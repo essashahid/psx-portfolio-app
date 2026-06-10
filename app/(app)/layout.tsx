@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { createClient, getUser } from "@/lib/supabase/server";
 import { Sidebar } from "@/components/sidebar";
+import { AutoRefreshPrices } from "@/components/auto-refresh-prices";
 import { DISCLAIMER } from "@/lib/utils";
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
@@ -16,6 +17,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
 
   return (
     <div className="flex h-screen overflow-hidden">
+      <AutoRefreshPrices />
       <Sidebar email={user.email ?? ""} openAlerts={count ?? 0} />
       <div className="flex min-w-0 flex-1 flex-col">
         <main className="flex-1 overflow-y-auto p-6">{children}</main>

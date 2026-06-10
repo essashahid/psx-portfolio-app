@@ -1,4 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { PsxDpsProvider } from "@/lib/market-data/psx-dps";
 
 export interface PricePoint {
   ticker: string;
@@ -109,8 +110,11 @@ export function getMarketDataProvider(
   supabase: SupabaseClient,
   userId: string
 ): MarketDataProvider {
-  const configured = (process.env.MARKET_DATA_PROVIDER ?? "manual").toLowerCase();
-  if (configured === "manual" || configured === "") {
+  const configured = (process.env.MARKET_DATA_PROVIDER ?? "psx").toLowerCase();
+  if (configured === "psx" || configured === "") {
+    return new PsxDpsProvider(supabase, userId);
+  }
+  if (configured === "manual") {
     return new ManualProvider(supabase, userId);
   }
   return new ExternalProvider(configured, supabase, userId);

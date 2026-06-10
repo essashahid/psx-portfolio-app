@@ -11,7 +11,7 @@ import { Badge, severityVariant } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Markdown } from "@/components/markdown";
 import { AllocationPie, GainLossBar, TargetVsActualBar, ValueLine } from "@/components/charts-lazy";
-import { Upload, Sparkles, ArrowRight } from "lucide-react";
+import { Upload, Sparkles, ArrowRight, RefreshCw } from "lucide-react";
 
 export const dynamic = "force-dynamic";
 
@@ -117,13 +117,22 @@ export default async function DashboardPage() {
         title="Dashboard"
         description={`Portfolio status as of ${today}${profileRes.data?.demo_mode ? " — demo mode is active" : ""}`}
         actions={
-          <ActionButton
-            endpoint="/api/ai/briefing"
-            body={{ type: "daily" }}
-            label={<><Sparkles className="h-4 w-4" /> Generate daily briefing</>}
-            variant="outline"
-            size="sm"
-          />
+          <>
+            <ActionButton
+              endpoint="/api/prices"
+              body={{ refresh: true }}
+              label={<><RefreshCw className="h-3.5 w-3.5" /> Refresh prices</>}
+              variant="outline"
+              size="sm"
+            />
+            <ActionButton
+              endpoint="/api/ai/briefing"
+              body={{ type: "daily" }}
+              label={<><Sparkles className="h-4 w-4" /> Generate daily briefing</>}
+              variant="outline"
+              size="sm"
+            />
+          </>
         }
       />
 

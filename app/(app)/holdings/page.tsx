@@ -5,8 +5,9 @@ import { PageHeader } from "@/components/page-header";
 import { HoldingsTable } from "@/components/holdings-table";
 import { AddTransactionDialog } from "@/components/add-transaction-dialog";
 import { EmptyState } from "@/components/empty-state";
+import { ActionButton } from "@/components/action-button";
 import { Button } from "@/components/ui/button";
-import { Briefcase, Download, Upload } from "lucide-react";
+import { Briefcase, Download, RefreshCw, Upload } from "lucide-react";
 
 export const dynamic = "force-dynamic";
 
@@ -24,6 +25,13 @@ export default async function HoldingsPage() {
         description="Every position with cost, value, targets and thesis health. Click a ticker for its research workspace."
         actions={
           <>
+            <ActionButton
+              endpoint="/api/prices"
+              body={{ refresh: true }}
+              label={<><RefreshCw className="h-3.5 w-3.5" /> Refresh prices</>}
+              variant="outline"
+              size="sm"
+            />
             <AddTransactionDialog />
             {/* eslint-disable-next-line @next/next/no-html-link-for-pages -- CSV download, not a page navigation */}
             <a href="/api/export/holdings">

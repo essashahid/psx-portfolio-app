@@ -4,6 +4,7 @@ import { requireUser, errorResponse } from "@/lib/api-helpers";
 import { refreshAlerts } from "@/lib/alerts";
 import { takeSnapshot } from "@/lib/portfolio";
 import { getMarketDataProvider } from "@/lib/market-data/adapter";
+import { needsRefresh, PSX_PRICE_SOURCE } from "@/lib/market-data/psx-dps";
 import { parseNumberLoose, parseDateLoose } from "@/lib/utils";
 
 export const maxDuration = 60;
@@ -23,12 +24,14 @@ export async function POST(request: Request) {
       prices?: { ticker: string; price: number; date?: string }[];
       csv?: string;
       refresh?: boolean;
+      /** Skip the fetch when the last provider fetch is newer than this. */
+      ifStaleMinutes?: number;
     };
 
     if (body.refresh) {
       const provider = getMarketDataProvider(supabase, user.id);
-      const result = await provider.refreshPortfolioPrices(user.id);
       if (provider.name === "manual") {
+        const result = await provider.refreshPortfolioPrices(user.id);
         return NextResponse.json({
           provider: "manual",
           updated: 0,
@@ -39,9 +42,34 @@ export async function POST(request: Request) {
               : "Manual mode: all holdings already have prices. Update them below whenever you like.",
         });
       }
-      await takeSnapshot(supabase, user.id);
-      await refreshAlerts(supabase, user.id);
-      return NextResponse.json({ provider: provider.name, ...result });
+
+      if (body.ifStaleMinutes) {
+        const { data: last } = await supabase
+          .from("prices")
+          .select("created_at")
+          .eq("user_id", user.id)
+          .eq("source", PSX_PRICE_SOURCE)
+          .order("created_at", { ascending: false })
+          .limit(1)
+          .maybeSingle();
+        if (!needsRefresh(last ? new Date(last.created_at) : null, body.ifStaleMinutes)) {
+          return NextResponse.json({ provider: provider.name, updated: 0, skipped: [], fresh: true });
+        }
+      }
+
+      const result = await provider.refreshPortfolioPrices(user.id);
+      if (result.updated > 0) {
+        await takeSnapshot(supabase, user.id);
+        await refreshAlerts(supabase, user.id);
+      }
+      return NextResponse.json({
+        provider: provider.name,
+        ...result,
+        message:
+          result.updated > 0
+            ? `${result.updated} price(s) refreshed from PSX${result.skipped.length ? `; no data for ${result.skipped.join(", ")}` : ""}.`
+            : `PSX returned no prices${result.skipped.length ? ` for ${result.skipped.join(", ")}` : ""}. Try again shortly.`,
+      });
     }
 
     let updates: { ticker: string; price: number; date?: string }[] = body.prices ?? [];
