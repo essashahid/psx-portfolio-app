@@ -12,7 +12,7 @@ const BROWSER_HEADERS = {
   Referer: "https://dps.psx.com.pk/announcements/companies",
 };
 
-type PsxAnnouncement = {
+export type PsxAnnouncement = {
   date: string;
   time: string;
   ticker: string;
@@ -20,6 +20,11 @@ type PsxAnnouncement = {
   title: string;
   url: string;
 };
+
+/** Raw company announcements for one ticker (newest first). Reused by the dividend engine. */
+export async function getCompanyAnnouncements(ticker: string, count: number): Promise<PsxAnnouncement[]> {
+  return fetchCompanyAnnouncements(ticker, count);
+}
 
 export function psxAnnouncementsConfigured(): boolean {
   return process.env.NEWS_ENABLE_PSX_ANNOUNCEMENTS !== "false";

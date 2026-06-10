@@ -18,6 +18,8 @@ import { tavilyConfigured } from "@/lib/tavily";
 import { gdeltConfigured } from "@/lib/news/gdelt";
 import { psxAnnouncementsConfigured } from "@/lib/news/psx-announcements";
 import { twelveDataConfigured } from "@/lib/market-data/twelve-data";
+import { getTaxSettings } from "@/lib/dividends/tax";
+import { TaxProfileForm } from "@/components/tax-profile-form";
 import type { Profile } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
@@ -27,6 +29,7 @@ export default async function SettingsPage() {
   const user = await getUser();
   if (!user) return null;
 
+  const taxSettings = await getTaxSettings(supabase, user.id);
   const [profileRes, accountsRes, mappingsRes, statementsRes] = await Promise.all([
     supabase.from("profiles").select("*").eq("id", user.id).maybeSingle(),
     supabase.from("broker_accounts").select("id, label, broker_type").eq("user_id", user.id).order("created_at"),
@@ -77,6 +80,17 @@ export default async function SettingsPage() {
       <Card>
         <CardHeader><CardTitle>Profile</CardTitle></CardHeader>
         <CardContent><ProfileForm profile={profile} /></CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Tax profile — dividends</CardTitle>
+          <CardDescription>
+            Used to estimate withholding on expected dividends. Defaults to Pakistan filer / ATL. This is an estimate
+            aid, not tax advice — edit the rate if FBR rules change or a dividend category is taxed differently.
+          </CardDescription>
+        </CardHeader>
+        <CardContent><TaxProfileForm settings={taxSettings} /></CardContent>
       </Card>
 
       <Card>

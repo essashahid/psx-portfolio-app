@@ -1,5 +1,6 @@
 import type { PortfolioSummary } from "@/lib/types";
 import type { DividendSummary } from "@/lib/dividends";
+import type { DividendEvent } from "@/lib/dividends/engine";
 
 export type ReviewSeverity = "high" | "medium" | "low";
 export type ReviewCategory = "allocation" | "performance" | "data" | "thesis" | "dividend" | "news" | "alert";
@@ -21,9 +22,102 @@ export function buildReviewQueue(input: {
   hiddenLowConfidenceNews: number;
   dividendSummary: DividendSummary;
   latestPriceDate: string | null;
+  dividendEvents?: DividendEvent[];
+  taxConfigured?: boolean;
+  showForecastsInReview?: boolean;
 }): ReviewQueueItem[] {
   const { summary, openAlerts, hiddenLowConfidenceNews, dividendSummary, latestPriceDate } = input;
   const items: ReviewQueueItem[] = [];
+  const events = input.dividendEvents ?? [];
+
+  // --- Dividend receivables -------------------------------------------------
+  const fmt = (n: number | null) => (n === null ? "?" : Math.round(n).toLocaleString("en-PK"));
+  const overdueEvents = events.filter((e) => e.status === "overdue");
+  for (const e of overdueEvents.slice(0, 3)) {
+    items.push({
+      id: `div-overdue-${e.id}`,
+      severity: "high",
+      category: "dividend",
+      ticker: e.ticker,
+      title: `${e.ticker} expected dividend payment window has passed`,
+      explanation: `Expected net ~PKR ${fmt(e.net_expected)} (window ${e.estimated_payment_start ?? "?"} → ${e.estimated_payment_end ?? "?"}) is not marked received. Check your bank/CDC and mark it received or not eligible.`,
+      actionLabel: "Open receivables",
+      href: "/dividends",
+    });
+  }
+
+  const upcomingConfirmed = events.filter(
+    (e) => !e.is_forecast && (e.status === "announced" || e.status === "expected")
+  );
+  for (const e of upcomingConfirmed.slice(0, 3)) {
+    items.push({
+      id: `div-upcoming-${e.id}`,
+      severity: "medium",
+      category: "dividend",
+      ticker: e.ticker,
+      title: `${e.ticker} announced a dividend — est. net PKR ${fmt(e.net_expected)} (confirmed)`,
+      explanation: `You hold ${fmt(e.eligible_quantity)} shares. Estimated net after ${e.tax_rate !== null ? `${(e.tax_rate * 100).toFixed(0)}% filer tax` : "tax"}: PKR ${fmt(e.net_expected)}.${e.eligibility_status !== "eligible" ? " Confirm eligibility." : ""}`,
+      actionLabel: e.eligibility_status !== "eligible" ? "Confirm eligibility" : "Open receivables",
+      href: "/dividends",
+    });
+  }
+
+  const needsReviewEvents = events.filter((e) => e.status === "needs_review");
+  if (needsReviewEvents.length > 0) {
+    items.push({
+      id: "div-needs-review",
+      severity: "medium",
+      category: "dividend",
+      title: `${needsReviewEvents.length} detected dividend announcement(s) need review`,
+      explanation: "Staged from official PSX announcements but the value or category could not be fully parsed. Review and confirm or ignore them.",
+      actionLabel: "Review staged",
+      href: "/dividends",
+    });
+  }
+
+  const faceValueAssumed = events.filter(
+    (e) => e.face_value_assumed && ["announced", "expected", "needs_review"].includes(e.status)
+  );
+  if (faceValueAssumed.length > 0) {
+    const tickers = [...new Set(faceValueAssumed.map((e) => e.ticker))];
+    items.push({
+      id: "div-face-value",
+      severity: "medium",
+      category: "dividend",
+      title: `Face value missing for ${tickers.length} company(ies) — dividend calculations need review`,
+      explanation: `${tickers.join(", ")}: percentage dividends were converted with the default face value. Confirm the actual face value.`,
+      actionLabel: "Review receivables",
+      href: "/dividends",
+    });
+  }
+
+  if (input.showForecastsInReview !== false) {
+    const forecasts = events.filter((e) => e.is_forecast && e.status === "forecasted");
+    for (const e of forecasts.slice(0, 2)) {
+      items.push({
+        id: `div-forecast-${e.id}`,
+        severity: "low",
+        category: "dividend",
+        ticker: e.ticker,
+        title: `${e.ticker} may announce a dividend around ${e.estimated_payment_start?.slice(0, 7) ?? "soon"} (forecast only)`,
+        explanation: `This is only a forecast based on your payout history — not announced. Estimated net range PKR ${fmt(e.net_low)}–${fmt(e.net_high)}.`,
+        actionLabel: "View forecast",
+        href: "/dividends",
+      });
+    }
+  }
+
+  if (input.taxConfigured === false && events.length > 0) {
+    items.push({
+      id: "div-tax-profile",
+      severity: "medium",
+      category: "dividend",
+      title: "Dividend tax profile uses default filer/ATL assumptions",
+      explanation: "Net receivable estimates assume 15% filer withholding. Confirm or adjust your tax profile so estimates match your status.",
+      actionLabel: "Open tax profile",
+      href: "/settings",
+    });
+  }
   const missingTargets = summary.holdings.filter((h) => h.target_price === null && h.target_allocation === null);
   const missingTheses = summary.holdings.filter((h) => !h.has_thesis);
   const missingPrices = summary.holdings.filter((h) => h.latest_price === null);

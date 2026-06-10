@@ -2,6 +2,8 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { getPortfolio } from "@/lib/portfolio";
 import { chatMarkdown } from "@/lib/ai/openai";
 import { getDividends, summarizeDividends } from "@/lib/dividends";
+import { getTaxSettings } from "@/lib/dividends/tax";
+import { normalizeEvent } from "@/lib/dividends/engine";
 import type { BriefingType } from "@/lib/types";
 
 /** Assembles a factual, compact context block the model can rely on. */
@@ -82,6 +84,50 @@ export async function buildPortfolioContext(
       lines.push(
         `- Pending ${d.ticker}: status ${d.status}, gross ${d.amount.toFixed(0)}, net ${(d.net_amount ?? d.amount).toFixed(0)}, payment ${d.payment_date ?? d.pay_date ?? "unknown"}`
       );
+    }
+  }
+
+  // Dividend receivables engine (confirmed announcements, forecasts, overdue)
+  const { data: eventRows } = await supabase
+    .from("dividend_events")
+    .select("*")
+    .eq("user_id", userId)
+    .in("status", ["announced", "expected", "overdue", "needs_review", "forecasted"])
+    .order("created_at", { ascending: false })
+    .limit(40);
+  const taxSettings = await getTaxSettings(supabase, userId);
+  const events = (eventRows ?? []).map((r) => normalizeEvent(r as Record<string, unknown>));
+  if (events.length > 0 || taxSettings.configured) {
+    lines.push(`\n## Dividend receivables`);
+    lines.push(
+      `Tax assumption: ${taxSettings.taxpayer_status === "filer" ? "Pakistan filer / ATL" : taxSettings.taxpayer_status}, dividend WHT rate ${taxSettings.dividend_tax_rate !== null ? `${(taxSettings.dividend_tax_rate * 100).toFixed(1)}%` : "NOT CONFIGURED — net amounts are rough"}, tax year ${taxSettings.tax_year}${taxSettings.configured ? "" : " (defaults — user has not confirmed the tax profile)"}.`
+    );
+    lines.push(
+      `RULES FOR YOU: Never state a dividend will definitely be received. Confirmed items are announced but eligibility/receipt may be unconfirmed — use wording like "estimated net receivable based on your current holding and configured filer tax rate". Items marked forecast are NOT announced; always label them "forecast only". Mention eligibility uncertainty and missing data explicitly.`
+    );
+    const confirmed = events.filter((e) => !e.is_forecast && (e.status === "announced" || e.status === "expected"));
+    for (const e of confirmed) {
+      lines.push(
+        `- CONFIRMED ${e.ticker}: ${e.dividend_type} dividend${e.dividend_per_share !== null ? ` Rs ${e.dividend_per_share}/share` : ""}, announced ${e.announcement_date ?? "?"}, qty ${e.eligible_quantity ?? "?"}, gross ~${e.gross_expected?.toFixed(0) ?? "?"}, est. tax ${e.estimated_tax?.toFixed(0) ?? "?"}, est. net ~${e.net_expected?.toFixed(0) ?? "?"}, payment ${e.payment_date ?? `est. ${e.estimated_payment_start ?? "?"} to ${e.estimated_payment_end ?? "?"}`}, eligibility ${e.eligibility_status}${e.face_value_assumed ? ", face value assumed (needs review)" : ""}`
+      );
+    }
+    const overdueEvents = events.filter((e) => e.status === "overdue");
+    for (const e of overdueEvents) {
+      lines.push(
+        `- OVERDUE ${e.ticker}: expected net ~${e.net_expected?.toFixed(0) ?? "?"} — payment window (${e.estimated_payment_start ?? "?"} to ${e.estimated_payment_end ?? "?"}) has passed without being marked received. Needs follow-up.`
+      );
+    }
+    const forecasts = events.filter((e) => e.is_forecast && e.status === "forecasted");
+    for (const e of forecasts) {
+      lines.push(
+        `- FORECAST ONLY (not announced) ${e.ticker}: possible payout window ${e.estimated_payment_start ?? "?"} to ${e.estimated_payment_end ?? "?"}, est. net range ${e.net_low?.toFixed(0) ?? "?"}–${e.net_high?.toFixed(0) ?? "?"} (basis: ${e.forecast_basis ?? "history"}, confidence ${e.confidence_level})`
+      );
+    }
+    const staged = events.filter((e) => e.status === "needs_review").length;
+    if (staged > 0) lines.push(`- ${staged} detected announcement(s) are staged and need user review (value could not be fully parsed).`);
+    const eligibilityUnknown = confirmed.filter((e) => e.eligibility_status !== "eligible").length;
+    if (eligibilityUnknown > 0) {
+      lines.push(`- Missing data: ${eligibilityUnknown} confirmed event(s) have unconfirmed eligibility (transaction history incomplete — user should confirm holdings before ex-date/book closure).`);
     }
   }
 

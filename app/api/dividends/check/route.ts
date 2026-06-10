@@ -1,0 +1,27 @@
+import { NextResponse } from "next/server";
+import { requireUser, errorResponse, logAgentRun } from "@/lib/api-helpers";
+import { checkUpcomingDividends, type DetectResult } from "@/lib/dividends/detect";
+
+export const maxDuration = 120;
+
+/** "Check upcoming dividends" — scans PSX announcements for every holding. */
+export async function POST() {
+  const { supabase, user, error } = await requireUser();
+  if (error) return error;
+
+  try {
+    const result = (await logAgentRun(supabase, user.id, "dividend_detection", {}, async () =>
+      ({ ...(await checkUpcomingDividends(supabase, user.id)) })
+    )) as unknown as DetectResult;
+    const parts = [
+      `${result.checkedTickers} holding(s) checked`,
+      `${result.staged} new dividend event(s) staged`,
+    ];
+    if (result.skippedDuplicates > 0) parts.push(`${result.skippedDuplicates} already known`);
+    if (result.lowConfidence > 0) parts.push(`${result.lowConfidence} low-confidence (hidden by default)`);
+    if (result.errors.length > 0) parts.push(`${result.errors.length} source error(s)`);
+    return NextResponse.json({ ok: true, ...result, message: `${parts.join(" · ")}.` });
+  } catch (err) {
+    return errorResponse(err);
+  }
+}

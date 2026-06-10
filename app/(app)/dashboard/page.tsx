@@ -2,6 +2,8 @@ import Link from "next/link";
 import { createClient, getUser } from "@/lib/supabase/server";
 import { getPortfolio } from "@/lib/portfolio";
 import { getDividends, summarizeDividends } from "@/lib/dividends";
+import { getTaxSettings } from "@/lib/dividends/tax";
+import { normalizeEvent } from "@/lib/dividends/engine";
 import { buildReviewQueue, type ReviewSeverity } from "@/lib/review-queue";
 import { formatMoney, formatNumber, formatSignedPct } from "@/lib/utils";
 import { PageHeader } from "@/components/page-header";
@@ -22,7 +24,7 @@ export default async function DashboardPage() {
   const user = await getUser();
   if (!user) return null;
 
-  const [summary, [briefingRes, newsRes, alertsRes, snapshotsRes, batchesRes, profileRes, lowConfidenceNewsRes], dividends] =
+  const [summary, [briefingRes, newsRes, alertsRes, snapshotsRes, batchesRes, profileRes, lowConfidenceNewsRes], dividends, dividendEventsRes, taxSettings] =
     await Promise.all([
       getPortfolio(supabase, user.id),
       Promise.all([
@@ -69,6 +71,14 @@ export default async function DashboardPage() {
           .eq("low_confidence", true),
       ]),
       getDividends(supabase, user.id),
+      supabase
+        .from("dividend_events")
+        .select("*")
+        .eq("user_id", user.id)
+        .in("status", ["announced", "expected", "overdue", "needs_review", "forecasted"])
+        .order("created_at", { ascending: false })
+        .limit(50),
+      getTaxSettings(supabase, user.id),
     ]);
 
   if (summary.holdingsCount === 0) {
@@ -133,6 +143,9 @@ export default async function DashboardPage() {
     hiddenLowConfidenceNews: lowConfidenceNewsRes.count ?? 0,
     dividendSummary,
     latestPriceDate,
+    dividendEvents: (dividendEventsRes.data ?? []).map((r) => normalizeEvent(r as Record<string, unknown>)),
+    taxConfigured: taxSettings.configured,
+    showForecastsInReview: taxSettings.show_forecasts_in_review,
   });
 
   return (
