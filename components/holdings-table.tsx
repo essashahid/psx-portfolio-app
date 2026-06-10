@@ -13,6 +13,7 @@ import {
 import type { EnrichedHolding } from "@/lib/types";
 import { formatMoney, formatNumber, formatSignedPct, cn } from "@/lib/utils";
 import { Badge, thesisStatusVariant } from "@/components/ui/badge";
+import { EditHoldingDialog } from "@/components/edit-holding-dialog";
 import { ArrowUpDown } from "lucide-react";
 
 const col = createColumnHelper<EnrichedHolding>();
@@ -143,6 +144,11 @@ export function HoldingsTable({ holdings }: { holdings: EnrichedHolding[] }) {
           const due = v <= new Date().toISOString().slice(0, 10);
           return <span className={cn("text-xs tabular-nums", due && "font-semibold text-amber-600")}>{v}</span>;
         },
+      }),
+      col.display({
+        id: "actions",
+        header: "",
+        cell: (c) => <EditHoldingDialog holding={c.row.original} />,
       }),
     ],
     []
