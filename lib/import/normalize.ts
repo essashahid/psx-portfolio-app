@@ -20,7 +20,7 @@ const HEADER_SYNONYMS: Record<CanonicalField, string[]> = {
   market_price: ["market price", "market rate", "closing rate", "closing price", "close", "last price", "last rate", "current price", "current rate", "price", "ltp", "rate per share"],
   market_value: ["market value", "current value", "value", "valuation", "market val", "value at market"],
   total_cost: ["total cost", "cost value", "cost amount", "investment", "invested amount", "total investment", "cost"],
-  trade_date: ["trade date", "transaction date", "date", "txn date", "deal date", "order date"],
+  trade_date: ["trade date", "transaction date", "txn date", "deal date", "order date"],
   settlement_date: ["settlement date", "settle date", "value date", "clearing date"],
   type: ["type", "transaction type", "txn type", "trade type", "nature", "buy/sell", "b/s", "side", "activity", "transaction nature"],
   price: ["rate", "trade rate", "deal rate", "execution price", "trade price", "price per share"],
@@ -95,8 +95,8 @@ export function detectStatementType(
     fields.has("ticker") &&
     fields.has("quantity") &&
     !fields.has("type") &&
-    !fields.has("trade_date") &&
-    !fields.has("settlement_date")
+    !fields.has("settlement_date") &&
+    (!fields.has("trade_date") || fields.has("market_price") || fields.has("market_value") || fields.has("avg_cost"))
   ) {
     return "holdings";
   }
