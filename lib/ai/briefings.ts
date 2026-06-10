@@ -1,0 +1,159 @@
+import type { SupabaseClient } from "@supabase/supabase-js";
+import { getPortfolio } from "@/lib/portfolio";
+import { chatMarkdown } from "@/lib/ai/openai";
+import type { BriefingType } from "@/lib/types";
+
+/** Assembles a factual, compact context block the model can rely on. */
+export async function buildPortfolioContext(
+  supabase: SupabaseClient,
+  userId: string,
+  opts: { newsDays?: number } = {}
+): Promise<string> {
+  const summary = await getPortfolio(supabase, userId);
+  const since = new Date(Date.now() - (opts.newsDays ?? 7) * 86400000).toISOString();
+
+  const [newsRes, alertsRes, journalRes, snapshotsRes] = await Promise.all([
+    supabase
+      .from("news_articles")
+      .select("ticker, title, url, source, published_at, ai_summary, sentiment, relevance_score, category")
+      .eq("user_id", userId)
+      .eq("ignored", false)
+      .gte("created_at", since)
+      .order("relevance_score", { ascending: false })
+      .limit(25),
+    supabase
+      .from("alerts")
+      .select("ticker, alert_type, severity, title, message")
+      .eq("user_id", userId)
+      .eq("status", "open")
+      .limit(30),
+    supabase
+      .from("journal_entries")
+      .select("ticker, entry_date, entry_type, title, confidence")
+      .eq("user_id", userId)
+      .order("entry_date", { ascending: false })
+      .limit(15),
+    supabase
+      .from("portfolio_snapshots")
+      .select("snapshot_date, total_value, unrealized_pl")
+      .eq("user_id", userId)
+      .order("snapshot_date", { ascending: false })
+      .limit(8),
+  ]);
+
+  const { data: theses } = await supabase
+    .from("theses")
+    .select("ticker, status, confidence, review_date, key_risks, why_bought")
+    .eq("user_id", userId);
+
+  const lines: string[] = [];
+  lines.push(`# Portfolio (PKR)`);
+  lines.push(
+    `Total value: ${summary.totalValue.toFixed(0)} | Total cost: ${summary.totalCost.toFixed(0)} | Unrealized P/L: ${summary.unrealizedPl.toFixed(0)} (${summary.unrealizedPlPct?.toFixed(1) ?? "n/a"}%) | Realized P/L: ${summary.realizedPl.toFixed(0)} | Dividend income: ${summary.dividendIncome.toFixed(0)} | Holdings: ${summary.holdingsCount} | Priced holdings: ${summary.pricedHoldings}/${summary.holdingsCount}`
+  );
+  if (summary.pricedHoldings < summary.holdingsCount) {
+    lines.push(
+      `NOTE: ${summary.holdingsCount - summary.pricedHoldings} holding(s) have no latest price — their market value falls back to cost.`
+    );
+  }
+  lines.push(`\n## Holdings`);
+  for (const h of summary.holdings) {
+    lines.push(
+      `- ${h.ticker} (${h.company_name ?? "?"}, ${h.sector ?? "?"}): qty ${h.quantity}, avg cost ${h.avg_cost.toFixed(2)}, latest price ${h.latest_price?.toFixed(2) ?? "MISSING"}, weight ${h.weight?.toFixed(1) ?? "?"}%, target alloc ${h.target_allocation ?? "none"}%, target price ${h.target_price ?? "none"}, review level ${h.review_level ?? "none"}, unrealized P/L ${h.unrealized_pl?.toFixed(0) ?? "n/a"} (${h.unrealized_pl_pct?.toFixed(1) ?? "n/a"}%), thesis: ${h.has_thesis ? `${h.thesis_status} (confidence ${h.thesis_confidence ?? "?"}/5)` : "MISSING"}, review date: ${h.review_date ?? "none"}`
+    );
+  }
+  lines.push(`\n## Sector weights`);
+  for (const s of summary.sectorWeights) lines.push(`- ${s.sector}: ${s.weight.toFixed(1)}%`);
+
+  if ((theses ?? []).length) {
+    lines.push(`\n## Theses`);
+    for (const t of theses ?? []) {
+      lines.push(
+        `- ${t.ticker} [${t.status}, confidence ${t.confidence ?? "?"}/5, review ${t.review_date ?? "none"}]: ${(t.why_bought ?? "").slice(0, 200)} | Risks: ${(t.key_risks ?? "none stated").slice(0, 150)}`
+      );
+    }
+  }
+  if ((newsRes.data ?? []).length) {
+    lines.push(`\n## Recent news (last ${opts.newsDays ?? 7} days)`);
+    for (const n of newsRes.data ?? []) {
+      lines.push(
+        `- [${n.ticker ?? "general"}] ${n.title} (${n.sentiment ?? "?"}, relevance ${n.relevance_score ?? "?"}/10, ${n.category ?? "general"}) ${n.url} :: ${(n.ai_summary ?? "").slice(0, 200)}`
+      );
+    }
+  } else {
+    lines.push(`\n## Recent news\nNo stored news. Suggest the user refresh news from the News Center.`);
+  }
+  if ((alertsRes.data ?? []).length) {
+    lines.push(`\n## Open alerts`);
+    for (const a of alertsRes.data ?? []) {
+      lines.push(`- [${a.severity}] ${a.ticker ?? "portfolio"} ${a.alert_type}: ${a.title}`);
+    }
+  }
+  if ((journalRes.data ?? []).length) {
+    lines.push(`\n## Recent journal entries`);
+    for (const j of journalRes.data ?? []) {
+      lines.push(`- ${j.entry_date} [${j.entry_type}] ${j.ticker ?? ""} ${j.title}`);
+    }
+  }
+  if ((snapshotsRes.data ?? []).length > 1) {
+    lines.push(`\n## Recent portfolio snapshots`);
+    for (const s of snapshotsRes.data ?? []) {
+      lines.push(`- ${s.snapshot_date}: value ${Number(s.total_value).toFixed(0)}, unrealized P/L ${Number(s.unrealized_pl).toFixed(0)}`);
+    }
+  }
+  lines.push(`\nToday's date: ${new Date().toISOString().slice(0, 10)}`);
+  return lines.join("\n");
+}
+
+const BRIEFING_INSTRUCTIONS: Record<string, { title: string; prompt: string }> = {
+  daily: {
+    title: "Daily Briefing",
+    prompt: `Write today's daily portfolio briefing in markdown with these sections (skip a section only if there is truly nothing to say, and then say why):
+1. **Portfolio overview** — value, cost, P/L, anything notable.
+2. **Biggest movers** — only if snapshot/price history allows; otherwise state that price history is insufficient.
+3. **Important news** — highest-relevance items, each with its source URL.
+4. **Holdings requiring review** — missing theses, review dates due, weakening theses.
+5. **Thesis risks** — risks flagged in theses that current news touches.
+6. **Allocation drift** — actual vs target allocation gaps worth attention.
+7. **Target price proximity** — holdings near/above target price or near/below review level.
+8. **Upcoming review dates**.
+9. **Questions to consider** — 2-4 specific questions for the user.`,
+  },
+  weekly: {
+    title: "Weekly Briefing",
+    prompt: `Write a weekly portfolio review in markdown: performance summary (note missing data plainly), allocation drift vs targets, the week's relevant news with source URLs, thesis changes or theses needing re-confirmation, key risks, dividends recorded, a concrete review list for next week, and a short journal summary if entries exist.`,
+  },
+  risk_review: {
+    title: "Portfolio Risk Review",
+    prompt: `Write a portfolio risk review in markdown: concentration (single stock and sector), missing-thesis exposure, theses with low confidence or Weakening/Broken status, negative-news exposure, holdings without price data, and 3-5 specific review questions. Do not invent risks not supported by the data.`,
+  },
+  news_only: {
+    title: "News Briefing",
+    prompt: `Write a news-only briefing in markdown. Group stored news by holding, summarize each item with its source URL, flag anything that may affect a stated thesis, and list which holdings had no news coverage.`,
+  },
+  dividend_review: {
+    title: "Dividend Review",
+    prompt: `Write a dividend review in markdown: dividend income recorded so far (by ticker if linkable), any dividend-related news with source URLs, and what dividend data is missing or worth confirming.`,
+  },
+  thesis_review: {
+    title: "Thesis Review",
+    prompt: `Review every holding's thesis in markdown. For each holding: thesis status and confidence, whether recent news supports or challenges it, and what would need to change for the status to move. Explicitly list holdings with no thesis — that is the biggest gap.`,
+  },
+};
+
+export async function generateBriefing(
+  supabase: SupabaseClient,
+  userId: string,
+  type: BriefingType
+): Promise<{ title: string; content: string; model: string }> {
+  const instructions = BRIEFING_INSTRUCTIONS[type] ?? BRIEFING_INSTRUCTIONS.daily;
+  const context = await buildPortfolioContext(supabase, userId, {
+    newsDays: type === "weekly" ? 7 : type === "daily" ? 2 : 14,
+  });
+  const { content, model } = await chatMarkdown(
+    `You write portfolio briefings from the provided context only. Never fabricate prices, news, or events not in the context.`,
+    `${instructions.prompt}\n\n--- CONTEXT ---\n${context}`,
+    2200
+  );
+  return { title: instructions.title, content, model };
+}

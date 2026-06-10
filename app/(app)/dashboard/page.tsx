@@ -1,0 +1,361 @@
+import Link from "next/link";
+import { createClient } from "@/lib/supabase/server";
+import { getPortfolio } from "@/lib/portfolio";
+import { formatMoney, formatNumber, formatSignedPct } from "@/lib/utils";
+import { PageHeader } from "@/components/page-header";
+import { StatCard } from "@/components/stat-card";
+import { EmptyState } from "@/components/empty-state";
+import { ActionButton } from "@/components/action-button";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Badge, severityVariant } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Markdown } from "@/components/markdown";
+import { AllocationPie, GainLossBar, TargetVsActualBar, ValueLine } from "@/components/charts";
+import { Upload, Sparkles, ArrowRight } from "lucide-react";
+
+export const dynamic = "force-dynamic";
+
+export default async function DashboardPage() {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return null;
+
+  const [summary, [briefingRes, newsRes, alertsRes, snapshotsRes, batchesRes, profileRes]] =
+    await Promise.all([
+      getPortfolio(supabase, user.id),
+      Promise.all([
+        supabase
+          .from("ai_briefings")
+          .select("id, title, content, created_at, briefing_type")
+          .eq("user_id", user.id)
+          .in("briefing_type", ["daily", "weekly"])
+          .order("created_at", { ascending: false })
+          .limit(1),
+        supabase
+          .from("news_articles")
+          .select("id, ticker, title, url, source, sentiment, relevance_score, published_at")
+          .eq("user_id", user.id)
+          .eq("ignored", false)
+          .gte("relevance_score", 7)
+          .order("created_at", { ascending: false })
+          .limit(5),
+        supabase
+          .from("alerts")
+          .select("id, ticker, alert_type, severity, title")
+          .eq("user_id", user.id)
+          .eq("status", "open")
+          .order("created_at", { ascending: false })
+          .limit(6),
+        supabase
+          .from("portfolio_snapshots")
+          .select("snapshot_date, total_value, total_cost")
+          .eq("user_id", user.id)
+          .order("snapshot_date", { ascending: true })
+          .limit(120),
+        supabase
+          .from("import_batches")
+          .select("id, statement_type, status, accepted_rows, rejected_rows, created_at")
+          .eq("user_id", user.id)
+          .order("created_at", { ascending: false })
+          .limit(3),
+        supabase.from("profiles").select("demo_mode").eq("id", user.id).maybeSingle(),
+      ]),
+    ]);
+
+  if (summary.holdingsCount === 0) {
+    return (
+      <div className="mx-auto max-w-2xl pt-12">
+        <PageHeader
+          title="Welcome to PortfolioOS PK"
+          description="Your private PSX portfolio command center. Nothing here connects to AKD or CDC — you import statements yourself, and all data stays in your account."
+        />
+        <EmptyState
+          icon={Upload}
+          title="Your portfolio is empty"
+          description="Start by importing an AKD/CDC statement (CSV, Excel or PDF), or load demo data to explore every feature first."
+          action={
+            <div className="flex flex-col items-center gap-3">
+              <div className="flex gap-2">
+                <Link href="/import">
+                  <Button>
+                    <Upload className="h-4 w-4" /> Import a statement
+                  </Button>
+                </Link>
+                <ActionButton endpoint="/api/demo" label={<><Sparkles className="h-4 w-4" /> Load demo data</>} variant="outline" />
+              </div>
+              <p className="text-[11px] text-muted-foreground">Demo data is clearly marked and can be cleared from Settings at any time.</p>
+            </div>
+          }
+        />
+      </div>
+    );
+  }
+
+  const briefing = briefingRes.data?.[0] ?? null;
+  const today = new Date().toISOString().slice(0, 10);
+  const needsReview = summary.holdings.filter(
+    (h) => !h.has_thesis || (h.review_date && h.review_date <= today) || h.thesis_status === "Weakening" || h.thesis_status === "Broken"
+  );
+  const upcomingReviews = summary.holdings
+    .filter((h) => h.review_date && h.review_date > today)
+    .sort((a, b) => (a.review_date! < b.review_date! ? -1 : 1))
+    .slice(0, 5);
+
+  return (
+    <div className="space-y-5">
+      <PageHeader
+        title="Dashboard"
+        description={`Portfolio status as of ${today}${profileRes.data?.demo_mode ? " — demo mode is active" : ""}`}
+        actions={
+          <ActionButton
+            endpoint="/api/ai/briefing"
+            body={{ type: "daily" }}
+            label={<><Sparkles className="h-4 w-4" /> Generate daily briefing</>}
+            variant="outline"
+            size="sm"
+          />
+        }
+      />
+
+      {profileRes.data?.demo_mode && (
+        <p className="rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800">
+          Demo mode: holdings, prices and news below are illustrative sample data. Clear it from Settings after importing your real statements.
+        </p>
+      )}
+
+      <div className="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-5">
+        <StatCard
+          label="Total value"
+          value={formatMoney(summary.totalValue)}
+          sub={summary.pricedHoldings < summary.holdingsCount ? `${summary.holdingsCount - summary.pricedHoldings} holding(s) priced at cost` : undefined}
+        />
+        <StatCard label="Total cost" value={formatMoney(summary.totalCost)} />
+        <StatCard
+          label="Unrealized P/L"
+          value={formatMoney(summary.unrealizedPl)}
+          sub={summary.unrealizedPlPct !== null ? formatSignedPct(summary.unrealizedPlPct) : "needs prices"}
+          tone={summary.unrealizedPl > 0 ? "positive" : summary.unrealizedPl < 0 ? "negative" : "neutral"}
+        />
+        <StatCard
+          label="Realized P/L"
+          value={formatMoney(summary.realizedPl)}
+          tone={summary.realizedPl > 0 ? "positive" : summary.realizedPl < 0 ? "negative" : "neutral"}
+        />
+        <StatCard label="Dividend income" value={formatMoney(summary.dividendIncome)} />
+        <StatCard label="Cash balance" value={formatMoney(summary.cashBalance)} sub="from imported cash movements" />
+        <StatCard label="Holdings" value={formatNumber(summary.holdingsCount, 0)} />
+        <StatCard
+          label="Largest holding"
+          value={summary.largestHolding?.ticker ?? "—"}
+          sub={summary.largestHolding?.weight ? `${summary.largestHolding.weight.toFixed(1)}% of portfolio` : undefined}
+        />
+        <StatCard
+          label="Largest sector"
+          value={summary.largestSector?.sector ?? "—"}
+          sub={summary.largestSector ? `${summary.largestSector.weight.toFixed(1)}% of portfolio` : undefined}
+        />
+        <StatCard
+          label="Open alerts"
+          value={formatNumber(alertsRes.data?.length ?? 0, 0)}
+          tone={(alertsRes.data?.length ?? 0) > 0 ? "negative" : "neutral"}
+        />
+      </div>
+
+      <div className="grid gap-4 lg:grid-cols-2">
+        <Card>
+          <CardHeader>
+            <CardTitle>Allocation by stock</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <AllocationPie
+              data={summary.holdings.map((h) => ({ name: h.ticker, value: h.market_value ?? h.total_cost }))}
+            />
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader>
+            <CardTitle>Allocation by sector</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <AllocationPie data={summary.sectorWeights.map((s) => ({ name: s.sector, value: s.value }))} />
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader>
+            <CardTitle>Unrealized gain/loss by holding</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <GainLossBar
+              data={summary.holdings
+                .filter((h) => h.unrealized_pl !== null)
+                .map((h) => ({ ticker: h.ticker, pl: h.unrealized_pl! }))}
+            />
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader>
+            <CardTitle>Actual vs target allocation</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <TargetVsActualBar
+              data={summary.holdings
+                .filter((h) => h.target_allocation !== null)
+                .map((h) => ({ ticker: h.ticker, actual: h.weight ?? 0, target: h.target_allocation! }))}
+            />
+          </CardContent>
+        </Card>
+      </div>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Portfolio value over time</CardTitle>
+          <CardDescription>Daily snapshots are taken on imports and price updates.</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <ValueLine
+            data={(snapshotsRes.data ?? []).map((s) => ({
+              date: s.snapshot_date.slice(5),
+              value: Number(s.total_value),
+              cost: Number(s.total_cost),
+            }))}
+          />
+        </CardContent>
+      </Card>
+
+      <div className="grid gap-4 lg:grid-cols-2">
+        <Card>
+          <CardHeader className="flex-row items-center justify-between">
+            <div>
+              <CardTitle>Daily AI briefing</CardTitle>
+              <CardDescription>
+                {briefing ? `Generated ${briefing.created_at.slice(0, 16).replace("T", " ")}` : "No briefing yet"}
+              </CardDescription>
+            </div>
+            <Link href="/briefings" className="text-xs text-muted-foreground hover:text-foreground">
+              All briefings <ArrowRight className="inline h-3 w-3" />
+            </Link>
+          </CardHeader>
+          <CardContent>
+            {briefing ? (
+              <div className="max-h-80 overflow-y-auto">
+                <Markdown content={briefing.content} />
+              </div>
+            ) : (
+              <p className="py-6 text-center text-xs text-muted-foreground">
+                Generate your first daily briefing with the button above.
+              </p>
+            )}
+          </CardContent>
+        </Card>
+
+        <div className="space-y-4">
+          <Card>
+            <CardHeader className="flex-row items-center justify-between">
+              <CardTitle>High-relevance news</CardTitle>
+              <Link href="/news" className="text-xs text-muted-foreground hover:text-foreground">
+                News Center <ArrowRight className="inline h-3 w-3" />
+              </Link>
+            </CardHeader>
+            <CardContent className="space-y-2">
+              {(newsRes.data ?? []).length === 0 && (
+                <p className="py-4 text-center text-xs text-muted-foreground">
+                  No high-relevance news stored. Refresh news from the News Center.
+                </p>
+              )}
+              {(newsRes.data ?? []).map((n) => (
+                <div key={n.id} className="flex items-start gap-2 border-b border-border pb-2 last:border-0 last:pb-0">
+                  <Badge variant={n.sentiment === "positive" ? "green" : n.sentiment === "negative" ? "red" : "secondary"}>
+                    {n.ticker ?? "—"}
+                  </Badge>
+                  <a href={n.url} target="_blank" rel="noopener noreferrer" className="text-xs leading-snug hover:underline">
+                    {n.title}
+                    <span className="ml-1 text-muted-foreground">({n.source})</span>
+                  </a>
+                </div>
+              ))}
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="flex-row items-center justify-between">
+              <CardTitle>Open alerts</CardTitle>
+              <Link href="/alerts" className="text-xs text-muted-foreground hover:text-foreground">
+                All alerts <ArrowRight className="inline h-3 w-3" />
+              </Link>
+            </CardHeader>
+            <CardContent className="space-y-1.5">
+              {(alertsRes.data ?? []).length === 0 && (
+                <p className="py-4 text-center text-xs text-muted-foreground">No open alerts.</p>
+              )}
+              {(alertsRes.data ?? []).map((a) => (
+                <div key={a.id} className="flex items-center gap-2 text-xs">
+                  <Badge variant={severityVariant(a.severity)}>{a.severity}</Badge>
+                  <span className="truncate">{a.title}</span>
+                </div>
+              ))}
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+
+      <div className="grid gap-4 lg:grid-cols-3">
+        <Card>
+          <CardHeader>
+            <CardTitle>Holdings requiring review</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-1.5">
+            {needsReview.length === 0 && <p className="py-3 text-center text-xs text-muted-foreground">Nothing flagged. 👍</p>}
+            {needsReview.map((h) => (
+              <Link key={h.ticker} href={`/stocks/${h.ticker}`} className="flex items-center justify-between text-xs hover:underline">
+                <span className="font-medium">{h.ticker}</span>
+                <span className="text-muted-foreground">
+                  {!h.has_thesis
+                    ? "missing thesis"
+                    : h.review_date && h.review_date <= today
+                      ? "review due"
+                      : `thesis ${h.thesis_status?.toLowerCase()}`}
+                </span>
+              </Link>
+            ))}
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader>
+            <CardTitle>Upcoming review dates</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-1.5">
+            {upcomingReviews.length === 0 && <p className="py-3 text-center text-xs text-muted-foreground">No upcoming review dates set.</p>}
+            {upcomingReviews.map((h) => (
+              <div key={h.ticker} className="flex items-center justify-between text-xs">
+                <span className="font-medium">{h.ticker}</span>
+                <span className="text-muted-foreground">{h.review_date}</span>
+              </div>
+            ))}
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader>
+            <CardTitle>Import status</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-1.5">
+            {(batchesRes.data ?? []).length === 0 && (
+              <p className="py-3 text-center text-xs text-muted-foreground">No imports yet.</p>
+            )}
+            {(batchesRes.data ?? []).map((b) => (
+              <div key={b.id} className="flex items-center justify-between text-xs">
+                <span>
+                  {b.created_at.slice(0, 10)} · {b.statement_type}
+                </span>
+                <span className="text-muted-foreground">
+                  {b.status === "committed" ? `${b.accepted_rows} rows${b.rejected_rows ? `, ${b.rejected_rows} rejected` : ""}` : b.status}
+                </span>
+              </div>
+            ))}
+          </CardContent>
+        </Card>
+      </div>
+    </div>
+  );
+}

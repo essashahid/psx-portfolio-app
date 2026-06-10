@@ -1,0 +1,185 @@
+import { createClient } from "@/lib/supabase/server";
+import { getPortfolio } from "@/lib/portfolio";
+import { PageHeader } from "@/components/page-header";
+import { ActionButton } from "@/components/action-button";
+import {
+  ProfileForm,
+  PriceManager,
+  BrokerAccounts,
+  SavedMappings,
+  StatementsList,
+} from "@/components/settings-forms";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Download, Sparkles, Trash2, RefreshCw } from "lucide-react";
+import { aiConfigured } from "@/lib/ai/openai";
+import { tavilyConfigured } from "@/lib/tavily";
+import type { Profile } from "@/lib/types";
+
+export const dynamic = "force-dynamic";
+
+export default async function SettingsPage() {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return null;
+
+  const [profileRes, accountsRes, mappingsRes, statementsRes] = await Promise.all([
+    supabase.from("profiles").select("*").eq("id", user.id).maybeSingle(),
+    supabase.from("broker_accounts").select("id, label, broker_type").eq("user_id", user.id).order("created_at"),
+    supabase.from("import_mappings").select("id, name, statement_type, created_at").eq("user_id", user.id).order("created_at", { ascending: false }),
+    supabase.from("uploaded_statements").select("id, file_name, file_type, statement_type, status, created_at").eq("user_id", user.id).order("created_at", { ascending: false }).limit(20),
+  ]);
+  const summary = await getPortfolio(supabase, user.id);
+
+  const profile: Profile = profileRes.data ?? {
+    id: user.id,
+    full_name: "",
+    base_currency: "PKR",
+    cost_basis_method: "weighted_average",
+    manual_price_mode: true,
+    demo_mode: false,
+  };
+
+  const keyStatus = [
+    { name: "Supabase", ok: !!process.env.NEXT_PUBLIC_SUPABASE_URL, note: "database, auth, storage" },
+    { name: "OpenAI", ok: aiConfigured(), note: "briefings, thesis checks, news analysis" },
+    { name: "Tavily", ok: tavilyConfigured(), note: "news & research discovery" },
+    {
+      name: "Market data",
+      ok: true,
+      note: `provider: ${process.env.MARKET_DATA_PROVIDER || "manual"} ${(process.env.MARKET_DATA_PROVIDER ?? "manual") === "manual" ? "(manual prices — works without an external API)" : ""}`,
+    },
+  ];
+
+  return (
+    <div className="space-y-4">
+      <PageHeader title="Settings" description="Profile, prices, accounts, data management and integrations." />
+
+      <Card>
+        <CardHeader><CardTitle>Profile</CardTitle></CardHeader>
+        <CardContent><ProfileForm profile={profile} /></CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Latest prices (manual mode)</CardTitle>
+          <CardDescription>
+            No live PSX feed is configured, so prices are yours to manage: edit them here, upload a CSV, or let statement imports
+            capture market prices automatically. A provider can be plugged into the market-data adapter later.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          {summary.holdings.length === 0 ? (
+            <p className="text-xs text-muted-foreground">Import holdings first; then you can manage their prices here.</p>
+          ) : (
+            <PriceManager
+              holdings={summary.holdings.map((h) => ({
+                ticker: h.ticker,
+                latest_price: h.latest_price,
+                price_date: h.price_date,
+                price_source: h.price_source,
+              }))}
+            />
+          )}
+        </CardContent>
+      </Card>
+
+      <div className="grid gap-4 lg:grid-cols-2">
+        <Card>
+          <CardHeader>
+            <CardTitle>Broker account labels</CardTitle>
+            <CardDescription>For your own organization only.</CardDescription>
+          </CardHeader>
+          <CardContent><BrokerAccounts accounts={accountsRes.data ?? []} /></CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader><CardTitle>Integration status</CardTitle></CardHeader>
+          <CardContent className="space-y-2">
+            {keyStatus.map((k) => (
+              <div key={k.name} className="flex items-center justify-between text-xs">
+                <span className="font-medium">{k.name}</span>
+                <span className="flex items-center gap-2 text-muted-foreground">
+                  {k.note}
+                  <Badge variant={k.ok ? "green" : "amber"}>{k.ok ? "configured" : "not configured"}</Badge>
+                </span>
+              </div>
+            ))}
+            <p className="pt-1 text-[11px] text-muted-foreground">
+              Keys live in <code>.env.local</code> on the server. The app degrades gracefully when a key is missing.
+            </p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader><CardTitle>Saved import mappings</CardTitle></CardHeader>
+          <CardContent><SavedMappings mappings={mappingsRes.data ?? []} /></CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Export data</CardTitle>
+            <CardDescription>Download your data as CSV anytime.</CardDescription>
+          </CardHeader>
+          <CardContent className="flex flex-wrap gap-2">
+            {["holdings", "transactions", "dividends", "journal"].map((k) => (
+              <a key={k} href={`/api/export/${k}`}>
+                <Button variant="outline" size="sm"><Download className="h-3.5 w-3.5" /> {k}</Button>
+              </a>
+            ))}
+          </CardContent>
+        </Card>
+      </div>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Uploaded statements</CardTitle>
+          <CardDescription>Original files stored privately in Supabase Storage. Deleting a file keeps committed portfolio data.</CardDescription>
+        </CardHeader>
+        <CardContent><StatementsList statements={statementsRes.data ?? []} /></CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Demo mode</CardTitle>
+          <CardDescription>
+            {profile.demo_mode
+              ? "Demo data is currently loaded (MEBL, FFC, HUBC, SYS, ENGRO with sample prices, theses, news and a briefing)."
+              : "Load a sample PSX portfolio to try every feature, then clear it when you import real data."}
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="flex flex-wrap gap-2">
+          <ActionButton endpoint="/api/demo" label={<><Sparkles className="h-3.5 w-3.5" /> Load demo data</>} variant="outline" size="sm" />
+          <ActionButton
+            endpoint="/api/demo"
+            method="DELETE"
+            label={<><Trash2 className="h-3.5 w-3.5" /> Clear demo data</>}
+            variant="outline"
+            size="sm"
+            confirmText="Remove all demo-tagged holdings, prices, news, journal entries and briefings?"
+          />
+        </CardContent>
+      </Card>
+
+      <Card className="border-red-200">
+        <CardHeader>
+          <CardTitle className="text-red-700">Danger zone</CardTitle>
+          <CardDescription>Reset deletes ALL portfolio data and uploaded files for your account. This cannot be undone.</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <ActionButton
+            endpoint="/api/portfolio/reset"
+            body={{ confirm: "RESET" }}
+            label={<><RefreshCw className="h-3.5 w-3.5" /> Reset portfolio</>}
+            variant="destructive"
+            size="sm"
+            confirmText="This permanently deletes all holdings, transactions, news, briefings, journal entries, alerts and uploaded statements. Continue?"
+          />
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
