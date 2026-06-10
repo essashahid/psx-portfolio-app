@@ -3,6 +3,7 @@ import { requireUser, errorResponse } from "@/lib/api-helpers";
 import { commitBatch } from "@/lib/import/commit";
 import { refreshAlerts } from "@/lib/alerts";
 import { takeSnapshot } from "@/lib/portfolio";
+import { enrichHoldingsMetadata } from "@/lib/holdings/enrichment";
 import type { NormalizedRow, StatementType } from "@/lib/types";
 
 export const maxDuration = 120;
@@ -92,12 +93,22 @@ export async function POST(request: Request) {
       .update({ status: "committed" })
       .eq("id", batch.statement_id);
 
+    let enrichment: Awaited<ReturnType<typeof enrichHoldingsMetadata>> | null = null;
+    let enrichmentError: string | null = null;
+    try {
+      enrichment = await enrichHoldingsMetadata(supabase, user.id, { tickers: result.holdingsTouched });
+    } catch (err) {
+      enrichmentError = err instanceof Error ? err.message : String(err);
+    }
+
     await takeSnapshot(supabase, user.id);
     await refreshAlerts(supabase, user.id);
 
     return NextResponse.json({
       ok: true,
       ...result,
+      metadataEnrichment: enrichment,
+      metadataEnrichmentError: enrichmentError,
       rejected,
       duplicates,
       excluded: excluded.size,

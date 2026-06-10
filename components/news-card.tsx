@@ -10,6 +10,8 @@ import { cn } from "@/lib/utils";
 export function NewsCard({ article }: { article: NewsArticle }) {
   const [saved, setSaved] = useState(article.saved);
   const [ignored, setIgnored] = useState(article.ignored);
+  const relevanceLabel = getRelevanceLabel(article.relevance_score);
+  const lowRelevance = article.relevance_score !== null && article.relevance_score <= 3;
 
   async function toggle(field: "saved" | "ignored") {
     const supabase = createClient();
@@ -20,13 +22,23 @@ export function NewsCard({ article }: { article: NewsArticle }) {
   }
 
   return (
-    <div className={cn("rounded-lg border border-border bg-card p-4", ignored && "opacity-50")}>
+    <div
+      className={cn(
+        "rounded-lg border border-border bg-card p-4",
+        lowRelevance && "border-amber-200 bg-amber-50/30",
+        ignored && "opacity-50"
+      )}
+    >
       <div className="flex items-start justify-between gap-3">
         <div className="flex flex-wrap items-center gap-1.5">
           {article.ticker && <Badge variant="outline">{article.ticker}</Badge>}
           <Badge variant={sentimentVariant(article.sentiment)}>{article.sentiment ?? "unrated"}</Badge>
-          {article.relevance_score !== null && <Badge variant="secondary">relevance {article.relevance_score}/10</Badge>}
-          {article.category && article.category !== "general" && <Badge variant="blue">{article.category}</Badge>}
+          {relevanceLabel && (
+            <Badge variant={article.relevance_score !== null && article.relevance_score >= 7 ? "blue" : lowRelevance ? "amber" : "secondary"}>
+              {relevanceLabel}
+            </Badge>
+          )}
+          {article.category && article.category !== "general" && <Badge variant="blue">{formatCategory(article.category)}</Badge>}
         </div>
         <div className="flex shrink-0 gap-1">
           <button
@@ -74,4 +86,16 @@ export function NewsCard({ article }: { article: NewsArticle }) {
       )}
     </div>
   );
+}
+
+function getRelevanceLabel(score: number | null): string | null {
+  if (score === null) return null;
+  if (score <= 2) return `off-topic ${score}/10`;
+  if (score <= 3) return `weak match ${score}/10`;
+  if (score >= 7) return `high relevance ${score}/10`;
+  return `relevance ${score}/10`;
+}
+
+function formatCategory(category: string): string {
+  return category.replace(/_/g, " ");
 }

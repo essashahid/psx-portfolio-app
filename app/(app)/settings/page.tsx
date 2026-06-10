@@ -15,6 +15,9 @@ import { Button } from "@/components/ui/button";
 import { Download, Sparkles, Trash2, RefreshCw } from "lucide-react";
 import { aiConfigured } from "@/lib/ai/openai";
 import { tavilyConfigured } from "@/lib/tavily";
+import { gdeltConfigured } from "@/lib/news/gdelt";
+import { psxAnnouncementsConfigured } from "@/lib/news/psx-announcements";
+import { twelveDataConfigured } from "@/lib/market-data/twelve-data";
 import type { Profile } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
@@ -43,14 +46,29 @@ export default async function SettingsPage() {
 
   const keyStatus = [
     { name: "Supabase", ok: !!process.env.NEXT_PUBLIC_SUPABASE_URL, note: "database, auth, storage" },
-    { name: "OpenAI", ok: aiConfigured(), note: "briefings, thesis checks, news analysis" },
-    { name: "Tavily", ok: tavilyConfigured(), note: "news & research discovery" },
+    { name: "Gemini", ok: aiConfigured(), note: "briefings, thesis checks, news analysis, metadata enrichment" },
+    {
+      name: "News providers",
+      ok: tavilyConfigured() || gdeltConfigured() || psxAnnouncementsConfigured(),
+      note: [
+        tavilyConfigured() ? "Tavily" : null,
+        gdeltConfigured() ? "GDELT" : null,
+        psxAnnouncementsConfigured() ? "PSX announcements" : null,
+      ].filter(Boolean).join(" + ") || "none enabled",
+    },
     {
       name: "Market data",
       ok: true,
-      note: `provider: ${process.env.MARKET_DATA_PROVIDER || "manual"} ${(process.env.MARKET_DATA_PROVIDER ?? "manual") === "manual" ? "(manual prices — works without an external API)" : ""}`,
+      note: `provider: ${process.env.MARKET_DATA_PROVIDER || "psx"} ${
+        (process.env.MARKET_DATA_PROVIDER ?? "psx").toLowerCase().replace("-", "") === "twelvedata"
+          ? twelveDataConfigured()
+            ? "(Twelve Data key configured)"
+            : "(Twelve Data key missing)"
+          : ""
+      }`,
     },
   ];
+  const marketProvider = (process.env.MARKET_DATA_PROVIDER ?? "psx").toLowerCase();
 
   return (
     <div className="space-y-4">
@@ -63,10 +81,11 @@ export default async function SettingsPage() {
 
       <Card>
         <CardHeader>
-          <CardTitle>Latest prices (manual mode)</CardTitle>
+          <CardTitle>Latest prices</CardTitle>
           <CardDescription>
-            No live PSX feed is configured, so prices are yours to manage: edit them here, upload a CSV, or let statement imports
-            capture market prices automatically. A provider can be plugged into the market-data adapter later.
+            {marketProvider === "manual"
+              ? "Manual provider is active: edit prices here, upload a CSV, or let statement imports capture market prices automatically."
+              : `External provider is active: ${process.env.MARKET_DATA_PROVIDER || "psx"}. You can still override or backfill prices manually here.`}
           </CardDescription>
         </CardHeader>
         <CardContent>

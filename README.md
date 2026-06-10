@@ -33,12 +33,14 @@ cp .env.example .env.local
 |---|---|---|
 | `NEXT_PUBLIC_SUPABASE_URL` / `NEXT_PUBLIC_SUPABASE_ANON_KEY` | yes | Supabase project (Settings → API) |
 | `SUPABASE_SERVICE_ROLE_KEY` | yes | server-side admin tasks (never sent to the browser) |
-| `OPENAI_API_KEY` (+ optional `OPENAI_MODEL`, default `gpt-4o-mini`) | for AI features | briefings, thesis checks, news analysis, journal analysis |
-| `TAVILY_API_KEY` | for news | News Center refresh |
-| `MARKET_DATA_PROVIDER` | no | `manual` (default) works with zero external APIs |
-| `MARKET_DATA_API_KEY`, `APP_BASE_URL` | no | reserved for a future price provider / deployment |
+| `GEMINI_API_KEY` (+ optional `GEMINI_MODEL`) | for AI features | briefings, thesis checks, news analysis, journal analysis, metadata enrichment |
+| `TAVILY_API_KEY` | for primary news discovery | Tavily-powered News Center refresh |
+| `NEWS_ENABLE_GDELT`, `GDELT_REQUEST_DELAY_MS` | no | secondary free GDELT discovery; defaults to enabled with a polite request delay |
+| `NEWS_ENABLE_PSX_ANNOUNCEMENTS` | no | official PSX company-announcement discovery; defaults to enabled |
+| `MARKET_DATA_PROVIDER` | no | `psx` (default), `twelve-data`, or `manual` |
+| `TWELVE_DATA_API_KEY`, `MARKET_DATA_API_KEY`, `APP_BASE_URL` | no | Twelve Data key / fallback provider key / deployment URL |
 
-The app **degrades gracefully**: with no OpenAI/Tavily keys, everything except AI/news still works, and those buttons explain what is missing.
+The app **degrades gracefully**: with no Gemini/Tavily/Twelve Data keys, manual prices, PSX announcements, and GDELT discovery can still work where reachable.
 
 ### 3. Run
 
@@ -55,7 +57,7 @@ Open http://localhost:3000, sign up, and either click **Load demo data** or impo
 2. **Import Center** → upload an AKD/CDC statement (CSV/XLSX/PDF) → the engine detects the statement type (holdings snapshot / trade history / dividends-cash / generic), normalizes headers via synonyms, validates rows with Zod, and stages everything.
 3. **Preview** → fix column mapping if needed, exclude rows, see exactly what will change → **Confirm**.
 4. Dashboard, Holdings, Goals populate. Set **target price / allocation / review level** per holding, write a **thesis** (why bought, expectations, risks, sell/add conditions, confidence, status, review date).
-5. **News Center → Refresh** searches Tavily per holding (+sector), and OpenAI scores each article for sentiment, relevance, and thesis impact.
+5. **News Center → Refresh** pulls official PSX company announcements, Tavily results, and GDELT secondary coverage, then Gemini scores generic articles for sentiment, relevance, and thesis impact.
 6. **AI Briefings** — daily / weekly / risk / news-only / dividend / thesis review, generated from your actual data, stored permanently.
 7. **Journal** decisions; run **pattern analysis** over your own entries.
 8. **Alerts** recompute on every import/price/news change: missing thesis, review due, allocation drift (±5pp), price above target / below review level, concentration (>25% stock, >40% sector), negative news, dividend/result announcements, import issues.
@@ -116,5 +118,5 @@ scripts/test-import.ts              import-engine sanity tests (npx tsx scripts/
 
 - PDF parsing is best-effort (text-layer tables). For scanned PDFs, export CSV/XLSX from the broker portal instead; the preview step always shows what was understood before anything is committed.
 - Demo prices are illustrative, not live quotes.
-- One Tavily news refresh covers up to 12 holdings per run to keep API usage sane.
+- One news refresh covers up to 12 holdings per run to keep Tavily/GDELT/PSX usage sane.
 - Do not commit real API keys: `.env*` is git-ignored, but `.env.example` should only ever contain placeholders.

@@ -108,16 +108,26 @@ export async function buildPortfolioContext(
 const BRIEFING_INSTRUCTIONS: Record<string, { title: string; prompt: string }> = {
   daily: {
     title: "Daily Briefing",
-    prompt: `Write today's daily portfolio briefing in markdown with these sections (skip a section only if there is truly nothing to say, and then say why):
-1. **Portfolio overview** — value, cost, P/L, anything notable.
-2. **Biggest movers** — only if snapshot/price history allows; otherwise state that price history is insufficient.
-3. **Important news** — highest-relevance items, each with its source URL.
-4. **Holdings requiring review** — missing theses, review dates due, weakening theses.
-5. **Thesis risks** — risks flagged in theses that current news touches.
-6. **Allocation drift** — actual vs target allocation gaps worth attention.
-7. **Target price proximity** — holdings near/above target price or near/below review level.
-8. **Upcoming review dates**.
-9. **Questions to consider** — 2-4 specific questions for the user.`,
+    prompt: `Write a concise daily portfolio brief for a serious PSX investor. This is not a blog post.
+
+Format rules:
+- Use markdown only.
+- Start with a one-sentence **Bottom line**.
+- Use H2 headings only. Do not use H1, H3, H4, numbered headings, or "Here is...".
+- Keep it under 450 words.
+- Prefer short bullets over paragraphs.
+- Do not repeat every holding; mention only items that require attention.
+- If prices are missing, say exactly what is missing and how that limits the analysis. Do not say P/L "cannot be calculated" if the context provides cost-based fallback values.
+
+Use exactly these sections:
+## Bottom line
+## Portfolio state
+## Attention queue
+## News and filings
+## Data quality
+## Review questions
+
+The "Attention queue" must list the 3-6 most important actions or checks, ordered by urgency.`,
   },
   weekly: {
     title: "Weekly Briefing",

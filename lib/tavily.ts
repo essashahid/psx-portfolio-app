@@ -43,10 +43,24 @@ export function holdingQueries(h: {
   company_name: string | null;
   sector: string | null;
 }): string[] {
-  const queries = [`${h.ticker} Pakistan Stock Exchange latest news`];
-  if (h.company_name) {
-    queries.push(`${h.company_name} PSX latest news`);
-    queries.push(`${h.company_name} financial result dividend announcement`);
+  const queries = new Set<string>();
+  const companyName = h.company_name?.trim();
+
+  if (companyName) {
+    const company = `"${companyName}"`;
+    queries.add(`${company} ${h.ticker} PSX Pakistan Stock Exchange news`);
+    queries.add(`${company} financial result dividend announcement Pakistan`);
+
+    const shortName = companyName
+      .replace(/\b(limited|ltd\.?|company|co\.?)\b/gi, " ")
+      .replace(/\s+/g, " ")
+      .trim();
+    if (shortName && shortName.toLowerCase() !== companyName.toLowerCase()) {
+      queries.add(`"${shortName}" ${h.ticker} PSX latest news`);
+    }
+  } else {
+    queries.add(`${h.ticker} PSX Pakistan Stock Exchange company news`);
   }
-  return queries;
+
+  return [...queries].slice(0, 3);
 }

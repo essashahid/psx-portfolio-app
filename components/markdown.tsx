@@ -40,10 +40,10 @@ function mdToHtml(md: string): string {
   };
   for (const raw of lines) {
     const line = raw.trimEnd();
-    const h = line.match(/^(#{1,3})\s+(.*)/);
+    const h = line.match(/^(#{1,6})\s+(.*)/);
     if (h) {
       closeLists();
-      const level = h[1].length;
+      const level = Math.min(h[1].length, 6);
       out.push(`<h${level}>${inline(h[2])}</h${level}>`);
       continue;
     }

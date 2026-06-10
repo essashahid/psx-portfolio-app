@@ -41,7 +41,16 @@ export function HoldingsTable({ holdings }: { holdings: EnrichedHolding[] }) {
       }),
       col.accessor("sector", {
         header: "Sector",
-        cell: (c) => <span className="block max-w-[140px] truncate text-xs">{c.getValue() ?? "—"}</span>,
+        cell: (c) =>
+          c.getValue() ? (
+            <span className="block max-w-[140px] truncate text-xs" title={c.getValue() ?? ""}>
+              {c.getValue()}
+            </span>
+          ) : (
+            <span className="text-xs font-medium text-amber-600" title="Sector metadata is missing. Use Enrich metadata.">
+              Unclassified
+            </span>
+          ),
       }),
       col.accessor("quantity", {
         header: "Qty",

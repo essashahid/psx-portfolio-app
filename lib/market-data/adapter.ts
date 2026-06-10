@@ -1,5 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { PsxDpsProvider } from "@/lib/market-data/psx-dps";
+import { TwelveDataProvider } from "@/lib/market-data/twelve-data";
 
 export interface PricePoint {
   ticker: string;
@@ -113,6 +114,9 @@ export function getMarketDataProvider(
   const configured = (process.env.MARKET_DATA_PROVIDER ?? "psx").toLowerCase();
   if (configured === "psx" || configured === "") {
     return new PsxDpsProvider(supabase, userId);
+  }
+  if (configured === "twelve-data" || configured === "twelvedata") {
+    return new TwelveDataProvider(supabase, userId);
   }
   if (configured === "manual") {
     return new ManualProvider(supabase, userId);

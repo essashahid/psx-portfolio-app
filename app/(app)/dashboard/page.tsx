@@ -11,7 +11,7 @@ import { Badge, severityVariant } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Markdown } from "@/components/markdown";
 import { AllocationPie, GainLossBar, TargetVsActualBar, ValueLine } from "@/components/charts-lazy";
-import { Upload, Sparkles, ArrowRight, RefreshCw } from "lucide-react";
+import { AlertTriangle, ArrowRight, FileText, Newspaper, RefreshCw, Sparkles, Upload } from "lucide-react";
 
 export const dynamic = "force-dynamic";
 
@@ -110,6 +110,11 @@ export default async function DashboardPage() {
     .sort((a, b) => a.unrealized_pl_pct! - b.unrealized_pl_pct!)
     .filter((h) => h.unrealized_pl_pct! < 0)
     .slice(0, 5);
+  const latestNews = newsRes.data ?? [];
+  const openAlerts = alertsRes.data ?? [];
+  const missingPrices = summary.holdings.filter((h) => h.latest_price === null);
+  const missingTheses = summary.holdings.filter((h) => !h.has_thesis);
+  const unclassifiedSectors = summary.holdings.filter((h) => !h.sector);
 
   return (
     <div className="space-y-5">
@@ -241,28 +246,50 @@ export default async function DashboardPage() {
         </CardContent>
       </Card>
 
-      <div className="grid gap-4 lg:grid-cols-2">
-        <Card>
-          <CardHeader className="flex-row items-center justify-between">
+      <div className="grid gap-4 xl:grid-cols-[minmax(0,1.35fr)_minmax(360px,0.85fr)]">
+        <Card className="overflow-hidden">
+          <CardHeader className="flex-row items-start justify-between border-b border-border bg-muted/30 p-4">
             <div>
-              <CardTitle>Daily AI briefing</CardTitle>
-              <CardDescription>
-                {briefing ? `Generated ${briefing.created_at.slice(0, 16).replace("T", " ")}` : "No briefing yet"}
+              <div className="flex items-center gap-2">
+                <FileText className="h-4 w-4 text-muted-foreground" />
+                <CardTitle>Daily review brief</CardTitle>
+                {briefing && <Badge variant="outline">{briefing.briefing_type}</Badge>}
+              </div>
+              <CardDescription className="mt-1">
+                {briefing ? `Generated ${briefing.created_at.slice(0, 16).replace("T", " ")}` : "No briefing generated yet"}
               </CardDescription>
             </div>
-            <Link href="/briefings" className="text-xs text-muted-foreground hover:text-foreground">
-              All briefings <ArrowRight className="inline h-3 w-3" />
+            <Link href="/briefings" className="shrink-0 text-xs text-muted-foreground hover:text-foreground">
+              Open full brief <ArrowRight className="inline h-3 w-3" />
             </Link>
           </CardHeader>
-          <CardContent>
+          <CardContent className="p-0">
             {briefing ? (
-              <div className="max-h-80 overflow-y-auto">
-                <Markdown content={briefing.content} />
+              <div className="grid md:grid-cols-[180px_minmax(0,1fr)]">
+                <div className="space-y-3 border-b border-border bg-muted/20 p-4 md:border-b-0 md:border-r">
+                  <div>
+                    <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">Coverage</p>
+                    <p className="mt-1 text-sm font-semibold">{summary.pricedHoldings}/{summary.holdingsCount} priced</p>
+                  </div>
+                  <div>
+                    <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">Open alerts</p>
+                    <p className="mt-1 text-sm font-semibold">{openAlerts.length}</p>
+                  </div>
+                  <div>
+                    <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">High-relevance news</p>
+                    <p className="mt-1 text-sm font-semibold">{latestNews.length}</p>
+                  </div>
+                </div>
+                <div className="max-h-[420px] overflow-y-auto p-4">
+                  <Markdown content={briefing.content} className="dashboard-briefing" />
+                </div>
               </div>
             ) : (
-              <p className="py-6 text-center text-xs text-muted-foreground">
-                Generate your first daily briefing with the button above.
-              </p>
+              <div className="flex min-h-48 flex-col items-center justify-center gap-3 p-6 text-center">
+                <FileText className="h-7 w-7 text-muted-foreground/70" />
+                <p className="max-w-md text-sm font-medium">Generate a concise daily review once prices, news, and alerts are up to date.</p>
+                <p className="max-w-md text-xs text-muted-foreground">The dashboard will show a compact version here; the full archive stays in Briefings.</p>
+              </div>
             )}
           </CardContent>
         </Card>
@@ -270,46 +297,70 @@ export default async function DashboardPage() {
         <div className="space-y-4">
           <Card>
             <CardHeader className="flex-row items-center justify-between">
-              <CardTitle>High-relevance news</CardTitle>
-              <Link href="/news" className="text-xs text-muted-foreground hover:text-foreground">
-                News Center <ArrowRight className="inline h-3 w-3" />
+              <div className="flex items-center gap-2">
+                <AlertTriangle className="h-4 w-4 text-muted-foreground" />
+                <CardTitle>Attention queue</CardTitle>
+              </div>
+              <Link href="/alerts" className="text-xs text-muted-foreground hover:text-foreground">
+                Alerts <ArrowRight className="inline h-3 w-3" />
               </Link>
             </CardHeader>
             <CardContent className="space-y-2">
-              {(newsRes.data ?? []).length === 0 && (
-                <p className="py-4 text-center text-xs text-muted-foreground">
-                  No high-relevance news stored. Refresh news from the News Center.
-                </p>
+              {missingPrices.length > 0 && (
+                <Link href="/settings" className="flex items-start justify-between gap-3 rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-900 hover:bg-amber-100">
+                  <span>{missingPrices.length} holding(s) need latest prices</span>
+                  <span className="shrink-0 text-amber-700">Fix</span>
+                </Link>
               )}
-              {(newsRes.data ?? []).map((n) => (
-                <div key={n.id} className="flex items-start gap-2 border-b border-border pb-2 last:border-0 last:pb-0">
-                  <Badge variant={n.sentiment === "positive" ? "green" : n.sentiment === "negative" ? "red" : "secondary"}>
-                    {n.ticker ?? "—"}
-                  </Badge>
-                  <a href={n.url} target="_blank" rel="noopener noreferrer" className="text-xs leading-snug hover:underline">
-                    {n.title}
-                    <span className="ml-1 text-muted-foreground">({n.source})</span>
-                  </a>
+              {missingTheses.length > 0 && (
+                <Link href="/holdings" className="flex items-start justify-between gap-3 rounded-md border border-border px-3 py-2 text-xs hover:bg-muted">
+                  <span>{missingTheses.length} holding(s) have no thesis</span>
+                  <span className="shrink-0 text-muted-foreground">Review</span>
+                </Link>
+              )}
+              {unclassifiedSectors.length > 0 && (
+                <Link href="/holdings" className="flex items-start justify-between gap-3 rounded-md border border-border px-3 py-2 text-xs hover:bg-muted">
+                  <span>{unclassifiedSectors.length} holding(s) need sector metadata</span>
+                  <span className="shrink-0 text-muted-foreground">Enrich</span>
+                </Link>
+              )}
+              {openAlerts.slice(0, 4).map((a) => (
+                <div key={a.id} className="flex items-start gap-2 rounded-md border border-border px-3 py-2 text-xs">
+                  <Badge variant={severityVariant(a.severity)}>{a.severity}</Badge>
+                  <span className="min-w-0 flex-1">{a.title}</span>
                 </div>
               ))}
+              {missingPrices.length === 0 && missingTheses.length === 0 && unclassifiedSectors.length === 0 && openAlerts.length === 0 && (
+                <p className="py-4 text-center text-xs text-muted-foreground">No open attention items.</p>
+              )}
             </CardContent>
           </Card>
 
           <Card>
             <CardHeader className="flex-row items-center justify-between">
-              <CardTitle>Open alerts</CardTitle>
-              <Link href="/alerts" className="text-xs text-muted-foreground hover:text-foreground">
-                All alerts <ArrowRight className="inline h-3 w-3" />
+              <div className="flex items-center gap-2">
+                <Newspaper className="h-4 w-4 text-muted-foreground" />
+                <CardTitle>High-relevance news</CardTitle>
+              </div>
+              <Link href="/news" className="text-xs text-muted-foreground hover:text-foreground">
+                News Center <ArrowRight className="inline h-3 w-3" />
               </Link>
             </CardHeader>
-            <CardContent className="space-y-1.5">
-              {(alertsRes.data ?? []).length === 0 && (
-                <p className="py-4 text-center text-xs text-muted-foreground">No open alerts.</p>
+            <CardContent className="space-y-2">
+              {latestNews.length === 0 && (
+                <p className="py-4 text-center text-xs text-muted-foreground">
+                  No high-relevance news stored. Refresh news from the News Center.
+                </p>
               )}
-              {(alertsRes.data ?? []).map((a) => (
-                <div key={a.id} className="flex items-center gap-2 text-xs">
-                  <Badge variant={severityVariant(a.severity)}>{a.severity}</Badge>
-                  <span className="truncate">{a.title}</span>
+              {latestNews.map((n) => (
+                <div key={n.id} className="flex items-start gap-2 border-b border-border pb-2 last:border-0 last:pb-0">
+                  <Badge variant={n.sentiment === "positive" ? "green" : n.sentiment === "negative" ? "red" : "secondary"}>
+                    {n.ticker ?? "—"}
+                  </Badge>
+                  <a href={n.url} target="_blank" rel="noopener noreferrer" className="min-w-0 text-xs leading-snug hover:underline">
+                    {n.title}
+                    <span className="ml-1 text-muted-foreground">({n.source})</span>
+                  </a>
                 </div>
               ))}
             </CardContent>
@@ -342,7 +393,7 @@ export default async function DashboardPage() {
             <CardDescription>Positions trading below your cost</CardDescription>
           </CardHeader>
           <CardContent className="space-y-1.5">
-            {topLosers.length === 0 && <p className="py-3 text-center text-xs text-muted-foreground">No positions below cost. 👍</p>}
+            {topLosers.length === 0 && <p className="py-3 text-center text-xs text-muted-foreground">No positions below cost.</p>}
             {topLosers.map((h) => (
               <Link key={h.ticker} href={`/stocks/${h.ticker}`} className="flex items-center justify-between text-xs hover:underline">
                 <span className="font-medium">{h.ticker}</span>

@@ -3,6 +3,10 @@ import { requireUser, errorResponse, logAgentRun } from "@/lib/api-helpers";
 import { tavilySearch, holdingQueries, tavilyConfigured } from "@/lib/tavily";
 import { analyzeArticles, aiConfigured, type ArticleAnalysis } from "@/lib/ai/openai";
 import { refreshAlerts } from "@/lib/alerts";
+import { gdeltConfigured, gdeltSearchHoldings } from "@/lib/news/gdelt";
+import { matchesHoldingText } from "@/lib/news/matching";
+import { psxAnnouncementsConfigured, psxAnnouncementSearchHoldings } from "@/lib/news/psx-announcements";
+import type { DiscoveredNewsArticle } from "@/lib/news/types";
 
 export const maxDuration = 300;
 
@@ -12,9 +16,13 @@ export async function POST(request: Request) {
   const { supabase, user, error } = await requireUser();
   if (error) return error;
 
-  if (!tavilyConfigured()) {
+  const tavilyEnabled = tavilyConfigured() && process.env.NEWS_ENABLE_TAVILY !== "false";
+  const psxAnnouncementsEnabled = psxAnnouncementsConfigured();
+  const gdeltEnabled = gdeltConfigured();
+
+  if (!tavilyEnabled && !psxAnnouncementsEnabled && !gdeltEnabled) {
     return NextResponse.json(
-      { error: "TAVILY_API_KEY is not configured. Add it in .env.local to enable news refresh." },
+      { error: "No news providers are enabled. Enable Tavily, GDELT, or PSX announcements." },
       { status: 503 }
     );
   }
@@ -44,67 +52,66 @@ export async function POST(request: Request) {
         .eq("user_id", user.id);
       const known = new Set((existing ?? []).map((e) => e.url));
 
-      const found: {
-        url: string;
-        title: string;
-        snippet: string;
-        ticker: string;
-        company_name: string;
-        sector: string | null;
-        source: string;
-        published_at: string | null;
-      }[] = [];
+      const found: DiscoveredNewsArticle[] = [];
 
       const searchErrors: string[] = [];
-      // distinct sector queries (one per sector, not per holding)
-      const sectors = [...new Set(holdings.map((h) => h.sector).filter(Boolean))] as string[];
+      let skippedNoHoldingMatch = 0;
+      const providerCounts = {
+        tavily: 0,
+        gdelt: 0,
+        psxAnnouncements: 0,
+      };
 
-      for (const h of holdings) {
-        for (const q of holdingQueries(h)) {
-          try {
-            const results = await tavilySearch(q, { days: 7, maxResults: 4 });
-            for (const r of results) {
-              if (known.has(r.url)) continue;
-              known.add(r.url);
-              found.push({
-                url: r.url,
-                title: r.title,
-                snippet: (r.content ?? "").slice(0, 1500),
-                ticker: h.ticker,
-                company_name: h.company_name ?? h.ticker,
-                sector: h.sector,
-                source: safeHostname(r.url),
-                published_at: r.published_date ?? null,
-              });
+      function addArticle(article: DiscoveredNewsArticle) {
+        if (known.has(article.url)) return false;
+        known.add(article.url);
+        found.push(article);
+        if (article.provider === "tavily") providerCounts.tavily++;
+        if (article.provider === "gdelt") providerCounts.gdelt++;
+        if (article.provider === "psx-announcements") providerCounts.psxAnnouncements++;
+        return true;
+      }
+
+      if (psxAnnouncementsEnabled) {
+        const { articles, errors } = await psxAnnouncementSearchHoldings(holdings, { maxResultsPerHolding: 4 });
+        for (const article of articles) addArticle(article);
+        searchErrors.push(...errors);
+      }
+
+      if (tavilyEnabled) {
+        for (const h of holdings) {
+          for (const q of holdingQueries(h)) {
+            try {
+              const results = await tavilySearch(q, { days: 7, maxResults: 4 });
+              for (const r of results) {
+                if (!matchesHoldingText(h, [r.title, r.content ?? "", r.url])) {
+                  skippedNoHoldingMatch++;
+                  continue;
+                }
+                addArticle({
+                  url: r.url,
+                  title: r.title,
+                  snippet: (r.content ?? "").slice(0, 1500),
+                  ticker: h.ticker,
+                  company_name: h.company_name ?? h.ticker,
+                  sector: h.sector,
+                  source: safeHostname(r.url),
+                  published_at: r.published_date ?? null,
+                  provider: "tavily",
+                  category: "general",
+                });
+              }
+            } catch (e) {
+              searchErrors.push(`${h.ticker} Tavily: ${e instanceof Error ? e.message : String(e)}`);
             }
-          } catch (e) {
-            searchErrors.push(`${h.ticker}: ${e instanceof Error ? e.message : String(e)}`);
           }
         }
       }
-      if (!body.ticker) {
-        for (const sector of sectors.slice(0, 5)) {
-          try {
-            const results = await tavilySearch(`${sector} Pakistan latest news`, { days: 7, maxResults: 3 });
-            const h = holdings.find((x) => x.sector === sector)!;
-            for (const r of results) {
-              if (known.has(r.url)) continue;
-              known.add(r.url);
-              found.push({
-                url: r.url,
-                title: r.title,
-                snippet: (r.content ?? "").slice(0, 1500),
-                ticker: h.ticker,
-                company_name: h.company_name ?? h.ticker,
-                sector,
-                source: safeHostname(r.url),
-                published_at: r.published_date ?? null,
-              });
-            }
-          } catch (e) {
-            searchErrors.push(`${sector}: ${e instanceof Error ? e.message : String(e)}`);
-          }
-        }
+
+      if (gdeltEnabled) {
+        const { articles, errors } = await gdeltSearchHoldings(holdings, { days: 7, maxResultsPerHolding: 2 });
+        for (const article of articles) addArticle(article);
+        searchErrors.push(...errors);
       }
 
       // AI analysis in batches of 8 (skipped gracefully when no key configured)
@@ -112,10 +119,11 @@ export async function POST(request: Request) {
         .map((h) => `${h.ticker} = ${h.company_name} (${h.sector ?? "sector unknown"})`)
         .join("\n");
       const analysisByUrl = new Map<string, ArticleAnalysis>();
+      const aiCandidates = found.filter((article) => article.provider !== "psx-announcements");
       let aiSkipped = false;
       if (aiConfigured()) {
-        for (let i = 0; i < found.length; i += 8) {
-          const batch = found.slice(i, i + 8);
+        for (let i = 0; i < aiCandidates.length; i += 8) {
+          const batch = aiCandidates.slice(i, i + 8);
           try {
             const { analyses } = await analyzeArticles(
               batch.map((a) => ({
@@ -137,8 +145,11 @@ export async function POST(request: Request) {
       }
 
       let inserted = 0;
+      let autoIgnored = 0;
       for (const a of found) {
         const analysis = analysisByUrl.get(a.url);
+        const relevanceScore = analysis ? clampScore(analysis.relevance_score) : a.relevance_score ?? null;
+        const shouldAutoIgnore = relevanceScore !== null && relevanceScore <= 2;
         const { error: insErr } = await supabase.from("news_articles").upsert(
           {
             user_id: user.id,
@@ -150,25 +161,33 @@ export async function POST(request: Request) {
             source: a.source,
             published_at: a.published_at,
             snippet: a.snippet,
-            ai_summary: analysis?.summary ?? null,
-            sentiment: analysis?.sentiment ?? null,
-            relevance_score: analysis ? clampScore(analysis.relevance_score) : null,
-            why_it_matters: analysis?.why_it_matters ?? null,
-            thesis_impact: analysis?.possible_thesis_impact ?? null,
-            review_question: analysis?.suggested_user_review_question ?? null,
-            category: analysis?.category ?? "general",
+            ai_summary: analysis?.summary ?? a.ai_summary ?? null,
+            sentiment: analysis?.sentiment ?? a.sentiment ?? null,
+            relevance_score: relevanceScore,
+            why_it_matters: analysis?.why_it_matters ?? a.why_it_matters ?? null,
+            thesis_impact: analysis?.possible_thesis_impact ?? a.thesis_impact ?? null,
+            review_question: analysis?.suggested_user_review_question ?? a.review_question ?? null,
+            category: analysis?.category ?? a.category ?? "general",
+            ignored: shouldAutoIgnore,
           },
           { onConflict: "user_id,url", ignoreDuplicates: true }
         );
-        if (!insErr) inserted++;
+        if (!insErr) {
+          inserted++;
+          if (shouldAutoIgnore) autoIgnored++;
+        }
       }
 
       await refreshAlerts(supabase, user.id);
 
       return {
+        message: `${inserted} article${inserted === 1 ? "" : "s"} saved. ${skippedNoHoldingMatch} off-topic match${skippedNoHoldingMatch === 1 ? "" : "es"} skipped.`,
         searched: holdings.length,
         found: found.length,
         inserted,
+        autoIgnored,
+        skippedNoHoldingMatch,
+        providers: providerCounts,
         aiSkipped,
         errors: searchErrors.slice(0, 10),
       };

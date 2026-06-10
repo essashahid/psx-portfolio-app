@@ -37,6 +37,7 @@ export default async function NewsPage({
     .order("ticker");
   const tickers = [...new Set((holdings ?? []).map((h) => h.ticker))];
   const sectors = [...new Set((holdings ?? []).map((h) => h.sector).filter(Boolean))] as string[];
+  const relevanceMode = sp.relevance ?? (sp.view ? "all" : "portfolio");
 
   let query = supabase
     .from("news_articles")
@@ -48,7 +49,12 @@ export default async function NewsPage({
   if (sp.ticker) query = query.eq("ticker", sp.ticker);
   if (sp.sector) query = query.eq("sector", sp.sector);
   if (sp.sentiment) query = query.eq("sentiment", sp.sentiment);
-  if (sp.relevance) query = query.gte("relevance_score", parseInt(sp.relevance, 10));
+  if (relevanceMode === "portfolio") query = query.or("relevance_score.gte.4,relevance_score.is.null");
+  else if (relevanceMode === "low") query = query.lte("relevance_score", 3);
+  else if (relevanceMode !== "all") {
+    const minimumRelevance = parseInt(relevanceMode, 10);
+    if (Number.isFinite(minimumRelevance)) query = query.gte("relevance_score", minimumRelevance);
+  }
   if (sp.view === "saved") query = query.eq("saved", true);
   else if (sp.view === "ignored") query = query.eq("ignored", true);
   else query = query.eq("ignored", false);
@@ -82,7 +88,7 @@ export default async function NewsPage({
     <div className="space-y-4">
       <PageHeader
         title="News Center"
-        description="Tavily-powered news monitoring for your holdings, analyzed for relevance and thesis impact."
+        description="Holding-specific news, screened for portfolio relevance and thesis impact."
         actions={
           <ActionButton
             endpoint="/api/news/refresh"
@@ -111,7 +117,10 @@ export default async function NewsPage({
           {["positive", "neutral", "negative"].map((s) =>
             filterLink({ sentiment: s }, s, sp.sentiment === s)
           )}
-          {filterLink({ relevance: sp.relevance === "7" ? undefined : "7" }, "High relevance (7+)", sp.relevance === "7")}
+          {filterLink({ relevance: "portfolio" }, "Portfolio-relevant (4+)", relevanceMode === "portfolio")}
+          {filterLink({ relevance: "7" }, "High relevance (7+)", relevanceMode === "7")}
+          {filterLink({ relevance: "low" }, "Low relevance (1-3)", relevanceMode === "low")}
+          {filterLink({ relevance: "all" }, "All relevance", relevanceMode === "all")}
           {filterLink({ window: undefined }, "Any time", !sp.window)}
           {filterLink({ window: "24h" }, "24 hours", sp.window === "24h")}
           {filterLink({ window: "7d" }, "7 days", sp.window === "7d")}
@@ -124,11 +133,13 @@ export default async function NewsPage({
       {(articles ?? []).length === 0 ? (
         <EmptyState
           icon={Newspaper}
-          title="No news stored yet"
+          title={relevanceMode === "portfolio" ? "No portfolio-relevant news shown" : "No news stored yet"}
           description={
             tickers.length === 0
               ? "Import holdings first, then refresh news to start monitoring your portfolio."
-              : "Hit “Refresh news for all holdings” to search Pakistani business news for every position via Tavily."
+              : relevanceMode === "portfolio"
+                ? "Refresh news or switch the relevance filter if you want to audit lower-scored matches."
+                : "Hit “Refresh news for all holdings” to search Pakistani business news for every position via Tavily."
           }
           action={
             tickers.length === 0 ? (

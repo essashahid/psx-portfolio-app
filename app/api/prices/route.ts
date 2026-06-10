@@ -43,12 +43,13 @@ export async function POST(request: Request) {
         });
       }
 
+      const providerSource = provider.name === "psx" ? PSX_PRICE_SOURCE : provider.name;
       if (body.ifStaleMinutes) {
         const { data: last } = await supabase
           .from("prices")
           .select("created_at")
           .eq("user_id", user.id)
-          .eq("source", PSX_PRICE_SOURCE)
+          .eq("source", providerSource)
           .order("created_at", { ascending: false })
           .limit(1)
           .maybeSingle();
@@ -67,8 +68,8 @@ export async function POST(request: Request) {
         ...result,
         message:
           result.updated > 0
-            ? `${result.updated} price(s) refreshed from PSX${result.skipped.length ? `; no data for ${result.skipped.join(", ")}` : ""}.`
-            : `PSX returned no prices${result.skipped.length ? ` for ${result.skipped.join(", ")}` : ""}. Try again shortly.`,
+            ? `${result.updated} price(s) refreshed from ${provider.name}${result.skipped.length ? `; no data for ${result.skipped.join(", ")}` : ""}.`
+            : `${provider.name} returned no prices${result.skipped.length ? ` for ${result.skipped.join(", ")}` : ""}. Try again shortly.`,
       });
     }
 

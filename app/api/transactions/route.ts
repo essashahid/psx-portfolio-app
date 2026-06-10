@@ -3,6 +3,7 @@ import { z } from "zod";
 import { requireUser, errorResponse } from "@/lib/api-helpers";
 import { recomputeHoldingsFromTransactions, takeSnapshot } from "@/lib/portfolio";
 import { refreshAlerts } from "@/lib/alerts";
+import { enrichHoldingsMetadata } from "@/lib/holdings/enrichment";
 
 export const maxDuration = 60;
 
@@ -78,10 +79,20 @@ export async function POST(request: Request) {
     if (insErr) throw insErr;
 
     await recomputeHoldingsFromTransactions(supabase, user.id);
+    let enrichmentMessage: string | null = null;
+    try {
+      const enrichment = await enrichHoldingsMetadata(supabase, user.id, { tickers: [ticker] });
+      enrichmentMessage = enrichment.updatedFromAi + enrichment.updatedFromMaster > 0 ? enrichment.message : null;
+    } catch {
+      enrichmentMessage = null;
+    }
     await takeSnapshot(supabase, user.id);
     await refreshAlerts(supabase, user.id);
 
-    return NextResponse.json({ ok: true, message: "Transaction recorded and holdings recalculated." });
+    return NextResponse.json({
+      ok: true,
+      message: enrichmentMessage ?? "Transaction recorded and holdings recalculated.",
+    });
   } catch (err) {
     return errorResponse(err);
   }

@@ -7,7 +7,7 @@ import { AddTransactionDialog } from "@/components/add-transaction-dialog";
 import { EmptyState } from "@/components/empty-state";
 import { ActionButton } from "@/components/action-button";
 import { Button } from "@/components/ui/button";
-import { Briefcase, Download, RefreshCw, Upload } from "lucide-react";
+import { Briefcase, Download, RefreshCw, Sparkles, Upload } from "lucide-react";
 
 export const dynamic = "force-dynamic";
 
@@ -29,6 +29,12 @@ export default async function HoldingsPage() {
               endpoint="/api/prices"
               body={{ refresh: true }}
               label={<><RefreshCw className="h-3.5 w-3.5" /> Refresh prices</>}
+              variant="outline"
+              size="sm"
+            />
+            <ActionButton
+              endpoint="/api/holdings/enrich"
+              label={<><Sparkles className="h-3.5 w-3.5" /> Enrich metadata</>}
               variant="outline"
               size="sm"
             />
