@@ -1,6 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { aiConfigured, chatJson } from "@/lib/ai/openai";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { fetchPsxSymbols } from "@/lib/market-data/psx-dps";
 
 type HoldingMetadataRow = {
   ticker: string;
@@ -78,6 +79,31 @@ export async function enrichHoldingsMetadata(
     await updateHolding(supabase, userId, h.ticker, patch);
     Object.assign(h, patch);
     updatedFromMaster++;
+  }
+
+  // Official PSX symbol directory — authoritative for anything still listed.
+  const afterMaster = holdings.filter(needsMetadata);
+  if (afterMaster.length > 0) {
+    const psxDirectory = await fetchPsxSymbols();
+    const officialRows: { ticker: string; company_name: string; sector: string | null }[] = [];
+    for (const h of afterMaster) {
+      const official = psxDirectory.get(h.ticker);
+      if (!official) continue;
+      const patch = missingPatch(h, {
+        company_name: cleanText(official.name),
+        sector: cleanText(official.sector),
+      });
+      if (Object.keys(patch).length === 0) continue;
+      await updateHolding(supabase, userId, h.ticker, patch);
+      Object.assign(h, patch);
+      updatedFromMaster++;
+      officialRows.push({
+        ticker: h.ticker,
+        company_name: h.company_name ?? official.name,
+        sector: h.sector ?? null,
+      });
+    }
+    await upsertStockMaster(officialRows);
   }
 
   const stillIncomplete = holdings.filter(needsMetadata);
@@ -205,7 +231,7 @@ function resultMessage(result: Omit<EnrichmentResult, "message">): EnrichmentRes
   const skipped = result.skippedLowConfidence.length;
   const message =
     updated > 0
-      ? `${updated} holding${updated === 1 ? "" : "s"} enriched (${result.updatedFromMaster} from stock master, ${result.updatedFromAi} from Gemini).`
+      ? `${updated} holding${updated === 1 ? "" : "s"} enriched (${result.updatedFromMaster} from PSX directory/stock master, ${result.updatedFromAi} from Gemini).`
       : result.aiSkipped
         ? "No metadata updated. Gemini is not configured, so unresolved sectors remain blank."
         : skipped > 0

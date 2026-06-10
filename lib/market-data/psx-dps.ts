@@ -109,6 +109,49 @@ export class PsxDpsProvider implements MarketDataProvider {
   }
 }
 
+// --- Official symbol directory --------------------------------------------
+
+export interface PsxSymbolInfo {
+  name: string;
+  sector: string;
+}
+
+/** "COMMERCIAL BANKS" → "Commercial Banks" (keeps "&" intact). */
+function titleCase(s: string): string {
+  return s
+    .toLowerCase()
+    .replace(/\b[a-z]/g, (c) => c.toUpperCase())
+    .trim();
+}
+
+/**
+ * The full official PSX symbol directory (~1,050 listings) with exchange
+ * sector classifications, from dps.psx.com.pk/symbols. One request returns
+ * everything, so callers should fetch once and look up many.
+ */
+export async function fetchPsxSymbols(): Promise<Map<string, PsxSymbolInfo>> {
+  const map = new Map<string, PsxSymbolInfo>();
+  try {
+    const res = await fetch("https://dps.psx.com.pk/symbols", {
+      headers: BROWSER_HEADERS,
+      signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
+      cache: "no-store",
+    });
+    if (!res.ok) return map;
+    const rows = (await res.json()) as { symbol?: string; name?: string; sectorName?: string }[];
+    for (const r of rows) {
+      if (!r.symbol || !r.name) continue;
+      map.set(r.symbol.toUpperCase(), {
+        name: r.name.trim(),
+        sector: r.sectorName ? titleCase(r.sectorName) : "",
+      });
+    }
+  } catch {
+    // Directory unavailable — callers fall back to other sources.
+  }
+  return map;
+}
+
 // --- Staleness rules (PKT = UTC+5, no DST) -------------------------------
 // Generous trading window: weekdays 9:10–16:35 PKT (covers Friday's late
 // close); "last close" pegged at 16:30 PKT.
