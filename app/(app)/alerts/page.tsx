@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { createClient } from "@/lib/supabase/server";
+import { createClient, getUser } from "@/lib/supabase/server";
 import { PageHeader } from "@/components/page-header";
 import { ActionButton } from "@/components/action-button";
 import { DismissAlertButton } from "@/components/alert-actions";
@@ -33,9 +33,7 @@ export default async function AlertsPage({
   const sp = await searchParams;
   const view = sp.view === "history" ? "history" : "open";
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getUser();
   if (!user) return null;
 
   let query = supabase

@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { createClient } from "@/lib/supabase/server";
+import { createClient, getUser } from "@/lib/supabase/server";
 import { PageHeader } from "@/components/page-header";
 import { JournalForm } from "@/components/journal-form";
 import { ActionButton } from "@/components/action-button";
@@ -29,9 +29,7 @@ export default async function JournalPage({
 }) {
   const sp = await searchParams;
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getUser();
   if (!user) return null;
 
   const { data: holdings } = await supabase

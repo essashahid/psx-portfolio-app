@@ -133,7 +133,7 @@ export function HoldingsTable({ holdings }: { holdings: EnrichedHolding[] }) {
           c.row.original.has_thesis ? (
             <Badge variant={thesisStatusVariant(c.getValue())}>{c.getValue()}</Badge>
           ) : (
-            <Badge variant="amber">missing</Badge>
+            <span className="text-xs text-muted-foreground">—</span>
           ),
       }),
       col.accessor("review_date", {

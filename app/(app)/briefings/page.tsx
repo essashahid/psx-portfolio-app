@@ -1,4 +1,4 @@
-import { createClient } from "@/lib/supabase/server";
+import { createClient, getUser } from "@/lib/supabase/server";
 import { PageHeader } from "@/components/page-header";
 import { ActionButton } from "@/components/action-button";
 import { EmptyState } from "@/components/empty-state";
@@ -36,9 +36,7 @@ export default async function BriefingsPage({
 }) {
   const sp = await searchParams;
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getUser();
   if (!user) return null;
 
   let query = supabase

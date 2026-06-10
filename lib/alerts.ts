@@ -28,10 +28,13 @@ export async function refreshAlerts(
   const summary = await getPortfolio(supabase, userId);
   const alerts: NewAlert[] = [];
   const today = new Date().toISOString().slice(0, 10);
+  // Only nag about missing theses once the user has written at least one —
+  // otherwise a fresh import floods Alerts with a warning per holding.
+  const usesTheses = summary.holdings.some((h) => h.has_thesis);
 
   for (const h of summary.holdings) {
     // missing thesis
-    if (!h.has_thesis) {
+    if (usesTheses && !h.has_thesis) {
       alerts.push({
         ticker: h.ticker,
         alert_type: "missing_thesis",
@@ -198,17 +201,18 @@ export async function refreshAlerts(
     });
   }
 
-  // Upsert new alerts (re-opens nothing the user dismissed: dedupe_key conflict ignores)
+  // Upsert new alerts in one batch (re-opens nothing the user dismissed:
+  // dedupe_key conflict ignores)
   let created = 0;
-  for (const a of alerts) {
+  if (alerts.length > 0) {
     const { error, data } = await supabase
       .from("alerts")
       .upsert(
-        { user_id: userId, ...a },
+        alerts.map((a) => ({ user_id: userId, ...a })),
         { onConflict: "user_id,dedupe_key", ignoreDuplicates: true }
       )
       .select("id");
-    if (!error && data && data.length > 0) created++;
+    if (!error && data) created = data.length;
   }
 
   // Resolve open rule-based alerts whose condition cleared
@@ -228,10 +232,9 @@ export async function refreshAlerts(
     .eq("user_id", userId)
     .eq("status", "open")
     .in("alert_type", RULE_TYPES);
-  for (const o of open ?? []) {
-    if (!activeKeys.has(o.dedupe_key)) {
-      await supabase.from("alerts").update({ status: "resolved" }).eq("id", o.id);
-    }
+  const clearedIds = (open ?? []).filter((o) => !activeKeys.has(o.dedupe_key)).map((o) => o.id);
+  if (clearedIds.length > 0) {
+    await supabase.from("alerts").update({ status: "resolved" }).in("id", clearedIds);
   }
 
   const { count } = await supabase

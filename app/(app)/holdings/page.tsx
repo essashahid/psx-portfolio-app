@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { createClient } from "@/lib/supabase/server";
+import { createClient, getUser } from "@/lib/supabase/server";
 import { getPortfolio } from "@/lib/portfolio";
 import { PageHeader } from "@/components/page-header";
 import { HoldingsTable } from "@/components/holdings-table";
@@ -12,9 +12,7 @@ export const dynamic = "force-dynamic";
 
 export default async function HoldingsPage() {
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getUser();
   if (!user) return null;
 
   const summary = await getPortfolio(supabase, user.id);

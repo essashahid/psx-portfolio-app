@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { createClient } from "@/lib/supabase/server";
+import { createClient, getUser } from "@/lib/supabase/server";
 import { getPortfolio } from "@/lib/portfolio";
 import { formatMoney, formatNumber, formatSignedPct } from "@/lib/utils";
 import { PageHeader } from "@/components/page-header";
@@ -10,16 +10,14 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Badge, severityVariant } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Markdown } from "@/components/markdown";
-import { AllocationPie, GainLossBar, TargetVsActualBar, ValueLine } from "@/components/charts";
+import { AllocationPie, GainLossBar, TargetVsActualBar, ValueLine } from "@/components/charts-lazy";
 import { Upload, Sparkles, ArrowRight } from "lucide-react";
 
 export const dynamic = "force-dynamic";
 
 export default async function DashboardPage() {
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getUser();
   if (!user) return null;
 
   const [summary, [briefingRes, newsRes, alertsRes, snapshotsRes, batchesRes, profileRes]] =
@@ -95,12 +93,22 @@ export default async function DashboardPage() {
 
   const briefing = briefingRes.data?.[0] ?? null;
   const today = new Date().toISOString().slice(0, 10);
+  // Thesis review prompts only appear once the user has started writing theses.
   const needsReview = summary.holdings.filter(
-    (h) => !h.has_thesis || (h.review_date && h.review_date <= today) || h.thesis_status === "Weakening" || h.thesis_status === "Broken"
+    (h) => h.has_thesis && ((h.review_date && h.review_date <= today) || h.thesis_status === "Weakening" || h.thesis_status === "Broken")
   );
   const upcomingReviews = summary.holdings
     .filter((h) => h.review_date && h.review_date > today)
     .sort((a, b) => (a.review_date! < b.review_date! ? -1 : 1))
+    .slice(0, 5);
+  const priced = summary.holdings.filter((h) => h.unrealized_pl_pct !== null);
+  const topGainers = [...priced]
+    .sort((a, b) => b.unrealized_pl_pct! - a.unrealized_pl_pct!)
+    .filter((h) => h.unrealized_pl_pct! > 0)
+    .slice(0, 5);
+  const topLosers = [...priced]
+    .sort((a, b) => a.unrealized_pl_pct! - b.unrealized_pl_pct!)
+    .filter((h) => h.unrealized_pl_pct! < 0)
     .slice(0, 5);
 
   return (
@@ -303,19 +311,17 @@ export default async function DashboardPage() {
       <div className="grid gap-4 lg:grid-cols-3">
         <Card>
           <CardHeader>
-            <CardTitle>Holdings requiring review</CardTitle>
+            <CardTitle>Top gainers</CardTitle>
+            <CardDescription>By unrealized return on cost</CardDescription>
           </CardHeader>
           <CardContent className="space-y-1.5">
-            {needsReview.length === 0 && <p className="py-3 text-center text-xs text-muted-foreground">Nothing flagged. 👍</p>}
-            {needsReview.map((h) => (
+            {topGainers.length === 0 && <p className="py-3 text-center text-xs text-muted-foreground">No priced gains yet.</p>}
+            {topGainers.map((h) => (
               <Link key={h.ticker} href={`/stocks/${h.ticker}`} className="flex items-center justify-between text-xs hover:underline">
                 <span className="font-medium">{h.ticker}</span>
-                <span className="text-muted-foreground">
-                  {!h.has_thesis
-                    ? "missing thesis"
-                    : h.review_date && h.review_date <= today
-                      ? "review due"
-                      : `thesis ${h.thesis_status?.toLowerCase()}`}
+                <span className="tabular-nums">
+                  <span className="font-semibold text-emerald-600">{formatSignedPct(h.unrealized_pl_pct!)}</span>
+                  <span className="ml-2 text-muted-foreground">{formatNumber(h.unrealized_pl ?? 0, 0)}</span>
                 </span>
               </Link>
             ))}
@@ -323,15 +329,19 @@ export default async function DashboardPage() {
         </Card>
         <Card>
           <CardHeader>
-            <CardTitle>Upcoming review dates</CardTitle>
+            <CardTitle>Biggest declines</CardTitle>
+            <CardDescription>Positions trading below your cost</CardDescription>
           </CardHeader>
           <CardContent className="space-y-1.5">
-            {upcomingReviews.length === 0 && <p className="py-3 text-center text-xs text-muted-foreground">No upcoming review dates set.</p>}
-            {upcomingReviews.map((h) => (
-              <div key={h.ticker} className="flex items-center justify-between text-xs">
+            {topLosers.length === 0 && <p className="py-3 text-center text-xs text-muted-foreground">No positions below cost. 👍</p>}
+            {topLosers.map((h) => (
+              <Link key={h.ticker} href={`/stocks/${h.ticker}`} className="flex items-center justify-between text-xs hover:underline">
                 <span className="font-medium">{h.ticker}</span>
-                <span className="text-muted-foreground">{h.review_date}</span>
-              </div>
+                <span className="tabular-nums">
+                  <span className="font-semibold text-red-600">{formatSignedPct(h.unrealized_pl_pct!)}</span>
+                  <span className="ml-2 text-muted-foreground">{formatNumber(h.unrealized_pl ?? 0, 0)}</span>
+                </span>
+              </Link>
             ))}
           </CardContent>
         </Card>
@@ -356,6 +366,43 @@ export default async function DashboardPage() {
           </CardContent>
         </Card>
       </div>
+
+      {(needsReview.length > 0 || upcomingReviews.length > 0) && (
+        <div className="grid gap-4 lg:grid-cols-2">
+          {needsReview.length > 0 && (
+            <Card>
+              <CardHeader>
+                <CardTitle>Theses requiring review</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-1.5">
+                {needsReview.map((h) => (
+                  <Link key={h.ticker} href={`/stocks/${h.ticker}`} className="flex items-center justify-between text-xs hover:underline">
+                    <span className="font-medium">{h.ticker}</span>
+                    <span className="text-muted-foreground">
+                      {h.review_date && h.review_date <= today ? "review due" : `thesis ${h.thesis_status?.toLowerCase()}`}
+                    </span>
+                  </Link>
+                ))}
+              </CardContent>
+            </Card>
+          )}
+          {upcomingReviews.length > 0 && (
+            <Card>
+              <CardHeader>
+                <CardTitle>Upcoming review dates</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-1.5">
+                {upcomingReviews.map((h) => (
+                  <div key={h.ticker} className="flex items-center justify-between text-xs">
+                    <span className="font-medium">{h.ticker}</span>
+                    <span className="text-muted-foreground">{h.review_date}</span>
+                  </div>
+                ))}
+              </CardContent>
+            </Card>
+          )}
+        </div>
+      )}
     </div>
   );
 }

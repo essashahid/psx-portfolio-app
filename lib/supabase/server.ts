@@ -1,7 +1,9 @@
+import { cache } from "react";
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
 
-export async function createClient() {
+// cache() dedupes per request: layout + page share one client instance.
+export const createClient = cache(async () => {
   const cookieStore = await cookies();
 
   return createServerClient(
@@ -24,13 +26,32 @@ export async function createClient() {
       },
     }
   );
+});
+
+export interface SessionUser {
+  id: string;
+  email: string;
 }
 
-/** Returns the authenticated user or null. */
-export async function getUser() {
+/**
+ * Fast per-request user lookup for server components.
+ *
+ * The proxy middleware already validates and refreshes the session on every
+ * request, so pages don't need another auth-server round-trip: getClaims()
+ * verifies the JWT locally (asymmetric keys, cached JWKS) and cache() dedupes
+ * across layout + page. RLS still enforces ownership on every DB query.
+ * API routes keep using requireUser()/auth.getUser() for full validation.
+ */
+export const getUser = cache(async (): Promise<SessionUser | null> => {
   const supabase = await createClient();
+  const { data } = await supabase.auth.getClaims();
+  const claims = data?.claims;
+  if (claims?.sub) {
+    return { id: claims.sub, email: (claims.email as string) ?? "" };
+  }
+  // Fallback (e.g. symmetric-key projects where local verification is unavailable)
   const {
     data: { user },
   } = await supabase.auth.getUser();
-  return user;
-}
+  return user ? { id: user.id, email: user.email ?? "" } : null;
+});

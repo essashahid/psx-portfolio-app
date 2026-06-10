@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { createClient } from "@/lib/supabase/server";
+import { createClient, getUser } from "@/lib/supabase/server";
 import { getPortfolio } from "@/lib/portfolio";
 import { formatMoney, formatNumber, formatSignedPct, cn } from "@/lib/utils";
 import { PageHeader } from "@/components/page-header";
@@ -29,9 +29,7 @@ export default async function StockDetailPage({
   const ticker = decodeURIComponent(rawTicker).toUpperCase();
 
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getUser();
   if (!user) return null;
 
   const summary = await getPortfolio(supabase, user.id);

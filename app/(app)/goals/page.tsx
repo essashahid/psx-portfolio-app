@@ -1,11 +1,11 @@
 import Link from "next/link";
-import { createClient } from "@/lib/supabase/server";
+import { createClient, getUser } from "@/lib/supabase/server";
 import { getPortfolio } from "@/lib/portfolio";
 import { PageHeader } from "@/components/page-header";
 import { GoalsEditor } from "@/components/goals-editor";
 import { EmptyState } from "@/components/empty-state";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { TargetVsActualBar } from "@/components/charts";
+import { TargetVsActualBar } from "@/components/charts-lazy";
 import { Button } from "@/components/ui/button";
 import { Target } from "lucide-react";
 
@@ -13,9 +13,7 @@ export const dynamic = "force-dynamic";
 
 export default async function GoalsPage() {
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getUser();
   if (!user) return null;
 
   const summary = await getPortfolio(supabase, user.id);
