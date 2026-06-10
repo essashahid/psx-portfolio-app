@@ -49,15 +49,15 @@ export default async function NewsPage({
   if (sp.ticker) query = query.eq("ticker", sp.ticker);
   if (sp.sector) query = query.eq("sector", sp.sector);
   if (sp.sentiment) query = query.eq("sentiment", sp.sentiment);
-  if (relevanceMode === "portfolio") query = query.or("relevance_score.gte.4,relevance_score.is.null");
-  else if (relevanceMode === "low") query = query.lte("relevance_score", 3);
+  if (relevanceMode === "portfolio") query = query.eq("low_confidence", false).or("relevance_score.gte.4,relevance_score.is.null");
+  else if (relevanceMode === "low") query = query.eq("low_confidence", true);
   else if (relevanceMode !== "all") {
     const minimumRelevance = parseInt(relevanceMode, 10);
     if (Number.isFinite(minimumRelevance)) query = query.gte("relevance_score", minimumRelevance);
   }
   if (sp.view === "saved") query = query.eq("saved", true);
   else if (sp.view === "ignored") query = query.eq("ignored", true);
-  else query = query.eq("ignored", false);
+  else if (relevanceMode !== "low") query = query.eq("ignored", false);
   if (sp.window) {
     const hours = sp.window === "24h" ? 24 : sp.window === "7d" ? 24 * 7 : 24 * 30;
     // eslint-disable-next-line react-hooks/purity -- server component; wall-clock time is the filter input

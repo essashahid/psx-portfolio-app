@@ -53,6 +53,8 @@ export async function gdeltSearchHoldings(
           published_at: parseGdeltDate(r.seendate),
           provider: "gdelt",
           category: "general",
+          source_quality: "unknown",
+          link_reason: `GDELT matched the company name for ${holding.ticker}.`,
         });
       }
     } catch (err) {

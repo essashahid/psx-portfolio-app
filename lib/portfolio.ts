@@ -28,7 +28,7 @@ export async function getPortfolio(
         .limit(500),
       supabase.from("targets").select("*").eq("user_id", userId),
       supabase.from("theses").select("*").eq("user_id", userId),
-      supabase.from("dividends").select("ticker, amount, net_amount").eq("user_id", userId),
+      supabase.from("dividends").select("ticker, amount, net_amount, status").eq("user_id", userId),
       supabase.from("transactions").select("realized_pl").eq("user_id", userId).not("realized_pl", "is", null),
       supabase.from("cash_movements").select("type, amount").eq("user_id", userId),
     ]);
@@ -51,10 +51,22 @@ export async function getPortfolio(
 
   const dividendByTicker = new Map<string, number>();
   let dividendIncome = 0;
+  let expectedDividendIncome = 0;
+  let pendingDividendIncome = 0;
+  let pendingDividends = 0;
   for (const d of divRes.data ?? []) {
     const amt = Number(d.net_amount ?? d.amount ?? 0);
-    dividendIncome += amt;
-    if (d.ticker) dividendByTicker.set(d.ticker, (dividendByTicker.get(d.ticker) ?? 0) + amt);
+    const status = d.status ?? "received";
+    if (status === "received") {
+      dividendIncome += amt;
+      if (d.ticker) dividendByTicker.set(d.ticker, (dividendByTicker.get(d.ticker) ?? 0) + amt);
+    } else if (status === "announced" || status === "expected") {
+      expectedDividendIncome += amt;
+      pendingDividendIncome += amt;
+      pendingDividends++;
+    } else if (status === "missing") {
+      pendingDividends++;
+    }
   }
 
   const realizedPl = (realizedRes.data ?? []).reduce(
@@ -147,6 +159,9 @@ export async function getPortfolio(
     unrealizedPlPct: pricedCost > 0 ? (unrealizedPl / pricedCost) * 100 : null,
     realizedPl,
     dividendIncome,
+    expectedDividendIncome,
+    pendingDividendIncome,
+    pendingDividends,
     cashBalance,
     holdingsCount: enriched.length,
     largestHolding,

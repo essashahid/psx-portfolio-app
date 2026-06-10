@@ -1,6 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { getPortfolio } from "@/lib/portfolio";
 import { chatMarkdown } from "@/lib/ai/openai";
+import { getDividends, summarizeDividends } from "@/lib/dividends";
 import type { BriefingType } from "@/lib/types";
 
 /** Assembles a factual, compact context block the model can rely on. */
@@ -10,14 +11,17 @@ export async function buildPortfolioContext(
   opts: { newsDays?: number } = {}
 ): Promise<string> {
   const summary = await getPortfolio(supabase, userId);
+  const dividends = await getDividends(supabase, userId);
+  const dividendSummary = summarizeDividends(dividends);
   const since = new Date(Date.now() - (opts.newsDays ?? 7) * 86400000).toISOString();
 
   const [newsRes, alertsRes, journalRes, snapshotsRes] = await Promise.all([
     supabase
       .from("news_articles")
-      .select("ticker, title, url, source, published_at, ai_summary, sentiment, relevance_score, category")
+      .select("ticker, title, url, source, published_at, ai_summary, sentiment, relevance_score, category, saved, source_quality, link_reason, low_confidence")
       .eq("user_id", userId)
       .eq("ignored", false)
+      .or("low_confidence.eq.false,saved.eq.true")
       .gte("created_at", since)
       .order("relevance_score", { ascending: false })
       .limit(25),
@@ -49,7 +53,7 @@ export async function buildPortfolioContext(
   const lines: string[] = [];
   lines.push(`# Portfolio (PKR)`);
   lines.push(
-    `Total value: ${summary.totalValue.toFixed(0)} | Total cost: ${summary.totalCost.toFixed(0)} | Unrealized P/L: ${summary.unrealizedPl.toFixed(0)} (${summary.unrealizedPlPct?.toFixed(1) ?? "n/a"}%) | Realized P/L: ${summary.realizedPl.toFixed(0)} | Dividend income: ${summary.dividendIncome.toFixed(0)} | Holdings: ${summary.holdingsCount} | Priced holdings: ${summary.pricedHoldings}/${summary.holdingsCount}`
+    `Total value: ${summary.totalValue.toFixed(0)} | Total cost: ${summary.totalCost.toFixed(0)} | Unrealized P/L: ${summary.unrealizedPl.toFixed(0)} (${summary.unrealizedPlPct?.toFixed(1) ?? "n/a"}%) | Realized P/L: ${summary.realizedPl.toFixed(0)} | Dividend received: ${summary.dividendIncome.toFixed(0)} | Expected dividends: ${summary.expectedDividendIncome.toFixed(0)} | Pending dividends: ${summary.pendingDividends} | Holdings: ${summary.holdingsCount} | Priced holdings: ${summary.pricedHoldings}/${summary.holdingsCount}`
   );
   if (summary.pricedHoldings < summary.holdingsCount) {
     lines.push(
@@ -65,6 +69,22 @@ export async function buildPortfolioContext(
   lines.push(`\n## Sector weights`);
   for (const s of summary.sectorWeights) lines.push(`- ${s.sector}: ${s.weight.toFixed(1)}%`);
 
+  lines.push(`\n## Dividend summary`);
+  lines.push(
+    `Received net: ${dividendSummary.netReceived.toFixed(0)} | Gross total: ${dividendSummary.totalGross.toFixed(0)} | Tax deducted: ${dividendSummary.totalTax.toFixed(0)} | Expected net: ${dividendSummary.expectedNet.toFixed(0)} | Pending count: ${dividendSummary.pendingCount}`
+  );
+  if (dividendSummary.topPayers.length) {
+    lines.push(`Top dividend payers: ${dividendSummary.topPayers.map((p) => `${p.ticker} ${p.net.toFixed(0)}`).join(", ")}`);
+  }
+  const pendingDividends = dividends.filter((d) => d.status !== "received").slice(0, 10);
+  if (pendingDividends.length) {
+    for (const d of pendingDividends) {
+      lines.push(
+        `- Pending ${d.ticker}: status ${d.status}, gross ${d.amount.toFixed(0)}, net ${(d.net_amount ?? d.amount).toFixed(0)}, payment ${d.payment_date ?? d.pay_date ?? "unknown"}`
+      );
+    }
+  }
+
   if ((theses ?? []).length) {
     lines.push(`\n## Theses`);
     for (const t of theses ?? []) {
@@ -77,7 +97,7 @@ export async function buildPortfolioContext(
     lines.push(`\n## Recent news (last ${opts.newsDays ?? 7} days)`);
     for (const n of newsRes.data ?? []) {
       lines.push(
-        `- [${n.ticker ?? "general"}] ${n.title} (${n.sentiment ?? "?"}, relevance ${n.relevance_score ?? "?"}/10, ${n.category ?? "general"}) ${n.url} :: ${(n.ai_summary ?? "").slice(0, 200)}`
+        `- [${n.ticker ?? "general"}] ${n.title} (${n.sentiment ?? "?"}, relevance ${n.relevance_score ?? "?"}/10, ${n.category ?? "general"}, source ${n.source_quality ?? "unknown"}${n.saved ? ", saved" : ""}) ${n.url} :: linked because ${(n.link_reason ?? "not stated").slice(0, 120)} :: ${(n.ai_summary ?? "").slice(0, 200)}`
       );
     }
   } else {
@@ -122,12 +142,14 @@ Format rules:
 Use exactly these sections:
 ## Bottom line
 ## Portfolio state
-## Attention queue
+## Review queue
+## Dividends
 ## News and filings
 ## Data quality
 ## Review questions
 
-The "Attention queue" must list the 3-6 most important actions or checks, ordered by urgency.`,
+The "Review queue" must list the 3-6 most important actions or checks, ordered by urgency.
+The "Dividends" section must summarize received income, expected income, pending dividends, and missing dividend setup when applicable.`,
   },
   weekly: {
     title: "Weekly Briefing",

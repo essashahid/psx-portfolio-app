@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { createClient, getUser } from "@/lib/supabase/server";
 import { getPortfolio } from "@/lib/portfolio";
+import { normalizeDividend, summarizeDividends } from "@/lib/dividends";
 import { formatMoney, formatNumber, formatSignedPct, cn } from "@/lib/utils";
 import { PageHeader } from "@/components/page-header";
 import { StatCard } from "@/components/stat-card";
@@ -16,7 +17,7 @@ import { Table, THead, TBody, TR, TH, TD } from "@/components/ui/table";
 import { Markdown } from "@/components/markdown";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, RefreshCw } from "lucide-react";
-import type { Target, Thesis } from "@/lib/types";
+import type { Dividend, Target, Thesis } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
 
@@ -78,15 +79,18 @@ export default async function StockDetailPage({
         .limit(15),
       supabase
         .from("dividends")
-        .select("pay_date, amount, net_amount")
+        .select("*")
         .eq("user_id", user.id)
         .eq("ticker", ticker)
-        .order("pay_date", { ascending: false })
+        .order("payment_date", { ascending: false, nullsFirst: false })
         .limit(8),
     ]);
 
   const thesis = thesisRes.data as Thesis | null;
   const target = targetRes.data as Target | null;
+  const stockDividends = ((divRes.data ?? []) as Dividend[]).map((row) => normalizeDividend(row as unknown as Record<string, unknown>));
+  const stockDividendSummary = summarizeDividends(stockDividends);
+  const dividendYieldOnCost = holding.total_cost > 0 ? (stockDividendSummary.netReceived / holding.total_cost) * 100 : null;
 
   return (
     <div className="space-y-5">
@@ -130,6 +134,11 @@ export default async function StockDetailPage({
           tone={holding.unrealized_pl !== null ? (holding.unrealized_pl > 0 ? "positive" : holding.unrealized_pl < 0 ? "negative" : "neutral") : "neutral"}
         />
         <StatCard label="Dividend income" value={formatMoney(holding.dividend_income)} />
+        <StatCard
+          label="Dividend yield on cost"
+          value={dividendYieldOnCost !== null ? `${dividendYieldOnCost.toFixed(1)}%` : "—"}
+          sub={`${stockDividendSummary.pendingCount} pending`}
+        />
       </div>
 
       {(alertsRes.data ?? []).length > 0 && (
@@ -258,7 +267,7 @@ export default async function StockDetailPage({
             <CardTitle>Transactions & dividends</CardTitle>
           </CardHeader>
           <CardContent>
-            {(txnRes.data ?? []).length === 0 && (divRes.data ?? []).length === 0 ? (
+            {(txnRes.data ?? []).length === 0 && stockDividends.length === 0 ? (
               <p className="py-4 text-center text-xs text-muted-foreground">
                 No transaction history — this position came from a holdings snapshot.
               </p>
@@ -282,12 +291,12 @@ export default async function StockDetailPage({
                       </TD>
                     </TR>
                   ))}
-                  {(divRes.data ?? []).map((d, i) => (
+                  {stockDividends.map((d, i) => (
                     <TR key={`d${i}`}>
-                      <TD className="text-xs">{d.pay_date ?? "—"}</TD>
-                      <TD><Badge variant="blue">DIVIDEND</Badge></TD>
-                      <TD className="text-right text-xs">—</TD>
-                      <TD className="text-right text-xs">—</TD>
+                      <TD className="text-xs">{d.payment_date ?? d.pay_date ?? "—"}</TD>
+                      <TD><Badge variant={d.status === "received" ? "blue" : "amber"}>{d.status} dividend</Badge></TD>
+                      <TD className="text-right text-xs">{d.quantity_held !== null ? formatNumber(d.quantity_held, 0) : "—"}</TD>
+                      <TD className="text-right text-xs">{d.dividend_per_share !== null ? formatNumber(d.dividend_per_share) : "—"}</TD>
                       <TD className="text-right text-xs tabular-nums">{formatNumber(Number(d.net_amount ?? d.amount), 0)}</TD>
                       <TD className="text-right text-xs">—</TD>
                     </TR>

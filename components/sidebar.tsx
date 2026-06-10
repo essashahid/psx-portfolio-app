@@ -16,6 +16,7 @@ import {
   Settings,
   LogOut,
   CandlestickChart,
+  HandCoins,
 } from "lucide-react";
 
 const NAV = [
@@ -25,6 +26,7 @@ const NAV = [
   { href: "/news", label: "News Center", icon: Newspaper },
   { href: "/briefings", label: "AI Briefings", icon: Sparkles },
   { href: "/goals", label: "Goals & Targets", icon: Target },
+  { href: "/dividends", label: "Dividends", icon: HandCoins },
   { href: "/journal", label: "Journal", icon: NotebookPen },
   { href: "/alerts", label: "Alerts", icon: Bell },
   { href: "/settings", label: "Settings", icon: Settings },

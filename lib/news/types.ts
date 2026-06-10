@@ -1,4 +1,5 @@
 export type NewsCategory = "general" | "dividend" | "result" | "corporate_announcement";
+export type NewsSourceQuality = "high" | "medium" | "low" | "unknown";
 
 export interface NewsHolding {
   ticker: string;
@@ -23,4 +24,7 @@ export interface DiscoveredNewsArticle {
   why_it_matters?: string;
   thesis_impact?: string;
   review_question?: string;
+  source_quality?: NewsSourceQuality;
+  link_reason?: string;
+  low_confidence?: boolean;
 }

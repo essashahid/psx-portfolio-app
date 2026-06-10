@@ -43,9 +43,9 @@ export async function GET(
     } else if (kind === "dividends") {
       const { data } = await supabase
         .from("dividends")
-        .select("ticker, pay_date, amount, tax, net_amount, source, notes")
+        .select("ticker, company_name, announcement_date, ex_date, payment_date, pay_date, dividend_per_share, quantity_held, amount, tax, net_amount, status, source, notes")
         .eq("user_id", user.id)
-        .order("pay_date", { ascending: true });
+        .order("payment_date", { ascending: true, nullsFirst: false });
       rows = data ?? [];
     } else if (kind === "journal") {
       const { data } = await supabase

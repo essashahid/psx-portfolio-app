@@ -62,6 +62,9 @@ export async function psxAnnouncementSearchHoldings(
                 ? "Dividend-related filings may affect income expectations."
                 : "Review if the filing changes governance, disclosure, or business assumptions.",
           review_question: `Does this official filing change your view of ${holding.ticker}?`,
+          source_quality: "high",
+          link_reason: `Official PSX company announcement for ${holding.ticker}.`,
+          low_confidence: false,
         });
       }
     } catch (err) {

@@ -11,7 +11,7 @@ export function NewsCard({ article }: { article: NewsArticle }) {
   const [saved, setSaved] = useState(article.saved);
   const [ignored, setIgnored] = useState(article.ignored);
   const relevanceLabel = getRelevanceLabel(article.relevance_score);
-  const lowRelevance = article.relevance_score !== null && article.relevance_score <= 3;
+  const lowRelevance = article.low_confidence || (article.relevance_score !== null && article.relevance_score <= 3);
 
   async function toggle(field: "saved" | "ignored") {
     const supabase = createClient();
@@ -39,6 +39,8 @@ export function NewsCard({ article }: { article: NewsArticle }) {
             </Badge>
           )}
           {article.category && article.category !== "general" && <Badge variant="blue">{formatCategory(article.category)}</Badge>}
+          {article.low_confidence && <Badge variant="amber">low confidence</Badge>}
+          {article.source_quality && <Badge variant={sourceQualityVariant(article.source_quality)}>source {article.source_quality}</Badge>}
         </div>
         <div className="flex shrink-0 gap-1">
           <button
@@ -78,6 +80,9 @@ export function NewsCard({ article }: { article: NewsArticle }) {
       {article.why_it_matters && (
         <p className="mt-1.5 text-xs"><span className="font-medium">Why it matters:</span> {article.why_it_matters}</p>
       )}
+      {article.link_reason && (
+        <p className="mt-1 text-xs text-muted-foreground"><span className="font-medium text-foreground">Linked because:</span> {article.link_reason}</p>
+      )}
       {article.thesis_impact && (
         <p className="mt-1 text-xs"><span className="font-medium">Possible thesis impact:</span> {article.thesis_impact}</p>
       )}
@@ -98,4 +103,11 @@ function getRelevanceLabel(score: number | null): string | null {
 
 function formatCategory(category: string): string {
   return category.replace(/_/g, " ");
+}
+
+function sourceQualityVariant(quality: string): "green" | "blue" | "amber" | "secondary" {
+  if (quality === "high") return "green";
+  if (quality === "medium") return "blue";
+  if (quality === "low") return "amber";
+  return "secondary";
 }

@@ -1,17 +1,19 @@
 import Link from "next/link";
 import { createClient, getUser } from "@/lib/supabase/server";
 import { getPortfolio } from "@/lib/portfolio";
+import { getDividends, summarizeDividends } from "@/lib/dividends";
+import { buildReviewQueue, type ReviewSeverity } from "@/lib/review-queue";
 import { formatMoney, formatNumber, formatSignedPct } from "@/lib/utils";
 import { PageHeader } from "@/components/page-header";
 import { StatCard } from "@/components/stat-card";
 import { EmptyState } from "@/components/empty-state";
 import { ActionButton } from "@/components/action-button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Badge, severityVariant } from "@/components/ui/badge";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Markdown } from "@/components/markdown";
 import { AllocationPie, GainLossBar, TargetVsActualBar, ValueLine } from "@/components/charts-lazy";
-import { AlertTriangle, ArrowRight, FileText, Newspaper, RefreshCw, Sparkles, Upload } from "lucide-react";
+import { AlertTriangle, ArrowRight, FileText, HandCoins, Newspaper, RefreshCw, Sparkles, Upload } from "lucide-react";
 
 export const dynamic = "force-dynamic";
 
@@ -20,7 +22,7 @@ export default async function DashboardPage() {
   const user = await getUser();
   if (!user) return null;
 
-  const [summary, [briefingRes, newsRes, alertsRes, snapshotsRes, batchesRes, profileRes]] =
+  const [summary, [briefingRes, newsRes, alertsRes, snapshotsRes, batchesRes, profileRes, lowConfidenceNewsRes], dividends] =
     await Promise.all([
       getPortfolio(supabase, user.id),
       Promise.all([
@@ -36,6 +38,7 @@ export default async function DashboardPage() {
           .select("id, ticker, title, url, source, sentiment, relevance_score, published_at")
           .eq("user_id", user.id)
           .eq("ignored", false)
+          .eq("low_confidence", false)
           .gte("relevance_score", 7)
           .order("created_at", { ascending: false })
           .limit(5),
@@ -59,7 +62,13 @@ export default async function DashboardPage() {
           .order("created_at", { ascending: false })
           .limit(3),
         supabase.from("profiles").select("demo_mode").eq("id", user.id).maybeSingle(),
+        supabase
+          .from("news_articles")
+          .select("id", { count: "exact", head: true })
+          .eq("user_id", user.id)
+          .eq("low_confidence", true),
       ]),
+      getDividends(supabase, user.id),
     ]);
 
   if (summary.holdingsCount === 0) {
@@ -112,9 +121,19 @@ export default async function DashboardPage() {
     .slice(0, 5);
   const latestNews = newsRes.data ?? [];
   const openAlerts = alertsRes.data ?? [];
-  const missingPrices = summary.holdings.filter((h) => h.latest_price === null);
-  const missingTheses = summary.holdings.filter((h) => !h.has_thesis);
-  const unclassifiedSectors = summary.holdings.filter((h) => !h.sector);
+  const dividendSummary = summarizeDividends(dividends);
+  const latestPriceDate = summary.holdings
+    .map((h) => h.price_date)
+    .filter((date): date is string => !!date)
+    .sort()
+    .at(-1) ?? null;
+  const reviewItems = buildReviewQueue({
+    summary,
+    openAlerts,
+    hiddenLowConfidenceNews: lowConfidenceNewsRes.count ?? 0,
+    dividendSummary,
+    latestPriceDate,
+  });
 
   return (
     <div className="space-y-5">
@@ -147,6 +166,45 @@ export default async function DashboardPage() {
         </p>
       )}
 
+      <Card className="overflow-hidden">
+        <CardHeader className="flex-row items-start justify-between border-b border-border bg-muted/25">
+          <div>
+            <div className="flex items-center gap-2">
+              <AlertTriangle className="h-4 w-4 text-muted-foreground" />
+              <CardTitle>Review Queue</CardTitle>
+            </div>
+            <CardDescription>Priority checks generated from allocation, price coverage, theses, dividends, alerts and news confidence.</CardDescription>
+          </div>
+          <Link href="/alerts" className="shrink-0 text-xs text-muted-foreground hover:text-foreground">
+            Alerts <ArrowRight className="inline h-3 w-3" />
+          </Link>
+        </CardHeader>
+        <CardContent className="p-0">
+          {reviewItems.length === 0 ? (
+            <p className="p-5 text-center text-sm text-muted-foreground">No review items right now.</p>
+          ) : (
+            <div className="divide-y divide-border">
+              {reviewItems.map((item) => (
+                <Link key={item.id} href={item.href} className="grid gap-3 p-4 transition-colors hover:bg-muted/50 md:grid-cols-[180px_minmax(0,1fr)_120px] md:items-center">
+                  <div className="flex flex-wrap items-center gap-1.5">
+                    <Badge variant={reviewSeverityVariant(item.severity)}>{item.severity}</Badge>
+                    <Badge variant="outline">{item.category}</Badge>
+                    {item.ticker && <Badge variant="secondary">{item.ticker}</Badge>}
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-sm font-semibold leading-snug">{item.title}</p>
+                    <p className="mt-0.5 text-xs leading-relaxed text-muted-foreground">{item.explanation}</p>
+                  </div>
+                  <span className="text-xs font-medium text-primary md:text-right">
+                    {item.actionLabel} <ArrowRight className="inline h-3 w-3" />
+                  </span>
+                </Link>
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
       <div className="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-5">
         <StatCard
           label="Total value"
@@ -166,6 +224,7 @@ export default async function DashboardPage() {
           tone={summary.realizedPl > 0 ? "positive" : summary.realizedPl < 0 ? "negative" : "neutral"}
         />
         <StatCard label="Dividend income" value={formatMoney(summary.dividendIncome)} />
+        <StatCard label="Expected dividends" value={formatMoney(summary.expectedDividendIncome)} sub={`${summary.pendingDividends} pending`} />
         <StatCard label="Cash balance" value={formatMoney(summary.cashBalance)} sub="from imported cash movements" />
         <StatCard label="Holdings" value={formatNumber(summary.holdingsCount, 0)} />
         <StatCard
@@ -298,40 +357,39 @@ export default async function DashboardPage() {
           <Card>
             <CardHeader className="flex-row items-center justify-between">
               <div className="flex items-center gap-2">
-                <AlertTriangle className="h-4 w-4 text-muted-foreground" />
-                <CardTitle>Attention queue</CardTitle>
+                <HandCoins className="h-4 w-4 text-muted-foreground" />
+                <CardTitle>Dividend snapshot</CardTitle>
               </div>
-              <Link href="/alerts" className="text-xs text-muted-foreground hover:text-foreground">
-                Alerts <ArrowRight className="inline h-3 w-3" />
+              <Link href="/dividends" className="text-xs text-muted-foreground hover:text-foreground">
+                Dividend Tracker <ArrowRight className="inline h-3 w-3" />
               </Link>
             </CardHeader>
-            <CardContent className="space-y-2">
-              {missingPrices.length > 0 && (
-                <Link href="/settings" className="flex items-start justify-between gap-3 rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-900 hover:bg-amber-100">
-                  <span>{missingPrices.length} holding(s) need latest prices</span>
-                  <span className="shrink-0 text-amber-700">Fix</span>
-                </Link>
-              )}
-              {missingTheses.length > 0 && (
-                <Link href="/holdings" className="flex items-start justify-between gap-3 rounded-md border border-border px-3 py-2 text-xs hover:bg-muted">
-                  <span>{missingTheses.length} holding(s) have no thesis</span>
-                  <span className="shrink-0 text-muted-foreground">Review</span>
-                </Link>
-              )}
-              {unclassifiedSectors.length > 0 && (
-                <Link href="/holdings" className="flex items-start justify-between gap-3 rounded-md border border-border px-3 py-2 text-xs hover:bg-muted">
-                  <span>{unclassifiedSectors.length} holding(s) need sector metadata</span>
-                  <span className="shrink-0 text-muted-foreground">Enrich</span>
-                </Link>
-              )}
-              {openAlerts.slice(0, 4).map((a) => (
-                <div key={a.id} className="flex items-start gap-2 rounded-md border border-border px-3 py-2 text-xs">
-                  <Badge variant={severityVariant(a.severity)}>{a.severity}</Badge>
-                  <span className="min-w-0 flex-1">{a.title}</span>
+            <CardContent className="space-y-3">
+              <div className="grid grid-cols-3 gap-2 text-xs">
+                <div className="rounded-md border border-border p-2">
+                  <p className="text-muted-foreground">Received</p>
+                  <p className="mt-1 font-semibold tabular-nums">{formatMoney(dividendSummary.netReceived)}</p>
                 </div>
-              ))}
-              {missingPrices.length === 0 && missingTheses.length === 0 && unclassifiedSectors.length === 0 && openAlerts.length === 0 && (
-                <p className="py-4 text-center text-xs text-muted-foreground">No open attention items.</p>
+                <div className="rounded-md border border-border p-2">
+                  <p className="text-muted-foreground">Expected</p>
+                  <p className="mt-1 font-semibold tabular-nums">{formatMoney(dividendSummary.expectedNet)}</p>
+                </div>
+                <div className="rounded-md border border-border p-2">
+                  <p className="text-muted-foreground">Pending</p>
+                  <p className="mt-1 font-semibold tabular-nums">{dividendSummary.pendingCount}</p>
+                </div>
+              </div>
+              {dividendSummary.topPayers.length === 0 ? (
+                <p className="py-3 text-center text-xs text-muted-foreground">No dividend records yet.</p>
+              ) : (
+                <div className="space-y-1.5">
+                  {dividendSummary.topPayers.slice(0, 4).map((d) => (
+                    <Link key={d.ticker} href={`/stocks/${d.ticker}`} className="flex items-center justify-between text-xs hover:underline">
+                      <span className="font-medium">{d.ticker}</span>
+                      <span className="tabular-nums text-muted-foreground">{formatMoney(d.net)}</span>
+                    </Link>
+                  ))}
+                </div>
               )}
             </CardContent>
           </Card>
@@ -465,4 +523,10 @@ export default async function DashboardPage() {
       )}
     </div>
   );
+}
+
+function reviewSeverityVariant(severity: ReviewSeverity): "red" | "amber" | "blue" {
+  if (severity === "high") return "red";
+  if (severity === "medium") return "amber";
+  return "blue";
 }

@@ -81,11 +81,20 @@ export interface Transaction {
 export interface Dividend {
   id: string;
   ticker: string | null;
+  company_name: string | null;
+  announcement_date: string | null;
+  ex_date: string | null;
   pay_date: string | null;
+  payment_date: string | null;
+  dividend_per_share: number | null;
+  quantity_held: number | null;
   amount: number;
   tax: number | null;
   net_amount: number | null;
+  status: "announced" | "expected" | "received" | "missing";
   notes: string | null;
+  source: string;
+  created_at: string;
 }
 
 export interface PriceRow {
@@ -154,6 +163,9 @@ export interface NewsArticle {
   thesis_impact: string | null;
   review_question: string | null;
   category: string | null;
+  source_quality: "high" | "medium" | "low" | "unknown" | null;
+  link_reason: string | null;
+  low_confidence: boolean;
   saved: boolean;
   ignored: boolean;
   created_at: string;
@@ -238,6 +250,9 @@ export interface PortfolioSummary {
   unrealizedPlPct: number | null;
   realizedPl: number;
   dividendIncome: number;
+  expectedDividendIncome: number;
+  pendingDividendIncome: number;
+  pendingDividends: number;
   cashBalance: number;
   holdingsCount: number;
   largestHolding: EnrichedHolding | null;

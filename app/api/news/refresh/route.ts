@@ -6,7 +6,7 @@ import { refreshAlerts } from "@/lib/alerts";
 import { gdeltConfigured, gdeltSearchHoldings } from "@/lib/news/gdelt";
 import { matchesHoldingText } from "@/lib/news/matching";
 import { psxAnnouncementsConfigured, psxAnnouncementSearchHoldings } from "@/lib/news/psx-announcements";
-import type { DiscoveredNewsArticle } from "@/lib/news/types";
+import type { DiscoveredNewsArticle, NewsHolding, NewsSourceQuality } from "@/lib/news/types";
 
 export const maxDuration = 300;
 
@@ -99,6 +99,8 @@ export async function POST(request: Request) {
                   published_at: r.published_date ?? null,
                   provider: "tavily",
                   category: "general",
+                  source_quality: sourceQuality(safeHostname(r.url)),
+                  link_reason: linkReason(h),
                 });
               }
             } catch (e) {
@@ -149,7 +151,13 @@ export async function POST(request: Request) {
       for (const a of found) {
         const analysis = analysisByUrl.get(a.url);
         const relevanceScore = analysis ? clampScore(analysis.relevance_score) : a.relevance_score ?? null;
-        const shouldAutoIgnore = relevanceScore !== null && relevanceScore <= 2;
+        const quality = a.source_quality ?? sourceQuality(a.source);
+        const lowConfidence =
+          a.low_confidence ??
+          (relevanceScore === null ||
+            (relevanceScore !== null && relevanceScore <= 3) ||
+            quality === "low");
+        const shouldAutoIgnore = lowConfidence;
         const { error: insErr } = await supabase.from("news_articles").upsert(
           {
             user_id: user.id,
@@ -168,6 +176,9 @@ export async function POST(request: Request) {
             thesis_impact: analysis?.possible_thesis_impact ?? a.thesis_impact ?? null,
             review_question: analysis?.suggested_user_review_question ?? a.review_question ?? null,
             category: analysis?.category ?? a.category ?? "general",
+            source_quality: quality,
+            link_reason: a.link_reason ?? analysis?.why_it_matters ?? null,
+            low_confidence: lowConfidence,
             ignored: shouldAutoIgnore,
           },
           { onConflict: "user_id,url", ignoreDuplicates: true }
@@ -209,4 +220,45 @@ function safeHostname(url: string): string {
 
 function clampScore(n: number): number {
   return Math.max(1, Math.min(10, Math.round(Number(n) || 5)));
+}
+
+function linkReason(holding: NewsHolding): string {
+  const company = holding.company_name?.trim();
+  if (company) return `Matched ${holding.ticker} by company name: ${company}.`;
+  return `Matched ${holding.ticker} by portfolio ticker.`;
+}
+
+function sourceQuality(source: string): NewsSourceQuality {
+  const s = source.toLowerCase();
+  if (s.includes("psx.com.pk") || s.includes("pucars") || s.includes("company announcements")) return "high";
+  if (
+    [
+      "brecorder.com",
+      "dawn.com",
+      "profit.pakistantoday.com.pk",
+      "pakistantoday.com.pk",
+      "thenews.com.pk",
+      "tribune.com.pk",
+      "reuters.com",
+      "marketscreener.com",
+    ].some((domain) => s.includes(domain))
+  ) {
+    return "high";
+  }
+  if (
+    [
+      "financialtimes.com",
+      "ft.com",
+      "tradingview.com",
+      "investing.com",
+      "oilprice.com",
+      "developingtelecoms.com",
+    ].some((domain) => s.includes(domain))
+  ) {
+    return "medium";
+  }
+  if (["facebook.com", "x.com", "twitter.com", "linkedin.com", "youtube.com"].some((domain) => s.includes(domain))) {
+    return "low";
+  }
+  return "unknown";
 }

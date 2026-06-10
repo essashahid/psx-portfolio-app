@@ -135,9 +135,13 @@ export async function commitBatch(
           batch_id: batchId,
           ticker: n.ticker,
           pay_date: n.trade_date ?? null,
+          payment_date: n.trade_date ?? null,
+          dividend_per_share: n.price ?? null,
+          quantity_held: n.quantity ?? null,
           amount: n.dividend_amount ?? n.gross_amount ?? n.net_amount ?? 0,
           tax: n.tax ?? null,
           net_amount: n.net_amount ?? null,
+          status: "received",
           row_hash: row.row_hash,
         });
       }
@@ -181,9 +185,13 @@ export async function commitBatch(
         batch_id: batchId,
         ticker: n.ticker ?? null,
         pay_date: n.trade_date ?? null,
+        payment_date: n.trade_date ?? null,
+        dividend_per_share: n.price ?? null,
+        quantity_held: n.quantity ?? null,
         amount,
         tax: n.tax ?? null,
         net_amount: n.net_amount ?? null,
+        status: "received",
         row_hash: row.row_hash,
         notes: n.description ?? null,
       });
