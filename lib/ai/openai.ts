@@ -60,10 +60,10 @@ export async function chatJson<T>(
   systemExtra: string,
   userPrompt: string,
   maxTokens = 2500,
-  opts: { thinkingBudget?: number } = {}
+  opts: { thinkingBudget?: number; model?: string } = {}
 ): Promise<{ data: T; model: string }> {
   const genAI = getClient();
-  const modelId = getModel();
+  const modelId = opts.model ?? getModel();
   // gemini-2.5-* are thinking models: reasoning tokens are drawn from the same
   // output budget, so a large document can exhaust maxOutputTokens before the
   // JSON is finished and the response comes back truncated. Bounding the

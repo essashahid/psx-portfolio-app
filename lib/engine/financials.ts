@@ -81,14 +81,15 @@ const EXTRACTION_PROMPT = `You convert a Pakistan Stock Exchange financial-resul
 
 STRICT RULES:
 - Echo ONLY numbers that literally appear in the document text. Never compute, estimate, or fill in missing values — use null.
-- Figures are usually in PKR thousands ("Rupees in '000") — record the units, do not convert.
-- EPS is in rupees (not thousands).
+- The ENTIRE filing uses ONE monetary unit. Read the statement headers ("Rupees in '000", "Rupees in million", "(Rupees)", etc.) and report it ONCE as document_units: one of "thousands" | "millions" | "billions" | "rupees". Do NOT convert any figure — echo them exactly as printed.
+- EPS is in rupees per share (never scaled). Percentages stay as printed.
 - Use the CURRENT period column (not the comparative prior-year column).
 - If you cannot confidently identify a value, use null.
 - confidence: 0-1, how certain you are the numbers are correctly read from the document.
 
 Return JSON:
-{"statements": [{
+{"document_units": "thousands" | "millions" | "billions" | "rupees",
+ "statements": [{
   "period_type": "annual" | "quarterly",
   "fiscal_year": 2025,
   "fiscal_period": "FY" | "Q1" | "Q2" | "Q3" | "Q4" | "H1" | "9M",
@@ -108,6 +109,45 @@ Return JSON:
 }]}
 
 Include a statement object only when the document actually contains that statement. Banks: treat markup/interest income as revenue. If the document is not a financial result (e.g. a notice), return {"statements": []}.`;
+
+// Monetary line items that must share a unit scale; eps is per-share (rupees)
+// and *_pct fields are ratios, so both are left untouched.
+const MONETARY_KEYS = new Set([
+  "revenue", "cost_of_sales", "gross_profit", "operating_expenses", "operating_profit",
+  "finance_cost", "profit_before_tax", "tax", "profit_after_tax",
+  "total_assets", "current_assets", "cash_and_equivalents", "inventory", "receivables",
+  "total_liabilities", "current_liabilities", "borrowings", "equity", "retained_earnings",
+  "operating_cash_flow", "investing_cash_flow", "financing_cash_flow", "capex", "cash_balance",
+]);
+
+/**
+ * Multiplier that converts the document's stated units into PKR thousands — the
+ * canonical unit used across company_financials (the PSX summary page is in
+ * thousands). Without this, dividing a thousands-based figure from one source by
+ * a full-rupee figure from another (e.g. ROE = PAT ÷ equity) is wrong by 1000×.
+ */
+function toThousandsMultiplier(units: string | null | undefined): number {
+  const u = (units ?? "").toLowerCase();
+  if (/000|thousand/.test(u)) return 1;
+  if (/billion|\bbn\b/.test(u)) return 1_000_000;
+  if (/million|\bmn\b|\bmln\b/.test(u)) return 1_000;
+  if (/rupee|pkr|\brs\b/.test(u)) return 1 / 1000; // full rupees → thousands
+  return 1; // unknown → assume thousands (PSX convention)
+}
+
+/**
+ * Normalize all monetary figures in a statement to PKR thousands in place, using
+ * a single filing-level multiplier (a report uses one unit throughout, so this
+ * is far more reliable than per-statement unit strings).
+ */
+function normalizeUnits(s: ExtractedStatement, mult: number): void {
+  if (mult === 1) return;
+  for (const [k, v] of Object.entries(s.data)) {
+    if (MONETARY_KEYS.has(k) && typeof v === "number" && Number.isFinite(v)) {
+      s.data[k] = Math.round(v * mult);
+    }
+  }
+}
 
 function validStatement(s: ExtractedStatement): boolean {
   if (!s.statement_type || !s.period_type) return false;
@@ -162,11 +202,15 @@ export async function extractFinancials(ticker: string, maxFilings = 2): Promise
     out.processed++;
 
     try {
-      const { data } = await chatJson<{ statements: ExtractedStatement[] }>(
+      const { data } = await chatJson<{ statements: ExtractedStatement[]; document_units?: string }>(
         EXTRACTION_PROMPT,
         `Filing title: ${filing.title}\nFiling date: ${filing.date ?? "unknown"}\nTicker: ${t}\n\n--- DOCUMENT TEXT ---\n${pdf.text}`,
         12_000, // 3 statements × ~15 fields can be sizeable; leave ample room
-        { thinkingBudget: 2_048 } // bound reasoning so the JSON output isn't starved
+        // Statement extraction is mechanical parsing, not reasoning — use the
+        // cheap flash model with thinking off. ~20× cheaper than pro, which
+        // matters for a universe-wide backfill, and cached per filing so it's a
+        // one-time cost. Falls back to the configured model if flash is unset.
+        { model: process.env.GEMINI_EXTRACT_MODEL || "gemini-2.5-flash", thinkingBudget: 0 }
       );
 
       const statements = (data.statements ?? []).filter(validStatement);
@@ -174,6 +218,9 @@ export async function extractFinancials(ticker: string, maxFilings = 2): Promise
         out.skipped.push(`no extractable statements: ${filing.title}`);
         continue;
       }
+      // One unit for the whole filing — scale every statement uniformly to thousands.
+      const mult = toThousandsMultiplier(data.document_units ?? statements[0]?.units);
+      statements.forEach((s) => normalizeUnits(s, mult));
 
       for (const s of statements) {
         const { error } = await db.from("company_financials").upsert(
@@ -186,7 +233,7 @@ export async function extractFinancials(ticker: string, maxFilings = 2): Promise
             reported_date: filing.date,
             source_type: "psx-filing",
             source_url: filing.url,
-            data: { ...s.data, _units: s.units ?? "unknown" },
+            data: { ...s.data, _units: "PKR thousands" },
             confidence: Math.max(0, Math.min(1, s.confidence ?? 0)),
             updated_at: new Date().toISOString(),
           },

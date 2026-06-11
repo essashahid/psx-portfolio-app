@@ -4,7 +4,7 @@ import { refreshTechnicals } from "@/lib/company/technicals";
 import { getCompanyMetadata, saveCompanyDescription } from "@/lib/company/metadata";
 import { aiConfigured, chatJson } from "@/lib/ai/openai";
 import { refreshQuote, refreshHistory, testProviderCoverage } from "@/lib/engine/market-data";
-import { populateFinancials } from "@/lib/engine/financials";
+import { populateAllFundamentals } from "@/lib/engine/fundamentals";
 import { refreshRatios } from "@/lib/engine/ratios";
 
 export const maxDuration = 120;
@@ -60,14 +60,16 @@ export async function POST(
     }
 
     if (section === "financials") {
-      const r = await populateFinancials(ticker);
-      if (r.saved > 0) await refreshRatios(supabase, ticker).catch(() => null);
+      const r = await populateAllFundamentals(ticker);
+      const parts: string[] = [];
+      if (r.pagePeriods) parts.push(`${r.pagePeriods} period(s) from the PSX page`);
+      if (r.extracted) parts.push(`${r.extracted} statement(s) from filings`);
+      if (r.payouts) parts.push(`${r.payouts} payout(s)`);
       return NextResponse.json({
-        message:
-          r.saved > 0
-            ? `${r.saved} period(s) loaded from the official PSX company page. Ratios recomputed.`
-            : r.errors[0] ?? `No financial data published on the PSX page for ${ticker}.`,
-        detail: { processed: r.processed, saved: r.saved, skipped: r.skipped, errors: r.errors },
+        message: parts.length
+          ? `Loaded ${parts.join(", ")}. ${r.ratios?.available ?? 0}/${r.ratios?.computed ?? 0} ratios now computable.`
+          : r.errors[0] ?? `No financial data found for ${ticker}.`,
+        detail: r,
       });
     }
 

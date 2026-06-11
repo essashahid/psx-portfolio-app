@@ -1,8 +1,7 @@
 import { NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { refreshTechnicals } from "@/lib/company/technicals";
-import { populateFinancials } from "@/lib/engine/financials";
-import { refreshRatios } from "@/lib/engine/ratios";
+import { populateCheapFundamentals, populateDeepFundamentals } from "@/lib/engine/fundamentals";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 300;
@@ -37,6 +36,7 @@ export async function GET(request: Request) {
   const task = url.searchParams.get("task") ?? "technicals";
   const limit = Math.max(1, Math.min(300, Number(url.searchParams.get("limit") ?? 80)));
   const finLimit = Math.max(0, Math.min(60, Number(url.searchParams.get("finlimit") ?? 12)));
+  const deepLimit = Math.max(0, Math.min(40, Number(url.searchParams.get("deeplimit") ?? 8)));
   const concurrency = Math.max(1, Math.min(10, Number(url.searchParams.get("concurrency") ?? 6)));
   const report: Record<string, unknown> = {};
 
@@ -58,23 +58,36 @@ export async function GET(request: Request) {
     report.technicals = { attempted: queue.length, refreshed: ok, withHistory: withData };
   }
 
-  if (task === "financials" || task === "all") {
-    const queue = await staleFirst(db, universe, "company_financials", finLimit);
+  // Cheap fundamentals (PSX page + payouts + ratios, no LLM) — run broadly so
+  // ~13 of 18 ratios cover the universe fast.
+  if (task === "fundamentals" || task === "financials" || task === "all") {
+    const queue = await staleFirst(db, universe, "company_payouts", finLimit * 3);
     let loaded = 0;
-    await runPool(queue, Math.min(concurrency, 4), async (ticker) => {
-      try {
-        const r = await populateFinancials(ticker);
-        if (r.saved > 0) { loaded++; await refreshRatios(db, ticker).catch(() => null); }
-      } catch {
-        /* skip */
-      }
+    let withPayouts = 0;
+    await runPool(queue, Math.min(concurrency, 5), async (ticker) => {
+      const r = await populateCheapFundamentals(ticker, db);
+      if (r.pagePeriods > 0) loaded++;
+      if (r.payouts > 0) withPayouts++;
     });
-    report.financials = { attempted: queue.length, loaded };
+    report.fundamentals = { attempted: queue.length, loaded, withPayouts };
+  }
+
+  // Deep statement extraction (LLM, cached per filing) — narrow rotating slice,
+  // prioritizing companies that still lack a balance sheet. Unlocks the
+  // remaining margin / leverage / liquidity / coverage / FCF ratios.
+  if (task === "extract" || task === "all") {
+    const queue = await missingStatementFirst(db, universe, deepLimit);
+    let extracted = 0;
+    await runPool(queue, Math.min(concurrency, 3), async (ticker) => {
+      const r = await populateDeepFundamentals(ticker, 3, db);
+      if (r.extracted > 0) extracted++;
+    });
+    report.extract = { attempted: queue.length, extracted };
   }
 
   await db.from("data_fetch_logs").insert({
     ticker: null, section: "backfill", source: "psx-dps", status: "ok", rows: report.workingSet as number,
-    detail: JSON.stringify({ technicals: report.technicals, financials: report.financials }).slice(0, 300),
+    detail: JSON.stringify({ technicals: report.technicals, fundamentals: report.fundamentals, extract: report.extract }).slice(0, 300),
   }).then(() => {}, () => {});
 
   return NextResponse.json({ ok: true, ...report });
@@ -121,6 +134,24 @@ async function staleFirst(db: ReturnType<typeof createAdminClient>, tickers: str
       return ua.localeCompare(ub);
     })
     .slice(0, limit);
+}
+
+/**
+ * Order the working set for deep extraction: companies with NO balance sheet
+ * stored come first (they have the most missing ratios), then rotate by oldest.
+ */
+async function missingStatementFirst(db: ReturnType<typeof createAdminClient>, tickers: string[], limit: number): Promise<string[]> {
+  if (limit === 0) return [];
+  const hasBalance = new Set<string>();
+  for (let i = 0; i < tickers.length; i += 400) {
+    const chunk = tickers.slice(i, i + 400);
+    const { data } = await db.from("company_financials").select("ticker").eq("statement_type", "balance_sheet").in("ticker", chunk);
+    for (const r of data ?? []) hasBalance.add((r.ticker as string).toUpperCase());
+  }
+  const missing = tickers.filter((t) => !hasBalance.has(t));
+  const have = tickers.filter((t) => hasBalance.has(t));
+  // Missing first; then a few of the existing to refresh on new filings.
+  return [...missing, ...have].slice(0, limit);
 }
 
 /** Bounded-concurrency worker pool. */

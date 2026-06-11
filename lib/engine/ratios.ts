@@ -14,6 +14,7 @@ interface FinRow {
   fiscal_period: string | null;
   statement_type: string;
   reported_date: string | null;
+  source_type: string | null;
   source_url: string | null;
   confidence: number | null;
   data: Record<string, number | null | string>;
@@ -68,26 +69,39 @@ export async function computeRatios(supabase: SupabaseClient, ticker: string): P
   const [{ data: finRows }, { data: quote }, { data: divRows }] = await Promise.all([
     supabase
       .from("company_financials")
-      .select("period_type, fiscal_year, fiscal_period, statement_type, reported_date, source_url, confidence, data")
+      .select("period_type, fiscal_year, fiscal_period, statement_type, reported_date, source_type, source_url, confidence, data")
       .eq("ticker", t)
       .order("reported_date", { ascending: false })
       .limit(30),
     supabase.from("market_quotes").select("price, as_of").eq("ticker", t).maybeSingle(),
+    // Market-wide payouts (ticker-scoped, populated from the official PSX feed)
+    // so dividend ratios compute for every company, not just imported holdings.
     supabase
-      .from("dividends")
-      .select("dividend_per_share, announcement_date, ex_date")
+      .from("company_payouts")
+      .select("dividend_per_share, announcement_date, book_closure_start")
       .eq("ticker", t)
+      .eq("kind", "cash")
       .order("announcement_date", { ascending: false })
       .limit(20),
   ]);
 
   const rows = (finRows ?? []) as FinRow[];
-  // Prefer the latest full-year income statement for valuation/margin ratios so
-  // a single interim quarter never distorts P/E or annualized figures. Fall
-  // back to the latest available statement when no annual is stored.
+
+  // Two sources with different shapes, kept strictly separate so neither
+  // corrupts the other:
+  //  • PSX summary page (source_type "psx-portal") — a clean, consistent annual
+  //    series (sales/EPS/margins) for valuation and year-over-year growth.
+  //  • Filing extraction (source_type "psx-filing") — full statements (operating
+  //    profit, finance cost, balance sheet, cash flow) for the deep ratios.
+  const pageAnnual = rows
+    .filter((r) => r.statement_type === "income_statement" && r.period_type === "annual" && r.source_type === "psx-portal")
+    .sort((a, b) => (b.fiscal_year ?? 0) - (a.fiscal_year ?? 0));
+
+  // Valuation / margins / growth: prefer the clean page annual series; fall back
+  // to any annual, then any income statement.
   const annualRows = rows.filter((r) => r.period_type === "annual");
-  const income = latest(annualRows, "income_statement") ?? latest(rows, "income_statement");
-  const prevIncome = previous(income?.period_type === "annual" ? annualRows : rows, income);
+  const income = pageAnnual[0] ?? latest(annualRows, "income_statement") ?? latest(rows, "income_statement");
+  const prevIncome = pageAnnual.length > 1 && income === pageAnnual[0] ? pageAnnual[1] : previous(income?.period_type === "annual" ? annualRows : rows, income);
   const balance = latest(rows, "balance_sheet");
   const cash = latest(rows, "cash_flow");
 
@@ -97,16 +111,29 @@ export async function computeRatios(supabase: SupabaseClient, ticker: string): P
   const cutoff = new Date(Date.now() - 365 * 86400_000).toISOString().slice(0, 10);
   const ttmDps =
     (divRows ?? [])
-      .filter((d) => d.dividend_per_share && (d.announcement_date ?? d.ex_date ?? "") >= cutoff)
+      .filter((d) => d.dividend_per_share && (d.announcement_date ?? d.book_closure_start ?? "") >= cutoff)
       .reduce((s, d) => s + Number(d.dividend_per_share), 0) || null;
 
   const eps = numOf(income?.data, "eps");
   const revenue = numOf(income?.data, "revenue");
   const grossProfit = numOf(income?.data, "gross_profit");
-  const operatingProfit = numOf(income?.data, "operating_profit");
   const pat = numOf(income?.data, "profit_after_tax");
-  const pbt = numOf(income?.data, "profit_before_tax");
-  const financeCost = numOf(income?.data, "finance_cost");
+
+  // Operating profit / finance cost / PBT come only from the full extracted
+  // statement (the PSX summary page lacks them), which may be an interim period.
+  // Use the latest income row that actually carries them, and pair each margin
+  // with that row's OWN revenue so the period and units stay consistent.
+  const detailedIncome = rows
+    .filter((r) => r.statement_type === "income_statement" && (numOf(r.data, "operating_profit") !== null || numOf(r.data, "profit_before_tax") !== null || numOf(r.data, "finance_cost") !== null))
+    .sort((a, b) => (b.reported_date ?? "").localeCompare(a.reported_date ?? "") || (b.fiscal_year ?? 0) - (a.fiscal_year ?? 0))[0];
+  const detailRevenue = numOf(detailedIncome?.data, "revenue");
+  const operatingProfit = numOf(detailedIncome?.data, "operating_profit");
+  const pbt = numOf(detailedIncome?.data, "profit_before_tax");
+  // Finance cost is an expense; filings print it in parentheses (negative). Use
+  // its magnitude so interest coverage = EBIT ÷ interest is well-formed.
+  const fcRaw = numOf(detailedIncome?.data, "finance_cost");
+  const financeCost = fcRaw != null ? Math.abs(fcRaw) : null;
+  const detailPeriod = periodLabel(detailedIncome);
   const equity = numOf(balance?.data, "equity");
   const totalAssets = numOf(balance?.data, "total_assets");
   const currentAssets = numOf(balance?.data, "current_assets");
@@ -145,7 +172,7 @@ export async function computeRatios(supabase: SupabaseClient, ticker: string): P
 
   // Profitability (statement-internal — units cancel)
   add("Gross margin", "Gross profit ÷ Revenue", { gross_profit: grossProfit, revenue }, grossProfit !== null && revenue ? (grossProfit / revenue) * 100 : null, need([["gross profit", grossProfit], ["revenue", revenue]]), incomePeriod);
-  add("Operating margin", "Operating profit ÷ Revenue", { operating_profit: operatingProfit, revenue }, operatingProfit !== null && revenue ? (operatingProfit / revenue) * 100 : null, need([["operating profit", operatingProfit], ["revenue", revenue]]), incomePeriod);
+  add("Operating margin", "Operating profit ÷ Revenue", { operating_profit: operatingProfit, revenue: detailRevenue }, operatingProfit !== null && detailRevenue ? (operatingProfit / detailRevenue) * 100 : null, need([["operating profit", operatingProfit], ["revenue", detailRevenue]]), detailPeriod ?? incomePeriod);
   add("Net margin", "Profit after tax ÷ Revenue", { profit_after_tax: pat, revenue }, pat !== null && revenue ? (pat / revenue) * 100 : null, need([["profit after tax", pat], ["revenue", revenue]]), incomePeriod);
   add("ROE", "Profit after tax ÷ Equity", { profit_after_tax: pat, equity }, pat !== null && equity ? (pat / equity) * 100 : null, need([["profit after tax", pat], ["equity", equity]]), `${incomePeriod ?? "?"} / ${balancePeriod ?? "?"}`);
   add("ROA", "Profit after tax ÷ Total assets", { profit_after_tax: pat, total_assets: totalAssets }, pat !== null && totalAssets ? (pat / totalAssets) * 100 : null, need([["profit after tax", pat], ["total assets", totalAssets]]), `${incomePeriod ?? "?"} / ${balancePeriod ?? "?"}`);
@@ -154,7 +181,7 @@ export async function computeRatios(supabase: SupabaseClient, ticker: string): P
   add("Debt-to-equity", "Borrowings ÷ Equity", { borrowings, equity }, borrowings !== null && equity ? borrowings / equity : null, need([["borrowings", borrowings], ["equity", equity]]), balancePeriod);
   add("Current ratio", "Current assets ÷ Current liabilities", { current_assets: currentAssets, current_liabilities: currentLiabilities }, currentAssets !== null && currentLiabilities ? currentAssets / currentLiabilities : null, need([["current assets", currentAssets], ["current liabilities", currentLiabilities]]), balancePeriod);
   add("Quick ratio", "(Current assets − Inventory) ÷ Current liabilities", { current_assets: currentAssets, inventory, current_liabilities: currentLiabilities }, currentAssets !== null && inventory !== null && currentLiabilities ? (currentAssets - inventory) / currentLiabilities : null, need([["current assets", currentAssets], ["inventory", inventory], ["current liabilities", currentLiabilities]]), balancePeriod);
-  add("Interest coverage", "(Profit before tax + Finance cost) ÷ Finance cost", { profit_before_tax: pbt, finance_cost: financeCost }, pbt !== null && financeCost ? (pbt + financeCost) / financeCost : null, need([["profit before tax", pbt], ["finance cost", financeCost]]), incomePeriod);
+  add("Interest coverage", "(Profit before tax + Finance cost) ÷ Finance cost", { profit_before_tax: pbt, finance_cost: financeCost }, pbt !== null && financeCost ? (pbt + financeCost) / financeCost : null, need([["profit before tax", pbt], ["finance cost", financeCost]]), detailPeriod ?? incomePeriod);
 
   // Growth (vs previous extracted period of the same kind)
   const prevRevenue = numOf(prevIncome?.data, "revenue");
