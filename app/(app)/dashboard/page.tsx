@@ -2,9 +2,6 @@ import Link from "next/link";
 import { createClient, getUser } from "@/lib/supabase/server";
 import { getPortfolio } from "@/lib/portfolio";
 import { getDividends, summarizeDividends } from "@/lib/dividends";
-import { getTaxSettings } from "@/lib/dividends/tax";
-import { normalizeEvent } from "@/lib/dividends/engine";
-import { buildReviewQueue, type ReviewSeverity } from "@/lib/review-queue";
 import { formatMoney, formatNumber, formatSignedPct } from "@/lib/utils";
 import { PageHeader } from "@/components/page-header";
 import { StatCard } from "@/components/stat-card";
@@ -15,7 +12,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Markdown } from "@/components/markdown";
 import { AllocationPie, GainLossBar, TargetVsActualBar, ValueLine } from "@/components/charts-lazy";
-import { AlertTriangle, ArrowRight, FileText, HandCoins, Newspaper, RefreshCw, Sparkles, Upload } from "lucide-react";
+import { ArrowRight, FileText, HandCoins, Newspaper, RefreshCw, Sparkles, Upload } from "lucide-react";
 
 export const dynamic = "force-dynamic";
 
@@ -24,7 +21,7 @@ export default async function DashboardPage() {
   const user = await getUser();
   if (!user) return null;
 
-  const [summary, [briefingRes, newsRes, alertsRes, snapshotsRes, batchesRes, profileRes, lowConfidenceNewsRes], dividends, dividendEventsRes, taxSettings] =
+  const [summary, [briefingRes, newsRes, alertsRes, snapshotsRes, batchesRes, profileRes], dividends] =
     await Promise.all([
       getPortfolio(supabase, user.id),
       Promise.all([
@@ -64,21 +61,8 @@ export default async function DashboardPage() {
           .order("created_at", { ascending: false })
           .limit(3),
         supabase.from("profiles").select("demo_mode").eq("id", user.id).maybeSingle(),
-        supabase
-          .from("news_articles")
-          .select("id", { count: "exact", head: true })
-          .eq("user_id", user.id)
-          .eq("low_confidence", true),
       ]),
       getDividends(supabase, user.id),
-      supabase
-        .from("dividend_events")
-        .select("*")
-        .eq("user_id", user.id)
-        .in("status", ["announced", "expected", "overdue", "needs_review", "forecasted"])
-        .order("created_at", { ascending: false })
-        .limit(50),
-      getTaxSettings(supabase, user.id),
     ]);
 
   if (summary.holdingsCount === 0) {
@@ -137,17 +121,6 @@ export default async function DashboardPage() {
     .filter((date): date is string => !!date)
     .sort()
     .at(-1) ?? null;
-  const reviewItems = buildReviewQueue({
-    summary,
-    openAlerts,
-    hiddenLowConfidenceNews: lowConfidenceNewsRes.count ?? 0,
-    dividendSummary,
-    latestPriceDate,
-    dividendEvents: (dividendEventsRes.data ?? []).map((r) => normalizeEvent(r as Record<string, unknown>)),
-    taxConfigured: taxSettings.configured,
-    showForecastsInReview: taxSettings.show_forecasts_in_review,
-  });
-
   return (
     <div className="space-y-5">
       <PageHeader
@@ -178,45 +151,6 @@ export default async function DashboardPage() {
           Demo mode: holdings, prices and news below are illustrative sample data. Clear it from Settings after importing your real statements.
         </p>
       )}
-
-      <Card className="overflow-hidden">
-        <CardHeader className="flex-row items-start justify-between border-b border-border bg-muted/25">
-          <div>
-            <div className="flex items-center gap-2">
-              <AlertTriangle className="h-4 w-4 text-muted-foreground" />
-              <CardTitle>Review Queue</CardTitle>
-            </div>
-            <CardDescription>Priority checks generated from allocation, price coverage, theses, dividends, alerts and news confidence.</CardDescription>
-          </div>
-          <Link href="/alerts" className="shrink-0 text-xs text-muted-foreground hover:text-foreground">
-            Alerts <ArrowRight className="inline h-3 w-3" />
-          </Link>
-        </CardHeader>
-        <CardContent className="p-0">
-          {reviewItems.length === 0 ? (
-            <p className="p-5 text-center text-sm text-muted-foreground">No review items right now.</p>
-          ) : (
-            <div className="divide-y divide-border">
-              {reviewItems.map((item) => (
-                <Link key={item.id} href={item.href} className="grid gap-3 p-4 transition-colors hover:bg-muted/50 md:grid-cols-[180px_minmax(0,1fr)_120px] md:items-center">
-                  <div className="flex flex-wrap items-center gap-1.5">
-                    <Badge variant={reviewSeverityVariant(item.severity)}>{item.severity}</Badge>
-                    <Badge variant="outline">{item.category}</Badge>
-                    {item.ticker && <Badge variant="secondary">{item.ticker}</Badge>}
-                  </div>
-                  <div className="min-w-0">
-                    <p className="text-sm font-semibold leading-snug">{item.title}</p>
-                    <p className="mt-0.5 text-xs leading-relaxed text-muted-foreground">{item.explanation}</p>
-                  </div>
-                  <span className="text-xs font-medium text-primary md:text-right">
-                    {item.actionLabel} <ArrowRight className="inline h-3 w-3" />
-                  </span>
-                </Link>
-              ))}
-            </div>
-          )}
-        </CardContent>
-      </Card>
 
       <div className="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-5">
         <StatCard
@@ -536,10 +470,4 @@ export default async function DashboardPage() {
       )}
     </div>
   );
-}
-
-function reviewSeverityVariant(severity: ReviewSeverity): "red" | "amber" | "blue" {
-  if (severity === "high") return "red";
-  if (severity === "medium") return "amber";
-  return "blue";
 }
