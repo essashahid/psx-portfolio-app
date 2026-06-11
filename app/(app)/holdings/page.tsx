@@ -60,7 +60,7 @@ export default async function HoldingsPage() {
           }
         />
       ) : (
-        <HoldingsTable holdings={summary.holdings} />
+        <HoldingsTable holdings={summary.holdings} summary={summary} />
       )}
     </div>
   );

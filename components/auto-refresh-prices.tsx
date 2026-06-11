@@ -3,7 +3,7 @@
 import { useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 
-const STALE_MINUTES = 10;
+const STALE_MINUTES = 2;
 
 /**
  * Keeps prices live without the user touching anything: fires a throttled
@@ -37,7 +37,7 @@ export function AutoRefreshPrices() {
     }
 
     tick();
-    const id = setInterval(tick, STALE_MINUTES * 60_000);
+    const id = setInterval(tick, 2 * 60_000);
     return () => {
       cancelled = true;
       clearInterval(id);
