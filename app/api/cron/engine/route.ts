@@ -1,0 +1,135 @@
+import { NextResponse } from "next/server";
+import { createAdminClient } from "@/lib/supabase/admin";
+import { fetchPsxSymbols } from "@/lib/market-data/psx-dps";
+import { refreshQuote } from "@/lib/engine/market-data";
+import { refreshTechnicals } from "@/lib/company/technicals";
+import { extractFinancials } from "@/lib/engine/financials";
+import { refreshRatios } from "@/lib/engine/ratios";
+
+export const dynamic = "force-dynamic";
+export const maxDuration = 300;
+
+const BATCH = 5;
+
+/**
+ * Daily Stock Data Engine job (after PSX close). One composite run keeps us
+ * within hosting cron limits:
+ *  1. Universe sync (when older than 6 days)
+ *  2. Quotes + technicals for the active set (holdings + watchlist)
+ *  3. Quotes for a rotating universe slice (oldest-fetched first)
+ *  4. Financial extraction queue (few tickers/run — Gemini is slow)
+ *  5. Ratio recompute for tickers with financials
+ */
+export async function GET(request: Request) {
+  const secret = process.env.CRON_SECRET;
+  if (!secret) return NextResponse.json({ error: "CRON_SECRET is not configured." }, { status: 503 });
+  const url = new URL(request.url);
+  const provided = request.headers.get("authorization")?.replace(/^Bearer\s+/i, "") ?? url.searchParams.get("key");
+  if (provided !== secret) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
+    return NextResponse.json({ error: "SUPABASE_SERVICE_ROLE_KEY missing." }, { status: 503 });
+  }
+
+  const db = createAdminClient();
+  const report: Record<string, unknown> = {};
+
+  // 1. Universe sync (weekly cadence)
+  try {
+    const { data: newest } = await db
+      .from("stock_universe")
+      .select("last_updated")
+      .order("last_updated", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    const ageDays = newest ? (Date.now() - new Date(newest.last_updated).getTime()) / 86400_000 : Infinity;
+    if (ageDays > 6) {
+      const directory = await fetchPsxSymbols();
+      const now = new Date().toISOString();
+      const rows = [...directory.entries()].map(([ticker, info]) => ({
+        ticker,
+        company_name: info.name,
+        psx_name: info.name,
+        sector: info.sector || null,
+        listing_status: "active",
+        last_updated: now,
+      }));
+      for (let i = 0; i < rows.length; i += 400) {
+        await db.from("stock_universe").upsert(rows.slice(i, i + 400), { onConflict: "ticker" });
+      }
+      report.universe = { synced: rows.length };
+    } else {
+      report.universe = { skipped: `synced ${ageDays.toFixed(1)}d ago` };
+    }
+  } catch (e) {
+    report.universe = { error: e instanceof Error ? e.message : String(e) };
+  }
+
+  // 2. Active set: quotes + technicals
+  const [{ data: holdings }, { data: watch }] = await Promise.all([
+    db.from("holdings").select("ticker").gt("quantity", 0),
+    db.from("stock_watchlist").select("ticker"),
+  ]);
+  const active = [...new Set([...(holdings ?? []), ...(watch ?? [])].map((r) => (r.ticker as string).toUpperCase()))];
+
+  let quotesOk = 0;
+  let techOk = 0;
+  for (let i = 0; i < active.length; i += BATCH) {
+    const batch = active.slice(i, i + BATCH);
+    const [qs, ts] = await Promise.all([
+      Promise.all(batch.map((t) => refreshQuote(t).catch(() => null))),
+      Promise.all(batch.map((t) => refreshTechnicals(t).catch(() => null))),
+    ]);
+    quotesOk += qs.filter(Boolean).length;
+    techOk += ts.filter((t) => t?.asOfDate).length;
+  }
+  report.activeSet = { tickers: active.length, quotes: quotesOk, technicals: techOk };
+
+  // 3. Rotating universe slice (oldest quotes first)
+  try {
+    const { data: universe } = await db.from("stock_universe").select("ticker").eq("listing_status", "active").limit(2000);
+    const all = (universe ?? []).map((r) => r.ticker as string).filter((t) => !active.includes(t));
+    const { data: quotes } = await db.from("market_quotes").select("ticker, last_fetched_at");
+    const fetchedAt = new Map((quotes ?? []).map((q) => [q.ticker as string, q.last_fetched_at as string]));
+    const slice = all.sort((a, b) => (fetchedAt.get(a) ?? "").localeCompare(fetchedAt.get(b) ?? "")).slice(0, 40);
+    let ok = 0;
+    for (let i = 0; i < slice.length; i += BATCH) {
+      const results = await Promise.all(slice.slice(i, i + BATCH).map((t) => refreshQuote(t).catch(() => null)));
+      ok += results.filter(Boolean).length;
+    }
+    report.universeSlice = { attempted: slice.length, refreshed: ok };
+  } catch (e) {
+    report.universeSlice = { error: e instanceof Error ? e.message : String(e) };
+  }
+
+  // 4. Financial extraction queue — prioritize active-set tickers without financials
+  try {
+    const { data: have } = await db.from("company_financials").select("ticker");
+    const covered = new Set((have ?? []).map((r) => r.ticker as string));
+    const queue = active.filter((t) => !covered.has(t)).slice(0, 2);
+    const extracted: Record<string, number> = {};
+    for (const t of queue) {
+      const r = await extractFinancials(t, 2);
+      extracted[t] = r.saved;
+      if (r.saved > 0) await refreshRatios(db, t).catch(() => null);
+    }
+    report.financials = { queue, extracted };
+  } catch (e) {
+    report.financials = { error: e instanceof Error ? e.message : String(e) };
+  }
+
+  // 5. Ratios for everything that has financials (cheap, pure reads + upsert)
+  try {
+    const { data: have } = await db.from("company_financials").select("ticker");
+    const tickers = [...new Set((have ?? []).map((r) => r.ticker as string))];
+    let ok = 0;
+    for (const t of tickers.slice(0, 50)) {
+      const r = await refreshRatios(db, t).catch(() => null);
+      if (r) ok++;
+    }
+    report.ratios = { recomputed: ok };
+  } catch (e) {
+    report.ratios = { error: e instanceof Error ? e.message : String(e) };
+  }
+
+  return NextResponse.json({ ok: true, ...report });
+}

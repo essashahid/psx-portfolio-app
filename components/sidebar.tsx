@@ -18,6 +18,7 @@ import {
   CandlestickChart,
   HandCoins,
   Search,
+  Database,
 } from "lucide-react";
 
 const NAV = [
@@ -31,6 +32,7 @@ const NAV = [
   { href: "/dividends", label: "Dividends", icon: HandCoins },
   { href: "/journal", label: "Journal", icon: NotebookPen },
   { href: "/alerts", label: "Alerts", icon: Bell },
+  { href: "/coverage", label: "Data Engine", icon: Database },
   { href: "/settings", label: "Settings", icon: Settings },
 ];
 

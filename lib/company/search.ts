@@ -50,7 +50,14 @@ export async function searchStocks(
 
   const merged = new Map<string, StockSearchResult>();
 
-  const [{ data: masterRows }, directory] = await Promise.all([
+  // stock_universe (synced from the official PSX directory) is the primary
+  // source; stock_master and the live directory fill any gaps.
+  const [{ data: universeRows }, { data: masterRows }, directory] = await Promise.all([
+    supabase
+      .from("stock_universe")
+      .select("ticker, company_name, sector")
+      .or(`ticker.ilike.%${q}%,company_name.ilike.%${q}%`)
+      .limit(50),
     supabase
       .from("stock_master")
       .select("ticker, company_name, sector")
@@ -59,11 +66,13 @@ export async function searchStocks(
     getDirectory().catch(() => new Map<string, PsxSymbolInfo>()),
   ]);
 
-  for (const r of masterRows ?? []) {
-    merged.set(r.ticker.toUpperCase(), {
-      ticker: r.ticker.toUpperCase(),
-      companyName: r.company_name ?? null,
-      sector: r.sector ?? null,
+  for (const r of [...(universeRows ?? []), ...(masterRows ?? [])]) {
+    const t = r.ticker.toUpperCase();
+    const existing = merged.get(t);
+    merged.set(t, {
+      ticker: t,
+      companyName: existing?.companyName ?? r.company_name ?? null,
+      sector: existing?.sector ?? r.sector ?? null,
     });
   }
 

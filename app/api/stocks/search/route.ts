@@ -24,28 +24,29 @@ export async function GET(request: Request) {
     const tickers = results.map((r) => r.ticker);
     if (tickers.length === 0) return NextResponse.json({ results: [] });
 
-    const [{ data: holdings }, { data: watch }, { data: prices }] = await Promise.all([
+    const [{ data: holdings }, { data: watch }, { data: quotes }, { data: tech }] = await Promise.all([
       supabase.from("holdings").select("ticker, quantity").eq("user_id", user.id).in("ticker", tickers).gt("quantity", 0),
       supabase.from("stock_watchlist").select("ticker").eq("user_id", user.id).in("ticker", tickers),
-      supabase
-        .from("company_technicals")
-        .select("ticker, latest_price, day_change_pct")
-        .in("ticker", tickers),
+      supabase.from("market_quotes").select("ticker, price, day_change_pct, as_of").in("ticker", tickers),
+      supabase.from("company_technicals").select("ticker, latest_price, day_change_pct").in("ticker", tickers),
     ]);
 
     const owned = new Set((holdings ?? []).map((h) => h.ticker.toUpperCase()));
     const watched = new Set((watch ?? []).map((w) => w.ticker.toUpperCase()));
-    const priceMap = new Map((prices ?? []).map((p) => [p.ticker.toUpperCase(), p]));
+    const quoteMap = new Map((quotes ?? []).map((p) => [p.ticker.toUpperCase(), p]));
+    const techMap = new Map((tech ?? []).map((p) => [p.ticker.toUpperCase(), p]));
 
     return NextResponse.json({
       results: results.map((r) => {
-        const p = priceMap.get(r.ticker);
+        const q = quoteMap.get(r.ticker);
+        const t = techMap.get(r.ticker);
         return {
           ...r,
           owned: owned.has(r.ticker),
           watched: watched.has(r.ticker),
-          price: p?.latest_price ?? null,
-          dayChangePct: p?.day_change_pct ?? null,
+          price: q?.price ?? t?.latest_price ?? null,
+          dayChangePct: q?.day_change_pct ?? t?.day_change_pct ?? null,
+          asOf: q?.as_of ?? null,
         };
       }),
     });

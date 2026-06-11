@@ -3,6 +3,7 @@ import { getCompanyMetadata } from "@/lib/company/metadata";
 import { getTechnicals } from "@/lib/company/technicals";
 import { getCompanyDividends } from "@/lib/company/dividends";
 import { getCompanyFilings } from "@/lib/company/filings";
+import { computeRatios } from "@/lib/engine/ratios";
 import { getPortfolio } from "@/lib/portfolio";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -166,20 +167,49 @@ export async function OverviewPanel({ ticker }: { ticker: string }) {
 // 2. Financials
 // ---------------------------------------------------------------------------
 
-const INCOME_ROWS = ["Revenue / sales", "Cost of sales", "Gross profit", "Operating expenses", "Operating profit", "Finance cost", "Profit before tax", "Tax", "Profit after tax", "EPS", "Dividend per share"];
-const BALANCE_ROWS = ["Total assets", "Current assets", "Cash & equivalents", "Inventory", "Receivables", "Total liabilities", "Current liabilities", "Borrowings", "Equity", "Retained earnings", "Book value/share"];
-const CASHFLOW_ROWS = ["Operating cash flow", "Investing cash flow", "Financing cash flow", "Free cash flow", "Capex", "Cash balance"];
+interface FinancialRow { ticker: string; period_type: string; fiscal_year: number | null; fiscal_period: string | null; statement_type: string; data: Record<string, number | null | string>; reported_date: string | null; source_url: string | null; confidence: number | null; updated_at: string | null; }
 
-interface FinancialRow { ticker: string; period_type: string; fiscal_year: number | null; fiscal_period: string | null; statement_type: string; data: Record<string, number | null>; reported_date: string | null; source_url: string | null; }
+const LINE_LABELS: Record<string, string> = {
+  revenue: "Revenue / sales", cost_of_sales: "Cost of sales", gross_profit: "Gross profit",
+  operating_expenses: "Operating expenses", operating_profit: "Operating profit", finance_cost: "Finance cost",
+  profit_before_tax: "Profit before tax", tax: "Tax", profit_after_tax: "Profit after tax", eps: "EPS (Rs)",
+  total_assets: "Total assets", current_assets: "Current assets", cash_and_equivalents: "Cash & equivalents",
+  inventory: "Inventory", receivables: "Receivables", total_liabilities: "Total liabilities",
+  current_liabilities: "Current liabilities", borrowings: "Borrowings", equity: "Equity", retained_earnings: "Retained earnings",
+  operating_cash_flow: "Operating cash flow", investing_cash_flow: "Investing cash flow",
+  financing_cash_flow: "Financing cash flow", capex: "Capex", cash_balance: "Cash balance",
+};
+
+function FetchFinancialsButton({ ticker }: { ticker: string }) {
+  return (
+    <ActionButton
+      endpoint={`/api/stocks/${ticker}/refresh`}
+      body={{ section: "financials" }}
+      label={<><FileText className="h-3.5 w-3.5" /> Extract from official filings</>}
+      variant="outline"
+      size="sm"
+    />
+  );
+}
 
 export async function FinancialsPanel({ ticker }: { ticker: string }) {
   const supabase = await createClient();
-  const { data } = await supabase
-    .from("company_financials")
-    .select("ticker, period_type, fiscal_year, fiscal_period, statement_type, data, reported_date, source_url")
-    .eq("ticker", ticker)
-    .order("fiscal_year", { ascending: false })
-    .limit(40);
+  const [{ data }, { data: lastLog }] = await Promise.all([
+    supabase
+      .from("company_financials")
+      .select("ticker, period_type, fiscal_year, fiscal_period, statement_type, data, reported_date, source_url, confidence, updated_at")
+      .eq("ticker", ticker)
+      .order("reported_date", { ascending: false })
+      .limit(40),
+    supabase
+      .from("data_fetch_logs")
+      .select("status, detail, created_at, source")
+      .eq("ticker", ticker)
+      .eq("section", "financials")
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle(),
+  ]);
 
   const rows = (data ?? []) as FinancialRow[];
 
@@ -188,35 +218,50 @@ export async function FinancialsPanel({ ticker }: { ticker: string }) {
       <div className="space-y-3">
         <EmptyState
           icon={FileText}
-          title="No structured financial statements yet"
-          description={`PortfolioOS does not yet have an income statement, balance sheet, or cash-flow data source wired for ${ticker}. Statements appear here once a fundamentals provider is connected or a filing is imported. The app never fabricates these numbers.`}
+          title="Financial data is not populated yet"
+          description={
+            lastLog
+              ? `Last fetch attempt: ${String(lastLog.created_at).slice(0, 16).replace("T", " ")} via ${lastLog.source} — ${lastLog.status}${lastLog.detail ? ` (${lastLog.detail})` : ""}. The engine extracts statements from official PSX result filings; numbers are never invented.`
+              : `No extraction has run for ${ticker} yet. The engine reads the company's official PSX result filings (PDF) and extracts the statements — numbers are never invented.`
+          }
+          action={<FetchFinancialsButton ticker={ticker} />}
         />
-        <Card>
-          <CardHeader>
-            <CardTitle>What this tab will show</CardTitle>
-            <CardDescription>Structure is ready — these line items populate when data arrives, with annual/quarterly views, YoY/QoQ growth, and CSV export.</CardDescription>
-          </CardHeader>
-          <CardContent className="grid gap-4 md:grid-cols-3">
-            <StatementScaffold title="Income statement" rows={INCOME_ROWS} />
-            <StatementScaffold title="Balance sheet" rows={BALANCE_ROWS} />
-            <StatementScaffold title="Cash flow" rows={CASHFLOW_ROWS} />
-          </CardContent>
-        </Card>
       </div>
     );
   }
 
-  // Group by statement type → render a period-comparison table.
-  const byType = (type: string) => rows.filter((r) => r.statement_type === type);
+  const byType = (type: string) => rows.filter((r) => r.statement_type === type).slice(0, 4);
+  const newest = rows[0];
+  const units = String(newest?.data?._units ?? "as reported");
+
   return (
     <div className="space-y-4">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <p className="text-[11px] text-muted-foreground">
+          Figures {units}; EPS in rupees. Extracted from official PSX filings — open a period's source to verify.
+        </p>
+        <FetchFinancialsButton ticker={ticker} />
+      </div>
       {["income_statement", "balance_sheet", "cash_flow"].map((type) => {
         const periods = byType(type);
         if (periods.length === 0) return null;
-        const keys = [...new Set(periods.flatMap((p) => Object.keys(p.data ?? {})))];
+        const keys = [...new Set(periods.flatMap((p) => Object.keys(p.data ?? {})))].filter((k) => !k.startsWith("_"));
         return (
           <Card key={type}>
-            <CardHeader><CardTitle className="capitalize">{type.replace(/_/g, " ")}</CardTitle></CardHeader>
+            <CardHeader>
+              <CardTitle className="capitalize">{type.replace(/_/g, " ")}</CardTitle>
+              <CardDescription>
+                {periods.map((p, i) => (
+                  <span key={i}>
+                    {i > 0 && " · "}
+                    <a href={p.source_url ?? "#"} target="_blank" rel="noopener noreferrer" className="underline hover:text-foreground">
+                      {p.fiscal_year ?? "?"} {p.fiscal_period ?? ""}
+                    </a>
+                    {p.confidence !== null && p.confidence < 0.7 && " (needs review)"}
+                  </span>
+                ))}
+              </CardDescription>
+            </CardHeader>
             <CardContent className="overflow-x-auto">
               <Table>
                 <THead>
@@ -225,8 +270,11 @@ export async function FinancialsPanel({ ticker }: { ticker: string }) {
                 <TBody>
                   {keys.map((k) => (
                     <TR key={k}>
-                      <TD className="text-xs">{k}</TD>
-                      {periods.map((p, i) => <TD key={i} className="text-right text-xs tabular-nums">{num(p.data?.[k] ?? null)}</TD>)}
+                      <TD className="text-xs">{LINE_LABELS[k] ?? k.replace(/_/g, " ")}</TD>
+                      {periods.map((p, i) => {
+                        const v = p.data?.[k];
+                        return <TD key={i} className="text-right text-xs tabular-nums">{typeof v === "number" ? num(v) : "—"}</TD>;
+                      })}
                     </TR>
                   ))}
                 </TBody>
@@ -235,21 +283,10 @@ export async function FinancialsPanel({ ticker }: { ticker: string }) {
           </Card>
         );
       })}
-    </div>
-  );
-}
-
-function StatementScaffold({ title, rows }: { title: string; rows: string[] }) {
-  return (
-    <div>
-      <p className="mb-2 text-xs font-semibold">{title}</p>
-      <ul className="space-y-1">
-        {rows.map((r) => (
-          <li key={r} className="flex items-center justify-between border-b border-dashed border-border/60 pb-1 text-[11px] text-muted-foreground">
-            <span>{r}</span><span>Data unavailable</span>
-          </li>
-        ))}
-      </ul>
+      <p className="text-[11px] text-muted-foreground">
+        Last extracted {newest?.updated_at ? String(newest.updated_at).slice(0, 10) : "—"} · Source: PSX result filings (parsed by AI, numbers echoed from the document only)
+        {typeof newest?.confidence === "number" ? ` · extraction confidence ${(newest.confidence * 100).toFixed(0)}%` : ""}
+      </p>
     </div>
   );
 }
@@ -259,12 +296,96 @@ function StatementScaffold({ title, rows }: { title: string; rows: string[] }) {
 // ---------------------------------------------------------------------------
 
 export async function EarningsPanel({ ticker }: { ticker: string }) {
-  const filings = await getCompanyFilings(ticker, 25);
+  const supabase = await createClient();
+  const [filings, { data: finData }] = await Promise.all([
+    getCompanyFilings(ticker, 25),
+    supabase
+      .from("company_financials")
+      .select("period_type, fiscal_year, fiscal_period, statement_type, data, reported_date, source_url")
+      .eq("ticker", ticker)
+      .eq("statement_type", "income_statement")
+      .order("reported_date", { ascending: false })
+      .limit(8),
+  ]);
   const resultFilings = filings.filter((f) => f.category === "result");
+  const incomes = (finData ?? []) as FinancialRow[];
+  const latest = incomes[0];
+  const prior = incomes[1];
+
+  const g = (k: string): number | null => {
+    const a = latest?.data?.[k];
+    const b = prior?.data?.[k];
+    if (typeof a !== "number" || typeof b !== "number" || b === 0) return null;
+    return ((a - b) / Math.abs(b)) * 100;
+  };
+  const v = (row: FinancialRow | undefined, k: string): number | null => {
+    const x = row?.data?.[k];
+    return typeof x === "number" ? x : null;
+  };
+  const margin = (row: FinancialRow | undefined): number | null => {
+    const pat = v(row, "profit_after_tax");
+    const rev = v(row, "revenue");
+    return pat !== null && rev ? (pat / rev) * 100 : null;
+  };
 
   return (
     <div className="space-y-4">
-      <Unavailable note="Structured earnings figures (revenue, profit, EPS, margins) are not yet wired for PSX. Below are the official result filings — open them for the actual numbers. No figures are fabricated." />
+      {latest ? (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2"><TrendingUp className="h-4 w-4" /> Latest result — {latest.fiscal_year} {latest.fiscal_period}</CardTitle>
+            <CardDescription>
+              Reported {latest.reported_date ?? "—"} ·{" "}
+              <a href={latest.source_url ?? "#"} target="_blank" rel="noopener noreferrer" className="underline hover:text-foreground">source filing</a>
+              {prior ? ` · compared with ${prior.fiscal_year} ${prior.fiscal_period}` : " · no prior period extracted yet for growth"}
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-6">
+              <Metric label="Revenue" value={num(v(latest, "revenue"))} sub={g("revenue") !== null ? `${formatSignedPct(g("revenue"))} vs prior` : undefined} tone={g("revenue") !== null ? (g("revenue")! >= 0 ? "positive" : "negative") : undefined} />
+              <Metric label="Profit after tax" value={num(v(latest, "profit_after_tax"))} sub={g("profit_after_tax") !== null ? `${formatSignedPct(g("profit_after_tax"))} vs prior` : undefined} tone={g("profit_after_tax") !== null ? (g("profit_after_tax")! >= 0 ? "positive" : "negative") : undefined} />
+              <Metric label="EPS (Rs)" value={num(v(latest, "eps"))} sub={g("eps") !== null ? `${formatSignedPct(g("eps"))} vs prior` : undefined} tone={g("eps") !== null ? (g("eps")! >= 0 ? "positive" : "negative") : undefined} />
+              <Metric label="Profit before tax" value={num(v(latest, "profit_before_tax"))} />
+              <Metric label="Net margin" value={margin(latest) !== null ? `${margin(latest)!.toFixed(1)}%` : "—"} sub={prior && margin(prior) !== null ? `prior ${margin(prior)!.toFixed(1)}%` : undefined} />
+              <Metric label="Finance cost" value={num(v(latest, "finance_cost"))} />
+            </div>
+            <p className="mt-2 text-[10px] text-muted-foreground">Figures {String(latest.data?._units ?? "as reported")}; EPS in rupees. Missing values were not present in the filing.</p>
+          </CardContent>
+        </Card>
+      ) : (
+        <EmptyState
+          icon={TrendingUp}
+          title="No earnings extracted yet"
+          description={`Run extraction to pull revenue, profit, and EPS from ${ticker}'s official result filings. Numbers are read from the documents, never invented.`}
+          action={<FetchFinancialsButton ticker={ticker} />}
+        />
+      )}
+
+      {incomes.length > 1 && (
+        <Card>
+          <CardHeader><CardTitle>Extracted periods</CardTitle></CardHeader>
+          <CardContent className="overflow-x-auto">
+            <Table>
+              <THead>
+                <TR><TH>Period</TH><TH className="text-right">Revenue</TH><TH className="text-right">PAT</TH><TH className="text-right">EPS</TH><TH className="text-right">Net margin</TH><TH>Reported</TH></TR>
+              </THead>
+              <TBody>
+                {incomes.map((r, i) => (
+                  <TR key={i}>
+                    <TD className="text-xs font-medium">{r.fiscal_year} {r.fiscal_period}</TD>
+                    <TD className="text-right text-xs tabular-nums">{num(v(r, "revenue"))}</TD>
+                    <TD className="text-right text-xs tabular-nums">{num(v(r, "profit_after_tax"))}</TD>
+                    <TD className="text-right text-xs tabular-nums">{num(v(r, "eps"))}</TD>
+                    <TD className="text-right text-xs tabular-nums">{margin(r) !== null ? `${margin(r)!.toFixed(1)}%` : "—"}</TD>
+                    <TD className="text-[11px] text-muted-foreground">{r.reported_date ?? "—"}</TD>
+                  </TR>
+                ))}
+              </TBody>
+            </Table>
+          </CardContent>
+        </Card>
+      )}
+
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2"><TrendingUp className="h-4 w-4" /> Result & earnings filings</CardTitle>
@@ -288,9 +409,6 @@ export async function EarningsPanel({ ticker }: { ticker: string }) {
           )}
         </CardContent>
       </Card>
-      <p className="text-[11px] text-muted-foreground">
-        Want trend charts (revenue, PAT, EPS, margins)? They populate automatically once the Financials tab has structured data.
-      </p>
     </div>
   );
 }
@@ -301,61 +419,65 @@ export async function EarningsPanel({ ticker }: { ticker: string }) {
 
 export async function RatiosPanel({ ticker }: { ticker: string }) {
   const supabase = await createClient();
-  const user = await getUser();
-  if (!user) return null;
 
-  const [technicals, dividends] = await Promise.all([
-    getTechnicals(supabase, ticker),
-    getCompanyDividends(supabase, user.id, ticker),
-  ]);
+  // Always compute live from stored inputs — the engine is pure reads, so the
+  // tab reflects the newest extracted financials and quote without waiting on
+  // a persisted snapshot.
+  const ratios = await computeRatios(supabase, ticker);
+  const available = ratios.filter((r) => r.ratio_value !== null);
+  const hasFinancials = ratios.some((r) => r.source !== null);
 
-  // Trailing-12-month cash dividend per share (only ratio we can ground today).
-  // eslint-disable-next-line react-hooks/purity -- Server-rendered ratio uses the request-time date for a TTM cutoff.
-  const cutoff = new Date(Date.now() - 365 * 86400_000).toISOString().slice(0, 10);
-  const ttmDps = dividends
-    .filter((d) => d.kind === "cash" && d.perShare && (d.announcementDate ?? d.date ?? "") >= cutoff)
-    .reduce((s, d) => s + (d.perShare ?? 0), 0);
-  const price = technicals.latestPrice;
-  const divYield = ttmDps > 0 && price ? (ttmDps / price) * 100 : null;
-
-  const ratios: { name: string; value: string; formula: string; period: string; available: boolean }[] = [
-    { name: "Dividend yield (TTM)", value: divYield !== null ? `${divYield.toFixed(2)}%` : "Insufficient data", formula: "Trailing 12m cash DPS ÷ price", period: "Last 12 months", available: divYield !== null },
-    { name: "P/E", value: "Insufficient data", formula: "Price ÷ EPS", period: "—", available: false },
-    { name: "P/B", value: "Insufficient data", formula: "Price ÷ book value/share", period: "—", available: false },
-    { name: "Earnings yield", value: "Insufficient data", formula: "EPS ÷ price", period: "—", available: false },
-    { name: "ROE", value: "Insufficient data", formula: "Net income ÷ equity", period: "—", available: false },
-    { name: "ROA", value: "Insufficient data", formula: "Net income ÷ total assets", period: "—", available: false },
-    { name: "Net margin", value: "Insufficient data", formula: "Profit after tax ÷ revenue", period: "—", available: false },
-    { name: "Debt-to-equity", value: "Insufficient data", formula: "Total debt ÷ equity", period: "—", available: false },
-    { name: "Current ratio", value: "Insufficient data", formula: "Current assets ÷ current liabilities", period: "—", available: false },
-    { name: "Payout ratio", value: "Insufficient data", formula: "DPS ÷ EPS", period: "—", available: false },
-  ];
+  const fmtVal = (r: (typeof ratios)[number]): string => {
+    if (r.ratio_value === null) return "—";
+    const pctNames = /yield|margin|growth|ROE|ROA|Payout/i;
+    return pctNames.test(r.ratio_name) ? `${r.ratio_value.toFixed(2)}%` : r.ratio_value.toFixed(2);
+  };
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2"><Calculator className="h-4 w-4" /> Fundamental ratios</CardTitle>
-        <CardDescription>A ratio is only shown when every input exists — otherwise it reads “insufficient data” rather than guessing.</CardDescription>
-      </CardHeader>
-      <CardContent className="overflow-x-auto">
-        <Table>
-          <THead>
-            <TR><TH>Ratio</TH><TH className="text-right">Value</TH><TH>Formula</TH><TH>Period</TH></TR>
-          </THead>
-          <TBody>
-            {ratios.map((r) => (
-              <TR key={r.name}>
-                <TD className="text-xs font-medium">{r.name}</TD>
-                <TD className={cn("text-right text-xs tabular-nums", !r.available && "text-muted-foreground")}>{r.value}</TD>
-                <TD className="text-[11px] text-muted-foreground" title={r.formula}>{r.formula}</TD>
-                <TD className="text-[11px] text-muted-foreground">{r.period}</TD>
-              </TR>
-            ))}
-          </TBody>
-        </Table>
-        <div className="mt-3"><SectionMeta meta={technicals.meta} /></div>
-      </CardContent>
-    </Card>
+    <div className="space-y-3">
+      {!hasFinancials && (
+        <EmptyState
+          icon={Calculator}
+          title="Most ratios need extracted financials"
+          description={`Only market-data ratios can be computed for ${ticker} right now. Extract the official result filings to unlock P/E, margins, ROE, leverage and growth ratios.`}
+          action={<FetchFinancialsButton ticker={ticker} />}
+        />
+      )}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2"><Calculator className="h-4 w-4" /> Fundamental ratios</CardTitle>
+          <CardDescription>
+            {available.length} of {ratios.length} computable from stored, sourced data. Uncomputable rows name the exact missing input — nothing is estimated.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="overflow-x-auto">
+          <Table>
+            <THead>
+              <TR><TH>Ratio</TH><TH className="text-right">Value</TH><TH>Formula</TH><TH>Period</TH></TR>
+            </THead>
+            <TBody>
+              {ratios.map((r) => (
+                <TR key={r.ratio_name}>
+                  <TD className="text-xs font-medium">{r.ratio_name}</TD>
+                  <TD
+                    className={cn("text-right text-xs tabular-nums", r.ratio_value === null && "text-muted-foreground")}
+                    title={r.missing ?? undefined}
+                  >
+                    {fmtVal(r)}
+                  </TD>
+                  <TD className="text-[11px] text-muted-foreground">{r.formula}{r.missing ? <span className="block text-[10px] italic">{r.missing}</span> : null}</TD>
+                  <TD className="text-[11px] text-muted-foreground">{r.source_period ?? "—"}</TD>
+                </TR>
+              ))}
+            </TBody>
+          </Table>
+          <p className="mt-3 text-[11px] text-muted-foreground">
+            Inputs: extracted PSX filings + live quote + recorded dividends · computed {new Date().toISOString().slice(0, 10)}
+            {ratios[0]?.source ? <> · <a href={ratios[0].source} target="_blank" rel="noopener noreferrer" className="underline hover:text-foreground">latest source filing</a></> : null}
+          </p>
+        </CardContent>
+      </Card>
+    </div>
   );
 }
 

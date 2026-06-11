@@ -38,14 +38,39 @@ export default async function StockCockpitPage({ params }: { params: Promise<{ t
 
   // Shell: cache-first profile + live quote + 52w range, plus ownership/watch
   // status. Heavy per-section data streams in below via Suspense.
-  const [header, { data: holding }, { data: watch }] = await Promise.all([
+  const [header, { data: holding }, { data: watch }, { data: latestIncome }, { data: divRows }] = await Promise.all([
     getCompanyHeader(supabase, ticker),
     supabase.from("holdings").select("quantity").eq("user_id", user.id).eq("ticker", ticker).gt("quantity", 0).maybeSingle(),
     supabase.from("stock_watchlist").select("ticker").eq("user_id", user.id).eq("ticker", ticker).maybeSingle(),
+    supabase
+      .from("company_financials")
+      .select("fiscal_year, fiscal_period, data")
+      .eq("ticker", ticker)
+      .eq("statement_type", "income_statement")
+      .order("reported_date", { ascending: false })
+      .limit(1)
+      .maybeSingle(),
+    supabase
+      .from("dividends")
+      .select("dividend_per_share, announcement_date")
+      .eq("ticker", ticker)
+      .order("announcement_date", { ascending: false })
+      .limit(12),
   ]);
 
   const { metadata, quote } = header;
   const dayTone = quote.dayChangePct ? (quote.dayChangePct > 0 ? "positive" : "negative") : undefined;
+
+  // Header fundamentals from extracted filings + recorded dividends (no live calls).
+  const epsRaw = (latestIncome?.data as Record<string, unknown> | undefined)?.eps;
+  const eps = typeof epsRaw === "number" && Number.isFinite(epsRaw) ? epsRaw : null;
+  const epsPeriod = latestIncome ? `${latestIncome.fiscal_year ?? ""} ${latestIncome.fiscal_period ?? ""}`.trim() : null;
+  const pe = eps && quote.price ? quote.price / eps : null;
+  const ttmCutoff = new Date(Date.now() - 365 * 86400_000).toISOString().slice(0, 10);
+  const ttmDps = (divRows ?? [])
+    .filter((d) => d.dividend_per_share && (d.announcement_date ?? "") >= ttmCutoff)
+    .reduce((s, d) => s + Number(d.dividend_per_share), 0);
+  const divYield = ttmDps > 0 && quote.price ? (ttmDps / quote.price) * 100 : null;
 
   const tabs = [
     { id: "overview", label: "Overview", content: <Suspense fallback={<CardSkeleton lines={8} />}><OverviewPanel ticker={ticker} /></Suspense> },
@@ -100,11 +125,11 @@ export default async function StockCockpitPage({ params }: { params: Promise<{ t
             <HeaderMetric label="Market cap" value={metadata.marketCap !== null ? formatMoney(metadata.marketCap) : "—"} />
             <HeaderMetric label="52-wk high" value={num(header.technicals?.fiftyTwoWeekHigh)} />
             <HeaderMetric label="52-wk low" value={num(header.technicals?.fiftyTwoWeekLow)} />
-            <HeaderMetric label="EPS" value="—" sub="needs fundamentals" />
-            <HeaderMetric label="P/E" value="—" sub="needs fundamentals" />
-            <HeaderMetric label="P/B" value="—" sub="needs fundamentals" />
-            <HeaderMetric label="Div yield" value="see Ratios" />
-            <HeaderMetric label="Updated" value={quote.asOf ?? metadata.meta.lastUpdated?.slice(0, 10) ?? "—"} />
+            <HeaderMetric label="EPS" value={eps !== null ? formatNumber(eps) : "—"} sub={eps !== null ? epsPeriod ?? undefined : "extract filings"} />
+            <HeaderMetric label="P/E" value={pe !== null ? pe.toFixed(1) : "—"} sub={pe === null ? (eps === null ? "needs EPS" : "needs price") : undefined} />
+            <HeaderMetric label="Div yield" value={divYield !== null ? `${divYield.toFixed(2)}%` : "—"} sub={divYield !== null ? "TTM recorded" : "no dividends recorded"} />
+            <HeaderMetric label="Volume" value={quote.volume !== null ? formatNumber(quote.volume, 0) : "—"} />
+            <HeaderMetric label="Updated" value={quote.asOf ?? metadata.meta.lastUpdated?.slice(0, 10) ?? "—"} sub={quote.meta.source ? `via ${quote.meta.source}` : undefined} />
           </div>
         </CardContent>
       </Card>
