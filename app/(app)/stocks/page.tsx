@@ -1,11 +1,14 @@
-import Link from "next/link";
 import { createClient, getUser } from "@/lib/supabase/server";
+import { getScreenerData } from "@/lib/market/screener";
+import { fmtPct, fmtInt, tone } from "@/lib/market/format";
 import { PageHeader } from "@/components/page-header";
 import { StockSearch } from "@/components/stock-search";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { StockScreener } from "@/components/market/stock-screener";
+import { Card, CardContent } from "@/components/ui/card";
 import { EmptyState } from "@/components/empty-state";
-import { formatNumber, formatSignedPct, cn } from "@/lib/utils";
-import { Star, Briefcase } from "lucide-react";
+import { ActionButton } from "@/components/action-button";
+import { cn } from "@/lib/utils";
+import { Activity, RefreshCw, DatabaseZap, Layers } from "lucide-react";
 
 export const dynamic = "force-dynamic";
 
@@ -14,98 +17,90 @@ export default async function StockResearchPage() {
   const user = await getUser();
   if (!user) return null;
 
-  const [{ data: watch }, { data: holdings }] = await Promise.all([
-    supabase.from("stock_watchlist").select("ticker, status, created_at").eq("user_id", user.id).order("created_at", { ascending: false }),
-    supabase.from("holdings").select("ticker, company_name, sector").eq("user_id", user.id).gt("quantity", 0).order("ticker"),
-  ]);
+  const d = await getScreenerData(supabase, user.id);
+  const indexTone = tone(d.index?.changePercent);
+  const coveragePct = d.coverage.total ? Math.round((d.coverage.withSpark / d.coverage.total) * 100) : 0;
 
-  const watchTickers = (watch ?? []).map((w) => w.ticker.toUpperCase());
-  const ownedTickers = new Set((holdings ?? []).map((h) => h.ticker.toUpperCase()));
-  const allTickers = [...new Set([...watchTickers, ...(holdings ?? []).map((h) => h.ticker.toUpperCase())])];
-
-  const { data: tech } = allTickers.length
-    ? await supabase.from("company_technicals").select("ticker, latest_price, day_change_pct").in("ticker", allTickers)
-    : { data: [] };
-  const priceMap = new Map((tech ?? []).map((t) => [t.ticker.toUpperCase(), t]));
-
-  function PriceTag({ ticker }: { ticker: string }) {
-    const p = priceMap.get(ticker);
-    if (!p?.latest_price) return null;
-    return (
-      <div className="text-right">
-        <p className="text-sm font-semibold tabular-nums">{formatNumber(p.latest_price)}</p>
-        {p.day_change_pct !== null && (
-          <p className={cn("text-[11px] tabular-nums", p.day_change_pct > 0 ? "text-emerald-600" : p.day_change_pct < 0 ? "text-red-600" : "text-muted-foreground")}>
-            {formatSignedPct(p.day_change_pct)}
-          </p>
-        )}
-      </div>
-    );
-  }
+  const actions = (
+    <div className="flex items-center gap-2">
+      <ActionButton endpoint="/api/market/refresh" body={{ section: "snapshot" }} label={<><RefreshCw className="h-3.5 w-3.5" /> Refresh prices</>} variant="outline" size="sm" />
+      <ActionButton endpoint="/api/market/backfill" body={{ limit: 60 }} label={<><DatabaseZap className="h-3.5 w-3.5" /> Build deep data</>} variant="outline" size="sm" />
+    </div>
+  );
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-5">
       <PageHeader
         eyebrow="Company intelligence"
         title="Stock Research"
-        description="Search any PSX-listed company and open its cockpit — overview, financials, earnings, ratios, technicals, dividends, filings and AI analysis in one place."
+        description="Screen the whole PSX — prices, trends, 52-week range, volume and your positions in one fast view. Open any company for its full cockpit."
+        actions={actions}
       />
 
       <StockSearch autoFocus />
 
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2"><Star className="h-4 w-4 text-amber-500" /> Watchlist</CardTitle>
-          <CardDescription>Stocks you are tracking. Add any company from its cockpit page.</CardDescription>
-        </CardHeader>
-        <CardContent>
-          {watchTickers.length === 0 ? (
-            <p className="py-6 text-center text-xs text-muted-foreground">
-              Your watchlist is empty. Search a stock above and tap “Watchlist” on its page.
-            </p>
-          ) : (
-            <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
-              {watchTickers.map((t) => (
-                <Link key={t} href={`/stocks/${t}`} className="flex items-center justify-between rounded-lg border border-border p-3 transition-colors hover:bg-accent">
-                  <div className="flex items-center gap-2">
-                    <span className="text-sm font-semibold">{t}</span>
-                    {ownedTickers.has(t) && <Briefcase className="h-3.5 w-3.5 text-emerald-600" />}
-                  </div>
-                  <PriceTag ticker={t} />
-                </Link>
-              ))}
-            </div>
-          )}
-        </CardContent>
-      </Card>
+      {!d.snapshotDate ? (
+        <EmptyState
+          icon={Activity}
+          title="No market data yet"
+          description="The screener is powered by the daily market snapshot. Refresh prices to pull the whole PSX, then build deep data for sparklines and 52-week ranges."
+          action={actions}
+        />
+      ) : (
+        <>
+          {/* Summary strip */}
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+            <Card className="rise">
+              <CardContent className="p-4">
+                <p className="text-[10px] uppercase tracking-wide text-muted-foreground">{d.index?.name ?? "Index"}</p>
+                {d.index?.value != null ? (
+                  <>
+                    <p className="text-lg font-semibold tabular-nums">{d.index.value.toLocaleString("en-PK", { maximumFractionDigits: 0 })}</p>
+                    <p className={cn("text-[11px] font-medium tabular-nums", indexTone === "positive" ? "text-emerald-600" : indexTone === "negative" ? "text-red-600" : "text-muted-foreground")}>{fmtPct(d.index.changePercent)}</p>
+                  </>
+                ) : (
+                  <p className="mt-1 text-xs text-muted-foreground">Unavailable</p>
+                )}
+              </CardContent>
+            </Card>
+            <Card className="rise rise-1">
+              <CardContent className="p-4">
+                <p className="text-[10px] uppercase tracking-wide text-muted-foreground">Breadth</p>
+                <p className="text-lg font-semibold tabular-nums">
+                  <span className="text-emerald-600">{d.breadth?.advancers ?? 0}</span>
+                  <span className="mx-1 text-muted-foreground">/</span>
+                  <span className="text-red-600">{d.breadth?.decliners ?? 0}</span>
+                </p>
+                <p className="text-[11px] text-muted-foreground">advancing / declining</p>
+              </CardContent>
+            </Card>
+            <Card className="rise rise-2">
+              <CardContent className="p-4">
+                <p className="text-[10px] uppercase tracking-wide text-muted-foreground">Stocks</p>
+                <p className="text-lg font-semibold tabular-nums">{fmtInt(d.coverage.total)}</p>
+                <p className="text-[11px] text-muted-foreground">traded today</p>
+              </CardContent>
+            </Card>
+            <Card className="rise rise-3">
+              <CardContent className="p-4">
+                <p className="flex items-center gap-1 text-[10px] uppercase tracking-wide text-muted-foreground"><Layers className="h-3 w-3" /> Deep data</p>
+                <p className="text-lg font-semibold tabular-nums">{coveragePct}%</p>
+                <p className="text-[11px] text-muted-foreground">{fmtInt(d.coverage.withSpark)} with trends</p>
+              </CardContent>
+            </Card>
+          </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2"><Briefcase className="h-4 w-4" /> Your holdings</CardTitle>
-          <CardDescription>Jump straight to the cockpit for a stock you already own.</CardDescription>
-        </CardHeader>
-        <CardContent>
-          {(holdings ?? []).length === 0 ? (
-            <EmptyState title="No holdings yet" description="Import a statement or add a transaction to see your holdings here." />
-          ) : (
-            <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
-              {(holdings ?? []).map((h) => (
-                <Link key={h.ticker} href={`/stocks/${h.ticker.toUpperCase()}`} className="flex items-center justify-between rounded-lg border border-border p-3 transition-colors hover:bg-accent">
-                  <div className="min-w-0">
-                    <p className="text-sm font-semibold">{h.ticker.toUpperCase()}</p>
-                    <p className="truncate text-[11px] text-muted-foreground">{h.company_name ?? h.sector ?? ""}</p>
-                  </div>
-                  <PriceTag ticker={h.ticker.toUpperCase()} />
-                </Link>
-              ))}
-            </div>
-          )}
-        </CardContent>
-      </Card>
+          <Card className="rise">
+            <CardContent className="p-4 sm:p-5">
+              <StockScreener stocks={d.stocks} />
+            </CardContent>
+          </Card>
 
-      <p className="text-center text-[11px] text-muted-foreground">
-        Data is cached and served fast, then refreshed in the background. Each section shows its source and last-updated time. Missing data is labelled, never invented.
-      </p>
+          <p className="text-center text-[11px] text-muted-foreground">
+            Source: official PSX market-watch via {d.source} · snapshot {d.snapshotDate}{d.updatedLabel ? ` · updated ${d.updatedLabel} PKT` : ""}. Sparklines &amp; 52-week ranges fill in as deep data is built. Data is cached and served fast; missing values are labelled, never invented.
+          </p>
+        </>
+      )}
     </div>
   );
 }

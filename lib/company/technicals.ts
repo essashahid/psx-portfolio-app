@@ -51,6 +51,20 @@ function pct(from: number, to: number): number {
   return ((to - from) / from) * 100;
 }
 
+/**
+ * Compact sparkline series for the screener: the last ~quarter of closes
+ * downsampled to at most `points` values. Small enough to read across the whole
+ * universe in one query, detailed enough to show the recent trend shape.
+ */
+export function sparkline(candles: Candle[], lookback = 90, points = 40): number[] {
+  const closes = candles.slice(-lookback).map((c) => c.close).filter((v) => Number.isFinite(v) && v > 0);
+  if (closes.length <= points) return closes;
+  const step = (closes.length - 1) / (points - 1);
+  const out: number[] = [];
+  for (let i = 0; i < points; i++) out.push(closes[Math.round(i * step)]);
+  return out;
+}
+
 export function computeTechnicals(ticker: string, candles: Candle[]): Omit<Technicals, "meta"> {
   const closes = candles.map((c) => c.close);
   const volumes = candles.map((c) => c.volume);
@@ -258,6 +272,7 @@ async function cacheTechnicals(ticker: string, t: Omit<Technicals, "meta">): Pro
         fifty_two_week_high: t.fiftyTwoWeekHigh,
         fifty_two_week_low: t.fiftyTwoWeekLow,
         volatility: t.volatility,
+        spark: sparkline(t.history),
         data: { history: t.history, flags: t.flags },
         source: "psx-dps",
         last_fetched_at: now,
