@@ -9,7 +9,8 @@
       "Bash(python3 -c \"import sys,json; d=json.load\\(sys.stdin\\); print\\(d.get\\('dependencies',{}\\).get\\('@google/generative-ai','NOT FOUND'\\)\\)\")",
       "Bash(python3 -c \"import sys,json; d=json.load\\(sys.stdin\\); print\\(d['version']\\)\")",
       "Bash(PGPASSWORD='Supersix123@' psql \"postgresql://postgres@db.qarnoqwnkvqxrofeadtb.supabase.co:5432/postgres\" -c \"SELECT version\\(\\);\")",
-      "Bash(npx tsc *)"
+      "Bash(npx tsc *)",
+      "Bash(npm run *)"
     ]
   }
 }

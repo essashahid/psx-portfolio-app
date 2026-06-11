@@ -17,12 +17,14 @@ import {
   LogOut,
   CandlestickChart,
   HandCoins,
+  Search,
 } from "lucide-react";
 
 const NAV = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { href: "/import", label: "Import Center", icon: Upload },
   { href: "/holdings", label: "Holdings", icon: Briefcase },
+  { href: "/stocks", label: "Stock Research", icon: Search },
   { href: "/news", label: "News Center", icon: Newspaper },
   { href: "/briefings", label: "AI Briefings", icon: Sparkles },
   { href: "/goals", label: "Goals & Targets", icon: Target },
@@ -54,8 +56,7 @@ export function Sidebar({ email, openAlerts }: { email: string; openAlerts: numb
       </div>
       <nav className="flex-1 space-y-0.5 overflow-y-auto px-2">
         {NAV.map((item) => {
-          const active = pathname === item.href || pathname.startsWith(item.href + "/") ||
-            (item.href === "/holdings" && pathname.startsWith("/stocks"));
+          const active = pathname === item.href || pathname.startsWith(item.href + "/");
           return (
             <Link
               key={item.href}

@@ -109,6 +109,33 @@ export class PsxDpsProvider implements MarketDataProvider {
   }
 }
 
+// --- EOD candles (close + volume) -----------------------------------------
+
+export interface EodCandle {
+  date: string; // YYYY-MM-DD (PKT)
+  close: number;
+  volume: number;
+}
+
+/**
+ * Full daily history for a ticker from the PSX portal, oldest first.
+ * Rows are [unixSec, close, volume, ...]. Used to compute technicals (moving
+ * averages, RSI, 52-week range, average volume) and to draw the price/volume
+ * charts. Returns [] when the portal has nothing for the symbol.
+ */
+export async function fetchPsxEod(ticker: string): Promise<EodCandle[]> {
+  const rows = await fetchSeries("eod", ticker.toUpperCase());
+  if (!rows) return [];
+  return rows
+    .filter((r) => Number.isFinite(r[1]) && r[1] > 0)
+    .map((r) => ({
+      date: pktDate(r[0]),
+      close: r[1],
+      volume: Number.isFinite(r[2]) ? r[2] : 0,
+    }))
+    .sort((a, b) => (a.date < b.date ? -1 : 1)); // oldest first
+}
+
 // --- Official symbol directory --------------------------------------------
 
 export interface PsxSymbolInfo {
