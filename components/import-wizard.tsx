@@ -336,47 +336,91 @@ export function ImportWizard() {
               {[...Array(6)].map((_, i) => <Skeleton key={i} className="h-8 w-full" />)}
             </div>
           ) : (
-            <div className="max-h-[420px] overflow-y-auto">
-              <Table>
-                <THead>
-                  <TR>
-                    <TH className="w-8">Use</TH>
-                    <TH>#</TH>
-                    {previewCols.map((c) => <TH key={c}>{c.replace(/_/g, " ")}</TH>)}
-                    <TH>Status</TH>
-                    <TH>Issues</TH>
-                  </TR>
-                </THead>
-                <TBody>
-                  {rows.map((r) => {
-                    const committable = r.status === "valid" || r.status === "warning";
-                    return (
-                      <TR key={r.id} className={r.status === "invalid" ? "opacity-50" : ""}>
-                        <TD>
+            <div className="scroll-touch max-h-[420px] overflow-y-auto">
+              <div className="space-y-2 md:hidden">
+                {rows.map((r) => {
+                  const committable = r.status === "valid" || r.status === "warning";
+                  return (
+                    <div
+                      key={r.id}
+                      className={`rounded-lg border border-border bg-background p-3 ${r.status === "invalid" ? "opacity-60" : ""}`}
+                    >
+                      <div className="flex items-center justify-between gap-3">
+                        <label className="flex min-w-0 items-center gap-2 text-sm font-medium">
                           <input
                             type="checkbox"
+                            className="h-4 w-4"
                             disabled={!committable}
                             checked={committable && !excluded.has(r.id)}
                             onChange={() => toggleRow(r.id)}
                           />
-                        </TD>
-                        <TD className="text-muted-foreground">{r.row_index + 1}</TD>
+                          Row {r.row_index + 1}
+                        </label>
+                        <Badge variant={STATUS_BADGE[r.status] ?? "secondary"}>{r.status}</Badge>
+                      </div>
+                      <div className="mt-2 grid grid-cols-2 gap-2">
                         {previewCols.map((c) => (
-                          <TD key={c} className="max-w-[160px] truncate text-xs">
-                            {r.normalized?.[c] !== null && r.normalized?.[c] !== undefined
-                              ? String(r.normalized[c])
-                              : "—"}
-                          </TD>
+                          <div key={c} className="min-w-0 rounded-md border border-border bg-card px-2 py-1.5">
+                            <p className="truncate text-[10px] uppercase text-muted-foreground">
+                              {c.replace(/_/g, " ")}
+                            </p>
+                            <p className="truncate text-xs font-medium">
+                              {r.normalized?.[c] !== null && r.normalized?.[c] !== undefined
+                                ? String(r.normalized[c])
+                                : "—"}
+                            </p>
+                          </div>
                         ))}
-                        <TD><Badge variant={STATUS_BADGE[r.status] ?? "secondary"}>{r.status}</Badge></TD>
-                        <TD className="max-w-[240px] truncate text-xs text-muted-foreground" title={r.issues.join("; ")}>
-                          {r.issues.join("; ") || "—"}
-                        </TD>
-                      </TR>
-                    );
-                  })}
-                </TBody>
-              </Table>
+                      </div>
+                      {r.issues.length > 0 && (
+                        <p className="mt-2 text-[11px] text-muted-foreground">{r.issues.join("; ")}</p>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+              <div className="hidden md:block">
+                <Table>
+                  <THead>
+                    <TR>
+                      <TH className="w-8">Use</TH>
+                      <TH>#</TH>
+                      {previewCols.map((c) => <TH key={c}>{c.replace(/_/g, " ")}</TH>)}
+                      <TH>Status</TH>
+                      <TH>Issues</TH>
+                    </TR>
+                  </THead>
+                  <TBody>
+                    {rows.map((r) => {
+                      const committable = r.status === "valid" || r.status === "warning";
+                      return (
+                        <TR key={r.id} className={r.status === "invalid" ? "opacity-50" : ""}>
+                          <TD>
+                            <input
+                              type="checkbox"
+                              disabled={!committable}
+                              checked={committable && !excluded.has(r.id)}
+                              onChange={() => toggleRow(r.id)}
+                            />
+                          </TD>
+                          <TD className="text-muted-foreground">{r.row_index + 1}</TD>
+                          {previewCols.map((c) => (
+                            <TD key={c} className="max-w-[160px] truncate text-xs">
+                              {r.normalized?.[c] !== null && r.normalized?.[c] !== undefined
+                                ? String(r.normalized[c])
+                                : "—"}
+                            </TD>
+                          ))}
+                          <TD><Badge variant={STATUS_BADGE[r.status] ?? "secondary"}>{r.status}</Badge></TD>
+                          <TD className="max-w-[240px] truncate text-xs text-muted-foreground" title={r.issues.join("; ")}>
+                            {r.issues.join("; ") || "—"}
+                          </TD>
+                        </TR>
+                      );
+                    })}
+                  </TBody>
+                </Table>
+              </div>
             </div>
           )}
         </CardContent>

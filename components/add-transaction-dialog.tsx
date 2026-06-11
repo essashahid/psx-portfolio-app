@@ -71,7 +71,7 @@ export function AddTransactionDialog({ defaultTicker }: { defaultTicker?: string
       </Button>
       <Dialog open={open} onClose={() => setOpen(false)} title="Add manual transaction">
         <form onSubmit={submit} className="space-y-3">
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid gap-3 sm:grid-cols-2">
             <div className="space-y-1.5">
               <Label>Ticker</Label>
               <Input required value={form.ticker} onChange={(e) => set("ticker", e.target.value.toUpperCase())} placeholder="MEBL" />

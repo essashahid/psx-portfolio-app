@@ -26,19 +26,23 @@ export function Dialog({
   if (!open) return null;
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
+      className="fixed inset-0 z-50 flex items-end justify-center bg-black/40 p-0 sm:items-center sm:p-4"
       onClick={onClose}
     >
       <div
         className={cn(
-          "w-full max-w-lg max-h-[85vh] overflow-y-auto rounded-lg border border-border bg-card p-5 shadow-xl",
+          "scroll-touch max-h-[88dvh] w-full max-w-none overflow-y-auto rounded-t-lg border border-border bg-card p-4 pb-[calc(env(safe-area-inset-bottom)+1rem)] shadow-xl sm:max-w-lg sm:rounded-lg sm:p-5",
           className
         )}
         onClick={(e) => e.stopPropagation()}
       >
         <div className="mb-3 flex items-center justify-between">
           <h2 className="text-sm font-semibold">{title}</h2>
-          <button onClick={onClose} className="rounded p-1 text-muted-foreground hover:bg-muted">
+          <button
+            onClick={onClose}
+            className="flex h-9 w-9 items-center justify-center rounded-md text-muted-foreground hover:bg-muted"
+            aria-label="Close dialog"
+          >
             <X className="h-4 w-4" />
           </button>
         </div>

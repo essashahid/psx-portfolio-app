@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 import { createClient, getUser } from "@/lib/supabase/server";
-import { Sidebar } from "@/components/sidebar";
+import { MobileBottomNav, MobileTopBar, Sidebar } from "@/components/sidebar";
 import { AutoRefreshPrices } from "@/components/auto-refresh-prices";
 import { DISCLAIMER } from "@/lib/utils";
 
@@ -16,17 +16,19 @@ export default async function AppLayout({ children }: { children: React.ReactNod
     .eq("status", "open");
 
   return (
-    <div className="flex h-screen overflow-hidden">
+    <div className="min-h-dvh bg-background md:flex md:h-dvh md:overflow-hidden">
       <AutoRefreshPrices />
       <Sidebar email={user.email ?? ""} openAlerts={count ?? 0} />
-      <div className="flex min-w-0 flex-1 flex-col">
-        <main className="flex-1 overflow-y-auto p-6 md:p-8">
+      <div className="flex min-w-0 flex-1 flex-col md:h-dvh">
+        <MobileTopBar email={user.email ?? ""} openAlerts={count ?? 0} />
+        <main className="scroll-touch flex-1 overflow-y-auto px-3 py-4 pb-24 sm:px-4 md:p-8">
           <div className="mx-auto w-full max-w-7xl">{children}</div>
         </main>
-        <footer className="border-t border-border bg-card px-6 py-2">
+        <footer className="hidden border-t border-border bg-card px-6 py-2 md:block">
           <p className="mx-auto max-w-7xl text-[11px] text-muted-foreground">{DISCLAIMER}</p>
         </footer>
       </div>
+      <MobileBottomNav openAlerts={count ?? 0} />
     </div>
   );
 }

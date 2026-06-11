@@ -2,7 +2,6 @@ import Link from "next/link";
 import { createClient, getUser } from "@/lib/supabase/server";
 import { getPortfolio } from "@/lib/portfolio";
 import { getDividends, summarizeDividends } from "@/lib/dividends";
-import { getTaxSettings } from "@/lib/dividends/tax";
 import { normalizeEvent, type DividendEvent } from "@/lib/dividends/engine";
 import { formatMoney, formatNumber, formatSignedPct } from "@/lib/utils";
 import { PageHeader } from "@/components/page-header";
@@ -31,7 +30,6 @@ export default async function DashboardPage() {
     [briefingRes, newsRes, alertsRes, snapshotsRes, batchesRes, profileRes, psxEventsRes, changelogRes],
     dividends,
     dividendEventsRes,
-    taxSettings,
   ] = await Promise.all([
     getPortfolio(supabase, user.id),
     Promise.all([
@@ -97,7 +95,6 @@ export default async function DashboardPage() {
       .in("status", ["announced", "expected", "overdue", "needs_review", "forecasted"])
       .order("created_at", { ascending: false })
       .limit(100),
-    getTaxSettings(supabase, user.id),
   ]);
 
   if (summary.holdingsCount === 0) {
@@ -167,7 +164,7 @@ export default async function DashboardPage() {
         <div className="mt-3 flex flex-wrap items-end justify-between gap-4">
           <div>
             <p className="text-ghost text-sm font-medium tracking-editorial">Total portfolio value</p>
-            <h1 className="mt-1 text-4xl font-medium tabular-nums tracking-editorial sm:text-5xl">
+            <h1 className="mt-1 break-words text-3xl font-medium tabular-nums tracking-editorial sm:text-5xl">
               {formatMoney(summary.totalValue)}
             </h1>
             <p className="mt-2 text-sm text-muted-foreground">
@@ -189,7 +186,7 @@ export default async function DashboardPage() {
               unrealized · {formatNumber(summary.holdingsCount, 0)} holdings · {formatMoney(summary.cashBalance)} cash
             </p>
           </div>
-          <div className="flex flex-wrap items-center gap-2">
+          <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto">
             <ActionButton
               endpoint="/api/dividends/daily"
               label={<><RefreshCw className="h-3.5 w-3.5" /> Run daily update</>}
@@ -443,7 +440,7 @@ export default async function DashboardPage() {
               </Link>
             </CardHeader>
             <CardContent className="space-y-3">
-              <div className="grid grid-cols-3 gap-2 text-xs">
+              <div className="grid gap-2 text-xs sm:grid-cols-3">
                 <div className="rounded-md border border-border p-2">
                   <p className="text-muted-foreground">Received</p>
                   <p className="mt-1 font-semibold tabular-nums">{formatMoney(dividendSummary.netReceived)}</p>

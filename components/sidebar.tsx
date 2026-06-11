@@ -34,6 +34,10 @@ const NAV = [
   { href: "/settings", label: "Settings", icon: Settings },
 ];
 
+function activeNavItem(pathname: string) {
+  return NAV.find((item) => pathname === item.href || pathname.startsWith(item.href + "/")) ?? NAV[0];
+}
+
 export function Sidebar({ email, openAlerts }: { email: string; openAlerts: number }) {
   const pathname = usePathname();
   const router = useRouter();
@@ -46,7 +50,7 @@ export function Sidebar({ email, openAlerts }: { email: string; openAlerts: numb
   }
 
   return (
-    <aside className="flex h-screen w-56 shrink-0 flex-col border-r border-border bg-sidebar text-sidebar-foreground">
+    <aside className="hidden h-dvh w-56 shrink-0 flex-col border-r border-border bg-sidebar text-sidebar-foreground md:flex">
       <div className="flex items-center gap-2.5 px-4 py-5">
         <CandlestickChart className="h-6 w-6 text-emerald-600" />
         <div>
@@ -89,5 +93,84 @@ export function Sidebar({ email, openAlerts }: { email: string; openAlerts: numb
         </button>
       </div>
     </aside>
+  );
+}
+
+export function MobileTopBar({ email, openAlerts }: { email: string; openAlerts: number }) {
+  const pathname = usePathname();
+  const router = useRouter();
+  const active = activeNavItem(pathname);
+
+  async function signOut() {
+    const supabase = createClient();
+    await supabase.auth.signOut();
+    router.push("/login");
+    router.refresh();
+  }
+
+  return (
+    <header className="sticky top-0 z-40 flex h-14 items-center justify-between border-b border-border bg-background/95 px-3 backdrop-blur md:hidden">
+      <Link href="/dashboard" className="flex min-w-0 items-center gap-2.5">
+        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary text-primary-foreground">
+          <CandlestickChart className="h-[18px] w-[18px]" />
+        </span>
+        <span className="min-w-0">
+          <span className="block truncate text-sm font-semibold leading-tight">PortfolioOS PK</span>
+          <span className="block truncate text-[11px] text-muted-foreground">
+            {active.label}
+            {openAlerts > 0 ? ` · ${openAlerts} alert${openAlerts === 1 ? "" : "s"}` : ""}
+          </span>
+        </span>
+      </Link>
+      <button
+        onClick={signOut}
+        className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg text-muted-foreground transition-colors active:bg-muted"
+        aria-label={`Sign out ${email}`}
+        title="Sign out"
+      >
+        <LogOut className="h-[18px] w-[18px]" />
+      </button>
+    </header>
+  );
+}
+
+export function MobileBottomNav({ openAlerts }: { openAlerts: number }) {
+  const pathname = usePathname();
+
+  return (
+    <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-card/95 shadow-[0_-12px_36px_-28px_rgba(0,0,0,0.55)] backdrop-blur md:hidden">
+      <div className="scroll-touch flex gap-1 overflow-x-auto px-2 pb-[calc(env(safe-area-inset-bottom)+0.375rem)] pt-1.5">
+        {NAV.map((item) => {
+          const active = pathname === item.href || pathname.startsWith(item.href + "/");
+          const Icon = item.icon;
+          return (
+            <Link
+              key={item.href}
+              href={item.href}
+              aria-current={active ? "page" : undefined}
+              className={cn(
+                "relative flex h-12 min-w-[4.75rem] flex-col items-center justify-center gap-0.5 rounded-lg px-2 text-[10px] font-medium transition-colors",
+                active
+                  ? "bg-primary text-primary-foreground"
+                  : "text-muted-foreground active:bg-muted active:text-foreground"
+              )}
+            >
+              <Icon className="h-[18px] w-[18px] shrink-0" />
+              <span className="max-w-full truncate leading-none">{item.label}</span>
+              {item.href === "/alerts" && openAlerts > 0 && (
+                <span
+                  className={cn(
+                    "absolute right-1.5 top-1 rounded-full px-1.5 py-0.5 text-[9px] font-semibold leading-none",
+                    active ? "bg-white text-primary" : "bg-amber-500 text-black"
+                  )}
+                >
+                  {openAlerts}
+                </span>
+              )}
+            </Link>
+          );
+        })}
+      </div>
+    </nav>
   );
 }

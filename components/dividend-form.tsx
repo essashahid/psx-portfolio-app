@@ -218,7 +218,7 @@ export function DividendManager({
         </table>
       </div>
 
-      <Dialog open={open} onClose={() => setOpen(false)} title={form.id ? "Edit dividend" : "Add dividend"} className="max-w-2xl">
+      <Dialog open={open} onClose={() => setOpen(false)} title={form.id ? "Edit dividend" : "Add dividend"} className="sm:max-w-2xl">
         <form onSubmit={submit} className="space-y-3">
           <div className="grid gap-3 md:grid-cols-3">
             <div className="space-y-1.5">

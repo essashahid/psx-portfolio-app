@@ -346,7 +346,7 @@ export function DividendReceivables({
       )}
 
       {/* Edit eligible quantity */}
-      <Dialog open={qtyDialog !== null} onClose={() => setQtyDialog(null)} title={`Eligible quantity — ${qtyDialog?.ticker ?? ""}`} className="max-w-xs">
+      <Dialog open={qtyDialog !== null} onClose={() => setQtyDialog(null)} title={`Eligible quantity — ${qtyDialog?.ticker ?? ""}`} className="sm:max-w-xs">
         <div className="space-y-3">
           <div className="space-y-1.5">
             <Label>Shares held before ex-date / book closure</Label>
@@ -364,7 +364,7 @@ export function DividendReceivables({
       </Dialog>
 
       {/* Mark received */}
-      <Dialog open={receiveDialog !== null} onClose={() => setReceiveDialog(null)} title={`Mark received — ${receiveDialog?.ticker ?? ""}`} className="max-w-xs">
+      <Dialog open={receiveDialog !== null} onClose={() => setReceiveDialog(null)} title={`Mark received — ${receiveDialog?.ticker ?? ""}`} className="sm:max-w-xs">
         <div className="space-y-3">
           <div className="space-y-1.5">
             <Label>Payment date</Label>

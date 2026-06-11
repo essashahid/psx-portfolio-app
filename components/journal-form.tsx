@@ -83,7 +83,7 @@ export function JournalForm({ tickers, defaultTicker }: { tickers: string[]; def
       </CardHeader>
       <CardContent>
         <form onSubmit={submit} className="space-y-3">
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
             <div className="space-y-1.5">
               <Label>Date</Label>
               <Input type="date" required value={form.entry_date} onChange={(e) => set("entry_date", e.target.value)} />
@@ -116,7 +116,7 @@ export function JournalForm({ tickers, defaultTicker }: { tickers: string[]; def
             <Label>Details</Label>
             <Textarea rows={3} value={form.body} placeholder="What happened, what you decided, and why…" onChange={(e) => set("body", e.target.value)} />
           </div>
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid gap-3 sm:grid-cols-2">
             <div className="space-y-1.5">
               <Label>Expected outcome</Label>
               <Input value={form.expected_outcome} onChange={(e) => set("expected_outcome", e.target.value)} />

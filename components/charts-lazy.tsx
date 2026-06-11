@@ -8,7 +8,7 @@ import { Skeleton } from "@/components/ui/skeleton";
  * paint instead of blocking it. Server pages import from here; the chart
  * area shows a skeleton for the brief hydration gap.
  */
-const ChartFallback = () => <Skeleton className="h-64 w-full rounded-md" />;
+const ChartFallback = () => <Skeleton className="h-56 w-full rounded-md md:h-64" />;
 
 export const AllocationPie = dynamic(
   () => import("@/components/charts").then((m) => m.AllocationPie),

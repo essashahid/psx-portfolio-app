@@ -65,13 +65,14 @@ export function EditHoldingDialog({ holding }: { holding: EnrichedHolding }) {
     <>
       <button
         onClick={() => setOpen(true)}
-        className="rounded p-1 text-muted-foreground hover:bg-muted hover:text-foreground"
+        className="flex h-9 w-9 items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground"
         title="Edit holding"
+        aria-label={`Edit ${holding.ticker}`}
       >
         <Pencil className="h-3.5 w-3.5" />
       </button>
 
-      <Dialog open={open} onClose={() => setOpen(false)} title={`Edit ${holding.ticker}`} className="max-w-sm">
+      <Dialog open={open} onClose={() => setOpen(false)} title={`Edit ${holding.ticker}`} className="sm:max-w-sm">
         <p className="mb-3 text-xs text-muted-foreground">
           {holding.company_name ?? holding.ticker} — manual overrides apply immediately.
         </p>
@@ -112,7 +113,7 @@ export function EditHoldingDialog({ holding }: { holding: EnrichedHolding }) {
           {err && <p className="rounded bg-red-50 px-2 py-1.5 text-xs text-red-700">{err}</p>}
         </div>
 
-        <div className="mt-4 flex items-center justify-between">
+        <div className="mt-4 flex flex-col-reverse gap-2 sm:flex-row sm:items-center sm:justify-between">
           <Button
             variant="destructive"
             size="sm"
@@ -122,7 +123,7 @@ export function EditHoldingDialog({ holding }: { holding: EnrichedHolding }) {
             {deleting ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Trash2 className="h-3.5 w-3.5" />}
             Delete holding
           </Button>
-          <div className="flex gap-2">
+          <div className="flex justify-end gap-2">
             <Button variant="outline" size="sm" onClick={() => setOpen(false)}>
               Cancel
             </Button>

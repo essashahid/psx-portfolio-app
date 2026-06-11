@@ -310,6 +310,7 @@ export async function RatiosPanel({ ticker }: { ticker: string }) {
   ]);
 
   // Trailing-12-month cash dividend per share (only ratio we can ground today).
+  // eslint-disable-next-line react-hooks/purity -- Server-rendered ratio uses the request-time date for a TTM cutoff.
   const cutoff = new Date(Date.now() - 365 * 86400_000).toISOString().slice(0, 10);
   const ttmDps = dividends
     .filter((d) => d.kind === "cash" && d.perShare && (d.announcementDate ?? d.date ?? "") >= cutoff)

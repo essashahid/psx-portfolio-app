@@ -3,7 +3,6 @@ import { createClient, getUser } from "@/lib/supabase/server";
 import { PageHeader } from "@/components/page-header";
 import { StockSearch } from "@/components/stock-search";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { EmptyState } from "@/components/empty-state";
 import { formatNumber, formatSignedPct, cn } from "@/lib/utils";
 import { Star, Briefcase } from "lucide-react";

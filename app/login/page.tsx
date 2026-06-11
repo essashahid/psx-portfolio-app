@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
@@ -66,17 +67,23 @@ export default function LoginPage() {
       />
 
       {/* Photoreal stones flanking the composition (Synex motif, hero only) */}
-      <img
+      <Image
         aria-hidden
         src="https://qclay.design/lovable/synex/stone-left.png"
         alt=""
-        className="pointer-events-none absolute bottom-0 left-0 z-0 h-[180px] w-auto select-none object-contain object-bottom-left sm:h-[260px] md:h-[360px] lg:h-[440px]"
+        width={440}
+        height={440}
+        sizes="(min-width: 1024px) 440px, (min-width: 768px) 360px, 260px"
+        className="pointer-events-none absolute bottom-0 left-0 z-0 hidden h-[260px] w-auto select-none object-contain object-bottom-left sm:block md:h-[360px] lg:h-[440px]"
       />
-      <img
+      <Image
         aria-hidden
         src="https://qclay.design/lovable/synex/stone-right.png"
         alt=""
-        className="pointer-events-none absolute bottom-0 right-0 z-0 h-[180px] w-auto select-none object-contain object-bottom-right sm:h-[260px] md:h-[360px] lg:h-[440px]"
+        width={440}
+        height={440}
+        sizes="(min-width: 1024px) 440px, (min-width: 768px) 360px, 260px"
+        className="pointer-events-none absolute bottom-0 right-0 z-0 hidden h-[260px] w-auto select-none object-contain object-bottom-right sm:block md:h-[360px] lg:h-[440px]"
       />
 
       {/* Hero content */}

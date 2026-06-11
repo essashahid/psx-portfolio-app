@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useSyncExternalStore } from "react";
 
 /**
  * Shared chart language for the whole platform. Every chart pulls its colors,
@@ -37,11 +37,22 @@ export const DRAW_MS = 850;
 
 /** True once mounted when the user allows motion — gates chart animations. */
 export function useChartMotion(): boolean {
-  const [animate, setAnimate] = useState(false);
-  useEffect(() => {
-    setAnimate(!window.matchMedia("(prefers-reduced-motion: reduce)").matches);
-  }, []);
-  return animate;
+  return useSyncExternalStore(
+    (onStoreChange) => {
+      const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
+      const coarsePointer = window.matchMedia("(pointer: coarse)");
+      reducedMotion.addEventListener("change", onStoreChange);
+      coarsePointer.addEventListener("change", onStoreChange);
+      return () => {
+        reducedMotion.removeEventListener("change", onStoreChange);
+        coarsePointer.removeEventListener("change", onStoreChange);
+      };
+    },
+    () =>
+      !window.matchMedia("(prefers-reduced-motion: reduce)").matches &&
+      !window.matchMedia("(pointer: coarse)").matches,
+    () => false
+  );
 }
 
 // ── Formatting ─────────────────────────────────────────────────────────────

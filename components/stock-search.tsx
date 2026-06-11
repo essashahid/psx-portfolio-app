@@ -32,12 +32,10 @@ export function StockSearch({ autoFocus = false }: { autoFocus?: boolean }) {
   const [results, setResults] = useState<Result[]>([]);
   const [loading, setLoading] = useState(false);
   const [open, setOpen] = useState(false);
-  const [recent, setRecent] = useState<string[]>([]);
+  const [recent] = useState<string[]>(() => loadRecent());
   const [highlight, setHighlight] = useState(0);
   const boxRef = useRef<HTMLDivElement>(null);
   const debounce = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  useEffect(() => setRecent(loadRecent()), []);
 
   useEffect(() => {
     function onClick(e: MouseEvent) {
@@ -47,6 +45,7 @@ export function StockSearch({ autoFocus = false }: { autoFocus?: boolean }) {
     return () => document.removeEventListener("mousedown", onClick);
   }, []);
 
+  /* eslint-disable react-hooks/set-state-in-effect -- Debounced remote search is intentionally synchronized from query text. */
   useEffect(() => {
     if (debounce.current) clearTimeout(debounce.current);
     const q = query.trim();
@@ -72,6 +71,7 @@ export function StockSearch({ autoFocus = false }: { autoFocus?: boolean }) {
       if (debounce.current) clearTimeout(debounce.current);
     };
   }, [query]);
+  /* eslint-enable react-hooks/set-state-in-effect */
 
   const go = useCallback(
     (ticker: string) => {

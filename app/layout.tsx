@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Inter_Tight, Geist_Mono } from "next/font/google";
 import "./globals.css";
 
@@ -13,6 +13,13 @@ export const metadata: Metadata = {
   title: "PortfolioOS PK",
   description:
     "Private PSX portfolio command center — personal portfolio tracking and research support only, not financial advice.",
+};
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  viewportFit: "cover",
+  themeColor: "#f2f2f0",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

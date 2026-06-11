@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { cn } from "@/lib/utils";
 
 export interface TabDef {
@@ -16,12 +16,11 @@ export interface TabDef {
  * tab is mirrored to the URL hash so it survives reloads and is shareable.
  */
 export function Tabs({ tabs, initial }: { tabs: TabDef[]; initial?: string }) {
-  const [active, setActive] = useState(initial ?? tabs[0]?.id);
-
-  useEffect(() => {
+  const [active, setActive] = useState(() => {
+    if (typeof window === "undefined") return initial ?? tabs[0]?.id;
     const hash = decodeURIComponent(window.location.hash.replace("#", ""));
-    if (hash && tabs.some((t) => t.id === hash)) setActive(hash);
-  }, [tabs]);
+    return hash && tabs.some((t) => t.id === hash) ? hash : initial ?? tabs[0]?.id;
+  });
 
   function select(id: string) {
     setActive(id);

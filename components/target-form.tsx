@@ -51,7 +51,7 @@ export function TargetForm({ ticker, target }: { ticker: string; target: Target 
 
   return (
     <form onSubmit={save} className="space-y-3">
-      <div className="grid grid-cols-3 gap-3">
+      <div className="grid gap-3 sm:grid-cols-3">
         <div className="space-y-1.5">
           <Label>Target price (PKR)</Label>
           <Input type="number" step="any" min="0" value={form.target_price} onChange={(e) => setForm({ ...form, target_price: e.target.value })} />

@@ -83,7 +83,7 @@ export function ThesisForm({ ticker, thesis }: { ticker: string; thesis: Thesis 
           />
         </div>
       ))}
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         <div className="space-y-1.5">
           <Label>Time horizon</Label>
           <Input value={form.time_horizon} placeholder="e.g. 3-5 years" onChange={(e) => setForm({ ...form, time_horizon: e.target.value })} />

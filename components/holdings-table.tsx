@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import type { ReactNode } from "react";
 import Link from "next/link";
 import {
   useReactTable,
@@ -85,6 +86,165 @@ function allocationStatus(
   return { label: "On target", variant: "green" };
 }
 
+function MobileMetric({
+  label,
+  value,
+  tone,
+}: {
+  label: string;
+  value: ReactNode;
+  tone?: "positive" | "negative" | "muted" | "accent";
+}) {
+  return (
+    <div className="min-w-0 rounded-md border border-border bg-background/55 px-2.5 py-2">
+      <p className="truncate text-[10px] font-medium uppercase text-muted-foreground">{label}</p>
+      <p
+        className={cn(
+          "mt-0.5 min-w-0 truncate text-sm font-semibold tabular-nums",
+          tone === "positive" && "text-emerald-600",
+          tone === "negative" && "text-red-600",
+          tone === "muted" && "text-muted-foreground",
+          tone === "accent" && "text-amber-600"
+        )}
+      >
+        {value}
+      </p>
+    </div>
+  );
+}
+
+function MobileHoldingCard({
+  holding,
+  tab,
+  badges,
+}: {
+  holding: EnrichedHolding;
+  tab: ViewTab;
+  badges: RowBadge[];
+}) {
+  const pl = holding.unrealized_pl;
+  const plPct = holding.unrealized_pl_pct;
+  const plTone = pl === null ? "muted" : pl > 0 ? "positive" : pl < 0 ? "negative" : undefined;
+  const yoc =
+    holding.dividend_income && holding.total_cost
+      ? `${((holding.dividend_income / holding.total_cost) * 100).toFixed(2)}%`
+      : "—";
+  const yov =
+    holding.dividend_income && holding.market_value
+      ? `${((holding.dividend_income / holding.market_value) * 100).toFixed(2)}%`
+      : "—";
+  const drift =
+    holding.weight !== null && holding.target_allocation !== null
+      ? holding.weight - holding.target_allocation
+      : null;
+  const allocStatus = allocationStatus(holding.weight, holding.target_allocation);
+  const reviewLabels = ["", "Watch", "Monitor", "Review", "Urgent", "Exit"];
+
+  return (
+    <article className="rounded-lg border border-border bg-card p-3 shadow-[var(--shadow-card)]">
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <div className="flex min-w-0 flex-wrap items-center gap-1.5">
+            <Link
+              href={`/stocks/${holding.ticker}`}
+              className="text-base font-bold leading-tight text-foreground"
+            >
+              {holding.ticker}
+            </Link>
+            {badges.map((b) => (
+              <span
+                key={b.label}
+                className={cn("rounded px-1.5 py-0.5 text-[9px] font-bold uppercase leading-none", b.cls)}
+              >
+                {b.label}
+              </span>
+            ))}
+          </div>
+          <p className="mt-0.5 truncate text-xs text-muted-foreground">
+            {holding.company_name ?? holding.sector ?? "Unclassified"}
+          </p>
+        </div>
+        <EditHoldingDialog holding={holding} />
+      </div>
+
+      {tab === "performance" && (
+        <div className="mt-3 grid grid-cols-2 gap-2">
+          <MobileMetric label="Market value" value={holding.market_value !== null ? formatMoney(holding.market_value) : "—"} />
+          <MobileMetric label="P/L" value={pl !== null ? `${formatNumber(pl, 0)}${plPct !== null ? ` · ${formatSignedPct(plPct)}` : ""}` : "—"} tone={plTone} />
+          <MobileMetric label="Price" value={holding.latest_price !== null ? formatNumber(holding.latest_price) : "no price"} tone={holding.latest_price === null ? "accent" : undefined} />
+          <MobileMetric label="Weight" value={holding.weight !== null ? `${holding.weight.toFixed(1)}%` : "—"} />
+        </div>
+      )}
+
+      {tab === "income" && (
+        <div className="mt-3 grid grid-cols-2 gap-2">
+          <MobileMetric label="Dividends" value={holding.dividend_income > 0 ? formatMoney(holding.dividend_income) : "—"} tone={holding.dividend_income > 0 ? "accent" : "muted"} />
+          <MobileMetric label="Yield cost" value={yoc} />
+          <MobileMetric label="Yield value" value={yov} />
+          <MobileMetric label="Quantity" value={formatNumber(holding.quantity, 0)} />
+        </div>
+      )}
+
+      {tab === "allocation" && (
+        <div className="mt-3 grid grid-cols-2 gap-2">
+          <MobileMetric label="Weight" value={holding.weight !== null ? `${holding.weight.toFixed(1)}%` : "—"} />
+          <MobileMetric label="Target" value={holding.target_allocation !== null ? `${holding.target_allocation}%` : "—"} />
+          <MobileMetric
+            label="Drift"
+            value={drift !== null ? `${drift > 0 ? "+" : ""}${drift.toFixed(1)}%` : "—"}
+            tone={drift === null || Math.abs(drift) <= 3 ? "muted" : drift > 0 ? "accent" : undefined}
+          />
+          <div className="min-w-0 rounded-md border border-border bg-background/55 px-2.5 py-2">
+            <p className="truncate text-[10px] font-medium uppercase text-muted-foreground">Status</p>
+            <div className="mt-1">
+              {allocStatus ? (
+                <Badge variant={allocStatus.variant}>{allocStatus.label}</Badge>
+              ) : (
+                <span className="text-xs text-muted-foreground">no target</span>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {tab === "planning" && (
+        <div className="mt-3 grid grid-cols-2 gap-2">
+          <MobileMetric label="Price" value={holding.latest_price !== null ? formatNumber(holding.latest_price) : "no price"} tone={holding.latest_price === null ? "accent" : undefined} />
+          <MobileMetric label="Target" value={holding.target_price !== null ? formatNumber(holding.target_price) : "—"} />
+          <MobileMetric
+            label="To target"
+            value={holding.distance_to_target_pct !== null ? formatSignedPct(holding.distance_to_target_pct) : "—"}
+            tone={
+              holding.distance_to_target_pct === null
+                ? "muted"
+                : holding.distance_to_target_pct > 0
+                ? "positive"
+                : "negative"
+            }
+          />
+          <div className="min-w-0 rounded-md border border-border bg-background/55 px-2.5 py-2">
+            <p className="truncate text-[10px] font-medium uppercase text-muted-foreground">Thesis</p>
+            <div className="mt-1">
+              {holding.has_thesis ? (
+                <Badge variant={thesisStatusVariant(holding.thesis_status)}>
+                  {holding.thesis_status}
+                </Badge>
+              ) : (
+                <span className="text-xs text-muted-foreground">missing</span>
+              )}
+            </div>
+          </div>
+          <MobileMetric
+            label="Review"
+            value={holding.review_level !== null ? reviewLabels[holding.review_level] ?? holding.review_level : "—"}
+          />
+          <MobileMetric label="Next review" value={holding.review_date ?? "—"} tone={holding.review_date ? undefined : "muted"} />
+        </div>
+      )}
+    </article>
+  );
+}
+
 export function HoldingsTable({
   holdings,
   summary,
@@ -156,7 +316,7 @@ export function HoldingsTable({
   const makeTickerCell = (h: EnrichedHolding) => {
     const badges = rowBadges.get(h.ticker) ?? [];
     return (
-      <div className="min-w-32.5">
+      <div className="min-w-32">
         <div className="flex items-center gap-1">
           <Link
             href={`/stocks/${h.ticker}`}
@@ -174,7 +334,7 @@ export function HoldingsTable({
           ))}
         </div>
         <p
-          className="mt-0.5 max-w-42.5 truncate text-[11px] text-muted-foreground"
+          className="mt-0.5 max-w-44 truncate text-[11px] text-muted-foreground"
           title={h.company_name ?? ""}
         >
           {h.company_name ?? "—"}
@@ -198,7 +358,7 @@ export function HoldingsTable({
       header: "Sector",
       cell: (c) =>
         c.getValue() ? (
-          <span className="block max-w-35 truncate text-xs" title={c.getValue() ?? ""}>
+          <span className="block max-w-36 truncate text-xs" title={c.getValue() ?? ""}>
             {c.getValue()}
           </span>
         ) : (
@@ -503,6 +663,7 @@ export function HoldingsTable({
     return rows;
   }, [holdings, search, sectorFilter, activeFilters]);
 
+  // eslint-disable-next-line react-hooks/incompatible-library -- TanStack Table is the app's table engine; mobile cards consume the same row model.
   const table = useReactTable({
     data: filtered,
     columns,
@@ -514,6 +675,7 @@ export function HoldingsTable({
 
   const plTone =
     summary.unrealizedPl > 0 ? "positive" : summary.unrealizedPl < 0 ? "negative" : "neutral";
+  const tableRows = table.getRowModel().rows;
 
   return (
     <div className="space-y-4">
@@ -565,19 +727,20 @@ export function HoldingsTable({
       </div>
 
       {/* Search + filter bar */}
-      <div className="flex flex-wrap items-center gap-2">
-        <div className="relative min-w-45 max-w-60">
-          <Search className="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
+      <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center">
+        <div className="relative w-full sm:max-w-60">
+          <Search className="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
           <Input
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Search ticker or company…"
-            className="h-8 pl-8 text-xs"
+            className="pl-9 md:h-8 md:text-xs"
           />
           {search && (
             <button
               onClick={() => setSearch("")}
-              className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+              className="absolute right-1 top-1/2 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-md text-muted-foreground hover:text-foreground"
+              aria-label="Clear search"
             >
               <X className="h-3 w-3" />
             </button>
@@ -588,7 +751,7 @@ export function HoldingsTable({
           <select
             value={sectorFilter ?? ""}
             onChange={(e) => setSectorFilter(e.target.value || null)}
-            className="h-8 rounded-md border border-input bg-background px-2 text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-ring"
+            className="h-10 rounded-md border border-border bg-background px-2 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-ring md:h-8 md:text-xs"
           >
             <option value="">All sectors</option>
             {sectors.map((s) => (
@@ -599,13 +762,13 @@ export function HoldingsTable({
           </select>
         )}
 
-        <div className="flex flex-wrap gap-1.5">
+        <div className="scroll-touch -mx-1 flex gap-1.5 overflow-x-auto px-1 sm:mx-0 sm:flex-wrap sm:overflow-visible sm:px-0">
           {QUICK_FILTERS.map((f) => (
             <button
               key={f.key}
               onClick={() => toggleFilter(f.key)}
               className={cn(
-                "rounded-full border px-2.5 py-1 text-[11px] font-medium transition-colors",
+                "h-9 shrink-0 rounded-full border px-3 text-[11px] font-medium transition-colors md:h-auto md:px-2.5 md:py-1",
                 activeFilters.has(f.key)
                   ? "border-primary bg-primary text-primary-foreground"
                   : "border-border bg-background text-muted-foreground hover:border-foreground/50 hover:text-foreground"
@@ -621,7 +784,7 @@ export function HoldingsTable({
                 setSectorFilter(null);
                 setActiveFilters(new Set());
               }}
-              className="rounded-full border border-border px-2.5 py-1 text-[11px] text-muted-foreground hover:text-foreground"
+              className="h-9 shrink-0 rounded-full border border-border px-3 text-[11px] text-muted-foreground hover:text-foreground md:h-auto md:px-2.5 md:py-1"
             >
               Clear filters
             </button>
@@ -632,14 +795,14 @@ export function HoldingsTable({
       {/* Tab bar + table */}
       <div className="overflow-hidden rounded-lg border border-border bg-card">
         {/* Tab header */}
-        <div className="flex items-center justify-between border-b border-border bg-muted/20 px-4 py-2.5">
-          <div className="flex gap-1">
+        <div className="flex flex-col gap-2 border-b border-border bg-muted/20 px-3 py-2.5 sm:flex-row sm:items-center sm:justify-between sm:px-4">
+          <div className="scroll-touch -mx-1 flex gap-1 overflow-x-auto px-1 sm:mx-0 sm:overflow-visible sm:px-0">
             {TABS.map((t) => (
               <button
                 key={t.key}
                 onClick={() => setTab(t.key)}
                 className={cn(
-                  "rounded-md px-3 py-1.5 text-xs font-medium transition-colors",
+                  "h-9 shrink-0 rounded-md px-3 text-xs font-medium transition-colors sm:h-auto sm:py-1.5",
                   tab === t.key
                     ? "bg-primary text-primary-foreground"
                     : "text-muted-foreground hover:bg-muted hover:text-foreground"
@@ -650,14 +813,32 @@ export function HoldingsTable({
             ))}
           </div>
           {latestPriceDate && (
-            <span className="text-[11px] text-muted-foreground">
+            <span className="text-[11px] text-muted-foreground sm:text-right">
               Prices as of {latestPriceDate}
             </span>
           )}
         </div>
 
+        {/* Mobile cards */}
+        <div className="space-y-2.5 p-2.5 md:hidden">
+          {tableRows.length === 0 ? (
+            <p className="rounded-lg border border-border bg-background py-10 text-center text-sm text-muted-foreground">
+              No holdings match the current filters.
+            </p>
+          ) : (
+            tableRows.map((row) => (
+              <MobileHoldingCard
+                key={row.id}
+                holding={row.original}
+                tab={tab}
+                badges={rowBadges.get(row.original.ticker) ?? []}
+              />
+            ))
+          )}
+        </div>
+
         {/* Table */}
-        <div className="w-full overflow-x-auto">
+        <div className="scroll-touch hidden w-full overflow-x-auto md:block">
           <table className="w-full text-sm">
             <thead>
               {table.getHeaderGroups().map((hg) => (
@@ -690,7 +871,7 @@ export function HoldingsTable({
                   </td>
                 </tr>
               ) : (
-                table.getRowModel().rows.map((row) => (
+                tableRows.map((row) => (
                   <tr
                     key={row.id}
                     className="border-b border-border last:border-0 transition-colors hover:bg-muted/40"
@@ -708,7 +889,7 @@ export function HoldingsTable({
         </div>
 
         {/* Footer */}
-        <div className="flex items-center justify-between border-t border-border px-4 py-2 text-[11px] text-muted-foreground">
+        <div className="flex flex-col gap-1 border-t border-border px-3 py-2 text-[11px] text-muted-foreground sm:flex-row sm:items-center sm:justify-between sm:px-4">
           <span>
             {filtered.length !== holdings.length
               ? `${filtered.length} of ${holdings.length} holdings`
