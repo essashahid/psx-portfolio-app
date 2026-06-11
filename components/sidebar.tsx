@@ -19,6 +19,7 @@ import {
   HandCoins,
   Search,
   Database,
+  Activity,
 } from "lucide-react";
 
 const NAV = [
@@ -26,6 +27,7 @@ const NAV = [
   { href: "/import", label: "Import Center", icon: Upload },
   { href: "/holdings", label: "Holdings", icon: Briefcase },
   { href: "/stocks", label: "Stock Research", icon: Search },
+  { href: "/market", label: "Market Pulse", icon: Activity },
   { href: "/news", label: "News Center", icon: Newspaper },
   { href: "/briefings", label: "AI Briefings", icon: Sparkles },
   { href: "/goals", label: "Goals & Targets", icon: Target },

@@ -7,6 +7,10 @@
     {
       "path": "/api/cron/engine",
       "schedule": "45 11 * * 1-5"
+    },
+    {
+      "path": "/api/cron/market",
+      "schedule": "40 11 * * 1-5"
     }
   ]
 }

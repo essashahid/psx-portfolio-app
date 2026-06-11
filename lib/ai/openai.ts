@@ -35,14 +35,20 @@ Hard rules — never break these:
 export async function chatMarkdown(
   systemExtra: string,
   userPrompt: string,
-  maxTokens = 1800
+  maxTokens = 1800,
+  opts: { thinkingBudget?: number } = {}
 ): Promise<{ content: string; model: string }> {
   const genAI = getClient();
   const modelId = getModel();
+  // gemini-2.5-* draw reasoning tokens from the output budget; with a small
+  // maxTokens the whole budget can be spent thinking, yielding an empty answer.
+  // Bound the thinking budget (when requested) so prose is always emitted.
+  const generationConfig: Record<string, unknown> = { temperature: 0.4, maxOutputTokens: maxTokens };
+  if (opts.thinkingBudget !== undefined) generationConfig.thinkingConfig = { thinkingBudget: opts.thinkingBudget };
   const model = genAI.getGenerativeModel({
     model: modelId,
     systemInstruction: `${GUARDRAILS}\n\n${systemExtra}`,
-    generationConfig: { temperature: 0.4, maxOutputTokens: maxTokens },
+    generationConfig: generationConfig as never,
   });
   const result = await model.generateContent(userPrompt);
   const content = result.response.text().trim();
