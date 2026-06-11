@@ -14,10 +14,10 @@
   --accent: #ecece8;
   --destructive: oklch(0.55 0.2 25);
   --ring: #b6b6ad;
-  --sidebar: #141413;
-  --sidebar-foreground: #f2f2f0;
-  --sidebar-muted: #9c9c93;
-  --sidebar-active: #2b2b27;
+  --sidebar: #edede9;
+  --sidebar-foreground: #05050c;
+  --sidebar-muted: #6b6b64;
+  --sidebar-active: #111111;
   /* Soft layered shadow used by cards & raised surfaces. */
   --shadow-card: 0 1px 2px rgba(0, 0, 0, 0.04), 0 12px 32px -16px rgba(0, 0, 0, 0.12);
 }

@@ -159,12 +159,37 @@ export default async function DashboardPage() {
   const changelog = (changelogRes.data as ChangelogRow | null) ?? null;
   return (
     <div className="space-y-5">
-      <PageHeader
-        eyebrow="Overview"
-        title="Dashboard"
-        description={`Portfolio status as of ${today}${profileRes.data?.demo_mode ? " — demo mode is active" : ""}`}
-        actions={
-          <>
+      <header className="rise mb-2">
+        <p className="eyebrow">
+          Overview · {today}
+          {profileRes.data?.demo_mode ? " · demo mode" : ""}
+        </p>
+        <div className="mt-3 flex flex-wrap items-end justify-between gap-4">
+          <div>
+            <p className="text-ghost text-sm font-medium tracking-editorial">Total portfolio value</p>
+            <h1 className="mt-1 text-4xl font-medium tabular-nums tracking-editorial sm:text-5xl">
+              {formatMoney(summary.totalValue)}
+            </h1>
+            <p className="mt-2 text-sm text-muted-foreground">
+              {summary.unrealizedPlPct !== null ? (
+                <span
+                  className={
+                    summary.unrealizedPl > 0
+                      ? "font-medium text-emerald-600"
+                      : summary.unrealizedPl < 0
+                        ? "font-medium text-red-600"
+                        : "font-medium"
+                  }
+                >
+                  {formatSignedPct(summary.unrealizedPlPct)} ({formatMoney(summary.unrealizedPl)})
+                </span>
+              ) : (
+                <span className="font-medium">Awaiting prices</span>
+              )}{" "}
+              unrealized · {formatNumber(summary.holdingsCount, 0)} holdings · {formatMoney(summary.cashBalance)} cash
+            </p>
+          </div>
+          <div className="flex flex-wrap items-center gap-2">
             <ActionButton
               endpoint="/api/dividends/daily"
               label={<><RefreshCw className="h-3.5 w-3.5" /> Run daily update</>}
@@ -178,9 +203,9 @@ export default async function DashboardPage() {
               variant="outline"
               size="sm"
             />
-          </>
-        }
-      />
+          </div>
+        </div>
+      </header>
 
       {profileRes.data?.demo_mode && (
         <p className="rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800">

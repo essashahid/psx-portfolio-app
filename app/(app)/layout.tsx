@@ -20,9 +20,11 @@ export default async function AppLayout({ children }: { children: React.ReactNod
       <AutoRefreshPrices />
       <Sidebar email={user.email ?? ""} openAlerts={count ?? 0} />
       <div className="flex min-w-0 flex-1 flex-col">
-        <main className="flex-1 overflow-y-auto p-6">{children}</main>
+        <main className="flex-1 overflow-y-auto p-6 md:p-8">
+          <div className="mx-auto w-full max-w-7xl">{children}</div>
+        </main>
         <footer className="border-t border-border bg-card px-6 py-2">
-          <p className="text-[11px] text-muted-foreground">{DISCLAIMER}</p>
+          <p className="mx-auto max-w-7xl text-[11px] text-muted-foreground">{DISCLAIMER}</p>
         </footer>
       </div>
     </div>
