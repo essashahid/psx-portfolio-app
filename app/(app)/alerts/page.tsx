@@ -49,6 +49,7 @@ export default async function AlertsPage({
   return (
     <div className="space-y-4">
       <PageHeader
+        eyebrow="Signals"
         title="Alerts"
         description="Rule-based signals about what needs your attention — recomputed on every import, price update and news refresh."
         actions={

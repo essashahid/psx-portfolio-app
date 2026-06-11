@@ -21,6 +21,7 @@ export default async function GoalsPage() {
   return (
     <div className="space-y-4">
       <PageHeader
+        eyebrow="Planning"
         title="Goals & Targets"
         description="Set target allocation, target price and review level per holding. Drift beyond 5 percentage points raises an alert."
       />

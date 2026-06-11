@@ -104,6 +104,7 @@ export default async function DashboardPage() {
     return (
       <div className="mx-auto max-w-2xl pt-12">
         <PageHeader
+          eyebrow="Get started"
           title="Welcome to PortfolioOS PK"
           description="Your private PSX portfolio command center. Nothing here connects to AKD or CDC — you import statements yourself, and all data stays in your account."
         />
@@ -159,6 +160,7 @@ export default async function DashboardPage() {
   return (
     <div className="space-y-5">
       <PageHeader
+        eyebrow="Overview"
         title="Dashboard"
         description={`Portfolio status as of ${today}${profileRes.data?.demo_mode ? " — demo mode is active" : ""}`}
         actions={

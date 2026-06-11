@@ -71,6 +71,7 @@ export default async function JournalPage({
   return (
     <div className="space-y-4">
       <PageHeader
+        eyebrow="Decisions"
         title="Investment Journal"
         description="Write down decisions before the market grades them. AI can analyze your patterns over time."
         actions={

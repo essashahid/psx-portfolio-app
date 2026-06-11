@@ -1,22 +1,25 @@
 @import "tailwindcss";
 
 :root {
-  --background: oklch(0.985 0.002 247);
-  --foreground: oklch(0.2 0.02 257);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.2 0.02 257);
-  --muted: oklch(0.96 0.005 247);
-  --muted-foreground: oklch(0.52 0.02 257);
-  --border: oklch(0.91 0.008 247);
-  --primary: oklch(0.32 0.06 257);
-  --primary-foreground: oklch(0.98 0.002 247);
-  --accent: oklch(0.95 0.01 247);
+  /* Synex-inspired warm paper palette: editorial-minimal, premium, calm. */
+  --background: #f2f2f0;
+  --foreground: #05050c;
+  --card: #fbfbf9;
+  --card-foreground: #05050c;
+  --muted: #eaeae6;
+  --muted-foreground: #6b6b64;
+  --border: #e3e3dd;
+  --primary: #111111;
+  --primary-foreground: #ffffff;
+  --accent: #ecece8;
   --destructive: oklch(0.55 0.2 25);
-  --ring: oklch(0.6 0.05 257);
-  --sidebar: oklch(0.21 0.03 262);
-  --sidebar-foreground: oklch(0.92 0.005 247);
-  --sidebar-muted: oklch(0.65 0.02 257);
-  --sidebar-active: oklch(0.3 0.05 262);
+  --ring: #b6b6ad;
+  --sidebar: #141413;
+  --sidebar-foreground: #f2f2f0;
+  --sidebar-muted: #9c9c93;
+  --sidebar-active: #2b2b27;
+  /* Soft layered shadow used by cards & raised surfaces. */
+  --shadow-card: 0 1px 2px rgba(0, 0, 0, 0.04), 0 12px 32px -16px rgba(0, 0, 0, 0.12);
 }
 
 @theme inline {
@@ -36,13 +39,98 @@
   --color-sidebar-foreground: var(--sidebar-foreground);
   --color-sidebar-muted: var(--sidebar-muted);
   --color-sidebar-active: var(--sidebar-active);
-  --font-sans: var(--font-geist-sans);
+  --shadow-card: var(--shadow-card);
+  --font-sans: var(--font-inter-tight);
   --font-mono: var(--font-geist-mono);
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ── Synex editorial design language ─────────────────────────────────────
+   Shared primitives so the warm, refined aesthetic carries across pages. */
+
+/* Small tracked uppercase label that sits above headings. */
+.eyebrow {
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--muted-foreground);
+}
+
+/* Faded "ghost" ink for the first line of two-tone editorial headlines. */
+.text-ghost {
+  color: color-mix(in oklab, var(--foreground) 22%, transparent);
+}
+
+/* Tighter optical tracking for large display headings. */
+.tracking-editorial {
+  letter-spacing: -0.022em;
+}
+
+/* Black pill CTA with the signature circular indicator (see .pill-dot). */
+.btn-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  border-radius: 9999px;
+  background: var(--primary);
+  color: var(--primary-foreground);
+  padding: 0.625rem 1.25rem;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  transition: background 200ms ease;
+}
+.btn-pill:hover {
+  background: #333333;
+}
+.pill-dot {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  border-radius: 9999px;
+  background: rgba(255, 255, 255, 0.2);
+}
+.pill-dot::after {
+  content: "";
+  width: 6px;
+  height: 6px;
+  border-radius: 9999px;
+  background: #fff;
+}
+
+/* Staggered blur-up entrance — the cinematic top-to-bottom focus-in cascade.
+   Pure CSS (no Framer Motion dependency). */
+@keyframes rise-blur {
+  from {
+    opacity: 0;
+    transform: translateY(18px);
+    filter: blur(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+    filter: blur(0);
+  }
+}
+.rise {
+  animation: rise-blur 0.7s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+.rise-1 { animation-delay: 0.08s; }
+.rise-2 { animation-delay: 0.2s; }
+.rise-3 { animation-delay: 0.32s; }
+.rise-4 { animation-delay: 0.45s; }
+.rise-5 { animation-delay: 0.58s; }
+
+@media (prefers-reduced-motion: reduce) {
+  .rise { animation: none; }
 }
 
 /* Minimal markdown rendering for AI output */

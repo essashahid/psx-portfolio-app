@@ -87,6 +87,7 @@ export default async function NewsPage({
   return (
     <div className="space-y-4">
       <PageHeader
+        eyebrow="Market"
         title="News Center"
         description="Holding-specific news, screened for portfolio relevance and thesis impact."
         actions={

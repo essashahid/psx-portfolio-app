@@ -6,7 +6,6 @@ import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { DISCLAIMER } from "@/lib/utils";
 import { CandlestickChart, Loader2 } from "lucide-react";
 
@@ -55,25 +54,62 @@ export default function LoginPage() {
   }
 
   return (
-    <main className="flex min-h-screen flex-col items-center justify-center bg-background p-4">
-      <div className="mb-6 flex items-center gap-2.5">
-        <CandlestickChart className="h-8 w-8 text-emerald-600" />
-        <div>
-          <h1 className="text-lg font-semibold leading-tight">PortfolioOS PK</h1>
-          <p className="text-xs text-muted-foreground">Your private PSX portfolio command center</p>
+    <main className="relative flex min-h-screen flex-col items-center overflow-hidden bg-background px-4">
+      {/* Soft top-down halo behind the composition */}
+      <div
+        aria-hidden
+        className="pointer-events-none absolute inset-0"
+        style={{
+          background:
+            "radial-gradient(ellipse 80% 60% at 50% 28%, rgba(220,220,215,0.6) 0%, transparent 70%)",
+        }}
+      />
+
+      {/* Photoreal stones flanking the composition (Synex motif, hero only) */}
+      <img
+        aria-hidden
+        src="https://qclay.design/lovable/synex/stone-left.png"
+        alt=""
+        className="pointer-events-none absolute bottom-0 left-0 z-0 h-[180px] w-auto select-none object-contain object-bottom-left sm:h-[260px] md:h-[360px] lg:h-[440px]"
+      />
+      <img
+        aria-hidden
+        src="https://qclay.design/lovable/synex/stone-right.png"
+        alt=""
+        className="pointer-events-none absolute bottom-0 right-0 z-0 h-[180px] w-auto select-none object-contain object-bottom-right sm:h-[260px] md:h-[360px] lg:h-[440px]"
+      />
+
+      {/* Hero content */}
+      <div className="relative z-10 flex w-full max-w-xl flex-col items-center pt-16 text-center sm:pt-20 md:pt-24">
+        <div className="rise rise-1 mb-7 flex items-center gap-2.5">
+          <CandlestickChart className="h-6 w-6 text-emerald-600" />
+          <span className="text-[15px] font-semibold tracking-tight">PortfolioOS PK</span>
         </div>
-      </div>
-      <Card className="w-full max-w-sm">
-        <CardHeader>
-          <CardTitle>{mode === "signin" ? "Sign in" : "Create your account"}</CardTitle>
-          <CardDescription>
+
+        <p className="eyebrow rise rise-1 mb-3">PSX Portfolio Intelligence</p>
+
+        <h1 className="tracking-editorial text-4xl font-medium leading-[1.05] sm:text-5xl md:text-6xl">
+          <span className="rise rise-2 block text-ghost">A New Standard</span>
+          <span className="rise rise-3 block text-foreground">in PSX Investing</span>
+        </h1>
+
+        <p className="rise rise-4 mt-5 max-w-md text-balance text-sm text-muted-foreground sm:text-base">
+          Take full control of your assets with a unified platform for tracking,
+          researching, and growing your Pakistan Stock Exchange portfolio in real time.
+        </p>
+
+        {/* Auth card — the centered "dashboard" of the composition */}
+        <div className="rise rise-5 mt-10 w-full max-w-sm rounded-2xl border border-border bg-card/90 p-6 text-left shadow-[0_-8px_60px_rgba(0,0,0,0.06),0_40px_100px_-40px_rgba(0,0,0,0.25)] backdrop-blur-sm">
+          <h2 className="text-base font-semibold tracking-tight">
+            {mode === "signin" ? "Sign in" : "Create your account"}
+          </h2>
+          <p className="mt-1 text-xs text-muted-foreground">
             {mode === "signin"
               ? "Welcome back. Your portfolio data is private to your account."
               : "No brokerage credentials are ever requested — only an email and password for this app."}
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={submit} className="space-y-3">
+          </p>
+
+          <form onSubmit={submit} className="mt-4 space-y-3">
             {mode === "signup" && (
               <div className="space-y-1.5">
                 <Label htmlFor="name">Full name</Label>
@@ -101,9 +137,21 @@ export default function LoginPage() {
           >
             {mode === "signin" ? "No account? Sign up" : "Already have an account? Sign in"}
           </button>
-        </CardContent>
-      </Card>
-      <p className="mt-6 max-w-sm text-center text-[11px] text-muted-foreground">{DISCLAIMER}</p>
+        </div>
+      </div>
+
+      {/* Bottom dark fade grounds the composition */}
+      <div
+        aria-hidden
+        className="pointer-events-none absolute bottom-0 left-0 right-0 z-[5] h-44"
+        style={{
+          background:
+            "linear-gradient(to top, rgba(5,5,12,0.7) 0%, rgba(5,5,12,0.35) 45%, transparent 100%)",
+        }}
+      />
+      <p className="absolute bottom-3 left-0 right-0 z-10 mx-auto max-w-sm px-4 text-center text-[11px] text-white/70">
+        {DISCLAIMER}
+      </p>
     </main>
   );
 }

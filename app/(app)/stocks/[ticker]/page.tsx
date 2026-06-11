@@ -98,6 +98,7 @@ export default async function StockDetailPage({
         <ArrowLeft className="h-3.5 w-3.5" /> Back to holdings
       </Link>
       <PageHeader
+        eyebrow="Research workspace"
         title={`${ticker} — ${holding.company_name ?? ""}`}
         description={`${holding.sector ?? "Sector unknown"} · position source: ${holding.source} · last updated ${holding.last_updated.slice(0, 10)}`}
         actions={

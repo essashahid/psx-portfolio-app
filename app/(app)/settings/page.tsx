@@ -75,7 +75,7 @@ export default async function SettingsPage() {
 
   return (
     <div className="space-y-4">
-      <PageHeader title="Settings" description="Profile, prices, accounts, data management and integrations." />
+      <PageHeader eyebrow="Configuration" title="Settings" description="Profile, prices, accounts, data management and integrations." />
 
       <Card>
         <CardHeader><CardTitle>Profile</CardTitle></CardHeader>

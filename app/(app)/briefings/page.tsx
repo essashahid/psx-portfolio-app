@@ -51,6 +51,7 @@ export default async function BriefingsPage({
   return (
     <div className="space-y-4">
       <PageHeader
+        eyebrow="Intelligence"
         title="AI Briefings"
         description="Generated from your actual portfolio, news and journal. Stored permanently, never financial advice."
       />

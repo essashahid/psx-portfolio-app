@@ -62,6 +62,7 @@ export default async function DividendsPage() {
   return (
     <div className="space-y-5">
       <PageHeader
+        eyebrow="Income"
         title="Dividend Receivables"
         description={`Confirmed announcements, forecasts and received income. Tax estimates use your ${taxSettings.taxpayer_status === "filer" ? "filer / ATL" : taxSettings.taxpayer_status} profile${taxSettings.dividend_tax_rate !== null ? ` at ${(taxSettings.dividend_tax_rate * 100).toFixed(0)}%` : ""} (${taxSettings.tax_year}). Estimates only — not tax or investment advice.`}
         actions={

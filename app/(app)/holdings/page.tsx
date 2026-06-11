@@ -21,6 +21,7 @@ export default async function HoldingsPage() {
   return (
     <div className="space-y-5">
       <PageHeader
+        eyebrow="Portfolio"
         title="Holdings"
         description="Every position with cost, value, targets and thesis health. Click a ticker for its research workspace."
         actions={
