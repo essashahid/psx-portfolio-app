@@ -4,7 +4,7 @@ import { refreshTechnicals } from "@/lib/company/technicals";
 import { getCompanyMetadata, saveCompanyDescription } from "@/lib/company/metadata";
 import { aiConfigured, chatJson } from "@/lib/ai/openai";
 import { refreshQuote, refreshHistory, testProviderCoverage } from "@/lib/engine/market-data";
-import { extractFinancials } from "@/lib/engine/financials";
+import { populateFinancials } from "@/lib/engine/financials";
 import { refreshRatios } from "@/lib/engine/ratios";
 
 export const maxDuration = 120;
@@ -60,13 +60,13 @@ export async function POST(
     }
 
     if (section === "financials") {
-      const r = await extractFinancials(ticker, 2);
+      const r = await populateFinancials(ticker);
       if (r.saved > 0) await refreshRatios(supabase, ticker).catch(() => null);
       return NextResponse.json({
         message:
           r.saved > 0
-            ? `${r.saved} statement(s) extracted from official filings. Ratios recomputed.`
-            : r.errors[0] ?? r.skipped[0] ?? `No extractable result filings found for ${ticker}.`,
+            ? `${r.saved} period(s) loaded from the official PSX company page. Ratios recomputed.`
+            : r.errors[0] ?? `No financial data published on the PSX page for ${ticker}.`,
         detail: { processed: r.processed, saved: r.saved, skipped: r.skipped, errors: r.errors },
       });
     }

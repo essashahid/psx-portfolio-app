@@ -3,7 +3,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { fetchPsxSymbols } from "@/lib/market-data/psx-dps";
 import { refreshQuote } from "@/lib/engine/market-data";
 import { refreshTechnicals } from "@/lib/company/technicals";
-import { extractFinancials } from "@/lib/engine/financials";
+import { populateFinancials } from "@/lib/engine/financials";
 import { refreshRatios } from "@/lib/engine/ratios";
 
 export const dynamic = "force-dynamic";
@@ -101,18 +101,30 @@ export async function GET(request: Request) {
     report.universeSlice = { error: e instanceof Error ? e.message : String(e) };
   }
 
-  // 4. Financial extraction queue — prioritize active-set tickers without financials
+  // 4. Financials from the official PSX company page (one cheap HTTP request
+  //    each, no LLM). Refresh the whole active set every run, then top up a
+  //    rotating slice of the universe that has no financials yet.
   try {
     const { data: have } = await db.from("company_financials").select("ticker");
     const covered = new Set((have ?? []).map((r) => r.ticker as string));
-    const queue = active.filter((t) => !covered.has(t)).slice(0, 2);
-    const extracted: Record<string, number> = {};
-    for (const t of queue) {
-      const r = await extractFinancials(t, 2);
-      extracted[t] = r.saved;
-      if (r.saved > 0) await refreshRatios(db, t).catch(() => null);
+    const { data: universe } = await db.from("stock_universe").select("ticker").eq("listing_status", "active").limit(2000);
+    const topUp = (universe ?? [])
+      .map((r) => r.ticker as string)
+      .filter((t) => !covered.has(t) && !active.includes(t))
+      .slice(0, 30);
+    const queue = [...new Set([...active, ...topUp])];
+    let loaded = 0;
+    for (let i = 0; i < queue.length; i += BATCH) {
+      const results = await Promise.all(
+        queue.slice(i, i + BATCH).map(async (t) => {
+          const r = await populateFinancials(t).catch(() => null);
+          if (r && r.saved > 0) await refreshRatios(db, t).catch(() => null);
+          return r?.saved ?? 0;
+        })
+      );
+      loaded += results.filter((n) => n > 0).length;
     }
-    report.financials = { queue, extracted };
+    report.financials = { attempted: queue.length, loaded };
   } catch (e) {
     report.financials = { error: e instanceof Error ? e.message : String(e) };
   }

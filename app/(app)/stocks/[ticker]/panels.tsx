@@ -185,7 +185,7 @@ function FetchFinancialsButton({ ticker }: { ticker: string }) {
     <ActionButton
       endpoint={`/api/stocks/${ticker}/refresh`}
       body={{ section: "financials" }}
-      label={<><FileText className="h-3.5 w-3.5" /> Extract from official filings</>}
+      label={<><FileText className="h-3.5 w-3.5" /> Load from PSX company page</>}
       variant="outline"
       size="sm"
     />
@@ -221,8 +221,8 @@ export async function FinancialsPanel({ ticker }: { ticker: string }) {
           title="Financial data is not populated yet"
           description={
             lastLog
-              ? `Last fetch attempt: ${String(lastLog.created_at).slice(0, 16).replace("T", " ")} via ${lastLog.source} — ${lastLog.status}${lastLog.detail ? ` (${lastLog.detail})` : ""}. The engine extracts statements from official PSX result filings; numbers are never invented.`
-              : `No extraction has run for ${ticker} yet. The engine reads the company's official PSX result filings (PDF) and extracts the statements — numbers are never invented.`
+              ? `Last fetch attempt: ${String(lastLog.created_at).slice(0, 16).replace("T", " ")} via ${lastLog.source} — ${lastLog.status}${lastLog.detail ? ` (${lastLog.detail})` : ""}. The engine reads the official PSX company page; numbers are echoed from PSX, never invented.`
+              : `No data has been loaded for ${ticker} yet. The engine reads the official PSX company page (sales, EPS, margins) — numbers are echoed from PSX, never invented.`
           }
           action={<FetchFinancialsButton ticker={ticker} />}
         />
@@ -238,7 +238,7 @@ export async function FinancialsPanel({ ticker }: { ticker: string }) {
     <div className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <p className="text-[11px] text-muted-foreground">
-          Figures {units}; EPS in rupees. Extracted from official PSX filings — open a period's source to verify.
+          Figures {units}; EPS in rupees. Sourced from the official PSX company page — open the source to verify.
         </p>
         <FetchFinancialsButton ticker={ticker} />
       </div>
@@ -284,8 +284,7 @@ export async function FinancialsPanel({ ticker }: { ticker: string }) {
         );
       })}
       <p className="text-[11px] text-muted-foreground">
-        Last extracted {newest?.updated_at ? String(newest.updated_at).slice(0, 10) : "—"} · Source: PSX result filings (parsed by AI, numbers echoed from the document only)
-        {typeof newest?.confidence === "number" ? ` · extraction confidence ${(newest.confidence * 100).toFixed(0)}%` : ""}
+        Last loaded {newest?.updated_at ? String(newest.updated_at).slice(0, 10) : "—"} · Source: official PSX company page (figures echoed from PSX)
       </p>
     </div>
   );
@@ -336,8 +335,8 @@ export async function EarningsPanel({ ticker }: { ticker: string }) {
             <CardTitle className="flex items-center gap-2"><TrendingUp className="h-4 w-4" /> Latest result — {latest.fiscal_year} {latest.fiscal_period}</CardTitle>
             <CardDescription>
               Reported {latest.reported_date ?? "—"} ·{" "}
-              <a href={latest.source_url ?? "#"} target="_blank" rel="noopener noreferrer" className="underline hover:text-foreground">source filing</a>
-              {prior ? ` · compared with ${prior.fiscal_year} ${prior.fiscal_period}` : " · no prior period extracted yet for growth"}
+              <a href={latest.source_url ?? "#"} target="_blank" rel="noopener noreferrer" className="underline hover:text-foreground">PSX source</a>
+              {prior ? ` · compared with ${prior.fiscal_year} ${prior.fiscal_period}` : " · no prior period loaded yet for growth"}
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -349,14 +348,14 @@ export async function EarningsPanel({ ticker }: { ticker: string }) {
               <Metric label="Net margin" value={margin(latest) !== null ? `${margin(latest)!.toFixed(1)}%` : "—"} sub={prior && margin(prior) !== null ? `prior ${margin(prior)!.toFixed(1)}%` : undefined} />
               <Metric label="Finance cost" value={num(v(latest, "finance_cost"))} />
             </div>
-            <p className="mt-2 text-[10px] text-muted-foreground">Figures {String(latest.data?._units ?? "as reported")}; EPS in rupees. Missing values were not present in the filing.</p>
+            <p className="mt-2 text-[10px] text-muted-foreground">Figures {String(latest.data?._units ?? "as reported")}; EPS in rupees. Missing values were not published on the PSX page.</p>
           </CardContent>
         </Card>
       ) : (
         <EmptyState
           icon={TrendingUp}
-          title="No earnings extracted yet"
-          description={`Run extraction to pull revenue, profit, and EPS from ${ticker}'s official result filings. Numbers are read from the documents, never invented.`}
+          title="No earnings loaded yet"
+          description={`Load ${ticker}'s revenue, profit, and EPS from the official PSX company page. Numbers are echoed from PSX, never invented.`}
           action={<FetchFinancialsButton ticker={ticker} />}
         />
       )}
@@ -438,8 +437,8 @@ export async function RatiosPanel({ ticker }: { ticker: string }) {
       {!hasFinancials && (
         <EmptyState
           icon={Calculator}
-          title="Most ratios need extracted financials"
-          description={`Only market-data ratios can be computed for ${ticker} right now. Extract the official result filings to unlock P/E, margins, ROE, leverage and growth ratios.`}
+          title="Most ratios need financials loaded"
+          description={`Only market-data ratios can be computed for ${ticker} right now. Load the official PSX company page to unlock P/E, margins, and growth ratios.`}
           action={<FetchFinancialsButton ticker={ticker} />}
         />
       )}
@@ -472,8 +471,8 @@ export async function RatiosPanel({ ticker }: { ticker: string }) {
             </TBody>
           </Table>
           <p className="mt-3 text-[11px] text-muted-foreground">
-            Inputs: extracted PSX filings + live quote + recorded dividends · computed {new Date().toISOString().slice(0, 10)}
-            {ratios[0]?.source ? <> · <a href={ratios[0].source} target="_blank" rel="noopener noreferrer" className="underline hover:text-foreground">latest source filing</a></> : null}
+            Inputs: official PSX company page + live quote + recorded dividends · computed {new Date().toISOString().slice(0, 10)}
+            {ratios[0]?.source ? <> · <a href={ratios[0].source} target="_blank" rel="noopener noreferrer" className="underline hover:text-foreground">PSX source</a></> : null}
           </p>
         </CardContent>
       </Card>

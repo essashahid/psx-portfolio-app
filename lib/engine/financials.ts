@@ -1,6 +1,7 @@
 import { createAdminClient } from "@/lib/supabase/admin";
 import { aiConfigured, chatJson } from "@/lib/ai/openai";
 import { getCompanyFilings } from "@/lib/company/filings";
+import { fetchPsxCompanyData, type PsxPeriodFigures } from "@/lib/company/psx-company-data";
 
 /**
  * Financial-statement extraction pipeline.
@@ -13,8 +14,8 @@ import { getCompanyFilings } from "@/lib/company/filings";
  * read. The engine never invents a number.
  */
 
-const REQUEST_TIMEOUT_MS = 20_000;
-const MAX_PDF_BYTES = 10_000_000;
+const REQUEST_TIMEOUT_MS = 60_000; // PSX result PDFs can be 8MB+ over a slow link
+const MAX_PDF_BYTES = 20_000_000;
 const MAX_TEXT_CHARS = 42_000; // keep the prompt bounded
 
 const BROWSER_HEADERS = {
@@ -43,20 +44,36 @@ interface ExtractionResult {
   errors: string[];
 }
 
-async function fetchPdfText(url: string): Promise<string | null> {
+type PdfTextResult = { text: string } | { error: string };
+
+/**
+ * Download a PSX filing PDF and extract its text. Returns the text on success
+ * or a specific reason on failure (HTTP status, oversize, timeout, parse
+ * error, or too-little-text) so the caller can log exactly what went wrong
+ * instead of a blanket "could not read PDF".
+ */
+async function fetchPdfText(url: string): Promise<PdfTextResult> {
+  let buf: Buffer;
   try {
     const res = await fetch(url, { headers: BROWSER_HEADERS, signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS), cache: "no-store" });
-    if (!res.ok) return null;
-    const buf = Buffer.from(await res.arrayBuffer());
-    if (buf.byteLength > MAX_PDF_BYTES) return null;
+    if (!res.ok) return { error: `HTTP ${res.status} fetching PDF` };
+    buf = Buffer.from(await res.arrayBuffer());
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    return { error: /timeout|abort/i.test(msg) ? `download timed out after ${REQUEST_TIMEOUT_MS / 1000}s` : `download failed: ${msg}` };
+  }
+  if (buf.byteLength > MAX_PDF_BYTES) return { error: `PDF too large (${(buf.byteLength / 1e6).toFixed(1)}MB)` };
+
+  try {
     const { PDFParse } = await import("pdf-parse");
     const parser = new PDFParse({ data: new Uint8Array(buf) });
     const result = await parser.getText();
     await parser.destroy();
     const text = (result.text ?? "").replace(/[ \t]+/g, " ").trim();
-    return text.length > 200 ? text.slice(0, MAX_TEXT_CHARS) : null;
-  } catch {
-    return null;
+    if (text.length <= 200) return { error: `parsed text too short (${text.length} chars) — likely a scanned/image PDF` };
+    return { text: text.slice(0, MAX_TEXT_CHARS) };
+  } catch (err) {
+    return { error: `PDF parse failed: ${err instanceof Error ? err.message : String(err)}` };
   }
 }
 
@@ -137,9 +154,9 @@ export async function extractFinancials(ticker: string, maxFilings = 2): Promise
       continue;
     }
 
-    const text = await fetchPdfText(filing.url);
-    if (!text) {
-      out.errors.push(`could not read PDF: ${filing.title}`);
+    const pdf = await fetchPdfText(filing.url);
+    if ("error" in pdf) {
+      out.errors.push(`${filing.title}: ${pdf.error}`);
       continue;
     }
     out.processed++;
@@ -147,8 +164,9 @@ export async function extractFinancials(ticker: string, maxFilings = 2): Promise
     try {
       const { data } = await chatJson<{ statements: ExtractedStatement[] }>(
         EXTRACTION_PROMPT,
-        `Filing title: ${filing.title}\nFiling date: ${filing.date ?? "unknown"}\nTicker: ${t}\n\n--- DOCUMENT TEXT ---\n${text}`,
-        4000
+        `Filing title: ${filing.title}\nFiling date: ${filing.date ?? "unknown"}\nTicker: ${t}\n\n--- DOCUMENT TEXT ---\n${pdf.text}`,
+        12_000, // 3 statements × ~15 fields can be sizeable; leave ample room
+        { thinkingBudget: 2_048 } // bound reasoning so the JSON output isn't starved
       );
 
       const statements = (data.statements ?? []).filter(validStatement);
@@ -196,4 +214,126 @@ export async function extractFinancials(ticker: string, maxFilings = 2): Promise
   }
 
   return out;
+}
+
+/**
+ * Build a company_financials row payload from one PSX period column. Stores the
+ * figures PSX reports literally (sales→revenue in PKR thousands, eps in PKR)
+ * and, when PSX also publishes the period's margins, the implied gross profit
+ * and profit-after-tax (revenue × reported margin — arithmetic from two
+ * official figures, recorded with the margin so it stays auditable).
+ */
+function statementData(p: PsxPeriodFigures): Record<string, number | null | string> {
+  const data: Record<string, number | null | string> = {
+    revenue: p.sales,
+    eps: p.eps,
+    _units: "PKR thousands",
+    _source: "psx-portal",
+  };
+  if (p.grossMarginPct != null && p.sales != null) {
+    data.gross_profit = Math.round((p.sales * p.grossMarginPct) / 100);
+    data.gross_profit_margin_pct = p.grossMarginPct;
+  }
+  if (p.netMarginPct != null && p.sales != null) {
+    data.profit_after_tax = Math.round((p.sales * p.netMarginPct) / 100);
+    data.net_profit_margin_pct = p.netMarginPct;
+  }
+  return data;
+}
+
+/**
+ * Populate company_financials from the official PSX company page — no PDF
+ * download, no LLM, one HTTP request. This is the default, zero-marginal-cost
+ * financials path; the Gemini PDF extractor above remains available only as an
+ * opt-in deep fallback. Returns the same ExtractionResult shape as
+ * extractFinancials so callers are interchangeable.
+ */
+export async function populateFinancials(ticker: string): Promise<ExtractionResult> {
+  const t = ticker.toUpperCase();
+  const out: ExtractionResult = { ticker: t, processed: 0, saved: 0, skipped: [], errors: [] };
+
+  if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
+    out.errors.push("SUPABASE_SERVICE_ROLE_KEY missing — cannot persist financials.");
+    return out;
+  }
+
+  const data = await fetchPsxCompanyData(t);
+  if (!data) {
+    out.errors.push(`PSX company page for ${t} was unreachable or had no financial tables.`);
+    await logResult(t, out);
+    return out;
+  }
+
+  const db = createAdminClient();
+  const now = new Date().toISOString();
+  const periods: { p: PsxPeriodFigures; period_type: "annual" | "quarterly" }[] = [
+    ...data.annual.map((p) => ({ p, period_type: "annual" as const })),
+    ...data.quarterly.map((p) => ({ p, period_type: "quarterly" as const })),
+  ];
+
+  for (const { p, period_type } of periods) {
+    if (p.sales == null && p.eps == null) continue; // nothing reported for this column
+    out.processed++;
+    const { error } = await db.from("company_financials").upsert(
+      {
+        ticker: t,
+        period_type,
+        fiscal_year: p.fiscalYear,
+        fiscal_period: p.fiscalPeriod ?? (period_type === "annual" ? "FY" : null),
+        statement_type: "income_statement",
+        reported_date: null,
+        source_type: "psx-portal",
+        source_url: data.sourceUrl,
+        data: statementData(p),
+        confidence: 1, // official PSX figures, read verbatim
+        updated_at: now,
+      },
+      { onConflict: "ticker,period_type,fiscal_year,fiscal_period,statement_type" }
+    );
+    if (error) out.errors.push(`db: ${error.message}`);
+    else out.saved++;
+  }
+
+  // Cache the equity profile (shares / market cap) so the cockpit header and
+  // market-cap-dependent ratios have an authoritative source.
+  if (data.shares != null || data.marketCap != null) {
+    await db
+      .from("company_metadata")
+      .upsert(
+        {
+          ticker: t,
+          shares_outstanding: data.shares,
+          market_cap: data.marketCap,
+          source: "psx-portal",
+          source_url: data.sourceUrl,
+          last_fetched_at: now,
+          last_updated: now,
+        },
+        { onConflict: "ticker" }
+      )
+      .then(({ error }) => {
+        if (error) out.errors.push(`metadata: ${error.message}`);
+      });
+  }
+
+  await logResult(t, out);
+  return out;
+}
+
+async function logResult(ticker: string, out: ExtractionResult): Promise<void> {
+  try {
+    createAdminClient()
+      .from("data_fetch_logs")
+      .insert({
+        ticker,
+        section: "financials",
+        source: "psx-portal",
+        status: out.saved > 0 ? "ok" : out.errors.length ? "error" : "empty",
+        rows: out.saved,
+        detail: out.errors.join("; ").slice(0, 300) || null,
+      })
+      .then(() => {});
+  } catch {
+    /* best-effort */
+  }
 }

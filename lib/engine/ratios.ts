@@ -82,8 +82,12 @@ export async function computeRatios(supabase: SupabaseClient, ticker: string): P
   ]);
 
   const rows = (finRows ?? []) as FinRow[];
-  const income = latest(rows, "income_statement");
-  const prevIncome = previous(rows, income);
+  // Prefer the latest full-year income statement for valuation/margin ratios so
+  // a single interim quarter never distorts P/E or annualized figures. Fall
+  // back to the latest available statement when no annual is stored.
+  const annualRows = rows.filter((r) => r.period_type === "annual");
+  const income = latest(annualRows, "income_statement") ?? latest(rows, "income_statement");
+  const prevIncome = previous(income?.period_type === "annual" ? annualRows : rows, income);
   const balance = latest(rows, "balance_sheet");
   const cash = latest(rows, "cash_flow");
 

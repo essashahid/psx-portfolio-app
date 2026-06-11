@@ -53,20 +53,34 @@ export async function chatMarkdown(
 export async function chatJson<T>(
   systemExtra: string,
   userPrompt: string,
-  maxTokens = 2500
+  maxTokens = 2500,
+  opts: { thinkingBudget?: number } = {}
 ): Promise<{ data: T; model: string }> {
   const genAI = getClient();
   const modelId = getModel();
+  // gemini-2.5-* are thinking models: reasoning tokens are drawn from the same
+  // output budget, so a large document can exhaust maxOutputTokens before the
+  // JSON is finished and the response comes back truncated. Bounding the
+  // thinking budget keeps room for the structured output. (thinkingConfig is
+  // accepted by the REST API even though the 0.24 SDK types predate it.)
+  const generationConfig: Record<string, unknown> = {
+    temperature: 0.2,
+    maxOutputTokens: maxTokens,
+    responseMimeType: "application/json",
+  };
+  if (opts.thinkingBudget !== undefined) {
+    generationConfig.thinkingConfig = { thinkingBudget: opts.thinkingBudget };
+  }
   const model = genAI.getGenerativeModel({
     model: modelId,
     systemInstruction: `${GUARDRAILS}\n\n${systemExtra}\n\nRespond with valid JSON only.`,
-    generationConfig: {
-      temperature: 0.2,
-      maxOutputTokens: maxTokens,
-      responseMimeType: "application/json",
-    },
+    generationConfig: generationConfig as never,
   });
   const result = await model.generateContent(userPrompt);
+  const finish = result.response.candidates?.[0]?.finishReason;
+  if (finish === "MAX_TOKENS") {
+    throw new Error(`AI response hit the ${maxTokens}-token limit before completing — raise maxTokens or bound the thinking budget.`);
+  }
   const content = result.response.text().trim();
   if (!content) throw new Error("AI returned an empty response.");
   return { data: JSON.parse(content) as T, model: modelId };
