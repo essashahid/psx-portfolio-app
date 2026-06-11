@@ -17,6 +17,8 @@ const actionSchema = z.discriminatedUnion("action", [
   z.object({ action: z.literal("ignore"), id: z.string().uuid() }),
   z.object({ action: z.literal("watch"), id: z.string().uuid() }),
   z.object({ action: z.literal("confirm"), id: z.string().uuid() }),
+  z.object({ action: z.literal("merge_duplicate"), id: z.string().uuid() }),
+  z.object({ action: z.literal("keep_separate"), id: z.string().uuid() }),
   z.object({ action: z.literal("note"), id: z.string().uuid(), notes: z.string().max(1000) }),
   z.object({
     action: z.literal("mark_received"),
@@ -78,6 +80,19 @@ export async function PATCH(request: Request) {
       case "ignore":
         patch.status = "ignored";
         message = "Event ignored.";
+        break;
+      case "merge_duplicate":
+        // Accept the duplicate flag: drop this copy out of all totals.
+        patch.status = "ignored";
+        patch.is_possible_duplicate = true;
+        patch.notes = [event.notes, "Merged as a duplicate of the kept event."].filter(Boolean).join(" ");
+        message = "Merged — this duplicate will not be counted.";
+        break;
+      case "keep_separate":
+        // Reject the duplicate flag: treat it as a distinct payout again.
+        patch.is_possible_duplicate = false;
+        patch.duplicate_of = null;
+        message = "Kept as a separate dividend event.";
         break;
       case "watch":
         patch.notes = [event.notes, "Watching."].filter(Boolean).join(" ");

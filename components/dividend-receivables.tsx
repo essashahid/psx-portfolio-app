@@ -140,6 +140,8 @@ export function DividendReceivables({
                     </Badge>
                     <Badge variant={confidenceBadge(e.confidence_level)}>{e.confidence_level} confidence</Badge>
                     <Badge variant="default">{e.dividend_type}</Badge>
+                    {e.event_type === "credit" && <Badge variant="secondary">already credited</Badge>}
+                    {e.is_possible_duplicate && <Badge variant="amber">possible duplicate</Badge>}
                     {e.needs_tax_review && <Badge variant="amber">needs tax review</Badge>}
                   </div>
                   <p className="mt-0.5 text-xs text-muted-foreground">{e.company_name ?? e.ticker}</p>
@@ -186,6 +188,20 @@ export function DividendReceivables({
                   {e.eligibility_notes && e.eligibility_status !== "eligible" && (
                     <p className="text-[11px] text-muted-foreground">{e.eligibility_notes}</p>
                   )}
+                </div>
+              )}
+
+              {e.is_possible_duplicate && (
+                <div className="mt-2 flex flex-wrap items-center gap-2 rounded-md border border-amber-200 bg-amber-50 px-2.5 py-1.5">
+                  <span className="text-[11px] text-amber-700">
+                    Looks like a duplicate of another event for {e.ticker} — excluded from totals to avoid double counting.
+                  </span>
+                  <Button size="sm" variant="outline" disabled={busyId === e.id} onClick={() => act(e.id, { action: "merge_duplicate" })}>
+                    Merge
+                  </Button>
+                  <Button size="sm" variant="ghost" disabled={busyId === e.id} onClick={() => act(e.id, { action: "keep_separate" })}>
+                    Keep separate
+                  </Button>
                 </div>
               )}
 

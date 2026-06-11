@@ -41,16 +41,21 @@ export default async function DividendsPage() {
   const confirmedOpen = events.filter(
     (e) => !e.is_forecast && ["announced", "expected", "needs_review"].includes(e.status)
   );
-  const overdue = events.filter((e) => e.status === "overdue" || isOverdue(e, today));
+  // Outstanding receivables for the "expected net" total: exclude already-credited
+  // filings and flagged duplicates so nothing is double-counted.
+  const outstanding = confirmedOpen.filter((e) => e.event_type !== "credit" && !e.is_possible_duplicate);
+  const overdue = events.filter(
+    (e) => !e.is_possible_duplicate && (e.status === "overdue" || isOverdue(e, today))
+  );
   const forecasts = events.filter((e) => e.is_forecast && e.status === "forecasted");
   const needsEligibility = confirmedOpen.filter(
     (e) => e.eligibility_status === "needs_confirmation" || e.eligibility_status === "unknown"
   );
 
   const sum = (xs: (number | null)[]) => xs.reduce<number>((s, v) => s + (v ?? 0), 0);
-  const confirmedGross = sum(confirmedOpen.map((e) => e.gross_expected));
-  const confirmedTax = sum(confirmedOpen.map((e) => e.estimated_tax));
-  const confirmedNet = sum(confirmedOpen.map((e) => e.net_expected));
+  const confirmedGross = sum(outstanding.map((e) => e.gross_expected));
+  const confirmedTax = sum(outstanding.map((e) => e.estimated_tax));
+  const confirmedNet = sum(outstanding.map((e) => e.net_expected));
   const forecastNetLow = sum(forecasts.map((e) => e.net_low));
   const forecastNetHigh = sum(forecasts.map((e) => e.net_high));
 

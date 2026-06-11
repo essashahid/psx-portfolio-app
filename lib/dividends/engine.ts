@@ -69,6 +69,9 @@ export interface DividendEvent {
   is_forecast: boolean;
   is_confirmed: boolean;
   is_reconciled: boolean;
+  is_possible_duplicate: boolean;
+  duplicate_of: string | null;
+  reconciled_dividend_id: string | null;
   notes: string | null;
   dedupe_key: string;
   last_checked_at: string | null;
@@ -133,6 +136,9 @@ export function normalizeEvent(row: Record<string, unknown>): DividendEvent {
     is_forecast: Boolean(row.is_forecast),
     is_confirmed: Boolean(row.is_confirmed),
     is_reconciled: Boolean(row.is_reconciled),
+    is_possible_duplicate: Boolean(row.is_possible_duplicate),
+    duplicate_of: str(row.duplicate_of),
+    reconciled_dividend_id: str(row.reconciled_dividend_id),
     notes: str(row.notes),
     dedupe_key: String(row.dedupe_key),
     last_checked_at: str(row.last_checked_at),

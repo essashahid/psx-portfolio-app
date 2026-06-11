@@ -2,6 +2,8 @@ import Link from "next/link";
 import { createClient, getUser } from "@/lib/supabase/server";
 import { getPortfolio } from "@/lib/portfolio";
 import { getDividends, summarizeDividends } from "@/lib/dividends";
+import { getTaxSettings } from "@/lib/dividends/tax";
+import { normalizeEvent, type DividendEvent } from "@/lib/dividends/engine";
 import { formatMoney, formatNumber, formatSignedPct } from "@/lib/utils";
 import { PageHeader } from "@/components/page-header";
 import { StatCard } from "@/components/stat-card";
@@ -12,6 +14,9 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Markdown } from "@/components/markdown";
 import { AllocationPie, GainLossBar, TargetVsActualBar, ValueLine } from "@/components/charts-lazy";
+import { UpcomingIncome } from "@/components/upcoming-income";
+import { ImportantPsxEvents, type PsxEventRow } from "@/components/important-psx-events";
+import { DailyChangelog, type ChangelogRow } from "@/components/daily-changelog";
 import { ArrowRight, FileText, HandCoins, Newspaper, RefreshCw, Sparkles, Upload } from "lucide-react";
 
 export const dynamic = "force-dynamic";
@@ -21,49 +26,79 @@ export default async function DashboardPage() {
   const user = await getUser();
   if (!user) return null;
 
-  const [summary, [briefingRes, newsRes, alertsRes, snapshotsRes, batchesRes, profileRes], dividends] =
-    await Promise.all([
-      getPortfolio(supabase, user.id),
-      Promise.all([
-        supabase
-          .from("ai_briefings")
-          .select("id, title, content, created_at, briefing_type")
-          .eq("user_id", user.id)
-          .in("briefing_type", ["daily", "weekly"])
-          .order("created_at", { ascending: false })
-          .limit(1),
-        supabase
-          .from("news_articles")
-          .select("id, ticker, title, url, source, sentiment, relevance_score, published_at")
-          .eq("user_id", user.id)
-          .eq("ignored", false)
-          .eq("low_confidence", false)
-          .gte("relevance_score", 7)
-          .order("created_at", { ascending: false })
-          .limit(5),
-        supabase
-          .from("alerts")
-          .select("id, ticker, alert_type, severity, title")
-          .eq("user_id", user.id)
-          .eq("status", "open")
-          .order("created_at", { ascending: false })
-          .limit(6),
-        supabase
-          .from("portfolio_snapshots")
-          .select("snapshot_date, total_value, total_cost")
-          .eq("user_id", user.id)
-          .order("snapshot_date", { ascending: true })
-          .limit(120),
-        supabase
-          .from("import_batches")
-          .select("id, statement_type, status, accepted_rows, rejected_rows, created_at")
-          .eq("user_id", user.id)
-          .order("created_at", { ascending: false })
-          .limit(3),
-        supabase.from("profiles").select("demo_mode").eq("id", user.id).maybeSingle(),
-      ]),
-      getDividends(supabase, user.id),
-    ]);
+  const [
+    summary,
+    [briefingRes, newsRes, alertsRes, snapshotsRes, batchesRes, profileRes, psxEventsRes, changelogRes],
+    dividends,
+    dividendEventsRes,
+    taxSettings,
+  ] = await Promise.all([
+    getPortfolio(supabase, user.id),
+    Promise.all([
+      supabase
+        .from("ai_briefings")
+        .select("id, title, content, created_at, briefing_type")
+        .eq("user_id", user.id)
+        .in("briefing_type", ["daily", "weekly"])
+        .order("created_at", { ascending: false })
+        .limit(1),
+      supabase
+        .from("news_articles")
+        .select("id, ticker, title, url, source, sentiment, relevance_score, published_at")
+        .eq("user_id", user.id)
+        .eq("ignored", false)
+        .eq("low_confidence", false)
+        .gte("relevance_score", 7)
+        .order("created_at", { ascending: false })
+        .limit(5),
+      supabase
+        .from("alerts")
+        .select("id, ticker, alert_type, severity, title")
+        .eq("user_id", user.id)
+        .eq("status", "open")
+        .order("created_at", { ascending: false })
+        .limit(6),
+      supabase
+        .from("portfolio_snapshots")
+        .select("snapshot_date, total_value, total_cost")
+        .eq("user_id", user.id)
+        .order("snapshot_date", { ascending: true })
+        .limit(120),
+      supabase
+        .from("import_batches")
+        .select("id, statement_type, status, accepted_rows, rejected_rows, created_at")
+        .eq("user_id", user.id)
+        .order("created_at", { ascending: false })
+        .limit(3),
+      supabase.from("profiles").select("demo_mode").eq("id", user.id).maybeSingle(),
+      // Important PSX events: official filings (dividends, results, corporate actions)
+      supabase
+        .from("news_articles")
+        .select("id, ticker, title, url, category, published_at")
+        .eq("user_id", user.id)
+        .eq("ignored", false)
+        .in("category", ["dividend", "result", "corporate_announcement"])
+        .order("published_at", { ascending: false })
+        .limit(8),
+      // Latest "what changed" digest
+      supabase
+        .from("portfolio_changelog")
+        .select("run_date, highlights")
+        .eq("user_id", user.id)
+        .order("run_date", { ascending: false })
+        .limit(1)
+        .maybeSingle(),
+    ]),
+    getDividends(supabase, user.id),
+    supabase
+      .from("dividend_events")
+      .select("*")
+      .eq("user_id", user.id)
+      .in("status", ["announced", "expected", "overdue", "needs_review", "forecasted"])
+      .order("created_at", { ascending: false })
+      .limit(100),
+    getTaxSettings(supabase, user.id),
+  ]);
 
   if (summary.holdingsCount === 0) {
     return (
@@ -116,11 +151,11 @@ export default async function DashboardPage() {
   const latestNews = newsRes.data ?? [];
   const openAlerts = alertsRes.data ?? [];
   const dividendSummary = summarizeDividends(dividends);
-  const latestPriceDate = summary.holdings
-    .map((h) => h.price_date)
-    .filter((date): date is string => !!date)
-    .sort()
-    .at(-1) ?? null;
+  const dividendEvents: DividendEvent[] = (dividendEventsRes.data ?? []).map((r) =>
+    normalizeEvent(r as Record<string, unknown>)
+  );
+  const psxEvents = (psxEventsRes.data ?? []) as PsxEventRow[];
+  const changelog = (changelogRes.data as ChangelogRow | null) ?? null;
   return (
     <div className="space-y-5">
       <PageHeader
@@ -129,10 +164,9 @@ export default async function DashboardPage() {
         actions={
           <>
             <ActionButton
-              endpoint="/api/prices"
-              body={{ refresh: true }}
-              label={<><RefreshCw className="h-3.5 w-3.5" /> Refresh prices</>}
-              variant="outline"
+              endpoint="/api/dividends/daily"
+              label={<><RefreshCw className="h-3.5 w-3.5" /> Run daily update</>}
+              variant="default"
               size="sm"
             />
             <ActionButton
@@ -152,6 +186,9 @@ export default async function DashboardPage() {
         </p>
       )}
 
+      <DailyChangelog changelog={changelog} today={today} />
+
+      {/* 1. Portfolio Snapshot */}
       <div className="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-5">
         <StatCard
           label="Total value"
@@ -191,6 +228,73 @@ export default async function DashboardPage() {
         />
       </div>
 
+      {/* 2. Upcoming Income */}
+      <UpcomingIncome events={dividendEvents} today={today} />
+
+      {/* 3. Important PSX Events */}
+      <ImportantPsxEvents events={psxEvents} />
+
+      {/* 4. Top Gainers / Losers */}
+      <div className="grid gap-4 lg:grid-cols-3">
+        <Card>
+          <CardHeader>
+            <CardTitle>Top gainers</CardTitle>
+            <CardDescription>By unrealized return on cost</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-1.5">
+            {topGainers.length === 0 && <p className="py-3 text-center text-xs text-muted-foreground">No priced gains yet.</p>}
+            {topGainers.map((h) => (
+              <Link key={h.ticker} href={`/stocks/${h.ticker}`} className="flex items-center justify-between text-xs hover:underline">
+                <span className="font-medium">{h.ticker}</span>
+                <span className="tabular-nums">
+                  <span className="font-semibold text-emerald-600">{formatSignedPct(h.unrealized_pl_pct!)}</span>
+                  <span className="ml-2 text-muted-foreground">{formatNumber(h.unrealized_pl ?? 0, 0)}</span>
+                </span>
+              </Link>
+            ))}
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader>
+            <CardTitle>Biggest declines</CardTitle>
+            <CardDescription>Positions trading below your cost</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-1.5">
+            {topLosers.length === 0 && <p className="py-3 text-center text-xs text-muted-foreground">No positions below cost.</p>}
+            {topLosers.map((h) => (
+              <Link key={h.ticker} href={`/stocks/${h.ticker}`} className="flex items-center justify-between text-xs hover:underline">
+                <span className="font-medium">{h.ticker}</span>
+                <span className="tabular-nums">
+                  <span className="font-semibold text-red-600">{formatSignedPct(h.unrealized_pl_pct!)}</span>
+                  <span className="ml-2 text-muted-foreground">{formatNumber(h.unrealized_pl ?? 0, 0)}</span>
+                </span>
+              </Link>
+            ))}
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader>
+            <CardTitle>Import status</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-1.5">
+            {(batchesRes.data ?? []).length === 0 && (
+              <p className="py-3 text-center text-xs text-muted-foreground">No imports yet.</p>
+            )}
+            {(batchesRes.data ?? []).map((b) => (
+              <div key={b.id} className="flex items-center justify-between text-xs">
+                <span>
+                  {b.created_at.slice(0, 10)} · {b.statement_type}
+                </span>
+                <span className="text-muted-foreground">
+                  {b.status === "committed" ? `${b.accepted_rows} rows${b.rejected_rows ? `, ${b.rejected_rows} rejected` : ""}` : b.status}
+                </span>
+              </div>
+            ))}
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* 5. Allocation charts */}
       <div className="grid gap-4 lg:grid-cols-2">
         <Card>
           <CardHeader>
@@ -371,65 +475,6 @@ export default async function DashboardPage() {
             </CardContent>
           </Card>
         </div>
-      </div>
-
-      <div className="grid gap-4 lg:grid-cols-3">
-        <Card>
-          <CardHeader>
-            <CardTitle>Top gainers</CardTitle>
-            <CardDescription>By unrealized return on cost</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-1.5">
-            {topGainers.length === 0 && <p className="py-3 text-center text-xs text-muted-foreground">No priced gains yet.</p>}
-            {topGainers.map((h) => (
-              <Link key={h.ticker} href={`/stocks/${h.ticker}`} className="flex items-center justify-between text-xs hover:underline">
-                <span className="font-medium">{h.ticker}</span>
-                <span className="tabular-nums">
-                  <span className="font-semibold text-emerald-600">{formatSignedPct(h.unrealized_pl_pct!)}</span>
-                  <span className="ml-2 text-muted-foreground">{formatNumber(h.unrealized_pl ?? 0, 0)}</span>
-                </span>
-              </Link>
-            ))}
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader>
-            <CardTitle>Biggest declines</CardTitle>
-            <CardDescription>Positions trading below your cost</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-1.5">
-            {topLosers.length === 0 && <p className="py-3 text-center text-xs text-muted-foreground">No positions below cost.</p>}
-            {topLosers.map((h) => (
-              <Link key={h.ticker} href={`/stocks/${h.ticker}`} className="flex items-center justify-between text-xs hover:underline">
-                <span className="font-medium">{h.ticker}</span>
-                <span className="tabular-nums">
-                  <span className="font-semibold text-red-600">{formatSignedPct(h.unrealized_pl_pct!)}</span>
-                  <span className="ml-2 text-muted-foreground">{formatNumber(h.unrealized_pl ?? 0, 0)}</span>
-                </span>
-              </Link>
-            ))}
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader>
-            <CardTitle>Import status</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-1.5">
-            {(batchesRes.data ?? []).length === 0 && (
-              <p className="py-3 text-center text-xs text-muted-foreground">No imports yet.</p>
-            )}
-            {(batchesRes.data ?? []).map((b) => (
-              <div key={b.id} className="flex items-center justify-between text-xs">
-                <span>
-                  {b.created_at.slice(0, 10)} · {b.statement_type}
-                </span>
-                <span className="text-muted-foreground">
-                  {b.status === "committed" ? `${b.accepted_rows} rows${b.rejected_rows ? `, ${b.rejected_rows} rejected` : ""}` : b.status}
-                </span>
-              </div>
-            ))}
-          </CardContent>
-        </Card>
       </div>
 
       {(needsReview.length > 0 || upcomingReviews.length > 0) && (

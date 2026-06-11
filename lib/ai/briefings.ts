@@ -105,7 +105,13 @@ export async function buildPortfolioContext(
     lines.push(
       `RULES FOR YOU: Never state a dividend will definitely be received. Confirmed items are announced but eligibility/receipt may be unconfirmed — use wording like "estimated net receivable based on your current holding and configured filer tax rate". Items marked forecast are NOT announced; always label them "forecast only". Mention eligibility uncertainty and missing data explicitly.`
     );
-    const confirmed = events.filter((e) => !e.is_forecast && (e.status === "announced" || e.status === "expected"));
+    const confirmed = events.filter(
+      (e) =>
+        !e.is_forecast &&
+        !e.is_possible_duplicate &&
+        e.event_type !== "credit" &&
+        (e.status === "announced" || e.status === "expected")
+    );
     for (const e of confirmed) {
       lines.push(
         `- CONFIRMED ${e.ticker}: ${e.dividend_type} dividend${e.dividend_per_share !== null ? ` Rs ${e.dividend_per_share}/share` : ""}, announced ${e.announcement_date ?? "?"}, qty ${e.eligible_quantity ?? "?"}, gross ~${e.gross_expected?.toFixed(0) ?? "?"}, est. tax ${e.estimated_tax?.toFixed(0) ?? "?"}, est. net ~${e.net_expected?.toFixed(0) ?? "?"}, payment ${e.payment_date ?? `est. ${e.estimated_payment_start ?? "?"} to ${e.estimated_payment_end ?? "?"}`}, eligibility ${e.eligibility_status}${e.face_value_assumed ? ", face value assumed (needs review)" : ""}`

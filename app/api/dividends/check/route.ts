@@ -17,6 +17,8 @@ export async function POST() {
       `${result.checkedTickers} holding(s) checked`,
       `${result.staged} new dividend event(s) staged`,
     ];
+    if (result.upgraded > 0) parts.push(`${result.upgraded} upgraded with PDF values`);
+    if (result.pdfsRead > 0) parts.push(`${result.pdfsRead} announcement PDF(s) read`);
     if (result.skippedDuplicates > 0) parts.push(`${result.skippedDuplicates} already known`);
     if (result.lowConfidence > 0) parts.push(`${result.lowConfidence} low-confidence (hidden by default)`);
     if (result.errors.length > 0) parts.push(`${result.errors.length} source error(s)`);
