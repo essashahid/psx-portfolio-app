@@ -1,7 +1,19 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
 
+/**
+ * Global kill switch for all Gemini usage. Set AI_DISABLED=true to halt every
+ * Gemini call — crons (statement extraction, market brief) and on-demand AI
+ * routes alike degrade gracefully ("AI temporarily disabled") with no API call,
+ * while the free, non-LLM pipelines (PSX-page fundamentals, payouts, market
+ * snapshot, events) keep running. Remove the flag to resume.
+ */
+export function aiDisabled(): boolean {
+  const v = (process.env.AI_DISABLED ?? "").toLowerCase();
+  return v === "true" || v === "1" || v === "yes";
+}
+
 export function aiConfigured(): boolean {
-  return !!process.env.GEMINI_API_KEY;
+  return !aiDisabled() && !!process.env.GEMINI_API_KEY;
 }
 
 export function getModel(): string {
@@ -9,6 +21,9 @@ export function getModel(): string {
 }
 
 function getClient() {
+  if (aiDisabled()) {
+    throw new Error("AI is temporarily disabled (AI_DISABLED=true). Remove the flag to resume.");
+  }
   if (!process.env.GEMINI_API_KEY) {
     throw new Error("GEMINI_API_KEY is not configured. Add it in .env.local to enable AI features.");
   }
