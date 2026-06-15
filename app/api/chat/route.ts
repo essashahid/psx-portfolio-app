@@ -16,7 +16,7 @@ Rules:
 - Amounts are in PKR. Be concise and concrete — lead with the answer, then the supporting numbers. A few tight sentences beat a long essay.
 - The user already sees rich data cards (quote, position, ratios, chart, news) rendered alongside your reply, so don't dump tables — interpret and connect the numbers.
 - Call a tool only when the <context> block lacks something you need (e.g. a second company to compare, or data for a ticker not yet loaded).
-- End with a one-line "Not financial advice." only when you've given an assessment.`;
+- Never append disclaimers like "Not financial advice." — the product handles that separately.`;
 
 type Evt =
   | { type: "cards"; cards: Card[] }

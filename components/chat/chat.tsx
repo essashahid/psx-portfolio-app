@@ -1,6 +1,7 @@
 "use client";
 
 import { useRef, useState, useEffect } from "react";
+import ReactMarkdown from "react-markdown";
 import { ChatCards } from "@/components/chat/cards";
 import type { Card } from "@/lib/chat/context";
 import type { ChatLevel } from "@/lib/ai/claude";
@@ -110,7 +111,11 @@ export function Chat({ aiEnabled }: { aiEnabled: boolean }) {
               {m.role === "assistant" ? (
                 <div className="space-y-2">
                   {m.thinking && <ThinkingPanel text={m.thinking} streaming={busy && i === messages.length - 1 && !m.content} />}
-                  {m.content && <div className="whitespace-pre-wrap text-sm leading-relaxed text-foreground/90">{m.content}</div>}
+                  {m.content && (
+                    <div className="prose prose-sm max-w-none text-foreground/90 [&_p]:leading-relaxed [&_p]:my-1 [&_strong]:font-semibold [&_strong]:text-foreground [&_ul]:my-1.5 [&_ul]:pl-4 [&_li]:my-0.5 [&_h3]:text-sm [&_h3]:font-semibold [&_h3]:mt-3 [&_h3]:mb-1 [&_h4]:text-sm [&_h4]:font-medium [&_h4]:mt-2">
+                      <ReactMarkdown>{m.content}</ReactMarkdown>
+                    </div>
+                  )}
                   {m.status && !m.content && <p className="flex items-center gap-1.5 text-xs text-muted-foreground"><Loader2 className="h-3 w-3 animate-spin" /> {m.status}</p>}
                   {busy && i === messages.length - 1 && !m.content && !m.status && !m.thinking && <p className="flex items-center gap-1.5 text-xs text-muted-foreground"><Loader2 className="h-3 w-3 animate-spin" /> thinking…</p>}
                   {m.cards && <ChatCards cards={m.cards} />}
@@ -150,7 +155,7 @@ export function Chat({ aiEnabled }: { aiEnabled: boolean }) {
             {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
           </button>
         </form>
-        <p className="mt-1.5 text-center text-[10px] text-muted-foreground">Research support, not financial advice. Data is cached from official PSX sources.</p>
+        <p className="mt-1.5 text-center text-[10px] text-muted-foreground">Data cached from official PSX sources.</p>
       </div>
     </div>
   );
