@@ -16,9 +16,32 @@ import { fetchPsxCompanyData, type PsxPeriodFigures } from "@/lib/company/psx-co
 
 const REQUEST_TIMEOUT_MS = 60_000; // PSX result PDFs can be 8MB+ over a slow link
 const MAX_PDF_BYTES = 20_000_000;
-// Statements sit deep in 40+ page reports (after the narrative), so a tight cap
-// truncates them out. Flash has a ~1M-token context, so send the whole document.
-const MAX_TEXT_CHARS = 200_000;
+// Hard cap on text sent to the model. We don't send the whole 40-page report —
+// focusStatements() trims to the financial-statements region first, which cuts
+// input tokens ~5× (and cost with it) while keeping the actual statements.
+const MAX_TEXT_CHARS = 90_000;
+
+/**
+ * Trim extracted PDF text to the financial-statements region so we send the
+ * model ~15K tokens instead of ~50K. The narrative/glossy front matter of a PSX
+ * report carries no statement numbers; we keep from just before the first
+ * statement heading to a buffer past the last, capped at MAX_TEXT_CHARS. Falls
+ * back to the head of the document when no statement headings are found.
+ */
+function focusStatements(text: string): string {
+  const marker = /(statement of financial position|balance sheet|statement of profit|profit (?:or|and) loss|income statement|statement of comprehensive income|statement of cash flow|cash flow statement)/gi;
+  let first = -1;
+  let last = -1;
+  let m: RegExpExecArray | null;
+  while ((m = marker.exec(text)) !== null) {
+    if (first === -1) first = m.index;
+    last = m.index;
+  }
+  if (first === -1) return text.slice(0, MAX_TEXT_CHARS);
+  const start = Math.max(0, first - 2_000);
+  const end = Math.min(text.length, last + 22_000); // capture the last statement's rows + notes
+  return text.slice(start, end).slice(0, MAX_TEXT_CHARS);
+}
 
 const BROWSER_HEADERS = {
   "User-Agent":
@@ -73,7 +96,7 @@ async function fetchPdfText(url: string): Promise<PdfTextResult> {
     await parser.destroy();
     const text = (result.text ?? "").replace(/[ \t]+/g, " ").trim();
     if (text.length <= 200) return { error: `parsed text too short (${text.length} chars) — likely a scanned/image PDF` };
-    return { text: text.slice(0, MAX_TEXT_CHARS) };
+    return { text: focusStatements(text) };
   } catch (err) {
     return { error: `PDF parse failed: ${err instanceof Error ? err.message : String(err)}` };
   }

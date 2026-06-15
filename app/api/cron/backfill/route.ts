@@ -79,7 +79,7 @@ export async function GET(request: Request) {
     const queue = await missingStatementFirst(db, universe, deepLimit);
     let extracted = 0;
     await runPool(queue, Math.min(concurrency, 3), async (ticker) => {
-      const r = await populateDeepFundamentals(ticker, 3, db);
+      const r = await populateDeepFundamentals(ticker, 2, db);
       if (r.extracted > 0) extracted++;
     });
     report.extract = { attempted: queue.length, extracted };
