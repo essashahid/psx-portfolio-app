@@ -1,5 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { aiConfigured, chatJson } from "@/lib/ai/openai";
+import { aiAvailable, chatJson } from "@/lib/ai/openai";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { fetchPsxSymbols } from "@/lib/market-data/psx-dps";
 
@@ -108,7 +108,7 @@ export async function enrichHoldingsMetadata(
 
   const stillIncomplete = holdings.filter(needsMetadata);
   const shouldUseAi = opts.useAi ?? true;
-  if (stillIncomplete.length === 0 || !shouldUseAi || !aiConfigured()) {
+  if (stillIncomplete.length === 0 || !shouldUseAi || !aiAvailable()) {
     return resultMessage({
       checked: holdings.length,
       alreadyComplete: holdings.length - incomplete.length,

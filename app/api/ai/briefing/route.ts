@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { requireUser, errorResponse, logAgentRun } from "@/lib/api-helpers";
 import { generateBriefing } from "@/lib/ai/briefings";
-import { aiConfigured } from "@/lib/ai/openai";
+import { aiAvailable } from "@/lib/ai/openai";
 import type { BriefingType } from "@/lib/types";
 
 export const maxDuration = 120;
@@ -19,7 +19,7 @@ export async function POST(request: Request) {
   const { supabase, user, error } = await requireUser();
   if (error) return error;
 
-  if (!aiConfigured()) {
+  if (!aiAvailable()) {
     return NextResponse.json(
       { error: "OPENAI_API_KEY is not configured. Add it in .env.local to enable AI briefings." },
       { status: 503 }

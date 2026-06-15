@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { requireUser, errorResponse, logAgentRun } from "@/lib/api-helpers";
-import { chatMarkdown, aiConfigured } from "@/lib/ai/openai";
+import { chatMarkdown, aiAvailable } from "@/lib/ai/openai";
 import { getCompanyMetadata } from "@/lib/company/metadata";
 import { getTechnicals } from "@/lib/company/technicals";
 import { getCompanyFilings } from "@/lib/company/filings";
@@ -73,7 +73,7 @@ export async function POST(request: Request) {
   const { supabase, user, error } = await requireUser();
   if (error) return error;
 
-  if (!aiConfigured()) {
+  if (!aiAvailable()) {
     return NextResponse.json({ error: "GEMINI_API_KEY is not configured." }, { status: 503 });
   }
 

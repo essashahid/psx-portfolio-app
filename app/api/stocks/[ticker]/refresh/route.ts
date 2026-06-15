@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { requireUser, errorResponse } from "@/lib/api-helpers";
 import { refreshTechnicals } from "@/lib/company/technicals";
 import { getCompanyMetadata, saveCompanyDescription } from "@/lib/company/metadata";
-import { aiConfigured, chatJson } from "@/lib/ai/openai";
+import { aiAvailable, chatJson } from "@/lib/ai/openai";
 import { refreshQuote, refreshHistory, testProviderCoverage } from "@/lib/engine/market-data";
 import { populateAllFundamentals } from "@/lib/engine/fundamentals";
 import { refreshRatios } from "@/lib/engine/ratios";
@@ -92,7 +92,7 @@ export async function POST(
     }
 
     if (section === "description") {
-      if (!aiConfigured()) {
+      if (!aiAvailable()) {
         return NextResponse.json({ error: "GEMINI_API_KEY is not configured." }, { status: 503 });
       }
       const meta = await getCompanyMetadata(supabase, ticker);

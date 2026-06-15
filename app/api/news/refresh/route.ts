@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { requireUser, errorResponse, logAgentRun } from "@/lib/api-helpers";
 import { tavilySearch, holdingQueries, tavilyConfigured } from "@/lib/tavily";
-import { analyzeArticles, aiConfigured, type ArticleAnalysis } from "@/lib/ai/openai";
+import { analyzeArticles, aiAvailable, type ArticleAnalysis } from "@/lib/ai/openai";
 import { refreshAlerts } from "@/lib/alerts";
 import { gdeltConfigured, gdeltSearchHoldings } from "@/lib/news/gdelt";
 import { matchesHoldingText } from "@/lib/news/matching";
@@ -123,7 +123,7 @@ export async function POST(request: Request) {
       const analysisByUrl = new Map<string, ArticleAnalysis>();
       const aiCandidates = found.filter((article) => article.provider !== "psx-announcements");
       let aiSkipped = false;
-      if (aiConfigured()) {
+      if (aiAvailable()) {
         for (let i = 0; i < aiCandidates.length; i += 8) {
           const batch = aiCandidates.slice(i, i + 8);
           try {

@@ -1,19 +1,26 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
+import { tasksConfigured, taskJson, taskText } from "@/lib/ai/tasks";
 
 /**
- * Global kill switch for all Gemini usage. Set AI_DISABLED=true to halt every
- * Gemini call — crons (statement extraction, market brief) and on-demand AI
- * routes alike degrade gracefully ("AI temporarily disabled") with no API call,
- * while the free, non-LLM pipelines (PSX-page fundamentals, payouts, market
- * snapshot, events) keep running. Remove the flag to resume.
+ * Global kill switch for GEMINI usage. Set AI_DISABLED=true to halt every Gemini
+ * call. Note the analysis tasks (extraction, briefs, news) now prefer the cheap
+ * provider-agnostic "tasks" model (DeepSeek/Kimi/etc., see lib/ai/tasks.ts) when
+ * TASKS_API_KEY is set — Gemini is only the fallback. The interactive Research
+ * Copilot is separate again (Claude, gated by CHAT_DISABLED).
  */
 export function aiDisabled(): boolean {
   const v = (process.env.AI_DISABLED ?? "").toLowerCase();
   return v === "true" || v === "1" || v === "yes";
 }
 
+/** Gemini specifically. */
 export function aiConfigured(): boolean {
   return !aiDisabled() && !!process.env.GEMINI_API_KEY;
+}
+
+/** Any analysis provider available — cheap tasks model OR Gemini fallback. */
+export function aiAvailable(): boolean {
+  return tasksConfigured() || aiConfigured();
 }
 
 export function getModel(): string {
@@ -53,6 +60,8 @@ export async function chatMarkdown(
   maxTokens = 1800,
   opts: { thinkingBudget?: number } = {}
 ): Promise<{ content: string; model: string }> {
+  // Prefer the cheap provider-agnostic tasks model when configured.
+  if (tasksConfigured()) return taskText(`${GUARDRAILS}\n\n${systemExtra}`, userPrompt, maxTokens);
   const genAI = getClient();
   const modelId = getModel();
   // gemini-2.5-* draw reasoning tokens from the output budget; with a small
@@ -77,6 +86,9 @@ export async function chatJson<T>(
   maxTokens = 2500,
   opts: { thinkingBudget?: number; model?: string } = {}
 ): Promise<{ data: T; model: string }> {
+  // Prefer the cheap provider-agnostic tasks model when configured (Gemini-only
+  // opts like thinkingBudget/model are ignored on that path).
+  if (tasksConfigured()) return taskJson<T>(`${GUARDRAILS}\n\n${systemExtra}`, userPrompt, maxTokens);
   const genAI = getClient();
   const modelId = opts.model ?? getModel();
   // gemini-2.5-* are thinking models: reasoning tokens are drawn from the same

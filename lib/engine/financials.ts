@@ -1,5 +1,5 @@
 import { createAdminClient } from "@/lib/supabase/admin";
-import { aiConfigured, chatJson } from "@/lib/ai/openai";
+import { aiAvailable, chatJson } from "@/lib/ai/openai";
 import { getCompanyFilings } from "@/lib/company/filings";
 import { fetchPsxCompanyData, type PsxPeriodFigures } from "@/lib/company/psx-company-data";
 
@@ -166,7 +166,7 @@ export async function extractFinancials(ticker: string, maxFilings = 2): Promise
   const t = ticker.toUpperCase();
   const out: ExtractionResult = { ticker: t, processed: 0, saved: 0, skipped: [], errors: [] };
 
-  if (!aiConfigured()) {
+  if (!aiAvailable()) {
     out.errors.push("GEMINI_API_KEY is not configured — extraction unavailable.");
     return out;
   }

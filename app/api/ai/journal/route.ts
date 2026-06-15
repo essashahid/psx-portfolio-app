@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { requireUser, errorResponse, logAgentRun } from "@/lib/api-helpers";
-import { chatMarkdown, aiConfigured } from "@/lib/ai/openai";
+import { chatMarkdown, aiAvailable } from "@/lib/ai/openai";
 
 export const maxDuration = 120;
 
@@ -9,7 +9,7 @@ export async function POST() {
   const { supabase, user, error } = await requireUser();
   if (error) return error;
 
-  if (!aiConfigured()) {
+  if (!aiAvailable()) {
     return NextResponse.json(
       { error: "OPENAI_API_KEY is not configured. Add it in .env.local to enable AI analysis." },
       { status: 503 }

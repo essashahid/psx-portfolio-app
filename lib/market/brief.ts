@@ -1,6 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { aiConfigured, chatMarkdown } from "@/lib/ai/openai";
+import { aiAvailable, chatMarkdown } from "@/lib/ai/openai";
 
 /**
  * AI daily market brief. ONE LLM call per snapshot, cached in market_ai_briefs
@@ -57,7 +57,7 @@ export async function generateMarketBrief(snapshotDate: string, opts: { force?: 
     if (existing?.content) return { generated: false, date: snapshotDate, content: existing.content };
   }
 
-  if (!aiConfigured()) return { generated: false, date: snapshotDate, error: "GEMINI_API_KEY is not configured." };
+  if (!aiAvailable()) return { generated: false, date: snapshotDate, error: "GEMINI_API_KEY is not configured." };
 
   const { data: snap } = await db
     .from("market_snapshots")
