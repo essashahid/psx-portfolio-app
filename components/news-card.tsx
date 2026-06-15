@@ -4,7 +4,18 @@ import { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { Badge, sentimentVariant } from "@/components/ui/badge";
 import type { NewsArticle } from "@/lib/types";
-import { Bookmark, EyeOff } from "lucide-react";
+import {
+  ArrowUpRight,
+  Bookmark,
+  Building2,
+  CalendarDays,
+  EyeOff,
+  Link2,
+  MessageSquareText,
+  Sparkles,
+  Target,
+} from "lucide-react";
+import type { LucideIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 export function NewsCard({ article }: { article: NewsArticle }) {
@@ -12,6 +23,9 @@ export function NewsCard({ article }: { article: NewsArticle }) {
   const [ignored, setIgnored] = useState(article.ignored);
   const relevanceLabel = getRelevanceLabel(article.relevance_score);
   const lowRelevance = article.low_confidence || (article.relevance_score !== null && article.relevance_score <= 3);
+  const highRelevance = article.relevance_score !== null && article.relevance_score >= 7 && !lowRelevance;
+  const published = formatDate(article.published_at);
+  const body = article.ai_summary || article.snippet;
 
   async function toggle(field: "saved" | "ignored") {
     const supabase = createClient();
@@ -22,73 +36,140 @@ export function NewsCard({ article }: { article: NewsArticle }) {
   }
 
   return (
-    <div
+    <article
       className={cn(
-        "rounded-lg border border-border bg-card p-4",
-        lowRelevance && "border-amber-200 bg-amber-50/30",
-        ignored && "opacity-50"
+        "group overflow-hidden rounded-lg border border-border bg-card shadow-[var(--shadow-card)] transition-colors hover:border-foreground/20",
+        highRelevance && "border-emerald-200",
+        lowRelevance && "border-amber-200 bg-amber-50/25",
+        ignored && "opacity-55"
       )}
     >
-      <div className="flex items-start justify-between gap-3">
-        <div className="flex flex-wrap items-center gap-1.5">
-          {article.ticker && <Badge variant="outline">{article.ticker}</Badge>}
-          <Badge variant={sentimentVariant(article.sentiment)}>{article.sentiment ?? "unrated"}</Badge>
-          {relevanceLabel && (
-            <Badge variant={article.relevance_score !== null && article.relevance_score >= 7 ? "blue" : lowRelevance ? "amber" : "secondary"}>
-              {relevanceLabel}
-            </Badge>
+      <div
+        className={cn(
+          "h-1 bg-muted",
+          article.sentiment === "positive" && "bg-emerald-500",
+          article.sentiment === "negative" && "bg-red-500",
+          article.sentiment === "neutral" && "bg-zinc-300",
+          highRelevance && "bg-blue-500",
+          lowRelevance && "bg-amber-400"
+        )}
+      />
+      <div className="p-4">
+        <div className="flex items-start justify-between gap-3">
+          <div className="min-w-0 flex-1">
+            <div className="flex flex-wrap items-center gap-1.5">
+              {article.ticker && <Badge variant="outline">{article.ticker}</Badge>}
+              <Badge variant={sentimentVariant(article.sentiment)}>{article.sentiment ?? "unrated"}</Badge>
+              {relevanceLabel && (
+                <Badge variant={highRelevance ? "blue" : lowRelevance ? "amber" : "secondary"}>
+                  {relevanceLabel}
+                </Badge>
+              )}
+              {article.category && article.category !== "general" && <Badge variant="blue">{formatCategory(article.category)}</Badge>}
+              {article.low_confidence && <Badge variant="amber">low confidence</Badge>}
+              {article.source_quality && <Badge variant={sourceQualityVariant(article.source_quality)}>source {article.source_quality}</Badge>}
+            </div>
+            <a
+              href={article.url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="mt-3 flex items-start gap-2 text-base font-semibold leading-snug tracking-editorial text-foreground transition-colors hover:text-foreground/75"
+            >
+              <span>{article.title}</span>
+              <ArrowUpRight className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground transition-transform group-hover:-translate-y-0.5 group-hover:translate-x-0.5" />
+            </a>
+          </div>
+          <div className="flex shrink-0 gap-1">
+            <button
+              onClick={() => toggle("saved")}
+              title={saved ? "Unsave" : "Save"}
+              aria-label={saved ? "Unsave article" : "Save article"}
+              aria-pressed={saved}
+              className={cn(
+                "flex h-8 w-8 items-center justify-center rounded-md transition-colors hover:bg-muted",
+                saved ? "bg-blue-50 text-blue-700" : "text-muted-foreground"
+              )}
+            >
+              <Bookmark className="h-4 w-4" fill={saved ? "currentColor" : "none"} />
+            </button>
+            <button
+              onClick={() => toggle("ignored")}
+              title={ignored ? "Un-ignore" : "Ignore"}
+              aria-label={ignored ? "Un-ignore article" : "Ignore article"}
+              aria-pressed={ignored}
+              className={cn(
+                "flex h-8 w-8 items-center justify-center rounded-md transition-colors hover:bg-muted",
+                ignored ? "bg-amber-50 text-amber-700" : "text-muted-foreground"
+              )}
+            >
+              <EyeOff className="h-4 w-4" />
+            </button>
+          </div>
+        </div>
+
+        <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-muted-foreground">
+          <span className="inline-flex min-w-0 items-center gap-1">
+            <Link2 className="h-3.5 w-3.5 shrink-0" />
+            <span className="truncate">{article.source ?? "Unknown source"}</span>
+          </span>
+          {published && (
+            <span className="inline-flex items-center gap-1">
+              <CalendarDays className="h-3.5 w-3.5" />
+              {published}
+            </span>
           )}
-          {article.category && article.category !== "general" && <Badge variant="blue">{formatCategory(article.category)}</Badge>}
-          {article.low_confidence && <Badge variant="amber">low confidence</Badge>}
-          {article.source_quality && <Badge variant={sourceQualityVariant(article.source_quality)}>source {article.source_quality}</Badge>}
+          {article.company_name && (
+            <span className="inline-flex min-w-0 items-center gap-1">
+              <Building2 className="h-3.5 w-3.5 shrink-0" />
+              <span className="truncate">{article.company_name}</span>
+            </span>
+          )}
         </div>
-        <div className="flex shrink-0 gap-1">
-          <button
-            onClick={() => toggle("saved")}
-            title={saved ? "Unsave" : "Save"}
-            className={cn("rounded p-1 hover:bg-muted", saved ? "text-blue-600" : "text-muted-foreground")}
-          >
-            <Bookmark className="h-4 w-4" fill={saved ? "currentColor" : "none"} />
-          </button>
-          <button
-            onClick={() => toggle("ignored")}
-            title={ignored ? "Un-ignore" : "Ignore"}
-            className={cn("rounded p-1 hover:bg-muted", ignored ? "text-amber-600" : "text-muted-foreground")}
-          >
-            <EyeOff className="h-4 w-4" />
-          </button>
-        </div>
+
+        {body && (
+          <p className={cn("mt-3 text-sm leading-relaxed", article.ai_summary ? "text-foreground/90" : "line-clamp-3 text-muted-foreground")}>
+            {body}
+          </p>
+        )}
+
+        {(article.why_it_matters || article.link_reason || article.thesis_impact || article.review_question) && (
+          <div className="mt-4 space-y-2 border-t border-border pt-3">
+            {article.why_it_matters && (
+              <SignalLine icon={Sparkles} label="Why it matters" text={article.why_it_matters} />
+            )}
+            {article.thesis_impact && (
+              <SignalLine icon={Target} label="Thesis impact" text={article.thesis_impact} />
+            )}
+            {article.link_reason && (
+              <SignalLine icon={Link2} label="Linked because" text={article.link_reason} muted />
+            )}
+            {article.review_question && (
+              <SignalLine icon={MessageSquareText} label="Review prompt" text={article.review_question} muted />
+            )}
+          </div>
+        )}
       </div>
-      <a
-        href={article.url}
-        target="_blank"
-        rel="noopener noreferrer"
-        className="mt-2 block text-sm font-medium leading-snug hover:underline"
-      >
-        {article.title}
-      </a>
-      <p className="mt-0.5 text-xs text-muted-foreground">
-        {article.source ?? "unknown source"}
-        {article.published_at ? ` · ${String(article.published_at).slice(0, 10)}` : ""}
-        {article.company_name ? ` · ${article.company_name}` : ""}
+    </article>
+  );
+}
+
+function SignalLine({
+  icon: Icon,
+  label,
+  text,
+  muted,
+}: {
+  icon: LucideIcon;
+  label: string;
+  text: string;
+  muted?: boolean;
+}) {
+  return (
+    <div className="grid grid-cols-[1rem_minmax(0,1fr)] gap-2 text-xs leading-relaxed">
+      <Icon className={cn("mt-0.5 h-3.5 w-3.5", muted ? "text-muted-foreground" : "text-emerald-600")} />
+      <p className={muted ? "text-muted-foreground" : "text-foreground/90"}>
+        <span className="font-medium text-foreground">{label}:</span> {text}
       </p>
-      {article.ai_summary ? (
-        <p className="mt-2 text-xs leading-relaxed">{article.ai_summary}</p>
-      ) : (
-        article.snippet && <p className="mt-2 line-clamp-2 text-xs leading-relaxed text-muted-foreground">{article.snippet}</p>
-      )}
-      {article.why_it_matters && (
-        <p className="mt-1.5 text-xs"><span className="font-medium">Why it matters:</span> {article.why_it_matters}</p>
-      )}
-      {article.link_reason && (
-        <p className="mt-1 text-xs text-muted-foreground"><span className="font-medium text-foreground">Linked because:</span> {article.link_reason}</p>
-      )}
-      {article.thesis_impact && (
-        <p className="mt-1 text-xs"><span className="font-medium">Possible thesis impact:</span> {article.thesis_impact}</p>
-      )}
-      {article.review_question && (
-        <p className="mt-1 text-xs italic text-muted-foreground">Ask yourself: {article.review_question}</p>
-      )}
     </div>
   );
 }
@@ -110,4 +191,9 @@ function sourceQualityVariant(quality: string): "green" | "blue" | "amber" | "se
   if (quality === "medium") return "blue";
   if (quality === "low") return "amber";
   return "secondary";
+}
+
+function formatDate(value: string | null): string | null {
+  if (!value) return null;
+  return String(value).slice(0, 10);
 }
