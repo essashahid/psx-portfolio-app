@@ -2,7 +2,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import type Anthropic from "@anthropic-ai/sdk";
 import {
   getQuoteCard, getPositionCard, getRatioCard, getTechnicalCard, getDividendCard,
-  getNewsCard, getMarketCard, getHoldingsSummary,
+  getNewsCard, getMarketCard, getHoldingsSummary, getSectorCard,
 } from "@/lib/chat/data";
 
 /**
@@ -55,6 +55,11 @@ export const CHAT_TOOLS: Anthropic.Tool[] = [
     input_schema: { type: "object", properties: {} },
   },
   {
+    name: "get_sector_performance",
+    description: "How a sector performed today — average return, advancers/decliners, top gainer/loser, volume. Pass a sector name like 'Cement', 'Commercial Banks', 'Fertilizer' (fuzzy-matched); omit to get all sectors ranked by return.",
+    input_schema: { type: "object", properties: { sector: { type: "string", description: "Sector name or keyword, e.g. cement, banks, fertilizer" } } },
+  },
+  {
     name: "list_holdings",
     description: "The user's full list of holdings with today's change for each.",
     input_schema: { type: "object", properties: {} },
@@ -94,6 +99,8 @@ export async function executeTool(
       return (await getNewsCard(db, ticker, 6)) ?? { items: [] };
     case "get_market_overview":
       return (await getMarketCard(db)) ?? { error: "no snapshot yet" };
+    case "get_sector_performance":
+      return (await getSectorCard(db, typeof input.sector === "string" ? input.sector : null)) ?? { error: "no sector data" };
     case "list_holdings":
       return (await getHoldingsSummary(db, userId)) ?? { count: 0, holdings: [] };
     default:

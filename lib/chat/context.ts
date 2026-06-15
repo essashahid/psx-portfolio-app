@@ -2,8 +2,8 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import type { ResolvedMessage } from "@/lib/chat/resolver";
 import {
   getQuoteCard, getPositionCard, getRatioCard, getTechnicalCard, getDividendCard,
-  getNewsCard, getMarketCard, getHoldingsSummary,
-  type QuoteCard, type PositionCard, type RatioCard, type TechnicalCard, type DividendCard, type NewsCard, type MarketCard, type HoldingsSummary,
+  getNewsCard, getMarketCard, getHoldingsSummary, getSectorCard,
+  type QuoteCard, type PositionCard, type RatioCard, type TechnicalCard, type DividendCard, type NewsCard, type MarketCard, type HoldingsSummary, type SectorCard,
 } from "@/lib/chat/data";
 import { fmtPct, fmtCompact } from "@/lib/market/format";
 
@@ -16,6 +16,7 @@ export type Card =
   | { kind: "dividend"; data: DividendCard }
   | { kind: "news"; data: NewsCard }
   | { kind: "market"; data: MarketCard }
+  | { kind: "sector"; data: SectorCard }
   | { kind: "holdings"; data: HoldingsSummary };
 
 /**
@@ -27,9 +28,17 @@ export async function gatherCards(db: SupabaseClient, userId: string, resolved: 
   const cards: Card[] = [];
   const { tickers, intent } = resolved;
 
-  if (intent === "market" || (tickers.length === 0 && intent !== "position")) {
+  // A named sector ("how did cement do?") — show that sector's card.
+  if (resolved.sector) {
+    const sc = await getSectorCard(db, resolved.sector);
+    if (sc) cards.push({ kind: "sector", data: sc });
+  }
+
+  if (!resolved.sector && (intent === "market" || (tickers.length === 0 && intent !== "position"))) {
     const m = await getMarketCard(db);
     if (m) cards.push({ kind: "market", data: m });
+    const sectors = await getSectorCard(db, null); // full ranked list
+    if (sectors) cards.push({ kind: "sector", data: sectors });
     const news = await getNewsCard(db, null, 6);
     if (news) cards.push({ kind: "news", data: news });
   }
@@ -77,6 +86,15 @@ export function briefFromCards(cards: Card[]): string {
         const h = c.data;
         const up = h.holdings.filter((x) => (x.changePct ?? 0) > 0).length;
         lines.push(`YOUR HOLDINGS: ${h.count} positions, ${up} up today. Tickers: ${h.holdings.map((x) => `${x.ticker} ${fmtPct(x.changePct)}`).join(", ")}.`);
+        break;
+      }
+      case "sector": {
+        const sc = c.data;
+        const rows = sc.sectors.slice(0, sc.filter ? sc.sectors.length : 12);
+        const body = rows
+          .map((s) => `${s.sector} ${fmtPct(s.avgReturn)} (${s.advancers}↑/${s.decliners}↓, ${s.stockCount} stocks${s.topGainer ? `, top ${s.topGainer} ${fmtPct(s.topGainerPct)}` : ""})`)
+          .join("; ");
+        lines.push(`SECTORS ${sc.date}${sc.filter ? ` [${sc.filter}]` : " (avg return)"}: ${body}.`);
         break;
       }
       case "quote": {

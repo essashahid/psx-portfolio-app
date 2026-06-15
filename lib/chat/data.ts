@@ -216,6 +216,63 @@ export async function getMarketCard(db: SupabaseClient): Promise<MarketCard | nu
   };
 }
 
+export interface SectorCard {
+  date: string;
+  filter: string | null; // matched sector name when filtered to one
+  sectors: {
+    sector: string;
+    avgReturn: number | null;
+    advancers: number;
+    decliners: number;
+    stockCount: number;
+    topGainer: string | null;
+    topGainerPct: number | null;
+    topLoser: string | null;
+    topLoserPct: number | null;
+    totalVolume: number;
+  }[];
+}
+
+/**
+ * Per-sector performance from the latest snapshot. Pass a query (e.g. "cement",
+ * "banks") to fuzzy-match one sector; omit it for the full ranked list.
+ */
+export async function getSectorCard(db: SupabaseClient, sectorQuery?: string | null): Promise<SectorCard | null> {
+  const { data: snap } = await db
+    .from("market_snapshots")
+    .select("id, snapshot_date")
+    .eq("market", "PSX")
+    .order("snapshot_date", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  if (!snap) return null;
+
+  let q = db
+    .from("sector_snapshots")
+    .select("sector, average_return, advancers, decliners, stock_count, top_gainer, top_gainer_pct, top_loser, top_loser_pct, total_volume")
+    .eq("snapshot_id", snap.id);
+  if (sectorQuery) q = q.ilike("sector", `%${sectorQuery}%`);
+  const { data } = await q;
+  if (!data || data.length === 0) return null;
+
+  const sectors = data
+    .map((s) => ({
+      sector: s.sector as string,
+      avgReturn: num(s.average_return),
+      advancers: (s.advancers as number) ?? 0,
+      decliners: (s.decliners as number) ?? 0,
+      stockCount: (s.stock_count as number) ?? 0,
+      topGainer: (s.top_gainer as string) ?? null,
+      topGainerPct: num(s.top_gainer_pct),
+      topLoser: (s.top_loser as string) ?? null,
+      topLoserPct: num(s.top_loser_pct),
+      totalVolume: num(s.total_volume) ?? 0,
+    }))
+    .sort((a, b) => (b.avgReturn ?? 0) - (a.avgReturn ?? 0));
+
+  return { date: snap.snapshot_date as string, filter: sectorQuery ?? null, sectors };
+}
+
 export interface HoldingsSummary {
   count: number;
   holdings: { ticker: string; quantity: number; changePct: number | null }[];

@@ -27,12 +27,36 @@ const STOPWORDS = new Set([
 export interface ResolvedMessage {
   tickers: string[];
   intent: Intent;
+  sector: string | null;
+}
+
+/**
+ * Match a sector the user named (e.g. "cement", "banks") against the sectors in
+ * the latest snapshot. Cheap (~38 rows). A message word (≥4 chars) that is
+ * contained in a sector name counts as a match, so "banks" → "Commercial Banks"
+ * and "cement" → "Cement".
+ */
+async function resolveSector(supabase: SupabaseClient, message: string): Promise<string | null> {
+  const { data: snap } = await supabase.from("market_snapshots").select("id").eq("market", "PSX").order("snapshot_date", { ascending: false }).limit(1).maybeSingle();
+  if (!snap) return null;
+  const { data } = await supabase.from("sector_snapshots").select("sector").eq("snapshot_id", snap.id);
+  const sectors = (data ?? []).map((r) => r.sector as string);
+  const words = (message.toLowerCase().match(/[a-z&]{4,}/g) ?? []).filter((w) => !["sector", "today", "perform", "doing", "stocks", "shares"].includes(w));
+  let best: string | null = null;
+  for (const s of sectors) {
+    const sl = s.toLowerCase();
+    if (words.some((w) => sl.includes(w))) {
+      // Prefer the shortest matching sector name (most specific).
+      if (!best || s.length < best.length) best = s;
+    }
+  }
+  return best;
 }
 
 function detectIntent(msg: string): Intent {
   const m = msg.toLowerCase();
   if (/\b(compare|versus|\bvs\b|against|better than)\b/.test(m)) return "compare";
-  if (/\b(market|index|kse|breadth|overall|sentiment|today'?s? (market|session))\b/.test(m) && !/\bmy\b/.test(m)) return "market";
+  if (/\b(market|index|kse|breadth|overall|sentiment|sectors?|today'?s? (market|session))\b/.test(m) && !/\bmy\b/.test(m)) return "market";
   if (/\b(dividend|payout|yield|bonus)\b/.test(m)) return "dividend";
   if (/\b(p\/e|pe ratio|valuation|cheap|expensive|overvalued|undervalued|ratio|roe|roa|margin|fundamental)\b/.test(m)) return "valuation";
   if (/\b(chart|trend|technical|52[- ]?week|rsi|moving average|support|resistance|momentum)\b/.test(m)) return "technical";
@@ -54,5 +78,8 @@ export async function resolveMessage(supabase: SupabaseClient, message: string):
     // Preserve the order they appeared in the message.
     tickers = candidates.filter((c) => valid.has(c));
   }
-  return { tickers, intent: detectIntent(message) };
+  // Sector match only when no specific ticker was named (avoids misreading e.g.
+  // a bank ticker as the "banks" sector).
+  const sector = tickers.length === 0 ? await resolveSector(supabase, message) : null;
+  return { tickers, intent: detectIntent(message), sector };
 }

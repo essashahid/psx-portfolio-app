@@ -150,6 +150,26 @@ function ChatCard({ card }: { card: Card }) {
         </Shell>
       );
     }
+    case "sector": {
+      const sc = card.data;
+      const rows = sc.sectors.slice(0, sc.filter ? sc.sectors.length : 8);
+      return (
+        <Shell icon={Activity} title={sc.filter ? `Sector · ${sc.filter}` : "Sectors today"} href="/market">
+          <div className="space-y-1">
+            {rows.map((s) => {
+              const t = tone(s.avgReturn);
+              return (
+                <div key={s.sector} className="flex items-center justify-between gap-2">
+                  <span className="truncate text-[11px]">{s.sector} <span className="text-muted-foreground">({s.advancers}↑/{s.decliners}↓)</span></span>
+                  <span className={cn("shrink-0 text-[11px] font-semibold tabular-nums", t === "positive" ? "text-emerald-600" : t === "negative" ? "text-red-600" : "text-muted-foreground")}>{fmtPct(s.avgReturn)}</span>
+                </div>
+              );
+            })}
+          </div>
+          {sc.filter && rows[0]?.topGainer && <p className="mt-1.5 text-[10px] text-muted-foreground">Top: {rows[0].topGainer} {fmtPct(rows[0].topGainerPct)} · Worst: {rows[0].topLoser} {fmtPct(rows[0].topLoserPct)}</p>}
+        </Shell>
+      );
+    }
     case "holdings": {
       const h = card.data;
       return (
