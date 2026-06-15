@@ -1,5 +1,4 @@
 import Anthropic from "@anthropic-ai/sdk";
-import { aiDisabled } from "@/lib/ai/openai";
 
 /**
  * Claude client for the financial-assistant chat.
@@ -10,8 +9,10 @@ import { aiDisabled } from "@/lib/ai/openai";
  * complex/multi-entity questions. The shared system prompt + tool schemas are
  * prompt-cached so repeated turns bill cached-read rates.
  *
- * Respects the global AI_DISABLED kill switch (shared with the Gemini path) so
- * all LLM spend can be halted in one place.
+ * The chat (Claude) has its OWN kill switch, independent of the Gemini one:
+ * AI_DISABLED governs Gemini/cron spend only; the chat is gated by CHAT_DISABLED
+ * (+ the presence of CLAUDE_API_KEY). This lets the assistant run on Claude
+ * while the Gemini crons stay halted.
  */
 
 export type ChatLevel = "light" | "standard" | "deep";
@@ -31,13 +32,19 @@ const LEVELS: Record<ChatLevel, LevelConfig> = {
   deep: { model: "claude-opus-4-8", effort: "high", thinking: true },
 };
 
+/** Independent chat kill switch — does NOT touch the Gemini/cron AI_DISABLED flag. */
+export function chatDisabled(): boolean {
+  const v = (process.env.CHAT_DISABLED ?? "").toLowerCase();
+  return v === "true" || v === "1" || v === "yes";
+}
+
 export function claudeConfigured(): boolean {
-  return !aiDisabled() && !!process.env.CLAUDE_API_KEY;
+  return !chatDisabled() && !!process.env.CLAUDE_API_KEY;
 }
 
 let client: Anthropic | null = null;
 export function getClaude(): Anthropic {
-  if (aiDisabled()) throw new Error("AI is temporarily disabled (AI_DISABLED=true). Remove the flag to resume.");
+  if (chatDisabled()) throw new Error("Chat is disabled (CHAT_DISABLED=true). Remove the flag to resume.");
   if (!process.env.CLAUDE_API_KEY) throw new Error("CLAUDE_API_KEY is not configured.");
   client ??= new Anthropic({ apiKey: process.env.CLAUDE_API_KEY });
   return client;
