@@ -28,6 +28,7 @@ const NAV = [
   { href: "/holdings", label: "Holdings", icon: Briefcase },
   { href: "/stocks", label: "Stock Research", icon: Search },
   { href: "/market", label: "Market Pulse", icon: Activity },
+  { href: "/chat", label: "Research Copilot", icon: Sparkles },
   { href: "/news", label: "News Center", icon: Newspaper },
   { href: "/briefings", label: "AI Briefings", icon: Sparkles },
   { href: "/goals", label: "Goals & Targets", icon: Target },

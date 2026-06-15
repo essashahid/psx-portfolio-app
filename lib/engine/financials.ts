@@ -16,7 +16,9 @@ import { fetchPsxCompanyData, type PsxPeriodFigures } from "@/lib/company/psx-co
 
 const REQUEST_TIMEOUT_MS = 60_000; // PSX result PDFs can be 8MB+ over a slow link
 const MAX_PDF_BYTES = 20_000_000;
-const MAX_TEXT_CHARS = 42_000; // keep the prompt bounded
+// Statements sit deep in 40+ page reports (after the narrative), so a tight cap
+// truncates them out. Flash has a ~1M-token context, so send the whole document.
+const MAX_TEXT_CHARS = 200_000;
 
 const BROWSER_HEADERS = {
   "User-Agent":
@@ -174,9 +176,27 @@ export async function extractFinancials(ticker: string, maxFilings = 2): Promise
   }
   const db = createAdminClient();
 
-  const filings = await getCompanyFilings(t, 30);
+  const filings = await getCompanyFilings(t, 40);
+  // Only true financial-report PDFs carry statements. The "result" category is
+  // loose (it also tags Shariah disclosures, video recordings and briefing
+  // notices that merely mention "half year"), so require a report/accounts
+  // title AND exclude the known non-statement document types. Ranked so full
+  // reports (which contain all three statements) are tried before brief
+  // results notices.
+  const isReport = (title: string): boolean => {
+    const x = title.toLowerCase();
+    if (/shariah|video|briefing|presentation|clarification|notice of|proxy|agm|egm|book closure|circular|postal ballot|auditor|pattern of shareholding/.test(x)) return false;
+    return /transmission|quarterly report|half[\s-]?year|annual report|annual account|financial result|financial statement|accounts for|condensed interim|un-?audited|audited/.test(x);
+  };
+  const rank = (title: string): number => {
+    const x = title.toLowerCase();
+    if (/transmission|quarterly report|half[\s-]?year|condensed interim/.test(x)) return 0; // full reports
+    if (/annual report|annual account/.test(x)) return 1;
+    return 2; // brief "Financial Results" notices last
+  };
   const resultPdfs = filings
-    .filter((f) => f.category === "result" && f.url.toLowerCase().includes(".pdf"))
+    .filter((f) => f.url.toLowerCase().includes(".pdf") && isReport(f.title))
+    .sort((a, b) => rank(a.title) - rank(b.title) || (b.date ?? "").localeCompare(a.date ?? ""))
     .slice(0, maxFilings * 3); // candidates; we stop after maxFilings successful extractions
 
   if (resultPdfs.length === 0) {
