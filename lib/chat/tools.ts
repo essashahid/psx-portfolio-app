@@ -4,6 +4,7 @@ import {
   getQuoteCard, getPositionCard, getRatioCard, getTechnicalCard, getDividendCard,
   getNewsCard, getMarketCard, getHoldingsSummary, getSectorCard,
 } from "@/lib/chat/data";
+import { tavilySearch, tavilyConfigured } from "@/lib/tavily";
 
 /**
  * Tools Claude can call when the pre-fetched brief isn't enough (a second
@@ -64,6 +65,11 @@ export const CHAT_TOOLS: Anthropic.Tool[] = [
     description: "The user's full list of holdings with today's change for each.",
     input_schema: { type: "object", properties: {} },
   },
+  {
+    name: "web_search",
+    description: "Search the web for recent news / context NOT in the internal PSX data — e.g. WHY a stock or sector moved, macro events (IMF, policy rate, inflation, PKR), management/industry news. Returns recent articles with URLs. Prefer credible Pakistani business sources, and always cite the URLs you use. Use only when internal tools can't answer.",
+    input_schema: { type: "object", properties: { query: { type: "string", description: "Search query — include the company/sector and 'Pakistan' for relevance" }, days: { type: "number", description: "How many days back to search (default 14)" } }, required: ["query"] },
+  },
 ];
 
 /** Execute one tool call and return a compact JSON-able result. */
@@ -103,6 +109,21 @@ export async function executeTool(
       return (await getSectorCard(db, typeof input.sector === "string" ? input.sector : null)) ?? { error: "no sector data" };
     case "list_holdings":
       return (await getHoldingsSummary(db, userId)) ?? { count: 0, holdings: [] };
+    case "web_search": {
+      if (!tavilyConfigured()) return { error: "web search not configured" };
+      const query = String(input.query ?? "").trim();
+      if (!query) return { error: "query required" };
+      const days = typeof input.days === "number" && input.days > 0 ? Math.min(60, input.days) : 14;
+      try {
+        const q = /pakistan|psx|kse/i.test(query) ? query : `${query} Pakistan PSX`;
+        const results = await tavilySearch(q, { days, maxResults: 5 });
+        return {
+          results: results.map((r) => ({ title: r.title, url: r.url, date: r.published_date ?? null, snippet: (r.content ?? "").slice(0, 320) })),
+        };
+      } catch (e) {
+        return { error: e instanceof Error ? e.message : "search failed" };
+      }
+    }
     default:
       return { error: `unknown tool ${name}` };
   }
