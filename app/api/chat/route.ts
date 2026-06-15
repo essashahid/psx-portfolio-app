@@ -4,6 +4,7 @@ import { gatherCards, briefFromCards, type Card } from "@/lib/chat/context";
 import { CHAT_TOOLS, executeTool } from "@/lib/chat/tools";
 import { claudeConfigured, getClaude, buildRequestParams, type ChatLevel } from "@/lib/ai/claude";
 import type Anthropic from "@anthropic-ai/sdk";
+import type { SupabaseClient } from "@supabase/supabase-js";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 120;
@@ -17,15 +18,33 @@ Rules:
 - The user already sees rich data cards (quote, position, ratios, chart, news) rendered alongside your reply, so don't dump tables — interpret and connect the numbers.
 - Call a tool only when the <context> block lacks something you need (e.g. a second company to compare, or data for a ticker not yet loaded).
 - For internal numbers (price, ratios, sectors, positions, filings) use the data/tools — never the web. Use web_search only for things the internal data can't give: WHY something moved, macro/policy/industry news, recent events. When you use web_search, cite the source URLs inline and prefer credible Pakistani business outlets; say it's from the web, and note it may be less precise than the official PSX data.
-- Never append disclaimers like "Not financial advice." — the product handles that separately.`;
+- Never append disclaimers like "Not financial advice." — the product handles that separately.
+
+Writing style:
+- Do not narrate your process. Never open with "Let me check", "I pulled", "Here's what I found after", or similar setup language. Start with the answer.
+- Use clean Markdown only: short paragraphs, sentence-case headings, and compact bullets or numbered lists.
+- Do not use emojis, decorative icons, ASCII dividers, horizontal rules, pipe-separated pseudo tables, or all-caps section labels.
+- Keep line length readable: avoid dense multi-clause paragraphs. Split ideas into separate bullets when a sentence starts carrying too many numbers.
+- For watchlists, use one short intro, then numbered items. Each item should have a bold ticker/company line and 2-3 bullets: signal, why it matters, and what to monitor.
+- Prefer polished wording over hype. Say "strong breadth", "unusual volume", "needs follow-through", or "monitor for confirmation" rather than promotional language.`;
 
 type Evt =
+  | { type: "thread"; thread: ChatThread }
   | { type: "cards"; cards: Card[] }
   | { type: "status"; text: string }
   | { type: "thinking"; delta: string }
   | { type: "text"; delta: string }
   | { type: "error"; message: string }
   | { type: "done" };
+
+type ChatThread = {
+  id: string;
+  title: string;
+  summary: string | null;
+  created_at: string;
+  updated_at: string;
+  last_message_at: string;
+};
 
 export async function POST(request: Request) {
   const { supabase, user, error } = await requireUser();
@@ -34,6 +53,7 @@ export async function POST(request: Request) {
   const body = (await request.json().catch(() => ({}))) as {
     message?: string;
     level?: ChatLevel;
+    threadId?: string | null;
     history?: { role: "user" | "assistant"; content: string }[];
   };
   const message = (body.message ?? "").trim();
@@ -44,16 +64,29 @@ export async function POST(request: Request) {
   const stream = new ReadableStream<Uint8Array>({
     async start(controller) {
       const send = (e: Evt) => controller.enqueue(encoder.encode(JSON.stringify(e) + "\n"));
+      let thread: ChatThread | null = null;
+      let cards: Card[] = [];
+      let assistantContent = "";
+      let assistantThinking = "";
       try {
+        thread = await getOrCreateThread(supabase, user.id, body.threadId, message);
+        send({ type: "thread", thread });
+
+        await supabase
+          .from("chat_messages")
+          .insert({ user_id: user.id, thread_id: thread.id, role: "user", content: message });
+
         // 1. FREE layer — resolve, gather cards, render immediately.
         const resolved = await resolveMessage(supabase, message);
-        const cards = await gatherCards(supabase, user.id, resolved);
+        cards = await gatherCards(supabase, user.id, resolved);
         if (cards.length) send({ type: "cards", cards });
         const brief = briefFromCards(cards);
 
         // 2. If AI is off, return a useful templated answer from the brief.
         if (!claudeConfigured()) {
-          send({ type: "text", delta: fallbackAnswer(message, brief, cards.length) });
+          assistantContent = fallbackAnswer(message, brief, cards.length);
+          send({ type: "text", delta: assistantContent });
+          await persistAssistantTurn(supabase, user.id, thread.id, assistantContent, assistantThinking, cards);
           send({ type: "done" });
           controller.close();
           return;
@@ -79,8 +112,14 @@ export async function POST(request: Request) {
             messages,
           } as Anthropic.MessageCreateParamsStreaming);
 
-          mstream.on("thinking", (delta: string) => send({ type: "thinking", delta }));
-          mstream.on("text", (delta: string) => send({ type: "text", delta }));
+          mstream.on("thinking", (delta: string) => {
+            assistantThinking += delta;
+            send({ type: "thinking", delta });
+          });
+          mstream.on("text", (delta: string) => {
+            assistantContent += delta;
+            send({ type: "text", delta });
+          });
 
           const final = await mstream.finalMessage();
           if (final.stop_reason !== "tool_use") break;
@@ -97,6 +136,7 @@ export async function POST(request: Request) {
           messages.push({ role: "user", content: results });
         }
 
+        await persistAssistantTurn(supabase, user.id, thread.id, assistantContent, assistantThinking, cards);
         send({ type: "done" });
         controller.close();
       } catch (err) {
@@ -110,6 +150,94 @@ export async function POST(request: Request) {
   return new Response(stream, {
     headers: { "Content-Type": "application/x-ndjson; charset=utf-8", "Cache-Control": "no-store" },
   });
+}
+
+async function getOrCreateThread(
+  supabase: SupabaseClient,
+  userId: string,
+  threadId: string | null | undefined,
+  message: string
+): Promise<ChatThread> {
+  if (threadId) {
+    const { data, error } = await supabase
+      .from("chat_threads")
+      .select("id, title, summary, created_at, updated_at, last_message_at")
+      .eq("user_id", userId)
+      .eq("id", threadId)
+      .maybeSingle();
+    if (error) throw new Error(error.message);
+    if (!data) throw new Error("Chat not found.");
+    return data as ChatThread;
+  }
+
+  const now = new Date().toISOString();
+  const { data, error } = await supabase
+    .from("chat_threads")
+    .insert({
+      user_id: userId,
+      title: titleFromMessage(message),
+      summary: summaryFromContent(message),
+      last_message_at: now,
+      updated_at: now,
+    })
+    .select("id, title, summary, created_at, updated_at, last_message_at")
+    .single();
+
+  if (error) throw new Error(error.message);
+  return data as ChatThread;
+}
+
+async function persistAssistantTurn(
+  supabase: SupabaseClient,
+  userId: string,
+  threadId: string,
+  content: string,
+  thinking: string,
+  cards: Card[]
+) {
+  const now = new Date().toISOString();
+  const cleanContent = content.trim();
+  if (cleanContent) {
+    const { error } = await supabase.from("chat_messages").insert({
+      user_id: userId,
+      thread_id: threadId,
+      role: "assistant",
+      content: cleanContent,
+      thinking: thinking.trim() || null,
+      cards: cards.length ? cards : null,
+    });
+    if (error) throw new Error(error.message);
+  }
+
+  const { error } = await supabase
+    .from("chat_threads")
+    .update({
+      summary: summaryFromContent(cleanContent),
+      updated_at: now,
+      last_message_at: now,
+    })
+    .eq("user_id", userId)
+    .eq("id", threadId);
+  if (error) throw new Error(error.message);
+}
+
+function titleFromMessage(message: string): string {
+  const cleaned = message
+    .replace(/\s+/g, " ")
+    .replace(/[^\w\s./&-]/g, "")
+    .trim();
+  if (!cleaned) return "New chat";
+  const words = cleaned.split(" ").slice(0, 8).join(" ");
+  return words.length > 80 ? `${words.slice(0, 77)}...` : words;
+}
+
+function summaryFromContent(content: string): string | null {
+  const cleaned = content
+    .replace(/[#*_>`~-]/g, "")
+    .replace(/\s+/g, " ")
+    .trim();
+  if (!cleaned) return null;
+  return cleaned.length > 150 ? `${cleaned.slice(0, 147)}...` : cleaned;
 }
 
 /** Deterministic answer when the LLM is disabled — uses the same digested numbers. */

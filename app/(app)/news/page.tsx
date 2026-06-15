@@ -36,6 +36,7 @@ type Search = {
   relevance?: string;
   window?: string;
   view?: string;
+  date?: string;
 };
 
 type ActiveFilter = {
@@ -172,6 +173,12 @@ export default async function NewsPage({
   const activeFilters = buildActiveFilters(sp, relevanceMode, filterHref);
   const hasFilters = activeFilters.length > 0;
   const relevanceLabel = describeRelevance(relevanceMode);
+  const dateGroups = groupArticlesByDate(articles);
+  const selectedDate = sp.date;
+  const feedGroups = selectedDate
+    ? dateGroups.filter((group) => group.date === selectedDate)
+    : dateGroups;
+  const shownCount = feedGroups.reduce((sum, group) => sum + group.articles.length, 0);
 
   return (
     <div className="space-y-5">
@@ -320,20 +327,70 @@ export default async function NewsPage({
           <div className="flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
             <div>
               <p className="eyebrow">Feed</p>
-              <h2 className="text-lg font-semibold tracking-editorial">Latest matching news</h2>
+              <h2 className="text-lg font-semibold tracking-editorial">Datewise news timeline</h2>
             </div>
             <p className="text-xs text-muted-foreground">
-              {articles.length === 80 ? "Showing latest 80 matches" : `${articles.length} match${articles.length === 1 ? "" : "es"}`}
+              {articles.length === 80 && !selectedDate
+                ? "Showing latest 80 matches"
+                : `${shownCount} match${shownCount === 1 ? "" : "es"}`}
             </p>
           </div>
 
-          {articles.length === 0 ? (
+          {dateGroups.length > 0 && (
+            <div className="rounded-lg border border-border bg-card p-3 shadow-[var(--shadow-card)]">
+              <div className="mb-2 flex items-center justify-between gap-3">
+                <p className="text-xs font-semibold text-foreground">Browse by date</p>
+                {selectedDate && (
+                  <Link href={filterHref({ date: undefined })} className="text-[11px] font-medium text-muted-foreground hover:text-foreground">
+                    Show all dates
+                  </Link>
+                )}
+              </div>
+              <div className="scroll-touch flex gap-2 overflow-x-auto pb-1">
+                <Link
+                  href={filterHref({ date: undefined })}
+                  className={cn(
+                    "inline-flex min-h-9 shrink-0 items-center justify-center rounded-md border px-3 py-1.5 text-xs font-medium transition-colors",
+                    !selectedDate
+                      ? "border-primary bg-primary text-primary-foreground shadow-sm"
+                      : "border-border bg-background text-muted-foreground hover:bg-muted hover:text-foreground"
+                  )}
+                >
+                  All dates
+                  <span className={cn("ml-2 rounded-full px-1.5 py-0.5 text-[10px]", !selectedDate ? "bg-white/15 text-white" : "bg-muted text-muted-foreground")}>
+                    {articles.length}
+                  </span>
+                </Link>
+                {dateGroups.map((group) => (
+                  <Link
+                    key={group.date}
+                    href={filterHref({ date: group.date })}
+                    className={cn(
+                      "inline-flex min-h-9 shrink-0 items-center justify-center rounded-md border px-3 py-1.5 text-xs font-medium transition-colors",
+                      selectedDate === group.date
+                        ? "border-primary bg-primary text-primary-foreground shadow-sm"
+                        : "border-border bg-background text-muted-foreground hover:bg-muted hover:text-foreground"
+                    )}
+                  >
+                    {formatDateTab(group.date)}
+                    <span className={cn("ml-2 rounded-full px-1.5 py-0.5 text-[10px]", selectedDate === group.date ? "bg-white/15 text-white" : "bg-muted text-muted-foreground")}>
+                      {group.articles.length}
+                    </span>
+                  </Link>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {articles.length === 0 || feedGroups.length === 0 ? (
             <EmptyState
               icon={Newspaper}
-              title={relevanceMode === "portfolio" ? "No portfolio-relevant news shown" : "No matching news"}
+              title={selectedDate ? "No news for this date" : relevanceMode === "portfolio" ? "No portfolio-relevant news shown" : "No matching news"}
               description={
                 tickers.length === 0
                   ? "Import holdings first, then refresh news to start monitoring your portfolio."
+                  : selectedDate
+                    ? "Choose another date tab or clear the date filter to return to the full timeline."
                   : hasFilters
                     ? "No stored articles match the current filters."
                     : "Refresh news to search Pakistani business news for every position."
@@ -341,15 +398,32 @@ export default async function NewsPage({
               action={
                 tickers.length === 0 ? (
                   <Link href="/import"><Button>Go to Import Center</Button></Link>
+                ) : selectedDate ? (
+                  <Link href={filterHref({ date: undefined })}><Button variant="outline">Show all dates</Button></Link>
                 ) : hasFilters ? (
                   <Link href="/news"><Button variant="outline">Clear filters</Button></Link>
                 ) : undefined
               }
             />
           ) : (
-            <div className="grid gap-3 lg:grid-cols-2">
-              {articles.map((article) => (
-                <NewsCard key={article.id} article={article} />
+            <div className="space-y-5">
+              {feedGroups.map((group) => (
+                <section key={group.date} className="space-y-3">
+                  <div className="flex items-center justify-between gap-3 border-b border-border pb-2">
+                    <div>
+                      <p className="text-sm font-semibold">{formatDateHeading(group.date)}</p>
+                      <p className="text-[11px] text-muted-foreground">
+                        {group.articles.length} article{group.articles.length === 1 ? "" : "s"}
+                      </p>
+                    </div>
+                    <Badge variant="secondary">{group.date}</Badge>
+                  </div>
+                  <div className="grid gap-3 lg:grid-cols-2">
+                    {group.articles.map((article) => (
+                      <NewsCard key={article.id} article={article} />
+                    ))}
+                  </div>
+                </section>
               ))}
             </div>
           )}
@@ -537,6 +611,7 @@ function buildActiveFilters(sp: Search, relevanceMode: string, filterHref: (patc
   if (sp.sentiment) filters.push({ label: "Sentiment", value: sp.sentiment, href: filterHref({ sentiment: undefined }) });
   if (sp.window) filters.push({ label: "Window", value: sp.window, href: filterHref({ window: undefined }) });
   if (sp.view) filters.push({ label: "State", value: sp.view, href: filterHref({ view: undefined }) });
+  if (sp.date) filters.push({ label: "Date", value: sp.date, href: filterHref({ date: undefined }) });
   if (sp.relevance && relevanceMode !== "portfolio") {
     filters.push({ label: "Relevance", value: describeRelevance(relevanceMode), href: filterHref({ relevance: undefined }) });
   }
@@ -565,4 +640,52 @@ function formatCategory(category: string): string {
 function formatDate(value: string | null): string | null {
   if (!value) return null;
   return String(value).slice(0, 10);
+}
+
+function articleDateKey(article: NewsArticle): string {
+  return String(article.published_at ?? article.created_at).slice(0, 10);
+}
+
+function groupArticlesByDate(articles: NewsArticle[]): { date: string; articles: NewsArticle[] }[] {
+  const groups = new Map<string, NewsArticle[]>();
+  for (const article of articles) {
+    const key = articleDateKey(article);
+    const existing = groups.get(key);
+    if (existing) existing.push(article);
+    else groups.set(key, [article]);
+  }
+  return [...groups.entries()]
+    .map(([date, rows]) => ({
+      date,
+      articles: rows.sort((a, b) => articleTimestamp(b) - articleTimestamp(a)),
+    }))
+    .sort((a, b) => b.date.localeCompare(a.date));
+}
+
+function formatDateTab(date: string): string {
+  const parsed = parseDateKey(date);
+  if (!parsed) return date;
+  return parsed.toLocaleDateString("en-PK", { month: "short", day: "numeric" });
+}
+
+function formatDateHeading(date: string): string {
+  const parsed = parseDateKey(date);
+  if (!parsed) return date;
+  return parsed.toLocaleDateString("en-PK", {
+    weekday: "long",
+    month: "long",
+    day: "numeric",
+    year: "numeric",
+  });
+}
+
+function parseDateKey(date: string): Date | null {
+  const parsed = new Date(`${date}T00:00:00`);
+  return Number.isNaN(parsed.getTime()) ? null : parsed;
+}
+
+function articleTimestamp(article: NewsArticle): number {
+  const value = article.published_at ?? article.created_at;
+  const parsed = new Date(value).getTime();
+  return Number.isNaN(parsed) ? 0 : parsed;
 }
