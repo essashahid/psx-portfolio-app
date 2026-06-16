@@ -30,7 +30,7 @@ const PROMPTS: Record<Action, { title: string; prompt: string }> = {
   summarize_earnings: {
     title: "Latest Earnings Summary",
     prompt:
-      "Summarize the latest earnings picture. We do NOT have structured income-statement data in context, so be explicit that detailed earnings figures are unavailable, point to the most recent result/board-meeting filings listed, and explain what the user should open to read the actual numbers. Do not fabricate revenue, profit, or EPS.",
+      "Summarize the latest earnings picture using the structured financials and computed ratios in context. Quote actual figures (revenue, profit, EPS, margins, growth) where available. If any key figure is missing, say so and point to the relevant filing.",
   },
   explain_trends: {
     title: "Key Trends",
@@ -45,7 +45,7 @@ const PROMPTS: Record<Action, { title: string; prompt: string }> = {
   explain_ratios: {
     title: "Valuation & Ratios",
     prompt:
-      "Explain which valuation/profitability ratios matter for a company in this sector and what each would tell the user. State clearly that the inputs (EPS, book value, net income) are NOT available in context, so no ratio can be computed here, and tell the user where to get them. Do not invent ratio values.",
+      "Using the computed ratios and structured financials in context, explain what the current valuation picture looks like for this company. For each ratio: the value, what it means, and whether it looks attractive or stretched given the sector. Where a ratio is missing, explain what input is needed.",
   },
   explain_technicals: {
     title: "Technical Picture",
@@ -83,16 +83,66 @@ export async function POST(request: Request) {
     const ticker = (body.ticker ?? "").toUpperCase();
     if (!ticker) return NextResponse.json({ error: "ticker is required" }, { status: 400 });
 
-    const [metadata, technicals, filings, dividends, portfolio] = await Promise.all([
+    const [metadata, technicals, filings, dividends, portfolio, financialsRes, ratiosRes] = await Promise.all([
       getCompanyMetadata(supabase, ticker),
       getTechnicals(supabase, ticker),
       getCompanyFilings(ticker, 12),
       getCompanyDividends(supabase, user.id, ticker),
       getPortfolio(supabase, user.id),
+      supabase
+        .from("company_financials")
+        .select("period_type, fiscal_year, fiscal_period, statement_type, source_type, data, confidence")
+        .eq("ticker", ticker)
+        .order("fiscal_year", { ascending: false })
+        .limit(12),
+      supabase
+        .from("company_ratios")
+        .select("ratio_name, ratio_value, formula, inputs, missing, source_period")
+        .eq("ticker", ticker),
     ]);
 
     const holding = portfolio.holdings.find((h) => h.ticker === ticker);
     const n = (v: number | null) => (v === null ? "n/a" : formatNumber(v));
+
+    const fins = (financialsRes.data ?? []) as {
+      period_type: string; fiscal_year: number | null; fiscal_period: string | null;
+      statement_type: string; source_type: string | null;
+      data: Record<string, number | null | string>; confidence: number | null;
+    }[];
+    const ratios = (ratiosRes.data ?? []) as {
+      ratio_name: string; ratio_value: number | null; formula: string;
+      inputs: Record<string, number | string | null>; missing: string | null; source_period: string | null;
+    }[];
+
+    function finsBlock(): string {
+      if (!fins.length) return "No financial statements extracted yet.";
+      const lines: string[] = [];
+      for (const row of fins) {
+        const label = `${row.fiscal_year ?? "?"} ${row.fiscal_period ?? row.period_type} [${row.statement_type}] (${row.source_type ?? "?"}, confidence ${((row.confidence ?? 0) * 100).toFixed(0)}%)`;
+        const entries = Object.entries(row.data)
+          .filter(([k, v]) => !k.startsWith("_") && typeof v === "number")
+          .map(([k, v]) => `  ${k}: ${formatNumber(v as number)}`)
+          .join("\n");
+        if (entries) lines.push(`${label}\n${entries}`);
+      }
+      return lines.join("\n\n") || "No numeric data in stored statements.";
+    }
+
+    function ratiosBlock(): string {
+      if (!ratios.length) return "No ratios computed yet.";
+      const computable = ratios.filter((r) => r.ratio_value !== null);
+      const missing = ratios.filter((r) => r.ratio_value === null);
+      const lines: string[] = [];
+      if (computable.length) {
+        lines.push("Computed ratios:");
+        computable.forEach((r) => lines.push(`  ${r.ratio_name}: ${r.ratio_value?.toFixed(2)} (${r.source_period ?? "?"})`));
+      }
+      if (missing.length) {
+        lines.push("Uncomputable (missing inputs):");
+        missing.forEach((r) => lines.push(`  ${r.ratio_name}: ${r.missing}`));
+      }
+      return lines.join("\n");
+    }
 
     const context = [
       `# ${ticker} — ${metadata.companyName ?? "name unknown"} (${metadata.sector ?? "sector unknown"})`,
@@ -107,8 +157,11 @@ export async function POST(request: Request) {
       `Avg volume: ${n(technicals.averageVolume)} | Annualized volatility: ${technicals.volatility?.toFixed(1) ?? "n/a"}%`,
       `Flags: ${technicals.flags.map((f) => f.label).join("; ") || "none"}`,
       ``,
-      `## Structured financials`,
-      `NOT AVAILABLE in context — no income statement, balance sheet, cash flow, EPS, or book value. Do not invent these.`,
+      `## Structured financials (units: PKR thousands unless noted)`,
+      finsBlock(),
+      ``,
+      `## Computed ratios`,
+      ratiosBlock(),
       ``,
       `## Dividend history (recorded)`,
       dividends.length
