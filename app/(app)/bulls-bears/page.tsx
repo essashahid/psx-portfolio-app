@@ -25,8 +25,6 @@ import {
   Gauge,
   Landmark,
   LineChart,
-  ListChecks,
-  Radio,
   RefreshCw,
   Shield,
   Sparkles,
@@ -48,14 +46,6 @@ const BUCKET_ICON: Record<SectorBucket, typeof Activity> = {
   other: Building2,
 };
 
-const PROCESS = [
-  { label: "Top developments", detail: "Macro headlines and policy changes that can move the week.", icon: Radio },
-  { label: "Market recap", detail: "Index, breadth, leaders, laggards, and call accountability.", icon: Activity },
-  { label: "Regime read", detail: "Sector rotation: cyclicals, defensives, energy, and financials.", icon: Gauge },
-  { label: "Score ranking", detail: "Growth, quality, value, momentum, and income compressed into one rank.", icon: BarChart3 },
-  { label: "Quality check", detail: "Base effect, one-time gains, and whether earnings are recurring.", icon: AlertTriangle },
-  { label: "Budget mapper", detail: "Policy items mapped to sectors and your current holdings.", icon: Wallet },
-];
 
 export default async function BullsBearsPage() {
   const user = await getUser();
@@ -120,31 +110,7 @@ export default async function BullsBearsPage() {
         <LiveRecapCard recap={data.recap} />
       </div>
 
-      <Card className="rise rise-1">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2"><ListChecks className="h-4 w-4" /> Episode workflow</CardTitle>
-          <CardDescription>The repeatable thinking pattern from the video, converted into sections this page can refresh weekly.</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="grid gap-2 md:grid-cols-2 xl:grid-cols-3">
-            {PROCESS.map((step, index) => {
-              const Icon = step.icon;
-              return (
-                <div key={step.label} className="flex gap-3 rounded-lg border border-border bg-muted/25 p-3">
-                  <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-card text-foreground">
-                    <Icon className="h-4 w-4" />
-                  </span>
-                  <div>
-                    <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">Step {index + 1}</p>
-                    <p className="text-sm font-semibold">{step.label}</p>
-                    <p className="mt-1 text-xs leading-relaxed text-muted-foreground">{step.detail}</p>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </CardContent>
-      </Card>
+      <AtAGlance data={data} />
 
       <div className="grid gap-3 xl:grid-cols-[1.2fr_0.8fr]">
         <RegimeCard regime={data.regime} favored={data.brief.regime.favored} cautious={data.brief.regime.cautious} />
@@ -156,7 +122,9 @@ export default async function BullsBearsPage() {
         <Card className="rise rise-2">
           <CardHeader>
             <CardTitle className="flex items-center gap-2"><BarChart3 className="h-4 w-4" /> Sarmaya-style score board</CardTitle>
-            <CardDescription>Top 50 shortlist plus a full in-memory screener from cached ratios and technicals.</CardDescription>
+            <CardDescription>
+              Every PSX company ranked 1–{data.scoredCount} by a composite score (0–100). Higher = more fundamentally attractive right now. The score blends five things the show always checks: <strong>Growth</strong> (is EPS/revenue rising?), <strong>Quality</strong> (strong margins, low debt?), <strong>Value</strong> (is it cheap?), <strong>Momentum</strong> (is the price above its moving averages?), and <strong>Income</strong> (dividend yield + cover). Click any row to see the full breakdown. Filter by sector bucket or &quot;Owned&quot; to focus on what matters to you.
+            </CardDescription>
           </CardHeader>
           <CardContent>
             {data.topPicks.length ? (
@@ -288,7 +256,9 @@ function RegimeCard({ regime, favored, cautious }: { regime: Awaited<ReturnType<
     <Card className="rise">
       <CardHeader>
         <CardTitle className="flex items-center gap-2"><Gauge className="h-4 w-4" /> Rotation and regime</CardTitle>
-        <CardDescription>Live sector snapshots collapsed into the episode&apos;s rotation buckets.</CardDescription>
+        <CardDescription>
+          Markets cycle between two modes: <strong>risk-on</strong> (cyclicals like cement, autos, textiles lead — investors are confident) and <strong>risk-off</strong> (defensives like fertilizer, food, pharma lead — investors are cautious). Energy leads separately when oil/commodity prices rise. The bars below show which bucket is actually leading <em>today</em> from live PSX data. The &quot;Brief favored&quot; tags are what the episode specifically called out.
+        </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
         {regime ? (
@@ -467,7 +437,9 @@ function EarningsQualityCard({ flags, watchlist }: { flags: EarningsQualityFlag[
     <Card className="rise">
       <CardHeader>
         <CardTitle className="flex items-center gap-2"><AlertTriangle className="h-4 w-4 text-amber-600" /> Earnings quality</CardTitle>
-        <CardDescription>Flags for base effects, one-time gains, and loss-to-profit swings.</CardDescription>
+        <CardDescription>
+          Not all earnings growth is real. A <strong>base effect</strong> means last year was unusually bad, so this year looks great by comparison — but it&apos;s not true improvement. A <strong>one-time gain</strong> (e.g. selling an asset, a demerger windfall) inflates EPS for one quarter only. The show always asks: &quot;Is this recurring?&quot; These flags catch the cases where the answer is probably no.
+        </CardDescription>
       </CardHeader>
       <CardContent className="space-y-3">
         {flags.length ? (
@@ -646,4 +618,170 @@ function bucketToneClass(bucket: SectorBucket) {
     default:
       return "bg-muted text-muted-foreground";
   }
+}
+
+// ── At a glance ─────────────────────────────────────────────────────────────
+
+type GlanceItem = { icon: typeof Activity; label: string; text: string; tone: "positive" | "negative" | "neutral" | "caution" };
+
+function AtAGlance({ data }: { data: Awaited<ReturnType<typeof getBullsBears>> }) {
+  const items: GlanceItem[] = [];
+
+  // 1. Regime / rotation — what's actually leading today
+  if (data.regime) {
+    const { label, leader, laggard } = data.regime;
+    const leaderName = leader ? BUCKET_META[leader].label : null;
+    const laggardName = laggard ? BUCKET_META[laggard].label : null;
+    const t = leader === "defensive" ? "caution" : leader === "energy" || leader === "cyclical" ? "positive" : "neutral";
+    items.push({
+      icon: Gauge,
+      label: "Market regime right now",
+      text: laggardName
+        ? `${label}. ${leaderName} stocks are leading today; ${laggardName} is lagging. Position in the direction of the rotation, not against it.`
+        : `${label}. ${leaderName ?? "No clear leader"} is the leading bucket from today's PSX data.`,
+      tone: t,
+    });
+  } else {
+    items.push({
+      icon: Gauge,
+      label: "Market regime",
+      text: `From the weekly brief: ${data.brief.regime.stance}. ${data.brief.regime.note.slice(0, 120)}…`,
+      tone: "neutral",
+    });
+  }
+
+  // 2. Score board — top pick right now
+  const top = data.topPicks[0];
+  if (top) {
+    const ownedTop = data.topPicks.find((s) => data.ownedTickers.has(s.ticker));
+    if (ownedTop) {
+      items.push({
+        icon: Briefcase,
+        label: "Your highest-ranked holding",
+        text: `${ownedTop.ticker} (${ownedTop.companyName ?? ownedTop.sector ?? ""}) ranks #${ownedTop.rank} out of ${data.scoredCount} companies with a score of ${ownedTop.score.toFixed(0)}/100. Its strongest sub-score is ${bestSubScore(ownedTop)}.`,
+        tone: "positive",
+      });
+    } else {
+      items.push({
+        icon: BarChart3,
+        label: "Top-ranked company right now",
+        text: `${top.ticker} (${top.companyName ?? top.sector ?? ""}) is #1 out of ${data.scoredCount} ranked companies with a score of ${top.score.toFixed(0)}/100 — strongest on ${bestSubScore(top)}. Check it out in the score board below.`,
+        tone: "positive",
+      });
+    }
+  }
+
+  // 3. Budget → portfolio (only if holdings are actually touched)
+  const touched = data.budgetImpacts.filter((i) => i.holdings.length > 0);
+  if (touched.length > 0) {
+    const first = touched[0];
+    const positive = first.item.direction === "positive";
+    items.push({
+      icon: Wallet,
+      label: "Budget directly touches your portfolio",
+      text: `"${first.item.policy}" hits ${first.holdings.join(", ")} in your holdings (${first.item.detail}). ${touched.length > 1 ? `${touched.length - 1} more policy item${touched.length > 2 ? "s" : ""} also matched.` : ""}`,
+      tone: positive ? "positive" : "negative",
+    });
+  }
+
+  // 4. Earnings quality — owned stock with a flag, or top watchlist caution
+  const ownedFlag = data.earningsQuality.find((f) => data.ownedTickers.has(f.ticker));
+  const watchlistCaution = data.brief.watchlist.find((w) => w.caution);
+  if (ownedFlag) {
+    items.push({
+      icon: AlertTriangle,
+      label: "Earnings quality caution — you own this",
+      text: `${ownedFlag.ticker}: ${ownedFlag.caption}`,
+      tone: "caution",
+    });
+  } else if (watchlistCaution) {
+    items.push({
+      icon: AlertTriangle,
+      label: "Earnings quality caution from the episode",
+      text: `${watchlistCaution.ticker}: ${watchlistCaution.caution}`,
+      tone: "caution",
+    });
+  }
+
+  // 5. #1 signal to watch from the brief
+  const signal = data.brief.signalVsNoise.signal[0];
+  if (signal) {
+    items.push({
+      icon: Target,
+      label: "Key signal to watch",
+      text: signal,
+      tone: "neutral",
+    });
+  }
+
+  // 6. Top noise warning
+  const noise = data.brief.signalVsNoise.noise[0];
+  if (noise) {
+    items.push({
+      icon: TrendingDown,
+      label: "Don't over-read this",
+      text: noise,
+      tone: "negative",
+    });
+  }
+
+  const toneStyles: Record<GlanceItem["tone"], string> = {
+    positive: "border-emerald-200 bg-emerald-50/60",
+    negative: "border-red-200 bg-red-50/60",
+    caution: "border-amber-200 bg-amber-50/60",
+    neutral: "border-border bg-muted/30",
+  };
+  const iconStyles: Record<GlanceItem["tone"], string> = {
+    positive: "text-emerald-700",
+    negative: "text-red-600",
+    caution: "text-amber-700",
+    neutral: "text-muted-foreground",
+  };
+  const labelStyles: Record<GlanceItem["tone"], string> = {
+    positive: "text-emerald-800",
+    negative: "text-red-800",
+    caution: "text-amber-800",
+    neutral: "text-muted-foreground",
+  };
+  const textStyles: Record<GlanceItem["tone"], string> = {
+    positive: "text-emerald-950/85",
+    negative: "text-red-950/85",
+    caution: "text-amber-950/85",
+    neutral: "text-foreground/80",
+  };
+
+  return (
+    <Card className="rise rise-1">
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2"><Sparkles className="h-4 w-4 text-emerald-600" /> This week at a glance</CardTitle>
+        <CardDescription>
+          Plain-English summary of what the live market data + this week&apos;s episode are telling you. Each point links to a section further down.
+        </CardDescription>
+      </CardHeader>
+      <CardContent>
+        <div className="grid gap-2 md:grid-cols-2">
+          {items.map((item) => {
+            const Icon = item.icon;
+            return (
+              <div key={item.label} className={cn("flex gap-3 rounded-lg border p-3.5", toneStyles[item.tone])}>
+                <Icon className={cn("mt-0.5 h-4 w-4 shrink-0", iconStyles[item.tone])} />
+                <div className="min-w-0">
+                  <p className={cn("text-[10px] font-semibold uppercase tracking-wide", labelStyles[item.tone])}>{item.label}</p>
+                  <p className={cn("mt-1 text-xs leading-relaxed", textStyles[item.tone])}>{item.text}</p>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
+function bestSubScore(s: ScoredStock): string {
+  const keys = Object.keys(s.subScores) as Array<keyof typeof s.subScores>;
+  const best = keys.reduce((a, b) => ((s.subScores[a] ?? -1) >= (s.subScores[b] ?? -1) ? a : b));
+  const labels: Record<string, string> = { growth: "Growth", quality: "Quality", value: "Value", momentum: "Momentum", income: "Income" };
+  const val = s.subScores[best];
+  return `${labels[best] ?? best}${val != null ? ` (${val.toFixed(0)}th percentile)` : ""}`;
 }
