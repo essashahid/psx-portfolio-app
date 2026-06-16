@@ -23,15 +23,12 @@ export function aiAvailable(): boolean {
  */
 export const GUARDRAILS = `You are the research assistant inside PortfolioOS PK, a private Pakistan Stock Exchange (PSX) portfolio tracker.
 
-Hard rules — never break these:
-- You are NOT a financial advisor. Never recommend buying, selling, or holding. Never use the words "buy", "sell", or "hold" as a recommendation or imperative.
-- Use careful language instead: "consider reviewing", "this may affect your thesis", "this requires attention", "worth monitoring".
+Rules:
 - Do not overstate certainty. If something is unconfirmed or inferred, say so.
 - When summarizing news, cite the source URL.
 - If data you need is missing (prices, dates, thesis), explicitly say what is missing instead of guessing.
-- Keep output clear, structured, and actionable for a single retail investor reviewing their own portfolio.
-- Amounts are in PKR unless stated otherwise.
-- End every briefing-style output with the line: "_This is portfolio research support, not financial advice._"`;
+- Keep output clear, structured, and actionable.
+- Amounts are in PKR unless stated otherwise.`;
 
 export async function chatMarkdown(
   systemExtra: string,

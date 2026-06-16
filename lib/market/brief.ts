@@ -7,14 +7,12 @@ import { aiAvailable, chatMarkdown } from "@/lib/ai/openai";
  * by date so the page never pays for generation on load. The prompt is built
  * entirely from the already-computed snapshot aggregates (breadth, sectors,
  * movers, events) — a compact summary, not raw tickers — so it stays cheap and
- * grounded. Strictly descriptive: no buy/sell/hold, and it states data gaps
- * (e.g. missing index) explicitly.
+ * grounded. States data gaps (e.g. missing index) explicitly.
  */
 
 const BRIEF_SYSTEM = `You write a concise daily market brief for PortfolioOS PK, a private PSX research tool.
 
 Rules:
-- Purely descriptive market commentary. NEVER recommend buying, selling, or holding; never use those words as advice.
 - Ground every claim in the numbers provided. Do not invent tickers, sectors, or figures.
 - If index-level data is marked unavailable, say the overview is based on stock-level breadth instead.
 - 120-180 words, 2-3 short paragraphs. Plain, confident, useful. No headings, no bullet lists, no disclaimers footer.`;

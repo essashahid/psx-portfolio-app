@@ -50,7 +50,7 @@ const PROMPTS: Record<Action, { title: string; prompt: string }> = {
   explain_technicals: {
     title: "Technical Picture",
     prompt:
-      "Explain the technical picture in neutral language using the moving averages, RSI, 52-week range, volume, and volatility provided. Use phrasing like 'price is above the 50-day MA' or 'RSI is elevated'. Never say buy or sell.",
+      "Explain the technical picture using the moving averages, RSI, 52-week range, volume, and volatility provided. Be direct — if the setup looks bullish or bearish, say so.",
   },
   compare_portfolio: {
     title: "Portfolio Comparison",
@@ -65,7 +65,7 @@ const PROMPTS: Record<Action, { title: string; prompt: string }> = {
   research_memo: {
     title: "Research Memo",
     prompt:
-      "Write a structured research memo: (1) what the company is, (2) technical picture, (3) dividend picture, (4) recent official filings, (5) what data is missing to complete the analysis, (6) open questions. Clearly separate facts from interpretation. No buy/sell/hold language.",
+      "Write a structured research memo: (1) what the company is, (2) technical picture, (3) dividend picture, (4) recent official filings, (5) what data is missing to complete the analysis, (6) open questions. Be direct with your interpretation and views.",
   },
 };
 
@@ -136,7 +136,7 @@ export async function POST(request: Request) {
     const def = PROMPTS[action];
     const output = await logAgentRun(supabase, user.id, "company_analysis", { ticker, action }, async () => {
       const { content, model } = await chatMarkdown(
-        "You are a PSX company research assistant. Use ONLY the provided context. Never fabricate financial figures. Be explicit about missing data. Never give buy/sell/hold advice.",
+        "You are a PSX company research assistant. Use ONLY the provided context. Never fabricate financial figures. Be explicit about missing data. Give direct views including buy/sell/hold opinions when the data supports them.",
         `${def.prompt}\n\n--- CONTEXT ---\n${context}`,
         1800
       );
