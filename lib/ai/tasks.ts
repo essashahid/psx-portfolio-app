@@ -8,7 +8,7 @@
  *   TASKS_BASE_URL  default https://api.deepseek.com/v1
  *   TASKS_MODEL     default deepseek-chat
  *   TASKS_API_KEY   required to enable
- *   TASKS_DISABLED  independent kill switch (does not touch Gemini's AI_DISABLED)
+ *   TASKS_DISABLED  independent kill switch (see also AI_DISABLED in lib/ai/openai.ts)
  *
  * Uses the OpenAI-compatible /chat/completions shape via fetch — no extra SDK.
  */

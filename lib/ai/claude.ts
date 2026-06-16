@@ -9,10 +9,10 @@ import Anthropic from "@anthropic-ai/sdk";
  * complex/multi-entity questions. The shared system prompt + tool schemas are
  * prompt-cached so repeated turns bill cached-read rates.
  *
- * The chat (Claude) has its OWN kill switch, independent of the Gemini one:
- * AI_DISABLED governs Gemini/cron spend only; the chat is gated by CHAT_DISABLED
+ * The chat (Claude) has its OWN kill switch, independent of the tasks one:
+ * AI_DISABLED governs the DeepSeek tasks provider; the chat is gated by CHAT_DISABLED
  * (+ the presence of CLAUDE_API_KEY). This lets the assistant run on Claude
- * while the Gemini crons stay halted.
+ * while the analysis crons stay halted.
  */
 
 export type ChatLevel = "light" | "standard" | "deep";
@@ -32,7 +32,7 @@ const LEVELS: Record<ChatLevel, LevelConfig> = {
   deep: { model: "claude-opus-4-8", effort: "high", thinking: true },
 };
 
-/** Independent chat kill switch — does NOT touch the Gemini/cron AI_DISABLED flag. */
+/** Independent chat kill switch — does NOT touch the tasks AI_DISABLED flag. */
 export function chatDisabled(): boolean {
   const v = (process.env.CHAT_DISABLED ?? "").toLowerCase();
   return v === "true" || v === "1" || v === "yes";

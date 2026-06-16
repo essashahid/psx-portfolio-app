@@ -93,7 +93,7 @@ export async function POST(
 
     if (section === "description") {
       if (!aiAvailable()) {
-        return NextResponse.json({ error: "GEMINI_API_KEY is not configured." }, { status: 503 });
+        return NextResponse.json({ error: "AI provider is not configured. Add TASKS_API_KEY or DEEPSEEK_API_KEY in .env.local." }, { status: 503 });
       }
       const meta = await getCompanyMetadata(supabase, ticker);
       const { data } = await chatJson<{ description: string; industry: string; business_lines: string[] }>(

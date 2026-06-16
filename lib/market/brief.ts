@@ -57,7 +57,7 @@ export async function generateMarketBrief(snapshotDate: string, opts: { force?: 
     if (existing?.content) return { generated: false, date: snapshotDate, content: existing.content };
   }
 
-  if (!aiAvailable()) return { generated: false, date: snapshotDate, error: "GEMINI_API_KEY is not configured." };
+  if (!aiAvailable()) return { generated: false, date: snapshotDate, error: "AI provider is not configured." };
 
   const { data: snap } = await db
     .from("market_snapshots")
@@ -98,7 +98,7 @@ export async function generateMarketBrief(snapshotDate: string, opts: { force?: 
   let content: string;
   let model: string;
   try {
-    const r = await chatMarkdown(BRIEF_SYSTEM, `Write today's PSX market brief from these facts:\n\n${facts}`, 2_000, { thinkingBudget: 1_024 });
+    const r = await chatMarkdown(BRIEF_SYSTEM, `Write today's PSX market brief from these facts:\n\n${facts}`, 2_000);
     content = r.content;
     model = r.model;
   } catch (e) {

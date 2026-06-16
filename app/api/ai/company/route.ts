@@ -74,7 +74,7 @@ export async function POST(request: Request) {
   if (error) return error;
 
   if (!aiAvailable()) {
-    return NextResponse.json({ error: "GEMINI_API_KEY is not configured." }, { status: 503 });
+    return NextResponse.json({ error: "AI provider is not configured. Add TASKS_API_KEY or DEEPSEEK_API_KEY in .env.local." }, { status: 503 });
   }
 
   try {

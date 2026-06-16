@@ -1,40 +1,19 @@
-import { GoogleGenerativeAI } from "@google/generative-ai";
 import { tasksConfigured, taskJson, taskText } from "@/lib/ai/tasks";
 
-/**
- * Global kill switch for GEMINI usage. Set AI_DISABLED=true to halt every Gemini
- * call. Note the analysis tasks (extraction, briefs, news) now prefer the cheap
- * provider-agnostic "tasks" model (DeepSeek/Kimi/etc., see lib/ai/tasks.ts) when
- * TASKS_API_KEY is set — Gemini is only the fallback. The interactive Research
- * Copilot is separate again (Claude, gated by CHAT_DISABLED).
- */
+/** Master kill switch for analysis AI. Set AI_DISABLED=true to halt every tasks call. */
 export function aiDisabled(): boolean {
   const v = (process.env.AI_DISABLED ?? "").toLowerCase();
   return v === "true" || v === "1" || v === "yes";
 }
 
-/** Gemini specifically. */
+/** DeepSeek tasks provider is configured and not disabled. */
 export function aiConfigured(): boolean {
-  return !aiDisabled() && !!process.env.GEMINI_API_KEY;
+  return !aiDisabled() && tasksConfigured();
 }
 
-/** Any analysis provider available — cheap tasks model OR Gemini fallback. */
+/** Alias for aiConfigured — kept for call-site compatibility. */
 export function aiAvailable(): boolean {
-  return tasksConfigured() || aiConfigured();
-}
-
-export function getModel(): string {
-  return process.env.GEMINI_MODEL || "gemini-2.5-pro";
-}
-
-function getClient() {
-  if (aiDisabled()) {
-    throw new Error("AI is temporarily disabled (AI_DISABLED=true). Remove the flag to resume.");
-  }
-  if (!process.env.GEMINI_API_KEY) {
-    throw new Error("GEMINI_API_KEY is not configured. Add it in .env.local to enable AI features.");
-  }
-  return new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+  return aiConfigured();
 }
 
 /**
@@ -58,65 +37,16 @@ export async function chatMarkdown(
   systemExtra: string,
   userPrompt: string,
   maxTokens = 1800,
-  opts: { thinkingBudget?: number } = {}
 ): Promise<{ content: string; model: string }> {
-  // Prefer the cheap provider-agnostic tasks model when configured.
-  if (tasksConfigured()) return taskText(`${GUARDRAILS}\n\n${systemExtra}`, userPrompt, maxTokens);
-  const genAI = getClient();
-  const modelId = getModel();
-  // gemini-2.5-* draw reasoning tokens from the output budget; with a small
-  // maxTokens the whole budget can be spent thinking, yielding an empty answer.
-  // Bound the thinking budget (when requested) so prose is always emitted.
-  const generationConfig: Record<string, unknown> = { temperature: 0.4, maxOutputTokens: maxTokens };
-  if (opts.thinkingBudget !== undefined) generationConfig.thinkingConfig = { thinkingBudget: opts.thinkingBudget };
-  const model = genAI.getGenerativeModel({
-    model: modelId,
-    systemInstruction: `${GUARDRAILS}\n\n${systemExtra}`,
-    generationConfig: generationConfig as never,
-  });
-  const result = await model.generateContent(userPrompt);
-  const content = result.response.text().trim();
-  if (!content) throw new Error("AI returned an empty response.");
-  return { content, model: modelId };
+  return taskText(`${GUARDRAILS}\n\n${systemExtra}`, userPrompt, maxTokens);
 }
 
 export async function chatJson<T>(
   systemExtra: string,
   userPrompt: string,
   maxTokens = 2500,
-  opts: { thinkingBudget?: number; model?: string } = {}
 ): Promise<{ data: T; model: string }> {
-  // Prefer the cheap provider-agnostic tasks model when configured (Gemini-only
-  // opts like thinkingBudget/model are ignored on that path).
-  if (tasksConfigured()) return taskJson<T>(`${GUARDRAILS}\n\n${systemExtra}`, userPrompt, maxTokens);
-  const genAI = getClient();
-  const modelId = opts.model ?? getModel();
-  // gemini-2.5-* are thinking models: reasoning tokens are drawn from the same
-  // output budget, so a large document can exhaust maxOutputTokens before the
-  // JSON is finished and the response comes back truncated. Bounding the
-  // thinking budget keeps room for the structured output. (thinkingConfig is
-  // accepted by the REST API even though the 0.24 SDK types predate it.)
-  const generationConfig: Record<string, unknown> = {
-    temperature: 0.2,
-    maxOutputTokens: maxTokens,
-    responseMimeType: "application/json",
-  };
-  if (opts.thinkingBudget !== undefined) {
-    generationConfig.thinkingConfig = { thinkingBudget: opts.thinkingBudget };
-  }
-  const model = genAI.getGenerativeModel({
-    model: modelId,
-    systemInstruction: `${GUARDRAILS}\n\n${systemExtra}\n\nRespond with valid JSON only.`,
-    generationConfig: generationConfig as never,
-  });
-  const result = await model.generateContent(userPrompt);
-  const finish = result.response.candidates?.[0]?.finishReason;
-  if (finish === "MAX_TOKENS") {
-    throw new Error(`AI response hit the ${maxTokens}-token limit before completing — raise maxTokens or bound the thinking budget.`);
-  }
-  const content = result.response.text().trim();
-  if (!content) throw new Error("AI returned an empty response.");
-  return { data: JSON.parse(content) as T, model: modelId };
+  return taskJson<T>(`${GUARDRAILS}\n\n${systemExtra}`, userPrompt, maxTokens);
 }
 
 // ---------------------------------------------------------------------------

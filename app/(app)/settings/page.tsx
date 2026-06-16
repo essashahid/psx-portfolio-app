@@ -51,7 +51,7 @@ export default async function SettingsPage() {
 
   const keyStatus = [
     { name: "Supabase", ok: !!process.env.NEXT_PUBLIC_SUPABASE_URL, note: "database, auth, storage" },
-    { name: "Gemini", ok: aiConfigured(), note: "briefings, thesis checks, news analysis, metadata enrichment" },
+    { name: "DeepSeek", ok: aiConfigured(), note: "briefings, thesis checks, news analysis, metadata enrichment" },
     {
       name: "News providers",
       ok: tavilyConfigured() || gdeltConfigured() || psxAnnouncementsConfigured(),

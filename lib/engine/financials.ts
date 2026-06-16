@@ -6,12 +6,12 @@ import { fetchPsxCompanyData, type PsxPeriodFigures } from "@/lib/company/psx-co
 /**
  * Financial-statement extraction pipeline.
  *
- * Source of truth is always the official PSX result filing (PDF). Gemini is
- * used strictly as a PARSER: it converts the filing text into structured line
- * items, echoing only numbers that literally appear in the document. Every
- * extraction stores the source URL + confidence; low confidence rows are
- * flagged needs-review, and nothing is written when the document can't be
- * read. The engine never invents a number.
+ * Source of truth is always the official PSX result filing (PDF). The LLM
+ * is used strictly as a PARSER: it converts the filing text into structured
+ * line items, echoing only numbers that literally appear in the document.
+ * Every extraction stores the source URL + confidence; low confidence rows
+ * are flagged needs-review, and nothing is written when the document can't
+ * be read. The engine never invents a number.
  */
 
 const REQUEST_TIMEOUT_MS = 60_000; // PSX result PDFs can be 8MB+ over a slow link
@@ -190,7 +190,7 @@ export async function extractFinancials(ticker: string, maxFilings = 2): Promise
   const out: ExtractionResult = { ticker: t, processed: 0, saved: 0, skipped: [], errors: [] };
 
   if (!aiAvailable()) {
-    out.errors.push("GEMINI_API_KEY is not configured — extraction unavailable.");
+    out.errors.push("AI provider is not configured — extraction unavailable.");
     return out;
   }
   if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
@@ -248,12 +248,7 @@ export async function extractFinancials(ticker: string, maxFilings = 2): Promise
       const { data } = await chatJson<{ statements: ExtractedStatement[]; document_units?: string }>(
         EXTRACTION_PROMPT,
         `Filing title: ${filing.title}\nFiling date: ${filing.date ?? "unknown"}\nTicker: ${t}\n\n--- DOCUMENT TEXT ---\n${pdf.text}`,
-        12_000, // 3 statements × ~15 fields can be sizeable; leave ample room
-        // Statement extraction is mechanical parsing, not reasoning — use the
-        // cheap flash model with thinking off. ~20× cheaper than pro, which
-        // matters for a universe-wide backfill, and cached per filing so it's a
-        // one-time cost. Falls back to the configured model if flash is unset.
-        { model: process.env.GEMINI_EXTRACT_MODEL || "gemini-2.5-flash", thinkingBudget: 0 }
+        12_000,
       );
 
       const statements = (data.statements ?? []).filter(validStatement);
@@ -294,7 +289,7 @@ export async function extractFinancials(ticker: string, maxFilings = 2): Promise
     await db.from("data_fetch_logs").insert({
       ticker: t,
       section: "financials",
-      source: "psx-filing+gemini",
+      source: "psx-filing+deepseek",
       status: out.saved > 0 ? "ok" : out.errors.length ? "error" : "empty",
       rows: out.saved,
       detail: out.errors.join("; ").slice(0, 300) || null,
@@ -334,7 +329,7 @@ function statementData(p: PsxPeriodFigures): Record<string, number | null | stri
 /**
  * Populate company_financials from the official PSX company page — no PDF
  * download, no LLM, one HTTP request. This is the default, zero-marginal-cost
- * financials path; the Gemini PDF extractor above remains available only as an
+ * financials path; the PDF extractor above remains available only as an
  * opt-in deep fallback. Returns the same ExtractionResult shape as
  * extractFinancials so callers are interchangeable.
  */

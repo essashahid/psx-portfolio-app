@@ -21,7 +21,7 @@ export async function POST(request: Request) {
 
   if (!aiAvailable()) {
     return NextResponse.json(
-      { error: "OPENAI_API_KEY is not configured. Add it in .env.local to enable AI briefings." },
+      { error: "AI provider is not configured. Add TASKS_API_KEY or DEEPSEEK_API_KEY in .env.local." },
       { status: 503 }
     );
   }

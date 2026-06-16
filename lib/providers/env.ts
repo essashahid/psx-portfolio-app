@@ -20,7 +20,7 @@ export type ProviderName =
   | "finnhub"
   | "alpha-vantage"
   | "tavily"
-  | "gemini";
+  | "deepseek";
 
 export function alphaVantageKey(): string | null {
   return firstEnv("ALPHA_VANTAGE_API_KEY", "ALPHA_VINTAGE_API", "ALPHA_VANTAGE_API", "ALPHA_VINTAGE_API_KEY");
@@ -91,10 +91,12 @@ export function providerConfigs(): ProviderConfig[] {
       detail: process.env.TAVILY_API_KEY ? "Key configured" : "No key (TAVILY_API_KEY)",
     },
     {
-      name: "gemini",
-      label: "Gemini (extraction & summaries only)",
-      configured: !!process.env.GEMINI_API_KEY,
-      detail: process.env.GEMINI_API_KEY ? "Key configured — used to parse documents, never to invent numbers" : "No key (GEMINI_API_KEY)",
+      name: "deepseek",
+      label: "DeepSeek (extraction & summaries)",
+      configured: !!(process.env.TASKS_API_KEY || process.env.DEEPSEEK_API_KEY || process.env.DEEP_SEEK_API_KEY),
+      detail: (process.env.TASKS_API_KEY || process.env.DEEPSEEK_API_KEY || process.env.DEEP_SEEK_API_KEY)
+        ? "Key configured — used to parse documents and generate summaries"
+        : "No key (TASKS_API_KEY / DEEPSEEK_API_KEY)",
     },
   ];
 }
