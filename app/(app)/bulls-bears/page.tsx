@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { createClient, getUser } from "@/lib/supabase/server";
-import { getBullsBears, type BudgetImpact, type BucketRow, type EarningsQualityFlag } from "@/lib/market/bulls-bears";
+import { getBullsBears, type BudgetImpact, type BucketRow, type EarningsQualityFlag, type EnrichedTradeSetup, type PortfolioStrategyRow } from "@/lib/market/bulls-bears";
 import type { ScoredStock } from "@/lib/market/score";
 import { BUCKET_META, type SectorBucket } from "@/lib/market/sectors";
 import type { CallReview, Direction, MacroIndicator, WatchItem } from "@/lib/market/weekly-brief";
@@ -11,6 +11,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { EmptyState } from "@/components/empty-state";
 import { ScoreBoard } from "@/components/market/score-board";
+import { PortfolioStrategyChart, RegimeRotationChart, ScoreMomentumMap, SetupRiskRewardChart } from "@/components/market/bulls-bears-visuals";
 import {
   Activity,
   AlertTriangle,
@@ -20,11 +21,14 @@ import {
   BookOpen,
   Briefcase,
   Building2,
+  CheckCircle2,
   ClipboardCheck,
+  Eye,
   Flame,
   Gauge,
   Landmark,
   LineChart,
+  ListChecks,
   RefreshCw,
   Shield,
   Sparkles,
@@ -112,9 +116,20 @@ export default async function BullsBearsPage() {
 
       <AtAGlance data={data} />
 
+      <VisualDecisionMap data={data} />
+
+      <PortfolioStrategyPanel rows={data.portfolioStrategy} />
+
+      <TeamSetupsPanel setups={data.tradeSetups} opportunities={data.topOpportunities} />
+
       <div className="grid gap-3 xl:grid-cols-[1.2fr_0.8fr]">
         <RegimeCard regime={data.regime} favored={data.brief.regime.favored} cautious={data.brief.regime.cautious} />
         <MacroCard macro={data.brief.macro} />
+      </div>
+
+      <div className="grid gap-3 xl:grid-cols-[1fr_1fr]">
+        <IndexTechnicalCard data={data} />
+        <GlobalMarketsCard data={data} />
       </div>
 
       <div className="grid gap-3 xl:grid-cols-[0.8fr_1.2fr]">
@@ -248,6 +263,227 @@ function SmallStat({ label, value, tone: t, align = "center" }: { label: string;
       <p className={cn("truncate text-sm font-semibold tabular-nums", t === "positive" ? "text-emerald-600" : t === "negative" ? "text-red-600" : "text-foreground")}>{value}</p>
       <p className="text-[10px] uppercase tracking-wide text-muted-foreground">{label}</p>
     </div>
+  );
+}
+
+function VisualDecisionMap({ data }: { data: Awaited<ReturnType<typeof getBullsBears>> }) {
+  return (
+    <Card className="rise rise-1">
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2"><BarChart3 className="h-4 w-4" /> Visual decision map</CardTitle>
+        <CardDescription>
+          Four quick visuals: what your holdings score, which episode setups have attractive risk/reward, where the top-50 stocks sit on score vs momentum, and which sector bucket is leading today.
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="grid gap-4 xl:grid-cols-2">
+        <div className="rounded-lg border border-border bg-muted/20 p-3">
+          <p className="mb-1 text-xs font-semibold">Your holdings by show-style verdict</p>
+          <p className="mb-2 text-[11px] text-muted-foreground">Bars above 60 are investable screens; color shows whether the next step is add, hold, or review risk.</p>
+          <PortfolioStrategyChart rows={data.portfolioStrategy} />
+        </div>
+        <div className="rounded-lg border border-border bg-muted/20 p-3">
+          <p className="mb-1 text-xs font-semibold">Episode setup risk / reward</p>
+          <p className="mb-2 text-[11px] text-muted-foreground">Left side is risk to stop; right side is reward to the first target from the suggested entry midpoint.</p>
+          <SetupRiskRewardChart setups={data.tradeSetups} />
+        </div>
+        <div className="rounded-lg border border-border bg-muted/20 p-3">
+          <p className="mb-1 text-xs font-semibold">Top 50: score vs momentum</p>
+          <p className="mb-2 text-[11px] text-muted-foreground">Upper-right names combine fundamentals and trend. Your owned names are highlighted in green.</p>
+          <ScoreMomentumMap stocks={data.topPicks} owned={[...data.ownedTickers]} />
+        </div>
+        <div className="rounded-lg border border-border bg-muted/20 p-3">
+          <p className="mb-1 text-xs font-semibold">Live rotation by bucket</p>
+          <p className="mb-2 text-[11px] text-muted-foreground">This is the video’s cyclical / defensive / energy framework applied to today’s PSX sector snapshot.</p>
+          {data.regime ? <RegimeRotationChart buckets={data.regime.buckets} /> : <EmptyState icon={Gauge} title="No rotation chart yet" description="Refresh Market Pulse to populate live sector buckets." />}
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
+function PortfolioStrategyPanel({ rows }: { rows: PortfolioStrategyRow[] }) {
+  const addRows = rows.filter((row) => row.verdict === "setup_add" || row.verdict === "add_candidate");
+  const reviewRows = rows.filter((row) => row.verdict === "risk_review");
+
+  return (
+    <Card className="rise rise-2 border-emerald-100">
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2"><Briefcase className="h-4 w-4 text-emerald-600" /> What this means for my portfolio</CardTitle>
+        <CardDescription>
+          This applies the episode’s thinking to stocks you already own: score first, then rotation, setup, budget impact, and earnings quality. It is not a blind buy/sell list; it tells you what deserves research, sizing, or risk review.
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        {rows.length === 0 ? (
+          <EmptyState icon={Briefcase} title="No holdings to map" description="Import holdings and this panel will show which of your stocks match the episode strategy." />
+        ) : (
+          <>
+            <div className="grid gap-2 md:grid-cols-3">
+              <DecisionTile icon={CheckCircle2} label="Potential add / add-on" value={addRows.length} tone="positive" />
+              <DecisionTile icon={Eye} label="Hold and watch" value={rows.filter((row) => row.verdict === "hold_watch").length} tone="neutral" />
+              <DecisionTile icon={AlertTriangle} label="Risk review first" value={reviewRows.length} tone="caution" />
+            </div>
+            <div className="divide-y divide-border overflow-hidden rounded-lg border border-border">
+              {rows.map((row) => (
+                <div key={row.ticker} className="bg-card p-3">
+                  <div className="flex flex-wrap items-start justify-between gap-2">
+                    <div className="min-w-0">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <Link href={`/stocks/${row.ticker}`} className="text-sm font-semibold hover:underline">{row.ticker}</Link>
+                        <VerdictBadge verdict={row.verdict} label={row.verdictLabel} />
+                        <Badge variant="outline">{BUCKET_META[row.bucket].label}</Badge>
+                        {row.matchedSetup && <Badge variant="blue">Episode setup</Badge>}
+                      </div>
+                      <p className="mt-1 max-w-3xl text-sm leading-relaxed text-foreground/85">{row.actionSentence}</p>
+                    </div>
+                    <div className="grid grid-cols-3 gap-3 text-right text-[11px]">
+                      <MiniLabel label="Score" value={row.score != null ? `${row.score.toFixed(0)} (#${row.rank})` : "—"} />
+                      <MiniLabel label="Live" value={row.livePrice != null ? row.livePrice.toFixed(2) : "—"} />
+                      <MiniLabel label="P/L" value={fmtPct(row.unrealizedPct)} />
+                    </div>
+                  </div>
+                  <div className="mt-3 grid gap-2 lg:grid-cols-2">
+                    <ReasonList title="Why it matches" items={row.reasons.slice(0, 4)} tone="positive" />
+                    <ReasonList title="What to check first" items={row.risks.length ? row.risks.slice(0, 4) : [`Weakest sub-score: ${row.weakestSubScore ?? "not available"}. Confirm this before sizing up.`]} tone={row.risks.length ? "caution" : "neutral"} />
+                  </div>
+                </div>
+              ))}
+            </div>
+          </>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
+function TeamSetupsPanel({ setups, opportunities }: { setups: EnrichedTradeSetup[]; opportunities: ScoredStock[] }) {
+  return (
+    <div className="grid gap-3 xl:grid-cols-[1.15fr_0.85fr]">
+      <Card className="rise rise-2">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2"><Target className="h-4 w-4" /> Team setups for the following week</CardTitle>
+          <CardDescription>
+            These are the explicit PSX setups discussed after the video’s market outlook. The useful part is not just the ticker; it is the entry, stop, target, catalyst, and caveat.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          {setups.map((setup) => <TradeSetupRow key={setup.setup.ticker} setup={setup} />)}
+        </CardContent>
+      </Card>
+
+      <Card className="rise rise-3">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2"><ListChecks className="h-4 w-4" /> What I should research next</CardTitle>
+          <CardDescription>
+            Top-scoring names you do not currently own, filtered toward the episode’s preferred buckets where possible. Treat these as a research queue, not automatic buys.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          {opportunities.length ? (
+            <div className="space-y-1">
+              {opportunities.slice(0, 10).map((stock) => (
+                <Link key={stock.ticker} href={`/stocks/${stock.ticker}`} className="flex items-center justify-between gap-3 rounded-md px-2 py-2 transition-colors hover:bg-muted/60">
+                  <div className="min-w-0">
+                    <p className="text-xs font-semibold">{stock.ticker} <span className="font-normal text-muted-foreground">#{stock.rank}</span></p>
+                    <p className="truncate text-[10px] text-muted-foreground">{stock.companyName ?? stock.sector ?? BUCKET_META[stock.bucket].label}</p>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-xs font-bold tabular-nums">{stock.score.toFixed(0)}</p>
+                    <p className="text-[10px] text-muted-foreground">{bestSubScore(stock)}</p>
+                  </div>
+                </Link>
+              ))}
+            </div>
+          ) : (
+            <p className="rounded-lg border border-border bg-muted/25 p-3 text-xs text-muted-foreground">No clean non-owned opportunities matched the current score and rotation filters.</p>
+          )}
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
+function TradeSetupRow({ setup }: { setup: EnrichedTradeSetup }) {
+  const s = setup.setup;
+  const targetText = s.targets.map((target) => `${target.label}${target.price != null ? ` ${target.price}` : ""}`).join(" / ");
+  const statusVariant: "green" | "red" | "amber" | "blue" = setup.status === "in_entry" ? "green" : setup.status === "invalidated" ? "red" : setup.status === "extended" ? "amber" : "blue";
+
+  return (
+    <div className="rounded-lg border border-border bg-card p-3">
+      <div className="flex flex-wrap items-start justify-between gap-2">
+        <div className="min-w-0">
+          <div className="flex flex-wrap items-center gap-2">
+            <Link href={`/stocks/${s.ticker}`} className="text-sm font-semibold hover:underline">{s.ticker}</Link>
+            <Badge variant={statusVariant}>{setupStatusLabel(setup.status)}</Badge>
+            {setup.owned && <Badge variant="green">You own it</Badge>}
+            <Badge variant="outline">{BUCKET_META[s.bucket].label}</Badge>
+          </div>
+          <p className="mt-2 text-sm leading-relaxed text-foreground/85">
+            The team’s plan for {s.ticker} was <strong>{s.setupLabel}</strong>: use {s.entry} as the entry, keep risk defined with stop {s.stop}, then look for {targetText}. {setup.statusText}
+          </p>
+        </div>
+        <div className="grid grid-cols-3 gap-3 text-right text-[11px]">
+          <MiniLabel label="Live" value={setup.livePrice != null ? setup.livePrice.toFixed(2) : "—"} />
+          <MiniLabel label="Risk" value={setup.riskPct != null ? fmtPct(-Math.abs(setup.riskPct)) : "—"} />
+          <MiniLabel label="T1 reward" value={setup.rewardPct != null ? fmtPct(setup.rewardPct) : "—"} />
+        </div>
+      </div>
+      <div className="mt-3 grid gap-2 lg:grid-cols-3">
+        <ReasonList title="Technical pattern" items={[s.technicalCase]} tone="neutral" />
+        <ReasonList title="Fundamental case" items={[s.fundamentalCase]} tone="positive" />
+        <ReasonList title="Caveat" items={[s.caveat ?? "No explicit caveat in the transcript. Still verify current price and filings before acting."]} tone={s.caveat ? "caution" : "neutral"} />
+      </div>
+    </div>
+  );
+}
+
+function IndexTechnicalCard({ data }: { data: Awaited<ReturnType<typeof getBullsBears>> }) {
+  const map = data.brief.indexTechnicalMap;
+  return (
+    <Card className="rise">
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2"><LineChart className="h-4 w-4" /> Index technical map</CardTitle>
+        <CardDescription>
+          This is the market context the team used before selecting individual stocks. It tells you when to be aggressive and when to keep risk tight.
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-3">
+        <div className="rounded-lg border border-emerald-200 bg-emerald-50/50 p-3">
+          <p className="text-sm font-semibold text-emerald-800">Current bias: {map.bias}</p>
+          <p className="mt-1 text-xs leading-relaxed text-emerald-950/80">{map.breakoutConfirmation}</p>
+        </div>
+        <div className="grid gap-2 sm:grid-cols-2">
+          <ReasonList title="Bullish evidence" items={map.bullishEvidence} tone="positive" />
+          <ReasonList title="Invalidation / risk" items={[...map.bearishInvalidation, `Nearby support/gap: ${map.nearSupport}. Lower gaps: ${map.lowerGaps.join(", ")}.`]} tone="caution" />
+        </div>
+        <p className="rounded-lg border border-border bg-muted/25 p-3 text-sm leading-relaxed text-foreground/85">{map.playbook}</p>
+      </CardContent>
+    </Card>
+  );
+}
+
+function GlobalMarketsCard({ data }: { data: Awaited<ReturnType<typeof getBullsBears>> }) {
+  return (
+    <Card className="rise rise-1">
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2"><Activity className="h-4 w-4" /> Global market read</CardTitle>
+        <CardDescription>
+          Global context from the episode, translated into what it means for a PSX investor this week.
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-2">
+        {data.brief.globalMarkets.map((item) => (
+          <div key={item.market} className="rounded-lg border border-border bg-muted/25 p-3">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <p className="text-sm font-semibold">{item.market}</p>
+              <Badge variant={item.bias.toLowerCase().includes("sell") ? "amber" : item.bias.toLowerCase().includes("support") ? "green" : "outline"}>{item.bias}</Badge>
+            </div>
+            <p className="mt-1 text-xs leading-relaxed text-muted-foreground">{item.levels}</p>
+            <p className="mt-2 text-xs leading-relaxed text-foreground/85">{item.investorRead}</p>
+          </div>
+        ))}
+      </CardContent>
+    </Card>
   );
 }
 
@@ -576,6 +812,60 @@ function SignalList({ title, items, icon: Icon, tone: t }: { title: string; item
       </div>
     </div>
   );
+}
+
+function DecisionTile({ icon: Icon, label, value, tone: t }: { icon: typeof Activity; label: string; value: number; tone: "positive" | "neutral" | "caution" }) {
+  return (
+    <div className={cn("flex items-center gap-3 rounded-lg border p-3", t === "positive" ? "border-emerald-200 bg-emerald-50/55" : t === "caution" ? "border-amber-200 bg-amber-50/55" : "border-border bg-muted/25")}>
+      <Icon className={cn("h-4 w-4 shrink-0", t === "positive" ? "text-emerald-700" : t === "caution" ? "text-amber-700" : "text-muted-foreground")} />
+      <div>
+        <p className="text-lg font-semibold tabular-nums">{value}</p>
+        <p className="text-[10px] uppercase tracking-wide text-muted-foreground">{label}</p>
+      </div>
+    </div>
+  );
+}
+
+function ReasonList({ title, items, tone: t }: { title: string; items: string[]; tone: "positive" | "caution" | "neutral" }) {
+  const styles = t === "positive"
+    ? "border-emerald-200 bg-emerald-50/45 text-emerald-950/85"
+    : t === "caution"
+      ? "border-amber-200 bg-amber-50/55 text-amber-950/85"
+      : "border-border bg-muted/25 text-foreground/80";
+  return (
+    <div className={cn("rounded-lg border p-3", styles)}>
+      <p className="mb-1.5 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">{title}</p>
+      <div className="space-y-1.5">
+        {items.map((item) => (
+          <p key={item} className="text-xs leading-relaxed">{item}</p>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function VerdictBadge({ verdict, label }: { verdict: PortfolioStrategyRow["verdict"]; label: string }) {
+  if (verdict === "setup_add") return <Badge variant="green">{label}</Badge>;
+  if (verdict === "add_candidate") return <Badge variant="blue">{label}</Badge>;
+  if (verdict === "risk_review") return <Badge variant="amber">{label}</Badge>;
+  return <Badge variant="secondary">{label}</Badge>;
+}
+
+function setupStatusLabel(status: EnrichedTradeSetup["status"]): string {
+  switch (status) {
+    case "in_entry":
+      return "In entry zone";
+    case "below_entry":
+      return "Below entry";
+    case "above_entry":
+      return "Above entry";
+    case "extended":
+      return "Already extended";
+    case "invalidated":
+      return "Invalidated";
+    default:
+      return "Watch";
+  }
 }
 
 function DirectionBadge({ direction }: { direction: Direction }) {

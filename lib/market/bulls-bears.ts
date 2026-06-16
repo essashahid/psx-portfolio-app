@@ -1,7 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { getScoreUniverse, type ScoredStock } from "@/lib/market/score";
 import { bucketForSector, BUCKET_META, type SectorBucket } from "@/lib/market/sectors";
-import { CURRENT_BRIEF, type WeeklyBrief, type PolicyItem } from "@/lib/market/weekly-brief";
+import { CURRENT_BRIEF, type WeeklyBrief, type PolicyItem, type TradeSetup } from "@/lib/market/weekly-brief";
 
 /**
  * Bulls & Bears read model — assembles the show's repeatable pipeline from live
@@ -60,21 +60,68 @@ export interface BudgetImpact {
   holdings: string[]; // user's owned tickers this fans out to
 }
 
+export interface EnrichedTradeSetup {
+  setup: TradeSetup;
+  stock: ScoredStock | null;
+  owned: boolean;
+  livePrice: number | null;
+  entryMid: number | null;
+  riskPct: number | null;
+  rewardPct: number | null;
+  status: "in_entry" | "below_entry" | "above_entry" | "extended" | "invalidated" | "watch";
+  statusText: string;
+}
+
+export interface PortfolioStrategyRow {
+  ticker: string;
+  companyName: string | null;
+  sector: string | null;
+  bucket: SectorBucket;
+  quantity: number;
+  avgCost: number | null;
+  totalCost: number | null;
+  livePrice: number | null;
+  positionValue: number | null;
+  unrealizedPct: number | null;
+  score: number | null;
+  rank: number | null;
+  bestSubScore: string | null;
+  weakestSubScore: string | null;
+  matchedSetup: EnrichedTradeSetup | null;
+  verdict: "setup_add" | "add_candidate" | "hold_watch" | "risk_review";
+  verdictLabel: string;
+  actionSentence: string;
+  reasons: string[];
+  risks: string[];
+}
+
 export interface BullsBears {
   recap: RecapData | null;
   regime: RegimeRead | null;
   topPicks: ScoredStock[];
+  topOpportunities: ScoredStock[];
   bucketLeaders: Record<SectorBucket, ScoredStock[]>;
   scoredCount: number;
   marketCount: number;
   earningsQuality: EarningsQualityFlag[];
   budgetImpacts: BudgetImpact[];
+  tradeSetups: EnrichedTradeSetup[];
+  portfolioStrategy: PortfolioStrategyRow[];
   ownedTickers: Set<string>;
   brief: WeeklyBrief;
 }
 
 const TOP_PICKS = 50;
 const BASE_EFFECT_EPS_GROWTH = 150; // % — extreme YoY EPS growth flags a likely base effect / one-off
+
+interface HoldingRow {
+  ticker: string;
+  company_name: string | null;
+  sector: string | null;
+  quantity: number | null;
+  avg_cost: number | null;
+  total_cost: number | null;
+}
 
 function classifyRegime(buckets: BucketRow[]): RegimeRead {
   const ranked = buckets.filter((b) => b.avgReturn != null && b.bucket !== "other").sort((a, b) => (b.avgReturn ?? 0) - (a.avgReturn ?? 0));
@@ -191,6 +238,178 @@ async function buildEarningsQuality(supabase: SupabaseClient, tickers: string[])
   return flags;
 }
 
+function subScoreLabel(key: string): string {
+  const labels: Record<string, string> = {
+    growth: "growth",
+    quality: "quality",
+    value: "value",
+    momentum: "momentum",
+    income: "income",
+  };
+  return labels[key] ?? key;
+}
+
+function bestSubScore(stock: ScoredStock): string | null {
+  const entries = Object.entries(stock.subScores).filter((entry): entry is [string, number] => entry[1] != null);
+  if (!entries.length) return null;
+  const [key, value] = entries.sort((a, b) => b[1] - a[1])[0];
+  return `${subScoreLabel(key)} (${value.toFixed(0)})`;
+}
+
+function weakestSubScore(stock: ScoredStock): string | null {
+  const entries = Object.entries(stock.subScores).filter((entry): entry is [string, number] => entry[1] != null);
+  if (!entries.length) return null;
+  const [key, value] = entries.sort((a, b) => a[1] - b[1])[0];
+  return `${subScoreLabel(key)} (${value.toFixed(0)})`;
+}
+
+function setupMid(setup: TradeSetup): number | null {
+  if (setup.entryLow != null && setup.entryHigh != null) return (setup.entryLow + setup.entryHigh) / 2;
+  return setup.entryLow ?? setup.entryHigh ?? null;
+}
+
+function enrichTradeSetup(setup: TradeSetup, stock: ScoredStock | null, owned: boolean): EnrichedTradeSetup {
+  const livePrice = stock?.price ?? null;
+  const entryMid = setupMid(setup);
+  const stop = setup.stopPrice;
+  const firstTarget = setup.targets.find((t) => t.price != null)?.price ?? null;
+  const finalTarget = [...setup.targets].reverse().find((t) => t.price != null)?.price ?? null;
+  const riskPct = entryMid != null && stop != null ? ((entryMid - stop) / entryMid) * 100 : null;
+  const rewardPct = entryMid != null && firstTarget != null ? ((firstTarget - entryMid) / entryMid) * 100 : null;
+
+  let status: EnrichedTradeSetup["status"] = "watch";
+  let statusText = "Track the setup and wait for the defined price zone.";
+  if (livePrice != null && setup.stopPrice != null && livePrice <= setup.stopPrice) {
+    status = "invalidated";
+    statusText = `Live price is at/below the stop (${setup.stop}); the original setup is invalid until rebuilt.`;
+  } else if (livePrice != null && setup.entryLow != null && setup.entryHigh != null && livePrice >= setup.entryLow && livePrice <= setup.entryHigh) {
+    status = "in_entry";
+    statusText = `Live price is inside the episode entry zone (${setup.entry}).`;
+  } else if (livePrice != null && setup.entryLow != null && livePrice < setup.entryLow) {
+    status = "below_entry";
+    statusText = `Live price is below the planned entry zone; wait for a fresh reversal, not a blind catch.`;
+  } else if (livePrice != null && finalTarget != null && livePrice >= finalTarget) {
+    status = "extended";
+    statusText = `Live price has already reached/passed the far target; chasing would need a new setup.`;
+  } else if (livePrice != null && setup.entryHigh != null && livePrice > setup.entryHigh) {
+    status = "above_entry";
+    statusText = `Live price is above the entry zone. Risk/reward is weaker unless it retests or forms a new base.`;
+  }
+
+  return { setup, stock, owned, livePrice, entryMid, riskPct, rewardPct, status, statusText };
+}
+
+function buildPortfolioStrategy({
+  holdings,
+  stockByTicker,
+  setupByTicker,
+  qualityByTicker,
+  budgetImpacts,
+  regime,
+}: {
+  holdings: HoldingRow[];
+  stockByTicker: Map<string, ScoredStock>;
+  setupByTicker: Map<string, EnrichedTradeSetup>;
+  qualityByTicker: Map<string, EarningsQualityFlag>;
+  budgetImpacts: BudgetImpact[];
+  regime: RegimeRead | null;
+}): PortfolioStrategyRow[] {
+  const positiveBudget = new Map<string, string[]>();
+  const negativeBudget = new Map<string, string[]>();
+  for (const impact of budgetImpacts) {
+    for (const ticker of impact.holdings) {
+      const map = impact.item.direction === "negative" ? negativeBudget : impact.item.direction === "positive" ? positiveBudget : null;
+      if (map) (map.get(ticker) ?? map.set(ticker, []).get(ticker)!).push(impact.item.policy);
+    }
+  }
+
+  return holdings.map((h) => {
+    const ticker = h.ticker.toUpperCase();
+    const stock = stockByTicker.get(ticker) ?? null;
+    const bucket = stock?.bucket ?? bucketForSector(h.sector);
+    const setup = setupByTicker.get(ticker) ?? null;
+    const qualityFlag = qualityByTicker.get(ticker) ?? null;
+    const livePrice = stock?.price ?? null;
+    const quantity = Number(h.quantity ?? 0);
+    const avgCost = h.avg_cost != null ? Number(h.avg_cost) : null;
+    const totalCost = h.total_cost != null ? Number(h.total_cost) : avgCost != null ? avgCost * quantity : null;
+    const positionValue = livePrice != null ? livePrice * quantity : totalCost;
+    const unrealizedPct = livePrice != null && avgCost && avgCost > 0 ? ((livePrice - avgCost) / avgCost) * 100 : null;
+
+    const reasons: string[] = [];
+    const risks: string[] = [];
+    const score = stock?.score ?? null;
+    const rank = stock?.rank ?? null;
+    const alignedWithRegime = regime?.leader === bucket || CURRENT_BRIEF.regime.favored.includes(bucket);
+    const posBudget = positiveBudget.get(ticker) ?? [];
+    const negBudget = negativeBudget.get(ticker) ?? [];
+
+    if (setup) reasons.push(`The episode has a defined ${setup.setup.setupLabel} with entry ${setup.setup.entry}, stop ${setup.setup.stop}, and targets ${setup.setup.targets.map((t) => t.label + (t.price ? ` ${t.price}` : "")).join(" / ")}.`);
+    if (score != null && score >= 70) reasons.push(`Composite score is strong at ${score.toFixed(0)}/100, rank #${rank}.`);
+    else if (score != null && score >= 55) reasons.push(`Composite score is acceptable at ${score.toFixed(0)}/100, rank #${rank}.`);
+    if (stock?.subScores.momentum != null && stock.subScores.momentum >= 60) reasons.push(`Momentum is supportive (${stock.subScores.momentum.toFixed(0)} percentile).`);
+    if (stock?.subScores.quality != null && stock.subScores.quality >= 60) reasons.push(`Quality screen is supportive (${stock.subScores.quality.toFixed(0)} percentile).`);
+    if (alignedWithRegime) reasons.push(`${BUCKET_META[bucket].label} matches the episode/live rotation focus.`);
+    if (posBudget.length) reasons.push(`Budget tailwind matched: ${posBudget.join(", ")}.`);
+
+    if (qualityFlag) risks.push(qualityFlag.caption);
+    if (score != null && score < 45) risks.push(`Composite score is weak at ${score.toFixed(0)}/100; do not add without a fresh catalyst.`);
+    if (stock?.subScores.momentum != null && stock.subScores.momentum < 40) risks.push(`Momentum is weak (${stock.subScores.momentum.toFixed(0)} percentile).`);
+    if (stock?.subScores.quality != null && stock.subScores.quality < 40) risks.push(`Quality score is weak (${stock.subScores.quality.toFixed(0)} percentile).`);
+    if (negBudget.length) risks.push(`Budget headwind matched: ${negBudget.join(", ")}.`);
+    if (setup?.status === "extended") risks.push("The episode setup has already stretched into/past target territory.");
+    if (setup?.status === "invalidated") risks.push("The episode setup is invalidated by price trading through the stop.");
+
+    let verdict: PortfolioStrategyRow["verdict"] = "hold_watch";
+    let verdictLabel = "Hold / watch";
+    if (setup && (setup.status === "in_entry" || setup.status === "below_entry") && (score == null || score >= 55) && !qualityFlag) {
+      verdict = "setup_add";
+      verdictLabel = "Episode setup";
+    } else if (score != null && score >= 70 && alignedWithRegime && !qualityFlag) {
+      verdict = "add_candidate";
+      verdictLabel = "Add candidate";
+    } else if ((score != null && score < 45) || qualityFlag || negBudget.length > 0 || setup?.status === "invalidated") {
+      verdict = "risk_review";
+      verdictLabel = "Review risk";
+    }
+
+    const actionSentence =
+      verdict === "setup_add"
+        ? `${ticker} is the clearest show-style add candidate you already own: only use the defined entry/stop, not a market chase.`
+        : verdict === "add_candidate"
+          ? `${ticker} screens well and fits the rotation; review whether your position size should be increased on a pullback.`
+          : verdict === "risk_review"
+            ? `${ticker} needs a risk review before adding more because the score, quality, budget, or setup state is not clean.`
+            : `${ticker} is a hold/watch: keep it on the board, but wait for either a cleaner setup or stronger score confirmation before adding.`;
+
+    return {
+      ticker,
+      companyName: stock?.companyName ?? h.company_name ?? null,
+      sector: stock?.sector ?? h.sector ?? null,
+      bucket,
+      quantity,
+      avgCost,
+      totalCost,
+      livePrice,
+      positionValue,
+      unrealizedPct,
+      score,
+      rank,
+      bestSubScore: stock ? bestSubScore(stock) : null,
+      weakestSubScore: stock ? weakestSubScore(stock) : null,
+      matchedSetup: setup,
+      verdict,
+      verdictLabel,
+      actionSentence,
+      reasons: reasons.length ? reasons : ["No strong score/setup signal yet. Keep it on watch until the data improves."],
+      risks,
+    };
+  }).sort((a, b) => {
+    const order = { setup_add: 0, add_candidate: 1, risk_review: 2, hold_watch: 3 };
+    return order[a.verdict] - order[b.verdict] || (b.score ?? -1) - (a.score ?? -1);
+  });
+}
+
 export async function getBullsBears(supabase: SupabaseClient, userId: string): Promise<BullsBears> {
   const { data: snap } = await supabase
     .from("market_snapshots")
@@ -201,13 +420,14 @@ export async function getBullsBears(supabase: SupabaseClient, userId: string): P
     .maybeSingle();
 
   const [{ data: holdings }, universe, regime] = await Promise.all([
-    supabase.from("holdings").select("ticker, sector").eq("user_id", userId).gt("quantity", 0),
+    supabase.from("holdings").select("ticker, company_name, sector, quantity, avg_cost, total_cost").eq("user_id", userId).gt("quantity", 0),
     getScoreUniverse(supabase),
     snap ? buildRegime(supabase, snap.id) : Promise.resolve(null),
   ]);
 
-  const ownedTickers = new Set((holdings ?? []).map((h) => (h.ticker as string).toUpperCase()));
-  const ownedSectors = new Set((holdings ?? []).map((h) => (h.sector as string | null)?.toLowerCase()).filter((x): x is string => !!x));
+  const holdingRows = (holdings ?? []) as HoldingRow[];
+  const ownedTickers = new Set(holdingRows.map((h) => h.ticker.toUpperCase()));
+  const stockByTicker = new Map(universe.stocks.map((s) => [s.ticker, s]));
 
   const recap: RecapData | null = snap
     ? {
@@ -235,32 +455,57 @@ export async function getBullsBears(supabase: SupabaseClient, userId: string): P
   }
 
   const earningsQuality = await buildEarningsQuality(supabase, topPicks.map((p) => p.ticker));
+  const qualityByTicker = new Map(earningsQuality.map((f) => [f.ticker.toUpperCase(), f]));
 
   // Budget → portfolio fan-out: which policy items touch the user's holdings.
   const budgetImpacts: BudgetImpact[] = CURRENT_BRIEF.budget.map((item) => {
-    const hit = (holdings ?? [])
+    const hit = holdingRows
       .filter((h) => {
-        const sec = (h.sector as string | null)?.toLowerCase() ?? "";
-        const bucket = bucketForSector(h.sector as string | null);
+        const sec = h.sector?.toLowerCase() ?? "";
+        const bucket = bucketForSector(h.sector);
         const keywordMatch = item.sectorKeywords.some((k) => sec.includes(k));
         const bucketMatch = item.buckets.includes(bucket) && item.sectorKeywords.length === 0;
         return keywordMatch || bucketMatch;
       })
-      .map((h) => (h.ticker as string).toUpperCase());
+      .map((h) => h.ticker.toUpperCase());
     return { item, holdings: [...new Set(hit)] };
   });
 
-  void ownedSectors; // reserved for future sector-level fan-out
+  const tradeSetups = CURRENT_BRIEF.tradeSetups.map((setup) =>
+    enrichTradeSetup(setup, stockByTicker.get(setup.ticker.toUpperCase()) ?? null, ownedTickers.has(setup.ticker.toUpperCase()))
+  );
+  const setupByTicker = new Map(tradeSetups.map((s) => [s.setup.ticker.toUpperCase(), s]));
+
+  const portfolioStrategy = buildPortfolioStrategy({
+    holdings: holdingRows,
+    stockByTicker,
+    setupByTicker,
+    qualityByTicker,
+    budgetImpacts,
+    regime,
+  });
+
+  const preferredBuckets = new Set<SectorBucket>([...(regime?.leader ? [regime.leader] : []), ...CURRENT_BRIEF.regime.favored]);
+  const flaggedTickers = new Set(earningsQuality.map((f) => f.ticker.toUpperCase()));
+  const topOpportunities = universe.stocks
+    .filter((s) => !ownedTickers.has(s.ticker))
+    .filter((s) => s.score >= 60)
+    .filter((s) => preferredBuckets.size === 0 || preferredBuckets.has(s.bucket) || s.rank <= 15)
+    .filter((s) => !flaggedTickers.has(s.ticker))
+    .slice(0, 12);
 
   return {
     recap,
     regime,
     topPicks,
+    topOpportunities,
     bucketLeaders,
     scoredCount: universe.scoredCount,
     marketCount: universe.marketCount,
     earningsQuality,
     budgetImpacts,
+    tradeSetups,
+    portfolioStrategy,
     ownedTickers,
     brief: CURRENT_BRIEF,
   };

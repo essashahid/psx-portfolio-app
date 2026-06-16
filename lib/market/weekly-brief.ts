@@ -48,6 +48,47 @@ export interface WatchItem {
   caution?: string;
 }
 
+export interface TradeSetup {
+  ticker: string;
+  bucket: SectorBucket;
+  stance: "buy_on_pullback" | "hold_call" | "technical_only" | "avoid_fundamental";
+  setupLabel: string;
+  entry: string;
+  entryLow: number | null;
+  entryHigh: number | null;
+  stop: string;
+  stopPrice: number | null;
+  targets: { label: string; price: number | null }[];
+  timeframe: "short_term" | "swing" | "long_term";
+  technicalCase: string;
+  fundamentalCase: string;
+  caveat: string | null;
+}
+
+export interface IndexTechnicalMap {
+  bias: "bullish" | "bearish" | "range";
+  resistance: string;
+  breakoutConfirmation: string;
+  nearSupport: string;
+  lowerGaps: string[];
+  bullishEvidence: string[];
+  bearishInvalidation: string[];
+  playbook: string;
+}
+
+export interface StrategyRule {
+  title: string;
+  pattern: string;
+  apply: string;
+}
+
+export interface GlobalMarketNote {
+  market: string;
+  bias: string;
+  levels: string;
+  investorRead: string;
+}
+
 export interface WeeklyBrief {
   episode: string;
   recordedOn: string; // ISO date
@@ -55,10 +96,14 @@ export interface WeeklyBrief {
   topDevelopments: string[];
   marketRecap: { weeklyChangePct: number | null; note: string };
   regime: { stance: string; note: string; favored: SectorBucket[]; cautious: SectorBucket[] };
+  indexTechnicalMap: IndexTechnicalMap;
   macro: MacroIndicator[];
   budget: PolicyItem[];
   callReview: CallReview[];
   watchlist: WatchItem[];
+  tradeSetups: TradeSetup[];
+  strategyRules: StrategyRule[];
+  globalMarkets: GlobalMarketNote[];
   signalVsNoise: { signal: string[]; noise: string[] };
 }
 
@@ -82,6 +127,25 @@ export const CURRENT_BRIEF: WeeklyBrief = {
     note: "Through the war scare the show rotated cyclical → defensive and that helped. With oil/commodity prices firm, energy names (E&P, refineries, OMCs) screen well fundamentally even though institutions still treat them as laggards. Focus on individual strong-trend scripts over the index, always with stop-losses.",
     favored: ["defensive", "energy"],
     cautious: ["cyclical"],
+  },
+  indexTechnicalMap: {
+    bias: "bullish",
+    resistance: "KSE-100 near 175k",
+    breakoutConfirmation: "A close above roughly 175k-175.3k would create a fresh higher-high and confirm a trending market by Dow theory.",
+    nearSupport: "169,929 gap can be tested without invalidating the broader setup.",
+    lowerGaps: ["152k area", "105k-107k area"],
+    bullishEvidence: [
+      "Weekly EMA 21/55 structure is still constructive.",
+      "Elder Force Index has not printed bearish divergence above the recent high, so the current range can behave like continuation.",
+      "Daily Klinger/volume oscillator is pointing upward while the weekly signal has not fully failed.",
+      "Higher-high / higher-low market structure is intact.",
+    ],
+    bearishInvalidation: [
+      "If the daily oscillator rolls back down, the bullish stance shifts to bearish.",
+      "Budget-day selling and June-end rebalancing can create short-term volatility.",
+      "Global conflict headlines can delay the breakout even if the local setup remains constructive.",
+    ],
+    playbook: "Do not trade the index blindly inside the range. Prefer individual stocks with strong trend structure, clean scores, and defined stops; add only at pullbacks or breakouts where risk is clear.",
   },
   macro: [
     { label: "Forex reserves", value: "≈ $22.6bn", direction: "positive", note: "Reserves rising — supportive for PKR and import cover." },
@@ -117,6 +181,110 @@ export const CURRENT_BRIEF: WeeklyBrief = {
     { ticker: "POWER", bucket: "cyclical", thesis: "Power Cement — score improved sharply; among the best cement picks on the show's ranking." },
     { ticker: "NETSOL", bucket: "other", thesis: "Tech/services — entered the ranking model recently (#3 by Sarmaya score); ~31% since inclusion vs ~12.6% market." },
     { ticker: "SRVI", bucket: "cyclical", thesis: "Service Industries (tyres backend) — long-standing top pick, ~47% over the window; SLM Tyres IPO oversubscribed 6.3×." },
+  ],
+  tradeSetups: [
+    {
+      ticker: "THCCL",
+      bucket: "cyclical",
+      stance: "buy_on_pullback",
+      setupLabel: "Thatta Cement pullback buy",
+      entry: "63.5-64 on higher-low pullback",
+      entryLow: 63.5,
+      entryHigh: 64,
+      stop: "56",
+      stopPrice: 56,
+      targets: [
+        { label: "Target 1", price: 72 },
+        { label: "Target 2", price: 82 },
+        { label: "Swing zone", price: 95 },
+        { label: "Prior high", price: 103 },
+      ],
+      timeframe: "swing",
+      technicalCase: "Adjusted chart rallied from ~27 to ~102, retraced to the 0.786 zone, consolidated, broke 62, and is making higher highs / higher lows.",
+      fundamentalCase: "Housing scheme extension and possible real-estate relief can support cement and steel demand. The show also noted the latest results improved after a weak quarter.",
+      caveat: "Cement dispatches were down ~21%; near-term weakness can still happen if war/summer slowdown persists.",
+    },
+    {
+      ticker: "GGL",
+      bucket: "cyclical",
+      stance: "buy_on_pullback",
+      setupLabel: "GGL breakout retest",
+      entry: "19.8-20 on retest",
+      entryLow: 19.8,
+      entryHigh: 20,
+      stop: "18.50",
+      stopPrice: 18.5,
+      targets: [
+        { label: "Target 1", price: 22 },
+        { label: "Target 2", price: 23.62 },
+        { label: "Stretch", price: 24 },
+      ],
+      timeframe: "short_term",
+      technicalCase: "Price halved into ~14 during the war scare, formed bullish divergence, broke resistance near 19, and printed the first higher-low / breakout structure.",
+      fundamentalCase: "Holding-company exposure to GGL and GCIL; GCIL sales are improving, GGL has meaningful domestic Chinese glass tube share, and the base-effect quarter is close to rolling off.",
+      caveat: "Recent EPS was optically boosted by a one-time GCWL demerger bargain-purchase gain in other income. Treat growth as unproven until recurring earnings confirm.",
+    },
+    {
+      ticker: "QUICE",
+      bucket: "defensive",
+      stance: "technical_only",
+      setupLabel: "QUICE speculative technical trade",
+      entry: "31-32 on correction",
+      entryLow: 31,
+      entryHigh: 32,
+      stop: "27.70",
+      stopPrice: 27.7,
+      targets: [
+        { label: "Target 1", price: 37 },
+        { label: "Target 2", price: 39 },
+      ],
+      timeframe: "short_term",
+      technicalCase: "After a parabolic run from ~9 to ~45, price retraced, consolidated around 20-25, then rallied again without bearish divergence. The technical plan waits for a pullback to 31-32.",
+      fundamentalCase: "Revenue is improving and local carbonated drink volumes grew, but the company is still not fundamentally clean.",
+      caveat: "The fundamental view was cautious: losses, weak valuation comfort, and a 20% FED hit that cannot easily be passed to institutional clients.",
+    },
+  ],
+  strategyRules: [
+    {
+      title: "Rotation first, then stock selection",
+      pattern: "When uncertainty rises, money rotates from cyclicals to defensives. When risk appetite returns, cyclicals lead. When oil or commodities rise, energy can lead even if the index is mixed.",
+      apply: "Check your holdings by bucket. Add only where the bucket is leading or the company has a strong score plus a clean setup.",
+    },
+    {
+      title: "Ranking narrows the universe",
+      pattern: "The team shortlists top-ranked names first, then studies the business and chart. The score is not the trade; it is the filter.",
+      apply: "Prioritize top-50 score names, then inspect growth, quality, momentum, and earnings quality before buying.",
+    },
+    {
+      title: "Do not trust optical EPS",
+      pattern: "One-time gains and base effects can make EPS look explosive while recurring operations are still ordinary.",
+      apply: "If EPS growth is extreme, require clean operating revenue, margins, and next-quarter confirmation before treating it as a real growth stock.",
+    },
+    {
+      title: "Price levels define risk",
+      pattern: "Even bullish setups use entry zones and stop-losses. A good company bought at the wrong place can still be a bad trade.",
+      apply: "For each recommendation, compare current price with the entry zone, stop, and targets. Avoid chasing after target 1 without a new setup.",
+    },
+  ],
+  globalMarkets: [
+    {
+      market: "Global risk appetite",
+      bias: "Supportive",
+      levels: "SpaceX / Anthropic IPO hype; broad institutional risk appetite still firm.",
+      investorRead: "Helpful backdrop for equities, but not enough to override local PSX sector rotation.",
+    },
+    {
+      market: "Gold",
+      bias: "Short-term sell strength; long-term hold/value-buy",
+      levels: "Resistance 4270 / 4295 / 4400; support 4105 then 4030; long-term value area possibly 3700-3600.",
+      investorRead: "Short-term traders were told to sell bounces with defined risk; long-term holders can tolerate the correction if their horizon is multi-month.",
+    },
+    {
+      market: "FOMC / dollar",
+      bias: "Event risk",
+      levels: "Next week is FOMC week; dollar weakness can create a gold bounce into resistance.",
+      investorRead: "Expect spikes. Use smaller risk per trade and avoid confusing event volatility with thesis confirmation.",
+    },
   ],
   signalVsNoise: {
     signal: [

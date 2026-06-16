@@ -20,7 +20,8 @@
       "Bash(vercel env *)",
       "Bash(vercel --prod)",
       "Bash(npx eslint *)",
-      "Bash(echo \"=== eslint exit: $? ===\")"
+      "Bash(echo \"=== eslint exit: $? ===\")",
+      "Bash(git commit -m ' *)"
     ]
   }
 }
