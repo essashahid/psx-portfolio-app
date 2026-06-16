@@ -17,7 +17,7 @@ export async function getPortfolio(
   supabase: SupabaseClient,
   userId: string
 ): Promise<PortfolioSummary> {
-  const [holdingsRes, pricesRes, targetsRes, thesesRes, divRes, realizedRes, cashRes] =
+  const [holdingsRes, pricesRes, targetsRes, thesesRes, divRes, realizedRes, cashRes, profileRes] =
     await Promise.all([
       supabase.from("holdings").select("*").eq("user_id", userId).gt("quantity", 0).order("ticker"),
       supabase
@@ -31,6 +31,7 @@ export async function getPortfolio(
       supabase.from("dividends").select("ticker, amount, net_amount, status").eq("user_id", userId),
       supabase.from("transactions").select("realized_pl").eq("user_id", userId).not("realized_pl", "is", null),
       supabase.from("cash_movements").select("type, amount").eq("user_id", userId),
+      supabase.from("profiles").select("free_cash").eq("id", userId).maybeSingle(),
     ]);
 
   const holdings = (holdingsRes.data ?? []) as Holding[];
@@ -74,7 +75,7 @@ export async function getPortfolio(
     0
   );
 
-  let cashBalance = 0;
+  let cashBalance = Number(profileRes.data?.free_cash ?? 0);
   for (const c of cashRes.data ?? []) {
     const amt = Number(c.amount ?? 0);
     if (c.type === "CASH_IN" || c.type === "DIVIDEND") cashBalance += Math.abs(amt);

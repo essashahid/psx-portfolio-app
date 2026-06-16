@@ -4,6 +4,7 @@ import { PageHeader } from "@/components/page-header";
 import { ActionButton } from "@/components/action-button";
 import {
   ProfileForm,
+  FreeCashForm,
   PriceManager,
   BrokerAccounts,
   SavedMappings,
@@ -45,6 +46,7 @@ export default async function SettingsPage() {
     cost_basis_method: "weighted_average",
     manual_price_mode: true,
     demo_mode: false,
+    free_cash: 0,
   };
 
   const keyStatus = [
@@ -80,6 +82,18 @@ export default async function SettingsPage() {
       <Card>
         <CardHeader><CardTitle>Profile</CardTitle></CardHeader>
         <CardContent><ProfileForm profile={profile} /></CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Cash balance</CardTitle>
+          <CardDescription>
+            Enter your current brokerage cash balance. This is added to the cash derived from imported statements and shown as your total cash on the dashboard.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <FreeCashForm profileId={profile.id} freeCash={profile.free_cash} />
+        </CardContent>
       </Card>
 
       <Card>

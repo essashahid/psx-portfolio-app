@@ -43,6 +43,7 @@ export interface Profile {
   cost_basis_method: string;
   manual_price_mode: boolean;
   demo_mode: boolean;
+  free_cash: number;
 }
 
 export interface Holding {

@@ -1,6 +1,7 @@
 "use client";
 
-import Link from "next/link";
+import { useState, type ComponentType } from "react";
+import Link, { useLinkStatus } from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { cn } from "@/lib/utils";
@@ -20,6 +21,9 @@ import {
   Search,
   Database,
   Activity,
+  Menu,
+  X,
+  Loader2,
 } from "lucide-react";
 
 const NAV = [
@@ -39,8 +43,119 @@ const NAV = [
   { href: "/settings", label: "Settings", icon: Settings },
 ];
 
+const MOBILE_NAV = NAV.filter((item) =>
+  ["/dashboard", "/holdings", "/market", "/chat", "/news", "/alerts"].includes(item.href)
+);
+
 function activeNavItem(pathname: string) {
   return NAV.find((item) => pathname === item.href || pathname.startsWith(item.href + "/")) ?? NAV[0];
+}
+
+type NavIcon = ComponentType<{ className?: string }>;
+
+/**
+ * Desktop sidebar row. `useLinkStatus` lets us highlight the row and swap the
+ * icon for a spinner the instant it is clicked — before the server-rendered
+ * page is ready — so navigation never feels unresponsive.
+ */
+function SidebarRow({
+  icon: Icon,
+  label,
+  active,
+  badge,
+}: {
+  icon: NavIcon;
+  label: string;
+  active: boolean;
+  badge?: number;
+}) {
+  const { pending } = useLinkStatus();
+  const lit = active || pending;
+  return (
+    <span
+      className={cn(
+        "flex items-center gap-2.5 rounded-lg px-3 py-2 text-[13px] font-medium transition-colors",
+        lit
+          ? "bg-sidebar-active text-white shadow-sm"
+          : "text-sidebar-muted hover:bg-accent hover:text-sidebar-foreground"
+      )}
+    >
+      {pending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Icon className="h-4 w-4" />}
+      {label}
+      {badge ? (
+        <span className="ml-auto rounded-full bg-amber-500 px-1.5 py-0.5 text-[10px] font-semibold text-black">
+          {badge}
+        </span>
+      ) : null}
+    </span>
+  );
+}
+
+function MobileMenuRow({
+  icon: Icon,
+  label,
+  active,
+  badge,
+}: {
+  icon: NavIcon;
+  label: string;
+  active: boolean;
+  badge?: number;
+}) {
+  const { pending } = useLinkStatus();
+  const lit = active || pending;
+  return (
+    <span
+      className={cn(
+        "flex min-h-11 items-center gap-3 rounded-lg px-3 text-sm font-medium transition-colors",
+        lit ? "bg-primary text-primary-foreground" : "text-muted-foreground active:bg-muted active:text-foreground"
+      )}
+    >
+      {pending ? <Loader2 className="h-4 w-4 shrink-0 animate-spin" /> : <Icon className="h-4 w-4 shrink-0" />}
+      <span className="min-w-0 flex-1 truncate">{label}</span>
+      {badge ? (
+        <span className={cn("rounded-full px-1.5 py-0.5 text-[10px] font-semibold", lit ? "bg-white text-primary" : "bg-amber-500 text-black")}>
+          {badge}
+        </span>
+      ) : null}
+    </span>
+  );
+}
+
+function BottomNavRow({
+  icon: Icon,
+  label,
+  active,
+  badge,
+}: {
+  icon: NavIcon;
+  label: string;
+  active: boolean;
+  badge?: number;
+}) {
+  const { pending } = useLinkStatus();
+  const lit = active || pending;
+  return (
+    <span
+      className={cn(
+        "relative flex h-12 min-w-0 flex-col items-center justify-center gap-0.5 rounded-lg px-1 text-[10px] font-medium transition-colors",
+        lit ? "bg-primary text-primary-foreground" : "text-muted-foreground active:bg-muted active:text-foreground"
+      )}
+    >
+      {pending ? <Loader2 className="h-[18px] w-[18px] shrink-0 animate-spin" /> : <Icon className="h-[18px] w-[18px] shrink-0" />}
+      <span className="max-w-full truncate leading-none">{label}</span>
+      {badge ? (
+        <span
+          className={cn(
+            "absolute right-0.5 top-0.5 rounded-full px-1.5 py-0.5 text-[9px] font-semibold leading-none",
+            lit ? "bg-white text-primary" : "bg-amber-500 text-black"
+          )}
+        >
+          {badge}
+        </span>
+      ) : null}
+    </span>
+  );
 }
 
 export function Sidebar({ email, openAlerts }: { email: string; openAlerts: number }) {
@@ -67,23 +182,13 @@ export function Sidebar({ email, openAlerts }: { email: string; openAlerts: numb
         {NAV.map((item) => {
           const active = pathname === item.href || pathname.startsWith(item.href + "/");
           return (
-            <Link
-              key={item.href}
-              href={item.href}
-              className={cn(
-                "flex items-center gap-2.5 rounded-lg px-3 py-2 text-[13px] font-medium transition-colors",
-                active
-                  ? "bg-sidebar-active text-white shadow-sm"
-                  : "text-sidebar-muted hover:bg-accent hover:text-sidebar-foreground"
-              )}
-            >
-              <item.icon className="h-4 w-4" />
-              {item.label}
-              {item.href === "/alerts" && openAlerts > 0 && (
-                <span className="ml-auto rounded-full bg-amber-500 px-1.5 py-0.5 text-[10px] font-semibold text-black">
-                  {openAlerts}
-                </span>
-              )}
+            <Link key={item.href} href={item.href} className="block">
+              <SidebarRow
+                icon={item.icon}
+                label={item.label}
+                active={active}
+                badge={item.href === "/alerts" && openAlerts > 0 ? openAlerts : undefined}
+              />
             </Link>
           );
         })}
@@ -105,6 +210,7 @@ export function MobileTopBar({ email, openAlerts }: { email: string; openAlerts:
   const pathname = usePathname();
   const router = useRouter();
   const active = activeNavItem(pathname);
+  const [menuOpen, setMenuOpen] = useState(false);
 
   async function signOut() {
     const supabase = createClient();
@@ -114,28 +220,83 @@ export function MobileTopBar({ email, openAlerts }: { email: string; openAlerts:
   }
 
   return (
-    <header className="sticky top-0 z-40 flex h-14 items-center justify-between border-b border-border bg-background/95 px-3 backdrop-blur md:hidden">
-      <Link href="/dashboard" className="flex min-w-0 items-center gap-2.5">
-        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary text-primary-foreground">
-          <CandlestickChart className="h-[18px] w-[18px]" />
-        </span>
-        <span className="min-w-0">
-          <span className="block truncate text-sm font-semibold leading-tight">PortfolioOS PK</span>
-          <span className="block truncate text-[11px] text-muted-foreground">
-            {active.label}
-            {openAlerts > 0 ? ` · ${openAlerts} alert${openAlerts === 1 ? "" : "s"}` : ""}
-          </span>
-        </span>
-      </Link>
-      <button
-        onClick={signOut}
-        className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg text-muted-foreground transition-colors active:bg-muted"
-        aria-label={`Sign out ${email}`}
-        title="Sign out"
-      >
-        <LogOut className="h-[18px] w-[18px]" />
-      </button>
-    </header>
+    <>
+      <header className="sticky top-0 z-40 flex h-14 items-center justify-between border-b border-border bg-background/95 px-3 backdrop-blur md:hidden">
+        <div className="flex min-w-0 items-center gap-2">
+          <button
+            onClick={() => setMenuOpen(true)}
+            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg text-muted-foreground transition-colors active:bg-muted"
+            aria-label="Open navigation menu"
+            title="Menu"
+          >
+            <Menu className="h-[19px] w-[19px]" />
+          </button>
+          <Link href="/dashboard" className="flex min-w-0 items-center gap-2.5">
+            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary text-primary-foreground">
+              <CandlestickChart className="h-[18px] w-[18px]" />
+            </span>
+            <span className="min-w-0">
+              <span className="block truncate text-sm font-semibold leading-tight">PortfolioOS PK</span>
+              <span className="block truncate text-[11px] text-muted-foreground">
+                {active.label}
+                {openAlerts > 0 ? ` · ${openAlerts} alert${openAlerts === 1 ? "" : "s"}` : ""}
+              </span>
+            </span>
+          </Link>
+        </div>
+        <button
+          onClick={signOut}
+          className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg text-muted-foreground transition-colors active:bg-muted"
+          aria-label={`Sign out ${email}`}
+          title="Sign out"
+        >
+          <LogOut className="h-[18px] w-[18px]" />
+        </button>
+      </header>
+
+      {menuOpen && (
+        <div className="fixed inset-0 z-50 md:hidden">
+          <button
+            className="absolute inset-0 bg-black/35"
+            onClick={() => setMenuOpen(false)}
+            aria-label="Close navigation menu"
+          />
+          <div className="scroll-touch absolute inset-y-0 left-0 flex w-[min(22rem,88vw)] flex-col overflow-y-auto border-r border-border bg-card pb-[calc(env(safe-area-inset-bottom)+1rem)] shadow-xl">
+            <div className="flex items-center justify-between border-b border-border px-4 py-4">
+              <div className="flex min-w-0 items-center gap-2.5">
+                <CandlestickChart className="h-5 w-5 shrink-0 text-emerald-600" />
+                <div className="min-w-0">
+                  <p className="truncate text-sm font-semibold">PortfolioOS PK</p>
+                  <p className="truncate text-[11px] text-muted-foreground">{email}</p>
+                </div>
+              </div>
+              <button
+                onClick={() => setMenuOpen(false)}
+                className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg text-muted-foreground active:bg-muted"
+                aria-label="Close navigation menu"
+              >
+                <X className="h-[18px] w-[18px]" />
+              </button>
+            </div>
+            <nav className="grid gap-1 p-3">
+              {NAV.map((item) => {
+                const activeItem = pathname === item.href || pathname.startsWith(item.href + "/");
+                return (
+                  <Link key={item.href} href={item.href} onClick={() => setMenuOpen(false)} className="block">
+                    <MobileMenuRow
+                      icon={item.icon}
+                      label={item.label}
+                      active={activeItem}
+                      badge={item.href === "/alerts" && openAlerts > 0 ? openAlerts : undefined}
+                    />
+                  </Link>
+                );
+              })}
+            </nav>
+          </div>
+        </div>
+      )}
+    </>
   );
 }
 
@@ -144,34 +305,18 @@ export function MobileBottomNav({ openAlerts }: { openAlerts: number }) {
 
   return (
     <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-card/95 shadow-[0_-12px_36px_-28px_rgba(0,0,0,0.55)] backdrop-blur md:hidden">
-      <div className="scroll-touch flex gap-1 overflow-x-auto px-2 pb-[calc(env(safe-area-inset-bottom)+0.375rem)] pt-1.5">
-        {NAV.map((item) => {
+      <div className="grid grid-cols-6 gap-1 px-1.5 pb-[calc(env(safe-area-inset-bottom)+0.375rem)] pt-1.5">
+        {MOBILE_NAV.map((item) => {
           const active = pathname === item.href || pathname.startsWith(item.href + "/");
-          const Icon = item.icon;
+          const shortLabel = item.href === "/dashboard" ? "Home" : item.href === "/chat" ? "Copilot" : item.label.replace(" Center", "").replace(" Pulse", "");
           return (
-            <Link
-              key={item.href}
-              href={item.href}
-              aria-current={active ? "page" : undefined}
-              className={cn(
-                "relative flex h-12 min-w-[4.75rem] flex-col items-center justify-center gap-0.5 rounded-lg px-2 text-[10px] font-medium transition-colors",
-                active
-                  ? "bg-primary text-primary-foreground"
-                  : "text-muted-foreground active:bg-muted active:text-foreground"
-              )}
-            >
-              <Icon className="h-[18px] w-[18px] shrink-0" />
-              <span className="max-w-full truncate leading-none">{item.label}</span>
-              {item.href === "/alerts" && openAlerts > 0 && (
-                <span
-                  className={cn(
-                    "absolute right-1.5 top-1 rounded-full px-1.5 py-0.5 text-[9px] font-semibold leading-none",
-                    active ? "bg-white text-primary" : "bg-amber-500 text-black"
-                  )}
-                >
-                  {openAlerts}
-                </span>
-              )}
+            <Link key={item.href} href={item.href} aria-current={active ? "page" : undefined} className="block">
+              <BottomNavRow
+                icon={item.icon}
+                label={shortLabel}
+                active={active}
+                badge={item.href === "/alerts" && openAlerts > 0 ? openAlerts : undefined}
+              />
             </Link>
           );
         })}

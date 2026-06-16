@@ -71,6 +71,49 @@ export function ProfileForm({ profile }: { profile: Profile }) {
 }
 
 // ---------------------------------------------------------------------------
+// Free cash
+// ---------------------------------------------------------------------------
+export function FreeCashForm({ profileId, freeCash }: { profileId: string; freeCash: number }) {
+  const router = useRouter();
+  const [busy, setBusy] = useState(false);
+  const [msg, setMsg] = useState<string | null>(null);
+  const [value, setValue] = useState(freeCash.toString());
+
+  async function save(e: React.FormEvent) {
+    e.preventDefault();
+    const parsed = parseFloat(value);
+    if (isNaN(parsed) || parsed < 0) { setMsg("Enter a valid non-negative amount."); return; }
+    setBusy(true);
+    const supabase = createClient();
+    const { error } = await supabase.from("profiles").update({ free_cash: parsed }).eq("id", profileId);
+    setBusy(false);
+    setMsg(error ? `Error: ${error.message}` : "Cash balance saved.");
+    if (!error) router.refresh();
+  }
+
+  return (
+    <form onSubmit={save} className="flex items-end gap-3">
+      <div className="space-y-1.5">
+        <Label>Free cash (PKR)</Label>
+        <Input
+          type="number"
+          min="0"
+          step="0.01"
+          value={value}
+          onChange={(e) => setValue(e.target.value)}
+          className="w-48"
+          placeholder="0"
+        />
+      </div>
+      <Button type="submit" size="sm" disabled={busy}>
+        {busy && <Loader2 className="h-3.5 w-3.5 animate-spin" />} Save
+      </Button>
+      {msg && <p className={`text-xs ${msg.startsWith("Error") ? "text-red-600" : "text-emerald-700"}`}>{msg}</p>}
+    </form>
+  );
+}
+
+// ---------------------------------------------------------------------------
 // Manual prices
 // ---------------------------------------------------------------------------
 export function PriceManager({
