@@ -54,7 +54,7 @@ export function NewsCard({ article }: { article: NewsArticle }) {
           lowRelevance && "bg-amber-400"
         )}
       />
-      <div className="p-4">
+      <div className="p-3 sm:p-4">
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0 flex-1">
             <div className="flex flex-wrap items-center gap-1.5">
@@ -73,20 +73,20 @@ export function NewsCard({ article }: { article: NewsArticle }) {
               href={article.url}
               target="_blank"
               rel="noopener noreferrer"
-              className="mt-3 flex items-start gap-2 text-base font-semibold leading-snug tracking-editorial text-foreground transition-colors hover:text-foreground/75"
+              className="mt-3 flex items-start gap-2 text-sm font-semibold leading-snug tracking-editorial text-foreground transition-colors hover:text-foreground/75 sm:text-base"
             >
               <span>{article.title}</span>
               <ArrowUpRight className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground transition-transform group-hover:-translate-y-0.5 group-hover:translate-x-0.5" />
             </a>
           </div>
-          <div className="flex shrink-0 gap-1">
+          <div className="flex shrink-0 gap-0.5 sm:gap-1">
             <button
               onClick={() => toggle("saved")}
               title={saved ? "Unsave" : "Save"}
               aria-label={saved ? "Unsave article" : "Save article"}
               aria-pressed={saved}
               className={cn(
-                "flex h-8 w-8 items-center justify-center rounded-md transition-colors hover:bg-muted",
+                "flex h-9 w-9 items-center justify-center rounded-md transition-colors hover:bg-muted sm:h-8 sm:w-8",
                 saved ? "bg-blue-50 text-blue-700" : "text-muted-foreground"
               )}
             >
@@ -98,7 +98,7 @@ export function NewsCard({ article }: { article: NewsArticle }) {
               aria-label={ignored ? "Un-ignore article" : "Ignore article"}
               aria-pressed={ignored}
               className={cn(
-                "flex h-8 w-8 items-center justify-center rounded-md transition-colors hover:bg-muted",
+                "flex h-9 w-9 items-center justify-center rounded-md transition-colors hover:bg-muted sm:h-8 sm:w-8",
                 ignored ? "bg-amber-50 text-amber-700" : "text-muted-foreground"
               )}
             >

@@ -48,6 +48,7 @@ export async function GET() {
         universe: universeRes.count ?? 0,
         quotes: quotesRes.count ?? 0,
         priceHistoryRows: histRes.count ?? 0,
+        technicalRows: techRes.count ?? 0,
         technicals: distinct(histTickers.data),
         financialsTickers: distinct(finTickers.data),
         financialStatements: finRes.count ?? 0,

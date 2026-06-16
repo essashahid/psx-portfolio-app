@@ -66,9 +66,10 @@ export default async function StockCockpitPage({ params }: { params: Promise<{ t
   const eps = typeof epsRaw === "number" && Number.isFinite(epsRaw) ? epsRaw : null;
   const epsPeriod = latestIncome ? `${latestIncome.fiscal_year ?? ""} ${latestIncome.fiscal_period ?? ""}`.trim() : null;
   const pe = eps && quote.price ? quote.price / eps : null;
-  const ttmCutoff = new Date(Date.now() - 365 * 86400_000).toISOString().slice(0, 10);
+  const latestDividendDate = divRows?.[0]?.announcement_date ?? null;
+  const ttmCutoff = latestDividendDate ? new Date(new Date(latestDividendDate).getTime() - 365 * 86400_000).toISOString().slice(0, 10) : null;
   const ttmDps = (divRows ?? [])
-    .filter((d) => d.dividend_per_share && (d.announcement_date ?? "") >= ttmCutoff)
+    .filter((d) => d.dividend_per_share && ttmCutoff && (d.announcement_date ?? "") >= ttmCutoff)
     .reduce((s, d) => s + Number(d.dividend_per_share), 0);
   const divYield = ttmDps > 0 && quote.price ? (ttmDps / quote.price) * 100 : null;
 

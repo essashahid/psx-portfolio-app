@@ -68,10 +68,10 @@ const CHAT_MARKDOWN_COMPONENTS: Components = {
   h2: ({ children }) => <h2 className="mb-3 mt-5 text-lg font-semibold tracking-editorial first:mt-0">{children}</h2>,
   h3: ({ children }) => <h3 className="mb-2.5 mt-4 text-base font-semibold tracking-editorial first:mt-0">{children}</h3>,
   h4: ({ children }) => <h4 className="mb-2 mt-3 text-sm font-semibold text-foreground">{children}</h4>,
-  p: ({ children }) => <p className="my-2 leading-7 text-foreground/85">{children}</p>,
+  p: ({ children }) => <p className="my-2 leading-6 text-foreground/85 sm:leading-7">{children}</p>,
   ul: ({ children }) => <ul className="my-3 space-y-2 pl-0">{children}</ul>,
   ol: ({ children }) => <ol className="my-3 list-decimal space-y-3 pl-5 marker:text-muted-foreground">{children}</ol>,
-  li: ({ children }) => <li className="leading-7 text-foreground/85 [&>p]:my-0">{children}</li>,
+  li: ({ children }) => <li className="leading-6 text-foreground/85 sm:leading-7 [&>p]:my-0">{children}</li>,
   strong: ({ children }) => <strong className="font-semibold text-foreground">{children}</strong>,
   em: ({ children }) => <em className="text-foreground/75">{children}</em>,
   hr: () => <div className="my-5 h-px bg-border" />,
@@ -244,8 +244,8 @@ export function Chat({
   }
 
   return (
-    <div className="grid h-[calc(100dvh-9rem)] min-h-0 gap-3 md:grid-cols-[18rem_minmax(0,1fr)]">
-      <aside className="flex min-h-0 flex-col rounded-lg border border-border bg-card shadow-[var(--shadow-card)]">
+    <div className="grid min-h-[calc(100dvh-12.5rem)] gap-3 md:h-[calc(100dvh-9rem)] md:min-h-0 md:grid-cols-[18rem_minmax(0,1fr)]">
+      <aside className="flex max-h-44 min-h-0 flex-col rounded-lg border border-border bg-card shadow-[var(--shadow-card)] md:max-h-none">
         <div className="flex items-center justify-between gap-2 border-b border-border px-3 py-3">
           <div>
             <p className="text-sm font-semibold">Saved chats</p>
@@ -281,7 +281,7 @@ export function Chat({
                 <div
                   key={thread.id}
                   className={cn(
-                    "group min-w-72 rounded-lg border p-2 transition-colors md:min-w-0",
+                    "group min-w-64 rounded-lg border p-2 transition-colors sm:min-w-72 md:min-w-0",
                     active ? "border-primary bg-primary text-primary-foreground" : "border-border bg-background/50 hover:bg-muted"
                   )}
                 >
@@ -364,7 +364,7 @@ export function Chat({
         </div>
       </aside>
 
-      <section className="flex min-h-0 flex-col rounded-lg border border-border bg-background/45">
+      <section className="flex min-h-[calc(100dvh-21rem)] flex-col overflow-hidden rounded-lg border border-border bg-background/45 md:min-h-0">
         <div className="flex items-center justify-between gap-3 border-b border-border px-3 py-2.5">
           <div className="min-w-0">
             <p className="truncate text-sm font-semibold">{activeThread?.title ?? "New chat"}</p>
@@ -401,12 +401,12 @@ export function Chat({
 
           {messages.map((m, i) => (
             <div key={i} className={cn("flex", m.role === "user" ? "justify-end" : "justify-start")}>
-              <div className={cn("max-w-[94%]", m.role === "user" ? "rounded-2xl rounded-br-sm bg-foreground px-4 py-2 text-sm text-background" : "w-full")}>
+              <div className={cn("max-w-[96%] sm:max-w-[94%]", m.role === "user" ? "rounded-2xl rounded-br-sm bg-foreground px-4 py-2 text-sm text-background" : "w-full")}>
                 {m.role === "assistant" ? (
                   <div className="space-y-2">
                     {m.thinking && <ThinkingPanel text={m.thinking} streaming={busy && i === messages.length - 1 && !m.content} />}
                     {m.content && (
-                      <div className="max-w-4xl rounded-lg border border-border bg-card/85 px-4 py-3 text-[15px] shadow-[var(--shadow-card)] sm:px-5 sm:py-4">
+                      <div className="max-w-4xl rounded-lg border border-border bg-card/85 px-3 py-3 text-sm shadow-[var(--shadow-card)] sm:px-5 sm:py-4 sm:text-[15px]">
                         <ReactMarkdown components={CHAT_MARKDOWN_COMPONENTS}>
                           {formatAssistantContent(m.content)}
                         </ReactMarkdown>
@@ -424,8 +424,8 @@ export function Chat({
           ))}
         </div>
 
-        <div className="border-t border-border bg-background/70 p-3">
-          <div className="mb-2 flex items-center gap-1">
+        <div className="border-t border-border bg-background/70 p-3 pb-[calc(env(safe-area-inset-bottom)+0.75rem)] md:pb-3">
+          <div className="scroll-touch mb-2 flex items-center gap-1 overflow-x-auto pb-1">
             {LEVELS.map((l) => {
               const Icon = l.icon;
               return (

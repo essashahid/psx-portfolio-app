@@ -18,7 +18,9 @@
       "Bash(git -C /Users/essaarshad/Downloads/psx-portfolio-app show --name-only a236bc2)",
       "Bash(curl -s -o /dev/null -w \"%{http_code}\" \"https://psx-portfolio-mit3yzf45-essa-arshads-projects.vercel.app/chat\")",
       "Bash(vercel env *)",
-      "Bash(vercel --prod)"
+      "Bash(vercel --prod)",
+      "Bash(npx eslint *)",
+      "Bash(echo \"=== eslint exit: $? ===\")"
     ]
   }
 }

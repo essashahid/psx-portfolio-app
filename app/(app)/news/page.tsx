@@ -184,11 +184,11 @@ export default async function NewsPage({
     <div className="space-y-5">
       <section className="rise overflow-hidden rounded-lg border border-border bg-card shadow-[var(--shadow-card)]">
         <div className="grid lg:grid-cols-[minmax(0,1.65fr)_minmax(20rem,0.9fr)]">
-          <div className="p-5 sm:p-6">
+          <div className="p-4 sm:p-6">
             <p className="eyebrow">PSX intelligence</p>
             <div className="mt-3 flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
               <div className="min-w-0">
-                <h1 className="text-3xl font-semibold tracking-editorial text-foreground sm:text-4xl">News Center</h1>
+                <h1 className="text-2xl font-semibold tracking-editorial text-foreground sm:text-4xl">News Center</h1>
                 <p className="mt-2 max-w-2xl text-sm leading-relaxed text-muted-foreground">
                   Holding-specific news screened for portfolio relevance, source quality, sentiment, and thesis impact.
                 </p>
@@ -209,7 +209,7 @@ export default async function NewsPage({
             </div>
           </div>
 
-          <aside className="border-t border-border bg-muted/30 p-5 lg:border-l lg:border-t-0">
+          <aside className="border-t border-border bg-muted/30 p-4 sm:p-5 lg:border-l lg:border-t-0">
             <div className="flex items-start justify-between gap-3">
               <div>
                 <p className="eyebrow">Current view</p>
@@ -262,7 +262,7 @@ export default async function NewsPage({
       </section>
 
       <Card className="rise rise-1">
-        <CardHeader className="flex-row items-start justify-between gap-3 space-y-0">
+        <CardHeader className="gap-3 space-y-0 sm:flex-row sm:items-start sm:justify-between">
           <div>
             <CardTitle className="flex items-center gap-2">
               <SlidersHorizontal className="h-4 w-4" /> Refine feed
@@ -337,8 +337,8 @@ export default async function NewsPage({
           </div>
 
           {dateGroups.length > 0 && (
-            <div className="rounded-lg border border-border bg-card p-3 shadow-[var(--shadow-card)]">
-              <div className="mb-2 flex items-center justify-between gap-3">
+            <div className="rounded-lg border border-border bg-card p-2.5 shadow-[var(--shadow-card)] sm:p-3">
+              <div className="mb-2 flex items-center justify-between gap-3 px-0.5">
                 <p className="text-xs font-semibold text-foreground">Browse by date</p>
                 {selectedDate && (
                   <Link href={filterHref({ date: undefined })} className="text-[11px] font-medium text-muted-foreground hover:text-foreground">
@@ -350,7 +350,7 @@ export default async function NewsPage({
                 <Link
                   href={filterHref({ date: undefined })}
                   className={cn(
-                    "inline-flex min-h-9 shrink-0 items-center justify-center rounded-md border px-3 py-1.5 text-xs font-medium transition-colors",
+                    "inline-flex min-h-9 shrink-0 items-center justify-center rounded-md border px-2.5 py-1.5 text-xs font-medium transition-colors sm:px-3",
                     !selectedDate
                       ? "border-primary bg-primary text-primary-foreground shadow-sm"
                       : "border-border bg-background text-muted-foreground hover:bg-muted hover:text-foreground"
@@ -366,7 +366,7 @@ export default async function NewsPage({
                     key={group.date}
                     href={filterHref({ date: group.date })}
                     className={cn(
-                      "inline-flex min-h-9 shrink-0 items-center justify-center rounded-md border px-3 py-1.5 text-xs font-medium transition-colors",
+                      "inline-flex min-h-9 shrink-0 items-center justify-center rounded-md border px-2.5 py-1.5 text-xs font-medium transition-colors sm:px-3",
                       selectedDate === group.date
                         ? "border-primary bg-primary text-primary-foreground shadow-sm"
                         : "border-border bg-background text-muted-foreground hover:bg-muted hover:text-foreground"
@@ -416,7 +416,7 @@ export default async function NewsPage({
                         {group.articles.length} article{group.articles.length === 1 ? "" : "s"}
                       </p>
                     </div>
-                    <Badge variant="secondary">{group.date}</Badge>
+                    <Badge variant="secondary" className="hidden sm:inline-flex">{group.date}</Badge>
                   </div>
                   <div className="grid gap-3 lg:grid-cols-2">
                     {group.articles.map((article) => (
