@@ -14,9 +14,9 @@ import { bucketForSector, type SectorBucket } from "@/lib/market/sectors";
  * joined to the latest market snapshot, and computes at request time.
  *
  * Sub-scores mirror the show's checklist:
- *   • Growth   — EPS / revenue / profit growth
- *   • Quality  — ROE, margins, interest cover, low leverage
- *   • Value    — earnings yield, dividend yield (cheapness)
+ *   • Growth   — EPS / revenue / profit growth and multi-year CAGR
+ *   • Quality  — ROE, ROIC, margins, cash conversion, interest cover, low leverage
+ *   • Value    — earnings yield, FCF yield, book/sales/EV cheapness
  *   • Momentum — price vs MA50/200, distance from 52-week high
  *   • Income   — dividend yield + cover
  */
@@ -48,9 +48,18 @@ export interface ScoredStock {
     revenueGrowth: number | null;
     profitGrowth: number | null;
     roe: number | null;
+    roic: number | null;
     netMargin: number | null;
     pe: number | null;
+    pb: number | null;
+    ps: number | null;
+    evSales: number | null;
+    evEbit: number | null;
+    fcfYield: number | null;
     debtToEquity: number | null;
+    netDebtToEquity: number | null;
+    ocfToPat: number | null;
+    accrualRatio: number | null;
     dividendYield: number | null;
     rsi: number | null;
     pctVsMa50: number | null;
@@ -74,23 +83,42 @@ const RATIO_MAP: Record<RatioSubScoreKey, { name: string; higherBetter: boolean 
     { name: "EPS growth", higherBetter: true },
     { name: "Revenue growth", higherBetter: true },
     { name: "Profit growth", higherBetter: true },
+    { name: "EPS CAGR", higherBetter: true },
+    { name: "Revenue CAGR", higherBetter: true },
   ],
   quality: [
     { name: "ROE", higherBetter: true },
+    { name: "ROIC", higherBetter: true },
     { name: "Net margin", higherBetter: true },
     { name: "Gross margin", higherBetter: true },
+    { name: "FCF margin", higherBetter: true },
+    { name: "OCF / PAT", higherBetter: true },
+    { name: "Cash conversion", higherBetter: true },
+    { name: "Asset turnover", higherBetter: true },
     { name: "Interest coverage", higherBetter: true },
     { name: "Debt-to-equity", higherBetter: false },
+    { name: "Net debt-to-equity", higherBetter: false },
+    { name: "Debt / assets", higherBetter: false },
+    { name: "Liabilities / assets", higherBetter: false },
+    { name: "Accrual ratio", higherBetter: false },
   ],
   value: [
     { name: "Earnings yield", higherBetter: true },
+    { name: "FCF yield", higherBetter: true },
     { name: "Dividend yield (TTM)", higherBetter: true },
+    { name: "P/B", higherBetter: false },
+    { name: "P/S", higherBetter: false },
+    { name: "Price / FCF", higherBetter: false },
+    { name: "EV/Sales", higherBetter: false },
+    { name: "EV/EBIT", higherBetter: false },
   ],
   income: [
     { name: "Dividend yield (TTM)", higherBetter: true },
     { name: "Dividend cover", higherBetter: true },
   ],
 };
+
+const POSITIVE_ONLY_RATIOS = new Set(["P/E", "P/B", "P/S", "Price / FCF", "EV/Sales", "EV/EBIT"]);
 
 interface Raw {
   ticker: string;
@@ -155,9 +183,11 @@ export async function getScoreUniverse(supabase: SupabaseClient): Promise<ScoreU
       .not("ratio_value", "is", null);
     for (const r of ratios ?? []) {
       const t = (r.ticker as string).toUpperCase();
+      const name = r.ratio_name as string;
       const v = Number(r.ratio_value);
       if (!Number.isFinite(v)) continue;
-      (ratiosByTicker.get(t) ?? ratiosByTicker.set(t, new Map()).get(t)!).set(r.ratio_name as string, v);
+      if (POSITIVE_ONLY_RATIOS.has(name) && v <= 0) continue;
+      (ratiosByTicker.get(t) ?? ratiosByTicker.set(t, new Map()).get(t)!).set(name, v);
     }
   }
 
@@ -274,9 +304,18 @@ export async function getScoreUniverse(supabase: SupabaseClient): Promise<ScoreU
         revenueGrowth: r.ratios.get("Revenue growth") ?? null,
         profitGrowth: r.ratios.get("Profit growth") ?? null,
         roe: r.ratios.get("ROE") ?? null,
+        roic: r.ratios.get("ROIC") ?? null,
         netMargin: r.ratios.get("Net margin") ?? null,
         pe: r.ratios.get("P/E") ?? null,
+        pb: r.ratios.get("P/B") ?? null,
+        ps: r.ratios.get("P/S") ?? null,
+        evSales: r.ratios.get("EV/Sales") ?? null,
+        evEbit: r.ratios.get("EV/EBIT") ?? null,
+        fcfYield: r.ratios.get("FCF yield") ?? null,
         debtToEquity: r.ratios.get("Debt-to-equity") ?? null,
+        netDebtToEquity: r.ratios.get("Net debt-to-equity") ?? null,
+        ocfToPat: r.ratios.get("OCF / PAT") ?? null,
+        accrualRatio: r.ratios.get("Accrual ratio") ?? null,
         dividendYield: r.ratios.get("Dividend yield (TTM)") ?? null,
         rsi: r.rsi,
         pctVsMa50: r.pctVsMa50,

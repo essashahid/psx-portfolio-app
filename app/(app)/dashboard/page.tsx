@@ -1,9 +1,10 @@
 import Link from "next/link";
 import { createClient, getUser } from "@/lib/supabase/server";
 import { getPortfolio } from "@/lib/portfolio";
+import { getDailyHoldingPerformance } from "@/lib/portfolio/daily-performance";
 import { getDividends, summarizeDividends } from "@/lib/dividends";
 import { normalizeEvent, type DividendEvent } from "@/lib/dividends/engine";
-import { formatMoney, formatNumber, formatSignedPct } from "@/lib/utils";
+import { cn, formatMoney, formatNumber, formatSignedPct } from "@/lib/utils";
 import { PageHeader } from "@/components/page-header";
 import { StatCard } from "@/components/stat-card";
 import { EmptyState } from "@/components/empty-state";
@@ -12,11 +13,11 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Markdown } from "@/components/markdown";
-import { AllocationPie, GainLossBar, TargetVsActualBar, ValueLine } from "@/components/charts-lazy";
+import { AllocationPie, DailyHoldingPerformanceBar, GainLossBar, TargetVsActualBar, ValueLine } from "@/components/charts-lazy";
 import { UpcomingIncome } from "@/components/upcoming-income";
 import { ImportantPsxEvents, type PsxEventRow } from "@/components/important-psx-events";
 import { DailyChangelog, type ChangelogRow } from "@/components/daily-changelog";
-import { ArrowRight, FileText, HandCoins, Newspaper, RefreshCw, Sparkles, Upload } from "lucide-react";
+import { Activity, ArrowRight, FileText, HandCoins, Newspaper, RefreshCw, Sparkles, Upload } from "lucide-react";
 
 export const dynamic = "force-dynamic";
 
@@ -27,11 +28,13 @@ export default async function DashboardPage() {
 
   const [
     summary,
+    dailyPerformance,
     [briefingRes, newsRes, alertsRes, snapshotsRes, batchesRes, profileRes, psxEventsRes, changelogRes],
     dividends,
     dividendEventsRes,
   ] = await Promise.all([
     getPortfolio(supabase, user.id),
+    getDailyHoldingPerformance(supabase, user.id),
     Promise.all([
       supabase
         .from("ai_briefings")
@@ -154,6 +157,19 @@ export default async function DashboardPage() {
   );
   const psxEvents = (psxEventsRes.data ?? []) as PsxEventRow[];
   const changelog = (changelogRes.data as ChangelogRow | null) ?? null;
+  const dailyTone =
+    dailyPerformance.totalDayPnl !== null && dailyPerformance.totalDayPnl > 0
+      ? "positive"
+      : dailyPerformance.totalDayPnl !== null && dailyPerformance.totalDayPnl < 0
+        ? "negative"
+        : "flat";
+  const dailyImpact = dailyPerformance.biggestImpact;
+  const dailySentence =
+    dailyPerformance.rows.length === 0
+      ? "Import holdings to see a daily position-by-position performance map."
+      : dailyPerformance.totalDayPnl === null
+        ? "Daily PSX quotes are not available for your current holdings yet."
+        : `${dailyPerformance.gainers} holding${dailyPerformance.gainers === 1 ? "" : "s"} up, ${dailyPerformance.losers} down. Your priced holdings ${dailyTone === "positive" ? "added" : dailyTone === "negative" ? "lost" : "were flat at"} ${formatMoney(Math.abs(dailyPerformance.totalDayPnl))} today${dailyPerformance.weightedDayChangePct !== null ? `, a weighted move of ${formatSignedPct(dailyPerformance.weightedDayChangePct)}` : ""}.`;
   return (
     <div className="space-y-5">
       <header className="rise mb-2">
@@ -211,6 +227,125 @@ export default async function DashboardPage() {
       )}
 
       <DailyChangelog changelog={changelog} today={today} />
+
+      <Card className="overflow-hidden border-zinc-300">
+        <CardHeader className="flex-row items-start justify-between gap-3 border-b border-border bg-muted/25 p-4">
+          <div>
+            <CardTitle className="flex items-center gap-2">
+              <Activity className="h-4 w-4 text-muted-foreground" />
+              Today&apos;s holdings move
+            </CardTitle>
+            <CardDescription className="mt-1 max-w-3xl leading-relaxed">
+              {dailySentence}
+              {dailyImpact && dailyImpact.dayPnl !== null ? (
+                <> The biggest portfolio mover was <strong>{dailyImpact.ticker}</strong>, contributing {formatMoney(dailyImpact.dayPnl)}.</>
+              ) : null}
+            </CardDescription>
+          </div>
+          <Badge variant="outline" className="shrink-0">
+            {dailyPerformance.asOf ?? "No market date"}
+          </Badge>
+        </CardHeader>
+        <CardContent className="space-y-4 p-4">
+          <div className="grid gap-2 text-xs sm:grid-cols-2 lg:grid-cols-5">
+            <div className="rounded-md border border-border bg-card/60 p-3">
+              <p className="text-muted-foreground">Today&apos;s P/L</p>
+              <p
+                className={cn(
+                  "mt-1 text-base font-semibold tabular-nums",
+                  dailyTone === "positive" ? "text-emerald-600" : dailyTone === "negative" ? "text-red-600" : "text-foreground"
+                )}
+              >
+                {formatMoney(dailyPerformance.totalDayPnl)}
+              </p>
+            </div>
+            <div className="rounded-md border border-border bg-card/60 p-3">
+              <p className="text-muted-foreground">Weighted move</p>
+              <p className="mt-1 text-base font-semibold tabular-nums">{formatSignedPct(dailyPerformance.weightedDayChangePct)}</p>
+            </div>
+            <div className="rounded-md border border-border bg-card/60 p-3">
+              <p className="text-muted-foreground">Breadth</p>
+              <p className="mt-1 text-base font-semibold tabular-nums">
+                {dailyPerformance.gainers} up / {dailyPerformance.losers} down
+              </p>
+            </div>
+            <div className="rounded-md border border-border bg-card/60 p-3">
+              <p className="text-muted-foreground">Best stock</p>
+              <p className="mt-1 text-base font-semibold tabular-nums">
+                {dailyPerformance.best ? `${dailyPerformance.best.ticker} ${formatSignedPct(dailyPerformance.best.dayChangePct)}` : "—"}
+              </p>
+            </div>
+            <div className="rounded-md border border-border bg-card/60 p-3">
+              <p className="text-muted-foreground">Quote coverage</p>
+              <p className="mt-1 text-base font-semibold tabular-nums">{formatNumber(dailyPerformance.coverage * 100, 0)}%</p>
+            </div>
+          </div>
+
+          {dailyPerformance.rows.length === 0 ? (
+            <EmptyState
+              icon={Activity}
+              title="No holdings to map"
+              description="After you import holdings, this section will show every stock's daily PSX move and contribution to your account."
+            />
+          ) : (
+            <div className="grid gap-4 xl:grid-cols-[minmax(0,1.2fr)_minmax(360px,0.8fr)]">
+              <DailyHoldingPerformanceBar
+                data={dailyPerformance.rows.map((row) => ({
+                  ticker: row.ticker,
+                  dayPnl: row.dayPnl,
+                  dayChangePct: row.dayChangePct,
+                  marketValue: row.marketValue,
+                }))}
+              />
+              <div className="min-w-0 space-y-2">
+                <div className="flex items-center justify-between gap-3 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+                  <span>Holding</span>
+                  <span className="text-right">Day impact</span>
+                </div>
+                <div className="max-h-[390px] divide-y divide-border overflow-y-auto rounded-md border border-border bg-card">
+                  {dailyPerformance.rows.map((row) => {
+                    const rowTone = row.dayPnl !== null && row.dayPnl > 0 ? "positive" : row.dayPnl !== null && row.dayPnl < 0 ? "negative" : "flat";
+                    return (
+                      <Link key={row.ticker} href={`/stocks/${row.ticker}`} className="grid gap-2 p-3 text-xs transition-colors hover:bg-muted/45 sm:grid-cols-[minmax(0,1fr)_auto]">
+                        <div className="min-w-0">
+                          <div className="flex min-w-0 flex-wrap items-center gap-1.5">
+                            <span className="font-semibold">{row.ticker}</span>
+                            {row.sector && <Badge variant="secondary" className="max-w-full truncate text-[9px]">{row.sector}</Badge>}
+                          </div>
+                          <p className="mt-1 truncate text-[11px] text-muted-foreground">{row.companyName ?? "Company name unavailable"}</p>
+                          <p className="mt-1 text-[11px] text-muted-foreground">
+                            {row.vsSectorPct !== null
+                              ? `${formatSignedPct(row.vsSectorPct)} vs sector`
+                              : row.sectorAveragePct !== null
+                                ? `Sector ${formatSignedPct(row.sectorAveragePct)}`
+                                : "Sector comparison unavailable"}
+                          </p>
+                        </div>
+                        <div className="text-left sm:text-right">
+                          <p
+                            className={cn(
+                              "font-semibold tabular-nums",
+                              rowTone === "positive" ? "text-emerald-600" : rowTone === "negative" ? "text-red-600" : "text-muted-foreground"
+                            )}
+                          >
+                            {formatMoney(row.dayPnl)}
+                          </p>
+                          <p className="mt-1 text-[11px] tabular-nums text-muted-foreground">
+                            {formatSignedPct(row.dayChangePct)} · {row.price !== null ? formatNumber(row.price, 2) : "no price"}
+                          </p>
+                          <p className="mt-1 text-[10px] tabular-nums text-muted-foreground">
+                            {row.marketValue !== null ? formatMoney(row.marketValue) : "market value unavailable"}
+                          </p>
+                        </div>
+                      </Link>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+          )}
+        </CardContent>
+      </Card>
 
       {/* 1. Portfolio Snapshot */}
       <div className="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-5">

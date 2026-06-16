@@ -20,6 +20,16 @@ export const GainLossBar = dynamic(
   { ssr: false, loading: ChartFallback }
 );
 
+export const DailyHoldingPerformanceBar = dynamic(
+  () => import("@/components/charts").then((m) => m.DailyHoldingPerformanceBar),
+  { ssr: false, loading: ChartFallback }
+);
+
+export const RatioSnapshotChart = dynamic(
+  () => import("@/components/charts").then((m) => m.RatioSnapshotChart),
+  { ssr: false, loading: ChartFallback }
+);
+
 export const TargetVsActualBar = dynamic(
   () => import("@/components/charts").then((m) => m.TargetVsActualBar),
   { ssr: false, loading: ChartFallback }

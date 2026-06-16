@@ -126,9 +126,14 @@ export async function getPositionCard(db: SupabaseClient, userId: string, ticker
 }
 
 const RATIO_ORDER = [
-  "P/E", "Earnings yield", "Dividend yield (TTM)", "Payout ratio", "Gross margin",
-  "Operating margin", "Net margin", "ROE", "ROA", "Debt-to-equity", "Current ratio",
-  "Interest coverage", "Revenue growth", "Profit growth", "EPS growth",
+  "P/E", "Earnings yield", "P/B", "P/S", "EV/Sales", "EV/EBIT", "FCF yield",
+  "Dividend yield (TTM)", "Payout ratio", "Dividend cover", "Book value / share",
+  "Sales / share", "Cash / share", "Gross margin", "Operating margin", "Net margin",
+  "ROE", "ROA", "ROIC", "Asset turnover", "Debt-to-equity", "Net debt-to-equity",
+  "Debt / assets", "Liabilities / assets", "Current ratio", "Quick ratio", "Cash ratio",
+  "Interest coverage", "OCF / PAT", "Cash conversion", "Accrual ratio", "Revenue growth",
+  "Profit growth", "EPS growth", "Revenue CAGR", "EPS CAGR", "Gross margin change",
+  "Net margin change", "FCF margin",
 ];
 
 export async function getRatioCard(db: SupabaseClient, ticker: string): Promise<RatioCard | null> {

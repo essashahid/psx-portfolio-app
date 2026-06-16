@@ -186,10 +186,21 @@ function ScoreDetail({ s }: { s: ScoredStock }) {
     metricRow("EPS growth", m.epsGrowth, pc),
     metricRow("Revenue growth", m.revenueGrowth, pc),
     metricRow("ROE", m.roe, pc),
+    metricRow("ROIC", m.roic, pc),
     metricRow("Net margin", m.netMargin, pc),
+    metricRow("FCF yield", m.fcfYield, pc),
+    metricRow("OCF / PAT", m.ocfToPat, pe),
+    metricRow("Accrual ratio", m.accrualRatio, pe),
+  ];
+  const valuation = [
     metricRow("P/E", m.pe, pe),
-    metricRow("Debt / equity", m.debtToEquity, pe),
+    metricRow("P/B", m.pb, pe),
+    metricRow("P/S", m.ps, pe),
+    metricRow("EV/Sales", m.evSales, pe),
+    metricRow("EV/EBIT", m.evEbit, pe),
     metricRow("Dividend yield", m.dividendYield, pc),
+    metricRow("Debt / equity", m.debtToEquity, pe),
+    metricRow("Net debt / equity", m.netDebtToEquity, pe),
   ];
   const technicals = [
     metricRow("vs 50-day MA", m.pctVsMa50, pc),
@@ -198,7 +209,7 @@ function ScoreDetail({ s }: { s: ScoredStock }) {
     metricRow("RSI (14)", m.rsi, (v) => v.toFixed(0)),
   ];
   return (
-    <div className="grid gap-4 border-t border-border bg-muted/30 px-4 py-3 lg:grid-cols-3">
+    <div className="grid gap-4 border-t border-border bg-muted/30 px-4 py-3 xl:grid-cols-4">
       <div>
         <p className="mb-2 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">Sub-scores</p>
         <div className="space-y-1.5">
@@ -212,9 +223,20 @@ function ScoreDetail({ s }: { s: ScoredStock }) {
         </div>
       </div>
       <div>
-        <p className="mb-2 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">Fundamentals</p>
+        <p className="mb-2 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">Quality & growth</p>
         <dl className="grid grid-cols-2 gap-x-3 gap-y-1 text-[11px]">
           {fundamentals.map((r) => (
+            <div key={r.label} className="flex justify-between gap-2">
+              <dt className="text-muted-foreground">{r.label}</dt>
+              <dd className="font-medium tabular-nums">{r.value}</dd>
+            </div>
+          ))}
+        </dl>
+      </div>
+      <div>
+        <p className="mb-2 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">Value & leverage</p>
+        <dl className="grid grid-cols-2 gap-x-3 gap-y-1 text-[11px]">
+          {valuation.map((r) => (
             <div key={r.label} className="flex justify-between gap-2">
               <dt className="text-muted-foreground">{r.label}</dt>
               <dd className="font-medium tabular-nums">{r.value}</dd>

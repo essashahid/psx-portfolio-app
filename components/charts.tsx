@@ -24,6 +24,7 @@ import {
   DRAW_MS,
   useChartMotion,
   fmtCompact,
+  fmtPkr,
   GlassTooltip,
   CURSOR,
   FadeDefs,
@@ -129,6 +130,137 @@ export function GainLossBar({ data }: { data: { ticker: string; pl: number }[] }
           >
             {data.map((d, i) => (
               <Cell key={i} fill={d.pl >= 0 ? "url(#plUp)" : "url(#plDown)"} />
+            ))}
+          </Bar>
+        </BarChart>
+      </ResponsiveContainer>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Daily holding performance — rupee contribution per position
+// ---------------------------------------------------------------------------
+
+export function DailyHoldingPerformanceBar({
+  data,
+}: {
+  data: { ticker: string; dayPnl: number | null; dayChangePct: number | null; marketValue: number | null }[];
+}) {
+  const animate = useChartMotion();
+  const rows = useMemo(
+    () =>
+      data
+        .filter((d) => d.dayPnl !== null)
+        .sort((a, b) => Math.abs(b.dayPnl ?? 0) - Math.abs(a.dayPnl ?? 0))
+        .slice(0, 14),
+    [data]
+  );
+
+  if (!rows.length) return <ChartEmpty note="Needs daily market quotes to compute per-holding impact." />;
+
+  const height = Math.min(380, Math.max(230, rows.length * 34 + 58));
+
+  return (
+    <div className="chart-reveal">
+      <ResponsiveContainer width="100%" height={height}>
+        <BarChart data={rows} layout="vertical" margin={{ top: 6, right: 16, bottom: 8, left: 4 }}>
+          <FadeDefs
+            defs={[
+              { id: "dayPnlUp", color: INK.up, from: 0.95, to: 0.58 },
+              { id: "dayPnlDown", color: INK.down, from: 0.58, to: 0.95 },
+            ]}
+          />
+          <CartesianGrid strokeDasharray="3 3" stroke={INK.grid} horizontal={false} />
+          <XAxis type="number" tick={AXIS_TICK} tickFormatter={fmtCompact} axisLine={false} tickLine={false} />
+          <YAxis type="category" dataKey="ticker" tick={AXIS_TICK} width={58} axisLine={false} tickLine={false} />
+          <ReferenceLine x={0} stroke={INK.neutral} strokeWidth={1} />
+          <Tooltip
+            content={
+              <GlassTooltip
+                format={(v, key) => (key === "dayChangePct" ? `${v > 0 ? "+" : ""}${v.toFixed(2)}%` : fmtPkr(v))}
+              />
+            }
+            cursor={{ fill: "rgba(0,0,0,0.035)" }}
+          />
+          <Bar
+            dataKey="dayPnl"
+            name="Day P/L"
+            radius={[0, 5, 5, 0]}
+            maxBarSize={28}
+            isAnimationActive={animate}
+            animationDuration={DRAW_MS}
+            animationEasing={EASE}
+          >
+            {rows.map((d) => (
+              <Cell key={d.ticker} fill={d.dayPnl != null && d.dayPnl >= 0 ? "url(#dayPnlUp)" : "url(#dayPnlDown)"} />
+            ))}
+          </Bar>
+          <Bar dataKey="dayChangePct" name="Day %" hide />
+        </BarChart>
+      </ResponsiveContainer>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Ratio factor snapshot — normalized 0-100 fundamentals profile
+// ---------------------------------------------------------------------------
+
+export function RatioSnapshotChart({
+  data,
+}: {
+  data: { factor: string; score: number; summary: string }[];
+}) {
+  const animate = useChartMotion();
+  const rows = useMemo(
+    () => data.filter((d) => Number.isFinite(d.score)).sort((a, b) => b.score - a.score),
+    [data]
+  );
+
+  if (!rows.length) return <ChartEmpty note="Computed ratios will appear here once enough fundamentals are available." />;
+
+  return (
+    <div className="chart-reveal">
+      <ResponsiveContainer width="100%" height={Math.max(230, rows.length * 42 + 36)}>
+        <BarChart data={rows} layout="vertical" margin={{ top: 8, right: 16, bottom: 6, left: 10 }}>
+          <CartesianGrid strokeDasharray="3 3" stroke={INK.grid} horizontal={false} />
+          <XAxis type="number" domain={[0, 100]} tick={AXIS_TICK} axisLine={false} tickLine={false} />
+          <YAxis type="category" dataKey="factor" tick={AXIS_TICK} width={118} axisLine={false} tickLine={false} />
+          <ReferenceLine x={50} stroke={INK.neutral} strokeDasharray="4 4" />
+          <Tooltip
+            cursor={{ fill: "rgba(0,0,0,0.035)" }}
+            content={({ active, payload }) => {
+              const row = active ? (payload?.[0]?.payload as (typeof rows)[number] | undefined) : null;
+              if (!row) return null;
+              return (
+                <div className="chart-tooltip">
+                  <p className="chart-tooltip-label">{row.factor}</p>
+                  <div className="space-y-1 text-[11px]">
+                    <div className="flex items-center justify-between gap-4">
+                      <span className="text-muted-foreground">Score</span>
+                      <span className="font-semibold tabular-nums">{row.score.toFixed(0)} / 100</span>
+                    </div>
+                    <p className="max-w-[260px] leading-snug text-muted-foreground">{row.summary}</p>
+                  </div>
+                </div>
+              );
+            }}
+          />
+          <Bar
+            dataKey="score"
+            name="Factor score"
+            radius={[0, 5, 5, 0]}
+            maxBarSize={28}
+            isAnimationActive={animate}
+            animationDuration={DRAW_MS}
+            animationEasing={EASE}
+          >
+            {rows.map((row) => (
+              <Cell
+                key={row.factor}
+                fill={row.score >= 70 ? INK.up : row.score >= 50 ? INK.line : row.score >= 35 ? INK.amber : INK.down}
+              />
             ))}
           </Bar>
         </BarChart>
