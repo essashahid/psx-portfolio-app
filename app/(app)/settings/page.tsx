@@ -92,7 +92,7 @@ export default async function SettingsPage() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <FreeCashForm profileId={profile.id} freeCash={profile.free_cash} />
+          <FreeCashForm profileId={profile.id} freeCash={profile.free_cash ?? 0} />
         </CardContent>
       </Card>
 

@@ -73,11 +73,11 @@ export function ProfileForm({ profile }: { profile: Profile }) {
 // ---------------------------------------------------------------------------
 // Free cash
 // ---------------------------------------------------------------------------
-export function FreeCashForm({ profileId, freeCash }: { profileId: string; freeCash: number }) {
+export function FreeCashForm({ profileId, freeCash }: { profileId: string; freeCash: number | null | undefined }) {
   const router = useRouter();
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
-  const [value, setValue] = useState(freeCash.toString());
+  const [value, setValue] = useState(String(freeCash ?? 0));
 
   async function save(e: React.FormEvent) {
     e.preventDefault();
