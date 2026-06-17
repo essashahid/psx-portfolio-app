@@ -21,6 +21,8 @@ import { psxAnnouncementsConfigured } from "@/lib/news/psx-announcements";
 import { twelveDataConfigured } from "@/lib/market-data/twelve-data";
 import { getTaxSettings } from "@/lib/dividends/tax";
 import { TaxProfileForm } from "@/components/tax-profile-form";
+import { ForeignFlowsForm } from "@/components/foreign-flows-form";
+import { foreignFlowsAutoConfigured } from "@/lib/market/foreign-flows-ingest";
 import type { Profile } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
@@ -31,6 +33,14 @@ export default async function SettingsPage() {
   if (!user) return null;
 
   const taxSettings = await getTaxSettings(supabase, user.id);
+  const latestFlowRes = await supabase
+    .from("foreign_flow_days")
+    .select("flow_date")
+    .order("flow_date", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  const latestFlowDate = latestFlowRes.data?.flow_date ? String(latestFlowRes.data.flow_date) : null;
+  const flowsAuto = foreignFlowsAutoConfigured();
   const [profileRes, accountsRes, mappingsRes, statementsRes] = await Promise.all([
     supabase.from("profiles").select("*").eq("id", user.id).maybeSingle(),
     supabase.from("broker_accounts").select("id, label, broker_type").eq("user_id", user.id).order("created_at"),
@@ -72,6 +82,11 @@ export default async function SettingsPage() {
           : ""
       }`,
     },
+    {
+      name: "Foreign flows (FIPI/LIPI)",
+      ok: flowsAuto || !!latestFlowDate,
+      note: flowsAuto ? "auto-fetch enabled (NCCPL_FLOWS_URL)" : latestFlowDate ? `manual · latest ${latestFlowDate}` : "manual entry (no data yet)",
+    },
   ];
   const marketProvider = (process.env.MARKET_DATA_PROVIDER ?? "psx").toLowerCase();
 
@@ -105,6 +120,18 @@ export default async function SettingsPage() {
           </CardDescription>
         </CardHeader>
         <CardContent><TaxProfileForm settings={taxSettings} /></CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Foreign flows — FIPI / LIPI</CardTitle>
+          <CardDescription>
+            Record the day&apos;s NCCPL foreign (FIPI) and local (LIPI) investor flows — the PSX &ldquo;smart money&rdquo; signal.
+            It powers the Market Pulse flows card, the Bulls &amp; Bears regime overlay, and the Research Copilot. Figures are
+            net USD millions; positive = net foreign buying.
+          </CardDescription>
+        </CardHeader>
+        <CardContent><ForeignFlowsForm lastDate={latestFlowDate} autoConfigured={flowsAuto} /></CardContent>
       </Card>
 
       <Card>

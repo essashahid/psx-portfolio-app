@@ -2,6 +2,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { getScoreUniverse, type ScoredStock } from "@/lib/market/score";
 import { bucketForSector, BUCKET_META, type SectorBucket } from "@/lib/market/sectors";
 import { CURRENT_BRIEF, type WeeklyBrief, type PolicyItem, type TradeSetup } from "@/lib/market/weekly-brief";
+import { getForeignFlowSnapshot, type ForeignFlowSnapshot } from "@/lib/market/foreign-flows";
 
 /**
  * Bulls & Bears read model — assembles the show's repeatable pipeline from live
@@ -109,6 +110,7 @@ export interface BullsBears {
   portfolioStrategy: PortfolioStrategyRow[];
   ownedTickers: Set<string>;
   brief: WeeklyBrief;
+  foreignFlow: ForeignFlowSnapshot | null;
 }
 
 const TOP_PICKS = 50;
@@ -419,11 +421,23 @@ export async function getBullsBears(supabase: SupabaseClient, userId: string): P
     .limit(1)
     .maybeSingle();
 
-  const [{ data: holdings }, universe, regime] = await Promise.all([
+  const [{ data: holdings }, universe, regime, foreignFlow] = await Promise.all([
     supabase.from("holdings").select("ticker, company_name, sector, quantity, avg_cost, total_cost").eq("user_id", userId).gt("quantity", 0),
     getScoreUniverse(supabase),
     snap ? buildRegime(supabase, snap.id) : Promise.resolve(null),
+    getForeignFlowSnapshot(supabase),
   ]);
+
+  // Fold the foreign-flow read into the regime note: confirmation when foreign
+  // money agrees with price leadership, divergence when it leans the other way.
+  if (regime && foreignFlow && foreignFlow.buckets.length > 0) {
+    const top = foreignFlow.buckets[0];
+    const bottom = foreignFlow.buckets[foreignFlow.buckets.length - 1];
+    if (top.net > 0) {
+      const confirms = regime.leader === top.bucket;
+      regime.note += ` Foreign money is ${confirms ? "confirming" : "leaning into"} ${top.label.toLowerCase()} (net ${foreignFlow.day.currency} ${top.net > 0 ? "+" : ""}${top.net.toFixed(1)}mn buying)${bottom.net < 0 ? `, while net-selling ${bottom.label.toLowerCase()}` : ""}.`;
+    }
+  }
 
   const holdingRows = (holdings ?? []) as HoldingRow[];
   const ownedTickers = new Set(holdingRows.map((h) => h.ticker.toUpperCase()));
@@ -508,5 +522,6 @@ export async function getBullsBears(supabase: SupabaseClient, userId: string): P
     portfolioStrategy,
     ownedTickers,
     brief: CURRENT_BRIEF,
+    foreignFlow,
   };
 }

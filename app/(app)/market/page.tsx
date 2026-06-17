@@ -2,6 +2,8 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { getUser } from "@/lib/supabase/server";
 import { getMarketDashboard, type EventRow, type OwnedPerf } from "@/lib/market/read";
+import { getForeignFlowSnapshot } from "@/lib/market/foreign-flows";
+import { ForeignFlows } from "@/components/market/foreign-flows";
 import { fmtPct, fmtCompact, fmtInt, tone } from "@/lib/market/format";
 import { PageHeader } from "@/components/page-header";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -9,7 +11,7 @@ import { EmptyState } from "@/components/empty-state";
 import { ActionButton } from "@/components/action-button";
 import { SectorBarsLazy, MarketHeatmapLazy, MoversBoardLazy } from "@/components/market/lazy";
 import { cn } from "@/lib/utils";
-import { Activity, TrendingUp, TrendingDown, Gauge, Sparkles, FileText, Newspaper, RefreshCw, ArrowUpRight, ArrowDownRight } from "lucide-react";
+import { Activity, TrendingUp, TrendingDown, Gauge, Sparkles, FileText, Newspaper, RefreshCw, ArrowUpRight, ArrowDownRight, Globe2 } from "lucide-react";
 
 export const dynamic = "force-dynamic";
 
@@ -26,6 +28,7 @@ export default async function MarketPulsePage() {
   if (!user) return null;
   const supabase = await createClient();
   const d = await getMarketDashboard(supabase, user.id);
+  const foreignFlow = await getForeignFlowSnapshot(supabase);
 
   const refresh = (
     <ActionButton
@@ -137,6 +140,27 @@ export default async function MarketPulsePage() {
         <MiniCard icon={Activity} label="Stocks traded" value={fmtInt(s.item_count)} />
         <MiniCard icon={FileText} label="Official filings today" value={fmtInt(todaysEvents.length)} />
       </div>
+
+      {/* ── Foreign flows (FIPI / LIPI) ────────────────────────────────── */}
+      {foreignFlow ? (
+        <Card className="rise">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2"><Globe2 className="h-4 w-4 text-sky-600" /> Foreign &amp; local flows</CardTitle>
+            <CardDescription>The PSX &ldquo;smart money&rdquo; read — net foreign (FIPI) and local (LIPI) investment, by sector and investor type.</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <ForeignFlows snapshot={foreignFlow} />
+          </CardContent>
+        </Card>
+      ) : (
+        <Card className="rise border-dashed">
+          <CardContent className="flex flex-col items-start gap-1 p-5">
+            <p className="eyebrow flex items-center gap-1.5"><Globe2 className="h-3.5 w-3.5" /> Foreign &amp; local flows</p>
+            <p className="text-sm font-medium">No FIPI / LIPI data yet</p>
+            <p className="text-xs text-muted-foreground">Add the day&apos;s NCCPL foreign/local flow numbers in <Link href="/settings" className="underline">Settings → Foreign flows</Link> to track whether foreigners are net buyers or sellers, and of which sectors.</p>
+          </CardContent>
+        </Card>
+      )}
 
       {/* ── AI brief ───────────────────────────────────────────────────── */}
       <Card className="rise">

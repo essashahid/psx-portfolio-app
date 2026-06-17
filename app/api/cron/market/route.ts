@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 import { buildMarketSnapshot } from "@/lib/market/snapshot";
 import { refreshMarketEvents } from "@/lib/market/events";
 import { generateMarketBrief } from "@/lib/market/brief";
+import { createAdminClient } from "@/lib/supabase/admin";
+import { fetchAndIngestForeignFlows, foreignFlowsAutoConfigured } from "@/lib/market/foreign-flows-ingest";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 300;
@@ -13,7 +15,7 @@ export const maxDuration = 300;
  *
  * Protected by CRON_SECRET (Bearer header or ?key=). Schedule it during/after
  * PSX hours; each run is two market-wide HTTP pulls plus one cheap LLM call.
- *   ?task=snapshot|events|brief|all (default all)
+ *   ?task=snapshot|events|brief|flows|all (default all)
  *   ?brief=1 to force brief regeneration
  */
 export async function GET(request: Request) {
@@ -36,6 +38,15 @@ export async function GET(request: Request) {
   if (task === "all" || task === "events") {
     const ev = await refreshMarketEvents();
     report.events = ev;
+  }
+  if (task === "all" || task === "flows") {
+    // Foreign/local flows — best-effort, only acts when NCCPL_FLOWS_URL is set.
+    if (foreignFlowsAutoConfigured()) {
+      const flows = await fetchAndIngestForeignFlows(createAdminClient());
+      report.flows = flows ?? { ingested: false, note: "source unreachable; manual upload stands" };
+    } else {
+      report.flows = { configured: false };
+    }
   }
   if (task === "all" || task === "brief") {
     const date = new Date().toLocaleDateString("en-CA", { timeZone: "Asia/Karachi" });

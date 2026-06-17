@@ -4,6 +4,7 @@ import {
   getQuoteCard, getPositionCard, getRatioCard, getTechnicalCard, getDividendCard,
   getNewsCard, getMarketCard, getHoldingsSummary, getSectorCard,
 } from "@/lib/chat/data";
+import { getForeignFlowCard } from "@/lib/market/foreign-flows";
 import { tavilySearch, tavilyConfigured } from "@/lib/tavily";
 
 /**
@@ -66,6 +67,11 @@ export const CHAT_TOOLS: Anthropic.Tool[] = [
     input_schema: { type: "object", properties: {} },
   },
   {
+    name: "get_foreign_flows",
+    description: "Foreign (FIPI) and local (LIPI) investor flows on PSX — the 'smart money' signal of whether foreigners are net buyers or sellers, and of which sectors. Pass a sector/bucket keyword (e.g. 'banks', 'cement', 'energy') for one sector, or omit for the market-wide read with the by-sector and local-participant breakdown. Amounts are net USD millions; positive = net foreign buying.",
+    input_schema: { type: "object", properties: { sector: { type: "string", description: "Optional sector or bucket keyword, e.g. banks, cement, energy" } } },
+  },
+  {
     name: "web_search",
     description: "Search the web for recent news / context NOT in the internal PSX data — e.g. WHY a stock or sector moved, macro events (IMF, policy rate, inflation, PKR), management/industry news. Returns recent articles with URLs. Prefer credible Pakistani business sources, and always cite the URLs you use. Use only when internal tools can't answer.",
     input_schema: { type: "object", properties: { query: { type: "string", description: "Search query — include the company/sector and 'Pakistan' for relevance" }, days: { type: "number", description: "How many days back to search (default 14)" } }, required: ["query"] },
@@ -109,6 +115,8 @@ export async function executeTool(
       return (await getSectorCard(db, typeof input.sector === "string" ? input.sector : null)) ?? { error: "no sector data" };
     case "list_holdings":
       return (await getHoldingsSummary(db, userId)) ?? { count: 0, holdings: [] };
+    case "get_foreign_flows":
+      return (await getForeignFlowCard(db, typeof input.sector === "string" ? input.sector : null)) ?? { error: "no foreign-flow data on record" };
     case "web_search": {
       if (!tavilyConfigured()) return { error: "web search not configured" };
       const query = String(input.query ?? "").trim();

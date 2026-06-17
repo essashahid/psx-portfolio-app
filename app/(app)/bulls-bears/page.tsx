@@ -12,6 +12,7 @@ import { Badge } from "@/components/ui/badge";
 import { EmptyState } from "@/components/empty-state";
 import { ScoreBoard } from "@/components/market/score-board";
 import { PortfolioStrategyChart, RegimeRotationChart, ScoreMomentumMap, SetupRiskRewardChart } from "@/components/market/bulls-bears-visuals";
+import { ForeignFlows } from "@/components/market/foreign-flows";
 import {
   Activity,
   AlertTriangle,
@@ -36,6 +37,7 @@ import {
   TrendingDown,
   TrendingUp,
   Wallet,
+  Globe2,
 } from "lucide-react";
 
 export const dynamic = "force-dynamic";
@@ -126,6 +128,8 @@ export default async function BullsBearsPage() {
         <RegimeCard regime={data.regime} favored={data.brief.regime.favored} cautious={data.brief.regime.cautious} />
         <MacroCard macro={data.brief.macro} />
       </div>
+
+      <ForeignFlowCard flow={data.foreignFlow} />
 
       <div className="grid gap-3 xl:grid-cols-[1fr_1fr]">
         <IndexTechnicalCard data={data} />
@@ -523,6 +527,30 @@ function RegimeCard({ regime, favored, cautious }: { regime: Awaited<ReturnType<
           <BriefBucketList title="Brief favored" buckets={favored} variant="green" />
           <BriefBucketList title="Brief cautious" buckets={cautious} variant="amber" />
         </div>
+      </CardContent>
+    </Card>
+  );
+}
+
+function ForeignFlowCard({ flow }: { flow: Awaited<ReturnType<typeof getBullsBears>>["foreignFlow"] }) {
+  return (
+    <Card className="rise">
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2"><Globe2 className="h-4 w-4 text-sky-600" /> Foreign money (FIPI / LIPI)</CardTitle>
+        <CardDescription>
+          The &ldquo;smart money&rdquo; overlay on the rotation read — is foreign capital confirming or fading the sectors that are leading on price?
+        </CardDescription>
+      </CardHeader>
+      <CardContent>
+        {flow ? (
+          <ForeignFlows snapshot={flow} />
+        ) : (
+          <EmptyState
+            icon={Globe2}
+            title="No FIPI / LIPI data yet"
+            description="Add the day's NCCPL foreign/local flow numbers in Settings → Foreign flows to overlay smart-money direction on the regime read."
+          />
+        )}
       </CardContent>
     </Card>
   );
