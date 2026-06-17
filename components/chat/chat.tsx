@@ -247,6 +247,7 @@ export function Chat({
           } else if (evt.type === "cards") update((m) => ({ ...m, cards: evt.cards }));
           else if (evt.type === "thinking") update((m) => ({ ...m, thinking: (m.thinking ?? "") + evt.delta }));
           else if (evt.type === "text") update((m) => ({ ...m, content: m.content + evt.delta, status: undefined }));
+          else if (evt.type === "reset") update((m) => ({ ...m, content: "" }));
           else if (evt.type === "status") update((m) => ({ ...m, status: evt.text }));
           else if (evt.type === "error") update((m) => ({ ...m, content: (m.content || "") + `\n\nError: ${evt.message}` }));
         }

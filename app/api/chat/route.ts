@@ -11,6 +11,11 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 export const dynamic = "force-dynamic";
 export const maxDuration = 120;
 
+// Max model round-trips per question. On the final turn tools are disabled so
+// the model is forced to synthesize an answer instead of leaving the budget
+// exhausted mid-investigation.
+const MAX_TOOL_TURNS = 6;
+
 const SYSTEM_PROMPT = `You are the financial assistant inside PortfolioOS PK, a private Pakistan Stock Exchange (PSX) portfolio tracker. You help the owner understand their holdings and the PSX market.
 
 Rules:
@@ -38,6 +43,7 @@ type Evt =
   | { type: "status"; text: string }
   | { type: "thinking"; delta: string }
   | { type: "text"; delta: string }
+  | { type: "reset" }
   | { type: "error"; message: string }
   | { type: "done" };
 
@@ -113,11 +119,15 @@ export async function POST(request: Request) {
             { role: "user", content: userContext },
           ];
 
-          for (let turn = 0; turn < 4; turn++) {
+          for (let turn = 0; turn < MAX_TOOL_TURNS; turn++) {
+            const lastTurn = turn === MAX_TOOL_TURNS - 1;
+            const turnStart = assistantContent.length;
             const mstream = claude.messages.stream({
               ...params,
               system: [{ type: "text", text: SYSTEM_PROMPT, cache_control: { type: "ephemeral" } }],
               tools: CHAT_TOOLS,
+              // Final turn: forbid tools so the model must answer from what it has.
+              ...(lastTurn ? { tool_choice: { type: "none" as const } } : {}),
               messages,
             } as Anthropic.MessageCreateParamsStreaming);
 
@@ -132,6 +142,17 @@ export async function POST(request: Request) {
 
             const final = await mstream.finalMessage();
             if (final.stop_reason !== "tool_use") break;
+
+            // The visible text on a tool turn is planning narration ("let me
+            // check…"), not the answer — move it to the reasoning panel and
+            // reset the answer bubble so only the final synthesis remains.
+            const narration = assistantContent.slice(turnStart);
+            assistantContent = assistantContent.slice(0, turnStart);
+            send({ type: "reset" });
+            if (narration.trim()) {
+              assistantThinking += (assistantThinking ? "\n\n" : "") + narration;
+              send({ type: "thinking", delta: narration });
+            }
 
             // Execute tools, append results, loop.
             const toolUses = final.content.filter((b): b is Anthropic.ToolUseBlock => b.type === "tool_use");
@@ -162,6 +183,10 @@ export async function POST(request: Request) {
               send({ type: "text", delta });
             },
             onStatus: (text) => send({ type: "status", text }),
+            onReset: () => {
+              assistantContent = "";
+              send({ type: "reset" });
+            },
           });
         }
 

@@ -18,7 +18,8 @@ import type { ChatModelDef } from "./models";
 
 const DEFAULT_BASE_URL = "https://api.deepseek.com/v1";
 const REQUEST_TIMEOUT_MS = 120_000;
-const MAX_TOOL_TURNS = 4;
+// Final turn drops tools so the model is forced to answer from what it gathered.
+const MAX_TOOL_TURNS = 6;
 
 function chatDisabled(): boolean {
   const v = (process.env.CHAT_DISABLED ?? "").toLowerCase();
@@ -64,6 +65,8 @@ export interface DeepSeekChatOptions {
   onThinking: (delta: string) => void;
   onText: (delta: string) => void;
   onStatus: (text: string) => void;
+  /** Clear the answer bubble — called when a turn's text was planning chatter. */
+  onReset: () => void;
 }
 
 /** Run the DeepSeek chat loop, streaming text/thinking/status through callbacks. */
@@ -81,6 +84,8 @@ export async function runDeepSeekChat(opts: DeepSeekChatOptions): Promise<void> 
   ];
 
   for (let turn = 0; turn < MAX_TOOL_TURNS; turn++) {
+    const lastTurn = turn === MAX_TOOL_TURNS - 1;
+    const sendTools = useTools && !lastTurn;
     const res = await fetch(`${base}/chat/completions`, {
       method: "POST",
       headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/json" },
@@ -91,7 +96,7 @@ export async function runDeepSeekChat(opts: DeepSeekChatOptions): Promise<void> 
         stream: true,
         max_tokens: opts.def.maxTokens,
         ...(opts.def.supportsTemperature ? { temperature: 0.4 } : {}),
-        ...(useTools ? { tools: toOpenAITools(opts.tools), tool_choice: "auto" as const } : {}),
+        ...(sendTools ? { tools: toOpenAITools(opts.tools), tool_choice: "auto" as const } : {}),
       }),
     });
 
@@ -157,6 +162,11 @@ export async function runDeepSeekChat(opts: DeepSeekChatOptions): Promise<void> 
     // No tools requested → this turn produced the final answer.
     const calls = toolCalls.filter((c) => c.id && c.function.name);
     if (finishReason !== "tool_calls" || calls.length === 0) return;
+
+    // The visible text on a tool turn is planning narration, not the answer —
+    // move it to the reasoning panel and clear the answer bubble.
+    if (content.trim()) opts.onThinking(content);
+    opts.onReset();
 
     // Execute the tools, append results, and loop.
     messages.push({ role: "assistant", content, tool_calls: calls });
