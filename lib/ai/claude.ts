@@ -1,4 +1,5 @@
 import Anthropic from "@anthropic-ai/sdk";
+import type { ChatModelDef } from "./models";
 
 /**
  * Claude client for the financial-assistant chat.
@@ -9,28 +10,12 @@ import Anthropic from "@anthropic-ai/sdk";
  * complex/multi-entity questions. The shared system prompt + tool schemas are
  * prompt-cached so repeated turns bill cached-read rates.
  *
- * The chat (Claude) has its OWN kill switch, independent of the tasks one:
- * AI_DISABLED governs the DeepSeek tasks provider; the chat is gated by CHAT_DISABLED
- * (+ the presence of CLAUDE_API_KEY). This lets the assistant run on Claude
- * while the analysis crons stay halted.
+ * The chat has its OWN kill switch, independent of the tasks one: AI_DISABLED
+ * governs the DeepSeek tasks/cron provider; the chat is gated by CHAT_DISABLED.
+ * Which provider/model handles a given turn is chosen in the UI — see
+ * lib/ai/models.ts for the registry and lib/ai/deepseek-chat.ts for the other
+ * provider.
  */
-
-export type ChatLevel = "light" | "standard" | "deep";
-
-interface LevelConfig {
-  model: string;
-  effort?: "low" | "medium" | "high" | "xhigh" | "max";
-  thinking: boolean;
-}
-
-// The "levels" the user picks in the UI map to model + effort. Standard
-// (Sonnet) is the default — best balance for cost-sensitive personal use;
-// Deep (Opus) is reserved for heavy multi-step analysis.
-const LEVELS: Record<ChatLevel, LevelConfig> = {
-  light: { model: "claude-haiku-4-5", thinking: false },
-  standard: { model: "claude-sonnet-4-6", effort: "medium", thinking: true },
-  deep: { model: "claude-opus-4-8", effort: "high", thinking: true },
-};
 
 /** Independent chat kill switch — does NOT touch the tasks AI_DISABLED flag. */
 export function chatDisabled(): boolean {
@@ -50,24 +35,19 @@ export function getClaude(): Anthropic {
   return client;
 }
 
-export function levelConfig(level: ChatLevel): LevelConfig {
-  return LEVELS[level] ?? LEVELS.standard;
-}
-
-/** Build the generation params for a level (model, thinking, effort), SDK-ready. */
-export function buildRequestParams(level: ChatLevel, maxTokens = 1500): {
+/** Build the generation params for a Claude model def (model, thinking, effort), SDK-ready. */
+export function buildClaudeParams(def: ChatModelDef): {
   model: string;
   max_tokens: number;
   thinking?: { type: "adaptive"; display: "summarized" };
   output_config?: { effort: "low" | "medium" | "high" | "xhigh" | "max" };
 } {
-  const cfg = levelConfig(level);
   return {
-    model: cfg.model,
-    max_tokens: maxTokens,
+    model: def.apiModel,
+    max_tokens: def.maxTokens,
     // Adaptive thinking with a visible summary powers the "thinking" panel in
-    // the UI; Haiku ("light") has no thinking/effort, so we omit both.
-    ...(cfg.thinking ? { thinking: { type: "adaptive" as const, display: "summarized" as const } } : {}),
-    ...(cfg.effort ? { output_config: { effort: cfg.effort } } : {}),
+    // the UI; Haiku has no thinking/effort, so we omit both.
+    ...(def.thinking ? { thinking: { type: "adaptive" as const, display: "summarized" as const } } : {}),
+    ...(def.effort ? { output_config: { effort: def.effort } } : {}),
   };
 }

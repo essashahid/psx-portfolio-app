@@ -4,7 +4,13 @@ import { useRef, useState, useEffect } from "react";
 import ReactMarkdown, { type Components } from "react-markdown";
 import { ChatCards } from "@/components/chat/cards";
 import type { Card } from "@/lib/chat/context";
-import type { ChatLevel } from "@/lib/ai/claude";
+import {
+  CHAT_MODELS,
+  DEFAULT_MODEL_ID,
+  groupedModels,
+  type ChatModelId,
+  type ChatProvider,
+} from "@/lib/ai/models";
 import { cn } from "@/lib/utils";
 import {
   Brain,
@@ -50,11 +56,20 @@ interface SavedMessage {
   created_at: string;
 }
 
-const LEVELS: { id: ChatLevel; label: string; icon: typeof Zap; hint: string }[] = [
-  { id: "light", label: "Light", icon: Zap, hint: "Fastest, cheapest - quick lookups" },
-  { id: "standard", label: "Standard", icon: Gauge, hint: "Balanced - default" },
-  { id: "deep", label: "Deep think", icon: Brain, hint: "Most thorough - multi-step analysis" },
-];
+const MODEL_ICONS: Record<ChatModelId, typeof Zap> = {
+  "claude-haiku": Zap,
+  "claude-sonnet": Gauge,
+  "claude-opus": Brain,
+  "deepseek-chat": Zap,
+  "deepseek-reasoner": Brain,
+};
+
+/** First selectable model whose provider has a key configured, else the default. */
+function firstAvailableModel(providers: Record<ChatProvider, boolean>): ChatModelId {
+  const def = CHAT_MODELS.find((m) => m.id === DEFAULT_MODEL_ID);
+  if (def && providers[def.provider]) return DEFAULT_MODEL_ID;
+  return CHAT_MODELS.find((m) => providers[m.provider])?.id ?? DEFAULT_MODEL_ID;
+}
 
 const SUGGESTIONS = [
   "How does MEBL's position look?",
@@ -93,17 +108,18 @@ const CHAT_MARKDOWN_COMPONENTS: Components = {
 };
 
 export function Chat({
-  aiEnabled,
+  providers,
   initialThreads = [],
 }: {
-  aiEnabled: boolean;
+  providers: Record<ChatProvider, boolean>;
   initialThreads?: ChatThread[];
 }) {
+  const aiEnabled = providers.claude || providers.deepseek;
   const [messages, setMessages] = useState<Message[]>([]);
   const [threads, setThreads] = useState<ChatThread[]>(initialThreads);
   const [currentThreadId, setCurrentThreadId] = useState<string | null>(null);
   const [input, setInput] = useState("");
-  const [level, setLevel] = useState<ChatLevel>("standard");
+  const [model, setModel] = useState<ChatModelId>(() => firstAvailableModel(providers));
   const [busy, setBusy] = useState(false);
   const [loadingThread, setLoadingThread] = useState<string | null>(null);
   const [renamingId, setRenamingId] = useState<string | null>(null);
@@ -210,7 +226,7 @@ export function Chat({
       const res = await fetch("/api/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ message: q, level, threadId, history }),
+        body: JSON.stringify({ message: q, model, threadId, history }),
       });
       if (!res.body) throw new Error("No stream");
       const reader = res.body.getReader();
@@ -425,16 +441,8 @@ export function Chat({
         </div>
 
         <div className="border-t border-border bg-background/70 p-3 pb-[calc(env(safe-area-inset-bottom)+0.75rem)] md:pb-3">
-          <div className="scroll-touch mb-2 flex items-center gap-1 overflow-x-auto pb-1">
-            {LEVELS.map((l) => {
-              const Icon = l.icon;
-              return (
-                <button key={l.id} onClick={() => setLevel(l.id)} title={l.hint}
-                  className={cn("flex items-center gap-1 rounded-full px-2.5 py-1 text-[11px] font-medium transition-colors", level === l.id ? "bg-foreground text-background" : "bg-muted text-muted-foreground hover:text-foreground")}>
-                  <Icon className="h-3 w-3" /> {l.label}
-                </button>
-              );
-            })}
+          <div className="mb-2 flex items-center gap-2">
+            <ModelPicker model={model} setModel={setModel} providers={providers} />
             {!aiEnabled && <span className="ml-auto text-[10px] text-amber-600">AI narration off - data only</span>}
           </div>
           <form onSubmit={(e) => { e.preventDefault(); send(input); }} className="flex items-end gap-2">
@@ -478,6 +486,93 @@ function formatThreadTime(value: string): string {
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return "";
   return date.toLocaleString(undefined, { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" });
+}
+
+function ModelPicker({
+  model,
+  setModel,
+  providers,
+}: {
+  model: ChatModelId;
+  setModel: (id: ChatModelId) => void;
+  providers: Record<ChatProvider, boolean>;
+}) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+  const selected = CHAT_MODELS.find((m) => m.id === model) ?? CHAT_MODELS[0];
+  const SelectedIcon = MODEL_ICONS[selected.id];
+
+  useEffect(() => {
+    if (!open) return;
+    function onClick(e: MouseEvent) {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    }
+    document.addEventListener("mousedown", onClick);
+    return () => document.removeEventListener("mousedown", onClick);
+  }, [open]);
+
+  return (
+    <div ref={ref} className="relative">
+      <button
+        type="button"
+        onClick={() => setOpen((o) => !o)}
+        className="flex items-center gap-1.5 rounded-full bg-muted px-2.5 py-1 text-[11px] font-medium text-foreground transition-colors hover:bg-muted/70"
+        title="Choose model"
+        aria-haspopup="listbox"
+        aria-expanded={open}
+      >
+        <SelectedIcon className="h-3 w-3" />
+        <span className="text-muted-foreground">{selected.group}</span>
+        {selected.label}
+        <ChevronDown className={cn("h-3 w-3 transition-transform", open && "rotate-180")} />
+      </button>
+
+      {open && (
+        <div
+          role="listbox"
+          className="absolute bottom-full left-0 z-20 mb-1.5 w-64 overflow-hidden rounded-lg border border-border bg-card shadow-[var(--shadow-card)]"
+        >
+          {groupedModels().map((g) => (
+            <div key={g.group} className="py-1">
+              <p className="px-3 pb-0.5 pt-1.5 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">{g.group}</p>
+              {g.models.map((m) => {
+                const Icon = MODEL_ICONS[m.id];
+                const available = providers[m.provider];
+                const active = m.id === model;
+                return (
+                  <button
+                    key={m.id}
+                    type="button"
+                    role="option"
+                    aria-selected={active}
+                    disabled={!available}
+                    onClick={() => {
+                      setModel(m.id);
+                      setOpen(false);
+                    }}
+                    className={cn(
+                      "flex w-full items-center gap-2 px-3 py-1.5 text-left text-xs transition-colors",
+                      active ? "bg-muted" : "hover:bg-muted/60",
+                      !available && "cursor-not-allowed opacity-40 hover:bg-transparent"
+                    )}
+                  >
+                    <Icon className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+                    <span className="flex-1">
+                      <span className="font-medium">{m.label}</span>
+                      <span className="block text-[10px] leading-tight text-muted-foreground">
+                        {available ? m.hint : "API key not configured"}
+                      </span>
+                    </span>
+                    {active && <Check className="h-3.5 w-3.5 shrink-0 text-emerald-600" />}
+                  </button>
+                );
+              })}
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
 }
 
 function ThinkingPanel({ text, streaming }: { text: string; streaming: boolean }) {

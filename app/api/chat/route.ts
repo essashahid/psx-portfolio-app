@@ -2,7 +2,9 @@ import { requireUser } from "@/lib/api-helpers";
 import { resolveMessage } from "@/lib/chat/resolver";
 import { gatherCards, briefFromCards, type Card } from "@/lib/chat/context";
 import { CHAT_TOOLS, executeTool } from "@/lib/chat/tools";
-import { claudeConfigured, getClaude, buildRequestParams, type ChatLevel } from "@/lib/ai/claude";
+import { claudeConfigured, getClaude, buildClaudeParams } from "@/lib/ai/claude";
+import { deepseekChatConfigured, runDeepSeekChat } from "@/lib/ai/deepseek-chat";
+import { getModelDef } from "@/lib/ai/models";
 import type Anthropic from "@anthropic-ai/sdk";
 import type { SupabaseClient } from "@supabase/supabase-js";
 
@@ -16,7 +18,10 @@ Rules:
 - Amounts are in PKR. Be concise and concrete — lead with the answer, then the supporting numbers. A few tight sentences beat a long essay.
 - The user already sees rich data cards (quote, position, ratios, chart, news) rendered alongside your reply, so don't dump tables — interpret and connect the numbers.
 - Call a tool only when the <context> block lacks something you need (e.g. a second company to compare, or data for a ticker not yet loaded).
-- For internal numbers (price, ratios, sectors, positions, filings) use the data/tools — never the web. Use web_search only for things the internal data can't give: WHY something moved, macro/policy/industry news, recent events. When you use web_search, cite the source URLs inline and prefer credible Pakistani business outlets; say it's from the web, and note it may be less precise than the official PSX data.
+- For internal numbers (price, ratios, sectors, positions, filings) use the data/tools — never the web. The web is for what the internal data can't give: WHY something moved, macro/policy/industry news, recent events. When you use web_search, cite the source URLs inline, prefer credible Pakistani business outlets, and say it's from the web.
+- When the user asks WHY a stock moved (a day's move, a catalyst, "what's driving this"), you MUST call web_search before answering — internal filings (get_news) rarely explain an intraday move. NEVER explain a move with generic sector narrative ("energy stocks were supported", "fertilizers track commodities", "broader market sentiment", "selective strength") unless a tool result actually says so. If neither a filing nor a web result names a specific catalyst, say plainly "No specific catalyst found in the data or recent news" — never invent a plausible-sounding reason. A guessed reason is worse than admitting there isn't one.
+- For a multi-holding "why" question, web_search only the top 3-4 movers by absolute % change; for the rest, note you didn't find a notable catalyst. This keeps the answer focused and bounds lookups.
+- Don't promise work you won't do. Never open with "I'll pull the latest news…" and then not call the tool — either call it, or answer with what you have.
 - Never append disclaimers like "Not financial advice." — the product handles that separately.
 
 Writing style:
@@ -51,13 +56,13 @@ export async function POST(request: Request) {
 
   const body = (await request.json().catch(() => ({}))) as {
     message?: string;
-    level?: ChatLevel;
+    model?: string;
     threadId?: string | null;
     history?: { role: "user" | "assistant"; content: string }[];
   };
   const message = (body.message ?? "").trim();
   if (!message) return new Response(JSON.stringify({ error: "Empty message" }), { status: 400 });
-  const level: ChatLevel = body.level ?? "standard";
+  const modelDef = getModelDef(body.model);
 
   const encoder = new TextEncoder();
   const stream = new ReadableStream<Uint8Array>({
@@ -81,8 +86,10 @@ export async function POST(request: Request) {
         if (cards.length) send({ type: "cards", cards });
         const brief = briefFromCards(cards);
 
-        // 2. If AI is off, return a useful templated answer from the brief.
-        if (!claudeConfigured()) {
+        // 2. If the selected provider's AI is off, return a useful templated
+        //    answer from the brief.
+        const providerReady = modelDef.provider === "claude" ? claudeConfigured() : deepseekChatConfigured();
+        if (!providerReady) {
           assistantContent = fallbackAnswer(message, brief, cards.length);
           send({ type: "text", delta: assistantContent });
           await persistAssistantTurn(supabase, user.id, thread.id, assistantContent, assistantThinking, cards);
@@ -91,48 +98,71 @@ export async function POST(request: Request) {
           return;
         }
 
-        // 3. Claude narrative with tools. The brief is injected so most
-        //    questions answer in one shot (no extra tool round-trips).
-        const claude = getClaude();
-        const params = buildRequestParams(level, level === "deep" ? 2200 : 1500);
+        // 3. Narrative with tools. The brief is injected so most questions
+        //    answer in one shot (no extra tool round-trips).
         const userContext = brief
           ? `<context>\n${brief}\n</context>\n\nQuestion: ${message}`
           : `Question: ${message}\n(No pre-loaded data matched — use tools to fetch what you need.)`;
-        const messages: Anthropic.MessageParam[] = [
-          ...(body.history ?? []).slice(-6).map((m) => ({ role: m.role, content: m.content })),
-          { role: "user", content: userContext },
-        ];
+        const trimmedHistory = (body.history ?? []).slice(-6);
 
-        for (let turn = 0; turn < 4; turn++) {
-          const mstream = claude.messages.stream({
-            ...params,
-            system: [{ type: "text", text: SYSTEM_PROMPT, cache_control: { type: "ephemeral" } }],
-            tools: CHAT_TOOLS,
-            messages,
-          } as Anthropic.MessageCreateParamsStreaming);
+        if (modelDef.provider === "claude") {
+          const claude = getClaude();
+          const params = buildClaudeParams(modelDef);
+          const messages: Anthropic.MessageParam[] = [
+            ...trimmedHistory.map((m) => ({ role: m.role, content: m.content })),
+            { role: "user", content: userContext },
+          ];
 
-          mstream.on("thinking", (delta: string) => {
-            assistantThinking += delta;
-            send({ type: "thinking", delta });
-          });
-          mstream.on("text", (delta: string) => {
-            assistantContent += delta;
-            send({ type: "text", delta });
-          });
+          for (let turn = 0; turn < 4; turn++) {
+            const mstream = claude.messages.stream({
+              ...params,
+              system: [{ type: "text", text: SYSTEM_PROMPT, cache_control: { type: "ephemeral" } }],
+              tools: CHAT_TOOLS,
+              messages,
+            } as Anthropic.MessageCreateParamsStreaming);
 
-          const final = await mstream.finalMessage();
-          if (final.stop_reason !== "tool_use") break;
+            mstream.on("thinking", (delta: string) => {
+              assistantThinking += delta;
+              send({ type: "thinking", delta });
+            });
+            mstream.on("text", (delta: string) => {
+              assistantContent += delta;
+              send({ type: "text", delta });
+            });
 
-          // Execute tools, append results, loop.
-          const toolUses = final.content.filter((b): b is Anthropic.ToolUseBlock => b.type === "tool_use");
-          messages.push({ role: "assistant", content: final.content });
-          const results: Anthropic.ToolResultBlockParam[] = [];
-          for (const tu of toolUses) {
-            send({ type: "status", text: `Looking up ${tu.name.replace(/_/g, " ")}…` });
-            const out = await executeTool(supabase, user.id, tu.name, (tu.input ?? {}) as Record<string, unknown>);
-            results.push({ type: "tool_result", tool_use_id: tu.id, content: JSON.stringify(out) });
+            const final = await mstream.finalMessage();
+            if (final.stop_reason !== "tool_use") break;
+
+            // Execute tools, append results, loop.
+            const toolUses = final.content.filter((b): b is Anthropic.ToolUseBlock => b.type === "tool_use");
+            messages.push({ role: "assistant", content: final.content });
+            const results: Anthropic.ToolResultBlockParam[] = [];
+            for (const tu of toolUses) {
+              send({ type: "status", text: `Looking up ${tu.name.replace(/_/g, " ")}…` });
+              const out = await executeTool(supabase, user.id, tu.name, (tu.input ?? {}) as Record<string, unknown>);
+              results.push({ type: "tool_result", tool_use_id: tu.id, content: JSON.stringify(out) });
+            }
+            messages.push({ role: "user", content: results });
           }
-          messages.push({ role: "user", content: results });
+        } else {
+          // DeepSeek — same tools and brief, OpenAI-shaped streaming loop.
+          await runDeepSeekChat({
+            def: modelDef,
+            system: SYSTEM_PROMPT,
+            history: trimmedHistory,
+            userContent: userContext,
+            tools: CHAT_TOOLS,
+            executeTool: (name, input) => executeTool(supabase, user.id, name, input),
+            onThinking: (delta) => {
+              assistantThinking += delta;
+              send({ type: "thinking", delta });
+            },
+            onText: (delta) => {
+              assistantContent += delta;
+              send({ type: "text", delta });
+            },
+            onStatus: (text) => send({ type: "status", text }),
+          });
         }
 
         await persistAssistantTurn(supabase, user.id, thread.id, assistantContent, assistantThinking, cards);

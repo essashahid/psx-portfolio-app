@@ -1,5 +1,6 @@
 import { createClient, getUser } from "@/lib/supabase/server";
 import { claudeConfigured } from "@/lib/ai/claude";
+import { deepseekChatConfigured } from "@/lib/ai/deepseek-chat";
 import { PageHeader } from "@/components/page-header";
 import { Chat, type ChatThread } from "@/components/chat/chat";
 
@@ -23,7 +24,10 @@ export default async function ChatPage() {
         title="Research Copilot"
         description="Ask anything about your holdings or the PSX. It pulls live prices, ratios, charts and filings — then interprets them."
       />
-      <Chat aiEnabled={claudeConfigured()} initialThreads={(threads ?? []) as ChatThread[]} />
+      <Chat
+        providers={{ claude: claudeConfigured(), deepseek: deepseekChatConfigured() }}
+        initialThreads={(threads ?? []) as ChatThread[]}
+      />
     </div>
   );
 }
