@@ -11,6 +11,7 @@ import {
   type ChatModelId,
   type ChatProvider,
 } from "@/lib/ai/models";
+import { looksLikeToolLeak } from "@/lib/chat/sanitize";
 import { cn } from "@/lib/utils";
 import {
   Brain,
@@ -476,6 +477,9 @@ function savedMessageToMessage(row: SavedMessage): Message {
 }
 
 function formatAssistantContent(content: string): string {
+  // Hide leaked tool-call markup while it streams; the server resends a clean
+  // fallback once the turn ends.
+  if (looksLikeToolLeak(content)) return "";
   return content
     .replace(/\r\n/g, "\n")
     .replace(/([.!?])(?=[A-Z][a-z])/g, "$1 ")

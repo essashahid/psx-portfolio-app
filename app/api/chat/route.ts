@@ -5,6 +5,8 @@ import { CHAT_TOOLS, executeTool } from "@/lib/chat/tools";
 import { claudeConfigured, getClaude, buildClaudeParams } from "@/lib/ai/claude";
 import { deepseekChatConfigured, runDeepSeekChat } from "@/lib/ai/deepseek-chat";
 import { getModelDef } from "@/lib/ai/models";
+import { looksLikeToolLeak, TOOL_LEAK_FALLBACK } from "@/lib/chat/sanitize";
+import { wantsWebContext, gatherWebContext } from "@/lib/chat/web-context";
 import type Anthropic from "@anthropic-ai/sdk";
 import type { SupabaseClient } from "@supabase/supabase-js";
 
@@ -106,10 +108,20 @@ export async function POST(request: Request) {
 
         // 3. Narrative with tools. The brief is injected so most questions
         //    answer in one shot (no extra tool round-trips).
-        const userContext = brief
+        let userContext = brief
           ? `<context>\n${brief}\n</context>\n\nQuestion: ${message}`
           : `Question: ${message}\n(No pre-loaded data matched — use tools to fetch what you need.)`;
         const trimmedHistory = (body.history ?? []).slice(-6);
+
+        // Models that can't call tools (DeepSeek R1) can't web_search on their
+        // own, so pre-fetch web context for "why did it move" questions and
+        // inject it — gives them the same catalyst lookup the tool models get.
+        const toolless = modelDef.provider === "deepseek" && !modelDef.supportsTools;
+        if (toolless && wantsWebContext(message)) {
+          send({ type: "status", text: "Searching the web…" });
+          const web = await gatherWebContext(resolved, message);
+          if (web) userContext = `${userContext}\n\n${web}`;
+        }
 
         if (modelDef.provider === "claude") {
           const claude = getClaude();
@@ -188,6 +200,14 @@ export async function POST(request: Request) {
               send({ type: "reset" });
             },
           });
+        }
+
+        // Backstop: if the model leaked a tool call as text instead of
+        // invoking it (DeepSeek R1 with tools), replace the garbage answer.
+        if (looksLikeToolLeak(assistantContent)) {
+          send({ type: "reset" });
+          assistantContent = TOOL_LEAK_FALLBACK;
+          send({ type: "text", delta: assistantContent });
         }
 
         await persistAssistantTurn(supabase, user.id, thread.id, assistantContent, assistantThinking, cards);
