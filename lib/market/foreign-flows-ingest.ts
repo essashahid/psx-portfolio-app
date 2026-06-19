@@ -6,10 +6,10 @@ import type { SupabaseClient } from "@supabase/supabase-js";
  * Two paths, both producing the same normalized FlowIngestPayload:
  *   1. Manual — the owner pastes the day's numbers (headline + per-sector lines)
  *      from the NCCPL report; the forgiving parsers below turn them into rows.
- *   2. Auto — when NCCPL_FLOWS_URL is configured, a scheduled job fetches and
- *      maps that source. NCCPL has no stable public API, so auto-fetch is
- *      best-effort and env-pluggable: unset/unreachable simply leaves manual as
- *      the source of truth, exactly like the app's manual price provider.
+ *   2. Auto — the scheduled job can fetch SCSTrade's public FIPI/LIPI JSON
+ *      endpoints, or a custom JSON URL when NCCPL_FLOWS_URL is configured.
+ *      NCCPL's own site is Cloudflare-protected and has no stable public API,
+ *      so the default source is intentionally adapter-based and best-effort.
  *
  * Amounts are stored in their reported unit (NCCPL reports USD millions).
  */
@@ -32,6 +32,21 @@ export interface IngestResult {
   participants: number;
   source: string;
 }
+
+type AutoProvider = "scstrade" | "custom" | "off";
+
+type ScsFlowRow = {
+  FLType?: string;
+  FLTypeNew?: string;
+  FLSectorName?: string;
+  FLBuyValue?: number;
+  FLSellValue?: number;
+  FLNetValueUSD?: number;
+};
+
+type ScsResponse<T> = {
+  d?: T[];
+};
 
 // ---------------------------------------------------------------------------
 // Parsing helpers (manual paste)
@@ -187,7 +202,7 @@ export async function ingestForeignFlows(
 // ---------------------------------------------------------------------------
 
 export function foreignFlowsAutoConfigured(): boolean {
-  return !!process.env.NCCPL_FLOWS_URL?.trim();
+  return foreignFlowsProvider() !== "off";
 }
 
 /**
@@ -237,8 +252,26 @@ export function mapNccplJson(raw: unknown, date: string): FlowIngestPayload | nu
   };
 }
 
-/** Fetch + ingest the latest day from NCCPL_FLOWS_URL. Returns null if unconfigured/unreachable. */
+/** Fetch + ingest the latest day from the configured auto provider. Returns null if unavailable. */
 export async function fetchAndIngestForeignFlows(admin: SupabaseClient): Promise<IngestResult | null> {
+  const provider = foreignFlowsProvider();
+  if (provider === "off") return null;
+  if (provider === "custom") return fetchAndIngestCustomForeignFlows(admin);
+
+  const customFallback = !!process.env.NCCPL_FLOWS_URL?.trim();
+  const scs = await fetchScsTradeFlows();
+  if (scs) return ingestForeignFlows(admin, scs, { ingestedBy: "auto" });
+  return customFallback ? fetchAndIngestCustomForeignFlows(admin) : null;
+}
+
+function foreignFlowsProvider(): AutoProvider {
+  const configured = (process.env.FOREIGN_FLOWS_PROVIDER ?? "").trim().toLowerCase();
+  if (configured === "off" || configured === "manual" || configured === "none") return "off";
+  if (configured === "custom" || configured === "nccpl") return process.env.NCCPL_FLOWS_URL?.trim() ? "custom" : "off";
+  return "scstrade";
+}
+
+async function fetchAndIngestCustomForeignFlows(admin: SupabaseClient): Promise<IngestResult | null> {
   const url = process.env.NCCPL_FLOWS_URL?.trim();
   if (!url) return null;
   const date = new Date().toLocaleDateString("en-CA", { timeZone: "Asia/Karachi" });
@@ -252,4 +285,128 @@ export async function fetchAndIngestForeignFlows(admin: SupabaseClient): Promise
   } catch {
     return null;
   }
+}
+
+const SCSTRADE_FLOWS_URL = "https://www.scstrade.com/FIPILIPI.aspx";
+const SCSTRADE_TIMEOUT_MS = 20_000;
+const FLOW_HEADERS = {
+  "User-Agent":
+    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0 Safari/537.36",
+  Accept: "application/json, text/javascript, */*; q=0.01",
+  "Content-Type": "application/json; charset=utf-8",
+  "X-Requested-With": "XMLHttpRequest",
+  Referer: SCSTRADE_FLOWS_URL,
+};
+
+async function fetchScsTradeFlows(): Promise<FlowIngestPayload | null> {
+  try {
+    const page = await fetch(SCSTRADE_FLOWS_URL, {
+      headers: { "User-Agent": FLOW_HEADERS["User-Agent"], Accept: "text/html" },
+      signal: AbortSignal.timeout(SCSTRADE_TIMEOUT_MS),
+      cache: "no-store",
+    });
+    if (!page.ok) return null;
+    const html = await page.text();
+    const mmddyyyy = extractScsLatestDate(html);
+    if (!mmddyyyy) return null;
+    const date = toIsoDate(mmddyyyy);
+    if (!date) return null;
+
+    const [summaryRows, sectorRows, participantRows] = await Promise.all([
+      fetchScsRows<ScsFlowRow>("loadmainsum", mmddyyyy),
+      fetchScsRows<ScsFlowRow>("loadfipiInvestor", mmddyyyy),
+      fetchScsRows<ScsFlowRow>("loadmainsumdetails", mmddyyyy),
+    ]);
+
+    const headline = summaryRows.find((r) => cleanLabel(r.FLType) === "FIPI");
+    const sectors = sectorRows
+      .filter((r) => cleanLabel(r.FLTypeNew) === "FIPI")
+      .map((r) => ({
+        sector: cleanSectorName(r.FLSectorName),
+        net: asNumber(r.FLNetValueUSD),
+        grossBuy: asNumber(r.FLBuyValue),
+        grossSell: absNumber(r.FLSellValue),
+      }))
+      .filter((s): s is { sector: string; net: number; grossBuy: number | null; grossSell: number | null } => !!s.sector && s.net != null);
+
+    const participants = participantRows
+      .filter((r) => isLocalParticipant(r.FLType))
+      .map((r) => {
+        const label = cleanParticipantLabel(r.FLType);
+        const p = normalizeParticipant(label);
+        return { ...p, net: asNumber(r.FLNetValueUSD) };
+      })
+      .filter((p): p is { category: string; label: string; net: number } => p.net != null);
+
+    const net = asNumber(headline?.FLNetValueUSD);
+    const grossBuy = asNumber(headline?.FLBuyValue);
+    const grossSell = absNumber(headline?.FLSellValue);
+    if (net == null && sectors.length === 0 && participants.length === 0) return null;
+
+    return {
+      date,
+      currency: "USD",
+      fipi: { net, grossBuy, grossSell },
+      sectors,
+      participants,
+      sourceProvider: "scstrade",
+      sourceUrl: `${SCSTRADE_FLOWS_URL}?start=${encodeURIComponent(mmddyyyy)}&end=${encodeURIComponent(mmddyyyy)}`,
+      note: "Auto-fetched from SCSTrade FIPI/LIPI public tables; source data is attributed to NCCPL.",
+    };
+  } catch {
+    return null;
+  }
+}
+
+async function fetchScsRows<T>(endpoint: string, mmddyyyy: string): Promise<T[]> {
+  const res = await fetch(`${SCSTRADE_FLOWS_URL}/${endpoint}`, {
+    method: "POST",
+    headers: FLOW_HEADERS,
+    body: JSON.stringify({ date1: mmddyyyy, date2: mmddyyyy }),
+    signal: AbortSignal.timeout(SCSTRADE_TIMEOUT_MS),
+    cache: "no-store",
+  });
+  if (!res.ok) return [];
+  const data = (await res.json().catch(() => null)) as ScsResponse<T> | null;
+  return Array.isArray(data?.d) ? data.d : [];
+}
+
+function extractScsLatestDate(html: string): string | null {
+  return html.match(/id="date2"[^>]*value="(\d{2}\/\d{2}\/\d{4})"/i)?.[1] ?? html.match(/id="date1"[^>]*value="(\d{2}\/\d{2}\/\d{4})"/i)?.[1] ?? null;
+}
+
+function toIsoDate(mmddyyyy: string): string | null {
+  const m = mmddyyyy.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+  if (!m) return null;
+  const [, month, day, year] = m;
+  return `${year}-${month}-${day}`;
+}
+
+function asNumber(value: unknown): number | null {
+  if (typeof value === "number" && Number.isFinite(value)) return value;
+  if (typeof value === "string") return parseAmount(value);
+  return null;
+}
+
+function absNumber(value: unknown): number | null {
+  const n = asNumber(value);
+  return n == null ? null : Math.abs(n);
+}
+
+function cleanLabel(value: string | null | undefined): string {
+  return (value ?? "").replace(/\s+/g, " ").trim().toUpperCase();
+}
+
+function cleanSectorName(value: string | null | undefined): string {
+  return (value ?? "").replace(/\s*\(mn\$?\)\s*/gi, "").replace(/\s+/g, " ").trim();
+}
+
+function cleanParticipantLabel(value: string | null | undefined): string {
+  return (value ?? "").replace(/\s+/g, " ").trim();
+}
+
+function isLocalParticipant(value: string | null | undefined): boolean {
+  const label = cleanLabel(value);
+  if (!label || label === "FIPI" || label === "LIPI") return false;
+  return !["FOREIGN CORPORATES", "FOREIGN INDIVIDUAL", "OVERSEAS PAKISTANI"].includes(label);
 }

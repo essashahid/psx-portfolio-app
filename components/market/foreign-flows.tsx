@@ -131,7 +131,8 @@ export function ForeignFlows({ snapshot, compact = false }: { snapshot: ForeignF
       )}
 
       <p className="text-[10px] text-muted-foreground">
-        Source: {day.sourceProvider === "manual" ? "manual entry" : day.sourceProvider} · {day.ingestedBy === "auto" ? "auto-fetched" : "uploaded"}
+        Source: {day.sourceProvider === "manual" ? "manual entry" : day.sourceProvider} · {day.ingestedBy === "auto" ? "auto-fetched latest available data" : "uploaded"}
+        {day.isStale ? ` · stale (${day.ageDays} days old)` : ""}
         {day.note ? ` · ${day.note}` : ""}. Positive = net foreign buying. Figures in {unit}.
       </p>
     </div>

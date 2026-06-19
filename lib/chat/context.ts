@@ -5,6 +5,7 @@ import {
   getNewsCard, getMarketCard, getHoldingsSummary, getSectorCard,
   type QuoteCard, type PositionCard, type RatioCard, type TechnicalCard, type DividendCard, type NewsCard, type MarketCard, type HoldingsSummary, type SectorCard,
 } from "@/lib/chat/data";
+import { getForeignFlowSnapshot, type ForeignFlowSnapshot } from "@/lib/market/foreign-flows";
 import { fmtPct, fmtCompact } from "@/lib/market/format";
 
 /** A typed card the UI renders directly (free — no LLM drew it). */
@@ -17,6 +18,7 @@ export type Card =
   | { kind: "news"; data: NewsCard }
   | { kind: "market"; data: MarketCard }
   | { kind: "sector"; data: SectorCard }
+  | { kind: "foreign_flow"; data: ForeignFlowSnapshot }
   | { kind: "holdings"; data: HoldingsSummary };
 
 /**
@@ -39,6 +41,8 @@ export async function gatherCards(db: SupabaseClient, userId: string, resolved: 
     if (m) cards.push({ kind: "market", data: m });
     const sectors = await getSectorCard(db, null); // full ranked list
     if (sectors) cards.push({ kind: "sector", data: sectors });
+    const flows = await getForeignFlowSnapshot(db);
+    if (flows) cards.push({ kind: "foreign_flow", data: flows });
     const news = await getNewsCard(db, null, 6);
     if (news) cards.push({ kind: "news", data: news });
   }
@@ -95,6 +99,15 @@ export function briefFromCards(cards: Card[]): string {
           .map((s) => `${s.sector} ${fmtPct(s.avgReturn)} (${s.advancers}↑/${s.decliners}↓, ${s.stockCount} stocks${s.topGainer ? `, top ${s.topGainer} ${fmtPct(s.topGainerPct)}` : ""})`)
           .join("; ");
         lines.push(`SECTORS ${sc.date}${sc.filter ? ` [${sc.filter}]` : " (avg return)"}: ${body}.`);
+        break;
+      }
+      case "foreign_flow": {
+        const f = c.data;
+        const unit = `${f.day.currency} mn`;
+        const buckets = f.buckets.map((b) => `${b.label} ${b.net >= 0 ? "+" : ""}${b.net.toFixed(2)}`).join(", ") || "no sector buckets";
+        const sectors = f.sectors.slice(0, 6).map((s) => `${s.sector} ${s.net != null && s.net >= 0 ? "+" : ""}${s.net?.toFixed(2) ?? "n/a"}`).join(", ");
+        const locals = f.participants.slice(0, 5).map((p) => `${p.label} ${p.net != null && p.net >= 0 ? "+" : ""}${p.net?.toFixed(2) ?? "n/a"}`).join(", ");
+        lines.push(`FOREIGN FLOWS latest available ${f.day.date}: FIPI ${f.day.fipiNet != null && f.day.fipiNet >= 0 ? "+" : ""}${f.day.fipiNet?.toFixed(2) ?? "n/a"} ${unit}; ${f.stanceLabel}; ${f.series.length}-day cumulative ${f.cumulativeNet != null && f.cumulativeNet >= 0 ? "+" : ""}${f.cumulativeNet?.toFixed(2) ?? "n/a"} ${unit}. By bucket: ${buckets}. Top sectors: ${sectors || "n/a"}. Local participants: ${locals || "n/a"}. Source ${f.day.sourceProvider}${f.day.sourceUrl ? ` (${f.day.sourceUrl})` : ""}.`);
         break;
       }
       case "quote": {

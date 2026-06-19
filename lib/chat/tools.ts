@@ -68,8 +68,15 @@ export const CHAT_TOOLS: Anthropic.Tool[] = [
   },
   {
     name: "get_foreign_flows",
-    description: "Foreign (FIPI) and local (LIPI) investor flows on PSX — the 'smart money' signal of whether foreigners are net buyers or sellers, and of which sectors. Pass a sector/bucket keyword (e.g. 'banks', 'cement', 'energy') for one sector, or omit for the market-wide read with the by-sector and local-participant breakdown. Amounts are net USD millions; positive = net foreign buying.",
-    input_schema: { type: "object", properties: { sector: { type: "string", description: "Optional sector or bucket keyword, e.g. banks, cement, energy" } } },
+    description: "Latest available foreign (FIPI) and local (LIPI) investor flows on PSX — the 'smart money' signal of whether foreigners are net buyers or sellers, and of which sectors. Defaults to current/latest non-stale data. Pass days for recent history, and include_stale_history only when the user explicitly asks for older stored data.",
+    input_schema: {
+      type: "object",
+      properties: {
+        sector: { type: "string", description: "Optional sector or bucket keyword, e.g. banks, cement, energy" },
+        days: { type: "number", description: "Recent series window, 1-365 days. Default 10." },
+        include_stale_history: { type: "boolean", description: "Only true when the user explicitly asks for older stored flow history." },
+      },
+    },
   },
   {
     name: "web_search",
@@ -116,7 +123,10 @@ export async function executeTool(
     case "list_holdings":
       return (await getHoldingsSummary(db, userId)) ?? { count: 0, holdings: [] };
     case "get_foreign_flows":
-      return (await getForeignFlowCard(db, typeof input.sector === "string" ? input.sector : null)) ?? { error: "no foreign-flow data on record" };
+      return (await getForeignFlowCard(db, typeof input.sector === "string" ? input.sector : null, {
+        days: typeof input.days === "number" ? input.days : undefined,
+        allowStale: input.include_stale_history === true,
+      })) ?? { error: "no current foreign-flow data on record", note: "Older rows may exist, but default reads hide stale data unless include_stale_history is true." };
     case "web_search": {
       if (!tavilyConfigured()) return { error: "web search not configured" };
       const query = String(input.query ?? "").trim();

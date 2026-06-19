@@ -85,7 +85,7 @@ export default async function SettingsPage() {
     {
       name: "Foreign flows (FIPI/LIPI)",
       ok: flowsAuto || !!latestFlowDate,
-      note: flowsAuto ? "auto-fetch enabled (NCCPL_FLOWS_URL)" : latestFlowDate ? `manual · latest ${latestFlowDate}` : "manual entry (no data yet)",
+      note: flowsAuto ? "auto-fetch enabled" : latestFlowDate ? `manual · latest ${latestFlowDate}` : "manual entry (no data yet)",
     },
   ];
   const marketProvider = (process.env.MARKET_DATA_PROVIDER ?? "psx").toLowerCase();
@@ -126,9 +126,9 @@ export default async function SettingsPage() {
         <CardHeader>
           <CardTitle>Foreign flows — FIPI / LIPI</CardTitle>
           <CardDescription>
-            Record the day&apos;s NCCPL foreign (FIPI) and local (LIPI) investor flows — the PSX &ldquo;smart money&rdquo; signal.
-            It powers the Market Pulse flows card, the Bulls &amp; Bears regime overlay, and the Research Copilot. Figures are
-            net USD millions; positive = net foreign buying.
+            Foreign (FIPI) and local (LIPI) investor flows power the Market Pulse flows card, the Bulls &amp; Bears regime
+            overlay, and the Research Copilot. Auto-fetch uses SCSTrade&apos;s public FIPI/LIPI tables when enabled; manual
+            entry remains available for overrides and backfills. Figures are net USD millions; positive = net foreign buying.
           </CardDescription>
         </CardHeader>
         <CardContent><ForeignFlowsForm lastDate={latestFlowDate} autoConfigured={flowsAuto} /></CardContent>

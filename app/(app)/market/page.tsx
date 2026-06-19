@@ -27,8 +27,8 @@ export default async function MarketPulsePage() {
   const user = await getUser();
   if (!user) return null;
   const supabase = await createClient();
-  const d = await getMarketDashboard(supabase, user.id);
   const foreignFlow = await getForeignFlowSnapshot(supabase);
+  const d = await getMarketDashboard(supabase, user.id);
 
   const refresh = (
     <ActionButton

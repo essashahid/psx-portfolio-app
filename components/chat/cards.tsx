@@ -5,7 +5,7 @@ import { Sparkline } from "@/components/market/sparkline";
 import { fmtPct, fmtPrice, fmtCompact, tone } from "@/lib/market/format";
 import type { Card } from "@/lib/chat/context";
 import { cn } from "@/lib/utils";
-import { TrendingUp, Briefcase, Calculator, Activity, HandCoins, FileText, Gauge } from "lucide-react";
+import { TrendingUp, Briefcase, Calculator, Activity, HandCoins, FileText, Gauge, Globe2 } from "lucide-react";
 
 /**
  * Renders the assistant's data cards — the free layer. These are React
@@ -42,6 +42,11 @@ function Big({ value, sub, t }: { value: string; sub?: string; t?: "positive" | 
       {sub && <p className="text-[11px] text-muted-foreground">{sub}</p>}
     </div>
   );
+}
+
+function fmtFlow(v: number | null | undefined): string {
+  if (v == null || !Number.isFinite(v)) return "—";
+  return `${v > 0 ? "+" : ""}${v.toFixed(2)}`;
 }
 
 function ChatCard({ card }: { card: Card }) {
@@ -167,6 +172,24 @@ function ChatCard({ card }: { card: Card }) {
             })}
           </div>
           {sc.filter && rows[0]?.topGainer && <p className="mt-1.5 text-[10px] text-muted-foreground">Top: {rows[0].topGainer} {fmtPct(rows[0].topGainerPct)} · Worst: {rows[0].topLoser} {fmtPct(rows[0].topLoserPct)}</p>}
+        </Shell>
+      );
+    }
+    case "foreign_flow": {
+      const f = card.data;
+      const t = tone(f.day.fipiNet);
+      return (
+        <Shell icon={Globe2} title={`FIPI / LIPI · ${f.day.date}`} href="/market" accent={t === "positive" ? "green" : t === "negative" ? "red" : undefined}>
+          <div className="flex items-end justify-between">
+            <Big value={`${fmtFlow(f.day.fipiNet)} ${f.day.currency} mn`} sub={f.stanceLabel} t={t} />
+            <div className="text-right">
+              <p className={cn("text-sm font-semibold tabular-nums", (f.cumulativeNet ?? 0) > 0 ? "text-emerald-600" : (f.cumulativeNet ?? 0) < 0 ? "text-red-600" : "text-muted-foreground")}>{fmtFlow(f.cumulativeNet)}</p>
+              <p className="text-[10px] text-muted-foreground">{f.series.length}-day net</p>
+            </div>
+          </div>
+          <p className="mt-1 text-[10px] text-muted-foreground">
+            {f.buckets.slice(0, 3).map((b) => `${b.label} ${fmtFlow(b.net)}`).join(" · ") || `Source ${f.day.sourceProvider}`}
+          </p>
         </Shell>
       );
     }

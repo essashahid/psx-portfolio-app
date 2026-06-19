@@ -6,9 +6,10 @@ export const dynamic = "force-dynamic";
 export const maxDuration = 60;
 
 /**
- * Foreign/local flow (FIPI/LIPI) auto-refresh. Best-effort: only does anything
- * when NCCPL_FLOWS_URL is configured. Protected by CRON_SECRET (Bearer header
- * or ?key=). Safe to schedule on weekdays after PSX close.
+ * Foreign/local flow (FIPI/LIPI) auto-refresh. Best-effort: fetches the
+ * configured provider (SCSTrade by default, custom JSON via NCCPL_FLOWS_URL
+ * when selected). Protected by CRON_SECRET (Bearer header or ?key=). Safe to
+ * schedule on weekdays after PSX close.
  */
 export async function GET(request: Request) {
   const secret = process.env.CRON_SECRET;
@@ -20,13 +21,13 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: "SUPABASE_SERVICE_ROLE_KEY missing." }, { status: 503 });
   }
   if (!foreignFlowsAutoConfigured()) {
-    return NextResponse.json({ ok: true, configured: false, note: "Set NCCPL_FLOWS_URL to enable auto-fetch; flows are managed manually." });
+    return NextResponse.json({ ok: true, configured: false, note: "Foreign flow auto-fetch is disabled; flows are managed manually." });
   }
 
   const admin = createAdminClient();
   const result = await fetchAndIngestForeignFlows(admin);
   if (!result) {
-    return NextResponse.json({ ok: false, configured: true, note: "Source unreachable or unparseable; manual upload remains the source of truth." });
+    return NextResponse.json({ ok: false, configured: true, note: "Source unreachable or unparseable; manual entry remains the fallback." });
   }
   return NextResponse.json({ ok: true, configured: true, ...result });
 }

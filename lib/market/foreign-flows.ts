@@ -1,4 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { createAdminClient } from "@/lib/supabase/admin";
+import { fetchAndIngestForeignFlows, foreignFlowsAutoConfigured } from "@/lib/market/foreign-flows-ingest";
 import { bucketForSector, BUCKET_META, type SectorBucket } from "@/lib/market/sectors";
 
 /**
@@ -25,6 +27,8 @@ export interface ForeignFlowDay {
   sourceUrl: string | null;
   ingestedBy: string;
   note: string | null;
+  isStale: boolean;
+  ageDays: number | null;
 }
 
 export interface SectorFlow {
@@ -61,6 +65,38 @@ export interface ForeignFlowSnapshot {
 }
 
 const num = (v: unknown): number | null => (v == null ? null : Number(v));
+const DEFAULT_MAX_CURRENT_AGE_DAYS = 7;
+const REFRESH_THROTTLE_MS = 5 * 60_000;
+
+let lastRefreshAttempt = 0;
+let refreshInFlight: Promise<void> | null = null;
+
+function todayPk(): string {
+  return new Date().toLocaleDateString("en-CA", { timeZone: "Asia/Karachi" });
+}
+
+function daysBetween(from: string, to: string): number | null {
+  const a = Date.parse(`${from}T00:00:00Z`);
+  const b = Date.parse(`${to}T00:00:00Z`);
+  if (!Number.isFinite(a) || !Number.isFinite(b)) return null;
+  return Math.floor((b - a) / 86400_000);
+}
+
+async function refreshBeforeCurrentRead(): Promise<void> {
+  if (!foreignFlowsAutoConfigured() || !process.env.SUPABASE_SERVICE_ROLE_KEY) return;
+  const now = Date.now();
+  if (now - lastRefreshAttempt < REFRESH_THROTTLE_MS) return;
+  if (refreshInFlight) return refreshInFlight;
+
+  lastRefreshAttempt = now;
+  refreshInFlight = fetchAndIngestForeignFlows(createAdminClient())
+    .catch(() => null)
+    .then(() => undefined)
+    .finally(() => {
+      refreshInFlight = null;
+    });
+  return refreshInFlight;
+}
 
 /** Aggregate per-sector foreign flow into the regime buckets the show reasons in. */
 export function bucketFlows(sectors: SectorFlow[]): BucketFlow[] {
@@ -82,8 +118,11 @@ export function bucketFlows(sectors: SectorFlow[]): BucketFlow[] {
 /** Latest day with its sector / participant breakdown and a recent cumulative series. */
 export async function getForeignFlowSnapshot(
   supabase: SupabaseClient,
-  seriesDays = 30
+  seriesDays = 30,
+  opts: { refresh?: boolean; allowStale?: boolean; maxCurrentAgeDays?: number } = {}
 ): Promise<ForeignFlowSnapshot | null> {
+  if (opts.refresh !== false) await refreshBeforeCurrentRead();
+
   const { data: latest } = await supabase
     .from("foreign_flow_days")
     .select("flow_date, currency, fipi_net, fipi_gross_buy, fipi_gross_sell, lipi_net, source_provider, source_url, ingested_by, note")
@@ -94,6 +133,11 @@ export async function getForeignFlowSnapshot(
   if (!latest) return null;
 
   const flowDate = String(latest.flow_date);
+  const ageDays = daysBetween(flowDate, todayPk());
+  const maxAge = opts.maxCurrentAgeDays ?? DEFAULT_MAX_CURRENT_AGE_DAYS;
+  const isStale = ageDays != null && ageDays > maxAge;
+  if (isStale && !opts.allowStale) return null;
+
   const since = new Date(Date.now() - seriesDays * 86400_000).toISOString().slice(0, 10);
 
   const [{ data: sectorRows }, { data: partRows }, { data: seriesRows }] = await Promise.all([
@@ -145,6 +189,8 @@ export async function getForeignFlowSnapshot(
     sourceUrl: latest.source_url ? String(latest.source_url) : null,
     ingestedBy: String(latest.ingested_by ?? "manual"),
     note: latest.note ? String(latest.note) : null,
+    isStale,
+    ageDays,
   };
 
   // Stance reads the recent tide, not just today, so a single noisy day doesn't flip it.
@@ -173,20 +219,27 @@ export async function getForeignBucketMap(supabase: SupabaseClient): Promise<Map
  */
 export async function getForeignFlowCard(
   supabase: SupabaseClient,
-  query: string | null
+  query: string | null,
+  opts: { days?: number; allowStale?: boolean } = {}
 ): Promise<unknown | null> {
-  const snap = await getForeignFlowSnapshot(supabase, 10);
+  const days = Math.max(1, Math.min(365, opts.days ?? 10));
+  const snap = await getForeignFlowSnapshot(supabase, days, { allowStale: opts.allowStale });
   if (!snap) return null;
   const unit = `${snap.day.currency} mn`;
   const base = {
     date: snap.day.date,
     unit,
+    freshness: snap.day.isStale ? "stale_history" : "latest_available",
+    age_days: snap.day.ageDays,
     fipi_net: snap.day.fipiNet,
     fipi_gross_buy: snap.day.fipiGrossBuy,
     fipi_gross_sell: snap.day.fipiGrossSell,
     stance: snap.stanceLabel,
     cumulative_net_recent: snap.cumulativeNet,
+    recent_series_days: days,
+    series: snap.series,
     source: snap.day.sourceProvider,
+    source_url: snap.day.sourceUrl,
   };
 
   if (query && query.trim()) {

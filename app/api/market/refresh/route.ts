@@ -3,6 +3,8 @@ import { requireUser, errorResponse } from "@/lib/api-helpers";
 import { buildMarketSnapshot } from "@/lib/market/snapshot";
 import { refreshMarketEvents } from "@/lib/market/events";
 import { generateMarketBrief } from "@/lib/market/brief";
+import { createAdminClient } from "@/lib/supabase/admin";
+import { fetchAndIngestForeignFlows, foreignFlowsAutoConfigured } from "@/lib/market/foreign-flows-ingest";
 
 export const maxDuration = 120;
 
@@ -27,6 +29,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ message: `${ev.saved} event(s) refreshed.`, detail: ev });
     }
     if (section === "brief") {
+      if (foreignFlowsAutoConfigured()) await fetchAndIngestForeignFlows(createAdminClient()).catch(() => null);
       const date = new Date().toLocaleDateString("en-CA", { timeZone: "Asia/Karachi" });
       const b = await generateMarketBrief(date, { force: true });
       return NextResponse.json({ message: b.error ? `Brief failed: ${b.error}` : "Market brief regenerated.", detail: b });
@@ -39,6 +42,7 @@ export async function POST(request: Request) {
     }
     if (section === "all") {
       await refreshMarketEvents().catch(() => null);
+      if (foreignFlowsAutoConfigured()) await fetchAndIngestForeignFlows(createAdminClient()).catch(() => null);
       await generateMarketBrief(snap.date, { force: true }).catch(() => null);
     }
     return NextResponse.json({

@@ -1,6 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { aiAvailable, chatMarkdown } from "@/lib/ai/openai";
+import { getForeignFlowSnapshot } from "@/lib/market/foreign-flows";
 
 /**
  * AI daily market brief. ONE LLM call per snapshot, cached in market_ai_briefs
@@ -49,10 +50,15 @@ export interface BriefResult {
  */
 export async function generateMarketBrief(snapshotDate: string, opts: { force?: boolean; client?: SupabaseClient } = {}): Promise<BriefResult> {
   const db = opts.client ?? createAdminClient();
+  const foreignFlow = await getForeignFlowSnapshot(db);
 
   if (!opts.force) {
-    const { data: existing } = await db.from("market_ai_briefs").select("content").eq("snapshot_date", snapshotDate).maybeSingle();
-    if (existing?.content) return { generated: false, date: snapshotDate, content: existing.content };
+    const { data: existing } = await db.from("market_ai_briefs").select("content, structured_output").eq("snapshot_date", snapshotDate).maybeSingle();
+    const structured = (existing?.structured_output ?? {}) as Record<string, unknown>;
+    const briefFlowDate = typeof structured.foreignFlowDate === "string" ? structured.foreignFlowDate : null;
+    if (existing?.content && (!foreignFlow || briefFlowDate === foreignFlow.day.date)) {
+      return { generated: false, date: snapshotDate, content: existing.content };
+    }
   }
 
   if (!aiAvailable()) return { generated: false, date: snapshotDate, error: "AI provider is not configured." };
@@ -79,6 +85,8 @@ export async function generateMarketBrief(snapshotDate: string, opts: { force?: 
   const losersTxt = (losers ?? []).map((g) => `${g.ticker} ${fmtPct(g.change_percent)}`).join(", ") || "none";
   const resultCount = (events ?? []).filter((e) => e.event_type === "result").length;
   const divCount = (events ?? []).filter((e) => e.event_type === "dividend").length;
+  const flowBuckets = foreignFlow?.buckets.map((b) => `${b.label} ${b.net >= 0 ? "+" : ""}${b.net.toFixed(2)}`).join(", ") ?? null;
+  const flowSectors = foreignFlow?.sectors.slice(0, 6).map((x) => `${x.sector} ${x.net != null && x.net >= 0 ? "+" : ""}${x.net?.toFixed(2) ?? "n/a"}`).join(", ") ?? null;
 
   const facts = [
     `Date: ${snapshotDate}`,
@@ -90,6 +98,9 @@ export async function generateMarketBrief(snapshotDate: string, opts: { force?: 
     `Top gainers: ${gainersTxt}`,
     `Top losers: ${losersTxt}`,
     `Most active: ${s.most_active_ticker ?? "n/a"}`,
+    foreignFlow
+      ? `Latest FIPI/LIPI (${foreignFlow.day.date}, source ${foreignFlow.day.sourceProvider}): FIPI net ${foreignFlow.day.fipiNet != null && foreignFlow.day.fipiNet >= 0 ? "+" : ""}${foreignFlow.day.fipiNet?.toFixed(2) ?? "n/a"} ${foreignFlow.day.currency} mn; ${foreignFlow.stanceLabel}; ${foreignFlow.series.length}-day cumulative ${foreignFlow.cumulativeNet != null && foreignFlow.cumulativeNet >= 0 ? "+" : ""}${foreignFlow.cumulativeNet?.toFixed(2) ?? "n/a"} ${foreignFlow.day.currency} mn; by bucket ${flowBuckets ?? "n/a"}; top sectors ${flowSectors ?? "n/a"}`
+      : "Latest FIPI/LIPI: unavailable or stale; do not infer current foreign-flow direction",
     `Official PSX filings today: ${resultCount} results, ${divCount} dividend-related, ${(events ?? []).length} total`,
   ].join("\n");
 
@@ -109,7 +120,14 @@ export async function generateMarketBrief(snapshotDate: string, opts: { force?: 
       snapshot_date: snapshotDate,
       title: `PSX Market Brief — ${snapshotDate}`,
       content,
-      structured_output: { index: s.index_name, breadth: { adv: s.total_advancers, dec: s.total_decliners }, topSectors, lagSectors },
+      structured_output: {
+        index: s.index_name,
+        breadth: { adv: s.total_advancers, dec: s.total_decliners },
+        topSectors,
+        lagSectors,
+        foreignFlowDate: foreignFlow?.day.date ?? null,
+        foreignFlowNet: foreignFlow?.day.fipiNet ?? null,
+      },
       model,
     },
     { onConflict: "snapshot_date" }

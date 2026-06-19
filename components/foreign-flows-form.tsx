@@ -9,10 +9,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Loader2, Globe2 } from "lucide-react";
 
 /**
- * Manual FIPI / LIPI entry. The owner pastes the day's NCCPL numbers — a
- * headline net (and optional gross buy/sell) plus per-sector lines — and the
- * server parses the forgiving "Sector, net" format. This is the reliable path
- * when no auto-fetch source (NCCPL_FLOWS_URL) is configured.
+ * Manual FIPI / LIPI entry. Auto-fetch handles the normal daily flow; this
+ * remains the override/backfill path when a source is late or needs correction.
  */
 export function ForeignFlowsForm({ lastDate, autoConfigured }: { lastDate: string | null; autoConfigured: boolean }) {
   const router = useRouter();
@@ -55,7 +53,7 @@ export function ForeignFlowsForm({ lastDate, autoConfigured }: { lastDate: strin
       <p className="rounded-md border border-sky-200 bg-sky-50 px-3 py-2 text-xs text-sky-800">
         <Globe2 className="mr-1 inline h-3.5 w-3.5" />
         {autoConfigured
-          ? "Auto-fetch is enabled (NCCPL_FLOWS_URL). You can still override or backfill any day here."
+          ? "Auto-fetch is enabled. You can still override or backfill any day here."
           : "Paste the day's NCCPL FIPI/LIPI numbers below. Figures are net USD millions; positive = net foreign buying."}
         {lastDate ? ` Latest on record: ${lastDate}.` : ""}
       </p>

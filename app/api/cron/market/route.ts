@@ -40,10 +40,10 @@ export async function GET(request: Request) {
     report.events = ev;
   }
   if (task === "all" || task === "flows") {
-    // Foreign/local flows — best-effort, only acts when NCCPL_FLOWS_URL is set.
+    // Foreign/local flows — best-effort; SCSTrade by default, custom JSON when configured.
     if (foreignFlowsAutoConfigured()) {
       const flows = await fetchAndIngestForeignFlows(createAdminClient());
-      report.flows = flows ?? { ingested: false, note: "source unreachable; manual upload stands" };
+      report.flows = flows ?? { ingested: false, note: "source unreachable; manual entry remains the fallback" };
     } else {
       report.flows = { configured: false };
     }

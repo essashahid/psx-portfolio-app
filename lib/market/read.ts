@@ -129,12 +129,13 @@ export async function getMarketDashboard(supabase: SupabaseClient, userId: strin
     return { snapshot: null, sectors: [], movers: {}, heatmap: [], events: [], brief: null, ownedTickers, watchTickers, owned: [], updatedLabel: null };
   }
 
-  const [{ data: sectors }, { data: movers }, { data: items }, { data: events }, { data: brief }] = await Promise.all([
+  const [{ data: sectors }, { data: movers }, { data: items }, { data: events }, { data: brief }, { data: latestFlow }] = await Promise.all([
     supabase.from("sector_snapshots").select("*").eq("snapshot_id", snapshot.id).order("average_return", { ascending: false }),
     supabase.from("market_movers").select("category, ticker, company_name, sector, price, change_percent, volume, value_traded, rank").eq("snapshot_id", snapshot.id).order("rank"),
     supabase.from("market_snapshot_items").select("ticker, company_name, sector, price, change_percent, volume, value_traded, market_cap, near_high, near_low, unusual_volume").eq("snapshot_id", snapshot.id).order("value_traded", { ascending: false, nullsFirst: false }).limit(HEATMAP_LIMIT),
     supabase.from("market_events").select("ticker, company_name, sector, event_type, title, source_url, source_quality, event_date, event_time").eq("event_date", snapshot.snapshot_date).order("event_time", { ascending: false }),
-    supabase.from("market_ai_briefs").select("title, content, created_at, model").eq("snapshot_date", snapshot.snapshot_date).maybeSingle(),
+    supabase.from("market_ai_briefs").select("title, content, created_at, model, structured_output").eq("snapshot_date", snapshot.snapshot_date).maybeSingle(),
+    supabase.from("foreign_flow_days").select("flow_date").eq("market", "PSX").order("flow_date", { ascending: false }).limit(1).maybeSingle(),
   ]);
 
   const moversByCat: Record<string, MoverRow[]> = {};
@@ -171,10 +172,27 @@ export async function getMarketDashboard(supabase: SupabaseClient, userId: strin
     movers: moversByCat,
     heatmap: (items ?? []) as ItemRow[],
     events: (events ?? []) as EventRow[],
-    brief: brief ? { title: brief.title, content: brief.content, created_at: brief.created_at, model: brief.model } : null,
+    brief: brief && briefMatchesLatestFlow(brief.structured_output, latestFlow?.flow_date ? String(latestFlow.flow_date) : null)
+      ? { title: brief.title, content: brief.content, created_at: brief.created_at, model: brief.model }
+      : null,
     ownedTickers,
     watchTickers,
     owned: ownedRows,
     updatedLabel,
   };
+}
+
+function briefMatchesLatestFlow(structured: unknown, latestFlowDate: string | null): boolean {
+  if (!latestFlowDate) return true;
+  if (isStaleFlowDate(latestFlowDate)) return false;
+  if (!structured || typeof structured !== "object") return false;
+  return (structured as Record<string, unknown>).foreignFlowDate === latestFlowDate;
+}
+
+function isStaleFlowDate(flowDate: string): boolean {
+  const today = new Date().toLocaleDateString("en-CA", { timeZone: "Asia/Karachi" });
+  const a = Date.parse(`${flowDate}T00:00:00Z`);
+  const b = Date.parse(`${today}T00:00:00Z`);
+  if (!Number.isFinite(a) || !Number.isFinite(b)) return true;
+  return Math.floor((b - a) / 86400_000) > 7;
 }
