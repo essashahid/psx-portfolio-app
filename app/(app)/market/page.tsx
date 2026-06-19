@@ -1,17 +1,25 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { getUser } from "@/lib/supabase/server";
-import { getMarketDashboard, type EventRow, type OwnedPerf } from "@/lib/market/read";
-import { getForeignFlowSnapshot } from "@/lib/market/foreign-flows";
+import { getDataFreshness, getMarketDashboard, type EventRow, type FreshnessItem, type OwnedPerf } from "@/lib/market/read";
+import {
+  getForeignFlowHistory,
+  getForeignFlowSnapshot,
+  getPortfolioFlowExposure,
+  type ForeignFlowHistory,
+  type PortfolioFlowExposure,
+} from "@/lib/market/foreign-flows";
 import { ForeignFlows } from "@/components/market/foreign-flows";
 import { fmtPct, fmtCompact, fmtInt, tone } from "@/lib/market/format";
 import { PageHeader } from "@/components/page-header";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import { EmptyState } from "@/components/empty-state";
 import { ActionButton } from "@/components/action-button";
 import { SectorBarsLazy, MarketHeatmapLazy, MoversBoardLazy } from "@/components/market/lazy";
+import { Sparkline } from "@/components/market/sparkline";
 import { cn } from "@/lib/utils";
-import { Activity, TrendingUp, TrendingDown, Gauge, Sparkles, FileText, Newspaper, RefreshCw, ArrowUpRight, ArrowDownRight, Globe2 } from "lucide-react";
+import { Activity, TrendingUp, TrendingDown, Gauge, Sparkles, FileText, Newspaper, RefreshCw, ArrowUpRight, ArrowDownRight, Globe2, DatabaseZap, WalletCards } from "lucide-react";
 
 export const dynamic = "force-dynamic";
 
@@ -27,8 +35,13 @@ export default async function MarketPulsePage() {
   const user = await getUser();
   if (!user) return null;
   const supabase = await createClient();
-  const foreignFlow = await getForeignFlowSnapshot(supabase);
-  const d = await getMarketDashboard(supabase, user.id);
+  const foreignFlow = await getForeignFlowSnapshot(supabase, 90);
+  const [d, flowHistory, flowExposure, freshness] = await Promise.all([
+    getMarketDashboard(supabase, user.id),
+    getForeignFlowHistory(supabase, 90),
+    getPortfolioFlowExposure(supabase, user.id, foreignFlow),
+    getDataFreshness(supabase, user.id),
+  ]);
 
   const refresh = (
     <ActionButton
@@ -141,17 +154,25 @@ export default async function MarketPulsePage() {
         <MiniCard icon={FileText} label="Official filings today" value={fmtInt(todaysEvents.length)} />
       </div>
 
+      <DataFreshnessCenter items={freshness} />
+
       {/* ── Foreign flows (FIPI / LIPI) ────────────────────────────────── */}
       {foreignFlow ? (
-        <Card className="rise">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2"><Globe2 className="h-4 w-4 text-sky-600" /> Foreign &amp; local flows</CardTitle>
-            <CardDescription>The PSX &ldquo;smart money&rdquo; read — net foreign (FIPI) and local (LIPI) investment, by sector and investor type.</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <ForeignFlows snapshot={foreignFlow} />
-          </CardContent>
-        </Card>
+        <div className="grid gap-3 xl:grid-cols-[1.15fr_0.85fr]">
+          <Card className="rise">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2"><Globe2 className="h-4 w-4 text-sky-600" /> Foreign &amp; local flows</CardTitle>
+              <CardDescription>The PSX &ldquo;smart money&rdquo; read — net foreign (FIPI) and local (LIPI) investment, by sector and investor type.</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <ForeignFlows snapshot={foreignFlow} />
+            </CardContent>
+          </Card>
+          <div className="grid gap-3">
+            <ForeignFlowHistoryPanel history={flowHistory} unit={`${foreignFlow.day.currency} mn`} />
+            <PortfolioFlowOverlay exposure={flowExposure} unit={`${foreignFlow.day.currency} mn`} />
+          </div>
+        </div>
       ) : (
         <Card className="rise border-dashed">
           <CardContent className="flex flex-col items-start gap-1 p-5">
@@ -289,6 +310,132 @@ function MiniCard({ icon: Icon, label, value, tone: t }: { icon: typeof Activity
           <p className="text-[10px] uppercase tracking-wide text-muted-foreground">{label}</p>
           <p className="truncate text-sm font-semibold">{value}</p>
         </div>
+      </CardContent>
+    </Card>
+  );
+}
+
+function fmtFlow(v: number | null | undefined, digits = 2): string {
+  if (v == null || !Number.isFinite(v)) return "—";
+  return `${v > 0 ? "+" : ""}${v.toFixed(digits)}`;
+}
+
+function DataFreshnessCenter({ items }: { items: FreshnessItem[] }) {
+  return (
+    <Card className="rise">
+      <CardHeader className="pb-2">
+        <CardTitle className="flex items-center gap-2"><DatabaseZap className="h-4 w-4 text-blue-600" /> Data freshness</CardTitle>
+        <CardDescription>Latest stored dates across market data, flows, prices, news, dividends, and generated briefings.</CardDescription>
+      </CardHeader>
+      <CardContent>
+        <div className="grid gap-2 md:grid-cols-2 xl:grid-cols-3">
+          {items.map((item) => (
+            <div key={item.key} className="flex items-center justify-between gap-2 rounded-md border border-border bg-card p-2.5">
+              <div className="min-w-0">
+                <div className="flex items-center gap-1.5">
+                  <p className="truncate text-xs font-semibold">{item.label}</p>
+                  <Badge variant={freshnessVariant(item.status)}>{item.status}</Badge>
+                </div>
+                <p className="mt-0.5 truncate text-[11px] text-muted-foreground">
+                  {item.date ?? "No data"}{item.ageDays != null ? ` · ${item.ageDays}d old` : ""}{item.detail ? ` · ${item.detail}` : ""}
+                </p>
+              </div>
+              {item.refresh && (
+                <ActionButton
+                  endpoint={item.refresh.endpoint}
+                  body={item.refresh.body}
+                  label={<><RefreshCw className="h-3 w-3" /> {item.refresh.label}</>}
+                  variant="ghost"
+                  size="sm"
+                  className="h-7 shrink-0 px-2 text-[10px]"
+                />
+              )}
+            </div>
+          ))}
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
+function freshnessVariant(status: FreshnessItem["status"]): "green" | "amber" | "red" | "secondary" {
+  if (status === "fresh") return "green";
+  if (status === "watch") return "amber";
+  if (status === "stale") return "red";
+  return "secondary";
+}
+
+function ForeignFlowHistoryPanel({ history, unit }: { history: ForeignFlowHistory; unit: string }) {
+  const spark = history.series.map((s) => s.fipiNet ?? 0);
+  return (
+    <Card className="rise">
+      <CardHeader className="pb-2">
+        <CardTitle className="flex items-center gap-2"><Activity className="h-4 w-4 text-sky-600" /> Flow history</CardTitle>
+        <CardDescription>Recent FIPI tide and sector accumulation from stored history.</CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-3">
+        <div className="flex items-center justify-between gap-3 rounded-md border border-border bg-muted/30 p-2">
+          <div>
+            <p className="text-[10px] uppercase tracking-wide text-muted-foreground">{history.series.length} stored day{history.series.length === 1 ? "" : "s"}</p>
+            <p className="text-xs font-semibold">FIPI net trend</p>
+          </div>
+          <Sparkline data={spark} width={132} height={36} />
+        </div>
+        <div className="grid grid-cols-3 gap-2">
+          {history.periods.map((p) => {
+            const t = tone(p.net);
+            return (
+              <div key={p.days} className="rounded-md border border-border p-2">
+                <p className="text-[10px] uppercase tracking-wide text-muted-foreground">{p.label}</p>
+                <p className={cn("text-sm font-semibold tabular-nums", t === "positive" ? "text-emerald-600" : t === "negative" ? "text-red-600" : "text-foreground")}>{fmtFlow(p.net)}</p>
+                <p className="text-[9px] text-muted-foreground">{p.points} day{p.points === 1 ? "" : "s"} · {p.positiveDays}↑/{p.negativeDays}↓</p>
+              </div>
+            );
+          })}
+        </div>
+        <div className="space-y-1.5 border-t border-border pt-2">
+          <p className="text-[11px] font-medium text-muted-foreground">90D sector flow leaders ({unit})</p>
+          {history.sectorTotals.slice(0, 5).map((s) => (
+            <div key={s.sector} className="flex items-center justify-between gap-2 text-[11px]">
+              <span className="truncate">{s.sector}</span>
+              <span className={cn("shrink-0 font-semibold tabular-nums", s.net > 0 ? "text-emerald-600" : s.net < 0 ? "text-red-600" : "text-muted-foreground")}>{fmtFlow(s.net)}</span>
+            </div>
+          ))}
+          {history.sectorTotals.length === 0 && <p className="text-[11px] text-muted-foreground">No sector history stored yet.</p>}
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
+function PortfolioFlowOverlay({ exposure, unit }: { exposure: PortfolioFlowExposure[]; unit: string }) {
+  return (
+    <Card className="rise">
+      <CardHeader className="pb-2">
+        <CardTitle className="flex items-center gap-2"><WalletCards className="h-4 w-4 text-emerald-600" /> Flow vs portfolio</CardTitle>
+        <CardDescription>Where latest foreign buying/selling overlaps your owned sectors.</CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-2">
+        {exposure.length === 0 ? (
+          <p className="py-4 text-center text-xs text-muted-foreground">No portfolio sector overlap with latest foreign-flow data.</p>
+        ) : (
+          exposure.slice(0, 7).map((row) => {
+            const t = tone(row.flowNet);
+            return (
+              <div key={`${row.sector}-${row.tickers.join("-")}`} className="rounded-md border border-border p-2">
+                <div className="flex items-center justify-between gap-2">
+                  <p className="truncate text-xs font-semibold" title={row.sector}>{row.sector}</p>
+                  <span className={cn("shrink-0 text-xs font-semibold tabular-nums", t === "positive" ? "text-emerald-600" : t === "negative" ? "text-red-600" : "text-muted-foreground")}>
+                    {fmtFlow(row.flowNet)} {unit}
+                  </span>
+                </div>
+                <p className="mt-0.5 truncate text-[10px] text-muted-foreground">
+                  {row.tickers.join(", ")} · {row.portfolioWeight.toFixed(1)}% of portfolio · {row.matchType === "bucket" ? "bucket match" : "sector match"}
+                </p>
+              </div>
+            );
+          })
+        )}
       </CardContent>
     </Card>
   );

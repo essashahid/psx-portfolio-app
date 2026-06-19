@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { requireUser, errorResponse } from "@/lib/api-helpers";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { fetchAndIngestForeignFlows, foreignFlowsAutoConfigured } from "@/lib/market/foreign-flows-ingest";
 
@@ -20,14 +21,32 @@ export async function GET(request: Request) {
   if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
     return NextResponse.json({ error: "SUPABASE_SERVICE_ROLE_KEY missing." }, { status: 503 });
   }
+  return runAutoRefresh();
+}
+
+export async function POST() {
+  const { error } = await requireUser();
+  if (error) return error;
+  if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
+    return NextResponse.json({ error: "SUPABASE_SERVICE_ROLE_KEY missing." }, { status: 503 });
+  }
+
+  try {
+    return await runAutoRefresh();
+  } catch (err) {
+    return errorResponse(err);
+  }
+}
+
+async function runAutoRefresh() {
   if (!foreignFlowsAutoConfigured()) {
-    return NextResponse.json({ ok: true, configured: false, note: "Foreign flow auto-fetch is disabled; flows are managed manually." });
+    return NextResponse.json({ ok: true, configured: false, message: "Foreign flow auto-fetch is disabled; flows are managed manually." });
   }
 
   const admin = createAdminClient();
   const result = await fetchAndIngestForeignFlows(admin);
   if (!result) {
-    return NextResponse.json({ ok: false, configured: true, note: "Source unreachable or unparseable; manual entry remains the fallback." });
+    return NextResponse.json({ ok: false, configured: true, message: "Flow source unreachable or unparseable; manual entry remains the fallback." });
   }
-  return NextResponse.json({ ok: true, configured: true, ...result });
+  return NextResponse.json({ ok: true, configured: true, ...result, message: `Foreign flows refreshed for ${result.date}.` });
 }

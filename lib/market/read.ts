@@ -104,6 +104,16 @@ export interface MarketDashboard {
   updatedLabel: string | null;
 }
 
+export interface FreshnessItem {
+  key: "market" | "prices" | "foreign_flows" | "news" | "dividends" | "brief";
+  label: string;
+  date: string | null;
+  detail: string | null;
+  ageDays: number | null;
+  status: "fresh" | "watch" | "stale" | "missing";
+  refresh: { endpoint: string; body?: Record<string, unknown>; label: string } | null;
+}
+
 const HEATMAP_LIMIT = 150;
 
 export async function getMarketDashboard(supabase: SupabaseClient, userId: string): Promise<MarketDashboard> {
@@ -182,6 +192,116 @@ export async function getMarketDashboard(supabase: SupabaseClient, userId: strin
   };
 }
 
+export async function getDataFreshness(supabase: SupabaseClient, userId: string): Promise<FreshnessItem[]> {
+  const [
+    { data: market },
+    { data: price },
+    { data: flow },
+    { data: news },
+    { data: dividend },
+    { data: brief },
+  ] = await Promise.all([
+    supabase
+      .from("market_snapshots")
+      .select("snapshot_date, snapshot_time, source_provider")
+      .eq("market", "PSX")
+      .order("snapshot_date", { ascending: false })
+      .limit(1)
+      .maybeSingle(),
+    supabase
+      .from("prices")
+      .select("price_date, source, created_at")
+      .eq("user_id", userId)
+      .order("price_date", { ascending: false })
+      .limit(1)
+      .maybeSingle(),
+    supabase
+      .from("foreign_flow_days")
+      .select("flow_date, source_provider, updated_at")
+      .eq("market", "PSX")
+      .order("flow_date", { ascending: false })
+      .limit(1)
+      .maybeSingle(),
+    supabase
+      .from("news_articles")
+      .select("created_at, source")
+      .eq("user_id", userId)
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle(),
+    supabase
+      .from("dividends")
+      .select("created_at, source")
+      .eq("user_id", userId)
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle(),
+    supabase
+      .from("market_ai_briefs")
+      .select("snapshot_date, created_at, model")
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle(),
+  ]);
+
+  return [
+    freshnessItem({
+      key: "market",
+      label: "Market snapshot",
+      date: market?.snapshot_date ? String(market.snapshot_date) : null,
+      detail: market?.source_provider ? String(market.source_provider) : null,
+      freshDays: 1,
+      staleDays: 3,
+      refresh: { endpoint: "/api/market/refresh", body: { section: "all" }, label: "Refresh market" },
+    }),
+    freshnessItem({
+      key: "foreign_flows",
+      label: "Foreign flows",
+      date: flow?.flow_date ? String(flow.flow_date) : null,
+      detail: flow?.source_provider ? String(flow.source_provider) : null,
+      freshDays: 2,
+      staleDays: 7,
+      refresh: { endpoint: "/api/flows/refresh", label: "Refresh flows" },
+    }),
+    freshnessItem({
+      key: "prices",
+      label: "Portfolio prices",
+      date: price?.price_date ? String(price.price_date) : null,
+      detail: price?.source ? String(price.source) : null,
+      freshDays: 2,
+      staleDays: 7,
+      refresh: { endpoint: "/api/prices", body: { refresh: true }, label: "Refresh prices" },
+    }),
+    freshnessItem({
+      key: "news",
+      label: "Holding news",
+      date: news?.created_at ? String(news.created_at).slice(0, 10) : null,
+      detail: news?.source ? String(news.source) : null,
+      freshDays: 3,
+      staleDays: 10,
+      refresh: { endpoint: "/api/news/refresh", label: "Refresh news" },
+    }),
+    freshnessItem({
+      key: "dividends",
+      label: "Dividends",
+      date: dividend?.created_at ? String(dividend.created_at).slice(0, 10) : null,
+      detail: dividend?.source ? String(dividend.source) : null,
+      freshDays: 7,
+      staleDays: 30,
+      refresh: { endpoint: "/api/dividends/daily", label: "Daily update" },
+    }),
+    freshnessItem({
+      key: "brief",
+      label: "AI market brief",
+      date: brief?.snapshot_date ? String(brief.snapshot_date) : null,
+      detail: brief?.model ? String(brief.model) : null,
+      freshDays: 1,
+      staleDays: 3,
+      refresh: { endpoint: "/api/market/refresh", body: { section: "brief" }, label: "Regenerate" },
+    }),
+  ];
+}
+
 function briefMatchesLatestFlow(structured: unknown, latestFlowDate: string | null): boolean {
   if (!latestFlowDate) return true;
   if (isStaleFlowDate(latestFlowDate)) return false;
@@ -195,4 +315,34 @@ function isStaleFlowDate(flowDate: string): boolean {
   const b = Date.parse(`${today}T00:00:00Z`);
   if (!Number.isFinite(a) || !Number.isFinite(b)) return true;
   return Math.floor((b - a) / 86400_000) > 7;
+}
+
+function freshnessItem(input: {
+  key: FreshnessItem["key"];
+  label: string;
+  date: string | null;
+  detail: string | null;
+  freshDays: number;
+  staleDays: number;
+  refresh: FreshnessItem["refresh"];
+}): FreshnessItem {
+  const ageDays = input.date ? ageInDays(input.date) : null;
+  const status: FreshnessItem["status"] =
+    ageDays == null
+      ? "missing"
+      : ageDays <= input.freshDays
+        ? "fresh"
+        : ageDays <= input.staleDays
+          ? "watch"
+          : "stale";
+  return { key: input.key, label: input.label, date: input.date, detail: input.detail, ageDays, status, refresh: input.refresh };
+}
+
+function ageInDays(date: string): number | null {
+  const day = date.slice(0, 10);
+  const today = new Date().toLocaleDateString("en-CA", { timeZone: "Asia/Karachi" });
+  const a = Date.parse(`${day}T00:00:00Z`);
+  const b = Date.parse(`${today}T00:00:00Z`);
+  if (!Number.isFinite(a) || !Number.isFinite(b)) return null;
+  return Math.max(0, Math.floor((b - a) / 86400_000));
 }

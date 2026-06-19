@@ -64,6 +64,40 @@ export interface ForeignFlowSnapshot {
   stanceLabel: string;
 }
 
+export interface ForeignFlowPeriod {
+  days: number;
+  label: string;
+  points: number;
+  net: number | null;
+  average: number | null;
+  positiveDays: number;
+  negativeDays: number;
+}
+
+export interface ForeignFlowSectorHistory {
+  sector: string;
+  bucket: SectorBucket;
+  net: number;
+  days: number;
+}
+
+export interface ForeignFlowHistory {
+  days: number;
+  series: { date: string; fipiNet: number | null }[];
+  periods: ForeignFlowPeriod[];
+  sectorTotals: ForeignFlowSectorHistory[];
+}
+
+export interface PortfolioFlowExposure {
+  sector: string;
+  bucket: SectorBucket;
+  flowNet: number | null;
+  exposureValue: number;
+  portfolioWeight: number;
+  tickers: string[];
+  matchType: "sector" | "bucket";
+}
+
 const num = (v: unknown): number | null => (v == null ? null : Number(v));
 const DEFAULT_MAX_CURRENT_AGE_DAYS = 7;
 const REFRESH_THROTTLE_MS = 5 * 60_000;
@@ -206,6 +240,103 @@ export async function getForeignFlowSnapshot(
   return { day, sectors, buckets: bucketFlows(sectors), participants, series, cumulativeNet, stance, stanceLabel };
 }
 
+export async function getForeignFlowHistory(
+  supabase: SupabaseClient,
+  days = 90
+): Promise<ForeignFlowHistory> {
+  const windowDays = Math.max(1, Math.min(365, days));
+  const since = new Date(Date.now() - windowDays * 86400_000).toISOString().slice(0, 10);
+  const [{ data: dayRows }, { data: sectorRows }] = await Promise.all([
+    supabase
+      .from("foreign_flow_days")
+      .select("flow_date, fipi_net")
+      .eq("market", "PSX")
+      .gte("flow_date", since)
+      .order("flow_date", { ascending: true }),
+    supabase
+      .from("foreign_flow_sectors")
+      .select("flow_date, sector, net")
+      .eq("market", "PSX")
+      .gte("flow_date", since),
+  ]);
+
+  const series = (dayRows ?? []).map((r) => ({ date: String(r.flow_date), fipiNet: num(r.fipi_net) }));
+  const periods = [7, 30, 90].filter((d) => d <= windowDays).map((d) => summarizePeriod(series, d));
+
+  const sectorAgg = new Map<string, { sector: string; bucket: SectorBucket; net: number; days: Set<string> }>();
+  for (const row of sectorRows ?? []) {
+    const sector = String(row.sector);
+    const key = normalizeName(sector);
+    const net = num(row.net);
+    if (net == null) continue;
+    const current = sectorAgg.get(key) ?? { sector, bucket: bucketForSector(sector), net: 0, days: new Set<string>() };
+    current.net += net;
+    current.days.add(String(row.flow_date));
+    sectorAgg.set(key, current);
+  }
+  const sectorTotals = [...sectorAgg.values()]
+    .map((s) => ({ sector: s.sector, bucket: s.bucket, net: s.net, days: s.days.size }))
+    .sort((a, b) => Math.abs(b.net) - Math.abs(a.net));
+
+  return { days: windowDays, series, periods, sectorTotals };
+}
+
+export async function getPortfolioFlowExposure(
+  supabase: SupabaseClient,
+  userId: string,
+  snapshot: ForeignFlowSnapshot | null
+): Promise<PortfolioFlowExposure[]> {
+  if (!snapshot) return [];
+  const { data: holdings } = await supabase
+    .from("holdings")
+    .select("ticker, sector, quantity, avg_cost, total_cost")
+    .eq("user_id", userId)
+    .gt("quantity", 0);
+  if (!holdings?.length) return [];
+
+  const tickers = holdings.map((h) => String(h.ticker).toUpperCase());
+  const { data: quotes } = await supabase
+    .from("market_quotes")
+    .select("ticker, price")
+    .in("ticker", tickers);
+  const priceByTicker = new Map((quotes ?? []).map((q) => [String(q.ticker).toUpperCase(), num(q.price)]));
+
+  const flowBySector = new Map(snapshot.sectors.map((s) => [normalizeName(s.sector), s]));
+  const flowByBucket = new Map<SectorBucket, number>();
+  for (const b of snapshot.buckets) flowByBucket.set(b.bucket, b.net);
+
+  const totalExposure = holdings.reduce((sum, h) => sum + holdingValue(h, priceByTicker.get(String(h.ticker).toUpperCase()) ?? null), 0);
+  if (totalExposure <= 0) return [];
+
+  const grouped = new Map<string, PortfolioFlowExposure>();
+  for (const h of holdings) {
+    const sector = String(h.sector ?? "Uncategorized");
+    const bucket = bucketForSector(sector);
+    const exact = flowBySector.get(normalizeName(sector));
+    const matchType: PortfolioFlowExposure["matchType"] = exact ? "sector" : "bucket";
+    const flowNet = exact?.net ?? flowByBucket.get(bucket) ?? null;
+    const key = exact ? `sector:${normalizeName(exact.sector)}` : `bucket:${bucket}:${normalizeName(sector)}`;
+    const value = holdingValue(h, priceByTicker.get(String(h.ticker).toUpperCase()) ?? null);
+    const current = grouped.get(key) ?? {
+      sector: exact?.sector ?? sector,
+      bucket,
+      flowNet,
+      exposureValue: 0,
+      portfolioWeight: 0,
+      tickers: [],
+      matchType,
+    };
+    current.exposureValue += value;
+    current.portfolioWeight = (current.exposureValue / totalExposure) * 100;
+    current.tickers.push(String(h.ticker).toUpperCase());
+    grouped.set(key, current);
+  }
+
+  return [...grouped.values()]
+    .filter((x) => x.flowNet != null)
+    .sort((a, b) => Math.abs(b.exposureValue) - Math.abs(a.exposureValue));
+}
+
 /** Map of regime bucket → net foreign flow, for overlaying on the Bulls & Bears rotation read. */
 export async function getForeignBucketMap(supabase: SupabaseClient): Promise<Map<SectorBucket, number> | null> {
   const snap = await getForeignFlowSnapshot(supabase, 5);
@@ -258,4 +389,34 @@ export async function getForeignFlowCard(
     top_sold: snap.sectors.filter((s) => (s.net ?? 0) < 0).slice(-5).reverse().map((s) => ({ sector: s.sector, net: s.net })),
     local_participants: snap.participants.slice(0, 6).map((p) => ({ category: p.label, net: p.net })),
   };
+}
+
+function summarizePeriod(series: { date: string; fipiNet: number | null }[], days: number): ForeignFlowPeriod {
+  const cutoff = new Date(Date.now() - days * 86400_000).toISOString().slice(0, 10);
+  const rows = series.filter((s) => s.date >= cutoff && s.fipiNet != null);
+  const net = rows.length ? rows.reduce((sum, row) => sum + (row.fipiNet ?? 0), 0) : null;
+  return {
+    days,
+    label: `${days}D`,
+    points: rows.length,
+    net,
+    average: net != null && rows.length ? net / rows.length : null,
+    positiveDays: rows.filter((r) => (r.fipiNet ?? 0) > 0).length,
+    negativeDays: rows.filter((r) => (r.fipiNet ?? 0) < 0).length,
+  };
+}
+
+function normalizeName(value: string | null | undefined): string {
+  return (value ?? "").toLowerCase().replace(/&/g, "and").replace(/\bcompanies\b/g, "").replace(/\s+/g, " ").trim();
+}
+
+function holdingValue(
+  holding: { ticker: unknown; quantity: unknown; avg_cost: unknown; total_cost: unknown },
+  price: number | null
+): number {
+  const quantity = Number(holding.quantity ?? 0);
+  if (price != null && quantity > 0) return price * quantity;
+  const totalCost = Number(holding.total_cost ?? 0);
+  if (totalCost > 0) return totalCost;
+  return quantity * Number(holding.avg_cost ?? 0);
 }
