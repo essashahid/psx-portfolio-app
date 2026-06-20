@@ -92,14 +92,11 @@ export const CHAT_MODELS: ChatModelDef[] = [
     provider: "deepseek",
     group: "DeepSeek",
     label: "Reasoner (R1)",
-    hint: "Deep reasoning; auto web search for \"why\" questions (no other live lookups)",
+    hint: "Deep reasoning with live portfolio, news, and thesis lookups",
     apiModel: "deepseek-reasoner",
     thinking: true,
     maxTokens: 3200,
-    // R1 does not support function calling (same reason it rejects
-    // temperature) — handing it tools makes it leak the call as raw text.
-    // It answers from the pre-loaded brief instead.
-    supportsTools: false,
+    supportsTools: true,
     supportsTemperature: false,
   },
 ];

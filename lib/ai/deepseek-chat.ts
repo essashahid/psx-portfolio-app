@@ -50,7 +50,13 @@ interface ToolCallAccum {
 
 type DSMessage =
   | { role: "system" | "user"; content: string }
-  | { role: "assistant"; content: string; tool_calls?: ToolCallAccum[] }
+  | {
+      role: "assistant";
+      content: string;
+      /** Required by thinking-mode models when continuing after a tool call. */
+      reasoning_content?: string;
+      tool_calls?: ToolCallAccum[];
+    }
   | { role: "tool"; tool_call_id: string; content: string };
 
 export interface DeepSeekChatOptions {
@@ -106,6 +112,7 @@ export async function runDeepSeekChat(opts: DeepSeekChatOptions): Promise<void> 
     }
 
     let content = "";
+    let reasoningContent = "";
     const toolCalls: ToolCallAccum[] = [];
     let finishReason: string | null = null;
 
@@ -142,7 +149,10 @@ export async function runDeepSeekChat(opts: DeepSeekChatOptions): Promise<void> 
         const choice = evt.choices?.[0];
         if (!choice) continue;
         const delta = choice.delta;
-        if (delta?.reasoning_content) opts.onThinking(delta.reasoning_content);
+        if (delta?.reasoning_content) {
+          reasoningContent += delta.reasoning_content;
+          opts.onThinking(delta.reasoning_content);
+        }
         if (delta?.content) {
           content += delta.content;
           opts.onText(delta.content);
@@ -169,7 +179,12 @@ export async function runDeepSeekChat(opts: DeepSeekChatOptions): Promise<void> 
     opts.onReset();
 
     // Execute the tools, append results, and loop.
-    messages.push({ role: "assistant", content, tool_calls: calls });
+    messages.push({
+      role: "assistant",
+      content,
+      ...(opts.def.thinking ? { reasoning_content: reasoningContent } : {}),
+      tool_calls: calls,
+    });
     for (const call of calls) {
       opts.onStatus(`Looking up ${call.function.name.replace(/_/g, " ")}…`);
       let input: Record<string, unknown> = {};
