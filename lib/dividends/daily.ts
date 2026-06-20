@@ -4,6 +4,7 @@ import { generateDividendForecasts } from "@/lib/dividends/forecast";
 import { reconcileAndDedupe } from "@/lib/dividends/dedup";
 import { getMarketDataProvider } from "@/lib/market-data/adapter";
 import { takeSnapshot } from "@/lib/portfolio";
+import { refreshNewsForUser } from "@/lib/news/refresh";
 
 /**
  * The daily proactive update. For one user it:
@@ -31,6 +32,7 @@ export interface DailyUpdateSummary {
   expected_net: number;
   overdue_total: number;
   needs_eligibility: number;
+  news_inserted: number;
   highlights: string[];
   errors: string[];
 }
@@ -142,7 +144,17 @@ export async function runDailyUpdate(
     .filter((r) => newlyOverdueKeys.includes(String(r.dedupe_key)))
     .map((r) => r.ticker);
 
-  // 7. Build human-readable highlights
+  // 7. News refresh
+  let news_inserted = 0;
+  try {
+    const nr = await refreshNewsForUser(supabase, userId);
+    news_inserted = nr.inserted;
+    errors.push(...nr.errors);
+  } catch (e) {
+    errors.push(`news: ${e instanceof Error ? e.message : String(e)}`);
+  }
+
+  // 8. Build human-readable highlights
   const highlights: string[] = [];
   if (events_staged > 0) highlights.push(`${events_staged} new dividend event(s) detected from PSX filings`);
   if (events_upgraded > 0) highlights.push(`${events_upgraded} event(s) updated with values read from announcement PDFs`);
@@ -152,7 +164,8 @@ export async function runDailyUpdate(
   if (newlyOverdueTickers.length > 0) highlights.push(`Now overdue: ${[...new Set(newlyOverdueTickers)].join(", ")}`);
   if (forecasts_generated > 0) highlights.push(`${forecasts_generated} forecast(s) refreshed`);
   if (prices_updated > 0) highlights.push(`${prices_updated} live price(s) refreshed`);
-  if (highlights.length === 0) highlights.push("No new dividend activity since the last run.");
+  if (news_inserted > 0) highlights.push(`${news_inserted} new article(s) added to news feed`);
+  if (highlights.length === 0) highlights.push("No new activity since the last run.");
 
   const summary: DailyUpdateSummary = {
     run_date: runDate,
@@ -168,6 +181,7 @@ export async function runDailyUpdate(
     expected_net,
     overdue_total,
     needs_eligibility,
+    news_inserted,
     highlights,
     errors: errors.slice(0, 10),
   };
