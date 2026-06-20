@@ -2,6 +2,7 @@
 
 import { useRef, useState, useEffect } from "react";
 import ReactMarkdown, { type Components } from "react-markdown";
+import remarkGfm from "remark-gfm";
 import { ChatCards } from "@/components/chat/cards";
 import type { Card } from "@/lib/chat/context";
 import {
@@ -106,6 +107,21 @@ const CHAT_MARKDOWN_COMPONENTS: Components = {
       {children}
     </code>
   ),
+  table: ({ children }) => (
+    <div className="my-4 overflow-x-auto rounded-lg border border-border">
+      <table className="w-full border-collapse text-sm">{children}</table>
+    </div>
+  ),
+  thead: ({ children }) => <thead className="bg-muted/60">{children}</thead>,
+  tbody: ({ children }) => <tbody className="divide-y divide-border">{children}</tbody>,
+  tr: ({ children }) => <tr className="transition-colors hover:bg-muted/30">{children}</tr>,
+  th: ({ children }) => (
+    <th className="border-b border-border px-3 py-2 text-left text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+      {children}
+    </th>
+  ),
+  td: ({ children }) => <td className="px-3 py-2 align-top text-foreground/90 tabular-nums">{children}</td>,
+  del: ({ children }) => <del className="text-muted-foreground">{children}</del>,
 };
 
 export function Chat({
@@ -425,7 +441,7 @@ export function Chat({
                     {m.thinking && <ThinkingPanel text={m.thinking} streaming={busy && i === messages.length - 1 && !m.content} />}
                     {m.content && (
                       <div className="max-w-4xl rounded-lg border border-border bg-card/85 px-3 py-3 text-sm shadow-[var(--shadow-card)] sm:px-5 sm:py-4 sm:text-[15px]">
-                        <ReactMarkdown components={CHAT_MARKDOWN_COMPONENTS}>
+                        <ReactMarkdown remarkPlugins={[remarkGfm]} components={CHAT_MARKDOWN_COMPONENTS}>
                           {formatAssistantContent(m.content)}
                         </ReactMarkdown>
                       </div>

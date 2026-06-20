@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import ReactMarkdown, { type Components } from "react-markdown";
+import remarkGfm from "remark-gfm";
 import { Loader2, Sparkles, X, ChevronDown, ChevronUp } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -33,6 +34,20 @@ const MD: Components = {
     </a>
   ),
   hr: () => <div className="my-4 h-px bg-border" />,
+  table: ({ children }) => (
+    <div className="my-3 overflow-x-auto rounded-lg border border-border">
+      <table className="w-full border-collapse text-sm">{children}</table>
+    </div>
+  ),
+  thead: ({ children }) => <thead className="bg-muted/60">{children}</thead>,
+  tbody: ({ children }) => <tbody className="divide-y divide-border">{children}</tbody>,
+  tr: ({ children }) => <tr>{children}</tr>,
+  th: ({ children }) => (
+    <th className="border-b border-border px-3 py-2 text-left text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+      {children}
+    </th>
+  ),
+  td: ({ children }) => <td className="px-3 py-2 align-top text-foreground/90 tabular-nums">{children}</td>,
 };
 
 interface SavedBrief {
@@ -149,7 +164,7 @@ export function NewsBriefWidget({
 
       {!collapsed && state !== "loading" && content && (
         <div className={cn("px-4 pb-4 pt-3", state === "error" && "text-red-600")}>
-          <ReactMarkdown components={MD}>{content}</ReactMarkdown>
+          <ReactMarkdown remarkPlugins={[remarkGfm]} components={MD}>{content}</ReactMarkdown>
         </div>
       )}
 
