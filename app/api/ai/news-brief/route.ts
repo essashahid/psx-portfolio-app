@@ -105,7 +105,7 @@ Is the macro backdrop for PSX bullish, bearish, or mixed right now? The key driv
       content = msg.content.map((b) => (b.type === "text" ? b.text : "")).join("").trim();
       usedModel = def.apiModel;
     } else {
-      const res = await taskText(system, prompt, 1800);
+      const res = await taskText(system, prompt, 3500);
       content = res.content;
       usedModel = res.model;
     }
