@@ -23,6 +23,7 @@ const TYPE_BADGE: Record<string, string> = {
   weekly: "Weekly",
   risk_review: "Risk",
   news_only: "News",
+  news_brief: "News brief",
   dividend_review: "Dividends",
   thesis_review: "Thesis",
   journal_analysis: "Journal",

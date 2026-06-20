@@ -46,7 +46,7 @@ export default async function NewsPage({ searchParams }: { searchParams: Promise
   const windowId = WINDOWS.find((w) => w.id === sp.window)?.id ?? "week";
   const windowHours = WINDOWS.find((w) => w.id === windowId)?.hours ?? null;
 
-  const [holdingsRes, articlesRes] = await Promise.all([
+  const [holdingsRes, articlesRes, briefRes] = await Promise.all([
     supabase.from("holdings").select("ticker").eq("user_id", user.id).gt("quantity", 0).order("ticker"),
     supabase
       .from("news_articles")
@@ -55,10 +55,21 @@ export default async function NewsPage({ searchParams }: { searchParams: Promise
       .or("ignored.eq.false,saved.eq.true")
       .order("created_at", { ascending: false })
       .limit(180),
+    supabase
+      .from("ai_briefings")
+      .select("id, content, model, created_at")
+      .eq("user_id", user.id)
+      .eq("briefing_type", "news_brief")
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle(),
   ]);
 
   const tickers = [...new Set((holdingsRes.data ?? []).map((h) => h.ticker))];
   const all = (articlesRes.data ?? []) as NewsArticle[];
+  const latestBrief = briefRes.data
+    ? { content: briefRes.data.content as string, model: (briefRes.data.model as string) ?? "", createdAt: briefRes.data.created_at as string }
+    : null;
 
   // One fetch, partitioned in memory — far simpler than six query branches.
   const visible = all.filter((a) => !a.ignored);
@@ -133,7 +144,7 @@ export default async function NewsPage({ searchParams }: { searchParams: Promise
         />
       </div>
 
-      <NewsBriefWidget hasNews={all.length > 0} claudeAvailable={claudeConfigured()} />
+      <NewsBriefWidget hasNews={all.length > 0} claudeAvailable={claudeConfigured()} initialBrief={latestBrief} />
 
       {/* Topic tabs */}
       <div className="sticky top-0 z-10 -mx-1 flex gap-1 overflow-x-auto border-b border-border bg-background/85 px-1 backdrop-blur">

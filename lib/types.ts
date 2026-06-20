@@ -32,6 +32,7 @@ export type BriefingType =
   | "risk_review"
   | "thesis_review"
   | "news_only"
+  | "news_brief"
   | "dividend_review"
   | "journal_analysis"
   | "stock_review";

@@ -110,7 +110,22 @@ Is the macro backdrop for PSX bullish, bearish, or mixed right now? The key driv
       usedModel = res.model;
     }
 
-    return NextResponse.json({ content, model: usedModel });
+    // Persist so the brief survives reloads and shows up in Briefings history.
+    const title = `News brief — ${new Date().toLocaleDateString("en-PK", { day: "numeric", month: "short", year: "numeric" })}`;
+    const { data: saved } = await supabase
+      .from("ai_briefings")
+      .insert({
+        user_id: user.id,
+        briefing_type: "news_brief",
+        title,
+        content,
+        model: usedModel,
+        meta: { articles: articles.length, holdings: holdings.length, picker: model },
+      })
+      .select("id, created_at")
+      .single();
+
+    return NextResponse.json({ content, model: usedModel, id: saved?.id ?? null, created_at: saved?.created_at ?? null });
   } catch (err) {
     return errorResponse(err);
   }

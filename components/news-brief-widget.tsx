@@ -35,10 +35,25 @@ const MD: Components = {
   hr: () => <div className="my-4 h-px bg-border" />,
 };
 
-export function NewsBriefWidget({ hasNews, claudeAvailable = false }: { hasNews: boolean; claudeAvailable?: boolean }) {
-  const [state, setState] = useState<"idle" | "loading" | "done" | "error">("idle");
-  const [content, setContent] = useState("");
-  const [model, setModel] = useState<string>("");
+interface SavedBrief {
+  content: string;
+  model: string;
+  createdAt: string;
+}
+
+export function NewsBriefWidget({
+  hasNews,
+  claudeAvailable = false,
+  initialBrief = null,
+}: {
+  hasNews: boolean;
+  claudeAvailable?: boolean;
+  initialBrief?: SavedBrief | null;
+}) {
+  const [state, setState] = useState<"idle" | "loading" | "done" | "error">(initialBrief ? "done" : "idle");
+  const [content, setContent] = useState(initialBrief?.content ?? "");
+  const [model, setModel] = useState<string>(initialBrief?.model ?? "");
+  const [savedAt, setSavedAt] = useState<string | null>(initialBrief?.createdAt ?? null);
   const [choice, setChoice] = useState<BriefModel>("deepseek");
   const [collapsed, setCollapsed] = useState(false);
 
@@ -57,6 +72,7 @@ export function NewsBriefWidget({ hasNews, claudeAvailable = false }: { hasNews:
       if (!res.ok) throw new Error(data.error ?? "Request failed");
       setContent(data.content);
       setModel(data.model);
+      setSavedAt(data.created_at ?? new Date().toISOString());
       setState("done");
     } catch (err) {
       setContent(err instanceof Error ? err.message : "Something went wrong.");
@@ -96,6 +112,11 @@ export function NewsBriefWidget({ hasNews, claudeAvailable = false }: { hasNews:
           <span className="text-sm font-semibold">Analyst brief</span>
           {model && state === "done" && (
             <span className="rounded bg-muted px-1.5 py-0.5 text-[10px] text-muted-foreground">{model}</span>
+          )}
+          {savedAt && state === "done" && (
+            <span className="text-[10px] text-muted-foreground" title={new Date(savedAt).toLocaleString("en-PK")}>
+              saved {formatAgo(savedAt)}
+            </span>
           )}
         </div>
         <div className="flex items-center gap-1.5">
@@ -137,6 +158,16 @@ export function NewsBriefWidget({ hasNews, claudeAvailable = false }: { hasNews:
       )}
     </div>
   );
+}
+
+function formatAgo(iso: string): string {
+  const diff = Date.now() - new Date(iso).getTime();
+  const mins = Math.round(diff / 60000);
+  if (mins < 1) return "just now";
+  if (mins < 60) return `${mins}m ago`;
+  const hrs = Math.round(mins / 60);
+  if (hrs < 24) return `${hrs}h ago`;
+  return new Date(iso).toLocaleDateString("en-PK", { day: "numeric", month: "short" });
 }
 
 /** Compact model selector. In the header it re-runs on pick; idle it just sets the choice. */
