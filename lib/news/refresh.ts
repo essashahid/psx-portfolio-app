@@ -1,6 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { tavilySearch, holdingQueries, tavilyConfigured } from "@/lib/tavily";
-import { analyzeArticles, analyzeMarketArticles, aiAvailable } from "@/lib/ai/openai";
+import { analyzeArticles, aiAvailable } from "@/lib/ai/openai";
 import { gdeltConfigured, gdeltSearchHoldings } from "@/lib/news/gdelt";
 import { matchesHoldingText } from "@/lib/news/matching";
 import { psxAnnouncementsConfigured, psxAnnouncementSearchHoldings } from "@/lib/news/psx-announcements";
@@ -107,12 +107,13 @@ export async function refreshNewsForUser(
     errors.push(...e);
   }
 
-  // AI analysis
+  // AI analysis — only for holding-specific articles (PSX announcements already
+  // have metadata; market-lane articles are stored as-is and synthesised
+  // on-demand by the Analyst Brief button, keeping cron token cost near zero).
   const portfolioContext = holdings
     .map((h) => `${h.ticker} = ${h.company_name} (${h.sector ?? "sector unknown"})`)
     .join("\n");
   const analysisByUrl = new Map<string, ReturnType<typeof Object.assign>>();
-  const marketAnalysisByUrl = new Map<string, ReturnType<typeof Object.assign>>();
 
   if (aiAvailable()) {
     const aiCandidates = found.filter((a) => a.provider !== "psx-announcements");
@@ -128,17 +129,6 @@ export async function refreshNewsForUser(
         for (const a of analyses) analysisByUrl.set(a.url, a);
       } catch (e) {
         errors.push(`AI: ${e instanceof Error ? e.message : String(e)}`);
-      }
-    }
-    for (let i = 0; i < marketFound.length; i += 8) {
-      try {
-        const { analyses } = await analyzeMarketArticles(
-          marketFound.slice(i, i + 8).map((a) => ({ url: a.url, title: a.title, snippet: a.snippet, source: a.source })),
-          portfolioContext
-        );
-        for (const a of analyses) marketAnalysisByUrl.set(a.url, a);
-      } catch (e) {
-        errors.push(`AI market: ${e instanceof Error ? e.message : String(e)}`);
       }
     }
   }
@@ -173,24 +163,21 @@ export async function refreshNewsForUser(
   }
 
   for (const a of marketFound) {
-    const m = marketAnalysisByUrl.get(a.url);
-    const relevanceScore = m ? clamp(m.market_relevance) : a.relevance_score ?? 5;
-    const lowConfidence = relevanceScore <= 2;
+    // Market articles are stored raw — no AI enrichment here. The Analyst Brief
+    // button synthesises them on-demand so the cron runs for free.
+    const relevanceScore = a.relevance_score ?? 5;
     const { error } = await supabase.from("news_articles").upsert(
       {
         user_id: userId, scope: "market",
         ticker: null, company_name: null, sector: null,
         title: a.title, url: a.url, source: a.source, published_at: a.published_at, snippet: a.snippet,
-        ai_summary: m?.summary ?? a.snippet?.slice(0, 280) ?? null,
-        sentiment: m?.sentiment ?? a.sentiment ?? null,
+        ai_summary: null,
+        sentiment: null,
         relevance_score: relevanceScore,
-        why_it_matters: m?.why_it_matters ?? null,
-        category: m?.category ?? a.category ?? "market",
-        impact_tickers: m?.affected_tickers ?? null,
-        is_interesting: m?.is_interesting ?? false,
+        category: a.category ?? "market",
         source_quality: a.source_quality ?? "medium",
-        low_confidence: lowConfidence,
-        ignored: lowConfidence,
+        low_confidence: false,
+        ignored: false,
       },
       { onConflict: "user_id,url", ignoreDuplicates: true }
     );
