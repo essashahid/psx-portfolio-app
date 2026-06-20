@@ -61,7 +61,16 @@ function detectIntent(msg: string): Intent {
   if (/\b(p\/e|pe ratio|valuation|cheap|expensive|overvalued|undervalued|ratio|roe|roa|margin|fundamental)\b/.test(m)) return "valuation";
   if (/\b(chart|trend|technical|52[- ]?week|rsi|moving average|support|resistance|momentum)\b/.test(m)) return "technical";
   if (/\b(news|filing|announce|happened|update|event)\b/.test(m)) return "news";
-  if (/\b(my|position|holding|own|portfolio|p\/l|pnl|profit|loss|gain)\b/.test(m)) return "position";
+  // Portfolio / position questions — including diversification, concentration,
+  // allocation and "do I have enough stocks" style questions that need the
+  // user's holdings loaded, not just market data.
+  if (
+    /\b(my|mine|position|holding|own|owned|portfolio|p\/l|pnl|profit|loss|gain|invested|investment|diversif\w*|allocat\w*|exposure|concentrat\w*|rebalanc\w*|weighting|overweight|underweight)\b/.test(m) ||
+    /\benough\s+(stocks?|shares?|holdings?|names?|positions?)\b/.test(m) ||
+    /\bhow\s+many\s+(stocks?|shares?|holdings?|names?|positions?|companies)\b/.test(m)
+  ) {
+    return "position";
+  }
   return "overview";
 }
 

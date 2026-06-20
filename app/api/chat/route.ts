@@ -24,7 +24,6 @@ Rules:
 - Ground EVERY claim in the data provided in the <context> block or returned by a tool. Never invent prices, ratios, or figures. If a needed number is missing, say so plainly.
 - Amounts are in PKR. Be concise and concrete — lead with the answer, then the supporting numbers. A few tight sentences beat a long essay.
 - The user already sees rich data cards (quote, position, ratios, chart, news) rendered alongside your reply, so don't dump tables — interpret and connect the numbers.
-- Retrieve aggressively. You have tools for the user's whole-portfolio summary, individual positions, full holdings with sector weights, their own investment theses and journal entries, quotes, ratios, technicals, dividends, filings/news, market and sector performance, foreign flows, and the web. Use them proactively and chain as many as a complete answer needs — there is no penalty for extra lookups. Never give a generic answer when a tool could ground it in the user's real data. In particular, when a question touches WHY the user holds something, whether news/results change their view, conviction, concentration, income, or performance, pull get_thesis / get_journal / get_portfolio_summary / list_holdings rather than guessing.
 - For internal numbers (price, ratios, sectors, positions, filings) use the data/tools — never the web. The web is for what the internal data can't give: WHY something moved, macro/policy/industry news, recent events. When you use web_search, cite the source URLs inline, prefer credible Pakistani business outlets, and say it's from the web.
 - When the user asks WHY a stock moved (a day's move, a catalyst, "what's driving this"), you MUST call web_search before answering — internal filings (get_news) rarely explain an intraday move. NEVER explain a move with generic sector narrative ("energy stocks were supported", "fertilizers track commodities", "broader market sentiment", "selective strength") unless a tool result actually says so. If neither a filing nor a web result names a specific catalyst, say plainly "No specific catalyst found in the data or recent news" — never invent a plausible-sounding reason. A guessed reason is worse than admitting there isn't one.
 - For a multi-holding "why" question, web_search only the top 3-4 movers by absolute % change; for the rest, note you didn't find a notable catalyst. This keeps the answer focused and bounds lookups.
@@ -38,6 +37,21 @@ Writing style:
 - Keep line length readable: avoid dense multi-clause paragraphs. Split ideas into separate bullets when a sentence starts carrying too many numbers.
 - For watchlists, use one short intro, then numbered items. Each item should have a bold ticker/company line and 2-3 bullets: signal, why it matters, and what to monitor.
 - Prefer polished wording over hype. Say "strong breadth", "unusual volume", "needs follow-through", or "monitor for confirmation" rather than promotional language.`;
+
+// Appended only for models that can actually call tools this turn.
+const TOOL_RULE = `
+Retrieval:
+- Retrieve aggressively. You have tools for the user's whole-portfolio summary, individual positions, full holdings with sector weights, their own investment theses and journal entries, quotes, ratios, technicals, dividends, filings/news, market and sector performance, foreign flows, and the web. Use them proactively and chain as many as a complete answer needs — there is no penalty for extra lookups.
+- Never give a generic answer when a tool could ground it in the user's real data. When a question touches WHY the user holds something, whether news/results change their view, conviction, concentration, income, or performance, call get_thesis / get_journal / get_portfolio_summary / list_holdings rather than guessing.
+- If you decide to look something up, actually call the tool in the same turn. Never reply with only a promise like "let me check" or "give me a moment".`;
+
+// Appended for tool-less models (e.g. DeepSeek R1): they cannot fetch, so they
+// must answer from the pre-loaded <context> and never promise a lookup.
+const NO_TOOL_RULE = `
+Answering without tools:
+- You cannot call tools on this turn. Answer using only the data in the <context> block.
+- If the context already contains the answer (e.g. the user's holdings, value, sectors), use it directly.
+- If something needed is genuinely missing, say plainly what's missing in one line. Never say you will "check", "pull", "look up", "fetch", or "give me a moment" — you cannot, so don't promise it.`;
 
 type Evt =
   | { type: "thread"; thread: ChatThread }
@@ -106,8 +120,14 @@ export async function POST(request: Request) {
           return;
         }
 
-        // 3. Narrative with tools. The brief is injected so most questions
-        //    answer in one shot (no extra tool round-trips).
+        // 3. Narrative. Tool-capable models get retrieval guidance; tool-less
+        //    ones (DeepSeek R1) get the "answer from context, never promise a
+        //    lookup" rule so they don't stall on a dangling promise.
+        const canUseTools = modelDef.provider === "claude" || !!modelDef.supportsTools;
+        const systemPrompt = `${SYSTEM_PROMPT}\n${canUseTools ? TOOL_RULE : NO_TOOL_RULE}`;
+
+        // The brief is injected so most questions answer in one shot (no extra
+        // tool round-trips).
         let userContext = brief
           ? `<context>\n${brief}\n</context>\n\nQuestion: ${message}`
           : `Question: ${message}\n(No pre-loaded data matched — use tools to fetch what you need.)`;
@@ -136,7 +156,7 @@ export async function POST(request: Request) {
             const turnStart = assistantContent.length;
             const mstream = claude.messages.stream({
               ...params,
-              system: [{ type: "text", text: SYSTEM_PROMPT, cache_control: { type: "ephemeral" } }],
+              system: [{ type: "text", text: systemPrompt, cache_control: { type: "ephemeral" } }],
               tools: CHAT_TOOLS,
               // Final turn: forbid tools so the model must answer from what it has.
               ...(lastTurn ? { tool_choice: { type: "none" as const } } : {}),
@@ -181,7 +201,7 @@ export async function POST(request: Request) {
           // DeepSeek — same tools and brief, OpenAI-shaped streaming loop.
           await runDeepSeekChat({
             def: modelDef,
-            system: SYSTEM_PROMPT,
+            system: systemPrompt,
             history: trimmedHistory,
             userContent: userContext,
             tools: CHAT_TOOLS,
