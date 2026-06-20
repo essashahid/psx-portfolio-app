@@ -130,7 +130,7 @@ function ChatCard({ card }: { card: Card }) {
     case "news": {
       const n = card.data;
       return (
-        <Shell icon={FileText} title={`${n.ticker ?? "Market"} · Filings`}>
+        <Shell icon={FileText} title={`${n.ticker ?? "Market"} · News`}>
           <ul className="space-y-1">
             {n.items.slice(0, 4).map((it, i) => (
               <li key={i} className="text-[11px] leading-snug">

@@ -58,7 +58,7 @@ export interface DividendCard {
 
 export interface NewsCard {
   ticker: string | null;
-  items: { title: string; type: string; date: string; url: string | null }[];
+  items: { title: string; type: string; date: string; url: string | null; summary?: string | null; sentiment?: string | null; source?: string | null }[];
 }
 
 export interface MarketCard {
@@ -189,14 +189,39 @@ export async function getDividendCard(db: SupabaseClient, ticker: string): Promi
   };
 }
 
-export async function getNewsCard(db: SupabaseClient, ticker: string | null, limit = 6): Promise<NewsCard | null> {
-  let query = db.from("market_events").select("ticker, title, event_type, event_date, source_url").order("event_date", { ascending: false }).limit(limit);
-  if (ticker) query = query.eq("ticker", ticker.toUpperCase());
-  const { data } = await query;
+export async function getNewsCard(
+  db: SupabaseClient,
+  userId: string,
+  ticker: string | null,
+  limit = 6
+): Promise<NewsCard | null> {
+  // Reads the user's News Center feed (news_articles) — macro/market stories,
+  // holding-specific news AND official PSX filings (the psx-announcements
+  // provider writes here too). Per-user and indexed, so it's fast and bounded.
+  let query = db
+    .from("news_articles")
+    .select("title, url, source, published_at, created_at, ai_summary, snippet, sentiment, category, ticker, impact_tickers, relevance_score")
+    .eq("user_id", userId)
+    .eq("ignored", false)
+    .eq("low_confidence", false);
+  if (ticker) {
+    const t = ticker.toUpperCase();
+    // Direct holding news OR a market story flagged as touching this ticker.
+    query = query.or(`ticker.eq.${t},impact_tickers.cs.{${t}}`);
+  }
+  const { data } = await query.order("published_at", { ascending: false, nullsFirst: false }).limit(limit);
   if (!data || data.length === 0) return null;
   return {
     ticker: ticker ? ticker.toUpperCase() : null,
-    items: data.map((e) => ({ title: e.title as string, type: e.event_type as string, date: e.event_date as string, url: (e.source_url as string) ?? null })),
+    items: data.map((e) => ({
+      title: e.title as string,
+      type: (e.category as string) ?? "news",
+      date: String((e.published_at as string) ?? (e.created_at as string) ?? "").slice(0, 10),
+      url: (e.url as string) ?? null,
+      summary: (e.ai_summary as string) ?? (typeof e.snippet === "string" ? e.snippet.slice(0, 240) : null),
+      sentiment: (e.sentiment as string) ?? null,
+      source: (e.source as string) ?? null,
+    })),
   };
 }
 

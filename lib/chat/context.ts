@@ -43,7 +43,7 @@ export async function gatherCards(db: SupabaseClient, userId: string, resolved: 
     if (sectors) cards.push({ kind: "sector", data: sectors });
     const flows = await getForeignFlowSnapshot(db);
     if (flows) cards.push({ kind: "foreign_flow", data: flows });
-    const news = await getNewsCard(db, null, 6);
+    const news = await getNewsCard(db, userId, null, 6);
     if (news) cards.push({ kind: "news", data: news });
   }
 
@@ -66,7 +66,7 @@ export async function gatherCards(db: SupabaseClient, userId: string, resolved: 
       intent === "valuation" || intent === "overview" || intent === "compare" || intent === "position" ? getRatioCard(db, ticker) : Promise.resolve(null),
       intent === "technical" || intent === "overview" || intent === "position" ? getTechnicalCard(db, ticker) : Promise.resolve(null),
       intent === "dividend" || intent === "overview" ? getDividendCard(db, ticker) : Promise.resolve(null),
-      intent === "news" || intent === "overview" ? getNewsCard(db, ticker, 4) : Promise.resolve(null),
+      intent === "news" || intent === "overview" ? getNewsCard(db, userId, ticker, 4) : Promise.resolve(null),
     ]);
     if (quote) cards.push({ kind: "quote", data: quote });
     if (position) cards.push({ kind: "position", data: position });

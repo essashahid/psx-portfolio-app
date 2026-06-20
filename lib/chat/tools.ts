@@ -49,7 +49,7 @@ export const CHAT_TOOLS: Anthropic.Tool[] = [
   },
   {
     name: "get_news",
-    description: "Recent official PSX filings/announcements. Pass a ticker for one company, or omit for market-wide.",
+    description: "The user's News Center feed: macro/market/policy/commodity stories, holding-specific news (with AI summary and sentiment), and official PSX filings. Pass a ticker for news about that company (including market stories flagged as impacting it), or omit for the latest portfolio + market news.",
     input_schema: { type: "object", properties: { ticker: { type: "string" } } },
   },
   {
@@ -136,7 +136,7 @@ export async function executeTool(
     case "get_dividends":
       return ticker ? (await getDividendCard(db, ticker)) ?? { error: "no payouts on record" } : { error: "ticker required" };
     case "get_news":
-      return (await getNewsCard(db, ticker, 6)) ?? { items: [] };
+      return (await getNewsCard(db, userId, ticker, 6)) ?? { items: [] };
     case "get_market_overview":
       return (await getMarketCard(db)) ?? { error: "no snapshot yet" };
     case "get_sector_performance":
