@@ -51,7 +51,7 @@ export const CHAT_MODELS: ChatModelDef[] = [
     hint: "Fastest, cheapest — quick lookups",
     apiModel: "claude-haiku-4-5",
     thinking: false,
-    maxTokens: 1500,
+    maxTokens: 2000,
   },
   {
     id: "claude-sonnet",
@@ -62,7 +62,7 @@ export const CHAT_MODELS: ChatModelDef[] = [
     apiModel: "claude-sonnet-4-6",
     thinking: true,
     effort: "medium",
-    maxTokens: 1500,
+    maxTokens: 2200,
   },
   {
     id: "claude-opus",
@@ -73,7 +73,7 @@ export const CHAT_MODELS: ChatModelDef[] = [
     apiModel: "claude-opus-4-8",
     thinking: true,
     effort: "high",
-    maxTokens: 2200,
+    maxTokens: 3000,
   },
   {
     id: "deepseek-chat",
@@ -83,7 +83,7 @@ export const CHAT_MODELS: ChatModelDef[] = [
     hint: "Fast general-purpose model",
     apiModel: "deepseek-chat",
     thinking: false,
-    maxTokens: 1800,
+    maxTokens: 2400,
     supportsTools: true,
     supportsTemperature: true,
   },
@@ -95,7 +95,7 @@ export const CHAT_MODELS: ChatModelDef[] = [
     hint: "Deep reasoning; auto web search for \"why\" questions (no other live lookups)",
     apiModel: "deepseek-reasoner",
     thinking: true,
-    maxTokens: 2400,
+    maxTokens: 3200,
     // R1 does not support function calling (same reason it rejects
     // temperature) — handing it tools makes it leak the call as raw text.
     // It answers from the pre-loaded brief instead.
