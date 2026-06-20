@@ -5,6 +5,7 @@ import {
   getNewsCard, getMarketCard, getHoldingsSummary, getSectorCard,
 } from "@/lib/chat/data";
 import { getForeignFlowCard } from "@/lib/market/foreign-flows";
+import { getPortfolio } from "@/lib/portfolio";
 import { tavilySearch, tavilyConfigured } from "@/lib/tavily";
 
 /**
@@ -63,8 +64,28 @@ export const CHAT_TOOLS: Anthropic.Tool[] = [
   },
   {
     name: "list_holdings",
-    description: "The user's full list of holdings with today's change for each.",
+    description: "The user's full list of holdings with, for each, its sector, portfolio weight (% of value), market value and today's change — plus a value-weighted sector concentration breakdown. Use for concentration, diversification, or 'what am I lacking' questions.",
     input_schema: { type: "object", properties: {} },
+  },
+  {
+    name: "get_portfolio_summary",
+    description: "The user's whole-portfolio snapshot: total market value and cost, unrealized and realized P/L, dividend income (received, expected, pending), cash balance, holdings count, largest holding, largest sector and full sector weights. Use for 'how am I doing', overall exposure/concentration, gains/losses or income questions.",
+    input_schema: { type: "object", properties: {} },
+  },
+  {
+    name: "get_thesis",
+    description: "The user's own saved investment thesis for a holding: why they bought, their expectation, time horizon, key risks, sell/add conditions, conviction (1-5), status (Active/Watch/Weakening/Broken/Closed) and review date. Pass a ticker for one, or omit for all theses. Use whenever a question touches WHY they own something, whether news/results change their view, conviction, or review timing — ground the answer in their actual reasoning.",
+    input_schema: { type: "object", properties: { ticker: { type: "string" } } },
+  },
+  {
+    name: "get_journal",
+    description: "The user's own journal entries — decisions and notes they wrote (buy/sell decisions, hold reviews, news reactions, result reviews, lessons learned). Pass a ticker to filter, or omit for the most recent across the portfolio. Use to ground answers in what the user previously decided or observed.",
+    input_schema: { type: "object", properties: { ticker: { type: "string" }, limit: { type: "number", description: "Max entries, default 8" } } },
+  },
+  {
+    name: "get_performance",
+    description: "The user's portfolio total value and unrealized P/L over time, from daily snapshots. Use for 'how has my portfolio done this week/month', trend, or drawdown questions.",
+    input_schema: { type: "object", properties: { days: { type: "number", description: "Lookback window in days, default 30" } } },
   },
   {
     name: "get_foreign_flows",
@@ -122,6 +143,71 @@ export async function executeTool(
       return (await getSectorCard(db, typeof input.sector === "string" ? input.sector : null)) ?? { error: "no sector data" };
     case "list_holdings":
       return (await getHoldingsSummary(db, userId)) ?? { count: 0, holdings: [] };
+    case "get_portfolio_summary": {
+      const p = await getPortfolio(db, userId);
+      return {
+        totalValue: p.totalValue,
+        totalCost: p.totalCost,
+        unrealizedPL: p.unrealizedPl,
+        unrealizedPLPct: p.unrealizedPlPct,
+        realizedPL: p.realizedPl,
+        dividendIncome: p.dividendIncome,
+        expectedDividendIncome: p.expectedDividendIncome,
+        pendingDividendIncome: p.pendingDividendIncome,
+        cashBalance: p.cashBalance,
+        holdingsCount: p.holdingsCount,
+        pricedHoldings: p.pricedHoldings,
+        largestHolding: p.largestHolding,
+        largestSector: p.largestSector,
+        sectorWeights: p.sectorWeights,
+      };
+    }
+    case "get_thesis": {
+      let q = db
+        .from("theses")
+        .select("ticker, why_bought, expectation, time_horizon, key_risks, sell_conditions, add_conditions, confidence, status, review_date, updated_at")
+        .eq("user_id", userId);
+      if (ticker) q = q.eq("ticker", ticker);
+      const { data } = await q.order("updated_at", { ascending: false }).limit(ticker ? 1 : 25);
+      return data && data.length
+        ? { theses: data }
+        : { theses: [], note: ticker ? `No saved thesis for ${ticker}.` : "No theses saved yet." };
+    }
+    case "get_journal": {
+      const limit = typeof input.limit === "number" ? Math.min(20, Math.max(1, Math.round(input.limit))) : 8;
+      let q = db
+        .from("journal_entries")
+        .select("ticker, entry_date, entry_type, title, body, expected_outcome, risk, confidence, outcome, lessons")
+        .eq("user_id", userId);
+      if (ticker) q = q.eq("ticker", ticker);
+      const { data } = await q.order("entry_date", { ascending: false }).limit(limit);
+      const entries = (data ?? []).map((e) => ({ ...e, body: typeof e.body === "string" ? e.body.slice(0, 500) : e.body }));
+      return entries.length
+        ? { entries }
+        : { entries: [], note: ticker ? `No journal entries for ${ticker}.` : "No journal entries yet." };
+    }
+    case "get_performance": {
+      const days = typeof input.days === "number" && input.days > 0 ? Math.min(365, Math.round(input.days)) : 30;
+      const since = new Date(Date.now() - days * 86_400_000).toISOString().slice(0, 10);
+      const { data } = await db
+        .from("portfolio_snapshots")
+        .select("snapshot_date, total_value, unrealized_pl")
+        .eq("user_id", userId)
+        .gte("snapshot_date", since)
+        .order("snapshot_date", { ascending: true });
+      if (!data || data.length === 0) return { snapshots: [], note: "No portfolio snapshots recorded yet." };
+      const first = data[0];
+      const last = data[data.length - 1];
+      return {
+        from: first.snapshot_date,
+        to: last.snapshot_date,
+        startValue: Number(first.total_value),
+        endValue: Number(last.total_value),
+        changeValue: Number(last.total_value) - Number(first.total_value),
+        points: data.length,
+        snapshots: data,
+      };
+    }
     case "get_foreign_flows":
       return (await getForeignFlowCard(db, typeof input.sector === "string" ? input.sector : null, {
         days: typeof input.days === "number" ? input.days : undefined,
