@@ -52,6 +52,7 @@ export async function gdeltSearchHoldings(
           source: r.domain ?? safeHostname(url),
           published_at: parseGdeltDate(r.seendate),
           provider: "gdelt",
+          scope: "portfolio",
           category: "general",
           source_quality: "unknown",
           link_reason: `GDELT matched the company name for ${holding.ticker}.`,

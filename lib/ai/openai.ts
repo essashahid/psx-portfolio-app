@@ -74,3 +74,46 @@ Return JSON: {"articles": [...]}.`,
   );
   return { analyses: data.articles ?? [], model };
 }
+
+// ---------------------------------------------------------------------------
+// Market / macro news analysis
+// ---------------------------------------------------------------------------
+
+export interface MarketArticleAnalysis {
+  url: string;
+  summary: string;
+  sentiment: "positive" | "neutral" | "negative";
+  market_relevance: number;
+  category: "policy" | "economy" | "commodity" | "market" | "international" | "company" | "earnings" | "general";
+  affected_tickers: string[];
+  why_it_matters: string;
+  is_interesting: boolean;
+}
+
+/**
+ * Classifies macro / market / sector / international stories for a PSX
+ * investor. Unlike analyzeArticles these are NOT tied to one holding — the
+ * model decides the topic, how much it matters to the broader market, which
+ * holdings (if any) it plausibly touches, and whether it's genuinely notable.
+ */
+export async function analyzeMarketArticles(
+  articles: { url: string; title: string; snippet: string; source: string }[],
+  portfolioContext: string
+): Promise<{ analyses: MarketArticleAnalysis[]; model: string }> {
+  const { data, model } = await chatJson<{ articles: MarketArticleAnalysis[] }>(
+    `You triage market, macro, policy, commodity and international news for a Pakistan Stock Exchange (PSX) investor.
+For each article return:
+- url (echo exactly)
+- summary (1-2 plain sentences, what actually happened — no fluff)
+- sentiment (positive|neutral|negative for PSX equities broadly)
+- market_relevance (1-10: 10 = clearly moves the KSE-100 / a major sector / the investor's holdings; 5 = relevant macro context; 1 = noise or irrelevant to PSX investing)
+- category (policy | economy | commodity | market | international | company | earnings | general)
+- affected_tickers (array of the user's holding tickers this story plausibly impacts; [] if none)
+- why_it_matters (1 sentence: why a PSX investor should care)
+- is_interesting (true only for genuinely notable, surprising or thesis-relevant stories — plant openings, big policy shifts, M&A, sharp commodity moves; false for routine/boilerplate)
+Be strict: filings about director changes, treasury shares, attendance and other boilerplate get low market_relevance.
+Return JSON: {"articles": [...]}.`,
+    `User's holdings (for affected_tickers):\n${portfolioContext}\n\nArticles to triage:\n${JSON.stringify(articles, null, 1)}`
+  );
+  return { analyses: data.articles ?? [], model };
+}

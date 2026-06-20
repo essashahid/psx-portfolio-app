@@ -256,7 +256,7 @@ export function buildReviewQueue(input: {
       title: `${hiddenLowConfidenceNews} news article(s) hidden for low relevance`,
       explanation: "Low-confidence matches are excluded from default news and AI briefings unless saved.",
       actionLabel: "Audit news",
-      href: "/news?relevance=low",
+      href: "/news",
     });
   }
 

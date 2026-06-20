@@ -164,6 +164,9 @@ export interface NewsArticle {
   thesis_impact: string | null;
   review_question: string | null;
   category: string | null;
+  scope: "portfolio" | "market";
+  impact_tickers: string[] | null;
+  is_interesting: boolean;
   source_quality: "high" | "medium" | "low" | "unknown" | null;
   link_reason: string | null;
   low_confidence: boolean;

@@ -18,6 +18,7 @@ import { aiConfigured } from "@/lib/ai/openai";
 import { tavilyConfigured } from "@/lib/tavily";
 import { gdeltConfigured } from "@/lib/news/gdelt";
 import { psxAnnouncementsConfigured } from "@/lib/news/psx-announcements";
+import { marketNewsConfigured } from "@/lib/news/feeds";
 import { twelveDataConfigured } from "@/lib/market-data/twelve-data";
 import { getTaxSettings } from "@/lib/dividends/tax";
 import { TaxProfileForm } from "@/components/tax-profile-form";
@@ -64,8 +65,9 @@ export default async function SettingsPage() {
     { name: "DeepSeek", ok: aiConfigured(), note: "briefings, thesis checks, news analysis, metadata enrichment" },
     {
       name: "News providers",
-      ok: tavilyConfigured() || gdeltConfigured() || psxAnnouncementsConfigured(),
+      ok: marketNewsConfigured() || tavilyConfigured() || gdeltConfigured() || psxAnnouncementsConfigured(),
       note: [
+        marketNewsConfigured() ? "Market wires + Google News" : null,
         tavilyConfigured() ? "Tavily" : null,
         gdeltConfigured() ? "GDELT" : null,
         psxAnnouncementsConfigured() ? "PSX announcements" : null,

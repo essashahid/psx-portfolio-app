@@ -44,32 +44,33 @@ export async function psxAnnouncementSearchHoldings(
     try {
       const rows = await fetchCompanyAnnouncements(holding.ticker, maxResults);
       for (const row of rows) {
-        const category = classifyAnnouncement(row.title);
+        const { category, material } = classifyAnnouncement(row.title);
+        // Material filings (results, dividends, big business events) lead the
+        // feed; routine governance/admin filings (director change, treasury
+        // shares, book closure, AGM notices) are kept but pushed down so they
+        // stop drowning out genuinely useful news.
+        const relevance = material ? (category === "result" || category === "dividend" ? 10 : 8) : 3;
         articles.push({
           url: row.url,
-          title: `${row.title} - PSX Company Announcement`,
-          snippet: `${row.companyName} filed a PSX company announcement: ${row.title}.`,
+          title: row.title,
+          snippet: `${row.companyName || holding.ticker} filed a PSX company announcement: ${row.title}.`,
           ticker: holding.ticker,
           company_name: row.companyName || holding.company_name || holding.ticker,
           sector: holding.sector,
-          source: "PSX Company Announcements",
+          source: "PSX Filing",
           published_at: parsePsxDateTime(row.date, row.time),
           provider: "psx-announcements",
+          scope: "portfolio",
           category,
           sentiment: "neutral",
-          relevance_score: category === "result" || category === "dividend" ? 10 : 8,
+          relevance_score: relevance,
           ai_summary: `${row.companyName || holding.ticker} filed a PSX company announcement: ${row.title}.`,
-          why_it_matters: "This is an official company filing on the PSX portal for a portfolio holding.",
-          thesis_impact:
-            category === "result"
-              ? "Financial results should be reviewed against the investment thesis."
-              : category === "dividend"
-                ? "Dividend-related filings may affect income expectations."
-                : "Review if the filing changes governance, disclosure, or business assumptions.",
-          review_question: `Does this official filing change your view of ${holding.ticker}?`,
+          why_it_matters: material
+            ? "Official company filing on the PSX portal for a portfolio holding."
+            : "Routine administrative filing — low investment signal.",
           source_quality: "high",
           link_reason: `Official PSX company announcement for ${holding.ticker}.`,
-          low_confidence: false,
+          low_confidence: !material,
         });
       }
     } catch (err) {
@@ -132,11 +133,25 @@ function parseAnnouncementRows(html: string): PsxAnnouncement[] {
     .filter((row): row is PsxAnnouncement => !!row);
 }
 
-function classifyAnnouncement(title: string): NewsCategory {
+/**
+ * Classify a filing and decide whether it is material (leads the feed) or
+ * routine boilerplate (director change, treasury shares, book closure, AGM
+ * notices, pattern of shareholding) that should be pushed down.
+ */
+function classifyAnnouncement(title: string): { category: NewsCategory; material: boolean } {
   const t = title.toLowerCase();
-  if (/\b(dividend|bonus|right|entitlement|payout|cash dividend)\b/.test(t)) return "dividend";
-  if (/\b(financial result|quarterly report|annual report|accounts)\b/.test(t)) return "result";
-  return "corporate_announcement";
+  if (/\b(dividend|bonus|right issue|entitlement|payout|cash dividend|interim dividend)\b/.test(t)) {
+    return { category: "dividend", material: true };
+  }
+  if (/\b(financial result|quarterly report|annual report|accounts|earnings|profit|eps)\b/.test(t)) {
+    return { category: "result", material: true };
+  }
+  // Genuinely market-moving corporate events.
+  if (/\b(acquisition|merger|expansion|plant|capacity|investment|contract|agreement|exploration|discovery|production|capex|de-?merger|spin-?off|de-?listing|material information)\b/.test(t)) {
+    return { category: "corporate_announcement", material: true };
+  }
+  // Routine governance / administrative boilerplate.
+  return { category: "corporate_announcement", material: false };
 }
 
 function parsePsxDateTime(dateValue: string, timeValue: string): string | null {
