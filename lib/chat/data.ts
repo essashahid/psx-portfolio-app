@@ -280,17 +280,92 @@ export async function getSectorCard(db: SupabaseClient, sectorQuery?: string | n
 
 export interface HoldingsSummary {
   count: number;
-  holdings: { ticker: string; quantity: number; changePct: number | null }[];
+  pricedCount: number;
+  totalValue: number | null;
+  totalCost: number;
+  unrealizedPL: number | null;
+  holdings: {
+    ticker: string;
+    sector: string | null;
+    quantity: number;
+    avgCost: number;
+    marketValue: number | null;
+    weightPct: number | null;
+    changePct: number | null;
+  }[];
+  sectors: { sector: string; value: number; weightPct: number; count: number }[];
 }
 
 export async function getHoldingsSummary(db: SupabaseClient, userId: string): Promise<HoldingsSummary | null> {
-  const { data: hs } = await db.from("holdings").select("ticker, quantity").eq("user_id", userId).gt("quantity", 0);
+  const { data: hs } = await db
+    .from("holdings")
+    .select("ticker, quantity, sector, avg_cost, total_cost")
+    .eq("user_id", userId)
+    .gt("quantity", 0);
   if (!hs || hs.length === 0) return null;
+
   const tickers = hs.map((h) => (h.ticker as string).toUpperCase());
-  const { data: qs } = await db.from("market_quotes").select("ticker, day_change_pct").in("ticker", tickers);
-  const chg = new Map((qs ?? []).map((q) => [(q.ticker as string).toUpperCase(), num(q.day_change_pct)]));
+  const [{ data: qs }, { data: uni }] = await Promise.all([
+    db.from("market_quotes").select("ticker, price, day_change_pct").in("ticker", tickers),
+    db.from("stock_universe").select("ticker, sector").in("ticker", tickers),
+  ]);
+  const priceMap = new Map((qs ?? []).map((q) => [(q.ticker as string).toUpperCase(), num(q.price)]));
+  const chgMap = new Map((qs ?? []).map((q) => [(q.ticker as string).toUpperCase(), num(q.day_change_pct)]));
+  const uniSector = new Map((uni ?? []).map((u) => [(u.ticker as string).toUpperCase(), (u.sector as string) ?? null]));
+
+  let totalValue = 0;
+  let totalCost = 0;
+  let pricedCost = 0;
+  let pricedCount = 0;
+
+  const holdings = hs.map((h) => {
+    const ticker = (h.ticker as string).toUpperCase();
+    const quantity = Number(h.quantity);
+    const avgCost = Number(h.avg_cost) || 0;
+    const cost = Number(h.total_cost) || quantity * avgCost;
+    totalCost += cost;
+    const price = priceMap.get(ticker) ?? null;
+    const marketValue = price != null ? price * quantity : null;
+    if (marketValue != null) {
+      totalValue += marketValue;
+      pricedCost += cost;
+      pricedCount++;
+    }
+    // Holdings.sector (from import) wins; fall back to the universe classification.
+    const sector = ((h.sector as string) || uniSector.get(ticker) || null) as string | null;
+    return { ticker, sector, quantity, avgCost, marketValue, changePct: chgMap.get(ticker) ?? null, cost };
+  });
+
+  const tv = totalValue > 0 ? totalValue : null;
+  const withWeights = holdings.map((h) => ({
+    ticker: h.ticker,
+    sector: h.sector,
+    quantity: h.quantity,
+    avgCost: h.avgCost,
+    marketValue: h.marketValue,
+    weightPct: h.marketValue != null && tv ? (h.marketValue / tv) * 100 : null,
+    changePct: h.changePct,
+  }));
+
+  const secMap = new Map<string, { value: number; count: number }>();
+  for (const h of holdings) {
+    const key = h.sector ?? "Unclassified";
+    const e = secMap.get(key) ?? { value: 0, count: 0 };
+    if (h.marketValue != null) e.value += h.marketValue;
+    e.count++;
+    secMap.set(key, e);
+  }
+  const sectors = [...secMap.entries()]
+    .map(([sector, v]) => ({ sector, value: v.value, weightPct: tv ? (v.value / tv) * 100 : 0, count: v.count }))
+    .sort((a, b) => b.value - a.value || b.count - a.count);
+
   return {
     count: tickers.length,
-    holdings: hs.map((h) => ({ ticker: (h.ticker as string).toUpperCase(), quantity: Number(h.quantity), changePct: chg.get((h.ticker as string).toUpperCase()) ?? null })),
+    pricedCount,
+    totalValue: tv,
+    totalCost,
+    unrealizedPL: tv != null ? totalValue - pricedCost : null,
+    holdings: withWeights,
+    sectors,
   };
 }

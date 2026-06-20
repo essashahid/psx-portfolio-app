@@ -50,6 +50,13 @@ export async function gatherCards(db: SupabaseClient, userId: string, resolved: 
   if (tickers.length === 0 && (intent === "position" || intent === "market")) {
     const h = await getHoldingsSummary(db, userId);
     if (h) cards.push({ kind: "holdings", data: h });
+    // For portfolio gap/concentration questions, include the full PSX sector
+    // list so the model can compare the user's sector mix against what exists in
+    // the market (answering "what am I lacking") instead of guessing.
+    if (h && intent === "position" && !resolved.sector && !cards.some((c) => c.kind === "sector")) {
+      const sectors = await getSectorCard(db, null);
+      if (sectors) cards.push({ kind: "sector", data: sectors });
+    }
   }
 
   for (const ticker of tickers.slice(0, 4)) {
@@ -89,7 +96,24 @@ export function briefFromCards(cards: Card[]): string {
       case "holdings": {
         const h = c.data;
         const up = h.holdings.filter((x) => (x.changePct ?? 0) > 0).length;
-        lines.push(`YOUR HOLDINGS: ${h.count} positions, ${up} up today. Tickers: ${h.holdings.map((x) => `${x.ticker} ${fmtPct(x.changePct)}`).join(", ")}.`);
+        const valueBit =
+          h.totalValue != null
+            ? ` Total value ${fmtCompact(h.totalValue)} PKR, cost ${fmtCompact(h.totalCost)}${h.unrealizedPL != null ? `, unrealized ${fmtCompact(h.unrealizedPL)}` : ""} (${h.pricedCount}/${h.count} priced).`
+            : " (no live prices — value/weights unavailable).";
+        lines.push(`YOUR HOLDINGS: ${h.count} positions, ${up} up today.${valueBit}`);
+        if (h.sectors.length) {
+          lines.push(
+            `SECTOR CONCENTRATION (by value): ${h.sectors
+              .map((s) => `${s.sector} ${s.weightPct.toFixed(0)}% (${s.count} stock${s.count === 1 ? "" : "s"})`)
+              .join(", ")}.`
+          );
+        }
+        const byWeight = [...h.holdings].sort((a, b) => (b.weightPct ?? -1) - (a.weightPct ?? -1));
+        lines.push(
+          `POSITIONS (by weight): ${byWeight
+            .map((x) => `${x.ticker} [${x.sector ?? "Unclassified"}] ${x.weightPct != null ? `${x.weightPct.toFixed(0)}%` : "unpriced"} ${fmtPct(x.changePct)}`)
+            .join(", ")}.`
+        );
         break;
       }
       case "sector": {
