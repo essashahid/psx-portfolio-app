@@ -3,6 +3,7 @@ import { createClient, getUser } from "@/lib/supabase/server";
 import { NewsCard } from "@/components/news-card";
 import { NewsTickerSelect } from "@/components/news-ticker-select";
 import { NewsBriefWidget } from "@/components/news-brief-widget";
+import { claudeConfigured } from "@/lib/ai/claude";
 import { ActionButton } from "@/components/action-button";
 import { EmptyState } from "@/components/empty-state";
 import { Button } from "@/components/ui/button";
@@ -125,15 +126,14 @@ export default async function NewsPage({ searchParams }: { searchParams: Promise
             Market-moving news, policy, and your holdings — screened and ranked for a PSX investor.
           </p>
         </div>
-        <div className="flex items-center gap-2">
-          <NewsBriefWidget hasNews={all.length > 0} />
-          <ActionButton
-            endpoint="/api/news/refresh"
-            label={<><RefreshCw className="h-3.5 w-3.5" /> Refresh</>}
-            size="sm"
-          />
-        </div>
+        <ActionButton
+          endpoint="/api/news/refresh"
+          label={<><RefreshCw className="h-3.5 w-3.5" /> Refresh</>}
+          size="sm"
+        />
       </div>
+
+      <NewsBriefWidget hasNews={all.length > 0} claudeAvailable={claudeConfigured()} />
 
       {/* Topic tabs */}
       <div className="sticky top-0 z-10 -mx-1 flex gap-1 overflow-x-auto border-b border-border bg-background/85 px-1 backdrop-blur">

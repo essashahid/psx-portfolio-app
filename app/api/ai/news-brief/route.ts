@@ -1,19 +1,31 @@
 import { NextResponse } from "next/server";
 import { requireUser, errorResponse } from "@/lib/api-helpers";
-import { chatMarkdown, aiAvailable } from "@/lib/ai/openai";
+import { aiAvailable } from "@/lib/ai/openai";
+import { taskText } from "@/lib/ai/tasks";
+import { getClaude, claudeConfigured, buildClaudeParams } from "@/lib/ai/claude";
+import { getModelDef } from "@/lib/ai/models";
 
-export const maxDuration = 60;
+export const maxDuration = 120;
 
-export async function POST() {
+type BriefModel = "deepseek" | "claude-sonnet" | "claude-opus";
+
+export async function POST(request: Request) {
   const { supabase, user, error } = await requireUser();
   if (error) return error;
 
-  if (!aiAvailable()) {
-    return NextResponse.json({ error: "AI provider not configured." }, { status: 503 });
+  const body = (await request.json().catch(() => ({}))) as { model?: BriefModel };
+  const model: BriefModel = body.model ?? "deepseek";
+  const useClaude = model === "claude-sonnet" || model === "claude-opus";
+
+  if (useClaude && !claudeConfigured()) {
+    return NextResponse.json({ error: "Claude is not configured. Add CLAUDE_API_KEY in .env.local." }, { status: 503 });
+  }
+  if (!useClaude && !aiAvailable()) {
+    return NextResponse.json({ error: "DeepSeek is not configured. Add TASKS_API_KEY or DEEPSEEK_API_KEY." }, { status: 503 });
   }
 
   try {
-    // Pull the last 48h of news — both portfolio and market lane, highest signal first.
+    // Last 48h — both portfolio and market lane, highest signal first.
     const since = new Date(Date.now() - 48 * 3_600_000).toISOString();
     const [newsRes, holdingsRes] = await Promise.all([
       supabase
@@ -28,7 +40,7 @@ export async function POST() {
         .limit(40),
       supabase
         .from("holdings")
-        .select("ticker, company_name, sector, quantity, current_price, average_cost")
+        .select("ticker, company_name, sector, quantity, avg_cost")
         .eq("user_id", user.id)
         .gt("quantity", 0),
     ]);
@@ -37,63 +49,68 @@ export async function POST() {
     const holdings = holdingsRes.data ?? [];
 
     if (articles.length === 0) {
-      return NextResponse.json({
-        content: "No news in the last 48 hours. Refresh the news feed first then try again.",
-        model: "none",
-      });
+      return NextResponse.json({ content: "No news in the last 48 hours. Refresh the news feed first then try again.", model: "none" });
     }
 
-    const holdingsList = holdings
-      .map((h) => `${h.ticker} (${h.company_name ?? h.ticker}, ${h.sector ?? "?"})`)
-      .join(", ");
+    const holdingsList = holdings.length
+      ? holdings.map((h) => `${h.ticker} (${h.company_name ?? h.ticker}, ${h.sector ?? "sector ?"}, qty ${h.quantity})`).join(", ")
+      : "No holdings imported.";
 
     const articleLines = articles.map((a, i) => {
       const parts = [
         `${i + 1}. [${a.scope === "market" ? "MARKET" : a.ticker ?? "?"}] ${a.title}`,
-        `   Source: ${a.source} | ${a.published_at?.slice(0, 10) ?? "?"} | Sentiment: ${a.sentiment ?? "?"} | Category: ${a.category ?? "?"}`,
+        `   ${a.source} | ${a.published_at?.slice(0, 10) ?? "?"} | ${a.category ?? "?"}${a.sentiment ? ` | ${a.sentiment}` : ""}`,
       ];
-      if (a.ai_summary) parts.push(`   Summary: ${a.ai_summary}`);
-      if (a.impact_tickers?.length) parts.push(`   Touches: ${a.impact_tickers.join(", ")}`);
-      if (a.is_interesting) parts.push(`   ★ Flagged as notable`);
+      if (a.ai_summary) parts.push(`   ${a.ai_summary}`);
+      if (a.impact_tickers?.length) parts.push(`   touches: ${a.impact_tickers.join(", ")}`);
       return parts.join("\n");
     }).join("\n\n");
 
-    const { content, model } = await chatMarkdown(
-      `You are a sharp, direct PSX market analyst briefing an investor at the start of their day.
+    const system = `You are a sharp, independent PSX (Pakistan Stock Exchange) market analyst writing a brief for a serious investor at the start of their day. Think freely and reason deeply about what the news actually means for this specific portfolio and for the broader market. Be direct and opinionated — back every claim with the figures and facts in the feed. PKR unless stated otherwise.`;
 
-Rules:
-- Be specific and opinionated — say what actually matters, not what "could" matter
-- Use the investor's actual holdings to connect macro news to real positions
-- Short sentences. No fluff. No "it is important to note that…"
-- Highlight when something is genuinely surprising or unusual
-- PKR amounts unless stated otherwise
-- Do not give buy/sell/hold advice`,
-      `My PSX portfolio: ${holdingsList || "No holdings yet"}
+    const prompt = `My PSX portfolio: ${holdingsList}
 
 News from the last 48 hours:
 ${articleLines}
 
 ---
-Give me a sharp analyst brief with these exact sections. Use markdown headers (##):
+Write a sharp analyst brief using markdown ## headers for these sections:
 
 ## Top Signal
-The single most important piece of news right now and exactly why it matters.
+The single most important development right now and exactly why it matters — with the numbers.
 
 ## Portfolio Impact
-For each piece of news that directly affects one of my holdings, say which holding, what changed, and how it shifts the picture. If nothing directly affects my holdings, say so plainly.
+Go holding by holding where the news actually touches one of my positions: which holding, what changed, and how it shifts the picture. Be specific about the mechanism (does this news really affect this company's revenue/costs/demand, or only indirectly?). If a story doesn't genuinely touch a holding, don't force it.
 
 ## Market Read
-Based on the overall news flow — is the macro environment for PSX bullish, bearish, or mixed right now? 2-3 sentences with the key drivers.
+Is the macro backdrop for PSX bullish, bearish, or mixed right now? The key drivers, with figures.
 
 ## Watch This Week
-2-3 specific things developing that I should monitor. No generic advice — only things evidenced by the news above.
+2-4 specific developments to monitor — only things evidenced by the news above.
 
 ## Interesting Finds
-1-2 items from the feed that are genuinely notable, surprising, or worth knowing even if they don't directly affect my portfolio right now.`,
-      1400
-    );
+1-2 genuinely notable or surprising items worth knowing even if they don't directly hit my portfolio.`;
 
-    return NextResponse.json({ content, model });
+    let content: string;
+    let usedModel: string;
+
+    if (useClaude) {
+      const def = getModelDef(model);
+      const params = buildClaudeParams({ ...def, maxTokens: Math.max(def.maxTokens, 2600) });
+      const msg = await getClaude().messages.create({
+        ...params,
+        system,
+        messages: [{ role: "user", content: prompt }],
+      });
+      content = msg.content.map((b) => (b.type === "text" ? b.text : "")).join("").trim();
+      usedModel = def.apiModel;
+    } else {
+      const res = await taskText(system, prompt, 1800);
+      content = res.content;
+      usedModel = res.model;
+    }
+
+    return NextResponse.json({ content, model: usedModel });
   } catch (err) {
     return errorResponse(err);
   }
