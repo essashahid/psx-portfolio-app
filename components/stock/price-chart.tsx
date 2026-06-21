@@ -11,6 +11,9 @@ import {
   YAxis,
   CartesianGrid,
   Tooltip,
+  ReferenceArea,
+  ReferenceLine,
+  ReferenceDot,
   ResponsiveContainer,
 } from "recharts";
 import { cn, formatNumber, formatSignedPct } from "@/lib/utils";
@@ -25,6 +28,7 @@ import {
   AXIS_TICK,
 } from "@/components/chart-kit";
 import type { Candle } from "@/lib/company/types";
+import type { TechnicalSignals } from "@/lib/market/technicals";
 
 const RANGES: { id: string; days: number; label: string }[] = [
   { id: "1M", days: 22, label: "1M" },
@@ -42,10 +46,11 @@ function sma(values: number[], period: number, index: number): number | null {
   return sum / period;
 }
 
-export function StockPriceChart({ candles }: { candles: Candle[] }) {
+export function StockPriceChart({ candles, signals }: { candles: Candle[]; signals?: TechnicalSignals | null }) {
   const animate = useChartMotion();
   const [range, setRange] = useState("1Y");
   const [showMA, setShowMA] = useState(true);
+  const [showStructure, setShowStructure] = useState(true);
 
   const data = useMemo(() => {
     const closes = candles.map((c) => c.close);
@@ -60,6 +65,28 @@ export function StockPriceChart({ candles }: { candles: Candle[] }) {
     const days = RANGES.find((r) => r.id === range)?.days ?? 252;
     return enriched.slice(-days);
   }, [candles, range]);
+
+  // 52-week high/low for the long-term context lines.
+  const yearBand = useMemo(() => {
+    const yc = candles.slice(-252).map((c) => c.close).filter((v) => Number.isFinite(v) && v > 0);
+    if (!yc.length) return null;
+    return { high: Math.max(...yc), low: Math.min(...yc) };
+  }, [candles]);
+
+  // Long-term structure overlays drawn only when there's a real accumulation
+  // read and the user hasn't hidden them. Divergence pivots are filtered to the
+  // visible range so we don't anchor a dot off-chart.
+  const acc = signals?.accumulation ?? null;
+  const firstDate = data[0]?.date ?? "";
+  const divergencePivots = useMemo(() => {
+    if (!signals?.divergences?.length) return [] as { date: string; price: number; kind: "bullish" | "bearish" }[];
+    return signals.divergences.flatMap((d) =>
+      [d.from, d.to]
+        .filter((p) => p.date >= firstDate)
+        .map((p) => ({ date: p.date, price: p.price, kind: d.kind }))
+    );
+  }, [signals, firstDate]);
+  const hasStructure = showStructure && (!!acc?.zoneLow || !!yearBand || divergencePivots.length > 0);
 
   // Range performance readout shown next to the selector.
   const rangeChange = useMemo(() => {
@@ -114,15 +141,29 @@ export function StockPriceChart({ candles }: { candles: Candle[] }) {
             </span>
           )}
         </div>
-        <button
-          onClick={() => setShowMA((v) => !v)}
-          className={cn(
-            "rounded-md px-2 py-1 text-[11px] font-medium transition-colors duration-200",
-            showMA ? "bg-accent text-foreground" : "text-muted-foreground hover:bg-accent"
+        <div className="flex items-center gap-1.5">
+          {signals && (
+            <button
+              onClick={() => setShowStructure((v) => !v)}
+              title="Long-term accumulation band, 52-week range, support and momentum-divergence pivots"
+              className={cn(
+                "rounded-md px-2 py-1 text-[11px] font-medium transition-colors duration-200",
+                showStructure ? "bg-accent text-foreground" : "text-muted-foreground hover:bg-accent"
+              )}
+            >
+              {showStructure ? "Hide" : "Show"} structure
+            </button>
           )}
-        >
-          {showMA ? "Hide" : "Show"} MA 50/200
-        </button>
+          <button
+            onClick={() => setShowMA((v) => !v)}
+            className={cn(
+              "rounded-md px-2 py-1 text-[11px] font-medium transition-colors duration-200",
+              showMA ? "bg-accent text-foreground" : "text-muted-foreground hover:bg-accent"
+            )}
+          >
+            {showMA ? "Hide" : "Show"} MA 50/200
+          </button>
+        </div>
       </div>
 
       {/* key={range} re-triggers the draw sweep on every range switch */}
@@ -130,6 +171,21 @@ export function StockPriceChart({ candles }: { candles: Candle[] }) {
         <ComposedChart data={data} margin={{ top: 5, right: 8, bottom: 0, left: 8 }}>
           <FadeDefs defs={[{ id: `priceFade-${trendUp ? "up" : "down"}`, color: lineColor, from: 0.2, to: 0 }]} />
           <CartesianGrid strokeDasharray="3 3" stroke={INK.grid} vertical={false} />
+          {/* Long-term accumulation band — drawn first so price sits on top of it. */}
+          {hasStructure && acc?.zoneLow != null && acc.zoneHigh != null && (
+            <ReferenceArea
+              yAxisId="price"
+              y1={acc.zoneLow}
+              y2={acc.zoneHigh}
+              ifOverflow="hidden"
+              fill={INK.line}
+              fillOpacity={0.07}
+              stroke={INK.lineSoft}
+              strokeOpacity={0.35}
+              strokeDasharray="2 3"
+              label={{ value: "Accumulation zone", position: "insideTopLeft", fontSize: 9.5, fill: INK.line, opacity: 0.7 }}
+            />
+          )}
           <XAxis
             dataKey="date"
             tick={AXIS_TICK}
@@ -204,6 +260,52 @@ export function StockPriceChart({ candles }: { candles: Candle[] }) {
               />
             </>
           )}
+          {hasStructure && yearBand && (
+            <>
+              <ReferenceLine
+                yAxisId="price"
+                y={yearBand.high}
+                ifOverflow="hidden"
+                stroke={INK.neutral}
+                strokeDasharray="4 4"
+                strokeOpacity={0.7}
+                label={{ value: "52w high", position: "right", fontSize: 9.5, fill: INK.neutral }}
+              />
+              <ReferenceLine
+                yAxisId="price"
+                y={yearBand.low}
+                ifOverflow="hidden"
+                stroke={INK.neutral}
+                strokeDasharray="4 4"
+                strokeOpacity={0.7}
+                label={{ value: "52w low", position: "right", fontSize: 9.5, fill: INK.neutral }}
+              />
+            </>
+          )}
+          {hasStructure && acc?.majorSupport != null && (
+            <ReferenceLine
+              yAxisId="price"
+              y={acc.majorSupport}
+              ifOverflow="hidden"
+              stroke={INK.up}
+              strokeDasharray="5 4"
+              strokeOpacity={0.55}
+              label={{ value: "Support", position: "left", fontSize: 9.5, fill: INK.up }}
+            />
+          )}
+          {hasStructure && divergencePivots.map((p, i) => (
+            <ReferenceDot
+              key={`${p.date}-${i}`}
+              yAxisId="price"
+              x={p.date}
+              y={p.price}
+              r={4}
+              ifOverflow="hidden"
+              fill={p.kind === "bullish" ? INK.up : INK.down}
+              stroke="#fbfbf9"
+              strokeWidth={1.5}
+            />
+          ))}
         </ComposedChart>
       </ResponsiveContainer>
 

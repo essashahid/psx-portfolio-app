@@ -25,25 +25,56 @@ import {
   Menu,
   X,
   Loader2,
+  FileText,
 } from "lucide-react";
 
-const NAV = [
-  { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
-  { href: "/import", label: "Import Center", icon: Upload },
-  { href: "/holdings", label: "Holdings", icon: Briefcase },
-  { href: "/stocks", label: "Stock Research", icon: Search },
-  { href: "/market", label: "Market Pulse", icon: Activity },
-  { href: "/bulls-bears", label: "Bulls & Bears", icon: BarChart3 },
-  { href: "/chat", label: "Research Copilot", icon: Sparkles },
-  { href: "/news", label: "News Center", icon: Newspaper },
-  { href: "/briefings", label: "AI Briefings", icon: Sparkles },
-  { href: "/goals", label: "Goals & Targets", icon: Target },
-  { href: "/dividends", label: "Dividends", icon: HandCoins },
-  { href: "/journal", label: "Journal", icon: NotebookPen },
-  { href: "/alerts", label: "Alerts", icon: Bell },
-  { href: "/coverage", label: "Data Engine", icon: Database },
-  { href: "/settings", label: "Settings", icon: Settings },
+/**
+ * Navigation grouped into labelled sections so the 15 destinations read as a
+ * structured map, not a flat wall — a newcomer can see "where do I look at my
+ * money / research an idea / plan / manage data". `NAV` stays a flat derived
+ * list for active-route matching and the mobile bottom bar.
+ */
+type NavItemDef = { href: string; label: string; icon: ComponentType<{ className?: string }>; hint: string };
+
+const NAV_SECTIONS: { title: string; items: NavItemDef[] }[] = [
+  {
+    title: "Overview",
+    items: [
+      { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard, hint: "Your portfolio at a glance" },
+      { href: "/holdings", label: "Holdings", icon: Briefcase, hint: "Positions, P/L and weights" },
+      { href: "/dividends", label: "Dividends", icon: HandCoins, hint: "Payouts received and forecast" },
+    ],
+  },
+  {
+    title: "Research",
+    items: [
+      { href: "/stocks", label: "Stock Research", icon: Search, hint: "Fundamentals, ratios and structure per stock" },
+      { href: "/market", label: "Market Pulse", icon: Activity, hint: "Index, breadth, sectors and flows" },
+      { href: "/bulls-bears", label: "Bulls & Bears", icon: BarChart3, hint: "Weekly regime, picks and watchlist" },
+      { href: "/news", label: "News Center", icon: Newspaper, hint: "Portfolio and market news" },
+      { href: "/chat", label: "Research Copilot", icon: Sparkles, hint: "Ask anything about your portfolio and PSX" },
+      { href: "/briefings", label: "AI Briefings", icon: FileText, hint: "Generated portfolio and market briefs" },
+    ],
+  },
+  {
+    title: "Planning",
+    items: [
+      { href: "/goals", label: "Goals & Targets", icon: Target, hint: "Targets and progress" },
+      { href: "/journal", label: "Journal", icon: NotebookPen, hint: "Your decisions and notes" },
+      { href: "/alerts", label: "Alerts", icon: Bell, hint: "Triggered watch conditions" },
+    ],
+  },
+  {
+    title: "Data & setup",
+    items: [
+      { href: "/import", label: "Import Center", icon: Upload, hint: "Import statements and transactions" },
+      { href: "/coverage", label: "Data Engine", icon: Database, hint: "Data coverage and provider health" },
+      { href: "/settings", label: "Settings", icon: Settings, hint: "Preferences and account" },
+    ],
+  },
 ];
+
+const NAV = NAV_SECTIONS.flatMap((s) => s.items);
 
 const MOBILE_NAV = NAV.filter((item) =>
   ["/dashboard", "/holdings", "/market", "/chat", "/news", "/alerts"].includes(item.href)
@@ -180,20 +211,25 @@ export function Sidebar({ email, openAlerts }: { email: string; openAlerts: numb
           <p className="eyebrow mt-0.5 text-[9px]">PSX command center</p>
         </div>
       </div>
-      <nav className="flex-1 space-y-0.5 overflow-y-auto px-2">
-        {NAV.map((item) => {
-          const active = pathname === item.href || pathname.startsWith(item.href + "/");
-          return (
-            <Link key={item.href} href={item.href} className="block">
-              <SidebarRow
-                icon={item.icon}
-                label={item.label}
-                active={active}
-                badge={item.href === "/alerts" && openAlerts > 0 ? openAlerts : undefined}
-              />
-            </Link>
-          );
-        })}
+      <nav className="flex-1 space-y-3 overflow-y-auto px-2 pb-3">
+        {NAV_SECTIONS.map((section) => (
+          <div key={section.title} className="space-y-0.5">
+            <p className="eyebrow px-3 pb-0.5 text-[9px]">{section.title}</p>
+            {section.items.map((item) => {
+              const active = pathname === item.href || pathname.startsWith(item.href + "/");
+              return (
+                <Link key={item.href} href={item.href} className="block" title={item.hint}>
+                  <SidebarRow
+                    icon={item.icon}
+                    label={item.label}
+                    active={active}
+                    badge={item.href === "/alerts" && openAlerts > 0 ? openAlerts : undefined}
+                  />
+                </Link>
+              );
+            })}
+          </div>
+        ))}
       </nav>
       <div className="border-t border-border px-4 py-3">
         <p className="truncate text-[11px] text-sidebar-muted">{email}</p>
@@ -280,20 +316,25 @@ export function MobileTopBar({ email, openAlerts }: { email: string; openAlerts:
                 <X className="h-[18px] w-[18px]" />
               </button>
             </div>
-            <nav className="grid gap-1 p-3">
-              {NAV.map((item) => {
-                const activeItem = pathname === item.href || pathname.startsWith(item.href + "/");
-                return (
-                  <Link key={item.href} href={item.href} onClick={() => setMenuOpen(false)} className="block">
-                    <MobileMenuRow
-                      icon={item.icon}
-                      label={item.label}
-                      active={activeItem}
-                      badge={item.href === "/alerts" && openAlerts > 0 ? openAlerts : undefined}
-                    />
-                  </Link>
-                );
-              })}
+            <nav className="grid gap-3 p-3">
+              {NAV_SECTIONS.map((section) => (
+                <div key={section.title} className="grid gap-1">
+                  <p className="eyebrow px-3 text-[9px]">{section.title}</p>
+                  {section.items.map((item) => {
+                    const activeItem = pathname === item.href || pathname.startsWith(item.href + "/");
+                    return (
+                      <Link key={item.href} href={item.href} onClick={() => setMenuOpen(false)} className="block">
+                        <MobileMenuRow
+                          icon={item.icon}
+                          label={item.label}
+                          active={activeItem}
+                          badge={item.href === "/alerts" && openAlerts > 0 ? openAlerts : undefined}
+                        />
+                      </Link>
+                    );
+                  })}
+                </div>
+              ))}
             </nav>
           </div>
         </div>

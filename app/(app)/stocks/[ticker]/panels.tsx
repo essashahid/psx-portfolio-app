@@ -1,6 +1,7 @@
 import { createClient, getUser } from "@/lib/supabase/server";
 import { getCompanyMetadata } from "@/lib/company/metadata";
 import { getTechnicals } from "@/lib/company/technicals";
+import { computeSignals } from "@/lib/market/technicals";
 import { getCompanyDividends } from "@/lib/company/dividends";
 import { getCompanyFilings } from "@/lib/company/filings";
 import { computeRatios, type RatioRow } from "@/lib/engine/ratios";
@@ -601,6 +602,7 @@ export async function RatiosPanel({ ticker }: { ticker: string }) {
 export async function TechnicalsPanel({ ticker }: { ticker: string }) {
   const supabase = await createClient();
   const technicals = await getTechnicals(supabase, ticker);
+  const signals = computeSignals(technicals.history);
 
   if (technicals.history.length === 0) {
     return (
@@ -619,10 +621,47 @@ export async function TechnicalsPanel({ ticker }: { ticker: string }) {
           <CardTitle>Price & volume</CardTitle>
         </CardHeader>
         <CardContent>
-          <StockPriceChart candles={technicals.history} />
+          <StockPriceChart candles={technicals.history} signals={signals} />
           <div className="mt-2"><SectionMeta meta={technicals.meta} ticker={ticker} refreshSection="technicals" /></div>
         </CardContent>
       </Card>
+
+      {signals.accumulation && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <TrendingUp className="h-4 w-4" /> Long-term structure
+            </CardTitle>
+            <CardDescription>For accumulation timing — fundamentals drive the decision, not the chart.</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <div className="flex flex-wrap items-center gap-2">
+              <Badge variant={signals.longTermTrend === "uptrend" ? "green" : signals.longTermTrend === "downtrend" ? "red" : "secondary"}>
+                {signals.longTermTrend === "uptrend" ? "Long-term uptrend" : signals.longTermTrend === "downtrend" ? "Long-term downtrend" : "Range / sideways"}
+              </Badge>
+              <Badge variant={signals.accumulation.status === "attractive" ? "green" : signals.accumulation.status === "deteriorating" ? "red" : "secondary"}>
+                {signals.accumulation.status === "attractive" ? "Healthy accumulation level" : signals.accumulation.status === "extended" ? "Extended vs base" : signals.accumulation.status === "deteriorating" ? "Below normal pullback" : "Structure unclear"}
+              </Badge>
+              {signals.divergences.map((d, i) => (
+                <Badge key={i} variant={d.kind === "bullish" ? "green" : "secondary"}>{d.kind === "bullish" ? "Bullish" : "Bearish"} momentum divergence</Badge>
+              ))}
+            </div>
+            <p className="text-xs leading-relaxed text-muted-foreground">{signals.accumulation.note}</p>
+            {signals.seasonality.length > 0 && (
+              <div className="grid gap-2 sm:grid-cols-2">
+                {signals.seasonality.map((w) => (
+                  <div key={w.label} className="rounded-lg border border-border bg-muted/40 px-3 py-2">
+                    <p className="text-[11px] font-medium text-foreground">{w.label}</p>
+                    <p className="text-[11px] text-muted-foreground">
+                      Closed positive {w.positive}/{w.years} years ({w.winRatePct.toFixed(0)}%), avg {w.avgReturnPct >= 0 ? "+" : ""}{w.avgReturnPct.toFixed(1)}%
+                    </p>
+                  </div>
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      )}
 
       <div className="grid gap-3 sm:grid-cols-3 lg:grid-cols-6">
         <Metric label="20-day MA" value={num(technicals.ma20)} />
