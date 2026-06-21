@@ -2,6 +2,7 @@ import { createClient, getUser } from "@/lib/supabase/server";
 import { getCompanyMetadata } from "@/lib/company/metadata";
 import { getTechnicals } from "@/lib/company/technicals";
 import { computeSignals } from "@/lib/market/technicals";
+import { METRIC_HINTS } from "@/lib/market/glossary";
 import { getCompanyDividends } from "@/lib/company/dividends";
 import { getCompanyFilings } from "@/lib/company/filings";
 import { computeRatios, type RatioRow } from "@/lib/engine/ratios";
@@ -26,10 +27,19 @@ import {
 // Small shared bits
 // ---------------------------------------------------------------------------
 
-function Metric({ label, value, sub, tone }: { label: string; value: string; sub?: string; tone?: "positive" | "negative" }) {
+function Metric({ label, value, sub, tone, hint }: { label: string; value: string; sub?: string; tone?: "positive" | "negative"; hint?: string }) {
+  const resolvedHint = hint ?? METRIC_HINTS[label];
   return (
     <div className="rounded-lg border border-border bg-card/60 p-3">
-      <p className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">{label}</p>
+      <p
+        className={cn(
+          "text-[10px] font-medium uppercase tracking-wide text-muted-foreground",
+          resolvedHint && "cursor-help decoration-muted-foreground/40 underline decoration-dotted underline-offset-2"
+        )}
+        title={resolvedHint}
+      >
+        {label}
+      </p>
       <p className={cn("mt-0.5 text-sm font-semibold tabular-nums", tone === "positive" && "text-emerald-600", tone === "negative" && "text-red-600")}>
         {value}
       </p>
@@ -572,7 +582,15 @@ export async function RatiosPanel({ ticker }: { ticker: string }) {
             <TBody>
               {ratios.map((r) => (
                 <TR key={r.ratio_name}>
-                  <TD className="text-xs font-medium">{r.ratio_name}</TD>
+                  <TD className="text-xs font-medium">
+                    {METRIC_HINTS[r.ratio_name] ? (
+                      <span className="cursor-help decoration-muted-foreground/40 underline decoration-dotted underline-offset-2" title={METRIC_HINTS[r.ratio_name]}>
+                        {r.ratio_name}
+                      </span>
+                    ) : (
+                      r.ratio_name
+                    )}
+                  </TD>
                   <TD
                     className={cn("text-right text-xs tabular-nums", r.ratio_value === null && "text-muted-foreground")}
                     title={r.missing ?? undefined}
@@ -627,37 +645,33 @@ export async function TechnicalsPanel({ ticker }: { ticker: string }) {
       </Card>
 
       {signals.accumulation && (
-        <Card>
+        <Card className="chart-reveal">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <TrendingUp className="h-4 w-4" /> Long-term structure
             </CardTitle>
-            <CardDescription>For accumulation timing — fundamentals drive the decision, not the chart.</CardDescription>
+            <CardDescription>This helps with accumulation timing. Your fundamentals should drive the decision, not the chart.</CardDescription>
           </CardHeader>
-          <CardContent className="space-y-3">
-            <div className="flex flex-wrap items-center gap-2">
-              <Badge variant={signals.longTermTrend === "uptrend" ? "green" : signals.longTermTrend === "downtrend" ? "red" : "secondary"}>
-                {signals.longTermTrend === "uptrend" ? "Long-term uptrend" : signals.longTermTrend === "downtrend" ? "Long-term downtrend" : "Range / sideways"}
-              </Badge>
-              <Badge variant={signals.accumulation.status === "attractive" ? "green" : signals.accumulation.status === "deteriorating" ? "red" : "secondary"}>
-                {signals.accumulation.status === "attractive" ? "Healthy accumulation level" : signals.accumulation.status === "extended" ? "Extended vs base" : signals.accumulation.status === "deteriorating" ? "Below normal pullback" : "Structure unclear"}
-              </Badge>
-              {signals.divergences.map((d, i) => (
-                <Badge key={i} variant={d.kind === "bullish" ? "green" : "secondary"}>{d.kind === "bullish" ? "Bullish" : "Bearish"} momentum divergence</Badge>
-              ))}
-            </div>
+          <CardContent className="space-y-2.5 text-sm">
+            <p className="font-medium">
+              The long-term trend is{" "}
+              <span className={cn(signals.longTermTrend === "uptrend" && "text-emerald-600", signals.longTermTrend === "downtrend" && "text-red-600")}>
+                {signals.longTermTrend === "uptrend" ? "rising" : signals.longTermTrend === "downtrend" ? "falling" : "sideways"}
+              </span>{" "}
+              and the price is{" "}
+              <span className={cn(signals.accumulation.status === "attractive" && "text-emerald-600", signals.accumulation.status === "deteriorating" && "text-red-600", signals.accumulation.status === "extended" && "text-amber-600")}>
+                {signals.accumulation.status === "attractive" ? "at a healthy accumulation level" : signals.accumulation.status === "extended" ? "extended above its recent base" : signals.accumulation.status === "deteriorating" ? "below its normal pullback range" : "at an unclear level"}
+              </span>
+              {signals.divergences[0] ? `. There is a ${signals.divergences[0].kind} momentum divergence.` : "."}
+            </p>
             <p className="text-xs leading-relaxed text-muted-foreground">{signals.accumulation.note}</p>
             {signals.seasonality.length > 0 && (
-              <div className="grid gap-2 sm:grid-cols-2">
-                {signals.seasonality.map((w) => (
-                  <div key={w.label} className="rounded-lg border border-border bg-muted/40 px-3 py-2">
-                    <p className="text-[11px] font-medium text-foreground">{w.label}</p>
-                    <p className="text-[11px] text-muted-foreground">
-                      Closed positive {w.positive}/{w.years} years ({w.winRatePct.toFixed(0)}%), avg {w.avgReturnPct >= 0 ? "+" : ""}{w.avgReturnPct.toFixed(1)}%
-                    </p>
-                  </div>
-                ))}
-              </div>
+              <p className="text-xs leading-relaxed text-muted-foreground">
+                <span className="font-medium text-foreground">Seasonality.</span>{" "}
+                {signals.seasonality
+                  .map((w) => `In the past, ${w.label} closed positive in ${w.positive} of ${w.years} years (${w.winRatePct.toFixed(0)}%), with an average move of ${w.avgReturnPct >= 0 ? "+" : ""}${w.avgReturnPct.toFixed(1)}%.`)
+                  .join(" ")}
+              </p>
             )}
           </CardContent>
         </Card>
@@ -677,7 +691,7 @@ export async function TechnicalsPanel({ ticker }: { ticker: string }) {
       </div>
 
       <Card>
-        <CardHeader><CardTitle>Trend signals</CardTitle><CardDescription>Neutral observations — not trading signals.</CardDescription></CardHeader>
+        <CardHeader><CardTitle>Trend signals</CardTitle><CardDescription>Neutral observations, not trading signals.</CardDescription></CardHeader>
         <CardContent className="flex flex-wrap gap-2">
           {technicals.flags.length === 0 ? (
             <p className="text-xs text-muted-foreground">Not enough history to derive trend signals.</p>

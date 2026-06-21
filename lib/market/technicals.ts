@@ -1,8 +1,8 @@
 /**
- * Long-term structure library — the analytical lens of the "Bulls & Bears"
- * experts, but applied to LONG-TERM INVESTING, not trading.
+ * Long-term structure library. It applies the analytical lens of the "Bulls &
+ * Bears" experts to long-term investing rather than trading.
  *
- * IMPORTANT — this platform is for long-term investors. This module deliberately
+ * IMPORTANT. This platform is for long-term investors. This module deliberately
  * does NOT produce trading constructs (stop-losses, short-term price targets,
  * risk/reward, entry/exit "setups", Klinger/ABCD swing signals). It surfaces
  * only what helps a long-term investor decide WHETHER and ROUGHLY WHEN to
@@ -169,7 +169,7 @@ function isoWeekKey(d: Date): string {
 }
 
 /**
- * Zigzag swing detection on close — used for the larger-trend pullback zone and
+ * Zigzag swing detection on close, used for the larger-trend pullback zone and
  * for momentum-divergence pivots. Threshold defaults high (8%) so we track the
  * major long-term swings, not short-term noise.
  */
@@ -229,7 +229,7 @@ export function detectDivergence(swings: Swing[], series: (number | null)[]): Di
         indicator: "RSI",
         from: { date: a.date, price: a.price, value: va },
         to: { date: b.date, price: b.price, value: vb },
-        note: `Price made a lower low (${a.price.toFixed(2)} → ${b.price.toFixed(2)}) while momentum (RSI) made a higher low — the long downtrend may be bottoming, which can mark a longer-term accumulation opportunity for a quality name.`,
+        note: `Price fell to a lower low, from ${a.price.toFixed(2)} to ${b.price.toFixed(2)}, but momentum measured by RSI made a higher low. The long downtrend may be bottoming. For a quality company this can be a longer-term accumulation opportunity.`,
       };
     }
   }
@@ -243,7 +243,7 @@ export function detectDivergence(swings: Swing[], series: (number | null)[]): Di
         indicator: "RSI",
         from: { date: a.date, price: a.price, value: va },
         to: { date: b.date, price: b.price, value: vb },
-        note: `Price made a higher high (${a.price.toFixed(2)} → ${b.price.toFixed(2)}) while momentum (RSI) made a lower high — momentum is fading at the highs. Not a sell signal for a long-term holder; just a reason to be patient about adding here and to re-check the thesis.`,
+        note: `Price rose to a higher high, from ${a.price.toFixed(2)} to ${b.price.toFixed(2)}, but momentum measured by RSI made a lower high. Momentum is fading at the highs. This is not a sell signal for a long-term holder. It is a reason to be patient about adding here and to recheck the thesis.`,
       };
     }
   }
@@ -279,7 +279,7 @@ export function buildAccumulationView(candles: Candle[], swings: Swing[], trend:
   const swingLow = swings[lowPos].price;
   const span = swingHigh - swingLow;
   if (span <= 0) {
-    return { zoneLow: null, zoneHigh: null, majorSupport: swingLow, status: "unclear", distanceFromHighPct, note: "Degenerate swing range — no clear accumulation band." };
+    return { zoneLow: null, zoneHigh: null, majorSupport: swingLow, status: "unclear", distanceFromHighPct, note: "The swing range is too small to define a clear accumulation band." };
   }
 
   const zoneLow = round(swingHigh - span * 0.618);
@@ -289,16 +289,16 @@ export function buildAccumulationView(candles: Candle[], swings: Swing[], trend:
   let note: string;
   if (trend === "downtrend") {
     status = "deteriorating";
-    note = `Long-term trend is down (price ${round(lastClose)}, ${distanceFromHighPct ?? "?"}% from the 52-week high). For a long-term investor this is only attractive if the fundamental thesis is intact and improving — let valuation and quality, not the chart, lead. Major support near ${round(swingLow)}.`;
+    note = `The long-term trend is down. Price is ${round(lastClose)}, which is ${distanceFromHighPct ?? "?"}% from the 52-week high. For a long-term investor this is only worth buying if the fundamental thesis is still intact and improving. Let valuation and quality lead, not the chart. Major support is near ${round(swingLow)}.`;
   } else if (lastClose < zoneLow) {
     status = "deteriorating";
-    note = `Price ${round(lastClose)} has fallen below the normal pullback band (${zoneLow}–${zoneHigh}) of its larger up-leg. Re-check the thesis: if fundamentals still hold, this is a deeper-value accumulation area; if they're weakening, don't average down. Major support near ${round(swingLow)}.`;
+    note = `Price ${round(lastClose)} has fallen below the normal pullback range of its larger up-leg, which sits between ${zoneLow} and ${zoneHigh}. Recheck the thesis. If the fundamentals still hold, this is a deeper-value accumulation area. If they are weakening, do not average down. Major support is near ${round(swingLow)}.`;
   } else if (lastClose <= zoneHigh) {
     status = "attractive";
-    note = `Price ${round(lastClose)} sits in a healthy long-term pullback / accumulation band (${zoneLow}–${zoneHigh}) of an intact up-leg — a reasonable area to accumulate a quality name gradually. Major support near ${round(swingLow)}.`;
+    note = `Price ${round(lastClose)} sits in a healthy long-term pullback range, between ${zoneLow} and ${zoneHigh}, within an intact up-leg. This is a reasonable area to accumulate a quality company gradually. Major support is near ${round(swingLow)}.`;
   } else {
     status = "extended";
-    note = `Price ${round(lastClose)} is above the healthy pullback band (${zoneLow}–${zoneHigh}) — extended versus its recent base. For long-term adds, accumulate gradually (e.g. a SIP) rather than committing a lump sum here, or wait for a pullback into the band.`;
+    note = `Price ${round(lastClose)} is above the healthy pullback range of ${zoneLow} to ${zoneHigh}, so it is extended versus its recent base. To add for the long term, accumulate gradually with a regular monthly plan rather than a lump sum, or wait for a pullback into that range.`;
   }
 
   return { zoneLow, zoneHigh, majorSupport: round(swingLow), status, distanceFromHighPct, note };
@@ -399,8 +399,8 @@ export function computeSignals(candles: Candle[]): TechnicalSignals {
     priceAboveFast: fast != null ? lastClose > fast : null,
     note:
       fast != null && slow != null
-        ? `Weekly EMA21 ${fast.toFixed(2)} vs EMA55 ${slow.toFixed(2)} — ${fast > slow ? "fast above slow: the multi-year trend is constructive" : "fast below slow: the multi-year trend is weak"}; price is ${lastClose > fast ? "above" : "below"} EMA21.`
-        : "Not enough weekly history for EMA21/55.",
+        ? `The weekly EMA 21 is ${fast.toFixed(2)} and the EMA 55 is ${slow.toFixed(2)}. ${fast > slow ? "The faster average is above the slower one, so the multi-year trend is constructive." : "The faster average is below the slower one, so the multi-year trend is weak."} Price is ${lastClose > fast ? "above" : "below"} the EMA 21.`
+        : "There is not enough weekly history to compute the EMA 21 and 55.",
   };
 
   let longTermTrend: TechnicalSignals["longTermTrend"] = "range";
@@ -417,9 +417,9 @@ export function computeSignals(candles: Candle[]): TechnicalSignals {
   const accumulation = buildAccumulationView(clean, swings, longTermTrend);
 
   const seasonality: SeasonalWindow[] = [];
-  const h2 = seasonalWindow(clean, { month: 6, day: 1 }, { month: 12, day: 31 }, "Jun – Dec (H2)");
+  const h2 = seasonalWindow(clean, { month: 6, day: 1 }, { month: 12, day: 31 }, "June to December");
   if (h2) seasonality.push(h2);
-  const h1 = seasonalWindow(clean, { month: 1, day: 1 }, { month: 5, day: 31 }, "Jan – May (H1)");
+  const h1 = seasonalWindow(clean, { month: 1, day: 1 }, { month: 5, day: 31 }, "January to May");
   if (h1) seasonality.push(h1);
 
   return {

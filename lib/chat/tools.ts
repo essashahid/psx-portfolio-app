@@ -39,7 +39,7 @@ export const CHAT_TOOLS: Anthropic.Tool[] = [
   },
   {
     name: "get_technicals",
-    description: "Long-term structure read for a ticker (for INVESTORS, not traders): 52-week range, RSI, moving averages, PLUS the multi-year trend (weekly EMA21/55), momentum-divergence trend warnings, a healthy accumulation/pullback band (where to gradually accumulate a quality name — NO stop-loss, NO price target, NO risk/reward), and multi-year seasonality for timing capital deployment. Use it to judge whether the price is an attractive long-term accumulation level, extended, or deteriorating — always secondary to fundamentals. Do not turn this into a swing-trade setup.",
+    description: "Long-term structure read for a ticker, written for investors rather than traders. It returns the 52-week range, RSI, and moving averages, plus the multi-year trend (weekly EMA21/55), momentum-divergence trend warnings, a healthy accumulation range (where to gradually accumulate a quality company, with no stop-loss, no price target, and no risk/reward), and multi-year seasonality for timing capital deployment. Use it to judge whether the price is an attractive long-term accumulation level, extended, or deteriorating. It is always secondary to fundamentals. Do not turn this into a swing-trade setup.",
     input_schema: { type: "object", properties: { ticker: { type: "string" } }, required: ["ticker"] },
   },
   {

@@ -189,10 +189,10 @@ function technicalSignalsLine(ticker: string, s: TechnicalSignals | null): strin
   for (const d of s.divergences) parts.push(`${d.kind} momentum divergence`);
   const acc = s.accumulation;
   if (acc) {
-    if (acc.zoneLow != null && acc.zoneHigh != null) parts.push(`accumulation band ${acc.zoneLow}–${acc.zoneHigh} (status: ${acc.status})`);
+    if (acc.zoneLow != null && acc.zoneHigh != null) parts.push(`accumulation range ${acc.zoneLow} to ${acc.zoneHigh} (status: ${acc.status})`);
     if (acc.distanceFromHighPct != null) parts.push(`${acc.distanceFromHighPct >= 0 ? "+" : ""}${acc.distanceFromHighPct}% vs 52w high`);
   }
-  for (const w of s.seasonality) parts.push(`${w.label} ${w.winRatePct.toFixed(0)}% positive/${w.years}y avg ${w.avgReturnPct >= 0 ? "+" : ""}${w.avgReturnPct.toFixed(1)}%`);
+  for (const w of s.seasonality) parts.push(`${w.label} ${w.winRatePct.toFixed(0)}% positive over ${w.years}y, avg ${w.avgReturnPct >= 0 ? "+" : ""}${w.avgReturnPct.toFixed(1)}%`);
   const accNote = acc?.note ? ` ${acc.note}` : "";
-  return `${ticker} LONG-TERM STRUCTURE: ${parts.join("; ")}.${accNote} (Context for accumulation timing only — fundamentals drive the decision; not a trade signal.)`;
+  return `${ticker} LONG-TERM STRUCTURE: ${parts.join("; ")}.${accNote} (This is context for accumulation timing only. Fundamentals drive the decision. This is not a trade signal.)`;
 }
