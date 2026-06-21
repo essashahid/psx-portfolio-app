@@ -3,6 +3,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { fetchPsxEod } from "@/lib/market-data/psx-dps";
 import { freshnessFor, isStaleOrMissing, TTL_MINUTES } from "@/lib/company/freshness";
 import type { Candle, Quote, Technicals, TechnicalFlag } from "@/lib/company/types";
+import { computeSignals } from "@/lib/market/technicals";
 
 const MAX_STORED_CANDLES = 1300; // ~5 trading years, enough for every chart range
 
@@ -273,7 +274,10 @@ async function cacheTechnicals(ticker: string, t: Omit<Technicals, "meta">): Pro
         fifty_two_week_low: t.fiftyTwoWeekLow,
         volatility: t.volatility,
         spark: sparkline(t.history),
-        data: { history: t.history, flags: t.flags },
+        // Rich indicator bundle (EMA21/55, EFI, Klinger-approx, divergences,
+        // Fib/ABCD, seasonality, trade plan) computed from the same close+volume
+        // history — surfaced to the chat LLM so it reads structure, not just MA/RSI.
+        data: { history: t.history, flags: t.flags, signals: computeSignals(t.history) },
         source: "psx-dps",
         last_fetched_at: now,
         updated_at: now,

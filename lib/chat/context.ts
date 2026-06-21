@@ -7,6 +7,7 @@ import {
 } from "@/lib/chat/data";
 import { getForeignFlowSnapshot, type ForeignFlowSnapshot } from "@/lib/market/foreign-flows";
 import { fmtPct, fmtCompact } from "@/lib/market/format";
+import type { TechnicalSignals } from "@/lib/market/technicals";
 
 /** A typed card the UI renders directly (free — no LLM drew it). */
 export type Card =
@@ -153,6 +154,8 @@ export function briefFromCards(cards: Card[]): string {
       case "technical": {
         const t = c.data;
         lines.push(`${t.ticker} TECHNICALS: 52w ${t.fiftyTwoWeekLow ?? "?"}-${t.fiftyTwoWeekHigh ?? "?"}${t.rsi != null ? `, RSI ${t.rsi.toFixed(0)}` : ""}${t.ma50 != null && t.price != null ? `, vs MA50 ${fmtPct(((t.price - t.ma50) / t.ma50) * 100)}` : ""}${t.ma200 != null && t.price != null ? `, vs MA200 ${fmtPct(((t.price - t.ma200) / t.ma200) * 100)}` : ""}.`);
+        const sigLine = technicalSignalsLine(t.ticker, t.signals);
+        if (sigLine) lines.push(sigLine);
         break;
       }
       case "dividend": {
@@ -168,4 +171,28 @@ export function briefFromCards(cards: Card[]): string {
     }
   }
   return lines.join("\n");
+}
+
+/**
+ * One dense line of the LONG-TERM structure read for the LLM: multi-year trend
+ * (weekly EMA21/55), momentum-divergence trend warnings, the healthy
+ * accumulation/pullback band (no stop-loss, no targets — this is for investors,
+ * not traders), and multi-year seasonality for timing gradual deployment.
+ */
+function technicalSignalsLine(ticker: string, s: TechnicalSignals | null): string | null {
+  if (!s) return null;
+  const parts: string[] = [];
+  parts.push(`long-term trend ${s.longTermTrend}`);
+  if (s.emaWeekly?.fast != null && s.emaWeekly.slow != null) {
+    parts.push(`wEMA21/55 ${s.emaWeekly.fast.toFixed(1)}/${s.emaWeekly.slow.toFixed(1)} (${s.emaWeekly.fastAboveSlow ? "fast>slow" : "fast<slow"})`);
+  }
+  for (const d of s.divergences) parts.push(`${d.kind} momentum divergence`);
+  const acc = s.accumulation;
+  if (acc) {
+    if (acc.zoneLow != null && acc.zoneHigh != null) parts.push(`accumulation band ${acc.zoneLow}–${acc.zoneHigh} (status: ${acc.status})`);
+    if (acc.distanceFromHighPct != null) parts.push(`${acc.distanceFromHighPct >= 0 ? "+" : ""}${acc.distanceFromHighPct}% vs 52w high`);
+  }
+  for (const w of s.seasonality) parts.push(`${w.label} ${w.winRatePct.toFixed(0)}% positive/${w.years}y avg ${w.avgReturnPct >= 0 ? "+" : ""}${w.avgReturnPct.toFixed(1)}%`);
+  const accNote = acc?.note ? ` ${acc.note}` : "";
+  return `${ticker} LONG-TERM STRUCTURE: ${parts.join("; ")}.${accNote} (Context for accumulation timing only — fundamentals drive the decision; not a trade signal.)`;
 }

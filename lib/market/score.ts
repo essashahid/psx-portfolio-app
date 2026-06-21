@@ -101,6 +101,7 @@ const RATIO_MAP: Record<RatioSubScoreKey, { name: string; higherBetter: boolean 
     { name: "Debt / assets", higherBetter: false },
     { name: "Liabilities / assets", higherBetter: false },
     { name: "Accrual ratio", higherBetter: false },
+    { name: "Days sales outstanding", higherBetter: false },
   ],
   value: [
     { name: "Earnings yield", higherBetter: true },

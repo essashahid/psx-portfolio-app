@@ -1,4 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
+import type { TechnicalSignals } from "@/lib/market/technicals";
 
 /**
  * Compact, FREE data getters for the chat assistant — everything reads from
@@ -48,6 +49,7 @@ export interface TechnicalCard {
   ma50: number | null;
   ma200: number | null;
   spark: number[] | null;
+  signals: TechnicalSignals | null; // EMA21/55, EFI, divergences, Fib/ABCD, seasonality, trade plan
 }
 
 export interface DividendCard {
@@ -131,7 +133,8 @@ const RATIO_ORDER = [
   "Sales / share", "Cash / share", "Gross margin", "Operating margin", "Net margin",
   "ROE", "ROA", "ROIC", "Asset turnover", "Debt-to-equity", "Net debt-to-equity",
   "Debt / assets", "Liabilities / assets", "Current ratio", "Quick ratio", "Cash ratio",
-  "Interest coverage", "OCF / PAT", "Cash conversion", "Accrual ratio", "Revenue growth",
+  "Interest coverage", "Receivables / revenue", "Receivables / share", "Receivables % of market cap",
+  "Days sales outstanding", "OCF / PAT", "Cash conversion", "Accrual ratio", "Revenue growth",
   "Profit growth", "EPS growth", "Revenue CAGR", "EPS CAGR", "Gross margin change",
   "Net margin change", "FCF margin",
 ];
@@ -153,10 +156,11 @@ export async function getTechnicalCard(db: SupabaseClient, ticker: string): Prom
   const t = ticker.toUpperCase();
   const { data } = await db
     .from("company_technicals")
-    .select("latest_price, fifty_two_week_high, fifty_two_week_low, rsi, moving_average_50, moving_average_200, spark")
+    .select("latest_price, fifty_two_week_high, fifty_two_week_low, rsi, moving_average_50, moving_average_200, spark, data")
     .eq("ticker", t)
     .maybeSingle();
   if (!data) return null;
+  const signals = (data.data as { signals?: TechnicalSignals } | null)?.signals ?? null;
   return {
     ticker: t,
     price: num(data.latest_price),
@@ -166,6 +170,7 @@ export async function getTechnicalCard(db: SupabaseClient, ticker: string): Prom
     ma50: num(data.moving_average_50),
     ma200: num(data.moving_average_200),
     spark: Array.isArray(data.spark) ? (data.spark as number[]) : null,
+    signals,
   };
 }
 

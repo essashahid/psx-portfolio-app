@@ -527,8 +527,9 @@ export async function RatiosPanel({ ticker }: { ticker: string }) {
 
   const fmtVal = (r: (typeof ratios)[number]): string => {
     if (r.ratio_value === null) return "—";
-    if (/Shares outstanding|Market cap/i.test(r.ratio_name)) return formatNumber(r.ratio_value, 0);
-    const pctNames = /yield|margin|growth|ROE|ROA|ROIC|Payout|tax rate|CAGR|change/i;
+    if (/Days sales outstanding/i.test(r.ratio_name)) return `${r.ratio_value.toFixed(0)} days`;
+    if (/^(Shares outstanding|Market cap)/i.test(r.ratio_name)) return formatNumber(r.ratio_value, 0);
+    const pctNames = /yield|margin|growth|ROE|ROA|ROIC|Payout|tax rate|CAGR|change|% of/i;
     return pctNames.test(r.ratio_name) ? `${r.ratio_value.toFixed(2)}%` : r.ratio_value.toFixed(2);
   };
 

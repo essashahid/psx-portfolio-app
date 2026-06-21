@@ -169,6 +169,7 @@ export async function computeRatios(supabase: SupabaseClient, ticker: string): P
   const revenueRupees = revenue !== null ? revenue * 1000 : null;
   const equityRupees = equity !== null ? equity * 1000 : null;
   const cashRupees = cashEq !== null ? cashEq * 1000 : null;
+  const receivablesRupees = receivables !== null ? receivables * 1000 : null;
   const borrowingsRupees = borrowings !== null ? borrowings * 1000 : null;
   const fcfRupees = fcf !== null ? fcf * 1000 : null;
   const operatingProfitRupees = operatingProfit !== null ? operatingProfit * 1000 : null;
@@ -251,6 +252,9 @@ export async function computeRatios(supabase: SupabaseClient, ticker: string): P
   add("Quick ratio", "(Current assets − Inventory) ÷ Current liabilities", { current_assets: currentAssets, inventory, current_liabilities: currentLiabilities }, currentAssets !== null && inventory !== null && currentLiabilities ? (currentAssets - inventory) / currentLiabilities : null, need([["current assets", currentAssets], ["inventory", inventory], ["current liabilities", currentLiabilities]]), balancePeriod);
   add("Cash ratio", "Cash and equivalents ÷ Current liabilities", { cash_and_equivalents: cashEq, current_liabilities: currentLiabilities }, safeDiv(cashEq, currentLiabilities), need([["cash and equivalents", cashEq], ["current liabilities", currentLiabilities]]), balancePeriod);
   add("Receivables / revenue", "Receivables ÷ Revenue", { receivables, revenue }, safeDiv(receivables, revenue), need([["receivables", receivables], ["revenue", revenue]]), `${incomePeriod ?? "?"} / ${balancePeriod ?? "?"}`);
+  add("Receivables / share", "(Receivables × 1,000) ÷ derived shares outstanding", { receivables_pkr_thousands: receivables, shares_outstanding: sharesOutstanding }, safeDiv(receivablesRupees, sharesOutstanding), need([["receivables", receivables], ["derived shares outstanding", sharesOutstanding]]), `${incomePeriod ?? "?"} / ${balancePeriod ?? "?"}`);
+  add("Receivables % of market cap", "(Receivables × 1,000) ÷ Market capitalization", { receivables_pkr_thousands: receivables, market_cap: marketCap }, pct(receivablesRupees, marketCap), need([["receivables", receivables], ["market capitalization", marketCap]]), `${balancePeriod ?? "?"}`);
+  add("Days sales outstanding", "(Receivables ÷ Revenue) × 365", { receivables, revenue }, receivables !== null && revenue ? (receivables / revenue) * 365 : null, need([["receivables", receivables], ["revenue", revenue]]), `${incomePeriod ?? "?"} / ${balancePeriod ?? "?"}`);
   add("Retained earnings / assets", "Retained earnings ÷ Total assets", { retained_earnings: retainedEarnings, total_assets: totalAssets }, safeDiv(retainedEarnings, totalAssets), need([["retained earnings", retainedEarnings], ["total assets", totalAssets]]), balancePeriod);
   add("Interest coverage", "(Profit before tax + Finance cost) ÷ Finance cost", { profit_before_tax: pbt, finance_cost: financeCost }, pbt !== null && financeCost ? (pbt + financeCost) / financeCost : null, need([["profit before tax", pbt], ["finance cost", financeCost]]), detailPeriod ?? incomePeriod);
 
