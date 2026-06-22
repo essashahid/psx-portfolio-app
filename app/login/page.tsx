@@ -55,7 +55,7 @@ export default function LoginPage() {
   }
 
   return (
-    <main className="relative flex min-h-screen flex-col items-center overflow-hidden bg-background px-4">
+    <main className="relative flex min-h-dvh flex-col items-center overflow-x-hidden bg-background px-4 pb-[calc(4rem+env(safe-area-inset-bottom))]">
       {/* Soft top-down halo behind the composition */}
       <div
         aria-hidden
@@ -87,7 +87,7 @@ export default function LoginPage() {
       />
 
       {/* Hero content */}
-      <div className="relative z-10 flex w-full max-w-xl flex-col items-center pt-16 text-center sm:pt-20 md:pt-24">
+      <div className="relative z-10 flex w-full max-w-xl flex-col items-center pt-[calc(2.5rem+env(safe-area-inset-top))] text-center sm:pt-20 md:pt-24">
         <div className="rise rise-1 mb-7 flex items-center gap-2.5">
           <CandlestickChart className="h-6 w-6 text-emerald-600" />
           <span className="text-[15px] font-semibold tracking-tight">PortfolioOS PK</span>
@@ -95,7 +95,7 @@ export default function LoginPage() {
 
         <p className="eyebrow rise rise-1 mb-3">PSX Portfolio Intelligence</p>
 
-        <h1 className="tracking-editorial text-4xl font-medium leading-[1.05] sm:text-5xl md:text-6xl">
+        <h1 className="tracking-editorial text-[2.25rem] font-medium leading-[1.05] sm:text-5xl md:text-6xl">
           <span className="rise rise-2 block text-ghost">A New Standard</span>
           <span className="rise rise-3 block text-foreground">in PSX Investing</span>
         </h1>
@@ -106,7 +106,7 @@ export default function LoginPage() {
         </p>
 
         {/* Auth card — the centered "dashboard" of the composition */}
-        <div className="rise rise-5 mt-10 w-full max-w-sm rounded-2xl border border-border bg-card/90 p-6 text-left shadow-[0_-8px_60px_rgba(0,0,0,0.06),0_40px_100px_-40px_rgba(0,0,0,0.25)] backdrop-blur-sm">
+        <div className="rise rise-5 mt-8 w-full max-w-sm rounded-2xl border border-border bg-card/90 p-5 text-left shadow-[0_-8px_60px_rgba(0,0,0,0.06),0_40px_100px_-40px_rgba(0,0,0,0.25)] backdrop-blur-sm sm:mt-10 sm:p-6">
           <h2 className="text-base font-semibold tracking-tight">
             {mode === "signin" ? "Sign in" : "Create your account"}
           </h2>
@@ -139,7 +139,7 @@ export default function LoginPage() {
             </Button>
           </form>
           <button
-            className="mt-3 w-full text-center text-xs text-muted-foreground hover:text-foreground"
+            className="mt-2 min-h-11 w-full text-center text-xs text-muted-foreground hover:text-foreground"
             onClick={() => { setMode(mode === "signin" ? "signup" : "signin"); setError(null); }}
           >
             {mode === "signin" ? "No account? Sign up" : "Already have an account? Sign in"}

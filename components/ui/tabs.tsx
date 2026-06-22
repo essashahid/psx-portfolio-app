@@ -29,13 +29,16 @@ export function Tabs({ tabs, initial }: { tabs: TabDef[]; initial?: string }) {
 
   return (
     <div>
-      <div className="sticky top-0 z-10 -mx-1 mb-4 flex gap-1 overflow-x-auto border-b border-border bg-background/80 px-1 pb-px backdrop-blur">
+      <div role="tablist" aria-label="Page sections" className="scroll-touch sticky top-0 z-10 -mx-1 mb-4 flex gap-1 overflow-x-auto border-b border-border bg-background/90 px-1 pb-px backdrop-blur">
         {tabs.map((t) => (
           <button
             key={t.id}
             onClick={() => select(t.id)}
+            role="tab"
+            aria-selected={active === t.id}
+            aria-controls={`panel-${t.id}`}
             className={cn(
-              "relative whitespace-nowrap px-3 py-2 text-[13px] font-medium transition-colors",
+              "relative min-h-11 shrink-0 whitespace-nowrap px-3 py-2 text-[13px] font-medium transition-colors md:min-h-0",
               active === t.id ? "text-foreground" : "text-muted-foreground hover:text-foreground"
             )}
           >
@@ -47,7 +50,7 @@ export function Tabs({ tabs, initial }: { tabs: TabDef[]; initial?: string }) {
         ))}
       </div>
       {tabs.map((t) => (
-        <div key={t.id} hidden={active !== t.id}>
+        <div key={t.id} id={`panel-${t.id}`} role="tabpanel" hidden={active !== t.id}>
           {t.content}
         </div>
       ))}

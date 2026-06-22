@@ -69,6 +69,12 @@ textarea {
   touch-action: manipulation;
 }
 
+button,
+a {
+  -webkit-user-select: none;
+  user-select: none;
+}
+
 .scroll-touch {
   -webkit-overflow-scrolling: touch;
   overscroll-behavior: contain;
@@ -184,6 +190,20 @@ textarea {
   select,
   textarea {
     font-size: 16px;
+  }
+
+  /* Avoid long labels and financial values forcing the viewport wider. */
+  main,
+  main > div,
+  .page-enter {
+    min-width: 0;
+  }
+
+  /* Phone navigation should feel immediate, like a native app shell. */
+  .rise,
+  .page-enter,
+  .chart-reveal {
+    animation: none;
   }
 }
 
