@@ -43,6 +43,7 @@ Writing style:
 - Use a proper Markdown table (with a header row and \`|---|\` separator) when comparing structured data across rows — e.g. sector weights, holdings side by side, or before/after numbers. Tables render natively, so prefer one over a long bullet list when the data is tabular. Keep tables to 2-4 columns and right-size them; don't wrap a single fact in a table.
 - Do not use emojis, decorative icons, ASCII dividers, or all-caps section labels.
 - Keep line length readable: avoid dense multi-clause paragraphs. Split ideas into separate bullets when a sentence starts carrying too many numbers.
+- Keep analysis proportionate to the question. Use the shortest reasoning path that checks the relevant evidence, and do not revisit the same conclusion from multiple angles.
 - For watchlists, use one short intro, then numbered items. Each item should have a bold ticker/company line and 2-3 bullets: signal, why it matters, and what to monitor.
 - Prefer polished wording over hype. Say "strong breadth", "unusual volume", "needs follow-through", or "monitor for confirmation" rather than promotional language.`;
 
@@ -125,9 +126,13 @@ export async function POST(request: Request) {
           .insert({ user_id: user.id, thread_id: thread.id, role: "user", content: message });
 
         // 1. FREE layer — resolve, gather cards, render immediately.
+        send({ type: "status", text: "Checking your portfolio and PSX context" });
         const resolved = await resolveMessage(supabase, message);
         cards = await gatherCards(supabase, user.id, resolved);
-        if (cards.length) send({ type: "cards", cards });
+        if (cards.length) {
+          send({ type: "cards", cards });
+          send({ type: "status", text: `Prepared ${cards.length} relevant data ${cards.length === 1 ? "view" : "views"}` });
+        }
         const brief = briefFromCards(cards);
 
         // 2. If the selected provider's AI is off, return a useful templated
@@ -160,10 +165,18 @@ export async function POST(request: Request) {
         // inject it — gives them the same catalyst lookup the tool models get.
         const toolless = modelDef.provider === "deepseek" && !modelDef.supportsTools;
         if (toolless && wantsWebContext(message)) {
-          send({ type: "status", text: "Searching the web…" });
+          send({ type: "status", text: "Searching recent market coverage" });
           const web = await gatherWebContext(resolved, message);
           if (web) userContext = `${userContext}\n\n${web}`;
         }
+
+        send({ type: "status", text: "Analyzing the evidence" });
+        let writingStarted = false;
+        const markWriting = () => {
+          if (writingStarted) return;
+          writingStarted = true;
+          send({ type: "status", text: "Writing the final answer" });
+        };
 
         if (modelDef.provider === "claude") {
           const claude = getClaude();
@@ -187,9 +200,9 @@ export async function POST(request: Request) {
 
             mstream.on("thinking", (delta: string) => {
               assistantThinking += delta;
-              send({ type: "thinking", delta });
             });
             mstream.on("text", (delta: string) => {
+              markWriting();
               assistantContent += delta;
               send({ type: "text", delta });
             });
@@ -202,10 +215,10 @@ export async function POST(request: Request) {
             // reset the answer bubble so only the final synthesis remains.
             const narration = assistantContent.slice(turnStart);
             assistantContent = assistantContent.slice(0, turnStart);
+            writingStarted = false;
             send({ type: "reset" });
             if (narration.trim()) {
               assistantThinking += (assistantThinking ? "\n\n" : "") + narration;
-              send({ type: "thinking", delta: narration });
             }
 
             // Execute tools, append results, loop.
@@ -213,7 +226,7 @@ export async function POST(request: Request) {
             messages.push({ role: "assistant", content: final.content });
             const results: Anthropic.ToolResultBlockParam[] = [];
             for (const tu of toolUses) {
-              send({ type: "status", text: `Looking up ${tu.name.replace(/_/g, " ")}…` });
+              send({ type: "status", text: toolActivityLabel(tu.name) });
               const out = await executeTool(supabase, user.id, tu.name, (tu.input ?? {}) as Record<string, unknown>);
               results.push({ type: "tool_result", tool_use_id: tu.id, content: JSON.stringify(out) });
             }
@@ -230,15 +243,16 @@ export async function POST(request: Request) {
             executeTool: (name, input) => executeTool(supabase, user.id, name, input),
             onThinking: (delta) => {
               assistantThinking += delta;
-              send({ type: "thinking", delta });
             },
             onText: (delta) => {
+              markWriting();
               assistantContent += delta;
               send({ type: "text", delta });
             },
-            onStatus: (text) => send({ type: "status", text }),
+            onStatus: (text) => send({ type: "status", text: toolActivityLabel(text.replace(/^Looking up\s+|…$/g, "").replace(/\s/g, "_")) }),
             onReset: () => {
               assistantContent = "";
+              writingStarted = false;
               send({ type: "reset" });
             },
           });
@@ -266,6 +280,27 @@ export async function POST(request: Request) {
   return new Response(stream, {
     headers: { "Content-Type": "application/x-ndjson; charset=utf-8", "Cache-Control": "no-store" },
   });
+}
+
+function toolActivityLabel(name: string): string {
+  const key = name.toLowerCase().replace(/^looking_up_/, "");
+  const labels: Record<string, string> = {
+    get_portfolio_summary: "Reviewing portfolio allocation and performance",
+    get_position: "Reviewing the selected holding",
+    list_holdings: "Comparing portfolio holdings",
+    get_thesis: "Reading your investment thesis",
+    get_journal: "Reviewing your decision journal",
+    get_quote: "Fetching the latest market data",
+    get_ratios: "Checking valuation and fundamentals",
+    get_technicals: "Reviewing price structure and momentum",
+    get_dividends: "Checking dividend history and income",
+    get_news: "Reviewing PSX filings and announcements",
+    get_market: "Reading the current PSX market snapshot",
+    get_sectors: "Comparing sector performance",
+    get_foreign_flows: "Checking investor flow data",
+    web_search: "Searching recent market coverage",
+  };
+  return labels[key] ?? `Reviewing ${key.replace(/_/g, " ")}`;
 }
 
 async function getOrCreateThread(
