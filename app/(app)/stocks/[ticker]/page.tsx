@@ -122,7 +122,7 @@ export default async function StockCockpitPage({ params }: { params: Promise<{ t
             </div>
           </div>
 
-          <div className="mt-5 grid grid-cols-2 gap-4 border-t border-border pt-4 sm:grid-cols-4 lg:grid-cols-8">
+          <div className="mt-5 grid grid-cols-4 gap-3 border-t border-border pt-4 lg:grid-cols-8">
             <HeaderMetric label="Market cap" value={metadata.marketCap !== null ? formatMoney(metadata.marketCap) : "—"} />
             <HeaderMetric label="52-wk high" value={num(header.technicals?.fiftyTwoWeekHigh)} />
             <HeaderMetric label="52-wk low" value={num(header.technicals?.fiftyTwoWeekLow)} />

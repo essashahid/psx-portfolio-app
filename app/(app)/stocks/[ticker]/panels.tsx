@@ -118,7 +118,7 @@ export async function OverviewPanel({ ticker }: { ticker: string }) {
         <Card>
           <CardHeader><CardTitle>Key snapshot</CardTitle></CardHeader>
           <CardContent>
-            <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+            <div className="grid grid-cols-4 gap-2">
               <Metric label="Price" value={num(technicals.latestPrice)} sub={technicals.asOfDate ? `as of ${technicals.asOfDate}` : undefined} />
               <Metric label="Day change" value={technicals.dayChangePct !== null ? formatSignedPct(technicals.dayChangePct) : "—"} tone={technicals.dayChangePct ? (technicals.dayChangePct > 0 ? "positive" : "negative") : undefined} />
               <Metric label="52-wk high" value={num(technicals.fiftyTwoWeekHigh)} />
@@ -138,7 +138,7 @@ export async function OverviewPanel({ ticker }: { ticker: string }) {
           <CardContent className="space-y-2">
             {holding ? (
               <>
-                <div className="grid grid-cols-2 gap-2">
+                <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
                   <Metric label="Quantity" value={formatNumber(holding.quantity, 0)} />
                   <Metric label="Avg cost" value={num(holding.avg_cost)} />
                   <Metric label="Market value" value={holding.market_value !== null ? formatMoney(holding.market_value) : "—"} />

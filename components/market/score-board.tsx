@@ -67,36 +67,36 @@ export function ScoreBoard({ stocks, owned = [] }: { stocks: ScoredStock[]; owne
             value={query}
             onChange={(e) => { setQuery(e.target.value); setVisible(PAGE); }}
             placeholder="Filter by ticker or company…"
-            className="h-9 w-full rounded-lg border border-border bg-card pl-8 pr-3 text-sm outline-none focus:ring-2 focus:ring-emerald-500/30"
+            className="h-11 w-full rounded-lg border border-border bg-card pl-8 pr-3 text-base outline-none focus:ring-2 focus:ring-emerald-500/30 md:h-9 md:text-sm"
           />
         </div>
         {hasOwned && (
           <button
             onClick={() => { setOwnedOnly((v) => !v); setVisible(PAGE); }}
-            className={cn("flex items-center gap-1.5 rounded-full px-2.5 py-1.5 text-[11px] font-medium transition-colors", ownedOnly ? "bg-emerald-600 text-white" : "bg-muted text-muted-foreground hover:text-foreground")}
+            className={cn("flex h-11 shrink-0 items-center gap-1.5 rounded-full px-3 text-[11px] font-medium transition-colors md:h-auto md:px-2.5 md:py-1.5", ownedOnly ? "bg-emerald-600 text-white" : "bg-muted text-muted-foreground hover:text-foreground")}
           >
             <Briefcase className="h-3 w-3" /> Owned
           </button>
         )}
       </div>
 
-      <div className="flex flex-wrap items-center gap-1.5">
+      <div className="scroll-touch -mx-1 flex items-center gap-1.5 overflow-x-auto px-1 md:mx-0 md:flex-wrap md:overflow-visible md:px-0">
         {BUCKETS.map((b) => (
           <button
             key={b}
             onClick={() => { setBucket(b); setVisible(PAGE); }}
-            className={cn("rounded-full px-2.5 py-1 text-[11px] font-medium transition-colors", bucket === b ? "bg-foreground text-background" : "bg-muted text-muted-foreground hover:text-foreground")}
+            className={cn("h-10 shrink-0 rounded-full px-3 text-[11px] font-medium transition-colors md:h-auto md:px-2.5 md:py-1", bucket === b ? "bg-foreground text-background" : "bg-muted text-muted-foreground hover:text-foreground")}
           >
             {b === "all" ? "All sectors" : BUCKET_META[b].label}
           </button>
         ))}
-        <div className="ml-auto flex items-center gap-1">
+        <div className="ml-auto flex shrink-0 items-center gap-1">
           <span className="text-[10px] text-muted-foreground">Rank by</span>
           {(["score", ...SUB_KEYS] as const).map((k) => (
             <button
               key={k}
               onClick={() => { setSortKey(k); setVisible(PAGE); }}
-              className={cn("flex items-center gap-0.5 rounded-md px-2 py-1 text-[11px] font-medium capitalize transition-colors", sortKey === k ? "bg-emerald-50 text-emerald-700" : "text-muted-foreground hover:text-foreground")}
+              className={cn("flex h-10 shrink-0 items-center gap-0.5 rounded-md px-2 text-[11px] font-medium capitalize transition-colors md:h-auto md:py-1", sortKey === k ? "bg-emerald-50 text-emerald-700" : "text-muted-foreground hover:text-foreground")}
             >
               {k === "score" ? "Score" : SUBSCORE_META[k as SubScoreKey].label}
             </button>
@@ -127,7 +127,7 @@ export function ScoreBoard({ stocks, owned = [] }: { stocks: ScoredStock[]; owne
               <div key={s.ticker}>
                 <button
                   onClick={() => setExpanded(isOpen ? null : s.ticker)}
-                  className="grid w-full grid-cols-[28px_minmax(0,1fr)_auto] items-center gap-2 px-3 py-2 text-left transition-colors hover:bg-muted/50 lg:grid-cols-[28px_minmax(0,1.8fr)_56px_repeat(5,minmax(0,1fr))_72px]"
+                  className="grid min-h-14 w-full grid-cols-[28px_minmax(0,1fr)_auto] items-center gap-2 px-3 py-2.5 text-left transition-colors hover:bg-muted/50 lg:min-h-0 lg:grid-cols-[28px_minmax(0,1.8fr)_56px_repeat(5,minmax(0,1fr))_72px] lg:py-2"
                 >
                   <span className="text-xs font-semibold tabular-nums text-muted-foreground">{s.rank}</span>
                   <div className="flex min-w-0 items-center gap-1.5">
