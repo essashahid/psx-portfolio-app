@@ -19,11 +19,15 @@ export default async function ChatPage() {
 
   return (
     <div>
-      <PageHeader
-        eyebrow="Assistant"
-        title="Research Copilot"
-        description="Ask about your holdings or the PSX using live prices, ratios, charts and filings."
-      />
+      {/* Hide the header on mobile — the top bar already labels the page, and
+          every pixel of vertical space goes to the conversation. */}
+      <div className="mb-4 hidden md:block">
+        <PageHeader
+          eyebrow="Assistant"
+          title="Research Copilot"
+          description="Ask about your holdings or the PSX using live prices, ratios, charts and filings."
+        />
+      </div>
       <Chat
         providers={{ claude: claudeConfigured(), deepseek: deepseekChatConfigured() }}
         initialThreads={(threads ?? []) as ChatThread[]}

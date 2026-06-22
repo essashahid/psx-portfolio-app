@@ -303,8 +303,10 @@ export function Chat({
   }
 
   return (
-    <div className="flex flex-col gap-3 min-h-[calc(100dvh-12.5rem)] md:grid md:h-[calc(100dvh-9rem)] md:min-h-0 md:grid-cols-[18rem_minmax(0,1fr)]">
-      <aside className="hidden min-h-0 flex-col rounded-lg border border-border bg-card shadow-[var(--shadow-card)] md:flex md:max-h-none">
+    {/* On mobile: exact height = viewport minus top-bar, main-pt, and bottom-nav (using the same
+        env(safe-area-inset-*) values the shell uses). On desktop: the existing fixed grid height. */}
+    <div className="flex flex-col gap-3 h-[calc(100dvh-10rem-env(safe-area-inset-top)-env(safe-area-inset-bottom))] md:h-[calc(100dvh-9rem)] md:grid md:grid-cols-[18rem_minmax(0,1fr)]">
+      <aside className="hidden min-h-0 flex-col rounded-lg border border-border bg-card shadow-card md:flex md:max-h-none">
         <div className={cn("flex items-center justify-between gap-2 px-3 py-2", (threadsOpen || threadError) && "border-b border-border", "md:border-b md:py-3")}>
           <button
             type="button"
@@ -447,7 +449,7 @@ export function Chat({
             className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg text-muted-foreground active:bg-muted md:hidden"
             aria-label="Saved chats"
           >
-            <MessageSquareText className="h-[18px] w-[18px]" />
+            <MessageSquareText className="h-4.5 w-4.5" />
           </button>
           <div className="min-w-0 flex-1">
             <p className="truncate text-sm font-semibold">{activeThread?.title ?? "New chat"}</p>
@@ -498,7 +500,7 @@ export function Chat({
                   <div className="space-y-2">
                     {m.thinking && <ThinkingPanel text={m.thinking} streaming={busy && i === messages.length - 1 && !m.content} />}
                     {m.content && (
-                      <div className="max-w-4xl rounded-lg border border-border bg-card/85 px-3 py-3 text-sm shadow-[var(--shadow-card)] sm:px-5 sm:py-4 sm:text-[15px]">
+                      <div className="max-w-4xl rounded-lg border border-border bg-card/85 px-3 py-3 text-sm shadow-card sm:px-5 sm:py-4 sm:text-[15px]">
                         <ReactMarkdown remarkPlugins={[remarkGfm]} components={CHAT_MARKDOWN_COMPONENTS}>
                           {formatAssistantContent(m.content)}
                         </ReactMarkdown>
@@ -723,7 +725,7 @@ function ModelPicker({
       {open && (
         <div
           role="listbox"
-          className="scroll-touch absolute bottom-full left-0 z-20 mb-1.5 max-h-[min(70dvh,28rem)] w-[min(16rem,calc(100vw-3rem))] overflow-y-auto rounded-lg border border-border bg-card shadow-[var(--shadow-card)]"
+          className="scroll-touch absolute bottom-full left-0 z-20 mb-1.5 max-h-[min(70dvh,28rem)] w-[min(16rem,calc(100vw-3rem))] overflow-y-auto rounded-lg border border-border bg-card shadow-card"
         >
           {groupedModels().map((g) => (
             <div key={g.group} className="py-1">
