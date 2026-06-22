@@ -53,6 +53,20 @@ Retrieval:
 - Never give a generic answer when a tool could ground it in the user's real data. When a question touches WHY the user holds something, whether news/results change their view, conviction, concentration, income, or performance, call get_thesis / get_journal / get_portfolio_summary / list_holdings rather than guessing.
 - If you decide to look something up, actually call the tool in the same turn. Never reply with only a promise like "let me check" or "give me a moment".`;
 
+// Today's date in Pakistan time, so the model anchors "today"/"this week"/
+// recency to the PSX trading day rather than its training cutoff. Computed per
+// request (not at module load) so a long-lived server never serves a stale date.
+function pktDateLine(): string {
+  const today = new Intl.DateTimeFormat("en-GB", {
+    timeZone: "Asia/Karachi",
+    weekday: "long",
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+  }).format(new Date());
+  return `Today's date is ${today} (Pakistan time). Interpret "today", "this week", and "recent" relative to this date, and treat anything materially older as not current news.`;
+}
+
 // Appended for tool-less models (e.g. DeepSeek R1): they cannot fetch, so they
 // must answer from the pre-loaded <context> and never promise a lookup.
 const NO_TOOL_RULE = `
@@ -132,7 +146,7 @@ export async function POST(request: Request) {
         //    ones (DeepSeek R1) get the "answer from context, never promise a
         //    lookup" rule so they don't stall on a dangling promise.
         const canUseTools = modelDef.provider === "claude" || !!modelDef.supportsTools;
-        const systemPrompt = `${SYSTEM_PROMPT}\n${canUseTools ? TOOL_RULE : NO_TOOL_RULE}`;
+        const systemPrompt = `${SYSTEM_PROMPT}\n${pktDateLine()}\n${canUseTools ? TOOL_RULE : NO_TOOL_RULE}`;
 
         // The brief is injected so most questions answer in one shot (no extra
         // tool round-trips).

@@ -92,11 +92,15 @@ export const CHAT_MODELS: ChatModelDef[] = [
     provider: "deepseek",
     group: "DeepSeek",
     label: "Reasoner (R1)",
-    hint: "Deep reasoning with live portfolio, news, and thesis lookups",
+    hint: "Deep reasoning over your portfolio and the latest news",
     apiModel: "deepseek-reasoner",
     thinking: true,
     maxTokens: 3200,
-    supportsTools: true,
+    // R1 has no function calling on DeepSeek's API. If handed tools it writes
+    // the call out as text, which trips the leak detector and replaces the
+    // answer with a fallback. Keep this false so the route pre-fetches web
+    // context for it instead (see the `toolless` branch in app/api/chat/route.ts).
+    supportsTools: false,
     supportsTemperature: false,
   },
 ];
