@@ -303,6 +303,7 @@ export function Chat({
   }
 
   return (
+    <>
     {/* On mobile: exact height = viewport minus top-bar, main-pt, and bottom-nav (using the same
         env(safe-area-inset-*) values the shell uses). On desktop: the existing fixed grid height. */}
     <div className="flex flex-col gap-3 h-[calc(100dvh-10rem-env(safe-area-inset-top)-env(safe-area-inset-bottom))] md:h-[calc(100dvh-9rem)] md:grid md:grid-cols-[18rem_minmax(0,1fr)]">
@@ -654,6 +655,7 @@ export function Chat({
         </div>
       )}
     </div>
+    </>
   );
 }
 
