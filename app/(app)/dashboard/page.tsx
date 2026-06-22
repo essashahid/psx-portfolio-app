@@ -302,7 +302,7 @@ export default async function DashboardPage() {
                   <span>Holding</span>
                   <span className="text-right">Day impact</span>
                 </div>
-                <div className="divide-y divide-border rounded-md border border-border bg-card md:max-h-[390px] md:overflow-y-auto">
+                <div className="scroll-touch divide-y divide-border rounded-md border border-border bg-card max-h-75 overflow-y-auto md:max-h-97.5">
                   {dailyPerformance.rows.map((row) => {
                     const rowTone = row.dayPnl !== null && row.dayPnl > 0 ? "positive" : row.dayPnl !== null && row.dayPnl < 0 ? "negative" : "flat";
                     return (
@@ -370,16 +370,20 @@ export default async function DashboardPage() {
         <StatCard label="Expected dividends" value={formatMoney(summary.expectedDividendIncome)} sub={`${summary.pendingDividends} pending`} />
         <StatCard label="Cash balance" value={formatMoney(summary.cashBalance)} sub="from imported cash movements" />
         <StatCard label="Holdings" value={formatNumber(summary.holdingsCount, 0)} />
-        <StatCard
-          label="Largest holding"
-          value={summary.largestHolding?.ticker ?? "—"}
-          sub={summary.largestHolding?.weight ? `${summary.largestHolding.weight.toFixed(1)}% of portfolio` : undefined}
-        />
-        <StatCard
-          label="Largest sector"
-          value={summary.largestSector?.sector ?? "—"}
-          sub={summary.largestSector ? `${summary.largestSector.weight.toFixed(1)}% of portfolio` : undefined}
-        />
+        <div className="hidden sm:contents">
+          <StatCard
+            label="Largest holding"
+            value={summary.largestHolding?.ticker ?? "—"}
+            sub={summary.largestHolding?.weight ? `${summary.largestHolding.weight.toFixed(1)}% of portfolio` : undefined}
+          />
+        </div>
+        <div className="hidden sm:contents">
+          <StatCard
+            label="Largest sector"
+            value={summary.largestSector?.sector ?? "—"}
+            sub={summary.largestSector ? `${summary.largestSector.weight.toFixed(1)}% of portfolio` : undefined}
+          />
+        </div>
         <StatCard
           label="Open alerts"
           value={formatNumber(alertsRes.data?.length ?? 0, 0)}
@@ -549,7 +553,7 @@ export default async function DashboardPage() {
                     <p className="mt-1 text-sm font-semibold">{latestNews.length}</p>
                   </div>
                 </div>
-                <div className="p-4 md:max-h-[420px] md:overflow-y-auto">
+                <div className="scroll-touch p-4 max-h-90 overflow-y-auto md:max-h-105">
                   <Markdown content={briefing.content} className="dashboard-briefing" />
                 </div>
               </div>
