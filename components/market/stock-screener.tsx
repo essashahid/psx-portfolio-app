@@ -109,20 +109,20 @@ export function StockScreener({ stocks }: { stocks: ScreenerStock[] }) {
             value={query}
             onChange={(e) => { setQuery(e.target.value); resetVisible(); }}
             placeholder="Filter by ticker or company…"
-            className="h-9 w-full rounded-lg border border-border bg-card pl-8 pr-3 text-sm outline-none focus:ring-2 focus:ring-emerald-500/30"
+            className="h-11 w-full rounded-lg border border-border bg-card pl-8 pr-3 text-base outline-none focus:ring-2 focus:ring-emerald-500/30 md:h-9 md:text-sm"
           />
         </div>
         <select
           value={sector}
           onChange={(e) => { setSector(e.target.value); resetVisible(); }}
-          className="h-9 rounded-lg border border-border bg-card px-2 text-xs outline-none focus:ring-2 focus:ring-emerald-500/30"
+          className="h-11 rounded-lg border border-border bg-card px-2 text-base outline-none focus:ring-2 focus:ring-emerald-500/30 md:h-9 md:text-xs"
         >
           <option value="">All sectors</option>
           {sectors.map((s) => <option key={s} value={s}>{s}</option>)}
         </select>
       </div>
 
-      <div className="flex flex-wrap items-center gap-1.5">
+      <div className="scroll-touch -mx-1 flex items-center gap-1.5 overflow-x-auto px-1 md:mx-0 md:flex-wrap md:overflow-visible md:px-0">
         {QUICK_FILTERS.map((f) => {
           const Icon = f.icon;
           return (
@@ -130,7 +130,7 @@ export function StockScreener({ stocks }: { stocks: ScreenerStock[] }) {
               key={f.id}
               onClick={() => { setQuick(f.id); resetVisible(); }}
               className={cn(
-                "flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-medium transition-colors",
+                "flex h-10 shrink-0 items-center gap-1.5 rounded-full px-3 text-[11px] font-medium transition-colors md:h-auto md:px-2.5 md:py-1",
                 quick === f.id ? "bg-foreground text-background" : "bg-muted text-muted-foreground hover:text-foreground"
               )}
             >
@@ -138,14 +138,14 @@ export function StockScreener({ stocks }: { stocks: ScreenerStock[] }) {
             </button>
           );
         })}
-        <div className="ml-auto flex items-center gap-1">
+        <div className="ml-auto flex shrink-0 items-center gap-1">
           <span className="text-[10px] text-muted-foreground">Sort</span>
           {SORTS.map((s) => (
             <button
               key={s.key}
               onClick={() => applySort(s.key)}
               className={cn(
-                "flex items-center gap-0.5 rounded-md px-2 py-1 text-[11px] font-medium transition-colors",
+                "flex h-10 shrink-0 items-center gap-0.5 rounded-md px-2 text-[11px] font-medium transition-colors md:h-auto md:py-1",
                 sortKey === s.key ? "bg-emerald-50 text-emerald-700" : "text-muted-foreground hover:text-foreground"
               )}
             >
@@ -179,7 +179,7 @@ export function StockScreener({ stocks }: { stocks: ScreenerStock[] }) {
               <Link
                 key={s.ticker}
                 href={`/stocks/${s.ticker}`}
-                className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-2 px-3 py-2 transition-colors hover:bg-muted/50 lg:grid-cols-[minmax(0,2.2fr)_72px_minmax(0,1fr)_90px_88px_88px_92px]"
+                className="grid min-h-14 grid-cols-[minmax(0,1fr)_auto] items-center gap-2 px-3 py-2.5 transition-colors hover:bg-muted/50 lg:min-h-0 lg:grid-cols-[minmax(0,2.2fr)_72px_minmax(0,1fr)_90px_88px_88px_92px] lg:py-2"
               >
                 {/* Company */}
                 <div className="flex min-w-0 items-center gap-2">

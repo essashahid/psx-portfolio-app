@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, type ComponentType } from "react";
+import { useEffect, useState, type ComponentType } from "react";
 import Link, { useLinkStatus } from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
@@ -77,8 +77,13 @@ const NAV_SECTIONS: { title: string; items: NavItemDef[] }[] = [
 const NAV = NAV_SECTIONS.flatMap((s) => s.items);
 
 const MOBILE_NAV = NAV.filter((item) =>
-  ["/dashboard", "/holdings", "/market", "/chat", "/news", "/alerts"].includes(item.href)
+  ["/dashboard", "/holdings", "/market", "/chat"].includes(item.href)
 );
+
+const MOBILE_MORE_SECTIONS = NAV_SECTIONS.map((section) => ({
+  ...section,
+  items: section.items.filter((item) => !MOBILE_NAV.some((primary) => primary.href === item.href)),
+})).filter((section) => section.items.length > 0);
 
 function activeNavItem(pathname: string) {
   return NAV.find((item) => pathname === item.href || pathname.startsWith(item.href + "/")) ?? NAV[0];
@@ -141,7 +146,7 @@ function MobileMenuRow({
     <span
       className={cn(
         "flex min-h-11 items-center gap-3 rounded-lg px-3 text-sm font-medium transition-colors",
-        lit ? "bg-primary text-primary-foreground" : "text-muted-foreground active:bg-muted active:text-foreground"
+        lit ? "bg-muted text-foreground" : "text-muted-foreground active:bg-muted active:text-foreground"
       )}
     >
       {pending ? <Loader2 className="h-4 w-4 shrink-0 animate-spin" /> : <Icon className="h-4 w-4 shrink-0" />}
@@ -181,7 +186,7 @@ function BottomNavRow({
         <span
           className={cn(
             "absolute right-0.5 top-0.5 rounded-full px-1.5 py-0.5 text-[9px] font-semibold leading-none",
-            lit ? "bg-white text-primary" : "bg-amber-500 text-black"
+            "bg-amber-500 text-black"
           )}
         >
           {badge}
@@ -244,11 +249,53 @@ export function Sidebar({ email, openAlerts }: { email: string; openAlerts: numb
   );
 }
 
-export function MobileTopBar({ email, openAlerts }: { email: string; openAlerts: number }) {
+export function MobileTopBar({ openAlerts }: { openAlerts: number }) {
+  const pathname = usePathname();
+  const active = activeNavItem(pathname);
+
+  return (
+    <header className="sticky top-0 z-40 flex h-[calc(3.5rem+env(safe-area-inset-top))] items-center justify-between border-b border-border bg-background/95 px-3 pt-[env(safe-area-inset-top)] backdrop-blur md:hidden">
+      <Link href="/dashboard" className="flex min-w-0 items-center gap-2.5" aria-label="PortfolioOS home">
+        <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary text-primary-foreground">
+          <CandlestickChart className="h-4 w-4" />
+        </span>
+        <span className="truncate text-base font-semibold">{active.label}</span>
+      </Link>
+      <Link
+        href="/alerts"
+        className="relative flex h-11 w-11 shrink-0 items-center justify-center rounded-lg text-muted-foreground active:bg-muted"
+        aria-label={openAlerts > 0 ? `${openAlerts} open alerts` : "Alerts"}
+      >
+        <Bell className="h-5 w-5" />
+        {openAlerts > 0 && (
+          <span className="absolute right-1 top-1 min-w-4 rounded-full bg-amber-500 px-1 text-center text-[9px] font-semibold leading-4 text-black">
+            {openAlerts > 99 ? "99+" : openAlerts}
+          </span>
+        )}
+      </Link>
+    </header>
+  );
+}
+
+export function MobileBottomNav({ email, openAlerts }: { email: string; openAlerts: number }) {
   const pathname = usePathname();
   const router = useRouter();
-  const active = activeNavItem(pathname);
-  const [menuOpen, setMenuOpen] = useState(false);
+  const [moreOpen, setMoreOpen] = useState(false);
+  const primaryPath = MOBILE_NAV.some((item) => pathname === item.href || pathname.startsWith(item.href + "/"));
+
+  useEffect(() => {
+    if (!moreOpen) return;
+    const previousOverflow = document.body.style.overflow;
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setMoreOpen(false);
+    };
+    document.body.style.overflow = "hidden";
+    document.addEventListener("keydown", closeOnEscape);
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      document.removeEventListener("keydown", closeOnEscape);
+    };
+  }, [moreOpen]);
 
   async function signOut() {
     const supabase = createClient();
@@ -259,111 +306,59 @@ export function MobileTopBar({ email, openAlerts }: { email: string; openAlerts:
 
   return (
     <>
-      <header className="sticky top-0 z-40 flex h-14 items-center justify-between border-b border-border bg-background/95 px-3 backdrop-blur md:hidden">
-        <div className="flex min-w-0 items-center gap-2">
-          <button
-            onClick={() => setMenuOpen(true)}
-            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg text-muted-foreground transition-colors active:bg-muted"
-            aria-label="Open navigation menu"
-            title="Menu"
-          >
-            <Menu className="h-[19px] w-[19px]" />
+      <nav aria-label="Primary navigation" className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-card/95 shadow-[0_-12px_36px_-28px_rgba(0,0,0,0.55)] backdrop-blur md:hidden">
+        <div className="grid grid-cols-5 gap-1 px-2 pb-[calc(env(safe-area-inset-bottom)+0.375rem)] pt-1.5">
+          {MOBILE_NAV.map((item) => {
+            const active = pathname === item.href || pathname.startsWith(item.href + "/");
+            const shortLabel = item.href === "/dashboard" ? "Home" : item.href === "/chat" ? "Copilot" : item.label.replace(" Pulse", "");
+            return (
+              <Link key={item.href} href={item.href} aria-current={active ? "page" : undefined} className="block">
+                <BottomNavRow icon={item.icon} label={shortLabel} active={active} />
+              </Link>
+            );
+          })}
+          <button type="button" onClick={() => setMoreOpen(true)} aria-expanded={moreOpen} className="block min-w-0">
+            <BottomNavRow icon={Menu} label="More" active={!primaryPath || moreOpen} badge={openAlerts > 0 ? openAlerts : undefined} />
           </button>
-          <Link href="/dashboard" className="flex min-w-0 items-center gap-2.5">
-            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary text-primary-foreground">
-              <CandlestickChart className="h-[18px] w-[18px]" />
-            </span>
-            <span className="min-w-0">
-              <span className="block truncate text-sm font-semibold leading-tight">PortfolioOS PK</span>
-              <span className="block truncate text-[11px] text-muted-foreground">
-                {active.label}
-                {openAlerts > 0 ? ` · ${openAlerts} alert${openAlerts === 1 ? "" : "s"}` : ""}
-              </span>
-            </span>
-          </Link>
         </div>
-        <button
-          onClick={signOut}
-          className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg text-muted-foreground transition-colors active:bg-muted"
-          aria-label={`Sign out ${email}`}
-          title="Sign out"
-        >
-          <LogOut className="h-[18px] w-[18px]" />
-        </button>
-      </header>
+      </nav>
 
-      {menuOpen && (
-        <div className="fixed inset-0 z-50 md:hidden">
-          <button
-            className="absolute inset-0 bg-black/35"
-            onClick={() => setMenuOpen(false)}
-            aria-label="Close navigation menu"
-          />
-          <div className="scroll-touch absolute inset-y-0 left-0 flex w-[min(22rem,88vw)] flex-col overflow-y-auto border-r border-border bg-card pb-[calc(env(safe-area-inset-bottom)+1rem)] shadow-xl">
-            <div className="flex items-center justify-between border-b border-border px-4 py-4">
-              <div className="flex min-w-0 items-center gap-2.5">
-                <CandlestickChart className="h-5 w-5 shrink-0 text-emerald-600" />
-                <div className="min-w-0">
-                  <p className="truncate text-sm font-semibold">PortfolioOS PK</p>
-                  <p className="truncate text-[11px] text-muted-foreground">{email}</p>
-                </div>
+      {moreOpen && (
+        <div className="fixed inset-0 z-50 md:hidden" role="dialog" aria-modal="true" aria-label="More navigation">
+          <button className="absolute inset-0 bg-black/35" onClick={() => setMoreOpen(false)} aria-label="Close menu" />
+          <div className="scroll-touch absolute inset-x-0 bottom-0 flex max-h-[85dvh] flex-col overflow-y-auto rounded-t-2xl border-t border-border bg-card pb-[calc(env(safe-area-inset-bottom)+1rem)] shadow-xl">
+            <div className="sticky top-0 z-10 flex items-center justify-between border-b border-border bg-card px-4 py-3">
+              <div className="min-w-0">
+                <p className="text-base font-semibold">More</p>
+                <p className="truncate text-[11px] text-muted-foreground">{email}</p>
               </div>
-              <button
-                onClick={() => setMenuOpen(false)}
-                className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg text-muted-foreground active:bg-muted"
-                aria-label="Close navigation menu"
-              >
-                <X className="h-[18px] w-[18px]" />
+              <button onClick={() => setMoreOpen(false)} className="flex h-11 w-11 items-center justify-center rounded-lg text-muted-foreground active:bg-muted" aria-label="Close menu">
+                <X className="h-5 w-5" />
               </button>
             </div>
-            <nav className="grid gap-3 p-3">
-              {NAV_SECTIONS.map((section) => (
+            <nav className="grid gap-4 p-3">
+              {MOBILE_MORE_SECTIONS.map((section) => (
                 <div key={section.title} className="grid gap-1">
                   <p className="eyebrow px-3 text-[9px]">{section.title}</p>
                   {section.items.map((item) => {
                     const activeItem = pathname === item.href || pathname.startsWith(item.href + "/");
                     return (
-                      <Link key={item.href} href={item.href} onClick={() => setMenuOpen(false)} className="block">
-                        <MobileMenuRow
-                          icon={item.icon}
-                          label={item.label}
-                          active={activeItem}
-                          badge={item.href === "/alerts" && openAlerts > 0 ? openAlerts : undefined}
-                        />
+                      <Link key={item.href} href={item.href} onClick={() => setMoreOpen(false)} className="block">
+                        <MobileMenuRow icon={item.icon} label={item.label} active={activeItem} badge={item.href === "/alerts" && openAlerts > 0 ? openAlerts : undefined} />
                       </Link>
                     );
                   })}
                 </div>
               ))}
             </nav>
+            <div className="border-t border-border px-3 pt-3">
+              <button onClick={signOut} className="flex min-h-11 w-full items-center gap-3 rounded-lg px-3 text-sm font-medium text-muted-foreground active:bg-muted">
+                <LogOut className="h-4 w-4" /> Sign out
+              </button>
+            </div>
           </div>
         </div>
       )}
     </>
-  );
-}
-
-export function MobileBottomNav({ openAlerts }: { openAlerts: number }) {
-  const pathname = usePathname();
-
-  return (
-    <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-card/95 shadow-[0_-12px_36px_-28px_rgba(0,0,0,0.55)] backdrop-blur md:hidden">
-      <div className="grid grid-cols-6 gap-1 px-1.5 pb-[calc(env(safe-area-inset-bottom)+0.375rem)] pt-1.5">
-        {MOBILE_NAV.map((item) => {
-          const active = pathname === item.href || pathname.startsWith(item.href + "/");
-          const shortLabel = item.href === "/dashboard" ? "Home" : item.href === "/chat" ? "Copilot" : item.label.replace(" Center", "").replace(" Pulse", "");
-          return (
-            <Link key={item.href} href={item.href} aria-current={active ? "page" : undefined} className="block">
-              <BottomNavRow
-                icon={item.icon}
-                label={shortLabel}
-                active={active}
-                badge={item.href === "/alerts" && openAlerts > 0 ? openAlerts : undefined}
-              />
-            </Link>
-          );
-        })}
-      </div>
-    </nav>
   );
 }

@@ -17,10 +17,18 @@ export function Dialog({
   children: React.ReactNode;
   className?: string;
 }) {
+  const titleId = React.useId();
+
   React.useEffect(() => {
     const handler = (e: KeyboardEvent) => e.key === "Escape" && onClose();
-    if (open) document.addEventListener("keydown", handler);
-    return () => document.removeEventListener("keydown", handler);
+    if (!open) return;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    document.addEventListener("keydown", handler);
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      document.removeEventListener("keydown", handler);
+    };
   }, [open, onClose]);
 
   if (!open) return null;
@@ -28,6 +36,9 @@ export function Dialog({
     <div
       className="fixed inset-0 z-50 flex items-end justify-center bg-black/40 p-0 sm:items-center sm:p-4"
       onClick={onClose}
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby={titleId}
     >
       <div
         className={cn(
@@ -36,11 +47,11 @@ export function Dialog({
         )}
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="mb-3 flex items-center justify-between">
-          <h2 className="text-sm font-semibold">{title}</h2>
+        <div className="sticky top-0 z-10 -mx-1 mb-3 flex items-center justify-between bg-card px-1">
+          <h2 id={titleId} className="text-base font-semibold sm:text-sm">{title}</h2>
           <button
             onClick={onClose}
-            className="flex h-9 w-9 items-center justify-center rounded-md text-muted-foreground hover:bg-muted"
+            className="flex h-11 w-11 items-center justify-center rounded-md text-muted-foreground hover:bg-muted sm:h-9 sm:w-9"
             aria-label="Close dialog"
           >
             <X className="h-4 w-4" />

@@ -22,7 +22,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
       <AutoRefreshPrices />
       <Sidebar email={user.email ?? ""} openAlerts={count ?? 0} />
       <div className="flex min-w-0 flex-1 flex-col md:h-dvh">
-        <MobileTopBar email={user.email ?? ""} openAlerts={count ?? 0} />
+        <MobileTopBar openAlerts={count ?? 0} />
         <main className="scroll-touch flex-1 overflow-y-auto overscroll-y-contain px-3 py-3 pb-[calc(5.75rem+env(safe-area-inset-bottom))] sm:px-4 sm:py-4 md:p-8">
           <div className="mx-auto w-full max-w-7xl">{children}</div>
         </main>
@@ -30,7 +30,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
           <p className="mx-auto max-w-7xl text-[11px] text-muted-foreground">{DISCLAIMER}</p>
         </footer>
       </div>
-      <MobileBottomNav openAlerts={count ?? 0} />
+      <MobileBottomNav email={user.email ?? ""} openAlerts={count ?? 0} />
     </div>
   );
 }

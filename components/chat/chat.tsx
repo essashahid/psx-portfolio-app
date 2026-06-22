@@ -142,13 +142,22 @@ export function Chat({
   const [renamingId, setRenamingId] = useState<string | null>(null);
   const [renameValue, setRenameValue] = useState("");
   const [threadError, setThreadError] = useState<string | null>(null);
+  const [threadsOpen, setThreadsOpen] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLTextAreaElement>(null);
 
   const activeThread = threads.find((thread) => thread.id === currentThreadId) ?? null;
 
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
   }, [messages]);
+
+  useEffect(() => {
+    const textarea = inputRef.current;
+    if (!textarea) return;
+    textarea.style.height = "auto";
+    textarea.style.height = `${Math.min(textarea.scrollHeight, 128)}px`;
+  }, [input]);
 
   function upsertThread(thread: ChatThread) {
     setThreads((prev) =>
@@ -176,6 +185,7 @@ export function Chat({
       setCurrentThreadId(data.thread.id);
       upsertThread(data.thread);
       setMessages((data.messages ?? []).map(savedMessageToMessage));
+      setThreadsOpen(false);
     } catch (err) {
       setThreadError(err instanceof Error ? err.message : "Failed to load chat");
     } finally {
@@ -188,6 +198,7 @@ export function Chat({
     setCurrentThreadId(null);
     setMessages([]);
     setThreadError(null);
+    setThreadsOpen(false);
   }
 
   async function renameThread(id: string) {
@@ -279,16 +290,25 @@ export function Chat({
 
   return (
     <div className="grid min-h-[calc(100dvh-12.5rem)] gap-3 md:h-[calc(100dvh-9rem)] md:min-h-0 md:grid-cols-[18rem_minmax(0,1fr)]">
-      <aside className="flex max-h-44 min-h-0 flex-col rounded-lg border border-border bg-card shadow-[var(--shadow-card)] md:max-h-none">
-        <div className="flex items-center justify-between gap-2 border-b border-border px-3 py-3">
-          <div>
+      <aside className="flex min-h-0 flex-col rounded-lg border border-border bg-card shadow-[var(--shadow-card)] md:max-h-none">
+        <div className={cn("flex items-center justify-between gap-2 px-3 py-2", (threadsOpen || threadError) && "border-b border-border", "md:border-b md:py-3")}>
+          <button
+            type="button"
+            onClick={() => setThreadsOpen((open) => !open)}
+            className="flex min-h-10 min-w-0 flex-1 items-center gap-2 text-left md:pointer-events-none"
+            aria-expanded={threadsOpen}
+            aria-controls="saved-chat-list"
+          >
+            <ChevronDown className={cn("h-4 w-4 shrink-0 transition-transform md:hidden", !threadsOpen && "-rotate-90")} />
+            <div className="min-w-0">
             <p className="text-sm font-semibold">Saved chats</p>
             <p className="text-[11px] text-muted-foreground">{threads.length} conversation{threads.length === 1 ? "" : "s"}</p>
-          </div>
+            </div>
+          </button>
           <button
             onClick={startNewChat}
             disabled={busy}
-            className="flex h-8 w-8 items-center justify-center rounded-md bg-primary text-primary-foreground transition-colors hover:bg-primary/90 disabled:opacity-50"
+            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-md bg-primary text-primary-foreground transition-colors hover:bg-primary/90 disabled:opacity-50 md:h-8 md:w-8"
             title="New chat"
             aria-label="New chat"
           >
@@ -302,7 +322,13 @@ export function Chat({
           </p>
         )}
 
-        <div className="scroll-touch flex gap-2 overflow-x-auto p-3 md:min-h-0 md:flex-1 md:flex-col md:overflow-y-auto">
+        <div
+          id="saved-chat-list"
+          className={cn(
+            "scroll-touch max-h-52 gap-2 overflow-x-auto p-3 md:flex md:max-h-none md:min-h-0 md:flex-1 md:flex-col md:overflow-y-auto",
+            threadsOpen ? "flex" : "hidden"
+          )}
+        >
           {threads.length === 0 ? (
             <div className="min-w-56 rounded-lg border border-dashed border-border p-3 text-xs text-muted-foreground md:min-w-0">
               Your chats will appear here after the first message.
@@ -330,16 +356,17 @@ export function Chat({
                       <input
                         value={renameValue}
                         onChange={(e) => setRenameValue(e.target.value)}
-                        className="h-8 min-w-0 flex-1 rounded-md border border-border bg-card px-2 text-xs text-foreground outline-none focus:ring-2 focus:ring-ring"
+                        className="h-11 min-w-0 flex-1 rounded-md border border-border bg-card px-2 text-base text-foreground outline-none focus:ring-2 focus:ring-ring md:h-8 md:text-xs"
                         autoFocus
                       />
-                      <button type="submit" className="flex h-8 w-8 items-center justify-center rounded-md bg-emerald-600 text-white">
+                      <button type="submit" aria-label="Save chat name" className="flex h-11 w-11 shrink-0 items-center justify-center rounded-md bg-emerald-600 text-white md:h-8 md:w-8">
                         <Check className="h-3.5 w-3.5" />
                       </button>
                       <button
                         type="button"
                         onClick={() => setRenamingId(null)}
-                        className="flex h-8 w-8 items-center justify-center rounded-md border border-border bg-card text-muted-foreground"
+                        aria-label="Cancel rename"
+                        className="flex h-11 w-11 shrink-0 items-center justify-center rounded-md border border-border bg-card text-muted-foreground md:h-8 md:w-8"
                       >
                         <X className="h-3.5 w-3.5" />
                       </button>
@@ -369,7 +396,7 @@ export function Chat({
                             setRenameValue(thread.title);
                           }}
                           className={cn(
-                            "flex h-7 w-7 items-center justify-center rounded-md transition-colors",
+                            "flex h-10 w-10 items-center justify-center rounded-md transition-colors md:h-7 md:w-7",
                             active ? "text-white/70 hover:bg-white/10 hover:text-white" : "text-muted-foreground hover:bg-muted hover:text-foreground"
                           )}
                           title="Rename chat"
@@ -380,7 +407,7 @@ export function Chat({
                         <button
                           onClick={() => void deleteThread(thread.id)}
                           className={cn(
-                            "flex h-7 w-7 items-center justify-center rounded-md transition-colors",
+                            "flex h-10 w-10 items-center justify-center rounded-md transition-colors md:h-7 md:w-7",
                             active ? "text-white/70 hover:bg-white/10 hover:text-white" : "text-muted-foreground hover:bg-red-50 hover:text-red-600"
                           )}
                           title="Delete chat"
@@ -398,7 +425,7 @@ export function Chat({
         </div>
       </aside>
 
-      <section className="flex min-h-[calc(100dvh-21rem)] flex-col overflow-hidden rounded-lg border border-border bg-background/45 md:min-h-0">
+      <section className="flex min-h-[calc(100dvh-16.5rem)] flex-col overflow-hidden rounded-lg border border-border bg-background/45 md:min-h-0">
         <div className="flex items-center justify-between gap-3 border-b border-border px-3 py-2.5">
           <div className="min-w-0">
             <p className="truncate text-sm font-semibold">{activeThread?.title ?? "New chat"}</p>
@@ -425,7 +452,7 @@ export function Chat({
               </p>
               <div className="mt-4 grid gap-2 sm:grid-cols-2">
                 {SUGGESTIONS.map((s) => (
-                  <button key={s} onClick={() => send(s)} className="rounded-lg border border-border bg-card px-3 py-2 text-left text-xs transition-colors hover:bg-muted">
+                  <button key={s} onClick={() => send(s)} className="min-h-11 rounded-lg border border-border bg-card px-3 py-2 text-left text-xs transition-colors hover:bg-muted">
                     {s}
                   </button>
                 ))}
@@ -458,21 +485,24 @@ export function Chat({
           ))}
         </div>
 
-        <div className="border-t border-border bg-background/70 p-3 pb-[calc(env(safe-area-inset-bottom)+0.75rem)] md:pb-3">
+        <div className="border-t border-border bg-background/95 p-3 backdrop-blur">
           <div className="mb-2 flex items-center gap-2">
             <ModelPicker model={model} setModel={setModel} providers={providers} />
             {!aiEnabled && <span className="ml-auto text-[10px] text-amber-600">AI narration off - data only</span>}
           </div>
           <form onSubmit={(e) => { e.preventDefault(); send(input); }} className="flex items-end gap-2">
             <textarea
+              ref={inputRef}
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); send(input); } }}
               placeholder="Ask anything about your holdings or PSX..."
               rows={1}
-              className="max-h-32 flex-1 resize-none rounded-xl border border-border bg-card px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-emerald-500/30"
+              enterKeyHint="send"
+              aria-label="Message Research Copilot"
+              className="min-h-11 max-h-32 flex-1 resize-none overflow-y-auto rounded-xl border border-border bg-card px-3 py-2.5 text-base leading-6 outline-none focus:ring-2 focus:ring-emerald-500/30 md:text-sm"
             />
-            <button type="submit" disabled={busy || !input.trim()} className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-emerald-600 text-white transition-colors hover:bg-emerald-700 disabled:opacity-40">
+            <button type="submit" disabled={busy || !input.trim()} aria-label="Send message" className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-emerald-600 text-white transition-colors hover:bg-emerald-700 disabled:opacity-40 md:h-10 md:w-10">
               {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
             </button>
           </form>
@@ -537,7 +567,7 @@ function ModelPicker({
       <button
         type="button"
         onClick={() => setOpen((o) => !o)}
-        className="flex items-center gap-1.5 rounded-full bg-muted px-2.5 py-1 text-[11px] font-medium text-foreground transition-colors hover:bg-muted/70"
+        className="flex min-h-10 max-w-[calc(100vw-3rem)] items-center gap-1.5 rounded-full bg-muted px-3 text-[11px] font-medium text-foreground transition-colors hover:bg-muted/70 md:min-h-0 md:px-2.5 md:py-1"
         title="Choose model"
         aria-haspopup="listbox"
         aria-expanded={open}
@@ -551,7 +581,7 @@ function ModelPicker({
       {open && (
         <div
           role="listbox"
-          className="absolute bottom-full left-0 z-20 mb-1.5 w-64 overflow-hidden rounded-lg border border-border bg-card shadow-[var(--shadow-card)]"
+          className="scroll-touch absolute bottom-full left-0 z-20 mb-1.5 max-h-[min(70dvh,28rem)] w-[min(16rem,calc(100vw-3rem))] overflow-y-auto rounded-lg border border-border bg-card shadow-[var(--shadow-card)]"
         >
           {groupedModels().map((g) => (
             <div key={g.group} className="py-1">
@@ -572,7 +602,7 @@ function ModelPicker({
                       setOpen(false);
                     }}
                     className={cn(
-                      "flex w-full items-center gap-2 px-3 py-1.5 text-left text-xs transition-colors",
+                      "flex min-h-11 w-full items-center gap-2 px-3 py-2 text-left text-xs transition-colors md:min-h-0 md:py-1.5",
                       active ? "bg-muted" : "hover:bg-muted/60",
                       !available && "cursor-not-allowed opacity-40 hover:bg-transparent"
                     )}
@@ -600,7 +630,7 @@ function ThinkingPanel({ text, streaming }: { text: string; streaming: boolean }
   const [open, setOpen] = useState(false);
   return (
     <div className="rounded-lg border border-border bg-muted/40">
-      <button onClick={() => setOpen((o) => !o)} className="flex w-full items-center gap-1.5 px-2.5 py-1.5 text-[11px] font-medium text-muted-foreground">
+      <button onClick={() => setOpen((o) => !o)} className="flex min-h-11 w-full items-center gap-1.5 px-3 py-2 text-[11px] font-medium text-muted-foreground md:min-h-0 md:px-2.5 md:py-1.5">
         {open ? <ChevronDown className="h-3 w-3" /> : <ChevronRight className="h-3 w-3" />}
         <Brain className="h-3 w-3" /> {streaming ? "Thinking..." : "Reasoning"}
       </button>

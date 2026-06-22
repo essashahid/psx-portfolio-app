@@ -22,7 +22,7 @@ export default async function ChatPage() {
       <PageHeader
         eyebrow="Assistant"
         title="Research Copilot"
-        description="Ask anything about your holdings or the PSX. It pulls live prices, ratios, charts and filings — then interprets them."
+        description="Ask about your holdings or the PSX using live prices, ratios, charts and filings."
       />
       <Chat
         providers={{ claude: claudeConfigured(), deepseek: deepseekChatConfigured() }}
