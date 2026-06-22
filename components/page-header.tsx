@@ -19,7 +19,11 @@ export function PageHeader({
           <p className="mt-1 max-w-xl text-sm text-muted-foreground">{description}</p>
         )}
       </div>
-      {actions && <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto">{actions}</div>}
+      {actions && (
+        <div className="scroll-touch -mx-1 flex gap-2 overflow-x-auto px-1 sm:mx-0 sm:w-auto sm:flex-wrap sm:overflow-visible sm:px-0">
+          {actions}
+        </div>
+      )}
     </div>
   );
 }

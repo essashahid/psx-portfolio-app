@@ -202,7 +202,7 @@ export default async function DashboardPage() {
               unrealized · {formatNumber(summary.holdingsCount, 0)} holdings · {formatMoney(summary.cashBalance)} cash
             </p>
           </div>
-          <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto">
+          <div className="scroll-touch -mx-1 flex gap-2 overflow-x-auto px-1 sm:mx-0 sm:w-auto sm:flex-wrap sm:overflow-visible sm:px-0">
             <ActionButton
               endpoint="/api/dividends/daily"
               label={<><RefreshCw className="h-3.5 w-3.5" /> Run daily update</>}
@@ -302,7 +302,7 @@ export default async function DashboardPage() {
                   <span>Holding</span>
                   <span className="text-right">Day impact</span>
                 </div>
-                <div className="max-h-[390px] divide-y divide-border overflow-y-auto rounded-md border border-border bg-card">
+                <div className="divide-y divide-border rounded-md border border-border bg-card md:max-h-[390px] md:overflow-y-auto">
                   {dailyPerformance.rows.map((row) => {
                     const rowTone = row.dayPnl !== null && row.dayPnl > 0 ? "positive" : row.dayPnl !== null && row.dayPnl < 0 ? "negative" : "flat";
                     return (
@@ -549,7 +549,7 @@ export default async function DashboardPage() {
                     <p className="mt-1 text-sm font-semibold">{latestNews.length}</p>
                   </div>
                 </div>
-                <div className="max-h-[420px] overflow-y-auto p-4">
+                <div className="p-4 md:max-h-[420px] md:overflow-y-auto">
                   <Markdown content={briefing.content} className="dashboard-briefing" />
                 </div>
               </div>
