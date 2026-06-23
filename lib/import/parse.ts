@@ -1,5 +1,6 @@
 import Papa from "papaparse";
 import * as XLSX from "xlsx";
+import { parseAkdStatement, akdToImportRows, reconcileAkd } from "@/lib/import/akd-statement";
 
 export interface ParsedFile {
   headers: string[];
@@ -94,6 +95,33 @@ async function parsePdf(buffer: Buffer): Promise<ParsedFile> {
   const result = await parser.getText();
   await parser.destroy();
   const text = result.text ?? "";
+
+  // AKD Securities "Statement Of Account" exports are column-blocked ledgers
+  // the generic extractor cannot read; use the dedicated parser when detected.
+  const akd = parseAkdStatement(text);
+  if (akd) {
+    const { headers, rows } = akdToImportRows(akd);
+    const warnings = [...akd.warnings];
+    const rec = reconcileAkd(akd);
+    warnings.push(
+      `AKD Statement Of Account detected: ${akd.trades.length} trade(s), ${akd.deposits.length} deposit(s), ${akd.charges.length} fee/CGT entr(ies). Only trades are imported here; deposits, fees and CGT are summarized below.`
+    );
+    warnings.push(
+      rec.cash.matches
+        ? `Cash ledger reconciles to the statement balance (PKR ${rec.cash.statedBalance?.toLocaleString()}). Deposits ${rec.cash.deposits.toLocaleString()}, buys ${rec.cash.buys.toLocaleString()}, sells ${rec.cash.sells.toLocaleString()}, CGT ${rec.cash.cgt.toLocaleString()}, fees ${rec.cash.fees.toLocaleString()}.`
+        : `Cash ledger did not fully reconcile (computed ${rec.cash.computedBalance.toLocaleString()} vs stated ${rec.cash.statedBalance?.toLocaleString()}, diff ${rec.cash.difference}). Review trades before committing.`
+    );
+    const gaps = rec.holdings.filter((h) => h.difference);
+    if (gaps.length) {
+      warnings.push(
+        `Holdings not matching the Inventory Position (likely bonus/merger corporate actions to record manually): ${gaps
+          .map((g) => `${g.ticker} ${g.difference! > 0 ? "+" : ""}${g.difference}`)
+          .join(", ")}.`
+      );
+    }
+    return { headers, rows, meta: { fileType: "pdf", pdfText: text.slice(0, 20000), warnings } };
+  }
+
   const table = extractTableFromText(text);
   return {
     headers: table.headers,
