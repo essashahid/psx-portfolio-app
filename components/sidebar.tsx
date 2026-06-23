@@ -22,6 +22,7 @@ import {
   Search,
   Database,
   Activity,
+  TrendingUp,
   Menu,
   X,
   Loader2,
@@ -43,6 +44,7 @@ const NAV_SECTIONS: { title: string; items: NavItemDef[] }[] = [
       { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard, hint: "Your portfolio at a glance" },
       { href: "/holdings", label: "Holdings", icon: Briefcase, hint: "Positions, P/L and weights" },
       { href: "/dividends", label: "Dividends", icon: HandCoins, hint: "Payouts received and forecast" },
+      { href: "/performance", label: "Performance", icon: TrendingUp, hint: "XIRR, cost basis, friction and concentration analytics" },
     ],
   },
   {
