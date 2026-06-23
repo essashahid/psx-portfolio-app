@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState, useEffect } from "react";
+import { useRef, useState, useEffect, useCallback } from "react";
 import ReactMarkdown, { type Components } from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { ChatCards } from "@/components/chat/cards";
@@ -16,12 +16,15 @@ import { looksLikeToolLeak } from "@/lib/chat/sanitize";
 import { cn } from "@/lib/utils";
 import {
   Brain,
+  ArrowDown,
   Check,
   ChevronDown,
-  ChevronRight,
   Clock3,
   Gauge,
   Loader2,
+  Database,
+  FileSearch,
+  Globe2,
   MessageSquareText,
   Pencil,
   Plus,
@@ -38,6 +41,8 @@ interface Message {
   thinking?: string;
   cards?: Card[];
   status?: string;
+  activity?: string[];
+  complete?: boolean;
 }
 
 export interface ChatThread {
@@ -145,12 +150,33 @@ export function Chat({
   const [threadsOpen, setThreadsOpen] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
+  const followStreamRef = useRef(true);
+  const [showLatest, setShowLatest] = useState(false);
 
   const activeThread = threads.find((thread) => thread.id === currentThreadId) ?? null;
 
+  const scrollToLatest = useCallback((behavior: ScrollBehavior = "smooth") => {
+    const viewport = scrollRef.current;
+    if (!viewport) return;
+    followStreamRef.current = true;
+    setShowLatest(false);
+    viewport.scrollTo({ top: viewport.scrollHeight, behavior });
+  }, []);
+
   useEffect(() => {
-    scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
-  }, [messages]);
+    if (!followStreamRef.current) return;
+    const frame = requestAnimationFrame(() => scrollToLatest("auto"));
+    return () => cancelAnimationFrame(frame);
+  }, [messages, scrollToLatest]);
+
+  function handleConversationScroll() {
+    const viewport = scrollRef.current;
+    if (!viewport) return;
+    const distanceFromBottom = viewport.scrollHeight - viewport.scrollTop - viewport.clientHeight;
+    const nearBottom = distanceFromBottom < 96;
+    followStreamRef.current = nearBottom;
+    setShowLatest(!nearBottom);
+  }
 
   useEffect(() => {
     const textarea = inputRef.current;
@@ -191,6 +217,7 @@ export function Chat({
   async function loadThread(id: string) {
     if (busy) return;
     setThreadError(null);
+    followStreamRef.current = true;
     setLoadingThread(id);
     try {
       const res = await fetch(`/api/chat/threads/${id}`, { cache: "no-store" });
@@ -255,7 +282,11 @@ export function Chat({
     const history = messages
       .filter((m) => m.content.trim())
       .map((m) => ({ role: m.role, content: m.content }));
-    setMessages((prev) => [...prev, { role: "user", content: q }, { role: "assistant", content: "" }]);
+    setMessages((prev) => [
+      ...prev,
+      { role: "user", content: q },
+      { role: "assistant", content: "", activity: ["Understanding your question"] },
+    ]);
 
     const update = (fn: (m: Message) => Message) =>
       setMessages((prev) => {
@@ -287,10 +318,15 @@ export function Chat({
             setCurrentThreadId(evt.thread.id);
             upsertThread(evt.thread);
           } else if (evt.type === "cards") update((m) => ({ ...m, cards: evt.cards }));
-          else if (evt.type === "thinking") update((m) => ({ ...m, thinking: (m.thinking ?? "") + evt.delta }));
-          else if (evt.type === "text") update((m) => ({ ...m, content: m.content + evt.delta, status: undefined }));
+          else if (evt.type === "thinking") continue;
+          else if (evt.type === "text") update((m) => ({ ...m, content: m.content + evt.delta }));
           else if (evt.type === "reset") update((m) => ({ ...m, content: "" }));
-          else if (evt.type === "status") update((m) => ({ ...m, status: evt.text }));
+          else if (evt.type === "status") update((m) => ({
+            ...m,
+            status: evt.text,
+            activity: [...(m.activity ?? []).filter((item) => item !== evt.text), evt.text],
+          }));
+          else if (evt.type === "done") update((m) => ({ ...m, status: undefined, complete: true }));
           else if (evt.type === "error") update((m) => ({ ...m, content: (m.content || "") + `\n\nError: ${evt.message}` }));
         }
       }
@@ -298,6 +334,7 @@ export function Chat({
       update((m) => ({ ...m, content: m.content || `Error: ${e instanceof Error ? e.message : "Failed"}` }));
     } finally {
       setBusy(false);
+      update((m) => ({ ...m, status: undefined, complete: true }));
       void refreshThreads();
     }
   }
@@ -443,7 +480,7 @@ export function Chat({
       </aside>
 
       <section className="flex flex-1 min-h-0 flex-col overflow-hidden rounded-lg border border-border bg-background/45">
-        <div className="flex items-center gap-2 border-b border-border px-3 py-2.5">
+        <div className="flex items-center gap-2 border-b border-border/80 bg-card/70 px-3 py-2.5 backdrop-blur-sm">
           <button
             type="button"
             onClick={() => setThreadsOpen(true)}
@@ -453,14 +490,14 @@ export function Chat({
             <MessageSquareText className="h-4.5 w-4.5" />
           </button>
           <div className="min-w-0 flex-1">
-            <p className="truncate text-sm font-semibold">{activeThread?.title ?? "New chat"}</p>
+            <p className="truncate text-sm font-semibold tracking-[-0.015em]">{activeThread?.title ?? "Research Copilot"}</p>
             <p className="text-[11px] text-muted-foreground">
               {currentThreadId ? "Saved automatically." : "A saved chat starts when you send a message."}
             </p>
           </div>
           {busy && (
             <span className="flex shrink-0 items-center gap-1.5 rounded-full bg-muted px-2 py-1 text-[11px] text-muted-foreground">
-              <Loader2 className="h-3 w-3 animate-spin" /> Saving
+              <Loader2 className="h-3 w-3 animate-spin" /> Researching
             </span>
           )}
           <button
@@ -474,7 +511,8 @@ export function Chat({
           </button>
         </div>
 
-        <div ref={scrollRef} className="scroll-touch min-h-0 flex-1 space-y-4 overflow-y-auto p-3 sm:p-4">
+        <div className="relative min-h-0 flex-1">
+        <div ref={scrollRef} onScroll={handleConversationScroll} className="scroll-touch h-full space-y-6 overflow-y-auto p-3 pb-8 sm:p-5 sm:pb-10">
           {messages.length === 0 && (
             <div className="rise mx-auto mt-8 max-w-lg text-center">
               <div className="mx-auto mb-3 flex h-11 w-11 items-center justify-center rounded-xl bg-emerald-50 text-emerald-600">
@@ -498,17 +536,22 @@ export function Chat({
             <div key={i} className={cn("flex", m.role === "user" ? "justify-end" : "justify-start")}>
               <div className={cn("max-w-[96%] sm:max-w-[94%]", m.role === "user" ? "rounded-2xl rounded-br-sm bg-foreground px-4 py-2 text-sm text-background" : "w-full")}>
                 {m.role === "assistant" ? (
-                  <div className="space-y-2">
-                    {m.thinking && <ThinkingPanel text={m.thinking} streaming={busy && i === messages.length - 1 && !m.content} />}
+                  <div className="space-y-3">
+                    {m.activity && m.activity.length > 0 && (
+                      <ResearchActivity
+                        steps={m.activity}
+                        active={busy && i === messages.length - 1}
+                        complete={!!m.complete || !(busy && i === messages.length - 1)}
+                      />
+                    )}
                     {m.content && (
-                      <div className="max-w-4xl rounded-lg border border-border bg-card/85 px-3 py-3 text-sm shadow-card sm:px-5 sm:py-4 sm:text-[15px]">
+                      <div className="max-w-4xl rounded-2xl border border-border/80 bg-card px-4 py-4 text-sm shadow-[0_10px_35px_-24px_rgba(15,23,42,0.35)] sm:px-6 sm:py-5 sm:text-[15px]">
                         <ReactMarkdown remarkPlugins={[remarkGfm]} components={CHAT_MARKDOWN_COMPONENTS}>
                           {formatAssistantContent(m.content)}
                         </ReactMarkdown>
                       </div>
                     )}
-                    {m.status && !m.content && <p className="flex items-center gap-1.5 text-xs text-muted-foreground"><Loader2 className="h-3 w-3 animate-spin" /> {m.status}</p>}
-                    {busy && i === messages.length - 1 && !m.content && !m.status && !m.thinking && <p className="flex items-center gap-1.5 text-xs text-muted-foreground"><Loader2 className="h-3 w-3 animate-spin" /> thinking...</p>}
+                    {busy && i === messages.length - 1 && !m.content && !m.activity?.length && <p className="flex items-center gap-1.5 text-xs text-muted-foreground"><Loader2 className="h-3 w-3 animate-spin" /> Preparing research...</p>}
                     {m.cards && <div className="max-w-5xl"><ChatCards cards={m.cards} /></div>}
                   </div>
                 ) : (
@@ -518,8 +561,18 @@ export function Chat({
             </div>
           ))}
         </div>
+        {showLatest && (
+          <button
+            type="button"
+            onClick={() => scrollToLatest()}
+            className="absolute bottom-3 left-1/2 flex -translate-x-1/2 items-center gap-1.5 rounded-full border border-border bg-card px-3 py-2 text-xs font-medium text-foreground shadow-lg transition hover:bg-muted"
+          >
+            <ArrowDown className="h-3.5 w-3.5" /> Latest response
+          </button>
+        )}
+        </div>
 
-        <div className="border-t border-border bg-background/95 p-3 backdrop-blur">
+        <div className="border-t border-border/80 bg-background/90 p-3 backdrop-blur-xl">
           <div className="mb-2 flex items-center gap-2">
             <ModelPicker model={model} setModel={setModel} providers={providers} />
             {!aiEnabled && <span className="ml-auto text-[10px] text-amber-600">AI narration off - data only</span>}
@@ -534,9 +587,9 @@ export function Chat({
               rows={1}
               enterKeyHint="send"
               aria-label="Message Research Copilot"
-              className="min-h-11 max-h-32 flex-1 resize-none overflow-y-auto rounded-xl border border-border bg-card px-3 py-2.5 text-base leading-6 outline-none focus:ring-2 focus:ring-emerald-500/30 md:text-sm"
+              className="min-h-11 max-h-32 flex-1 resize-none overflow-y-auto rounded-2xl border border-border/90 bg-card px-4 py-2.5 text-base leading-6 shadow-[0_8px_28px_-24px_rgba(15,23,42,0.5)] outline-none transition focus:border-emerald-300 focus:ring-4 focus:ring-emerald-500/10 md:text-sm"
             />
-            <button type="submit" disabled={busy || !input.trim()} aria-label="Send message" className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-emerald-600 text-white transition-colors hover:bg-emerald-700 disabled:opacity-40 md:h-10 md:w-10">
+            <button type="submit" disabled={busy || !input.trim()} aria-label="Send message" className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-emerald-600 text-white shadow-[0_8px_20px_-10px_rgba(5,150,105,0.8)] transition hover:bg-emerald-700 disabled:opacity-40 md:h-10 md:w-10">
               {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
             </button>
           </form>
@@ -772,15 +825,79 @@ function ModelPicker({
   );
 }
 
-function ThinkingPanel({ text, streaming }: { text: string; streaming: boolean }) {
+function ResearchActivity({
+  steps,
+  active,
+  complete,
+}: {
+  steps: string[];
+  active: boolean;
+  complete: boolean;
+}) {
   const [open, setOpen] = useState(false);
+
+  const latest = steps[steps.length - 1];
+  const expanded = active || open;
+
   return (
-    <div className="rounded-lg border border-border bg-muted/40">
-      <button onClick={() => setOpen((o) => !o)} className="flex min-h-11 w-full items-center gap-1.5 px-3 py-2 text-[11px] font-medium text-muted-foreground md:min-h-0 md:px-2.5 md:py-1.5">
-        {open ? <ChevronDown className="h-3 w-3" /> : <ChevronRight className="h-3 w-3" />}
-        <Brain className="h-3 w-3" /> {streaming ? "Thinking..." : "Reasoning"}
+    <div className="max-w-4xl overflow-hidden rounded-2xl border border-emerald-950/10 bg-[linear-gradient(135deg,rgba(236,253,245,0.85),rgba(255,255,255,0.9))] shadow-[0_14px_40px_-30px_rgba(5,150,105,0.55)]">
+      <button
+        type="button"
+        onClick={() => setOpen((value) => !value)}
+        className="flex min-h-12 w-full items-center gap-3 px-4 py-2.5 text-left"
+        aria-expanded={expanded}
+      >
+        <span className="relative flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-emerald-200/80 bg-white text-emerald-700 shadow-sm">
+          {active ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
+          {active && <span className="absolute -right-1 -top-1 h-2.5 w-2.5 animate-pulse rounded-full border-2 border-white bg-emerald-500" />}
+        </span>
+        <span className="min-w-0 flex-1">
+          <span className="flex items-center gap-2 text-xs font-semibold tracking-[-0.01em] text-foreground">
+            {active ? "Research in progress" : "Research complete"}
+            <span className="rounded-full border border-emerald-200 bg-emerald-50 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-[0.12em] text-emerald-700">
+              Live
+            </span>
+          </span>
+          <span className="mt-0.5 block truncate text-[11px] text-muted-foreground">{latest}</span>
+        </span>
+        <ChevronDown className={cn("h-4 w-4 text-muted-foreground transition-transform", expanded && "rotate-180")} />
       </button>
-      {open && <div className="whitespace-pre-wrap border-t border-border px-2.5 py-2 text-[11px] leading-relaxed text-muted-foreground">{text}</div>}
+      {expanded && (
+        <div className="border-t border-emerald-950/10 bg-white/55 px-4 py-3">
+          <div className="relative space-y-0">
+            {steps.map((step, index) => {
+              const isCurrent = active && index === steps.length - 1;
+              const Icon = activityIcon(step);
+              return (
+                <div key={`${step}-${index}`} className="relative flex min-h-9 items-start gap-3 pb-2 last:min-h-0 last:pb-0">
+                  {index < steps.length - 1 && <span className="absolute left-[11px] top-6 h-[calc(100%-0.25rem)] w-px bg-emerald-200" />}
+                  <span className={cn(
+                    "relative z-10 flex h-6 w-6 shrink-0 items-center justify-center rounded-full border bg-white",
+                    isCurrent ? "border-emerald-400 text-emerald-700 shadow-[0_0_0_3px_rgba(16,185,129,0.10)]" : "border-emerald-200 text-emerald-600"
+                  )}>
+                    {isCurrent ? <Loader2 className="h-3 w-3 animate-spin" /> : <Icon className="h-3 w-3" />}
+                  </span>
+                  <span className={cn("pt-1 text-[11px] leading-4", isCurrent ? "font-medium text-foreground" : "text-muted-foreground")}>{step}</span>
+                </div>
+              );
+            })}
+            {complete && !active && (
+              <div className="mt-2 flex items-center gap-2 border-t border-emerald-950/10 pt-2 text-[10px] font-medium text-emerald-700">
+                <Check className="h-3 w-3" /> Sources reviewed and answer synthesized
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
+}
+
+function activityIcon(step: string) {
+  const value = step.toLowerCase();
+  if (value.includes("web") || value.includes("coverage") || value.includes("news")) return Globe2;
+  if (value.includes("portfolio") || value.includes("holding") || value.includes("market data")) return Database;
+  if (value.includes("filing") || value.includes("document") || value.includes("source")) return FileSearch;
+  if (value.includes("answer") || value.includes("synth")) return Sparkles;
+  return Check;
 }
