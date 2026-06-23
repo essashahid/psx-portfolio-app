@@ -68,8 +68,8 @@ export default async function PerformancePage() {
         />
         <EmptyState
           icon={TrendingUp}
-          title="No analytics available"
-          description="Import an AKD Statement Of Account to see XIRR, cost basis with bonus-share adjustments, friction autopsy, capital deployment stats and concentration analysis."
+          title="No transactions found"
+          description="Import your AKD Statement Of Account to see XIRR, cost basis, friction autopsy and concentration analysis. Once imported, analytics load directly from your transaction data."
           action={
             <Link href="/import">
               <Button>
@@ -89,7 +89,7 @@ export default async function PerformancePage() {
       <PageHeader
         eyebrow="Portfolio"
         title="Performance"
-        description="Money-weighted returns, cost basis and analytics from your AKD Statement Of Account."
+        description="Money-weighted returns, cost basis, friction autopsy and concentration analysis."
         actions={
           <ActionButton
             endpoint="/api/import/sync-cash"
