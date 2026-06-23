@@ -5,19 +5,58 @@ import { PageHeader } from "@/components/page-header";
 import { StatCard } from "@/components/stat-card";
 import { EmptyState } from "@/components/empty-state";
 import { CostBasisTable } from "@/components/cost-basis-table";
+import { ActionButton } from "@/components/action-button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { cn, formatMoney, formatNumber, plColor } from "@/lib/utils";
-import { TrendingUp, Upload } from "lucide-react";
+import { AlertTriangle, RefreshCw, TrendingUp, Upload } from "lucide-react";
 
 export const dynamic = "force-dynamic";
+
+// Known corporate actions that need manual correction (CDC allotments and
+// the FFBL→FFC scheme of arrangement that don't appear in the AKD ledger).
+const KNOWN_GAPS = [
+  {
+    id: "IREIT-ipo",
+    label: "IREIT IPO allotment",
+    detail: "1,500 shares @ PKR 10.00 — CDC allotment Oct 6, 2025",
+    rowHash: "corp-action-IREIT-2025-10-06-BUY-1500",
+    body: { action: "ipoBuy", ticker: "IREIT", trade_date: "2025-10-06", quantity: 1500, price: 10, notes: "IPO allotment via CDC" },
+  },
+  {
+    id: "SLM-ipo",
+    label: "SLM IPO allotment",
+    detail: "1,000 shares @ PKR 19.95 — CDC allotment Jun 15, 2026",
+    rowHash: "corp-action-SLM-2026-06-15-BUY-1000",
+    body: { action: "ipoBuy", ticker: "SLM", trade_date: "2026-06-15", quantity: 1000, price: 19.95, notes: "IPO allotment via CDC" },
+  },
+  {
+    id: "FFBL-FFC-merger",
+    label: "FFBL→FFC scheme of arrangement",
+    detail: "100 FFBL converted to 23 FFC — LHC sanctioned Dec 5, 2024",
+    rowHash: "corp-action-FFBL-2024-12-05-SELL-100",
+    body: { action: "merger", fromTicker: "FFBL", fromQty: 100, toTicker: "FFC", toQty: 23, date: "2024-12-05" },
+  },
+] as const;
 
 export default async function PerformancePage() {
   const supabase = await createClient();
   const user = await getUser();
   if (!user) return null;
 
-  const analytics = await getPerformanceAnalytics(supabase, user.id);
+  // Resolve analytics and check which known gaps are already fixed in parallel.
+  const gapHashes = KNOWN_GAPS.map((g) => g.rowHash);
+  const [analytics, { data: fixedRows }] = await Promise.all([
+    getPerformanceAnalytics(supabase, user.id),
+    supabase
+      .from("transactions")
+      .select("row_hash")
+      .eq("user_id", user.id)
+      .in("row_hash", gapHashes),
+  ]);
+
+  const fixedSet = new Set((fixedRows ?? []).map((r) => r.row_hash as string));
+  const openGaps = KNOWN_GAPS.filter((g) => !fixedSet.has(g.rowHash));
 
   if (!analytics) {
     return (
@@ -51,7 +90,57 @@ export default async function PerformancePage() {
         eyebrow="Portfolio"
         title="Performance"
         description="Money-weighted returns, cost basis and analytics from your AKD Statement Of Account."
+        actions={
+          <ActionButton
+            endpoint="/api/import/sync-cash"
+            label={<><RefreshCw className="h-3.5 w-3.5" /> Sync cash ledger</>}
+            variant="outline"
+            size="sm"
+            onSuccessMessage="Cash ledger synced."
+          />
+        }
       />
+
+      {/* ── Data quality panel ── */}
+      {openGaps.length > 0 && (
+        <Card className="rise border-amber-200 bg-amber-50/50 dark:border-amber-900/40 dark:bg-amber-950/20">
+          <CardHeader className="pb-3">
+            <div className="flex items-center gap-2">
+              <AlertTriangle className="h-4 w-4 text-amber-600 dark:text-amber-400" />
+              <CardTitle className="text-sm text-amber-900 dark:text-amber-300">
+                {openGaps.length} holding{openGaps.length > 1 ? "s" : ""} need a corrective entry
+              </CardTitle>
+            </div>
+            <CardDescription className="text-amber-800/70 dark:text-amber-400/70">
+              These shares were obtained outside the AKD statement (IPO allotments via CDC or a court-sanctioned merger).
+              Adding them fixes your cost basis and holdings rebuild.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="pt-0">
+            <div className="space-y-2.5">
+              {openGaps.map((gap) => (
+                <div
+                  key={gap.id}
+                  className="flex flex-col gap-2 rounded-lg border border-amber-200/60 bg-white/60 px-3 py-2.5 sm:flex-row sm:items-center sm:justify-between dark:border-amber-900/30 dark:bg-black/10"
+                >
+                  <div className="min-w-0">
+                    <p className="text-sm font-medium text-amber-900 dark:text-amber-300">{gap.label}</p>
+                    <p className="text-xs text-amber-700/80 dark:text-amber-500">{gap.detail}</p>
+                  </div>
+                  <ActionButton
+                    endpoint="/api/corporate-actions"
+                    body={gap.body as Record<string, unknown>}
+                    label="Add transaction"
+                    size="sm"
+                    variant="outline"
+                    className="shrink-0 border-amber-300 bg-white text-amber-900 hover:bg-amber-50 dark:border-amber-700 dark:bg-transparent dark:text-amber-300"
+                  />
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* ── Returns hero ── */}
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6 rise">
@@ -94,7 +183,7 @@ export default async function PerformancePage() {
         <CardHeader>
           <CardTitle>Cost Basis</CardTitle>
           <CardDescription>
-            Weighted-average cost including all commissions. Bonus-share receipts lower the effective average.
+            Weighted-average cost from the AKD ledger. Bonus shares lower the effective average cost.
           </CardDescription>
         </CardHeader>
         <CardContent className="pt-0">
@@ -102,13 +191,15 @@ export default async function PerformancePage() {
         </CardContent>
       </Card>
 
-      {/* ── By year + Friction side-by-side ── */}
+      {/* ── By year + Friction ── */}
       <div className="grid grid-cols-1 gap-5 lg:grid-cols-2 rise rise-2">
         {/* By year */}
         <Card>
           <CardHeader>
             <CardTitle>Performance by Year</CardTitle>
-            <CardDescription>Deposits, capital deployed, realized gains and friction per calendar year.</CardDescription>
+            <CardDescription>
+              Deposits, capital deployed, realized gains and friction per calendar year.
+            </CardDescription>
           </CardHeader>
           <CardContent className="pt-0">
             <div className="scroll-touch -mx-2 overflow-x-auto px-2">
@@ -137,7 +228,12 @@ export default async function PerformancePage() {
                       <td className="py-2.5 pr-3 text-right tabular-nums">
                         {y.sells > 0 ? formatNumber(y.sells, 0) : "—"}
                       </td>
-                      <td className={cn("py-2.5 pr-3 text-right tabular-nums font-medium", plColor(y.realizedPl))}>
+                      <td
+                        className={cn(
+                          "py-2.5 pr-3 text-right tabular-nums font-medium",
+                          plColor(y.realizedPl)
+                        )}
+                      >
                         {y.realizedPl !== 0
                           ? `${y.realizedPl > 0 ? "+" : ""}${formatNumber(y.realizedPl, 0)}`
                           : "—"}
@@ -159,11 +255,10 @@ export default async function PerformancePage() {
           <CardHeader>
             <CardTitle>Friction Autopsy</CardTitle>
             <CardDescription>
-              Every basis point you paid to participate: brokerage, taxes, regulatory and custody fees.
+              Every basis point paid to participate: brokerage, taxes, regulatory and custody fees.
             </CardDescription>
           </CardHeader>
           <CardContent className="pt-0 space-y-5">
-            {/* Fee breakdown grid */}
             <div className="grid grid-cols-3 gap-3">
               {[
                 { label: "Commission", value: f.commission },
@@ -174,44 +269,54 @@ export default async function PerformancePage() {
                 { label: "Trade fees", value: f.tradeFeesTotal },
               ].map(({ label, value }) => (
                 <div key={label} className="rounded-lg bg-muted/60 px-3 py-2.5">
-                  <p className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">{label}</p>
+                  <p className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
+                    {label}
+                  </p>
                   <p className="mt-0.5 text-sm font-semibold tabular-nums">{formatNumber(value, 0)}</p>
                 </div>
               ))}
             </div>
 
-            {/* Total line */}
             <div className="flex items-baseline justify-between border-t border-border pt-3">
               <span className="text-sm font-medium">Total friction</span>
               <span className="text-base font-semibold tabular-nums">{formatMoney(f.total)}</span>
             </div>
-            <p className="text-xs text-muted-foreground -mt-2">
+            <p className="-mt-2 text-xs text-muted-foreground">
               {f.pctOfDeposits}% of deposits
               {f.pctOfGains !== null ? ` · ${f.pctOfGains}% of gross gains` : ""}
             </p>
 
-            {/* By trade size */}
             {f.bySize.length > 0 && (
               <div>
-                <p className="mb-2 text-[11px] font-medium uppercase tracking-wide text-muted-foreground">By trade size</p>
+                <p className="mb-2 text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
+                  By trade size
+                </p>
                 <div className="space-y-1.5">
                   {f.bySize.map((b) => (
                     <div key={b.bucket} className="flex items-center gap-3 text-xs">
                       <span className="w-32 shrink-0 text-muted-foreground">{b.bucket}</span>
                       <span className="tabular-nums">{b.trades} trades</span>
-                      <span className="ml-auto tabular-nums text-muted-foreground">{b.avgFeePct}% avg fee</span>
+                      <span className="ml-auto tabular-nums text-muted-foreground">
+                        {b.avgFeePct}% avg fee
+                      </span>
                     </div>
                   ))}
                 </div>
               </div>
             )}
 
-            {/* Deployment note */}
             {d.buysTotal > 0 && (
               <div className="rounded-lg border border-border bg-muted/30 px-3 py-2.5 text-xs text-muted-foreground">
-                <span className="font-medium text-foreground">{d.pctDeployedWithin24h}%</span> of buys within 24h of a deposit
+                <span className="font-medium text-foreground">{d.pctDeployedWithin24h}%</span> of buys
+                within 24h of a deposit
                 {d.medianDaysDepositToBuy !== null && (
-                  <> · median lag <span className="font-medium text-foreground">{d.medianDaysDepositToBuy}d</span></>
+                  <>
+                    {" "}
+                    · median lag{" "}
+                    <span className="font-medium text-foreground">
+                      {d.medianDaysDepositToBuy}d
+                    </span>
+                  </>
                 )}
               </div>
             )}
@@ -231,12 +336,16 @@ export default async function PerformancePage() {
           <div className="grid grid-cols-1 gap-8 lg:grid-cols-5">
             {/* Sector bars — 3/5 */}
             <div className="lg:col-span-3 space-y-3">
-              <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground mb-4">Sector allocation</p>
+              <p className="mb-4 text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
+                Sector allocation
+              </p>
               {c.sectorWeights.map((s) => (
                 <div key={s.sector}>
                   <div className="mb-1 flex items-baseline justify-between">
                     <span className="text-sm">{s.sector}</span>
-                    <span className="tabular-nums text-sm font-medium text-muted-foreground">{s.weightPct}%</span>
+                    <span className="tabular-nums text-sm font-medium text-muted-foreground">
+                      {s.weightPct}%
+                    </span>
                   </div>
                   <div className="h-1.5 overflow-hidden rounded-full bg-muted">
                     <div
@@ -250,13 +359,16 @@ export default async function PerformancePage() {
 
             {/* Key metrics — 2/5 */}
             <div className="lg:col-span-2 space-y-5">
-              <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">Key metrics</p>
-
+              <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
+                Key metrics
+              </p>
               <div className="space-y-3">
                 {[
                   {
                     label: "Largest holding",
-                    value: c.topHolding ? `${c.topHolding.ticker} (${c.topHolding.weightPct}%)` : "—",
+                    value: c.topHolding
+                      ? `${c.topHolding.ticker} (${c.topHolding.weightPct}%)`
+                      : "—",
                   },
                   {
                     label: "Top-2 banks weight",
@@ -266,7 +378,12 @@ export default async function PerformancePage() {
                   {
                     label: "HHI (diversification)",
                     value: formatNumber(c.hhi, 2),
-                    note: c.hhi < 0.1 ? "well diversified" : c.hhi < 0.25 ? "moderately concentrated" : "highly concentrated",
+                    note:
+                      c.hhi < 0.1
+                        ? "well diversified"
+                        : c.hhi < 0.25
+                        ? "moderately concentrated"
+                        : "highly concentrated",
                   },
                   {
                     label: "Tail positions (< 3%)",
@@ -282,13 +399,15 @@ export default async function PerformancePage() {
                 ))}
               </div>
 
-              {/* Shock scenario */}
               {c.topTwoShock && (
                 <div className="rounded-lg border border-amber-200 bg-amber-50/60 px-3 py-3 text-xs dark:border-amber-900/40 dark:bg-amber-950/20">
-                  <p className="font-medium text-amber-900 dark:text-amber-300">One-decision-away scenario</p>
+                  <p className="font-medium text-amber-900 dark:text-amber-300">
+                    One-decision-away scenario
+                  </p>
                   <p className="mt-1 text-amber-800 dark:text-amber-400">
                     A {c.topTwoShock.dropPct}% drop in your top two holdings would erase{" "}
-                    <span className="font-semibold">{c.topTwoShock.portfolioImpactPct}%</span> of total portfolio value.
+                    <span className="font-semibold">{c.topTwoShock.portfolioImpactPct}%</span> of
+                    total portfolio value.
                   </p>
                 </div>
               )}
