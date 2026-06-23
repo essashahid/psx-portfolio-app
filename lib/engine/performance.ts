@@ -1,13 +1,19 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { parseAkdStatement } from "@/lib/import/akd-statement";
-import { analyzeLedger, type LedgerAnalytics } from "@/lib/engine/ledger-analytics";
+import {
+  analyzeLedger,
+  xirr,
+  type LedgerAnalytics,
+  type CostBasisRow,
+  type ReturnsSummary,
+  type FrictionSummary,
+  type YearRow,
+  type DeploymentSummary,
+  type ConcentrationSummary,
+} from "@/lib/engine/ledger-analytics";
 
-/**
- * Downloads the most recent committed AKD statement PDF from Supabase Storage,
- * re-parses it and runs the full analytics engine. Returns null if no suitable
- * statement is found or if parsing fails.
- */
-export async function getPerformanceAnalytics(
+// Try to download the most recent committed AKD PDF from Storage and parse it.
+async function getPdfAnalytics(
   supabase: SupabaseClient,
   userId: string
 ): Promise<LedgerAnalytics | null> {
@@ -43,6 +49,398 @@ export async function getPerformanceAnalytics(
       continue;
     }
   }
-
   return null;
+}
+
+// Compute analytics purely from the database (transactions, holdings, prices,
+// cash_movements). Used when the AKD PDF is not in storage. The holdings table
+// already has the weighted-average cost from the last rebuild, so we don't
+// need to replay all trades here.
+async function getDbAnalytics(
+  supabase: SupabaseClient,
+  userId: string
+): Promise<LedgerAnalytics | null> {
+  const round2 = (n: number) => Math.round(n * 100) / 100;
+  const SELL_COST_RATE = 0.0018;
+  const CGT_RATE = 0.15;
+
+  const [txnsRes, holdingsRes, pricesRes, cashRes] = await Promise.all([
+    supabase
+      .from("transactions")
+      .select("ticker, trade_date, type, quantity, price, commission, tax, net_amount, realized_pl")
+      .eq("user_id", userId)
+      .in("type", ["BUY", "SELL"])
+      .order("trade_date", { ascending: true }),
+    supabase
+      .from("holdings")
+      .select("ticker, sector, quantity, avg_cost, total_cost")
+      .eq("user_id", userId)
+      .gt("quantity", 0),
+    supabase
+      .from("prices")
+      .select("ticker, price, price_date")
+      .eq("user_id", userId)
+      .order("price_date", { ascending: false })
+      .limit(500),
+    supabase
+      .from("cash_movements")
+      .select("movement_date, type, amount")
+      .eq("user_id", userId)
+      .eq("type", "CASH_IN")
+      .order("movement_date", { ascending: true }),
+  ]);
+
+  const txns = (txnsRes.data ?? []).map((t) => ({
+    ticker: t.ticker as string,
+    trade_date: t.trade_date as string | null,
+    type: t.type as string,
+    quantity: Number(t.quantity),
+    price: Number(t.price),
+    commission: Number(t.commission ?? 0),
+    tax: Number(t.tax ?? 0),
+    net_amount: Number(t.net_amount ?? 0),
+    realized_pl: t.realized_pl !== null ? Number(t.realized_pl) : null,
+  }));
+
+  const holdings = (holdingsRes.data ?? []).map((h) => ({
+    ticker: h.ticker as string,
+    sector: (h.sector as string | null) ?? "Other",
+    quantity: Number(h.quantity),
+    avg_cost: Number(h.avg_cost),
+    total_cost: Number(h.total_cost),
+  }));
+
+  const cashIn = cashRes.data ?? [];
+
+  if (txns.length === 0 && holdings.length === 0) return null;
+
+  // Latest price per ticker (rows already ordered newest first)
+  const latestPrice = new Map<string, number>();
+  for (const p of pricesRes.data ?? []) {
+    if (!latestPrice.has(p.ticker as string)) {
+      latestPrice.set(p.ticker as string, Number(p.price));
+    }
+  }
+
+  // ── Cost basis from holdings WAC ──────────────────────────────────────────
+  const totalMarketValue = holdings.reduce((s, h) => {
+    const p = latestPrice.get(h.ticker);
+    return s + (p !== undefined ? h.quantity * p : h.total_cost);
+  }, 0);
+
+  const costBasis: CostBasisRow[] = holdings
+    .map((h) => {
+      const currentPrice = latestPrice.get(h.ticker) ?? null;
+      const marketValue = currentPrice !== null ? round2(h.quantity * currentPrice) : null;
+      const unrealizedPl =
+        marketValue !== null ? round2(marketValue - h.total_cost) : null;
+      const breakEvenPrice =
+        h.avg_cost > 0 ? round2(h.avg_cost / (1 - SELL_COST_RATE)) : null;
+      let profitIfSoldToday: number | null = null;
+      if (marketValue !== null) {
+        const proceeds = marketValue * (1 - SELL_COST_RATE);
+        const gain = proceeds - h.total_cost;
+        profitIfSoldToday = round2(
+          proceeds - h.total_cost - (gain > 0 ? gain * CGT_RATE : 0)
+        );
+      }
+      const weightPct =
+        totalMarketValue > 0 && marketValue !== null
+          ? round2((marketValue / totalMarketValue) * 100)
+          : null;
+      return {
+        ticker: h.ticker,
+        sector: h.sector,
+        quantity: h.quantity,
+        avgCost: h.avg_cost,
+        totalInvested: h.total_cost,
+        currentPrice,
+        marketValue,
+        unrealizedPl,
+        unrealizedPlPct:
+          unrealizedPl !== null && h.total_cost > 0
+            ? round2((unrealizedPl / h.total_cost) * 100)
+            : null,
+        breakEvenPrice,
+        profitIfSoldToday,
+        weightPct,
+      };
+    })
+    .sort((a, b) => (b.marketValue ?? 0) - (a.marketValue ?? 0));
+
+  // ── Aggregates ────────────────────────────────────────────────────────────
+  const buys = txns.filter((t) => t.type === "BUY");
+  const sells = txns.filter((t) => t.type === "SELL");
+  const totalBuys = round2(buys.reduce((s, t) => s + t.net_amount, 0));
+  const totalSells = round2(sells.reduce((s, t) => s + t.net_amount, 0));
+  const realizedPl = round2(
+    sells
+      .filter((t) => t.realized_pl !== null)
+      .reduce((s, t) => s + (t.realized_pl ?? 0), 0)
+  );
+  const unrealizedPl = round2(costBasis.reduce((s, r) => s + (r.unrealizedPl ?? 0), 0));
+  const marketValue = round2(totalMarketValue);
+  const commission = round2(txns.reduce((s, t) => s + t.commission, 0));
+  const taxTotal = round2(txns.reduce((s, t) => s + t.tax, 0));
+  const totalFriction = round2(commission + taxTotal);
+
+  // Proxy for totalDeposited when cash_movements is empty:
+  //   net capital deployed = totalBuys – totalSells (assumes cash balance ≈ 0)
+  const totalDeposited =
+    cashIn.length > 0
+      ? round2(cashIn.reduce((s, c) => s + Number(c.amount), 0))
+      : round2(Math.max(totalBuys - totalSells, 0));
+
+  const cashBalance =
+    cashIn.length > 0 ? round2(totalDeposited + totalSells - totalBuys) : 0;
+  const netWorth = round2(marketValue + cashBalance);
+  const totalGain = round2(netWorth - totalDeposited);
+
+  // ── Dates ─────────────────────────────────────────────────────────────────
+  const firstTxnDate = txns[0]?.trade_date ?? null;
+  const lastTxnDate = txns[txns.length - 1]?.trade_date ?? null;
+  const holdingPeriodYears =
+    firstTxnDate && lastTxnDate
+      ? round2(
+          (Date.parse(lastTxnDate) - Date.parse(firstTxnDate)) / (365 * 86_400_000)
+        )
+      : 0;
+
+  let xirrPct: number | null = null;
+  if (cashIn.length >= 1 && lastTxnDate) {
+    const flows = [
+      ...cashIn.map((c) => ({
+        date: (c.movement_date as string | null) ?? lastTxnDate,
+        amount: -Number(c.amount),
+      })),
+      { date: lastTxnDate, amount: netWorth },
+    ];
+    xirrPct = xirr(flows);
+  }
+
+  const returns: ReturnsSummary = {
+    totalDeposited,
+    netWorth,
+    marketValue,
+    cashBalance,
+    totalGain,
+    totalReturnPct:
+      totalDeposited > 0 ? round2((totalGain / totalDeposited) * 100) : 0,
+    xirrPct,
+    holdingPeriodYears,
+    realizedPl,
+    unrealizedPl,
+    totalFriction,
+  };
+
+  // ── Friction ──────────────────────────────────────────────────────────────
+  const perTickerMap = new Map<string, { fees: number; trades: number }>();
+  for (const t of txns) {
+    const fees = t.commission + t.tax;
+    const e = perTickerMap.get(t.ticker) ?? { fees: 0, trades: 0 };
+    e.fees += fees;
+    e.trades += 1;
+    perTickerMap.set(t.ticker, e);
+  }
+  const grossProfit = realizedPl + unrealizedPl;
+  const bySizeBuckets = [
+    { bucket: "< 5,000", min: 0, max: 5000 },
+    { bucket: "5,000–20,000", min: 5000, max: 20000 },
+    { bucket: "20,000–50,000", min: 20000, max: 50000 },
+    { bucket: "> 50,000", min: 50000, max: Infinity },
+  ];
+  const bySize = bySizeBuckets
+    .map((b) => {
+      const bucket = txns.filter((t) => {
+        const gross = t.quantity * t.price;
+        return gross >= b.min && gross < b.max;
+      });
+      if (!bucket.length) return null;
+      const avgGross = round2(
+        bucket.reduce((s, t) => s + t.quantity * t.price, 0) / bucket.length
+      );
+      const avgFeePct = round2(
+        (bucket.reduce((s, t) => {
+          const g = t.quantity * t.price;
+          return s + (g > 0 ? (t.commission + t.tax) / g : 0);
+        }, 0) /
+          bucket.length) *
+          100
+      );
+      return { bucket: b.bucket, trades: bucket.length, avgGross, avgFeePct };
+    })
+    .filter((b): b is NonNullable<typeof b> => b !== null);
+
+  const friction: FrictionSummary = {
+    commission,
+    sst: round2(taxTotal * 0.85),
+    cdc: round2(taxTotal * 0.15),
+    tradeFeesTotal: totalFriction,
+    cgt: 0,
+    accountFees: 0,
+    total: totalFriction,
+    pctOfDeposits:
+      totalDeposited > 0 ? round2((totalFriction / totalDeposited) * 100) : 0,
+    pctOfGains: grossProfit > 0 ? round2((totalFriction / grossProfit) * 100) : null,
+    perTicker: [...perTickerMap.entries()]
+      .map(([ticker, v]) => ({ ticker, fees: round2(v.fees), trades: v.trades }))
+      .sort((a, b) => b.fees - a.fees),
+    bySize,
+  };
+
+  // ── By year ───────────────────────────────────────────────────────────────
+  const yearMap = new Map<string, YearRow>();
+  const ensureYear = (y: string) => {
+    if (!yearMap.has(y)) {
+      yearMap.set(y, {
+        year: y,
+        deposits: 0,
+        buys: 0,
+        sells: 0,
+        realizedPl: 0,
+        friction: 0,
+        tradeCount: 0,
+      });
+    }
+    return yearMap.get(y)!;
+  };
+  for (const c of cashIn) {
+    ensureYear(((c.movement_date as string | null) ?? "????").slice(0, 4)).deposits +=
+      Number(c.amount);
+  }
+  for (const t of txns) {
+    const y = (t.trade_date ?? "????").slice(0, 4);
+    const row = ensureYear(y);
+    if (t.type === "BUY") row.buys += t.net_amount;
+    else {
+      row.sells += t.net_amount;
+      row.realizedPl += t.realized_pl ?? 0;
+    }
+    row.friction += t.commission + t.tax;
+    row.tradeCount += 1;
+  }
+  const byYear: YearRow[] = [...yearMap.values()]
+    .map((r) => ({
+      ...r,
+      deposits: round2(r.deposits),
+      buys: round2(r.buys),
+      sells: round2(r.sells),
+      realizedPl: round2(r.realizedPl),
+      friction: round2(r.friction),
+    }))
+    .sort((a, b) => a.year.localeCompare(b.year));
+
+  // ── Capital deployment ────────────────────────────────────────────────────
+  const buysTotal = buys.length;
+  let deployment: DeploymentSummary = {
+    avgDaysDepositToBuy: null,
+    medianDaysDepositToBuy: null,
+    buysWithin24h: 0,
+    buysTotal,
+    pctDeployedWithin24h: null,
+  };
+  if (cashIn.length > 0) {
+    const depositDates = cashIn
+      .map((c) => c.movement_date as string | null)
+      .filter((d): d is string => !!d)
+      .sort();
+    const lags: number[] = [];
+    let within24h = 0;
+    for (const t of buys.filter((t) => t.trade_date)) {
+      let prior: string | null = null;
+      for (const dd of depositDates) {
+        if (dd <= t.trade_date!) prior = dd;
+        else break;
+      }
+      if (prior) {
+        const lag = Math.round(
+          (Date.parse(t.trade_date!) - Date.parse(prior)) / 86_400_000
+        );
+        lags.push(lag);
+        if (lag <= 1) within24h++;
+      }
+    }
+    lags.sort((a, b) => a - b);
+    deployment = {
+      avgDaysDepositToBuy: lags.length
+        ? round2(lags.reduce((s, x) => s + x, 0) / lags.length)
+        : null,
+      medianDaysDepositToBuy: lags.length ? lags[Math.floor(lags.length / 2)] : null,
+      buysWithin24h: within24h,
+      buysTotal,
+      pctDeployedWithin24h: buysTotal ? round2((within24h / buysTotal) * 100) : null,
+    };
+  }
+
+  // ── Concentration ─────────────────────────────────────────────────────────
+  const priced = costBasis.filter((r) => r.marketValue !== null);
+  const sectorMap = new Map<string, number>();
+  for (const r of priced) {
+    sectorMap.set(r.sector, (sectorMap.get(r.sector) ?? 0) + (r.marketValue ?? 0));
+  }
+  const sectorWeights = [...sectorMap.entries()]
+    .map(([sector, value]) => ({
+      sector,
+      weightPct: marketValue > 0 ? round2((value / marketValue) * 100) : 0,
+    }))
+    .sort((a, b) => b.weightPct - a.weightPct);
+  const hhi =
+    round2(
+      priced.reduce((s, r) => {
+        const w = (r.marketValue ?? 0) / (totalMarketValue || 1);
+        return s + w * w;
+      }, 0) * 100
+    ) / 100;
+  const top2Banks = round2(
+    priced
+      .filter((r) => r.sector === "Commercial Banks")
+      .sort((a, b) => (b.marketValue ?? 0) - (a.marketValue ?? 0))
+      .slice(0, 2)
+      .reduce((s, r) => s + (r.weightPct ?? 0), 0)
+  );
+  const topTwo = [...priced]
+    .sort((a, b) => (b.marketValue ?? 0) - (a.marketValue ?? 0))
+    .slice(0, 2);
+  const dropPct = 11;
+  const concentration: ConcentrationSummary = {
+    topHolding: priced[0]
+      ? { ticker: priced[0].ticker, weightPct: priced[0].weightPct ?? 0 }
+      : null,
+    top2BanksWeightPct: top2Banks,
+    sectorWeights,
+    hhi,
+    positionsBelow1pct: priced.filter((r) => (r.weightPct ?? 0) < 1).length,
+    positionsBelow3pct: priced.filter((r) => (r.weightPct ?? 0) < 3).length,
+    smallTailWeightPct: round2(
+      priced
+        .filter((r) => (r.weightPct ?? 0) < 3)
+        .reduce((s, r) => s + (r.weightPct ?? 0), 0)
+    ),
+    topTwoShock: topTwo.length
+      ? {
+          dropPct,
+          portfolioImpactPct: round2(
+            topTwo.reduce((s, r) => s + (r.weightPct ?? 0), 0) * (dropPct / 100)
+          ),
+        }
+      : null,
+  };
+
+  return { returns, costBasis, friction, byYear, deployment, concentration, sales: [] };
+}
+
+/**
+ * Primary entry point for the /performance page.
+ * Tries the AKD PDF from Supabase Storage first (most accurate: includes
+ * per-trade SST/CDC split, CGT charges, and exact deposit dates for XIRR).
+ * Falls back to DB-derived analytics when the PDF is not stored or fails to
+ * parse — all the data that matters is already in transactions + holdings.
+ */
+export async function getPerformanceAnalytics(
+  supabase: SupabaseClient,
+  userId: string
+): Promise<LedgerAnalytics | null> {
+  const pdf = await getPdfAnalytics(supabase, userId);
+  if (pdf) return pdf;
+  return getDbAnalytics(supabase, userId);
 }
