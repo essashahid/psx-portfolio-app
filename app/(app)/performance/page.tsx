@@ -9,54 +9,16 @@ import { ActionButton } from "@/components/action-button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { cn, formatMoney, formatNumber, plColor } from "@/lib/utils";
-import { AlertTriangle, RefreshCw, TrendingUp, Upload } from "lucide-react";
+import { RefreshCw, TrendingUp, Upload } from "lucide-react";
 
 export const dynamic = "force-dynamic";
-
-// Known corporate actions that need manual correction (CDC allotments and
-// the FFBL→FFC scheme of arrangement that don't appear in the AKD ledger).
-const KNOWN_GAPS = [
-  {
-    id: "IREIT-ipo",
-    label: "IREIT IPO allotment",
-    detail: "1,500 shares @ PKR 10.00 — CDC allotment Oct 6, 2025",
-    rowHash: "corp-action-IREIT-2025-10-06-BUY-1500",
-    body: { action: "ipoBuy", ticker: "IREIT", trade_date: "2025-10-06", quantity: 1500, price: 10, notes: "IPO allotment via CDC" },
-  },
-  {
-    id: "SLM-ipo",
-    label: "SLM IPO allotment",
-    detail: "1,000 shares @ PKR 19.95 — CDC allotment Jun 15, 2026",
-    rowHash: "corp-action-SLM-2026-06-15-BUY-1000",
-    body: { action: "ipoBuy", ticker: "SLM", trade_date: "2026-06-15", quantity: 1000, price: 19.95, notes: "IPO allotment via CDC" },
-  },
-  {
-    id: "FFBL-FFC-merger",
-    label: "FFBL→FFC scheme of arrangement",
-    detail: "100 FFBL converted to 23 FFC — LHC sanctioned Dec 5, 2024",
-    rowHash: "corp-action-FFBL-2024-12-05-SELL-100",
-    body: { action: "merger", fromTicker: "FFBL", fromQty: 100, toTicker: "FFC", toQty: 23, date: "2024-12-05" },
-  },
-] as const;
 
 export default async function PerformancePage() {
   const supabase = await createClient();
   const user = await getUser();
   if (!user) return null;
 
-  // Resolve analytics and check which known gaps are already fixed in parallel.
-  const gapHashes = KNOWN_GAPS.map((g) => g.rowHash);
-  const [analytics, { data: fixedRows }] = await Promise.all([
-    getPerformanceAnalytics(supabase, user.id),
-    supabase
-      .from("transactions")
-      .select("row_hash")
-      .eq("user_id", user.id)
-      .in("row_hash", gapHashes),
-  ]);
-
-  const fixedSet = new Set((fixedRows ?? []).map((r) => r.row_hash as string));
-  const openGaps = KNOWN_GAPS.filter((g) => !fixedSet.has(g.rowHash));
+  const analytics = await getPerformanceAnalytics(supabase, user.id);
 
   if (!analytics) {
     return (
@@ -100,47 +62,6 @@ export default async function PerformancePage() {
           />
         }
       />
-
-      {/* ── Data quality panel ── */}
-      {openGaps.length > 0 && (
-        <Card className="rise border-amber-200 bg-amber-50/50 dark:border-amber-900/40 dark:bg-amber-950/20">
-          <CardHeader className="pb-3">
-            <div className="flex items-center gap-2">
-              <AlertTriangle className="h-4 w-4 text-amber-600 dark:text-amber-400" />
-              <CardTitle className="text-sm text-amber-900 dark:text-amber-300">
-                {openGaps.length} holding{openGaps.length > 1 ? "s" : ""} need a corrective entry
-              </CardTitle>
-            </div>
-            <CardDescription className="text-amber-800/70 dark:text-amber-400/70">
-              These shares were obtained outside the AKD statement (IPO allotments via CDC or a court-sanctioned merger).
-              Adding them fixes your cost basis and holdings rebuild.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="pt-0">
-            <div className="space-y-2.5">
-              {openGaps.map((gap) => (
-                <div
-                  key={gap.id}
-                  className="flex flex-col gap-2 rounded-lg border border-amber-200/60 bg-white/60 px-3 py-2.5 sm:flex-row sm:items-center sm:justify-between dark:border-amber-900/30 dark:bg-black/10"
-                >
-                  <div className="min-w-0">
-                    <p className="text-sm font-medium text-amber-900 dark:text-amber-300">{gap.label}</p>
-                    <p className="text-xs text-amber-700/80 dark:text-amber-500">{gap.detail}</p>
-                  </div>
-                  <ActionButton
-                    endpoint="/api/corporate-actions"
-                    body={gap.body as Record<string, unknown>}
-                    label="Add transaction"
-                    size="sm"
-                    variant="outline"
-                    className="shrink-0 border-amber-300 bg-white text-amber-900 hover:bg-amber-50 dark:border-amber-700 dark:bg-transparent dark:text-amber-300"
-                  />
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-      )}
 
       {/* ── Returns hero ── */}
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6 rise">
