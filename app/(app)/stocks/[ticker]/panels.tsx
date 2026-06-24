@@ -12,6 +12,7 @@ import { Badge } from "@/components/ui/badge";
 import { Table, THead, TBody, TR, TH, TD } from "@/components/ui/table";
 import { EmptyState } from "@/components/empty-state";
 import { SectionMeta } from "@/components/stock/section-meta";
+import { SectorChip } from "@/components/sector-chip";
 import { ActionButton } from "@/components/action-button";
 import { WatchlistButton } from "@/components/stock/watchlist-button";
 import { CompanyAiActions } from "@/components/stock/company-ai-actions";
@@ -98,8 +99,8 @@ export async function OverviewPanel({ ticker }: { ticker: string }) {
                 />
               </div>
             )}
-            <div className="flex flex-wrap gap-2 text-xs">
-              {metadata.sector && <Badge variant="blue">{metadata.sector}</Badge>}
+            <div className="flex flex-wrap items-center gap-2 text-xs">
+              {metadata.sector && <SectorChip sector={metadata.sector} />}
               {metadata.industry && <Badge variant="outline">{metadata.industry}</Badge>}
               <Badge variant="secondary">PSX</Badge>
             </div>

@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Cell, ReferenceLine, Tooltip } from "recharts";
 import { INK, EASE, DRAW_MS, useChartMotion, AXIS_TICK } from "@/components/chart-kit";
+import { sectorColor } from "@/lib/sectors";
 import { fmtPct, fmtCompact } from "@/lib/market/format";
 import type { SectorRow } from "@/lib/market/read";
 import { cn } from "@/lib/utils";
@@ -85,7 +86,7 @@ export function SectorBars({ sectors }: { sectors: SectorRow[] }) {
             />
             <Bar dataKey="value" isAnimationActive={animate} animationDuration={DRAW_MS} animationEasing={EASE} radius={[0, 3, 3, 0]}>
               {data.map((s, i) => (
-                <Cell key={i} fill={metric === "volume" ? INK.line : (s.value >= 0 ? INK.up : INK.down)} />
+                <Cell key={i} fill={metric === "volume" ? sectorColor(s.sector) : (s.value >= 0 ? INK.up : INK.down)} />
               ))}
             </Bar>
           </BarChart>
