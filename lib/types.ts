@@ -37,6 +37,10 @@ export type BriefingType =
   | "journal_analysis"
   | "stock_review";
 
+export type ExperienceLevel = "beginner" | "intermediate" | "advanced";
+export type RiskProfile = "conservative" | "balanced" | "aggressive";
+export type Objective = "growth" | "income" | "preservation" | "learning";
+
 export interface Profile {
   id: string;
   full_name: string | null;
@@ -45,6 +49,12 @@ export interface Profile {
   manual_price_mode: boolean;
   demo_mode: boolean;
   free_cash: number;
+  onboarded: boolean;
+  experience_level: ExperienceLevel;
+  risk_profile: RiskProfile | null;
+  objective: Objective | null;
+  extra_features: string[];
+  hidden_features: string[];
 }
 
 export interface Holding {
