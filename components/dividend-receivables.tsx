@@ -13,7 +13,7 @@ import type { Dividend } from "@/lib/types";
 import { formatNumber, cn } from "@/lib/utils";
 import { CheckCircle2, EyeOff, Loader2, Pencil } from "lucide-react";
 
-type Tab = "confirmed" | "forecasted" | "received";
+type Tab = "upcoming" | "estimated" | "received" | "review";
 
 const fmt = (n: number | null | undefined, dp = 0) => (n === null || n === undefined ? "—" : formatNumber(n, dp));
 const dateOrDash = (d: string | null) => d ?? "—";
@@ -36,7 +36,7 @@ export function DividendReceivables({
   showLowConfidence: boolean;
 }) {
   const router = useRouter();
-  const [tab, setTab] = useState<Tab>("confirmed");
+  const [tab, setTab] = useState<Tab>("upcoming");
   const [showHidden, setShowHidden] = useState(showLowConfidence);
   const [busyId, setBusyId] = useState<string | null>(null);
   const [msg, setMsg] = useState<string | null>(null);
@@ -45,12 +45,14 @@ export function DividendReceivables({
   const [receiveDialog, setReceiveDialog] = useState<DividendEvent | null>(null);
   const [receiveForm, setReceiveForm] = useState({ date: "", gross: "", tax: "" });
 
-  const confirmed = useMemo(
+  const upcoming = useMemo(
     () =>
       events.filter(
         (e) =>
           !e.is_forecast &&
-          ["announced", "expected", "overdue", "needs_review"].includes(e.status) &&
+          ["announced", "expected"].includes(e.status) &&
+          !e.is_possible_duplicate &&
+          !e.needs_tax_review &&
           (showHidden || e.confidence_level !== "low")
       ),
     [events, showHidden]
@@ -58,12 +60,12 @@ export function DividendReceivables({
   const hiddenCount = useMemo(
     () =>
       events.filter(
-        (e) => !e.is_forecast && ["announced", "expected", "overdue", "needs_review"].includes(e.status) && e.confidence_level === "low"
+        (e) => !e.is_forecast && ["announced", "expected"].includes(e.status) && e.confidence_level === "low"
       ).length,
     [events]
   );
   const forecasts = useMemo(() => events.filter((e) => e.is_forecast && e.status === "forecasted"), [events]);
-  const receivedEvents = useMemo(() => events.filter((e) => e.status === "received"), [events]);
+  const review = useMemo(() => events.filter((e) => e.status === "needs_review" || e.status === "overdue" || e.is_possible_duplicate || e.needs_tax_review), [events]);
 
   async function act(id: string, body: Record<string, unknown>, done?: () => void) {
     setBusyId(id);
@@ -87,9 +89,10 @@ export function DividendReceivables({
   }
 
   const tabs: { key: Tab; label: string; count: number }[] = [
-    { key: "confirmed", label: "Confirmed", count: confirmed.length },
-    { key: "forecasted", label: "Forecasted", count: forecasts.length },
-    { key: "received", label: "Received", count: received.length + receivedEvents.length },
+    { key: "upcoming", label: "Upcoming", count: upcoming.length },
+    { key: "estimated", label: "Estimated", count: forecasts.length },
+    { key: "received", label: "Received", count: received.length },
+    { key: "review", label: "Needs review", count: review.length },
   ];
 
   return (
@@ -109,7 +112,7 @@ export function DividendReceivables({
             </button>
           ))}
         </div>
-        {tab === "confirmed" && hiddenCount > 0 && (
+        {tab === "upcoming" && hiddenCount > 0 && (
           <button
             onClick={() => setShowHidden((s) => !s)}
             className="inline-flex items-center gap-1 text-[11px] text-muted-foreground hover:text-foreground"
@@ -122,14 +125,14 @@ export function DividendReceivables({
 
       {msg && <p className="rounded-md bg-muted px-3 py-1.5 text-[11px]">{msg}</p>}
 
-      {tab === "confirmed" && (
+      {tab === "upcoming" && (
         <div className="space-y-2.5">
-          {confirmed.length === 0 && (
-            <p className="rounded-lg border border-border bg-card py-8 text-center text-xs text-muted-foreground">
-              No confirmed dividend announcements matched to your holdings. Click “Check upcoming dividends” to scan PSX announcements.
+          {upcoming.length === 0 && (
+            <p className="border-y border-border py-5 text-center text-xs text-muted-foreground">
+              No upcoming dividends have been confirmed for your holdings. Check PSX announcements to refresh verified records.
             </p>
           )}
-          {confirmed.map((e) => (
+          {upcoming.map((e) => (
             <div key={e.id} className="rounded-lg border border-border bg-card p-3.5">
               <div className="flex flex-wrap items-start justify-between gap-2">
                 <div>
@@ -244,11 +247,11 @@ export function DividendReceivables({
         </div>
       )}
 
-      {tab === "forecasted" && (
+      {tab === "estimated" && (
         <div className="space-y-2.5">
           {forecasts.length === 0 && (
             <p className="rounded-lg border border-border bg-card py-8 text-center text-xs text-muted-foreground">
-              No active forecasts. Click “Generate dividend forecasts” to project likely payouts from your dividend history.
+              No active estimates. Use “Estimate future dividends” to calculate deterministic estimates from stored dividend history.
             </p>
           )}
           {forecasts.map((e) => (
@@ -289,6 +292,19 @@ export function DividendReceivables({
         </div>
       )}
 
+      {tab === "review" && (
+        <div className="space-y-2">
+          {review.length === 0 ? (
+            <p className="border-y border-border py-5 text-center text-xs text-muted-foreground">No dividend records need review in the selected period.</p>
+          ) : review.map((event) => (
+            <div key={event.id} className="flex flex-wrap items-start justify-between gap-3 border-b border-border py-3 last:border-0">
+              <div><Link href={`/stocks/${event.ticker}`} className="text-sm font-semibold hover:underline">{event.ticker}</Link><p className="mt-0.5 text-xs text-muted-foreground">{event.company_name ?? event.ticker}</p></div>
+              <div className="text-right text-xs text-muted-foreground"><p className="font-medium text-foreground">{event.status === "overdue" ? "Payment overdue" : event.is_possible_duplicate ? "Possible duplicate" : event.needs_tax_review ? "Tax review required" : "Record needs review"}</p><p className="mt-0.5">{event.notes ?? event.eligibility_notes ?? "Review the stored event details."}</p></div>
+            </div>
+          ))}
+        </div>
+      )}
+
       {tab === "received" && (
         <div className="overflow-x-auto rounded-lg border border-border bg-card">
           <table className="w-full text-xs">
@@ -301,27 +317,10 @@ export function DividendReceivables({
                 <th className="px-2.5 py-2 text-right">Tax</th>
                 <th className="px-2.5 py-2 text-right">Net</th>
                 <th className="px-2.5 py-2 text-right">Rate</th>
-                <th className="px-2.5 py-2 text-right">Variance</th>
-                <th className="px-2.5 py-2">Notes</th>
+                <th className="px-2.5 py-2">Source</th>
               </tr>
             </thead>
             <tbody>
-              {receivedEvents.map((e) => (
-                <tr key={e.id} className="border-b border-border last:border-0">
-                  <td className="px-2.5 py-1.5 font-medium">{e.ticker}</td>
-                  <td className="max-w-[180px] truncate px-2.5 py-1.5 text-muted-foreground">{e.company_name ?? "—"}</td>
-                  <td className="px-2.5 py-1.5 tabular-nums">{dateOrDash(e.received_date)}</td>
-                  <td className="px-2.5 py-1.5 text-right tabular-nums">{fmt(e.gross_received)}</td>
-                  <td className="px-2.5 py-1.5 text-right tabular-nums">{fmt(e.tax_deducted_actual)}</td>
-                  <td className="px-2.5 py-1.5 text-right font-medium tabular-nums">{fmt(e.net_received)}</td>
-                  <td className="px-2.5 py-1.5 text-right tabular-nums">{e.actual_tax_rate !== null ? `${(e.actual_tax_rate * 100).toFixed(1)}%` : "—"}</td>
-                  <td className={cn("px-2.5 py-1.5 text-right tabular-nums", (e.variance_amount ?? 0) < 0 ? "text-red-600" : "text-emerald-600")}>
-                    {e.variance_amount !== null ? `${e.variance_amount >= 0 ? "+" : ""}${fmt(e.variance_amount)}` : "—"}
-                    {e.is_reconciled && " ✓"}
-                  </td>
-                  <td className="max-w-[160px] truncate px-2.5 py-1.5 text-muted-foreground">{e.notes ?? "—"}</td>
-                </tr>
-              ))}
               {received.map((d) => (
                 <tr key={d.id} className="border-b border-border last:border-0">
                   <td className="px-2.5 py-1.5 font-medium">{d.ticker}</td>
@@ -333,12 +332,11 @@ export function DividendReceivables({
                   <td className="px-2.5 py-1.5 text-right tabular-nums">
                     {d.tax !== null && d.amount > 0 ? `${((d.tax / d.amount) * 100).toFixed(1)}%` : "—"}
                   </td>
-                  <td className="px-2.5 py-1.5 text-right text-muted-foreground">—</td>
-                  <td className="max-w-[160px] truncate px-2.5 py-1.5 text-muted-foreground">{d.notes ?? "—"}</td>
+                  <td className="px-2.5 py-1.5 text-muted-foreground">{sourceLabel(d.source)}</td>
                 </tr>
               ))}
-              {received.length === 0 && receivedEvents.length === 0 && (
-                <tr><td colSpan={9} className="px-2.5 py-8 text-center text-muted-foreground">No received dividends recorded yet.</td></tr>
+              {received.length === 0 && (
+                <tr><td colSpan={8} className="px-2.5 py-8 text-center text-muted-foreground">No received dividends recorded yet.</td></tr>
               )}
             </tbody>
           </table>
@@ -400,4 +398,12 @@ export function DividendReceivables({
       </Dialog>
     </div>
   );
+}
+
+function sourceLabel(source: string) {
+  if (source === "manual") return "Manual";
+  if (source === "receivable") return "PSX announcement match";
+  if (source === "import") return "Broker import";
+  if (source === "statement") return "Ledger import";
+  return source || "System calculation";
 }

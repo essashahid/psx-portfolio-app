@@ -46,9 +46,11 @@ const blank: DividendFormState = {
 export function DividendManager({
   dividends,
   holdings,
+  triggerOnly = false,
 }: {
   dividends: Dividend[];
   holdings: EnrichedHolding[];
+  triggerOnly?: boolean;
 }) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
@@ -171,12 +173,16 @@ export function DividendManager({
 
   return (
     <>
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <p className="text-xs text-muted-foreground">{dividends.length} dividend record(s)</p>
+      {triggerOnly ? (
         <Button size="sm" onClick={openNew}><Plus className="h-3.5 w-3.5" /> Add dividend</Button>
-      </div>
+      ) : (
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <p className="text-xs text-muted-foreground">{dividends.length} dividend record(s)</p>
+          <Button size="sm" onClick={openNew}><Plus className="h-3.5 w-3.5" /> Add dividend</Button>
+        </div>
+      )}
 
-      <div className="mt-3 overflow-x-auto rounded-lg border border-border">
+      {!triggerOnly && <div className="mt-3 overflow-x-auto rounded-lg border border-border">
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b border-border">
@@ -216,7 +222,7 @@ export function DividendManager({
             )}
           </tbody>
         </table>
-      </div>
+      </div>}
 
       <Dialog open={open} onClose={() => setOpen(false)} title={form.id ? "Edit dividend" : "Add dividend"} className="sm:max-w-2xl">
         <form onSubmit={submit} className="space-y-3">
