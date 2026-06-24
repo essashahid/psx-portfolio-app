@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState, useEffect, useCallback } from "react";
+import { useRef, useState, useEffect, useCallback, useMemo } from "react";
 import ReactMarkdown, { type Components } from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { ChatCards } from "@/components/chat/cards";
@@ -78,12 +78,8 @@ function firstAvailableModel(providers: Record<ChatProvider, boolean>): ChatMode
   return CHAT_MODELS.find((m) => providers[m.provider])?.id ?? DEFAULT_MODEL_ID;
 }
 
-const SUGGESTIONS = [
-  "How does MEBL's position look?",
-  "How is the PSX market today?",
-  "Which of my holdings are up today?",
-  "Is OGDC cheap on valuation?",
-];
+type ResearchMode = "Quick answer" | "Deep research" | "Portfolio analysis" | "Company comparison" | "Filing analysis";
+const RESEARCH_MODES: ResearchMode[] = ["Quick answer", "Deep research", "Portfolio analysis", "Company comparison", "Filing analysis"];
 
 const CHAT_MARKDOWN_COMPONENTS: Components = {
   h1: ({ children }) => <h2 className="mb-3 mt-5 text-xl font-semibold tracking-editorial first:mt-0">{children}</h2>,
@@ -132,9 +128,13 @@ const CHAT_MARKDOWN_COMPONENTS: Components = {
 export function Chat({
   providers,
   initialThreads = [],
+  suggestions = [],
+  sourceStatus = [],
 }: {
   providers: Record<ChatProvider, boolean>;
   initialThreads?: ChatThread[];
+  suggestions?: string[];
+  sourceStatus?: string[];
 }) {
   const aiEnabled = providers.claude || providers.deepseek;
   const [messages, setMessages] = useState<Message[]>([]);
@@ -152,8 +152,14 @@ export function Chat({
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const followStreamRef = useRef(true);
   const [showLatest, setShowLatest] = useState(false);
+  const [searchThreads, setSearchThreads] = useState("");
+  const [researchMode, setResearchMode] = useState<ResearchMode>("Portfolio analysis");
 
   const activeThread = threads.find((thread) => thread.id === currentThreadId) ?? null;
+  const filteredThreads = useMemo(() => {
+    const query = searchThreads.trim().toLowerCase();
+    return query ? threads.filter((thread) => `${thread.title} ${thread.summary ?? ""}`.toLowerCase().includes(query)) : threads;
+  }, [threads, searchThreads]);
 
   const scrollToLatest = useCallback((behavior: ScrollBehavior = "smooth") => {
     const viewport = scrollRef.current;
@@ -355,7 +361,7 @@ export function Chat({
           >
             <ChevronDown className={cn("h-4 w-4 shrink-0 transition-transform md:hidden", !threadsOpen && "-rotate-90")} />
             <div className="min-w-0">
-            <p className="text-sm font-semibold">Saved chats</p>
+            <p className="text-sm font-semibold">Saved research</p>
             <p className="text-[11px] text-muted-foreground">{threads.length} conversation{threads.length === 1 ? "" : "s"}</p>
             </div>
           </button>
@@ -376,6 +382,9 @@ export function Chat({
           </p>
         )}
 
+        <div className="px-3 pb-2">
+          <input value={searchThreads} onChange={(event) => setSearchThreads(event.target.value)} placeholder="Search research…" className="h-8 w-full rounded-md border border-border bg-background px-2 text-xs outline-none focus:ring-2 focus:ring-ring" />
+        </div>
         <div
           id="saved-chat-list"
           className={cn(
@@ -388,7 +397,7 @@ export function Chat({
               Your chats will appear here after the first message.
             </div>
           ) : (
-            threads.map((thread) => {
+            filteredThreads.map((thread) => {
               const active = thread.id === currentThreadId;
               const loading = loadingThread === thread.id;
               return (
@@ -485,15 +494,13 @@ export function Chat({
             type="button"
             onClick={() => setThreadsOpen(true)}
             className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg text-muted-foreground active:bg-muted md:hidden"
-            aria-label="Saved chats"
+          aria-label="Saved research"
           >
             <MessageSquareText className="h-4.5 w-4.5" />
           </button>
           <div className="min-w-0 flex-1">
             <p className="truncate text-sm font-semibold tracking-[-0.015em]">{activeThread?.title ?? "Research Copilot"}</p>
-            <p className="text-[11px] text-muted-foreground">
-              {currentThreadId ? "Saved automatically." : "A saved chat starts when you send a message."}
-            </p>
+            <p className="text-[11px] text-muted-foreground">{currentThreadId ? "Saved research · sources and calculations remain traceable." : "Portfolio-aware research workspace."}</p>
           </div>
           {busy && (
             <span className="flex shrink-0 items-center gap-1.5 rounded-full bg-muted px-2 py-1 text-[11px] text-muted-foreground">
@@ -518,13 +525,13 @@ export function Chat({
               <div className="mx-auto mb-3 flex h-11 w-11 items-center justify-center rounded-xl bg-emerald-50 text-emerald-600">
                 <Sparkles className="h-5 w-5" />
               </div>
-              <h2 className="text-base font-semibold">Ask about your portfolio or the PSX</h2>
+              <h2 className="text-base font-semibold">Research your portfolio</h2>
               <p className="mt-1 text-sm text-muted-foreground">
-                Live data, ratios, charts and filings - interpreted. {aiEnabled ? "" : "(AI narration is off; you will still get live data cards.)"}
+                Ask about your holdings, compare companies, review official filings, analyse valuation or understand what moved your portfolio. {aiEnabled ? "" : "(AI narration is off; you will still get live data cards.)"}
               </p>
-              <div className="mt-4 grid gap-2 sm:grid-cols-2">
-                {SUGGESTIONS.map((s) => (
-                  <button key={s} onClick={() => send(s)} className="min-h-11 rounded-lg border border-border bg-card px-3 py-2 text-left text-xs transition-colors hover:bg-muted">
+              <div className="mt-5 divide-y divide-border border-y border-border text-left">
+                {suggestions.map((s) => (
+                  <button key={s} onClick={() => send(s)} className="block w-full px-1 py-3 text-left text-xs transition-colors hover:text-brand">
                     {s}
                   </button>
                 ))}
@@ -573,8 +580,12 @@ export function Chat({
         </div>
 
         <div className="border-t border-border/80 bg-background/90 p-3 backdrop-blur-xl">
-          <div className="mb-2 flex items-center gap-2">
-            <ModelPicker model={model} setModel={setModel} providers={providers} />
+          <div className="mb-2 flex flex-wrap items-center gap-2">
+            <select value={researchMode} onChange={(event) => setResearchMode(event.target.value as ResearchMode)} className="h-8 rounded-md border border-border bg-card px-2 text-[11px] font-medium text-foreground">
+              {RESEARCH_MODES.map((mode) => <option key={mode}>{mode}</option>)}
+            </select>
+            <details className="relative"><summary className="cursor-pointer list-none rounded-md bg-muted px-2.5 py-1 text-[11px] text-muted-foreground">Context: Portfolio · Transactions · Prices · Filings</summary><div className="absolute bottom-7 left-0 z-20 w-72 rounded-md border border-border bg-card p-3 text-xs shadow-[var(--shadow-card)]"><p className="font-semibold">Sources used in this answer</p>{sourceStatus.length ? <ul className="mt-2 space-y-1 text-muted-foreground">{sourceStatus.map((source) => <li key={source}>✓ {source}</li>)}</ul> : <p className="mt-2 text-muted-foreground">Data availability is checked before research.</p>}</div></details>
+            <details className="relative"><summary className="cursor-pointer text-[11px] text-muted-foreground hover:text-foreground">Advanced model settings</summary><div className="absolute bottom-6 left-0 z-20 mt-1 rounded-md border border-border bg-card p-2 shadow-[var(--shadow-card)]"><ModelPicker model={model} setModel={setModel} providers={providers} /></div></details>
             {!aiEnabled && <span className="ml-auto text-[10px] text-amber-600">AI narration off - data only</span>}
           </div>
           <form onSubmit={(e) => { e.preventDefault(); send(input); }} className="flex items-end gap-2">
@@ -583,7 +594,7 @@ export function Chat({
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); send(input); } }}
-              placeholder="Ask anything about your holdings or PSX..."
+              placeholder="Ask about your portfolio or the PSX..."
               rows={1}
               enterKeyHint="send"
               aria-label="Message Research Copilot"
@@ -593,18 +604,18 @@ export function Chat({
               {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
             </button>
           </form>
-          <p className="mt-1.5 text-center text-[10px] text-muted-foreground">Chats save automatically. Data is cached from official PSX sources.</p>
+          <p className="mt-1.5 text-center text-[10px] text-muted-foreground">Research saves automatically. Structured portfolio data and official PSX sources are retrieved before synthesis.</p>
         </div>
       </section>
 
       {/* Mobile saved-chats drawer — slides up from bottom */}
       {threadsOpen && (
-        <div className="fixed inset-0 z-50 md:hidden" role="dialog" aria-modal="true" aria-label="Saved chats">
+        <div className="fixed inset-0 z-50 md:hidden" role="dialog" aria-modal="true" aria-label="Saved research">
           <button className="absolute inset-0 bg-black/35" onClick={() => setThreadsOpen(false)} aria-label="Close saved chats" />
           <div className="scroll-touch absolute inset-x-0 bottom-0 flex max-h-[85dvh] flex-col overflow-y-auto rounded-t-2xl border-t border-border bg-card pb-[calc(env(safe-area-inset-bottom)+1rem)] shadow-xl">
             <div className="sticky top-0 z-10 flex items-center justify-between border-b border-border bg-card px-4 py-3">
               <div className="min-w-0">
-                <p className="text-base font-semibold">Saved chats</p>
+                <p className="text-base font-semibold">Saved research</p>
                 <p className="truncate text-[11px] text-muted-foreground">
                   {threads.length} conversation{threads.length === 1 ? "" : "s"}
                 </p>
@@ -635,7 +646,7 @@ export function Chat({
             <div className="grid gap-2 p-3">
               {threads.length === 0 ? (
                 <div className="rounded-lg border border-dashed border-border p-4 text-center text-sm text-muted-foreground">
-                  Your chats will appear here after the first message.
+              Your saved research will appear here after the first message.
                 </div>
               ) : (
                 threads.map((thread) => {
