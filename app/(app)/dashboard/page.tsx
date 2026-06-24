@@ -164,7 +164,7 @@ export default async function DashboardPage() {
           {/* eslint-disable-next-line @next/next/no-html-link-for-pages -- CSV download, not a page navigation */}
           <a href="/api/export/holdings"><Button variant="outline" size="sm"><Download className="h-3.5 w-3.5" /> Export holdings</Button></a>
         </div>
-        <HoldingsTable holdings={summary.holdings} summary={summary} />
+        <HoldingsTable holdings={summary.holdings} summary={summary} dailyRows={dailyPerformance.rows.map((row) => ({ ticker: row.ticker, dayChangePct: row.dayChangePct, dayPnl: row.dayPnl }))} />
       </section>
 
       <div className="grid gap-6 xl:grid-cols-2">
