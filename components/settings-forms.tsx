@@ -10,8 +10,10 @@ import { Select } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { Table, THead, TBody, TR, TH, TD } from "@/components/ui/table";
 import { formatNumber } from "@/lib/utils";
-import type { Profile } from "@/lib/types";
+import type { ExperienceLevel, Objective, Profile, RiskProfile } from "@/lib/types";
+import { OPTIONAL_NAV, isDefaultVisible, deriveFeaturePrefs, resolveVisibleHrefs } from "@/lib/nav";
 import { Loader2, Trash2, Plus } from "lucide-react";
+import Link from "next/link";
 
 // ---------------------------------------------------------------------------
 // Profile
@@ -64,6 +66,147 @@ export function ProfileForm({ profile }: { profile: Profile }) {
         <Button type="submit" size="sm" disabled={busy}>
           {busy && <Loader2 className="h-3.5 w-3.5 animate-spin" />} Save profile
         </Button>
+        {msg && <p className={`text-xs ${msg.startsWith("Error") ? "text-red-600" : "text-emerald-700"}`}>{msg}</p>}
+      </div>
+    </form>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Preferences — experience, risk, objective and which optional tabs are shown
+// ---------------------------------------------------------------------------
+const EXPERIENCE_OPTIONS: { value: ExperienceLevel; label: string }[] = [
+  { value: "beginner", label: "New to investing (simplest view)" },
+  { value: "intermediate", label: "Comfortable (adds research and planning)" },
+  { value: "advanced", label: "Experienced (everything unlocked)" },
+];
+
+const RISK_OPTIONS: { value: RiskProfile; label: string }[] = [
+  { value: "conservative", label: "Conservative" },
+  { value: "balanced", label: "Balanced" },
+  { value: "aggressive", label: "Growth seeking" },
+];
+
+const OBJECTIVE_OPTIONS: { value: Objective; label: string }[] = [
+  { value: "growth", label: "Long-term growth" },
+  { value: "income", label: "Dividend income" },
+  { value: "preservation", label: "Preserve capital" },
+  { value: "learning", label: "Learn as I go" },
+];
+
+export function PreferencesForm({ profile }: { profile: Profile }) {
+  const router = useRouter();
+  const [busy, setBusy] = useState(false);
+  const [msg, setMsg] = useState<string | null>(null);
+  const [experience, setExperience] = useState<ExperienceLevel>(profile.experience_level);
+  const [risk, setRisk] = useState<RiskProfile | "">(profile.risk_profile ?? "");
+  const [objective, setObjective] = useState<Objective | "">(profile.objective ?? "");
+  const [visible, setVisible] = useState<Set<string>>(
+    () => new Set(resolveVisibleHrefs(profile))
+  );
+
+  function toggle(href: string) {
+    setVisible((prev) => {
+      const next = new Set(prev);
+      if (next.has(href)) next.delete(href);
+      else next.add(href);
+      return next;
+    });
+  }
+
+  async function save(e: React.FormEvent) {
+    e.preventDefault();
+    setBusy(true);
+    const optionalVisible = new Set(OPTIONAL_NAV.filter((i) => visible.has(i.href)).map((i) => i.href));
+    const { extra_features, hidden_features } = deriveFeaturePrefs(experience, optionalVisible);
+    const supabase = createClient();
+    const { error } = await supabase
+      .from("profiles")
+      .update({
+        experience_level: experience,
+        risk_profile: risk || null,
+        objective: objective || null,
+        extra_features,
+        hidden_features,
+      })
+      .eq("id", profile.id);
+    setBusy(false);
+    setMsg(error ? `Error: ${error.message}` : "Preferences saved.");
+    if (!error) router.refresh();
+  }
+
+  return (
+    <form onSubmit={save} className="space-y-4">
+      <div className="grid gap-3 sm:grid-cols-3">
+        <div className="space-y-1.5">
+          <Label>Experience level</Label>
+          <Select value={experience} onChange={(e) => setExperience(e.target.value as ExperienceLevel)}>
+            {EXPERIENCE_OPTIONS.map((o) => (
+              <option key={o.value} value={o.value}>{o.label}</option>
+            ))}
+          </Select>
+        </div>
+        <div className="space-y-1.5">
+          <Label>Risk comfort</Label>
+          <Select value={risk} onChange={(e) => setRisk(e.target.value as RiskProfile | "")}>
+            <option value="">Not set</option>
+            {RISK_OPTIONS.map((o) => (
+              <option key={o.value} value={o.value}>{o.label}</option>
+            ))}
+          </Select>
+        </div>
+        <div className="space-y-1.5">
+          <Label>Objective</Label>
+          <Select value={objective} onChange={(e) => setObjective(e.target.value as Objective | "")}>
+            <option value="">Not set</option>
+            {OBJECTIVE_OPTIONS.map((o) => (
+              <option key={o.value} value={o.value}>{o.label}</option>
+            ))}
+          </Select>
+        </div>
+      </div>
+
+      <div className="space-y-2">
+        <Label>Sections you see</Label>
+        <p className="text-xs text-muted-foreground">
+          Your experience level sets a sensible default. Turn individual sections on or off here. Core sections like
+          Dashboard, Holdings and Settings are always available.
+        </p>
+        <div className="grid gap-1.5 sm:grid-cols-2">
+          {OPTIONAL_NAV.map((item) => {
+            const on = visible.has(item.href);
+            const isDefault = isDefaultVisible(item, experience);
+            return (
+              <label
+                key={item.href}
+                className="flex cursor-pointer items-start gap-2.5 rounded-lg border border-border bg-card px-3 py-2"
+              >
+                <input
+                  type="checkbox"
+                  checked={on}
+                  onChange={() => toggle(item.href)}
+                  className="mt-0.5 h-4 w-4 accent-emerald-600"
+                />
+                <span className="min-w-0">
+                  <span className="block text-xs font-medium">{item.label}</span>
+                  <span className="block text-[11px] text-muted-foreground">
+                    {item.hint}
+                    {!isDefault ? " · beyond your level" : ""}
+                  </span>
+                </span>
+              </label>
+            );
+          })}
+        </div>
+      </div>
+
+      <div className="flex flex-wrap items-center gap-3">
+        <Button type="submit" size="sm" disabled={busy}>
+          {busy && <Loader2 className="h-3.5 w-3.5 animate-spin" />} Save preferences
+        </Button>
+        <Link href="/onboarding" className="text-xs text-muted-foreground underline-offset-2 hover:text-foreground hover:underline">
+          Redo onboarding
+        </Link>
         {msg && <p className={`text-xs ${msg.startsWith("Error") ? "text-red-600" : "text-emerald-700"}`}>{msg}</p>}
       </div>
     </form>

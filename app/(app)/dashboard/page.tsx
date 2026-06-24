@@ -13,7 +13,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Markdown } from "@/components/markdown";
-import { AllocationPie, DailyHoldingPerformanceBar, GainLossBar, TargetVsActualBar, ValueLine } from "@/components/charts-lazy";
+import { AllocationPie, DailyHoldingPerformanceBar, ValueLine } from "@/components/charts-lazy";
 import { UpcomingIncome } from "@/components/upcoming-income";
 import { ImportantPsxEvents, type PsxEventRow } from "@/components/important-psx-events";
 import { DailyChangelog, type ChangelogRow } from "@/components/daily-changelog";
@@ -29,7 +29,7 @@ export default async function DashboardPage() {
   const [
     summary,
     dailyPerformance,
-    [briefingRes, newsRes, alertsRes, snapshotsRes, batchesRes, profileRes, psxEventsRes, changelogRes],
+    [briefingRes, newsRes, snapshotsRes, batchesRes, profileRes, psxEventsRes, changelogRes],
     dividends,
     dividendEventsRes,
   ] = await Promise.all([
@@ -53,13 +53,6 @@ export default async function DashboardPage() {
         .order("created_at", { ascending: false })
         .limit(5),
       supabase
-        .from("alerts")
-        .select("id, ticker, alert_type, severity, title")
-        .eq("user_id", user.id)
-        .eq("status", "open")
-        .order("created_at", { ascending: false })
-        .limit(6),
-      supabase
         .from("portfolio_snapshots")
         .select("snapshot_date, total_value, total_cost")
         .eq("user_id", user.id)
@@ -71,7 +64,7 @@ export default async function DashboardPage() {
         .eq("user_id", user.id)
         .order("created_at", { ascending: false })
         .limit(3),
-      supabase.from("profiles").select("demo_mode").eq("id", user.id).maybeSingle(),
+      supabase.from("profiles").select("demo_mode, experience_level").eq("id", user.id).maybeSingle(),
       // Important PSX events: official filings (dividends, results, corporate actions)
       supabase
         .from("news_articles")
@@ -131,6 +124,9 @@ export default async function DashboardPage() {
   }
 
   const briefing = briefingRes.data?.[0] ?? null;
+  // Beginners get a leaner overview: the heaviest analytical cards are hidden so
+  // the page stays a clean snapshot rather than a wall of charts.
+  const lean = profileRes.data?.experience_level === "beginner";
   const today = new Date().toISOString().slice(0, 10);
   // Thesis review prompts only appear once the user has started writing theses.
   const needsReview = summary.holdings.filter(
@@ -150,7 +146,6 @@ export default async function DashboardPage() {
     .filter((h) => h.unrealized_pl_pct! < 0)
     .slice(0, 5);
   const latestNews = newsRes.data ?? [];
-  const openAlerts = alertsRes.data ?? [];
   const dividendSummary = summarizeDividends(dividends);
   const dividendEvents: DividendEvent[] = (dividendEventsRes.data ?? []).map((r) =>
     normalizeEvent(r as Record<string, unknown>)
@@ -228,6 +223,7 @@ export default async function DashboardPage() {
 
       <DailyChangelog changelog={changelog} today={today} />
 
+      {!lean && (
       <Card className="overflow-hidden border-zinc-300">
         <CardHeader className="flex-row items-start justify-between gap-3 border-b border-border bg-muted/25 p-4">
           <div>
@@ -346,15 +342,15 @@ export default async function DashboardPage() {
           )}
         </CardContent>
       </Card>
+      )}
 
-      {/* 1. Portfolio Snapshot */}
-      <div className="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-5">
+      {/* 1. Portfolio Snapshot. Total value lives in the hero above, so it is not repeated here. */}
+      <div className="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-4">
         <StatCard
-          label="Total value"
-          value={formatMoney(summary.totalValue)}
+          label="Total cost"
+          value={formatMoney(summary.totalCost)}
           sub={summary.pricedHoldings < summary.holdingsCount ? `${summary.holdingsCount - summary.pricedHoldings} holding(s) priced at cost` : undefined}
         />
-        <StatCard label="Total cost" value={formatMoney(summary.totalCost)} />
         <StatCard
           label="Unrealized P/L"
           value={formatMoney(summary.unrealizedPl)}
@@ -384,11 +380,6 @@ export default async function DashboardPage() {
             sub={summary.largestSector ? `${summary.largestSector.weight.toFixed(1)}% of portfolio` : undefined}
           />
         </div>
-        <StatCard
-          label="Open alerts"
-          value={formatNumber(alertsRes.data?.length ?? 0, 0)}
-          tone={(alertsRes.data?.length ?? 0) > 0 ? "negative" : "neutral"}
-        />
       </div>
 
       {/* 2. Upcoming Income */}
@@ -477,30 +468,6 @@ export default async function DashboardPage() {
             <AllocationPie data={summary.sectorWeights.map((s) => ({ name: s.sector, value: s.value }))} />
           </CardContent>
         </Card>
-        <Card>
-          <CardHeader>
-            <CardTitle>Unrealized gain/loss by holding</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <GainLossBar
-              data={summary.holdings
-                .filter((h) => h.unrealized_pl !== null)
-                .map((h) => ({ ticker: h.ticker, pl: h.unrealized_pl! }))}
-            />
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader>
-            <CardTitle>Actual vs target allocation</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <TargetVsActualBar
-              data={summary.holdings
-                .filter((h) => h.target_allocation !== null)
-                .map((h) => ({ ticker: h.ticker, actual: h.weight ?? 0, target: h.target_allocation! }))}
-            />
-          </CardContent>
-        </Card>
       </div>
 
       <Card>
@@ -519,17 +486,18 @@ export default async function DashboardPage() {
         </CardContent>
       </Card>
 
-      <div className="grid gap-4 xl:grid-cols-[minmax(0,1.35fr)_minmax(360px,0.85fr)]">
+      <div className={cn("grid gap-4", briefing && "xl:grid-cols-[minmax(0,1.35fr)_minmax(360px,0.85fr)]")}>
+        {briefing && (
         <Card className="overflow-hidden">
           <CardHeader className="flex-row items-start justify-between border-b border-border bg-muted/30 p-4">
             <div>
               <div className="flex items-center gap-2">
                 <FileText className="h-4 w-4 text-muted-foreground" />
                 <CardTitle>Daily review brief</CardTitle>
-                {briefing && <Badge variant="outline">{briefing.briefing_type}</Badge>}
+                <Badge variant="outline">{briefing.briefing_type}</Badge>
               </div>
               <CardDescription className="mt-1">
-                {briefing ? `Generated ${briefing.created_at.slice(0, 16).replace("T", " ")}` : "No briefing generated yet"}
+                {`Generated ${briefing.created_at.slice(0, 16).replace("T", " ")}`}
               </CardDescription>
             </div>
             <Link href="/briefings" className="shrink-0 text-xs text-muted-foreground hover:text-foreground">
@@ -537,35 +505,24 @@ export default async function DashboardPage() {
             </Link>
           </CardHeader>
           <CardContent className="p-0">
-            {briefing ? (
-              <div className="grid md:grid-cols-[180px_minmax(0,1fr)]">
-                <div className="space-y-3 border-b border-border bg-muted/20 p-4 md:border-b-0 md:border-r">
-                  <div>
-                    <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">Coverage</p>
-                    <p className="mt-1 text-sm font-semibold">{summary.pricedHoldings}/{summary.holdingsCount} priced</p>
-                  </div>
-                  <div>
-                    <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">Open alerts</p>
-                    <p className="mt-1 text-sm font-semibold">{openAlerts.length}</p>
-                  </div>
-                  <div>
-                    <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">High-relevance news</p>
-                    <p className="mt-1 text-sm font-semibold">{latestNews.length}</p>
-                  </div>
+            <div className="grid md:grid-cols-[180px_minmax(0,1fr)]">
+              <div className="space-y-3 border-b border-border bg-muted/20 p-4 md:border-b-0 md:border-r">
+                <div>
+                  <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">Coverage</p>
+                  <p className="mt-1 text-sm font-semibold">{summary.pricedHoldings}/{summary.holdingsCount} priced</p>
                 </div>
-                <div className="scroll-touch p-4 max-h-90 overflow-y-auto md:max-h-105">
-                  <Markdown content={briefing.content} className="dashboard-briefing" />
+                <div>
+                  <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">High-relevance news</p>
+                  <p className="mt-1 text-sm font-semibold">{latestNews.length}</p>
                 </div>
               </div>
-            ) : (
-              <div className="flex min-h-48 flex-col items-center justify-center gap-3 p-6 text-center">
-                <FileText className="h-7 w-7 text-muted-foreground/70" />
-                <p className="max-w-md text-sm font-medium">Generate a concise daily review once prices, news, and alerts are up to date.</p>
-                <p className="max-w-md text-xs text-muted-foreground">The dashboard will show a compact version here; the full archive stays in Briefings.</p>
+              <div className="scroll-touch p-4 max-h-90 overflow-y-auto md:max-h-105">
+                <Markdown content={briefing.content} className="dashboard-briefing" />
               </div>
-            )}
+            </div>
           </CardContent>
         </Card>
+        )}
 
         <div className="space-y-4">
           <Card>
@@ -608,6 +565,7 @@ export default async function DashboardPage() {
             </CardContent>
           </Card>
 
+          {!lean && (
           <Card>
             <CardHeader className="flex-row items-center justify-between">
               <div className="flex items-center gap-2">
@@ -637,10 +595,11 @@ export default async function DashboardPage() {
               ))}
             </CardContent>
           </Card>
+          )}
         </div>
       </div>
 
-      {(needsReview.length > 0 || upcomingReviews.length > 0) && (
+      {!lean && (needsReview.length > 0 || upcomingReviews.length > 0) && (
         <div className="grid gap-4 lg:grid-cols-2">
           {needsReview.length > 0 && (
             <Card>
