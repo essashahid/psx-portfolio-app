@@ -68,10 +68,10 @@ function SidebarRow({
   return (
     <span
       className={cn(
-        "flex items-center gap-2.5 rounded-lg px-3 py-2 text-[13px] font-medium transition-colors",
+        "flex items-center gap-2.5 rounded-lg px-3 py-2 text-[13px] transition-colors",
         lit
-          ? "bg-sidebar-active text-white shadow-sm"
-          : "text-sidebar-muted hover:bg-accent hover:text-sidebar-foreground"
+          ? "bg-brand-soft font-semibold text-brand"
+          : "font-medium text-sidebar-muted hover:bg-accent hover:text-sidebar-foreground"
       )}
     >
       {pending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Icon className="h-4 w-4" />}
@@ -133,7 +133,7 @@ function BottomNavRow({
     <span
       className={cn(
         "relative flex h-12 min-w-0 flex-col items-center justify-center gap-0.5 rounded-lg px-1 text-[10px] font-medium transition-colors",
-        lit ? "bg-primary text-primary-foreground" : "text-muted-foreground active:bg-muted active:text-foreground"
+        lit ? "bg-brand text-white" : "text-muted-foreground active:bg-muted active:text-foreground"
       )}
     >
       {pending ? <Loader2 className="h-[18px] w-[18px] shrink-0 animate-spin" /> : <Icon className="h-[18px] w-[18px] shrink-0" />}

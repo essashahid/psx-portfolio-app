@@ -13,7 +13,10 @@ export function StatCard({
   tone?: "positive" | "negative" | "neutral";
 }) {
   return (
-    <Card>
+    <Card className={cn(
+      tone === "positive" && "border-l-[3px] border-l-emerald-500",
+      tone === "negative" && "border-l-[3px] border-l-red-400",
+    )}>
       <CardContent className="p-4">
         <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">{label}</p>
         <p

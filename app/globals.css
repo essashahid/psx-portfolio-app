@@ -18,6 +18,9 @@
   --sidebar-foreground: #05050c;
   --sidebar-muted: #6b6b64;
   --sidebar-active: #111111;
+  /* Brand accent — matches the chart editorial indigo (INK.line). */
+  --brand: #3450c8;
+  --brand-soft: #eef1fb;
   /* Soft layered shadow used by cards & raised surfaces. */
   --shadow-card: 0 1px 2px rgba(0, 0, 0, 0.04), 0 12px 32px -16px rgba(0, 0, 0, 0.12);
 }
@@ -39,6 +42,8 @@
   --color-sidebar-foreground: var(--sidebar-foreground);
   --color-sidebar-muted: var(--sidebar-muted);
   --color-sidebar-active: var(--sidebar-active);
+  --color-brand: var(--brand);
+  --color-brand-soft: var(--brand-soft);
   --shadow-card: var(--shadow-card);
   --font-sans: var(--font-inter-tight);
   --font-mono: var(--font-geist-mono);
@@ -93,7 +98,7 @@ a {
   font-weight: 600;
   letter-spacing: 0.14em;
   text-transform: uppercase;
-  color: var(--muted-foreground);
+  color: color-mix(in oklab, var(--muted-foreground) 65%, var(--brand));
 }
 
 /* Faded "ghost" ink for the first line of two-tone editorial headlines. */

@@ -13,7 +13,7 @@ import { Button } from "@/components/ui/button";
 import { AllocationPie, DailyHoldingPerformanceBar, ValueLine } from "@/components/charts-lazy";
 import { ImportantPsxEvents, type PsxEventRow } from "@/components/important-psx-events";
 import { SectorChip } from "@/components/sector-chip";
-import { Activity, RefreshCw, Sparkles, Upload } from "lucide-react";
+import { Activity, RefreshCw, Sparkles, TrendingDown, TrendingUp, Upload } from "lucide-react";
 
 // Personalized one-line read on the portfolio, tuned to the user's objective.
 const OBJECTIVE_LINE: Record<string, string> = {
@@ -183,7 +183,7 @@ export default async function DashboardPage() {
           <CardHeader className="flex-row items-start justify-between gap-3 border-b border-border bg-muted/20 p-4">
             <div>
               <CardTitle className="flex items-center gap-2">
-                <Activity className="h-4 w-4 text-muted-foreground" />
+                <Activity className="h-4 w-4 text-brand" />
                 Today&apos;s move
               </CardTitle>
               <CardDescription className="mt-1 max-w-3xl leading-relaxed">
@@ -299,8 +299,11 @@ export default async function DashboardPage() {
       {/* Gainers / Losers */}
       <div className="grid gap-4 lg:grid-cols-2">
         <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm">Top gainers</CardTitle>
+          <CardHeader className="rounded-t-lg bg-emerald-50/50 pb-2">
+            <CardTitle className="flex items-center gap-2 text-sm">
+              <TrendingUp className="h-3.5 w-3.5 text-emerald-600" />
+              Top gainers
+            </CardTitle>
             <CardDescription>By unrealized return on cost</CardDescription>
           </CardHeader>
           <CardContent className="space-y-1.5">
@@ -318,8 +321,11 @@ export default async function DashboardPage() {
         </Card>
 
         <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm">Biggest declines</CardTitle>
+          <CardHeader className="rounded-t-lg bg-red-50/40 pb-2">
+            <CardTitle className="flex items-center gap-2 text-sm">
+              <TrendingDown className="h-3.5 w-3.5 text-red-400" />
+              Biggest declines
+            </CardTitle>
             <CardDescription>Positions below your cost</CardDescription>
           </CardHeader>
           <CardContent className="space-y-1.5">
