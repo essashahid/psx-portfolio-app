@@ -1,15 +1,13 @@
+/* eslint-disable @next/next/no-html-link-for-pages -- export endpoint returns a file, not a page */
 import Link from "next/link";
 import { createClient, getUser } from "@/lib/supabase/server";
 import { getPerformanceAnalytics } from "@/lib/engine/performance";
-import { PageHeader } from "@/components/page-header";
-import { StatCard } from "@/components/stat-card";
+import { getPortfolio } from "@/lib/portfolio";
 import { EmptyState } from "@/components/empty-state";
-import { CostBasisTable } from "@/components/cost-basis-table";
 import { ActionButton } from "@/components/action-button";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { cn, formatMoney, formatNumber, plColor } from "@/lib/utils";
-import { RefreshCw, TrendingUp, Upload } from "lucide-react";
+import { cn, formatMoney, formatNumber, formatSignedPct } from "@/lib/utils";
+import { ChevronDown, Download, RefreshCw, TrendingUp, Upload } from "lucide-react";
 
 export const dynamic = "force-dynamic";
 
@@ -17,325 +15,39 @@ export default async function PerformancePage() {
   const supabase = await createClient();
   const user = await getUser();
   if (!user) return null;
+  const [analytics, portfolio] = await Promise.all([getPerformanceAnalytics(supabase, user.id), getPortfolio(supabase, user.id)]);
 
-  const analytics = await getPerformanceAnalytics(supabase, user.id);
+  if (!analytics) return <div className="space-y-5"><header><p className="eyebrow">Portfolio</p><h1 className="mt-1 text-2xl font-semibold">Performance</h1></header><EmptyState icon={TrendingUp} title="No ledger found" description="Import an AKD Statement of Account to calculate ledger-backed return, cash flows and trade costs." action={<Link href="/import"><Button><Upload className="h-4 w-4" /> Import statement</Button></Link>} /></div>;
 
-  if (!analytics) {
-    return (
-      <div className="space-y-5">
-        <PageHeader
-          eyebrow="Portfolio"
-          title="Performance"
-          description="Money-weighted returns, cost basis and portfolio analytics derived from your AKD ledger."
-        />
-        <EmptyState
-          icon={TrendingUp}
-          title="No transactions found"
-          description="Import your AKD Statement Of Account to see XIRR, cost basis, friction autopsy and concentration analysis. Once imported, analytics load directly from your transaction data."
-          action={
-            <Link href="/import">
-              <Button>
-                <Upload className="h-4 w-4" /> Import statement
-              </Button>
-            </Link>
-          }
-        />
-      </div>
-    );
-  }
+  const { returns, friction, byYear, sales } = analytics;
+  const currentWorth = portfolio.totalValue + portfolio.cashBalance;
+  const netGain = currentWorth - returns.totalDeposited;
+  const buyOrders = byYear.reduce((sum, row) => sum + row.tradeCount, 0) - sales.length;
+  const bridge = [
+    { label: "Capital contributed", value: returns.totalDeposited, tone: "base" },
+    { label: "Realised P/L", value: returns.realizedPl, tone: returns.realizedPl >= 0 ? "positive" : "negative" },
+    { label: "Unrealised P/L", value: portfolio.unrealizedPl, tone: portfolio.unrealizedPl >= 0 ? "positive" : "negative" },
+    { label: "Net dividends", value: portfolio.dividendIncome, tone: "positive" },
+    { label: "Total friction", value: -friction.total, tone: "negative" },
+    { label: "Current net worth", value: currentWorth, tone: "base" },
+  ];
 
-  const { returns: r, costBasis, friction: f, byYear, deployment: d, concentration: c } = analytics;
+  return <div className="space-y-7 pb-4">
+    <header className="flex flex-wrap items-start justify-between gap-4 border-b border-border pb-5"><div><p className="eyebrow">Portfolio</p><h1 className="mt-1 text-2xl font-semibold tracking-tight">Performance</h1><p className="mt-1 text-sm text-muted-foreground">Ledger-backed return, cash-flow and cost analysis.</p><p className="mt-3 text-xs text-muted-foreground">AKD ledger synced through 22 Jun 2026 · Current portfolio values include the 24 Jun manual purchases.</p></div><div className="flex flex-wrap items-start gap-2"><ActionButton endpoint="/api/import/sync-cash" label={<><RefreshCw className="h-3.5 w-3.5" /> Sync ledger</>} variant="outline" size="sm" /><a href="#reconciliation"><Button variant="outline" size="sm">Review adjustments</Button></a><details className="relative"><summary className="inline-flex h-10 cursor-pointer list-none items-center gap-1.5 rounded-md border border-border bg-card px-3 text-xs font-medium md:h-8">More <ChevronDown className="h-3.5 w-3.5" /></summary><div className="absolute right-0 z-20 mt-1 w-40 rounded-md border border-border bg-card p-1.5 shadow-[var(--shadow-card)]"><a href="/api/export/holdings" className="block rounded px-2 py-1.5 text-xs hover:bg-muted"><Download className="mr-1 inline h-3.5 w-3.5" />Export holdings</a></div></details></div></header>
 
-  return (
-    <div className="space-y-5">
-      <PageHeader
-        eyebrow="Portfolio"
-        title="Performance"
-        description="Money-weighted returns, cost basis, friction autopsy and concentration analysis."
-        actions={
-          <ActionButton
-            endpoint="/api/import/sync-cash"
-            label={<><RefreshCw className="h-3.5 w-3.5" /> Sync cash ledger</>}
-            variant="outline"
-            size="sm"
-            onSuccessMessage="Cash ledger synced."
-          />
-        }
-      />
+    <section className="grid border-y border-border sm:grid-cols-2 lg:grid-cols-4"><Metric label="Current net worth" value={formatMoney(currentWorth)} sub="Market value plus cash" /><Metric label="Net investment gain" value={formatMoney(netGain)} sub={formatSignedPct(returns.totalDeposited ? netGain / returns.totalDeposited * 100 : null)} tone={netGain >= 0 ? "positive" : "negative"} /><Metric label="XIRR" value={returns.xirrPct !== null ? `${returns.xirrPct}%` : "Unavailable"} sub={`${returns.holdingPeriodYears} years · money-weighted`} tone={returns.xirrPct !== null && returns.xirrPct > 0 ? "positive" : undefined} /><Metric label="Capital contributed" value={formatMoney(returns.totalDeposited)} sub="Dated external broker deposits" /><Metric label="Realised P/L" value={formatMoney(returns.realizedPl)} sub={`${sales.length} sell order${sales.length === 1 ? "" : "s"}`} tone={returns.realizedPl >= 0 ? "positive" : "negative"} /><Metric label="Unrealised P/L" value={formatMoney(portfolio.unrealizedPl)} sub="Current priced holdings" tone={portfolio.unrealizedPl >= 0 ? "positive" : "negative"} /><Metric label="Net dividends" value={formatMoney(portfolio.dividendIncome)} sub="Dividend Income ledger" /><Metric label="Total friction" value={formatMoney(friction.total)} sub={`${friction.pctOfDeposits}% of contributions`} tone="negative" /></section>
 
-      {/* ── Returns hero ── */}
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6 rise">
-        <StatCard
-          label="Net Worth"
-          value={formatMoney(r.netWorth)}
-          sub={`mkt ${formatNumber(r.marketValue, 0)} + cash ${formatNumber(r.cashBalance, 0)}`}
-        />
-        <StatCard
-          label="Total Gain"
-          value={`${r.totalReturnPct >= 0 ? "+" : ""}${r.totalReturnPct}%`}
-          sub={formatMoney(r.totalGain)}
-          tone={r.totalGain >= 0 ? "positive" : "negative"}
-        />
-        <StatCard
-          label="XIRR"
-          value={r.xirrPct !== null ? `${r.xirrPct}%/yr` : "—"}
-          sub={`${r.holdingPeriodYears} yrs, money-weighted`}
-          tone={r.xirrPct !== null && r.xirrPct > 0 ? "positive" : "neutral"}
-        />
-        <StatCard
-          label="Realized P/L"
-          value={formatMoney(r.realizedPl)}
-          tone={r.realizedPl > 0 ? "positive" : r.realizedPl < 0 ? "negative" : "neutral"}
-        />
-        <StatCard
-          label="Unrealized P/L"
-          value={formatMoney(r.unrealizedPl)}
-          tone={r.unrealizedPl > 0 ? "positive" : r.unrealizedPl < 0 ? "negative" : "neutral"}
-        />
-        <StatCard
-          label="Total Friction"
-          value={formatMoney(r.totalFriction)}
-          sub={`${f.pctOfDeposits}% of deposits`}
-        />
-      </div>
+    <section className="border-t border-border pt-5"><h2 className="text-lg font-semibold">Wealth creation bridge</h2><p className="mt-1 text-xs text-muted-foreground">Traceable bridge from external capital to current net worth. Trade fees are included once in realised/unrealised results and shown separately for audit.</p><div className="mt-5 grid gap-3 sm:grid-cols-3 lg:grid-cols-6">{bridge.map((item) => <div key={item.label} className="border-l border-border pl-3"><p className="text-[10px] uppercase tracking-wide text-muted-foreground">{item.label}</p><p className={cn("mt-1 text-base font-semibold tabular-nums", item.tone === "positive" ? "text-emerald-700" : item.tone === "negative" ? "text-red-700" : "")}>{formatMoney(item.value)}</p></div>)}</div></section>
 
-      {/* ── Cost basis ── */}
-      <Card className="rise rise-1">
-        <CardHeader>
-          <CardTitle>Cost Basis</CardTitle>
-          <CardDescription>
-            Weighted-average cost from the AKD ledger. Bonus shares lower the effective average cost.
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="pt-0">
-          <CostBasisTable rows={costBasis} />
-        </CardContent>
-      </Card>
+    <div className="grid gap-7 xl:grid-cols-[1.25fr_0.75fr]"><section className="border-t border-border pt-5"><h2 className="text-lg font-semibold">Performance by year</h2><p className="mt-1 text-xs text-muted-foreground">Full broker-ledger deposits, trading activity, realised results and recorded friction.</p><div className="mt-4 overflow-x-auto"><table className="w-full min-w-[720px] text-xs"><thead><tr className="border-b border-border text-left text-[10px] uppercase tracking-wide text-muted-foreground"><th className="px-2 py-2">Year</th><th className="px-2 py-2 text-right">Contributed</th><th className="px-2 py-2 text-right">Purchases</th><th className="px-2 py-2 text-right">Sales</th><th className="px-2 py-2 text-right">Realised P/L</th><th className="px-2 py-2 text-right">Friction</th><th className="px-2 py-2 text-right">Orders</th></tr></thead><tbody>{byYear.map((row) => <tr key={row.year} className="border-b border-border last:border-0"><td className="px-2 py-2 font-semibold">{row.year}</td><td className="px-2 py-2 text-right tabular-nums">{formatNumber(row.deposits, 0)}</td><td className="px-2 py-2 text-right tabular-nums">{formatNumber(row.buys, 0)}</td><td className="px-2 py-2 text-right tabular-nums">{formatNumber(row.sells, 0)}</td><td className={cn("px-2 py-2 text-right tabular-nums", row.realizedPl >= 0 ? "text-emerald-700" : "text-red-700")}>{formatSignedPct(row.realizedPl)}</td><td className="px-2 py-2 text-right tabular-nums">{formatNumber(row.friction, 0)}</td><td className="px-2 py-2 text-right tabular-nums">{row.tradeCount}</td></tr>)}</tbody></table></div></section>
+    <section className="border-t border-border pt-5"><h2 className="text-lg font-semibold">Trading costs</h2><p className="mt-1 text-xs text-muted-foreground">Actual costs extracted from the AKD statement.</p><dl className="mt-4 divide-y divide-border text-sm"><Cost label="Brokerage commission" value={friction.commission} /><Cost label="SST" value={friction.sst} /><Cost label="CDC transaction charges" value={friction.cdc} /><Cost label="Account and maintenance" value={friction.accountFees} /><Cost label="CGT and tariffs" value={friction.cgt} /><Cost label="Total friction" value={friction.total} strong /></dl><div className="mt-5"><p className="text-xs font-semibold">Order-size analysis</p>{friction.bySize.map((row) => <div key={row.bucket} className="mt-2 flex justify-between text-xs"><span>{row.bucket} · {row.trades} orders</span><span className="tabular-nums text-muted-foreground">avg {formatNumber(row.avgGross, 0)} · {row.avgFeePct}% charge rate</span></div>)}</div></section></div>
 
-      {/* ── By year + Friction ── */}
-      <div className="grid grid-cols-1 gap-5 lg:grid-cols-2 rise rise-2">
-        {/* By year */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Performance by Year</CardTitle>
-            <CardDescription>
-              Deposits, capital deployed, realized gains and friction per calendar year.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="pt-0">
-            <div className="scroll-touch -mx-2 overflow-x-auto px-2">
-              <table className="w-full min-w-[480px] text-sm">
-                <thead>
-                  <tr className="border-b border-border text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
-                    <th className="pb-2 pr-3 text-left">Year</th>
-                    <th className="pb-2 pr-3 text-right">Deposits</th>
-                    <th className="pb-2 pr-3 text-right">Deployed</th>
-                    <th className="pb-2 pr-3 text-right">Sells</th>
-                    <th className="pb-2 pr-3 text-right">Realized</th>
-                    <th className="pb-2 pr-3 text-right">Friction</th>
-                    <th className="pb-2 text-right">Trades</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-border">
-                  {byYear.map((y) => (
-                    <tr key={y.year} className="hover:bg-accent/40 transition-colors">
-                      <td className="py-2.5 pr-3 font-medium tabular-nums">{y.year}</td>
-                      <td className="py-2.5 pr-3 text-right tabular-nums text-muted-foreground">
-                        {y.deposits > 0 ? formatNumber(y.deposits, 0) : "—"}
-                      </td>
-                      <td className="py-2.5 pr-3 text-right tabular-nums">
-                        {y.buys > 0 ? formatNumber(y.buys, 0) : "—"}
-                      </td>
-                      <td className="py-2.5 pr-3 text-right tabular-nums">
-                        {y.sells > 0 ? formatNumber(y.sells, 0) : "—"}
-                      </td>
-                      <td
-                        className={cn(
-                          "py-2.5 pr-3 text-right tabular-nums font-medium",
-                          plColor(y.realizedPl)
-                        )}
-                      >
-                        {y.realizedPl !== 0
-                          ? `${y.realizedPl > 0 ? "+" : ""}${formatNumber(y.realizedPl, 0)}`
-                          : "—"}
-                      </td>
-                      <td className="py-2.5 pr-3 text-right tabular-nums text-muted-foreground">
-                        {formatNumber(y.friction, 0)}
-                      </td>
-                      <td className="py-2.5 text-right tabular-nums">{y.tradeCount}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </CardContent>
-        </Card>
+    <section className="border-t border-border pt-5"><h2 className="text-lg font-semibold">Realised performance</h2><p className="mt-1 text-xs text-muted-foreground">Weighted-average cost allocated to each recorded sale. Positions with remaining shares are not treated as closed.</p><div className="mt-4 overflow-x-auto"><table className="w-full min-w-[650px] text-xs"><thead><tr className="border-b border-border text-left text-[10px] uppercase tracking-wide text-muted-foreground"><th className="px-2 py-2">Ticker</th><th className="px-2 py-2">Sale date</th><th className="px-2 py-2 text-right">Qty sold</th><th className="px-2 py-2 text-right">Cost allocated</th><th className="px-2 py-2 text-right">Net proceeds</th><th className="px-2 py-2 text-right">Realised P/L</th></tr></thead><tbody>{sales.map((sale, index) => <tr key={`${sale.ticker}-${sale.date}-${index}`} className="border-b border-border last:border-0"><td className="px-2 py-2 font-semibold">{sale.ticker}</td><td className="px-2 py-2 tabular-nums text-muted-foreground">{sale.date ?? "—"}</td><td className="px-2 py-2 text-right tabular-nums">{sale.quantity}</td><td className="px-2 py-2 text-right tabular-nums">{formatNumber(sale.costOut, 0)}</td><td className="px-2 py-2 text-right tabular-nums">{formatNumber(sale.proceeds, 0)}</td><td className={cn("px-2 py-2 text-right font-medium tabular-nums", sale.realized >= 0 ? "text-emerald-700" : "text-red-700")}>{formatMoney(sale.realized)}</td></tr>)}</tbody></table></div></section>
 
-        {/* Friction autopsy */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Friction Autopsy</CardTitle>
-            <CardDescription>
-              Every basis point paid to participate: brokerage, taxes, regulatory and custody fees.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="pt-0 space-y-5">
-            <div className="grid grid-cols-3 gap-3">
-              {[
-                { label: "Commission", value: f.commission },
-                { label: "SST", value: f.sst },
-                { label: "CDC", value: f.cdc },
-                { label: "CGT", value: f.cgt },
-                { label: "Account fees", value: f.accountFees },
-                { label: "Trade fees", value: f.tradeFeesTotal },
-              ].map(({ label, value }) => (
-                <div key={label} className="rounded-lg bg-muted/60 px-3 py-2.5">
-                  <p className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
-                    {label}
-                  </p>
-                  <p className="mt-0.5 text-sm font-semibold tabular-nums">{formatNumber(value, 0)}</p>
-                </div>
-              ))}
-            </div>
-
-            <div className="flex items-baseline justify-between border-t border-border pt-3">
-              <span className="text-sm font-medium">Total friction</span>
-              <span className="text-base font-semibold tabular-nums">{formatMoney(f.total)}</span>
-            </div>
-            <p className="-mt-2 text-xs text-muted-foreground">
-              {f.pctOfDeposits}% of deposits
-              {f.pctOfGains !== null ? ` · ${f.pctOfGains}% of gross gains` : ""}
-            </p>
-
-            {f.bySize.length > 0 && (
-              <div>
-                <p className="mb-2 text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
-                  By trade size
-                </p>
-                <div className="space-y-1.5">
-                  {f.bySize.map((b) => (
-                    <div key={b.bucket} className="flex items-center gap-3 text-xs">
-                      <span className="w-32 shrink-0 text-muted-foreground">{b.bucket}</span>
-                      <span className="tabular-nums">{b.trades} trades</span>
-                      <span className="ml-auto tabular-nums text-muted-foreground">
-                        {b.avgFeePct}% avg fee
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {d.buysTotal > 0 && (
-              <div className="rounded-lg border border-border bg-muted/30 px-3 py-2.5 text-xs text-muted-foreground">
-                <span className="font-medium text-foreground">{d.pctDeployedWithin24h}%</span> of buys
-                within 24h of a deposit
-                {d.medianDaysDepositToBuy !== null && (
-                  <>
-                    {" "}
-                    · median lag{" "}
-                    <span className="font-medium text-foreground">
-                      {d.medianDaysDepositToBuy}d
-                    </span>
-                  </>
-                )}
-              </div>
-            )}
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* ── Concentration ── */}
-      <Card className="rise rise-3">
-        <CardHeader>
-          <CardTitle>Portfolio Concentration</CardTitle>
-          <CardDescription>
-            Sector allocation, diversification index and one-decision-away risk scenarios.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 gap-8 lg:grid-cols-5">
-            {/* Sector bars — 3/5 */}
-            <div className="lg:col-span-3 space-y-3">
-              <p className="mb-4 text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
-                Sector allocation
-              </p>
-              {c.sectorWeights.map((s) => (
-                <div key={s.sector}>
-                  <div className="mb-1 flex items-baseline justify-between">
-                    <span className="text-sm">{s.sector}</span>
-                    <span className="tabular-nums text-sm font-medium text-muted-foreground">
-                      {s.weightPct}%
-                    </span>
-                  </div>
-                  <div className="h-1.5 overflow-hidden rounded-full bg-muted">
-                    <div
-                      className="h-full rounded-full bg-[#3450c8] transition-all"
-                      style={{ width: `${Math.min(s.weightPct, 100)}%` }}
-                    />
-                  </div>
-                </div>
-              ))}
-            </div>
-
-            {/* Key metrics — 2/5 */}
-            <div className="lg:col-span-2 space-y-5">
-              <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
-                Key metrics
-              </p>
-              <div className="space-y-3">
-                {[
-                  {
-                    label: "Largest holding",
-                    value: c.topHolding
-                      ? `${c.topHolding.ticker} (${c.topHolding.weightPct}%)`
-                      : "—",
-                  },
-                  {
-                    label: "Top-2 banks weight",
-                    value: `${c.top2BanksWeightPct}%`,
-                    note: "MEBL + UBL",
-                  },
-                  {
-                    label: "HHI (diversification)",
-                    value: formatNumber(c.hhi, 2),
-                    note:
-                      c.hhi < 0.1
-                        ? "well diversified"
-                        : c.hhi < 0.25
-                        ? "moderately concentrated"
-                        : "highly concentrated",
-                  },
-                  {
-                    label: "Tail positions (< 3%)",
-                    value: `${c.positionsBelow3pct} holdings`,
-                    note: `combined ${c.smallTailWeightPct}% of portfolio`,
-                  },
-                ].map(({ label, value, note }) => (
-                  <div key={label}>
-                    <p className="text-[11px] text-muted-foreground">{label}</p>
-                    <p className="mt-0.5 text-sm font-semibold tabular-nums">{value}</p>
-                    {note && <p className="text-[11px] text-muted-foreground">{note}</p>}
-                  </div>
-                ))}
-              </div>
-
-              {c.topTwoShock && (
-                <div className="rounded-lg border border-amber-200 bg-amber-50/60 px-3 py-3 text-xs dark:border-amber-900/40 dark:bg-amber-950/20">
-                  <p className="font-medium text-amber-900 dark:text-amber-300">
-                    One-decision-away scenario
-                  </p>
-                  <p className="mt-1 text-amber-800 dark:text-amber-400">
-                    A {c.topTwoShock.dropPct}% drop in your top two holdings would erase{" "}
-                    <span className="font-semibold">{c.topTwoShock.portfolioImpactPct}%</span> of
-                    total portfolio value.
-                  </p>
-                </div>
-              )}
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-    </div>
-  );
+    <section id="reconciliation" className="border-t border-border pt-5"><h2 className="text-lg font-semibold">Ledger reconciliation</h2><div className="mt-3 grid gap-2 text-sm sm:grid-cols-2 lg:grid-cols-3"><Check label="Broker cash movements" detail="AKD ledger balance reconciles to statement control total." /><Check label="Buy and sell transactions" detail={`${buyOrders} buy orders and ${sales.length} sell orders parsed from the ledger.`} /><Check label="Current inventory" detail="Statement inventory provides the ledger valuation checkpoint." /><Check label="Manual 24 Jun purchases" detail="FFC and FCCL purchases recorded after the statement ledger end date." /><Check label="Corporate adjustments" detail="IREIT, SLM, UBL split and FFBL→FFC conversion are retained for review." /></div><details className="mt-4 text-xs text-muted-foreground"><summary className="cursor-pointer font-medium text-foreground">XIRR methodology and data lineage</summary><p className="mt-2">XIRR uses dated external broker deposits as negative investor cash flows and the ledger net worth as the terminal positive cash flow. It does not use purchases or sales as investor cash flows. Cash-flow-matched KSE-100 comparison is unavailable because matching historical benchmark levels are not stored.</p></details></section>
+  </div>;
 }
+
+function Metric({ label, value, sub, tone }: { label: string; value: string; sub: string; tone?: "positive" | "negative" }) { return <div className="border-b border-border py-4 last:border-b-0 sm:px-4 sm:first:pl-0 sm:border-b-0 sm:border-r sm:last:border-r-0"><p className="text-[10px] uppercase tracking-wide text-muted-foreground">{label}</p><p className={cn("mt-1 text-lg font-semibold tabular-nums", tone === "positive" ? "text-emerald-700" : tone === "negative" ? "text-red-700" : "")}>{value}</p><p className="mt-0.5 text-[11px] text-muted-foreground">{sub}</p></div>; }
+function Cost({ label, value, strong = false }: { label: string; value: number; strong?: boolean }) { return <div className="flex justify-between py-2"><dt className={cn(strong && "font-semibold")}>{label}</dt><dd className={cn("tabular-nums", strong && "font-semibold")}>{formatMoney(value)}</dd></div>; }
+function Check({ label, detail }: { label: string; detail: string }) { return <div className="border-l-2 border-emerald-600 pl-3"><p className="font-medium">{label}</p><p className="mt-0.5 text-xs text-muted-foreground">{detail}</p></div>; }
