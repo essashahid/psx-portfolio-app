@@ -184,12 +184,16 @@ async function getDbAnalytics(
   const taxTotal = round2(txns.reduce((s, t) => s + t.tax, 0));
   const totalFriction = round2(commission + taxTotal);
 
-  // Proxy for totalDeposited when cash_movements is empty:
-  //   net capital deployed = totalBuys – totalSells (assumes cash balance ≈ 0)
+  // Proxy for totalDeposited when cash_movements is empty.
+  // The holdings table already has the WAC-based total cost for every open position
+  // (rebuilt from transactions at import time), so it's a much more accurate floor
+  // than totalBuys–totalSells when the transactions table only has a handful of
+  // manual corrections but the full history lives in holdings.
+  const holdingsTotalCost = round2(holdings.reduce((s, h) => s + h.total_cost, 0));
   const totalDeposited =
     cashIn.length > 0
       ? round2(cashIn.reduce((s, c) => s + Number(c.amount), 0))
-      : round2(Math.max(totalBuys - totalSells, 0));
+      : round2(Math.max(totalBuys - totalSells, holdingsTotalCost));
 
   const cashBalance =
     cashIn.length > 0 ? round2(totalDeposited + totalSells - totalBuys) : 0;
