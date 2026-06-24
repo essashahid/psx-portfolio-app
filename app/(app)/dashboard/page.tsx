@@ -6,11 +6,9 @@ import { cn, formatMoney, formatNumber, formatSignedPct } from "@/lib/utils";
 import { EmptyState } from "@/components/empty-state";
 import { ActionButton } from "@/components/action-button";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { HoldingsTable } from "@/components/holdings-table";
 import { ImportantPsxEvents, type PsxEventRow } from "@/components/important-psx-events";
 import { DashboardAllocation, DashboardPerformance, DashboardReportButton, PortfolioContribution } from "@/components/dashboard-visuals";
-import { CircleAlert, Download, RefreshCw, Upload } from "lucide-react";
+import { CircleAlert, RefreshCw, Upload } from "lucide-react";
 
 export const dynamic = "force-dynamic";
 
@@ -144,7 +142,7 @@ export default async function DashboardPage() {
       <DashboardPerformance data={datedSnapshots} />
 
       <section>
-        <div className="grid overflow-hidden rounded-lg border border-border bg-card sm:grid-cols-2 lg:grid-cols-4">
+        <div className="grid border-y border-border sm:grid-cols-2 lg:grid-cols-4">
           <SummaryMetric label="Total cost" value={formatMoney(summary.totalCost)} />
           <SummaryMetric label="Unrealised P/L" value={formatMoney(summary.unrealizedPl)} sub={formatSignedPct(summary.unrealizedPlPct)} tone={summary.unrealizedPl > 0 ? "positive" : summary.unrealizedPl < 0 ? "negative" : "flat"} />
           <SummaryMetric label="Dividend income" value={formatMoney(summary.dividendIncome)} />
@@ -158,23 +156,14 @@ export default async function DashboardPage() {
         <DashboardAllocation sectors={sectorAllocations} holdings={holdingAllocations} />
       </div>
 
-      <section>
-        <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
-          <div><h2 className="text-lg font-semibold">Holdings</h2><p className="mt-0.5 text-xs text-muted-foreground">Search, filter and sort your current positions.</p></div>
-          {/* eslint-disable-next-line @next/next/no-html-link-for-pages -- CSV download, not a page navigation */}
-          <a href="/api/export/holdings"><Button variant="outline" size="sm"><Download className="h-3.5 w-3.5" /> Export holdings</Button></a>
-        </div>
-        <HoldingsTable holdings={summary.holdings} summary={summary} dailyRows={dailyPerformance.rows.map((row) => ({ ticker: row.ticker, dayChangePct: row.dayChangePct, dayPnl: row.dayPnl }))} />
-      </section>
-
       <div className="grid gap-6 xl:grid-cols-2">
         {checks.length > 0 && (
-          <Card>
-            <CardHeader className="flex-row items-center gap-2"><CircleAlert className="h-4 w-4 text-muted-foreground" /><CardTitle>Portfolio checks</CardTitle></CardHeader>
-            <CardContent className="divide-y divide-border">
+          <section className="border-t border-border pt-4">
+            <div className="flex items-center gap-2"><CircleAlert className="h-4 w-4 text-muted-foreground" /><h2 className="text-base font-semibold">Portfolio checks</h2></div>
+            <div className="mt-3 divide-y divide-border">
               {checks.map((check) => <Link key={`${check.title}-${check.detail}`} href={check.href} className="block py-3 first:pt-1 last:pb-0 hover:bg-muted/30"><p className="text-sm font-medium">{check.title}</p><p className="mt-0.5 text-xs text-muted-foreground">{check.detail}</p></Link>)}
-            </CardContent>
-          </Card>
+            </div>
+          </section>
         )}
         <ImportantPsxEvents events={(eventsData ?? []) as PsxEventRow[]} />
       </div>
@@ -187,5 +176,5 @@ function MetricInline({ label, value, sub, tone }: { label: string; value: strin
 }
 
 function SummaryMetric({ label, value, sub, tone }: { label: string; value: string; sub?: string; tone?: "positive" | "negative" | "flat" }) {
-  return <div className="border-b border-border p-4 last:border-b-0 sm:border-b-0 sm:border-r sm:last:border-r-0"><p className="text-xs font-medium text-muted-foreground">{label}</p><p className={cn("mt-1 text-lg font-semibold tabular-nums", tone === "positive" ? "text-emerald-700" : tone === "negative" ? "text-red-700" : "text-foreground")}>{value}</p>{sub && <p className="mt-0.5 text-xs text-muted-foreground">{sub}</p>}</div>;
+  return <div className="border-b border-border py-4 last:border-b-0 sm:border-b-0 sm:px-4 sm:first:pl-0 sm:border-r sm:last:border-r-0"><p className="text-xs font-medium text-muted-foreground">{label}</p><p className={cn("mt-1 text-lg font-semibold tabular-nums", tone === "positive" ? "text-emerald-700" : tone === "negative" ? "text-red-700" : "text-foreground")}>{value}</p>{sub && <p className="mt-0.5 text-xs text-muted-foreground">{sub}</p>}</div>;
 }

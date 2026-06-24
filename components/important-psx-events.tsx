@@ -1,5 +1,4 @@
 import Link from "next/link";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { FileText, ArrowRight } from "lucide-react";
 
@@ -21,17 +20,17 @@ const CATEGORY_LABEL: Record<string, { label: string; variant: "green" | "blue" 
 /** Official PSX filings that matter: dividends, results, corporate actions, material info. */
 export function ImportantPsxEvents({ events }: { events: PsxEventRow[] }) {
   return (
-    <Card className="overflow-hidden">
-      <CardHeader className="flex-row items-center justify-between">
+    <section className="border-t border-border pt-4">
+      <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           <FileText className="h-4 w-4 text-muted-foreground" />
-          <CardTitle>Important PSX Events</CardTitle>
+          <h2 className="text-base font-semibold">Important PSX Events</h2>
         </div>
         <Link href="/news" className="text-xs text-muted-foreground hover:text-foreground">
           News Center <ArrowRight className="inline h-3 w-3" />
         </Link>
-      </CardHeader>
-      <CardContent className="space-y-2">
+      </div>
+      <div className="mt-4 space-y-2">
         {events.length === 0 ? (
           <p className="py-4 text-center text-xs text-muted-foreground">
             No recent PSX filings stored. Refresh from the News Center.
@@ -58,7 +57,7 @@ export function ImportantPsxEvents({ events }: { events: PsxEventRow[] }) {
             );
           })
         )}
-      </CardContent>
-    </Card>
+      </div>
+    </section>
   );
 }

@@ -2,7 +2,6 @@
 
 import { useMemo, useState } from "react";
 import { ValueLine } from "@/components/charts";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { cn, formatMoney, formatSignedPct } from "@/lib/utils";
 import { FileText } from "lucide-react";
@@ -33,15 +32,15 @@ export function DashboardPerformance({ data }: { data: Snapshot[] }) {
   const [period, setPeriod] = useState<Period>("All");
   const visible = useMemo(() => filteredSnapshots(data, period), [data, period]);
   return (
-    <Card>
-      <CardHeader className="flex-row items-center justify-between gap-3 border-b border-border pb-3">
-        <div><CardTitle className="text-base">Portfolio performance</CardTitle><p className="mt-1 text-xs text-muted-foreground">Market value, cost basis and unrealised return over time.</p></div>
+    <section className="border-y border-border py-5">
+      <div className="flex items-center justify-between gap-3 pb-3">
+        <div><h2 className="text-base font-semibold">Portfolio performance</h2><p className="mt-1 text-xs text-muted-foreground">Market value, cost basis and unrealised return over time.</p></div>
         <div className="flex rounded-md bg-muted p-0.5" aria-label="Performance period">
           {PERIODS.map((item) => <button key={item} onClick={() => setPeriod(item)} className={cn("rounded px-2 py-1 text-[11px] font-medium", period === item ? "bg-card text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground")}>{item}</button>)}
         </div>
-      </CardHeader>
-      <CardContent className="pt-4"><ValueLine data={visible.map((point) => ({ ...point, date: point.date.slice(5) }))} /></CardContent>
-    </Card>
+      </div>
+      <div className="pt-2"><ValueLine data={visible.map((point) => ({ ...point, date: point.date.slice(5) }))} /></div>
+    </section>
   );
 }
 
@@ -50,9 +49,9 @@ export function PortfolioContribution({ rows, gainers, losers }: { rows: { ticke
   const largest = ranked[0];
   const max = Math.max(...ranked.map((row) => Math.abs(row.contribution ?? 0)), 1);
   return (
-    <Card>
-      <CardHeader className="border-b border-border"><CardTitle className="text-base">What moved your portfolio today</CardTitle><p className="mt-1 text-xs text-muted-foreground">{ranked.length ? `${gainers} holdings increased and ${losers} declined.${largest ? ` ${largest.ticker} had the largest contribution at ${formatMoney(largest.contribution)}.` : ""}` : "Daily price changes are not available for current holdings."}</p></CardHeader>
-      <CardContent className="pt-4">
+    <section className="border-t border-border pt-4">
+      <div><h2 className="text-base font-semibold">What moved your portfolio today</h2><p className="mt-1 text-xs text-muted-foreground">{ranked.length ? `${gainers} holdings increased and ${losers} declined.${largest ? ` ${largest.ticker} had the largest contribution at ${formatMoney(largest.contribution)}.` : ""}` : "Daily price changes are not available for current holdings."}</p></div>
+      <div className="pt-5">
         {ranked.length === 0 ? <p className="py-12 text-center text-sm text-muted-foreground">No daily contribution data available.</p> : <div className="space-y-3">{ranked.map((row) => {
           const positive = (row.contribution ?? 0) >= 0;
           const width = `${(Math.abs(row.contribution ?? 0) / max) * 50}%`;
@@ -63,8 +62,8 @@ export function PortfolioContribution({ rows, gainers, losers }: { rows: { ticke
             <span className="col-start-2 col-span-2 -mt-2 text-[10px] text-muted-foreground">{formatSignedPct(row.priceMove)} price move · {row.weight?.toFixed(1) ?? "—"}% weight</span>
           </div>;
         })}</div>}
-      </CardContent>
-    </Card>
+      </div>
+    </section>
   );
 }
 
@@ -73,10 +72,10 @@ export function DashboardAllocation({ sectors, holdings }: { sectors: Allocation
   const rows = view === "sectors" ? sectors : compactHoldings(holdings);
   const max = Math.max(...rows.map((row) => row.weight), 1);
   return (
-    <Card>
-      <CardHeader className="flex-row items-center justify-between gap-3 border-b border-border"><div><CardTitle className="text-base">Portfolio allocation</CardTitle><p className="mt-1 text-xs text-muted-foreground">{view === "sectors" ? "Allocation by sector" : "Top holdings by market value"}</p></div><div className="flex gap-1 rounded-md bg-muted p-0.5"><button onClick={() => setView("sectors")} className={cn("rounded px-2 py-1 text-[11px]", view === "sectors" && "bg-card shadow-sm")}>Sector</button><button onClick={() => setView("holdings")} className={cn("rounded px-2 py-1 text-[11px]", view === "holdings" && "bg-card shadow-sm")}>Holding</button></div></CardHeader>
-      <CardContent className="space-y-4 pt-4">{rows.map((row) => <div key={row.label}><div className="mb-1 flex items-baseline justify-between gap-3 text-xs"><span className="truncate font-medium">{row.label}</span><span className="shrink-0 tabular-nums text-muted-foreground">{formatMoney(row.value)} · {row.weight.toFixed(1)}%{view === "sectors" ? ` · ${row.holdings} holding${row.holdings === 1 ? "" : "s"}` : ""}</span></div><div className="h-2 overflow-hidden rounded-full bg-muted"><div className="h-full rounded-full bg-brand" style={{ width: `${(row.weight / max) * 100}%` }} /></div></div>)}</CardContent>
-    </Card>
+    <section className="border-t border-border pt-4">
+      <div className="flex items-center justify-between gap-3"><div><h2 className="text-base font-semibold">Portfolio allocation</h2><p className="mt-1 text-xs text-muted-foreground">{view === "sectors" ? "Allocation by sector" : "Top holdings by market value"}</p></div><div className="flex gap-1 rounded-md bg-muted p-0.5"><button onClick={() => setView("sectors")} className={cn("rounded px-2 py-1 text-[11px]", view === "sectors" && "bg-card shadow-sm")}>Sector</button><button onClick={() => setView("holdings")} className={cn("rounded px-2 py-1 text-[11px]", view === "holdings" && "bg-card shadow-sm")}>Holding</button></div></div>
+      <div className="space-y-4 pt-5">{rows.map((row) => <div key={row.label}><div className="mb-1 flex items-baseline justify-between gap-3 text-xs"><span className="truncate font-medium">{row.label}</span><span className="shrink-0 tabular-nums text-muted-foreground">{formatMoney(row.value)} · {row.weight.toFixed(1)}%{view === "sectors" ? ` · ${row.holdings} holding${row.holdings === 1 ? "" : "s"}` : ""}</span></div><div className="h-2 overflow-hidden rounded-full bg-muted"><div className="h-full rounded-full bg-brand" style={{ width: `${(row.weight / max) * 100}%` }} /></div></div>)}</div>
+    </section>
   );
 }
 
