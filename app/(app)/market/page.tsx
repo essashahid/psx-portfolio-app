@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { getUser } from "@/lib/supabase/server";
-import { getDataFreshness, getMarketDashboard, type EventRow, type FreshnessItem, type OwnedPerf } from "@/lib/market/read";
+import { getMarketDashboard, type EventRow, type OwnedPerf } from "@/lib/market/read";
 import {
   getForeignFlowHistory,
   getForeignFlowSnapshot,
@@ -19,7 +19,7 @@ import { ActionButton } from "@/components/action-button";
 import { SectorBarsLazy, MarketHeatmapLazy, MoversBoardLazy } from "@/components/market/lazy";
 import { Sparkline } from "@/components/market/sparkline";
 import { cn } from "@/lib/utils";
-import { Activity, TrendingUp, TrendingDown, Gauge, Sparkles, FileText, Newspaper, RefreshCw, ArrowUpRight, ArrowDownRight, Globe2, DatabaseZap, WalletCards } from "lucide-react";
+import { Activity, TrendingUp, TrendingDown, Gauge, Sparkles, FileText, RefreshCw, ArrowUpRight, ArrowDownRight, Globe2, WalletCards } from "lucide-react";
 
 export const dynamic = "force-dynamic";
 
@@ -36,11 +36,10 @@ export default async function MarketPulsePage() {
   if (!user) return null;
   const supabase = await createClient();
   const foreignFlow = await getForeignFlowSnapshot(supabase, 90);
-  const [d, flowHistory, flowExposure, freshness] = await Promise.all([
+  const [d, flowHistory, flowExposure] = await Promise.all([
     getMarketDashboard(supabase, user.id),
     getForeignFlowHistory(supabase, 90),
     getPortfolioFlowExposure(supabase, user.id, foreignFlow),
-    getDataFreshness(supabase, user.id),
   ]);
 
   const refresh = (
@@ -154,8 +153,6 @@ export default async function MarketPulsePage() {
         <MiniCard icon={FileText} label="Official filings today" value={fmtInt(todaysEvents.length)} />
       </div>
 
-      <DataFreshnessCenter items={freshness} />
-
       {/* ── Foreign flows (FIPI / LIPI) ────────────────────────────────── */}
       {foreignFlow ? (
         <div className="grid gap-3 xl:grid-cols-[1.15fr_0.85fr]">
@@ -207,27 +204,15 @@ export default async function MarketPulsePage() {
       </Card>
 
       {/* ── Sector performance ─────────────────────────────────────────── */}
-      <div className="grid gap-3 lg:grid-cols-2">
-        <Card className="rise">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2"><Activity className="h-4 w-4" /> Sector performance</CardTitle>
-            <CardDescription>Average return by sector. Toggle to volume to see where activity is concentrated.</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <SectorBarsLazy sectors={d.sectors} />
-          </CardContent>
-        </Card>
-
-        <Card className="rise rise-1">
-          <CardHeader>
-            <CardTitle>Sector heatmap</CardTitle>
-            <CardDescription>Each tile is a sector, shaded by average return. Breadth shown as advancers ↑ / decliners ↓.</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <SectorHeatGrid sectors={d.sectors} />
-          </CardContent>
-        </Card>
-      </div>
+      <Card className="rise">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2"><Activity className="h-4 w-4" /> Sector performance</CardTitle>
+          <CardDescription>Average return by sector. Toggle to volume to see where activity is concentrated.</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <SectorBarsLazy sectors={d.sectors} />
+        </CardContent>
+      </Card>
 
       {/* ── Market heatmap ─────────────────────────────────────────────── */}
       <Card className="rise">
@@ -264,20 +249,6 @@ export default async function MarketPulsePage() {
         </CardHeader>
         <CardContent>
           <EventsList events={todaysEvents} ownedTickers={d.ownedTickers} watchTickers={d.watchTickers} />
-        </CardContent>
-      </Card>
-
-      {/* ── Market news pointer ────────────────────────────────────────── */}
-      <Card className="rise">
-        <CardContent className="flex flex-col items-start gap-2 p-5 sm:flex-row sm:items-center sm:justify-between">
-          <div className="flex items-center gap-2">
-            <Newspaper className="h-4 w-4 text-muted-foreground" />
-            <div>
-              <p className="text-sm font-medium">Market &amp; sector news</p>
-              <p className="text-xs text-muted-foreground">Curated, credible Pakistani market news with AI relevance scoring lives in the News Center.</p>
-            </div>
-          </div>
-          <Link href="/news" className="rounded-lg border border-border px-3 py-1.5 text-xs font-medium transition-colors hover:bg-muted">Open News Center →</Link>
         </CardContent>
       </Card>
 
@@ -318,51 +289,6 @@ function MiniCard({ icon: Icon, label, value, tone: t }: { icon: typeof Activity
 function fmtFlow(v: number | null | undefined, digits = 2): string {
   if (v == null || !Number.isFinite(v)) return "—";
   return `${v > 0 ? "+" : ""}${v.toFixed(digits)}`;
-}
-
-function DataFreshnessCenter({ items }: { items: FreshnessItem[] }) {
-  return (
-    <Card className="rise">
-      <CardHeader className="pb-2">
-        <CardTitle className="flex items-center gap-2"><DatabaseZap className="h-4 w-4 text-blue-600" /> Data freshness</CardTitle>
-        <CardDescription>Latest stored dates across market data, flows, prices, news, dividends, and generated briefings.</CardDescription>
-      </CardHeader>
-      <CardContent>
-        <div className="grid gap-2 md:grid-cols-2 xl:grid-cols-3">
-          {items.map((item) => (
-            <div key={item.key} className="flex items-center justify-between gap-2 rounded-md border border-border bg-card p-2.5">
-              <div className="min-w-0">
-                <div className="flex items-center gap-1.5">
-                  <p className="truncate text-xs font-semibold">{item.label}</p>
-                  <Badge variant={freshnessVariant(item.status)}>{item.status}</Badge>
-                </div>
-                <p className="mt-0.5 truncate text-[11px] text-muted-foreground">
-                  {item.date ?? "No data"}{item.ageDays != null ? ` · ${item.ageDays}d old` : ""}{item.detail ? ` · ${item.detail}` : ""}
-                </p>
-              </div>
-              {item.refresh && (
-                <ActionButton
-                  endpoint={item.refresh.endpoint}
-                  body={item.refresh.body}
-                  label={<><RefreshCw className="h-3 w-3" /> {item.refresh.label}</>}
-                  variant="ghost"
-                  size="sm"
-                  className="h-7 shrink-0 px-2 text-[10px]"
-                />
-              )}
-            </div>
-          ))}
-        </div>
-      </CardContent>
-    </Card>
-  );
-}
-
-function freshnessVariant(status: FreshnessItem["status"]): "green" | "amber" | "red" | "secondary" {
-  if (status === "fresh") return "green";
-  if (status === "watch") return "amber";
-  if (status === "stale") return "red";
-  return "secondary";
 }
 
 function ForeignFlowHistoryPanel({ history, unit }: { history: ForeignFlowHistory; unit: string }) {
@@ -438,26 +364,6 @@ function PortfolioFlowOverlay({ exposure, unit }: { exposure: PortfolioFlowExpos
         )}
       </CardContent>
     </Card>
-  );
-}
-
-function SectorHeatGrid({ sectors }: { sectors: { sector: string; average_return: number | null; advancers: number; decliners: number; stock_count: number }[] }) {
-  const rows = sectors.filter((s) => s.stock_count >= 2 && s.average_return != null).sort((a, b) => (b.average_return ?? 0) - (a.average_return ?? 0));
-  if (!rows.length) return <p className="py-8 text-center text-xs text-muted-foreground">No sector data in this snapshot.</p>;
-  return (
-    <div className="grid grid-cols-2 gap-1.5 sm:grid-cols-3">
-      {rows.map((s) => {
-        const r = s.average_return ?? 0;
-        const t = tone(r);
-        return (
-          <div key={s.sector} className={cn("rounded-md border p-2", t === "positive" ? "border-emerald-200 bg-emerald-50/70" : t === "negative" ? "border-red-200 bg-red-50/70" : "border-border bg-muted/40")}>
-            <p className="truncate text-[11px] font-medium" title={s.sector}>{s.sector}</p>
-            <p className={cn("text-sm font-bold tabular-nums", t === "positive" ? "text-emerald-700" : t === "negative" ? "text-red-700" : "text-foreground")}>{fmtPct(r)}</p>
-            <p className="text-[9px] text-muted-foreground">{s.advancers}↑ {s.decliners}↓ · {s.stock_count}</p>
-          </div>
-        );
-      })}
-    </div>
   );
 }
 
