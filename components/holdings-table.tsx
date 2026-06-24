@@ -14,6 +14,7 @@ import {
 import type { EnrichedHolding, PortfolioSummary } from "@/lib/types";
 import { formatMoney, formatNumber, formatSignedPct, cn } from "@/lib/utils";
 import { Badge, thesisStatusVariant } from "@/components/ui/badge";
+import { SectorChip } from "@/components/sector-chip";
 import { EditHoldingDialog } from "@/components/edit-holding-dialog";
 import { Input } from "@/components/ui/input";
 import { ArrowUpDown, Search, X } from "lucide-react";
@@ -161,8 +162,11 @@ function MobileHoldingCard({
             ))}
           </div>
           <p className="mt-0.5 truncate text-xs text-muted-foreground">
-            {holding.company_name ?? holding.sector ?? "Unclassified"}
+            {holding.company_name ?? "—"}
           </p>
+          <div className="mt-1">
+            <SectorChip sector={holding.sector} size="xs" />
+          </div>
         </div>
         <EditHoldingDialog holding={holding} />
       </div>
@@ -356,14 +360,7 @@ export function HoldingsTable({
     });
     const sectorCol = col.accessor("sector", {
       header: "Sector",
-      cell: (c) =>
-        c.getValue() ? (
-          <span className="block max-w-36 truncate text-xs" title={c.getValue() ?? ""}>
-            {c.getValue()}
-          </span>
-        ) : (
-          <span className="text-xs text-amber-600">Unclassified</span>
-        ),
+      cell: (c) => <SectorChip sector={c.getValue()} />,
     });
     const mktValueCol = col.accessor("market_value", {
       id: "market_value",

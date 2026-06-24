@@ -12,7 +12,16 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { AllocationPie, DailyHoldingPerformanceBar, ValueLine } from "@/components/charts-lazy";
 import { ImportantPsxEvents, type PsxEventRow } from "@/components/important-psx-events";
+import { SectorChip } from "@/components/sector-chip";
 import { Activity, RefreshCw, Sparkles, Upload } from "lucide-react";
+
+// Personalized one-line read on the portfolio, tuned to the user's objective.
+const OBJECTIVE_LINE: Record<string, string> = {
+  growth: "Here is how your long-term holdings are tracking today.",
+  income: "Here is your income and how your payers are doing today.",
+  preservation: "Here is your capital and how steadily it is holding today.",
+  learning: "Here is your portfolio, explained simply.",
+};
 
 export const dynamic = "force-dynamic";
 
@@ -31,7 +40,7 @@ export default async function DashboardPage() {
         .eq("user_id", user.id)
         .order("snapshot_date", { ascending: true })
         .limit(120),
-      supabase.from("profiles").select("demo_mode, experience_level").eq("id", user.id).maybeSingle(),
+      supabase.from("profiles").select("demo_mode, experience_level, full_name, objective").eq("id", user.id).maybeSingle(),
       supabase
         .from("news_articles")
         .select("id, ticker, title, url, category, published_at")
@@ -74,6 +83,8 @@ export default async function DashboardPage() {
   }
 
   const lean = profileRes.data?.experience_level === "beginner";
+  const firstName = (profileRes.data?.full_name ?? "").trim().split(/\s+/)[0] || null;
+  const objectiveLine = OBJECTIVE_LINE[profileRes.data?.objective ?? ""] ?? null;
   const today = new Date().toISOString().slice(0, 10);
   const priced = summary.holdings.filter((h) => h.unrealized_pl_pct !== null);
   const topGainers = [...priced]
@@ -113,9 +124,10 @@ export default async function DashboardPage() {
       {/* Hero */}
       <header className="rise mb-2">
         <p className="eyebrow">
-          Overview · {today}
+          {firstName ? `Welcome back, ${firstName}` : "Overview"} · {today}
           {profileRes.data?.demo_mode ? " · demo mode" : ""}
         </p>
+        {objectiveLine && <p className="mt-1 text-sm text-muted-foreground">{objectiveLine}</p>}
         <div className="mt-3 flex flex-wrap items-end justify-between gap-4">
           <div>
             <p className="text-ghost text-sm font-medium tracking-editorial">Total portfolio value</p>
@@ -221,11 +233,7 @@ export default async function DashboardPage() {
                         <div className="min-w-0">
                           <div className="flex min-w-0 flex-wrap items-center gap-1.5">
                             <span className="font-semibold">{row.ticker}</span>
-                            {row.sector && (
-                              <Badge variant="secondary" className="max-w-full truncate text-[9px]">
-                                {row.sector}
-                              </Badge>
-                            )}
+                            {row.sector && <SectorChip sector={row.sector} size="xs" />}
                           </div>
                           <p className="mt-0.5 truncate text-[11px] text-muted-foreground">{row.companyName ?? "—"}</p>
                         </div>
@@ -344,7 +352,7 @@ export default async function DashboardPage() {
             <CardTitle className="text-sm">By sector</CardTitle>
           </CardHeader>
           <CardContent>
-            <AllocationPie data={summary.sectorWeights.map((s) => ({ name: s.sector, value: s.value }))} />
+            <AllocationPie palette="sector" data={summary.sectorWeights.map((s) => ({ name: s.sector, value: s.value }))} />
           </CardContent>
         </Card>
       </div>

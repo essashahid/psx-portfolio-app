@@ -31,12 +31,20 @@ import {
   ChartEmpty,
   AXIS_TICK,
 } from "@/components/chart-kit";
+import { sectorColor } from "@/lib/sectors";
 
 // ---------------------------------------------------------------------------
 // Allocation donut — animated sweep-in, hover focus, live center readout
 // ---------------------------------------------------------------------------
 
-export function AllocationPie({ data }: { data: { name: string; value: number }[] }) {
+export function AllocationPie({
+  data,
+  palette = "series",
+}: {
+  data: { name: string; value: number }[];
+  /** "sector" keys each slice to its stable sector colour; "series" cycles the editorial palette. */
+  palette?: "series" | "sector";
+}) {
   const animate = useChartMotion();
   const [active, setActive] = useState<number | null>(null);
   const total = useMemo(() => data.reduce((s, d) => s + d.value, 0), [data]);
@@ -64,10 +72,10 @@ export function AllocationPie({ data }: { data: { name: string; value: number }[
             onMouseEnter={(_, i) => setActive(i)}
             onMouseLeave={() => setActive(null)}
           >
-            {data.map((_, i) => (
+            {data.map((d, i) => (
               <Cell
                 key={i}
-                fill={SERIES_COLORS[i % SERIES_COLORS.length]}
+                fill={palette === "sector" ? sectorColor(d.name) : SERIES_COLORS[i % SERIES_COLORS.length]}
                 opacity={active === null || active === i ? 1 : 0.25}
                 style={{ transition: "opacity 200ms ease" }}
               />
