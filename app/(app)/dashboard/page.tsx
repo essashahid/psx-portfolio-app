@@ -2,8 +2,6 @@ import Link from "next/link";
 import { createClient, getUser } from "@/lib/supabase/server";
 import { getPortfolio } from "@/lib/portfolio";
 import { getDailyHoldingPerformance } from "@/lib/portfolio/daily-performance";
-import { getDividends, summarizeDividends } from "@/lib/dividends";
-import { normalizeEvent, type DividendEvent } from "@/lib/dividends/engine";
 import { cn, formatMoney, formatNumber, formatSignedPct } from "@/lib/utils";
 import { PageHeader } from "@/components/page-header";
 import { StatCard } from "@/components/stat-card";
@@ -12,12 +10,9 @@ import { ActionButton } from "@/components/action-button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Markdown } from "@/components/markdown";
 import { AllocationPie, DailyHoldingPerformanceBar, ValueLine } from "@/components/charts-lazy";
-import { UpcomingIncome } from "@/components/upcoming-income";
 import { ImportantPsxEvents, type PsxEventRow } from "@/components/important-psx-events";
-import { DailyChangelog, type ChangelogRow } from "@/components/daily-changelog";
-import { Activity, ArrowRight, FileText, HandCoins, Newspaper, RefreshCw, Sparkles, Upload } from "lucide-react";
+import { Activity, RefreshCw, Sparkles, Upload } from "lucide-react";
 
 export const dynamic = "force-dynamic";
 
@@ -26,46 +21,17 @@ export default async function DashboardPage() {
   const user = await getUser();
   if (!user) return null;
 
-  const [
-    summary,
-    dailyPerformance,
-    [briefingRes, newsRes, snapshotsRes, batchesRes, profileRes, psxEventsRes, changelogRes],
-    dividends,
-    dividendEventsRes,
-  ] = await Promise.all([
+  const [summary, dailyPerformance, [snapshotsRes, profileRes, psxEventsRes]] = await Promise.all([
     getPortfolio(supabase, user.id),
     getDailyHoldingPerformance(supabase, user.id),
     Promise.all([
-      supabase
-        .from("ai_briefings")
-        .select("id, title, content, created_at, briefing_type")
-        .eq("user_id", user.id)
-        .in("briefing_type", ["daily", "weekly"])
-        .order("created_at", { ascending: false })
-        .limit(1),
-      supabase
-        .from("news_articles")
-        .select("id, ticker, title, url, source, sentiment, relevance_score, published_at")
-        .eq("user_id", user.id)
-        .eq("ignored", false)
-        .eq("low_confidence", false)
-        .gte("relevance_score", 7)
-        .order("created_at", { ascending: false })
-        .limit(5),
       supabase
         .from("portfolio_snapshots")
         .select("snapshot_date, total_value, total_cost")
         .eq("user_id", user.id)
         .order("snapshot_date", { ascending: true })
         .limit(120),
-      supabase
-        .from("import_batches")
-        .select("id, statement_type, status, accepted_rows, rejected_rows, created_at")
-        .eq("user_id", user.id)
-        .order("created_at", { ascending: false })
-        .limit(3),
       supabase.from("profiles").select("demo_mode, experience_level").eq("id", user.id).maybeSingle(),
-      // Important PSX events: official filings (dividends, results, corporate actions)
       supabase
         .from("news_articles")
         .select("id, ticker, title, url, category, published_at")
@@ -74,23 +40,7 @@ export default async function DashboardPage() {
         .in("category", ["dividend", "result", "corporate_announcement"])
         .order("published_at", { ascending: false })
         .limit(8),
-      // Latest "what changed" digest
-      supabase
-        .from("portfolio_changelog")
-        .select("run_date, highlights")
-        .eq("user_id", user.id)
-        .order("run_date", { ascending: false })
-        .limit(1)
-        .maybeSingle(),
     ]),
-    getDividends(supabase, user.id),
-    supabase
-      .from("dividend_events")
-      .select("*")
-      .eq("user_id", user.id)
-      .in("status", ["announced", "expected", "overdue", "needs_review", "forecasted"])
-      .order("created_at", { ascending: false })
-      .limit(100),
   ]);
 
   if (summary.holdingsCount === 0) {
@@ -104,7 +54,7 @@ export default async function DashboardPage() {
         <EmptyState
           icon={Upload}
           title="Your portfolio is empty"
-          description="Start by importing an AKD/CDC statement (CSV, Excel or PDF), or load demo data to explore every feature first."
+          description="Start by importing an AKD or CDC statement (CSV, Excel or PDF), or load demo data to explore every feature first."
           action={
             <div className="flex flex-col items-center gap-3">
               <div className="flex gap-2">
@@ -123,19 +73,8 @@ export default async function DashboardPage() {
     );
   }
 
-  const briefing = briefingRes.data?.[0] ?? null;
-  // Beginners get a leaner overview: the heaviest analytical cards are hidden so
-  // the page stays a clean snapshot rather than a wall of charts.
   const lean = profileRes.data?.experience_level === "beginner";
   const today = new Date().toISOString().slice(0, 10);
-  // Thesis review prompts only appear once the user has started writing theses.
-  const needsReview = summary.holdings.filter(
-    (h) => h.has_thesis && ((h.review_date && h.review_date <= today) || h.thesis_status === "Weakening" || h.thesis_status === "Broken")
-  );
-  const upcomingReviews = summary.holdings
-    .filter((h) => h.review_date && h.review_date > today)
-    .sort((a, b) => (a.review_date! < b.review_date! ? -1 : 1))
-    .slice(0, 5);
   const priced = summary.holdings.filter((h) => h.unrealized_pl_pct !== null);
   const topGainers = [...priced]
     .sort((a, b) => b.unrealized_pl_pct! - a.unrealized_pl_pct!)
@@ -145,13 +84,7 @@ export default async function DashboardPage() {
     .sort((a, b) => a.unrealized_pl_pct! - b.unrealized_pl_pct!)
     .filter((h) => h.unrealized_pl_pct! < 0)
     .slice(0, 5);
-  const latestNews = newsRes.data ?? [];
-  const dividendSummary = summarizeDividends(dividends);
-  const dividendEvents: DividendEvent[] = (dividendEventsRes.data ?? []).map((r) =>
-    normalizeEvent(r as Record<string, unknown>)
-  );
   const psxEvents = (psxEventsRes.data ?? []) as PsxEventRow[];
-  const changelog = (changelogRes.data as ChangelogRow | null) ?? null;
   const dailyTone =
     dailyPerformance.totalDayPnl !== null && dailyPerformance.totalDayPnl > 0
       ? "positive"
@@ -163,10 +96,21 @@ export default async function DashboardPage() {
     dailyPerformance.rows.length === 0
       ? "Import holdings to see a daily position-by-position performance map."
       : dailyPerformance.totalDayPnl === null
-        ? "Daily PSX quotes are not available for your current holdings yet."
+        ? "Daily PSX quotes are not yet available for your holdings."
         : `${dailyPerformance.gainers} holding${dailyPerformance.gainers === 1 ? "" : "s"} up, ${dailyPerformance.losers} down. Your priced holdings ${dailyTone === "positive" ? "added" : dailyTone === "negative" ? "lost" : "were flat at"} ${formatMoney(Math.abs(dailyPerformance.totalDayPnl))} today${dailyPerformance.weightedDayChangePct !== null ? `, a weighted move of ${formatSignedPct(dailyPerformance.weightedDayChangePct)}` : ""}.`;
+
+  // Thesis reviews only surface once the user has written at least one thesis.
+  const needsReview = summary.holdings.filter(
+    (h) => h.has_thesis && ((h.review_date && h.review_date <= today) || h.thesis_status === "Weakening" || h.thesis_status === "Broken")
+  );
+  const upcomingReviews = summary.holdings
+    .filter((h) => h.review_date && h.review_date > today)
+    .sort((a, b) => (a.review_date! < b.review_date! ? -1 : 1))
+    .slice(0, 5);
+
   return (
     <div className="space-y-5">
+      {/* Hero */}
       <header className="rise mb-2">
         <p className="eyebrow">
           Overview · {today}
@@ -175,7 +119,7 @@ export default async function DashboardPage() {
         <div className="mt-3 flex flex-wrap items-end justify-between gap-4">
           <div>
             <p className="text-ghost text-sm font-medium tracking-editorial">Total portfolio value</p>
-            <h1 className="mt-1 break-words text-3xl font-medium tabular-nums tracking-editorial sm:text-5xl">
+            <h1 className="mt-1 text-3xl font-medium tabular-nums tracking-editorial sm:text-5xl">
               {formatMoney(summary.totalValue)}
             </h1>
             <p className="mt-2 text-sm text-muted-foreground">
@@ -207,7 +151,7 @@ export default async function DashboardPage() {
             <ActionButton
               endpoint="/api/ai/briefing"
               body={{ type: "daily" }}
-              label={<><Sparkles className="h-4 w-4" /> Generate daily briefing</>}
+              label={<><Sparkles className="h-4 w-4" /> Generate briefing</>}
               variant="outline"
               size="sm"
             />
@@ -221,101 +165,69 @@ export default async function DashboardPage() {
         </p>
       )}
 
-      <DailyChangelog changelog={changelog} today={today} />
-
+      {/* Today's holdings move — hidden for beginners */}
       {!lean && (
-      <Card className="overflow-hidden border-zinc-300">
-        <CardHeader className="flex-row items-start justify-between gap-3 border-b border-border bg-muted/25 p-4">
-          <div>
-            <CardTitle className="flex items-center gap-2">
-              <Activity className="h-4 w-4 text-muted-foreground" />
-              Today&apos;s holdings move
-            </CardTitle>
-            <CardDescription className="mt-1 max-w-3xl leading-relaxed">
-              {dailySentence}
-              {dailyImpact && dailyImpact.dayPnl !== null ? (
-                <> The biggest portfolio mover was <strong>{dailyImpact.ticker}</strong>, contributing {formatMoney(dailyImpact.dayPnl)}.</>
-              ) : null}
-            </CardDescription>
-          </div>
-          <Badge variant="outline" className="shrink-0">
-            {dailyPerformance.asOf ?? "No market date"}
-          </Badge>
-        </CardHeader>
-        <CardContent className="space-y-4 p-4">
-          <div className="grid gap-2 text-xs sm:grid-cols-2 lg:grid-cols-5">
-            <div className="rounded-md border border-border bg-card/60 p-3">
-              <p className="text-muted-foreground">Today&apos;s P/L</p>
-              <p
-                className={cn(
-                  "mt-1 text-base font-semibold tabular-nums",
-                  dailyTone === "positive" ? "text-emerald-600" : dailyTone === "negative" ? "text-red-600" : "text-foreground"
-                )}
-              >
-                {formatMoney(dailyPerformance.totalDayPnl)}
-              </p>
+        <Card className="overflow-hidden">
+          <CardHeader className="flex-row items-start justify-between gap-3 border-b border-border bg-muted/20 p-4">
+            <div>
+              <CardTitle className="flex items-center gap-2">
+                <Activity className="h-4 w-4 text-muted-foreground" />
+                Today&apos;s move
+              </CardTitle>
+              <CardDescription className="mt-1 max-w-3xl leading-relaxed">
+                {dailySentence}
+                {dailyImpact && dailyImpact.dayPnl !== null ? (
+                  <> Biggest mover: <strong>{dailyImpact.ticker}</strong>, contributing {formatMoney(dailyImpact.dayPnl)}.</>
+                ) : null}
+              </CardDescription>
             </div>
-            <div className="rounded-md border border-border bg-card/60 p-3">
-              <p className="text-muted-foreground">Weighted move</p>
-              <p className="mt-1 text-base font-semibold tabular-nums">{formatSignedPct(dailyPerformance.weightedDayChangePct)}</p>
-            </div>
-            <div className="rounded-md border border-border bg-card/60 p-3">
-              <p className="text-muted-foreground">Breadth</p>
-              <p className="mt-1 text-base font-semibold tabular-nums">
-                {dailyPerformance.gainers} up / {dailyPerformance.losers} down
-              </p>
-            </div>
-            <div className="rounded-md border border-border bg-card/60 p-3">
-              <p className="text-muted-foreground">Best stock</p>
-              <p className="mt-1 text-base font-semibold tabular-nums">
-                {dailyPerformance.best ? `${dailyPerformance.best.ticker} ${formatSignedPct(dailyPerformance.best.dayChangePct)}` : "—"}
-              </p>
-            </div>
-            <div className="rounded-md border border-border bg-card/60 p-3">
-              <p className="text-muted-foreground">Quote coverage</p>
-              <p className="mt-1 text-base font-semibold tabular-nums">{formatNumber(dailyPerformance.coverage * 100, 0)}%</p>
-            </div>
-          </div>
-
-          {dailyPerformance.rows.length === 0 ? (
-            <EmptyState
-              icon={Activity}
-              title="No holdings to map"
-              description="After you import holdings, this section will show every stock's daily PSX move and contribution to your account."
-            />
-          ) : (
-            <div className="grid gap-4 xl:grid-cols-[minmax(0,1.2fr)_minmax(360px,0.8fr)]">
-              <DailyHoldingPerformanceBar
-                data={dailyPerformance.rows.map((row) => ({
-                  ticker: row.ticker,
-                  dayPnl: row.dayPnl,
-                  dayChangePct: row.dayChangePct,
-                  marketValue: row.marketValue,
-                }))}
+            <Badge variant="outline" className="shrink-0 tabular-nums">
+              {dailyPerformance.asOf ?? "No market date"}
+            </Badge>
+          </CardHeader>
+          <CardContent className="p-4">
+            <div className="mb-3 grid gap-2 text-xs sm:grid-cols-4">
+              <MetricTile
+                label="Today P/L"
+                value={formatMoney(dailyPerformance.totalDayPnl)}
+                tone={dailyTone === "positive" ? "positive" : dailyTone === "negative" ? "negative" : undefined}
               />
-              <div className="min-w-0 space-y-2">
-                <div className="flex items-center justify-between gap-3 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
-                  <span>Holding</span>
-                  <span className="text-right">Day impact</span>
-                </div>
-                <div className="scroll-touch divide-y divide-border rounded-md border border-border bg-card max-h-75 overflow-y-auto md:max-h-97.5">
+              <MetricTile label="Weighted move" value={formatSignedPct(dailyPerformance.weightedDayChangePct)} />
+              <MetricTile label="Breadth" value={`${dailyPerformance.gainers} up / ${dailyPerformance.losers} down`} />
+              <MetricTile
+                label="Best stock"
+                value={dailyPerformance.best ? `${dailyPerformance.best.ticker} ${formatSignedPct(dailyPerformance.best.dayChangePct)}` : "—"}
+              />
+            </div>
+            {dailyPerformance.rows.length > 0 && (
+              <div className="grid gap-4 xl:grid-cols-[minmax(0,1.2fr)_minmax(360px,0.8fr)]">
+                <DailyHoldingPerformanceBar
+                  data={dailyPerformance.rows.map((row) => ({
+                    ticker: row.ticker,
+                    dayPnl: row.dayPnl,
+                    dayChangePct: row.dayChangePct,
+                    marketValue: row.marketValue,
+                  }))}
+                />
+                <div className="scroll-touch divide-y divide-border rounded-lg border border-border bg-card max-h-75 overflow-y-auto md:max-h-97.5">
                   {dailyPerformance.rows.map((row) => {
                     const rowTone = row.dayPnl !== null && row.dayPnl > 0 ? "positive" : row.dayPnl !== null && row.dayPnl < 0 ? "negative" : "flat";
                     return (
-                      <Link key={row.ticker} href={`/stocks/${row.ticker}`} className="grid gap-2 p-3 text-xs transition-colors hover:bg-muted/45 sm:grid-cols-[minmax(0,1fr)_auto]">
+                      <Link
+                        key={row.ticker}
+                        href={`/stocks/${row.ticker}`}
+                        className="grid gap-2 p-3 text-xs transition-colors hover:bg-muted/40 sm:grid-cols-[minmax(0,1fr)_auto]"
+                      >
                         <div className="min-w-0">
                           <div className="flex min-w-0 flex-wrap items-center gap-1.5">
                             <span className="font-semibold">{row.ticker}</span>
-                            {row.sector && <Badge variant="secondary" className="max-w-full truncate text-[9px]">{row.sector}</Badge>}
+                            {row.sector && (
+                              <Badge variant="secondary" className="max-w-full truncate text-[9px]">
+                                {row.sector}
+                              </Badge>
+                            )}
                           </div>
-                          <p className="mt-1 truncate text-[11px] text-muted-foreground">{row.companyName ?? "Company name unavailable"}</p>
-                          <p className="mt-1 text-[11px] text-muted-foreground">
-                            {row.vsSectorPct !== null
-                              ? `${formatSignedPct(row.vsSectorPct)} vs sector`
-                              : row.sectorAveragePct !== null
-                                ? `Sector ${formatSignedPct(row.sectorAveragePct)}`
-                                : "Sector comparison unavailable"}
-                          </p>
+                          <p className="mt-0.5 truncate text-[11px] text-muted-foreground">{row.companyName ?? "—"}</p>
                         </div>
                         <div className="text-left sm:text-right">
                           <p
@@ -326,11 +238,8 @@ export default async function DashboardPage() {
                           >
                             {formatMoney(row.dayPnl)}
                           </p>
-                          <p className="mt-1 text-[11px] tabular-nums text-muted-foreground">
+                          <p className="mt-0.5 text-[11px] tabular-nums text-muted-foreground">
                             {formatSignedPct(row.dayChangePct)} · {row.price !== null ? formatNumber(row.price, 2) : "no price"}
-                          </p>
-                          <p className="mt-1 text-[10px] tabular-nums text-muted-foreground">
-                            {row.marketValue !== null ? formatMoney(row.marketValue) : "market value unavailable"}
                           </p>
                         </div>
                       </Link>
@@ -338,18 +247,20 @@ export default async function DashboardPage() {
                   })}
                 </div>
               </div>
-            </div>
-          )}
-        </CardContent>
-      </Card>
+            )}
+            {dailyPerformance.rows.length === 0 && (
+              <EmptyState icon={Activity} title="No holdings to map" description="After you import holdings, this section will show every stock's daily move." />
+            )}
+          </CardContent>
+        </Card>
       )}
 
-      {/* 1. Portfolio Snapshot. Total value lives in the hero above, so it is not repeated here. */}
-      <div className="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-4">
+      {/* Snapshot stats */}
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
         <StatCard
           label="Total cost"
           value={formatMoney(summary.totalCost)}
-          sub={summary.pricedHoldings < summary.holdingsCount ? `${summary.holdingsCount - summary.pricedHoldings} holding(s) priced at cost` : undefined}
+          sub={summary.pricedHoldings < summary.holdingsCount ? `${summary.holdingsCount - summary.pricedHoldings} at cost` : undefined}
         />
         <StatCard
           label="Unrealized P/L"
@@ -357,48 +268,37 @@ export default async function DashboardPage() {
           sub={summary.unrealizedPlPct !== null ? formatSignedPct(summary.unrealizedPlPct) : "needs prices"}
           tone={summary.unrealizedPl > 0 ? "positive" : summary.unrealizedPl < 0 ? "negative" : "neutral"}
         />
-        <StatCard
-          label="Realized P/L"
-          value={formatMoney(summary.realizedPl)}
-          tone={summary.realizedPl > 0 ? "positive" : summary.realizedPl < 0 ? "negative" : "neutral"}
-        />
         <StatCard label="Dividend income" value={formatMoney(summary.dividendIncome)} />
-        <StatCard label="Expected dividends" value={formatMoney(summary.expectedDividendIncome)} sub={`${summary.pendingDividends} pending`} />
-        <StatCard label="Cash balance" value={formatMoney(summary.cashBalance)} sub="from imported cash movements" />
+        <StatCard label="Cash" value={formatMoney(summary.cashBalance)} />
         <StatCard label="Holdings" value={formatNumber(summary.holdingsCount, 0)} />
-        <div className="hidden sm:contents">
+        <div className="hidden lg:contents">
           <StatCard
             label="Largest holding"
             value={summary.largestHolding?.ticker ?? "—"}
             sub={summary.largestHolding?.weight ? `${summary.largestHolding.weight.toFixed(1)}% of portfolio` : undefined}
           />
-        </div>
-        <div className="hidden sm:contents">
           <StatCard
             label="Largest sector"
             value={summary.largestSector?.sector ?? "—"}
-            sub={summary.largestSector ? `${summary.largestSector.weight.toFixed(1)}% of portfolio` : undefined}
+            sub={summary.largestSector ? `${summary.largestSector.weight.toFixed(1)}%` : undefined}
           />
         </div>
       </div>
 
-      {/* 2. Upcoming Income */}
-      <UpcomingIncome events={dividendEvents} today={today} />
-
-      {/* 3. Important PSX Events */}
+      {/* Official PSX events */}
       <ImportantPsxEvents events={psxEvents} />
 
-      {/* 4. Top Gainers / Losers */}
-      <div className="grid gap-4 lg:grid-cols-3">
+      {/* Gainers / Losers */}
+      <div className="grid gap-4 lg:grid-cols-2">
         <Card>
-          <CardHeader>
-            <CardTitle>Top gainers</CardTitle>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm">Top gainers</CardTitle>
             <CardDescription>By unrealized return on cost</CardDescription>
           </CardHeader>
           <CardContent className="space-y-1.5">
             {topGainers.length === 0 && <p className="py-3 text-center text-xs text-muted-foreground">No priced gains yet.</p>}
             {topGainers.map((h) => (
-              <Link key={h.ticker} href={`/stocks/${h.ticker}`} className="flex items-center justify-between text-xs hover:underline">
+              <Link key={h.ticker} href={`/stocks/${h.ticker}`} className="flex items-center justify-between rounded-md px-1 py-1 text-xs transition-colors hover:bg-muted/50">
                 <span className="font-medium">{h.ticker}</span>
                 <span className="tabular-nums">
                   <span className="font-semibold text-emerald-600">{formatSignedPct(h.unrealized_pl_pct!)}</span>
@@ -408,15 +308,16 @@ export default async function DashboardPage() {
             ))}
           </CardContent>
         </Card>
+
         <Card>
-          <CardHeader>
-            <CardTitle>Biggest declines</CardTitle>
-            <CardDescription>Positions trading below your cost</CardDescription>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm">Biggest declines</CardTitle>
+            <CardDescription>Positions below your cost</CardDescription>
           </CardHeader>
           <CardContent className="space-y-1.5">
             {topLosers.length === 0 && <p className="py-3 text-center text-xs text-muted-foreground">No positions below cost.</p>}
             {topLosers.map((h) => (
-              <Link key={h.ticker} href={`/stocks/${h.ticker}`} className="flex items-center justify-between text-xs hover:underline">
+              <Link key={h.ticker} href={`/stocks/${h.ticker}`} className="flex items-center justify-between rounded-md px-1 py-1 text-xs transition-colors hover:bg-muted/50">
                 <span className="font-medium">{h.ticker}</span>
                 <span className="tabular-nums">
                   <span className="font-semibold text-red-600">{formatSignedPct(h.unrealized_pl_pct!)}</span>
@@ -426,43 +327,21 @@ export default async function DashboardPage() {
             ))}
           </CardContent>
         </Card>
-        <Card>
-          <CardHeader>
-            <CardTitle>Import status</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-1.5">
-            {(batchesRes.data ?? []).length === 0 && (
-              <p className="py-3 text-center text-xs text-muted-foreground">No imports yet.</p>
-            )}
-            {(batchesRes.data ?? []).map((b) => (
-              <div key={b.id} className="flex items-center justify-between text-xs">
-                <span>
-                  {b.created_at.slice(0, 10)} · {b.statement_type}
-                </span>
-                <span className="text-muted-foreground">
-                  {b.status === "committed" ? `${b.accepted_rows} rows${b.rejected_rows ? `, ${b.rejected_rows} rejected` : ""}` : b.status}
-                </span>
-              </div>
-            ))}
-          </CardContent>
-        </Card>
       </div>
 
-      {/* 5. Allocation charts */}
+      {/* Allocation + value over time */}
       <div className="grid gap-4 lg:grid-cols-2">
         <Card>
-          <CardHeader>
-            <CardTitle>Allocation by stock</CardTitle>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm">By stock</CardTitle>
           </CardHeader>
           <CardContent>
-            <AllocationPie
-              data={summary.holdings.map((h) => ({ name: h.ticker, value: h.market_value ?? h.total_cost }))}
-            />
+            <AllocationPie data={summary.holdings.map((h) => ({ name: h.ticker, value: h.market_value ?? h.total_cost }))} />
           </CardContent>
         </Card>
         <Card>
-          <CardHeader>
-            <CardTitle>Allocation by sector</CardTitle>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm">By sector</CardTitle>
           </CardHeader>
           <CardContent>
             <AllocationPie data={summary.sectorWeights.map((s) => ({ name: s.sector, value: s.value }))} />
@@ -471,9 +350,9 @@ export default async function DashboardPage() {
       </div>
 
       <Card>
-        <CardHeader>
-          <CardTitle>Portfolio value over time</CardTitle>
-          <CardDescription>Daily snapshots are taken on imports and price updates.</CardDescription>
+        <CardHeader className="pb-2">
+          <CardTitle className="text-sm">Portfolio value over time</CardTitle>
+          <CardDescription>Snapshots taken on imports and price updates.</CardDescription>
         </CardHeader>
         <CardContent>
           <ValueLine
@@ -486,129 +365,17 @@ export default async function DashboardPage() {
         </CardContent>
       </Card>
 
-      <div className={cn("grid gap-4", briefing && "xl:grid-cols-[minmax(0,1.35fr)_minmax(360px,0.85fr)]")}>
-        {briefing && (
-        <Card className="overflow-hidden">
-          <CardHeader className="flex-row items-start justify-between border-b border-border bg-muted/30 p-4">
-            <div>
-              <div className="flex items-center gap-2">
-                <FileText className="h-4 w-4 text-muted-foreground" />
-                <CardTitle>Daily review brief</CardTitle>
-                <Badge variant="outline">{briefing.briefing_type}</Badge>
-              </div>
-              <CardDescription className="mt-1">
-                {`Generated ${briefing.created_at.slice(0, 16).replace("T", " ")}`}
-              </CardDescription>
-            </div>
-            <Link href="/briefings" className="shrink-0 text-xs text-muted-foreground hover:text-foreground">
-              Open full brief <ArrowRight className="inline h-3 w-3" />
-            </Link>
-          </CardHeader>
-          <CardContent className="p-0">
-            <div className="grid md:grid-cols-[180px_minmax(0,1fr)]">
-              <div className="space-y-3 border-b border-border bg-muted/20 p-4 md:border-b-0 md:border-r">
-                <div>
-                  <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">Coverage</p>
-                  <p className="mt-1 text-sm font-semibold">{summary.pricedHoldings}/{summary.holdingsCount} priced</p>
-                </div>
-                <div>
-                  <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">High-relevance news</p>
-                  <p className="mt-1 text-sm font-semibold">{latestNews.length}</p>
-                </div>
-              </div>
-              <div className="scroll-touch p-4 max-h-90 overflow-y-auto md:max-h-105">
-                <Markdown content={briefing.content} className="dashboard-briefing" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        )}
-
-        <div className="space-y-4">
-          <Card>
-            <CardHeader className="flex-row items-center justify-between">
-              <div className="flex items-center gap-2">
-                <HandCoins className="h-4 w-4 text-muted-foreground" />
-                <CardTitle>Dividend snapshot</CardTitle>
-              </div>
-              <Link href="/dividends" className="text-xs text-muted-foreground hover:text-foreground">
-                Dividend Tracker <ArrowRight className="inline h-3 w-3" />
-              </Link>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              <div className="grid gap-2 text-xs sm:grid-cols-3">
-                <div className="rounded-md border border-border p-2">
-                  <p className="text-muted-foreground">Received</p>
-                  <p className="mt-1 font-semibold tabular-nums">{formatMoney(dividendSummary.netReceived)}</p>
-                </div>
-                <div className="rounded-md border border-border p-2">
-                  <p className="text-muted-foreground">Expected</p>
-                  <p className="mt-1 font-semibold tabular-nums">{formatMoney(dividendSummary.expectedNet)}</p>
-                </div>
-                <div className="rounded-md border border-border p-2">
-                  <p className="text-muted-foreground">Pending</p>
-                  <p className="mt-1 font-semibold tabular-nums">{dividendSummary.pendingCount}</p>
-                </div>
-              </div>
-              {dividendSummary.topPayers.length === 0 ? (
-                <p className="py-3 text-center text-xs text-muted-foreground">No dividend records yet.</p>
-              ) : (
-                <div className="space-y-1.5">
-                  {dividendSummary.topPayers.slice(0, 4).map((d) => (
-                    <Link key={d.ticker} href={`/stocks/${d.ticker}`} className="flex items-center justify-between text-xs hover:underline">
-                      <span className="font-medium">{d.ticker}</span>
-                      <span className="tabular-nums text-muted-foreground">{formatMoney(d.net)}</span>
-                    </Link>
-                  ))}
-                </div>
-              )}
-            </CardContent>
-          </Card>
-
-          {!lean && (
-          <Card>
-            <CardHeader className="flex-row items-center justify-between">
-              <div className="flex items-center gap-2">
-                <Newspaper className="h-4 w-4 text-muted-foreground" />
-                <CardTitle>High-relevance news</CardTitle>
-              </div>
-              <Link href="/news" className="text-xs text-muted-foreground hover:text-foreground">
-                News Center <ArrowRight className="inline h-3 w-3" />
-              </Link>
-            </CardHeader>
-            <CardContent className="space-y-2">
-              {latestNews.length === 0 && (
-                <p className="py-4 text-center text-xs text-muted-foreground">
-                  No high-relevance news stored. Refresh news from the News Center.
-                </p>
-              )}
-              {latestNews.map((n) => (
-                <div key={n.id} className="flex items-start gap-2 border-b border-border pb-2 last:border-0 last:pb-0">
-                  <Badge variant={n.sentiment === "positive" ? "green" : n.sentiment === "negative" ? "red" : "secondary"}>
-                    {n.ticker ?? "—"}
-                  </Badge>
-                  <a href={n.url} target="_blank" rel="noopener noreferrer" className="min-w-0 text-xs leading-snug hover:underline">
-                    {n.title}
-                    <span className="ml-1 text-muted-foreground">({n.source})</span>
-                  </a>
-                </div>
-              ))}
-            </CardContent>
-          </Card>
-          )}
-        </div>
-      </div>
-
+      {/* Thesis reviews — only show when the user has written theses */}
       {!lean && (needsReview.length > 0 || upcomingReviews.length > 0) && (
         <div className="grid gap-4 lg:grid-cols-2">
           {needsReview.length > 0 && (
             <Card>
-              <CardHeader>
-                <CardTitle>Theses requiring review</CardTitle>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm">Theses requiring review</CardTitle>
               </CardHeader>
               <CardContent className="space-y-1.5">
                 {needsReview.map((h) => (
-                  <Link key={h.ticker} href={`/stocks/${h.ticker}`} className="flex items-center justify-between text-xs hover:underline">
+                  <Link key={h.ticker} href={`/stocks/${h.ticker}`} className="flex items-center justify-between rounded-md px-1 py-1 text-xs transition-colors hover:bg-muted/50">
                     <span className="font-medium">{h.ticker}</span>
                     <span className="text-muted-foreground">
                       {h.review_date && h.review_date <= today ? "review due" : `thesis ${h.thesis_status?.toLowerCase()}`}
@@ -620,12 +387,12 @@ export default async function DashboardPage() {
           )}
           {upcomingReviews.length > 0 && (
             <Card>
-              <CardHeader>
-                <CardTitle>Upcoming review dates</CardTitle>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm">Upcoming review dates</CardTitle>
               </CardHeader>
               <CardContent className="space-y-1.5">
                 {upcomingReviews.map((h) => (
-                  <div key={h.ticker} className="flex items-center justify-between text-xs">
+                  <div key={h.ticker} className="flex items-center justify-between px-1 py-1 text-xs">
                     <span className="font-medium">{h.ticker}</span>
                     <span className="text-muted-foreground">{h.review_date}</span>
                   </div>
@@ -635,6 +402,23 @@ export default async function DashboardPage() {
           )}
         </div>
       )}
+    </div>
+  );
+}
+
+// Small metric tile used inside the Today's move card
+function MetricTile({ label, value, tone }: { label: string; value: string | null; tone?: "positive" | "negative" }) {
+  return (
+    <div className="rounded-lg border border-border bg-muted/30 px-3 py-2.5">
+      <p className="text-[10px] uppercase tracking-wide text-muted-foreground">{label}</p>
+      <p
+        className={cn(
+          "mt-0.5 text-sm font-semibold tabular-nums",
+          tone === "positive" ? "text-emerald-600" : tone === "negative" ? "text-red-600" : "text-foreground"
+        )}
+      >
+        {value ?? "—"}
+      </p>
     </div>
   );
 }
