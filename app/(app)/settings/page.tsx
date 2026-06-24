@@ -4,6 +4,7 @@ import { PageHeader } from "@/components/page-header";
 import { ActionButton } from "@/components/action-button";
 import {
   ProfileForm,
+  PreferencesForm,
   FreeCashForm,
   PriceManager,
   BrokerAccounts,
@@ -50,7 +51,7 @@ export default async function SettingsPage() {
   ]);
   const summary = await getPortfolio(supabase, user.id);
 
-  const profile: Profile = profileRes.data ?? {
+  const profile: Profile = (profileRes.data as Profile) ?? {
     id: user.id,
     full_name: "",
     base_currency: "PKR",
@@ -58,6 +59,12 @@ export default async function SettingsPage() {
     manual_price_mode: true,
     demo_mode: false,
     free_cash: 0,
+    onboarded: true,
+    experience_level: "intermediate",
+    risk_profile: null,
+    objective: null,
+    extra_features: [],
+    hidden_features: [],
   };
 
   const keyStatus = [
@@ -97,7 +104,18 @@ export default async function SettingsPage() {
       <PageHeader eyebrow="Configuration" title="Settings" description="Profile, prices, accounts, data management and integrations." />
 
       <Card>
-        <CardHeader><CardTitle>Profile</CardTitle></CardHeader>
+        <CardHeader>
+          <CardTitle>Your profile and view</CardTitle>
+          <CardDescription>
+            Set your experience level, risk comfort and objective. These personalize which sections appear and the tone of
+            insights. You can show or hide individual sections any time.
+          </CardDescription>
+        </CardHeader>
+        <CardContent><PreferencesForm profile={profile} /></CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader><CardTitle>Account details</CardTitle></CardHeader>
         <CardContent><ProfileForm profile={profile} /></CardContent>
       </Card>
 

@@ -6,86 +6,40 @@ import { usePathname, useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { cn } from "@/lib/utils";
 import {
-  LayoutDashboard,
-  Upload,
-  Briefcase,
-  Newspaper,
-  Sparkles,
-  Target,
-  NotebookPen,
-  Bell,
-  Settings,
   LogOut,
   CandlestickChart,
-  BarChart3,
-  HandCoins,
-  Search,
-  Database,
-  Activity,
-  TrendingUp,
   Menu,
   X,
   Loader2,
-  FileText,
+  Bell,
 } from "lucide-react";
+import { NAV, NAV_SECTIONS } from "@/lib/nav";
 
 /**
- * Navigation grouped into labelled sections so the 15 destinations read as a
- * structured map, not a flat wall — a newcomer can see "where do I look at my
- * money / research an idea / plan / manage data". `NAV` stays a flat derived
- * list for active-route matching and the mobile bottom bar.
+ * The destination map lives in `lib/nav.ts` (shared with the layout, which
+ * computes the per-user visible set). Here we just filter the sections by the
+ * `visibleHrefs` passed in, so a beginner sees a small map and an advanced user
+ * sees everything.
  */
-type NavItemDef = { href: string; label: string; icon: ComponentType<{ className?: string }>; hint: string };
+function visibleSections(visibleHrefs: string[]) {
+  const allowed = new Set(visibleHrefs);
+  return NAV_SECTIONS.map((section) => ({
+    ...section,
+    items: section.items.filter((item) => allowed.has(item.href)),
+  })).filter((section) => section.items.length > 0);
+}
 
-const NAV_SECTIONS: { title: string; items: NavItemDef[] }[] = [
-  {
-    title: "Overview",
-    items: [
-      { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard, hint: "Your portfolio at a glance" },
-      { href: "/holdings", label: "Holdings", icon: Briefcase, hint: "Positions, P/L and weights" },
-      { href: "/dividends", label: "Dividends", icon: HandCoins, hint: "Payouts received and forecast" },
-      { href: "/performance", label: "Performance", icon: TrendingUp, hint: "XIRR, cost basis, friction and concentration analytics" },
-    ],
-  },
-  {
-    title: "Research",
-    items: [
-      { href: "/stocks", label: "Stock Research", icon: Search, hint: "Fundamentals, ratios and structure per stock" },
-      { href: "/market", label: "Market Pulse", icon: Activity, hint: "Index, breadth, sectors and flows" },
-      { href: "/bulls-bears", label: "Bulls & Bears", icon: BarChart3, hint: "Weekly regime, picks and watchlist" },
-      { href: "/news", label: "News Center", icon: Newspaper, hint: "Portfolio and market news" },
-      { href: "/chat", label: "Research Copilot", icon: Sparkles, hint: "Ask anything about your portfolio and PSX" },
-      { href: "/briefings", label: "AI Briefings", icon: FileText, hint: "Generated portfolio and market briefs" },
-    ],
-  },
-  {
-    title: "Planning",
-    items: [
-      { href: "/goals", label: "Goals & Targets", icon: Target, hint: "Targets and progress" },
-      { href: "/journal", label: "Journal", icon: NotebookPen, hint: "Your decisions and notes" },
-      { href: "/alerts", label: "Alerts", icon: Bell, hint: "Triggered watch conditions" },
-    ],
-  },
-  {
-    title: "Data & setup",
-    items: [
-      { href: "/import", label: "Import Center", icon: Upload, hint: "Import statements and transactions" },
-      { href: "/coverage", label: "Data Engine", icon: Database, hint: "Data coverage and provider health" },
-      { href: "/settings", label: "Settings", icon: Settings, hint: "Preferences and account" },
-    ],
-  },
-];
-
-const NAV = NAV_SECTIONS.flatMap((s) => s.items);
-
-const MOBILE_NAV = NAV.filter((item) =>
-  ["/dashboard", "/holdings", "/market", "/chat"].includes(item.href)
-);
-
-const MOBILE_MORE_SECTIONS = NAV_SECTIONS.map((section) => ({
-  ...section,
-  items: section.items.filter((item) => !MOBILE_NAV.some((primary) => primary.href === item.href)),
-})).filter((section) => section.items.length > 0);
+// Mobile primary bar: keep Dashboard, Holdings and Copilot if visible, plus the
+// first available research tab. Derived from the user's visible set so we never
+// surface a primary tab that is hidden for them.
+function mobilePrimary(visibleHrefs: string[]) {
+  const allowed = new Set(visibleHrefs);
+  const wanted = ["/dashboard", "/holdings", "/market", "/dividends", "/chat"];
+  const picked = wanted.filter((href) => allowed.has(href)).slice(0, 4);
+  return NAV.filter((item) => picked.includes(item.href)).sort(
+    (a, b) => picked.indexOf(a.href) - picked.indexOf(b.href)
+  );
+}
 
 function activeNavItem(pathname: string) {
   return NAV.find((item) => pathname === item.href || pathname.startsWith(item.href + "/")) ?? NAV[0];
@@ -198,9 +152,10 @@ function BottomNavRow({
   );
 }
 
-export function Sidebar({ email, openAlerts }: { email: string; openAlerts: number }) {
+export function Sidebar({ email, openAlerts, visibleHrefs }: { email: string; openAlerts: number; visibleHrefs: string[] }) {
   const pathname = usePathname();
   const router = useRouter();
+  const sections = visibleSections(visibleHrefs);
 
   async function signOut() {
     const supabase = createClient();
@@ -219,7 +174,7 @@ export function Sidebar({ email, openAlerts }: { email: string; openAlerts: numb
         </div>
       </div>
       <nav className="flex-1 space-y-3 overflow-y-auto px-2 pb-3">
-        {NAV_SECTIONS.map((section) => (
+        {sections.map((section) => (
           <div key={section.title} className="space-y-0.5">
             <p className="eyebrow px-3 pb-0.5 text-[9px]">{section.title}</p>
             {section.items.map((item) => {
@@ -279,11 +234,18 @@ export function MobileTopBar({ openAlerts }: { openAlerts: number }) {
   );
 }
 
-export function MobileBottomNav({ email, openAlerts }: { email: string; openAlerts: number }) {
+export function MobileBottomNav({ email, openAlerts, visibleHrefs }: { email: string; openAlerts: number; visibleHrefs: string[] }) {
   const pathname = usePathname();
   const router = useRouter();
   const [moreOpen, setMoreOpen] = useState(false);
-  const primaryPath = MOBILE_NAV.some((item) => pathname === item.href || pathname.startsWith(item.href + "/"));
+  const mobileNav = mobilePrimary(visibleHrefs);
+  const moreSections = visibleSections(visibleHrefs)
+    .map((section) => ({
+      ...section,
+      items: section.items.filter((item) => !mobileNav.some((primary) => primary.href === item.href)),
+    }))
+    .filter((section) => section.items.length > 0);
+  const primaryPath = mobileNav.some((item) => pathname === item.href || pathname.startsWith(item.href + "/"));
 
   useEffect(() => {
     if (!moreOpen) return;
@@ -309,8 +271,11 @@ export function MobileBottomNav({ email, openAlerts }: { email: string; openAler
   return (
     <>
       <nav aria-label="Primary navigation" className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-card/95 shadow-[0_-12px_36px_-28px_rgba(0,0,0,0.55)] backdrop-blur md:hidden">
-        <div className="grid grid-cols-5 gap-1 px-2 pb-[calc(env(safe-area-inset-bottom)+0.375rem)] pt-1.5">
-          {MOBILE_NAV.map((item) => {
+        <div
+          className="grid gap-1 px-2 pb-[calc(env(safe-area-inset-bottom)+0.375rem)] pt-1.5"
+          style={{ gridTemplateColumns: `repeat(${mobileNav.length + 1}, minmax(0, 1fr))` }}
+        >
+          {mobileNav.map((item) => {
             const active = pathname === item.href || pathname.startsWith(item.href + "/");
             const shortLabel = item.href === "/dashboard" ? "Home" : item.href === "/chat" ? "Copilot" : item.label.replace(" Pulse", "");
             return (
@@ -339,7 +304,7 @@ export function MobileBottomNav({ email, openAlerts }: { email: string; openAler
               </button>
             </div>
             <nav className="grid gap-4 p-3">
-              {MOBILE_MORE_SECTIONS.map((section) => (
+              {moreSections.map((section) => (
                 <div key={section.title} className="grid gap-1">
                   <p className="eyebrow px-3 text-[9px]">{section.title}</p>
                   {section.items.map((item) => {
