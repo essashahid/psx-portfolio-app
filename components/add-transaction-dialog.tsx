@@ -9,7 +9,15 @@ import { Label } from "@/components/ui/label";
 import { Select } from "@/components/ui/select";
 import { Plus, Loader2 } from "lucide-react";
 
-export function AddTransactionDialog({ defaultTicker }: { defaultTicker?: string }) {
+export function AddTransactionDialog({
+  defaultTicker,
+  label = "Add transaction",
+  variant = "outline",
+}: {
+  defaultTicker?: string;
+  label?: string;
+  variant?: "default" | "outline";
+}) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -66,8 +74,8 @@ export function AddTransactionDialog({ defaultTicker }: { defaultTicker?: string
 
   return (
     <>
-      <Button variant="outline" size="sm" onClick={() => setOpen(true)}>
-        <Plus className="h-3.5 w-3.5" /> Add transaction / dividend
+      <Button variant={variant} size="sm" onClick={() => setOpen(true)}>
+        <Plus className="h-3.5 w-3.5" /> {label}
       </Button>
       <Dialog open={open} onClose={() => setOpen(false)} title="Add manual transaction">
         <form onSubmit={submit} className="space-y-3">

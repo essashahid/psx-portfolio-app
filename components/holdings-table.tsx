@@ -10,63 +10,47 @@ import {
   flexRender,
   createColumnHelper,
   type SortingState,
+  type VisibilityState,
 } from "@tanstack/react-table";
 import type { EnrichedHolding, PortfolioSummary } from "@/lib/types";
 import { formatMoney, formatNumber, formatSignedPct, cn } from "@/lib/utils";
 import { Badge, thesisStatusVariant } from "@/components/ui/badge";
 import { SectorChip } from "@/components/sector-chip";
-import { EditHoldingDialog } from "@/components/edit-holding-dialog";
+import { AddTransactionDialog } from "@/components/add-transaction-dialog";
 import { Input } from "@/components/ui/input";
-import { ArrowUpDown, Search, X } from "lucide-react";
+import { ArrowUpDown, ChevronDown, MoreHorizontal, Search, X } from "lucide-react";
 
 type ViewTab = "performance" | "income" | "allocation" | "planning";
 type QuickFilter =
-  | "gainers"
-  | "losers"
+  | "in_profit"
+  | "below_cost"
+  | "positive_today"
+  | "negative_today"
   | "dividend_payers"
   | "big_loss"
   | "missing_target"
-  | "missing_thesis";
+  | "missing_thesis"
+  | "missing_company"
+  | "stale_price"
+  | "unclassified_sector";
 
 const col = createColumnHelper<EnrichedHolding>();
 
-type RowBadge = { label: string; cls: string };
-
-function SummaryCard({
-  label,
-  value,
-  sub,
-  tone,
-}: {
-  label: string;
-  value: string;
-  sub?: string;
-  tone?: "positive" | "negative" | "neutral";
-}) {
-  return (
-    <div className="rounded-lg border border-border bg-card p-3">
-      <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">{label}</p>
-      <p
-        className={cn(
-          "mt-1 text-base font-bold tabular-nums leading-tight",
-          tone === "positive" && "text-emerald-600",
-          tone === "negative" && "text-red-600"
-        )}
-      >
-        {value}
-      </p>
-      {sub && <p className="mt-0.5 text-[11px] text-muted-foreground">{sub}</p>}
-    </div>
-  );
-}
-
-const QUICK_FILTERS: { key: QuickFilter; label: string }[] = [
-  { key: "gainers", label: "Gainers" },
-  { key: "losers", label: "Losers" },
+const PERFORMANCE_FILTERS: { key: QuickFilter; label: string }[] = [
+  { key: "in_profit", label: "In profit" },
+  { key: "below_cost", label: "Below cost" },
+  { key: "big_loss", label: "Loss greater than 10%" },
+  { key: "positive_today", label: "Positive today" },
+  { key: "negative_today", label: "Negative today" },
   { key: "dividend_payers", label: "Dividend payers" },
-  { key: "big_loss", label: "Loss >10%" },
+];
+
+const MORE_FILTERS: { key: QuickFilter; label: string }[] = [
   { key: "missing_target", label: "Missing target" },
   { key: "missing_thesis", label: "Missing thesis" },
+  { key: "missing_company", label: "Missing company information" },
+  { key: "stale_price", label: "Missing or stale price" },
+  { key: "unclassified_sector", label: "Unclassified sector" },
 ];
 
 const TABS: { key: ViewTab; label: string }[] = [
@@ -117,11 +101,9 @@ function MobileMetric({
 function MobileHoldingCard({
   holding,
   tab,
-  badges,
 }: {
   holding: EnrichedHolding;
   tab: ViewTab;
-  badges: RowBadge[];
 }) {
   const pl = holding.unrealized_pl;
   const plPct = holding.unrealized_pl_pct;
@@ -152,14 +134,6 @@ function MobileHoldingCard({
             >
               {holding.ticker}
             </Link>
-            {badges.map((b) => (
-              <span
-                key={b.label}
-                className={cn("rounded px-1.5 py-0.5 text-[9px] font-bold uppercase leading-none", b.cls)}
-              >
-                {b.label}
-              </span>
-            ))}
           </div>
           <p className="mt-0.5 truncate text-xs text-muted-foreground">
             {holding.company_name ?? "—"}
@@ -168,13 +142,13 @@ function MobileHoldingCard({
             <SectorChip sector={holding.sector} size="xs" />
           </div>
         </div>
-        <EditHoldingDialog holding={holding} />
+        <HoldingActionMenu holding={holding} />
       </div>
 
       {tab === "performance" && (
         <div className="mt-3 grid grid-cols-2 gap-2">
           <MobileMetric label="Market value" value={holding.market_value !== null ? formatMoney(holding.market_value) : "—"} />
-          <MobileMetric label="P/L" value={pl !== null ? `${formatNumber(pl, 0)}${plPct !== null ? ` · ${formatSignedPct(plPct)}` : ""}` : "—"} tone={plTone} />
+          <MobileMetric label="Unrealised P/L" value={pl !== null ? `${formatMoney(pl)}${plPct !== null ? ` · ${formatSignedPct(plPct)}` : ""}` : "—"} tone={plTone} />
           <MobileMetric label="Price" value={holding.latest_price !== null ? formatNumber(holding.latest_price) : "no price"} tone={holding.latest_price === null ? "accent" : undefined} />
           <MobileMetric label="Weight" value={holding.weight !== null ? `${holding.weight.toFixed(1)}%` : "—"} />
         </div>
@@ -249,33 +223,47 @@ function MobileHoldingCard({
   );
 }
 
+function HoldingActionMenu({ holding }: { holding: EnrichedHolding }) {
+  return (
+    <details className="relative">
+      <summary
+        className="flex h-9 w-9 cursor-pointer list-none items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground"
+        aria-label={`Actions for ${holding.ticker}`}
+        title="Holding actions"
+      >
+        <MoreHorizontal className="h-4 w-4" />
+      </summary>
+      <div className="absolute right-0 z-20 mt-1 flex w-48 flex-col gap-1 rounded-md border border-border bg-card p-1.5 text-xs shadow-[var(--shadow-card)]">
+        <Link href={`/stocks/${holding.ticker}`} className="rounded px-2 py-1.5 hover:bg-muted">View holding</Link>
+        <AddTransactionDialog defaultTicker={holding.ticker} label="Add transaction" />
+        <Link href="/dividends" className="rounded px-2 py-1.5 hover:bg-muted">Record dividend</Link>
+        <Link href={`/stocks/${holding.ticker}`} className="rounded px-2 py-1.5 hover:bg-muted">Edit target</Link>
+        <Link href={`/stocks/${holding.ticker}`} className="rounded px-2 py-1.5 hover:bg-muted">Edit thesis</Link>
+        <Link href={`/journal?ticker=${holding.ticker}`} className="rounded px-2 py-1.5 hover:bg-muted">View transaction history</Link>
+        <Link href={`/stocks/${holding.ticker}`} className="rounded px-2 py-1.5 hover:bg-muted">Update company information</Link>
+      </div>
+    </details>
+  );
+}
+
 export function HoldingsTable({
   holdings,
   summary,
+  dailyRows = [],
 }: {
   holdings: EnrichedHolding[];
   summary: PortfolioSummary;
+  dailyRows?: { ticker: string; dayChangePct: number | null; dayPnl: number | null }[];
 }) {
   const [tab, setTab] = useState<ViewTab>("performance");
   const [search, setSearch] = useState("");
   const [sectorFilter, setSectorFilter] = useState<string | null>(null);
   const [activeFilters, setActiveFilters] = useState(new Set<QuickFilter>());
   const [sorting, setSorting] = useState<SortingState>([{ id: "weight", desc: true }]);
+  const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({});
+  const [density, setDensity] = useState<"compact" | "comfortable">("comfortable");
 
-  // Spotlight rows
-  const pricedHoldings = holdings.filter((h) => h.unrealized_pl_pct !== null);
-  const topGainer =
-    [...pricedHoldings]
-      .filter((h) => (h.unrealized_pl_pct ?? 0) > 0)
-      .sort((a, b) => b.unrealized_pl_pct! - a.unrealized_pl_pct!)[0] ?? null;
-  const topLoser =
-    [...pricedHoldings]
-      .filter((h) => (h.unrealized_pl_pct ?? 0) < 0)
-      .sort((a, b) => a.unrealized_pl_pct! - b.unrealized_pl_pct!)[0] ?? null;
-  const topDividend =
-    [...holdings]
-      .filter((h) => h.dividend_income > 0)
-      .sort((a, b) => b.dividend_income - a.dividend_income)[0] ?? null;
+  const dailyByTicker = useMemo(() => new Map(dailyRows.map((row) => [row.ticker, row])), [dailyRows]);
 
   const latestPriceDate =
     holdings
@@ -284,41 +272,8 @@ export function HoldingsTable({
       .sort()
       .at(-1) ?? null;
 
-  // Pre-compute per-row insight badges
-  const rowBadges = useMemo((): Map<string, RowBadge[]> => {
-    const map = new Map<string, RowBadge[]>();
-    const add = (ticker: string | null | undefined, badge: RowBadge) => {
-      if (!ticker) return;
-      if (!map.has(ticker)) map.set(ticker, []);
-      map.get(ticker)!.push(badge);
-    };
-    add(summary.largestHolding?.ticker, {
-      label: "Top",
-      cls: "bg-violet-100 text-violet-700 dark:bg-violet-950 dark:text-violet-300",
-    });
-    add(topGainer?.ticker, {
-      label: "Best",
-      cls: "bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300",
-    });
-    add(topLoser?.ticker, {
-      label: "Worst",
-      cls: "bg-red-100 text-red-700 dark:bg-red-950 dark:text-red-300",
-    });
-    add(topDividend?.ticker, {
-      label: "Div",
-      cls: "bg-amber-100 text-amber-700 dark:bg-amber-950 dark:text-amber-300",
-    });
-    return map;
-  }, [
-    summary.largestHolding?.ticker,
-    topGainer?.ticker,
-    topLoser?.ticker,
-    topDividend?.ticker,
-  ]);
-
-  // Shared ticker+company cell used in every tab
+  // Shared ticker+company cell used in every tab.
   const makeTickerCell = (h: EnrichedHolding) => {
-    const badges = rowBadges.get(h.ticker) ?? [];
     return (
       <div className="min-w-32">
         <div className="flex items-center gap-1">
@@ -328,14 +283,6 @@ export function HoldingsTable({
           >
             {h.ticker}
           </Link>
-          {badges.map((b) => (
-            <span
-              key={b.label}
-              className={cn("rounded px-1 py-0 text-[9px] font-bold uppercase tracking-wide", b.cls)}
-            >
-              {b.label}
-            </span>
-          ))}
         </div>
         <p
           className="mt-0.5 max-w-44 truncate text-[11px] text-muted-foreground"
@@ -347,7 +294,7 @@ export function HoldingsTable({
     );
   };
 
-  // Column sets — depend only on rowBadges (stable via useMemo)
+  // Column sets are task-specific so the table stays readable at normal desktop widths.
   const allColumns = useMemo(() => {
     const tickerCol = col.accessor("ticker", {
       header: "Holding",
@@ -356,7 +303,7 @@ export function HoldingsTable({
     const actionsCol = col.display({
       id: "actions",
       header: "",
-      cell: (c) => <EditHoldingDialog holding={c.row.original} />,
+      cell: (c) => <HoldingActionMenu holding={c.row.original} />,
     });
     const sectorCol = col.accessor("sector", {
       header: "Sector",
@@ -364,10 +311,10 @@ export function HoldingsTable({
     });
     const mktValueCol = col.accessor("market_value", {
       id: "market_value",
-      header: "Mkt value",
+      header: "Market value",
       cell: (c) => (
         <span className="tabular-nums text-sm">
-          {c.getValue() !== null ? formatNumber(c.getValue()!, 0) : "—"}
+          {c.getValue() !== null ? formatMoney(c.getValue()) : "—"}
         </span>
       ),
     });
@@ -380,7 +327,7 @@ export function HoldingsTable({
         cell: (c) => <span className="tabular-nums text-sm">{formatNumber(c.getValue(), 0)}</span>,
       }),
       col.accessor("avg_cost", {
-        header: "Avg cost",
+        header: "Average cost",
         cell: (c) => <span className="tabular-nums text-sm">{formatNumber(c.getValue())}</span>,
       }),
       col.accessor("latest_price", {
@@ -401,23 +348,39 @@ export function HoldingsTable({
           );
         },
       }),
+      col.display({
+        id: "today",
+        header: "Today",
+        cell: (c) => {
+          const daily = dailyByTicker.get(c.row.original.ticker);
+          if (!daily || daily.dayChangePct === null) return <span className="text-sm text-muted-foreground">—</span>;
+          const tone = daily.dayChangePct > 0 ? "text-emerald-600" : daily.dayChangePct < 0 ? "text-red-600" : "text-muted-foreground";
+          return <span title={daily.dayPnl !== null ? `Portfolio contribution ${formatMoney(daily.dayPnl)}` : "Daily price movement"} className={cn("tabular-nums text-sm font-medium", tone)}>{formatSignedPct(daily.dayChangePct)}</span>;
+        },
+      }),
+      col.accessor("total_cost", {
+        header: "Cost basis",
+        cell: (c) => <span className="tabular-nums text-sm">{formatMoney(c.getValue())}</span>,
+      }),
       mktValueCol,
       col.accessor("unrealized_pl", {
         id: "pl",
-        header: "P/L",
+        header: "Unrealised P/L",
         cell: (c) => {
           const pl = c.getValue();
-          const pct = c.row.original.unrealized_pl_pct;
           if (pl === null) return <span className="text-sm text-muted-foreground">—</span>;
           const tone = pl > 0 ? "text-emerald-600" : pl < 0 ? "text-red-600" : "";
-          return (
-            <div className={cn("tabular-nums", tone)}>
-              <span className="text-sm font-medium">{formatNumber(pl, 0)}</span>
-              {pct !== null && (
-                <span className="ml-1.5 text-[11px] opacity-75">{formatSignedPct(pct)}</span>
-              )}
-            </div>
-          );
+          return <span className={cn("tabular-nums text-sm font-medium", tone)}>{formatMoney(pl)}</span>;
+        },
+      }),
+      col.display({
+        id: "total_return",
+        header: "Total return",
+        cell: (c) => {
+          const h = c.row.original;
+          if (!h.total_cost) return <span className="text-sm text-muted-foreground">—</span>;
+          const totalReturn = ((h.unrealized_pl ?? 0) + h.dividend_income) / h.total_cost * 100;
+          return <span className={cn("tabular-nums text-sm", totalReturn > 0 ? "text-emerald-600" : totalReturn < 0 ? "text-red-600" : "")}>{formatSignedPct(totalReturn)}</span>;
         },
       }),
       col.accessor("weight", {
@@ -483,16 +446,17 @@ export function HoldingsTable({
 
     const allocation = [
       tickerCol,
+      col.display({
+        id: "allocation_rank",
+        header: "Rank",
+        cell: (c) => <span className="tabular-nums text-sm text-muted-foreground">#{[...holdings].sort((a, b) => (b.weight ?? 0) - (a.weight ?? 0)).findIndex((h) => h.ticker === c.row.original.ticker) + 1}</span>,
+      }),
       sectorCol,
       mktValueCol,
       col.accessor("weight", {
         id: "weight_alloc",
         header: "Weight",
-        cell: (c) => (
-          <span className="tabular-nums text-sm font-medium">
-            {c.getValue() !== null ? `${c.getValue()!.toFixed(1)}%` : "—"}
-          </span>
-        ),
+        cell: (c) => c.getValue() === null ? <span className="text-sm text-muted-foreground">—</span> : <div className="flex min-w-36 items-center gap-2"><span className="w-11 tabular-nums text-sm font-medium">{c.getValue()!.toFixed(1)}%</span><span className="h-1.5 flex-1 overflow-hidden rounded-full bg-muted"><span className="block h-full rounded-full bg-brand" style={{ width: `${Math.min(c.getValue()! / Math.max(summary.largestHolding?.weight ?? 1, 1) * 100, 100)}%` }} /></span></div>,
       }),
       col.accessor("target_allocation", {
         header: "Target %",
@@ -522,17 +486,6 @@ export function HoldingsTable({
               {drift.toFixed(1)}%
             </span>
           );
-        },
-      }),
-      col.display({
-        id: "alloc_status",
-        header: "Status",
-        cell: (c) => {
-          const h = c.row.original;
-          const status = allocationStatus(h.weight, h.target_allocation);
-          if (!status)
-            return <span className="text-xs text-muted-foreground">no target</span>;
-          return <Badge variant={status.variant}>{status.label}</Badge>;
         },
       }),
       actionsCol,
@@ -612,8 +565,9 @@ export function HoldingsTable({
     ];
 
     return { performance, income, allocation, planning };
+    // Cells use the latest daily quote map and holding render helper.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [rowBadges]);
+  }, [dailyByTicker]);
 
   const columns =
     tab === "performance"
@@ -650,79 +604,47 @@ export function HoldingsTable({
       );
     }
     if (sectorFilter) rows = rows.filter((h) => h.sector === sectorFilter);
-    if (activeFilters.has("gainers")) rows = rows.filter((h) => (h.unrealized_pl_pct ?? 0) > 0);
-    if (activeFilters.has("losers")) rows = rows.filter((h) => (h.unrealized_pl_pct ?? 0) < 0);
+    if (activeFilters.has("in_profit")) rows = rows.filter((h) => (h.unrealized_pl ?? 0) > 0);
+    if (activeFilters.has("below_cost")) rows = rows.filter((h) => (h.unrealized_pl ?? 0) < 0);
+    if (activeFilters.has("positive_today")) rows = rows.filter((h) => (dailyByTicker.get(h.ticker)?.dayChangePct ?? 0) > 0);
+    if (activeFilters.has("negative_today")) rows = rows.filter((h) => (dailyByTicker.get(h.ticker)?.dayChangePct ?? 0) < 0);
     if (activeFilters.has("dividend_payers")) rows = rows.filter((h) => h.dividend_income > 0);
     if (activeFilters.has("big_loss")) rows = rows.filter((h) => (h.unrealized_pl_pct ?? 0) < -10);
     if (activeFilters.has("missing_target"))
       rows = rows.filter((h) => h.target_allocation === null && h.target_price === null);
     if (activeFilters.has("missing_thesis")) rows = rows.filter((h) => !h.has_thesis);
+    if (activeFilters.has("missing_company")) rows = rows.filter((h) => !h.company_name?.trim());
+    if (activeFilters.has("stale_price")) rows = rows.filter((h) => !h.price_date || h.price_date !== latestPriceDate);
+    if (activeFilters.has("unclassified_sector")) rows = rows.filter((h) => !h.sector?.trim());
     return rows;
-  }, [holdings, search, sectorFilter, activeFilters]);
+  }, [holdings, search, sectorFilter, activeFilters, dailyByTicker, latestPriceDate]);
 
   // eslint-disable-next-line react-hooks/incompatible-library -- TanStack Table is the app's table engine; mobile cards consume the same row model.
   const table = useReactTable({
     data: filtered,
     columns,
-    state: { sorting },
+    state: { sorting, columnVisibility },
     onSortingChange: setSorting,
+    onColumnVisibilityChange: setColumnVisibility,
     getCoreRowModel: getCoreRowModel(),
     getSortedRowModel: getSortedRowModel(),
   });
 
-  const plTone =
-    summary.unrealizedPl > 0 ? "positive" : summary.unrealizedPl < 0 ? "negative" : "neutral";
   const tableRows = table.getRowModel().rows;
+  const activeFilterCount = activeFilters.size + Number(!!sectorFilter) + Number(!!search);
+  const selectedPerformance = PERFORMANCE_FILTERS.find((item) => activeFilters.has(item.key))?.key ?? "";
+
+  function selectPerformance(value: string) {
+    setActiveFilters((previous) => {
+      const next = new Set(previous);
+      PERFORMANCE_FILTERS.forEach((item) => next.delete(item.key));
+      if (value) next.add(value as QuickFilter);
+      return next;
+    });
+  }
 
   return (
     <div className="space-y-4">
-      {/* Summary cards */}
-      <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-4 lg:grid-cols-8">
-        <SummaryCard
-          label="Holdings"
-          value={formatNumber(summary.holdingsCount, 0)}
-          sub={`${summary.pricedHoldings} priced`}
-        />
-        <SummaryCard label="Market value" value={formatMoney(summary.totalValue)} />
-        <SummaryCard
-          label="Unrealized P/L"
-          value={formatMoney(summary.unrealizedPl)}
-          sub={
-            summary.unrealizedPlPct !== null
-              ? formatSignedPct(summary.unrealizedPlPct)
-              : "needs prices"
-          }
-          tone={plTone}
-        />
-        <SummaryCard label="Dividend income" value={formatMoney(summary.dividendIncome)} />
-        <SummaryCard
-          label="Largest holding"
-          value={summary.largestHolding?.ticker ?? "—"}
-          sub={
-            summary.largestHolding?.weight != null
-              ? `${summary.largestHolding.weight.toFixed(1)}% of portfolio`
-              : undefined
-          }
-        />
-        <SummaryCard
-          label="Top gainer"
-          value={topGainer?.ticker ?? "—"}
-          sub={topGainer ? formatSignedPct(topGainer.unrealized_pl_pct!) : "no data"}
-          tone={topGainer ? "positive" : "neutral"}
-        />
-        <SummaryCard
-          label="Top loser"
-          value={topLoser?.ticker ?? "—"}
-          sub={topLoser ? formatSignedPct(topLoser.unrealized_pl_pct!) : "no data"}
-          tone={topLoser ? "negative" : "neutral"}
-        />
-        <SummaryCard
-          label="Top dividend"
-          value={topDividend?.ticker ?? "—"}
-          sub={topDividend ? formatMoney(topDividend.dividend_income) : "no data"}
-        />
-      </div>
-
       {/* Search + filter bar */}
       <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center">
         <div className="relative w-full sm:max-w-60">
@@ -758,36 +680,14 @@ export function HoldingsTable({
             ))}
           </select>
         )}
-
-        <div className="scroll-touch -mx-1 flex gap-1.5 overflow-x-auto px-1 sm:mx-0 sm:flex-wrap sm:overflow-visible sm:px-0">
-          {QUICK_FILTERS.map((f) => (
-            <button
-              key={f.key}
-              onClick={() => toggleFilter(f.key)}
-              className={cn(
-                "h-9 shrink-0 rounded-full border px-3 text-[11px] font-medium transition-colors md:h-auto md:px-2.5 md:py-1",
-                activeFilters.has(f.key)
-                  ? "border-primary bg-primary text-primary-foreground"
-                  : "border-border bg-background text-muted-foreground hover:border-foreground/50 hover:text-foreground"
-              )}
-            >
-              {f.label}
-            </button>
-          ))}
-          {(activeFilters.size > 0 || sectorFilter || search) && (
-            <button
-              onClick={() => {
-                setSearch("");
-                setSectorFilter(null);
-                setActiveFilters(new Set());
-              }}
-              className="h-9 shrink-0 rounded-full border border-border px-3 text-[11px] text-muted-foreground hover:text-foreground md:h-auto md:px-2.5 md:py-1"
-            >
-              Clear filters
-            </button>
-          )}
-        </div>
+        <select value={selectedPerformance} onChange={(event) => selectPerformance(event.target.value)} className="h-10 rounded-md border border-border bg-background px-2 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-ring md:h-8 md:text-xs"><option value="">Performance</option>{PERFORMANCE_FILTERS.map((filter) => <option key={filter.key} value={filter.key}>{filter.label}</option>)}</select>
+        <details className="relative">
+          <summary className="flex h-10 cursor-pointer list-none items-center gap-1 rounded-md border border-border bg-background px-2 text-sm text-muted-foreground hover:text-foreground md:h-8 md:text-xs">More filters <ChevronDown className="h-3.5 w-3.5" /></summary>
+          <div className="absolute left-0 z-20 mt-1 w-56 rounded-md border border-border bg-card p-1.5 shadow-[var(--shadow-card)]">{MORE_FILTERS.map((filter) => <label key={filter.key} className="flex cursor-pointer items-center gap-2 rounded px-2 py-1.5 text-xs hover:bg-muted"><input type="checkbox" checked={activeFilters.has(filter.key)} onChange={() => toggleFilter(filter.key)} />{filter.label}</label>)}</div>
+        </details>
       </div>
+
+      {activeFilterCount > 0 && <div className="flex items-center justify-between text-xs text-muted-foreground"><span>{activeFilterCount} filter{activeFilterCount === 1 ? "" : "s"} active · {filtered.length} holding{filtered.length === 1 ? "" : "s"} shown</span><button onClick={() => { setSearch(""); setSectorFilter(null); setActiveFilters(new Set()); }} className="underline underline-offset-2 hover:text-foreground">Clear filters</button></div>}
 
       {/* Tab bar + table */}
       <div className="overflow-hidden rounded-lg border border-border bg-card">
@@ -799,21 +699,24 @@ export function HoldingsTable({
                 key={t.key}
                 onClick={() => setTab(t.key)}
                 className={cn(
-                  "h-9 shrink-0 rounded-md px-3 text-xs font-medium transition-colors sm:h-auto sm:py-1.5",
+                  "h-9 shrink-0 border-b-2 px-3 text-xs font-medium transition-colors sm:h-auto sm:py-1.5",
                   tab === t.key
-                    ? "bg-primary text-primary-foreground"
-                    : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                    ? "border-foreground text-foreground"
+                    : "border-transparent text-muted-foreground hover:text-foreground"
                 )}
               >
                 {t.label}
               </button>
             ))}
           </div>
-          {latestPriceDate && (
-            <span className="text-[11px] text-muted-foreground sm:text-right">
-              Prices as of {latestPriceDate}
-            </span>
-          )}
+          <div className="flex items-center gap-2 text-[11px] text-muted-foreground sm:ml-auto">
+            {latestPriceDate && <span>Prices as of {latestPriceDate}</span>}
+            <select value={density} onChange={(event) => setDensity(event.target.value as "compact" | "comfortable")} className="rounded border border-border bg-card px-1.5 py-1 text-[11px] text-foreground"><option value="comfortable">Comfortable</option><option value="compact">Compact</option></select>
+            <details className="relative hidden md:block">
+              <summary className="cursor-pointer list-none rounded border border-border bg-card px-1.5 py-1 text-[11px] text-foreground">Columns</summary>
+              <div className="absolute right-0 z-20 mt-1 w-44 rounded-md border border-border bg-card p-1.5 shadow-[var(--shadow-card)]">{table.getAllLeafColumns().filter((column) => !["ticker", "actions"].includes(column.id)).map((column) => <label key={column.id} className="flex cursor-pointer items-center gap-2 rounded px-2 py-1 text-xs hover:bg-muted"><input type="checkbox" checked={column.getIsVisible()} onChange={column.getToggleVisibilityHandler()} />{typeof column.columnDef.header === "string" ? column.columnDef.header : column.id}</label>)}</div>
+            </details>
+          </div>
         </div>
 
         {/* Mobile cards */}
@@ -828,7 +731,6 @@ export function HoldingsTable({
                 key={row.id}
                 holding={row.original}
                 tab={tab}
-                badges={rowBadges.get(row.original.ticker) ?? []}
               />
             ))
           )}
@@ -843,7 +745,7 @@ export function HoldingsTable({
                   {hg.headers.map((header) => (
                     <th
                       key={header.id}
-                      className="h-9 cursor-pointer select-none whitespace-nowrap px-3 text-left align-middle text-[11px] font-semibold uppercase tracking-wide text-muted-foreground hover:text-foreground"
+                      className={cn("sticky top-0 z-10 h-9 cursor-pointer select-none whitespace-nowrap bg-card px-3 align-middle text-[11px] font-semibold uppercase tracking-wide text-muted-foreground hover:text-foreground", header.column.id === "ticker" ? "left-0 z-20 text-left" : ["sector", "actions"].includes(header.column.id) ? "text-left" : "text-right")}
                       onClick={header.column.getToggleSortingHandler()}
                     >
                       <span className="inline-flex items-center gap-1">
@@ -874,7 +776,7 @@ export function HoldingsTable({
                     className="border-b border-border last:border-0 transition-colors hover:bg-muted/40"
                   >
                     {row.getVisibleCells().map((cell) => (
-                      <td key={cell.id} className="whitespace-nowrap px-3 py-2.5 align-middle">
+                      <td key={cell.id} className={cn("whitespace-nowrap px-3 align-middle", density === "compact" ? "py-1.5" : "py-2.5", cell.column.id === "ticker" ? "sticky left-0 z-10 bg-card text-left group-hover:bg-muted/40" : ["sector", "actions"].includes(cell.column.id) ? "text-left" : "text-right")}>
                         {flexRender(cell.column.columnDef.cell, cell.getContext())}
                       </td>
                     ))}
@@ -892,7 +794,7 @@ export function HoldingsTable({
               ? `${filtered.length} of ${holdings.length} holdings`
               : `${holdings.length} holding${holdings.length !== 1 ? "s" : ""}`}
           </span>
-          <span>Total market value {formatMoney(summary.totalValue)} · unpriced counted at cost</span>
+          <span>Cost basis {formatMoney(summary.totalCost)} · Market value {formatMoney(summary.totalValue)} · Unrealised P/L {formatMoney(summary.unrealizedPl)} · Portfolio weight 100.0%</span>
         </div>
       </div>
     </div>
