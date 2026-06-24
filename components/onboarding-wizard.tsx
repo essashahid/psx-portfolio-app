@@ -160,6 +160,13 @@ export function OnboardingWizard({
     else void finish();
   }
 
+  async function signOut() {
+    const supabase = createClient();
+    await supabase.auth.signOut();
+    router.push("/login");
+    router.refresh();
+  }
+
   return (
     <div className="w-full max-w-lg">
       {/* Progress */}
@@ -256,6 +263,13 @@ export function OnboardingWizard({
           {!saving && step < TOTAL_STEPS - 1 && <ArrowRight className="h-4 w-4" />}
         </Button>
       </div>
+
+      <p className="mt-6 text-center text-xs text-muted-foreground">
+        Not you, or want a different account?{" "}
+        <button type="button" onClick={signOut} disabled={saving} className="font-medium text-foreground underline-offset-2 hover:underline">
+          Sign out
+        </button>
+      </p>
     </div>
   );
 }
