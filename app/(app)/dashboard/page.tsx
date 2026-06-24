@@ -1,9 +1,11 @@
 import Link from "next/link";
+import type { ReactNode } from "react";
 import { createClient, getUser } from "@/lib/supabase/server";
 import { getPortfolio } from "@/lib/portfolio";
 import { getDailyHoldingPerformance } from "@/lib/portfolio/daily-performance";
-import { cn, formatMoney, formatNumber, formatSignedPct } from "@/lib/utils";
+import { cn, formatNumber, formatSignedPct } from "@/lib/utils";
 import { EmptyState } from "@/components/empty-state";
+import { AnimatedMoney } from "@/components/animated-money";
 import { ActionButton } from "@/components/action-button";
 import { Button } from "@/components/ui/button";
 import { ImportantPsxEvents, type PsxEventRow } from "@/components/important-psx-events";
@@ -123,10 +125,10 @@ export default async function DashboardPage() {
           <div>
             <p className="eyebrow">{firstName ? `${firstName}'s portfolio` : "Portfolio overview"}{profileRes.data?.demo_mode ? " · demo mode" : ""}</p>
             <p className="mt-4 text-xs font-semibold uppercase tracking-[0.12em] text-muted-foreground">Portfolio value</p>
-            <h1 className="mt-1 text-4xl font-semibold tabular-nums tracking-tight sm:text-5xl">{formatMoney(summary.totalValue)}</h1>
+            <h1 className="mt-1 text-4xl font-semibold tracking-tight sm:text-5xl"><AnimatedMoney value={summary.totalValue} duration={1300} /></h1>
             <div className="mt-4 flex flex-wrap gap-x-7 gap-y-2 text-sm">
-              <MetricInline label="Today" value={formatMoney(dayPnl)} sub={formatSignedPct(dailyPerformance.weightedDayChangePct)} tone={dayTone} />
-              <MetricInline label="Overall return" value={formatMoney(summary.unrealizedPl)} sub={formatSignedPct(summary.unrealizedPlPct)} tone={summary.unrealizedPl > 0 ? "positive" : summary.unrealizedPl < 0 ? "negative" : "flat"} />
+              <MetricInline label="Today" value={<AnimatedMoney value={dayPnl} signed delay={100} duration={900} />} sub={formatSignedPct(dailyPerformance.weightedDayChangePct)} tone={dayTone} />
+              <MetricInline label="Overall return" value={<AnimatedMoney value={summary.unrealizedPl} signed delay={180} duration={1050} />} sub={formatSignedPct(summary.unrealizedPlPct)} tone={summary.unrealizedPl > 0 ? "positive" : summary.unrealizedPl < 0 ? "negative" : "flat"} />
             </div>
             <p className="mt-4 text-xs text-muted-foreground">Last updated: {formatUpdated(latestMarketDate, dailyPerformance.snapshotTime)}</p>
           </div>
@@ -143,10 +145,10 @@ export default async function DashboardPage() {
 
       <section>
         <div className="grid border-y border-border sm:grid-cols-2 lg:grid-cols-4">
-          <SummaryMetric label="Total cost" value={formatMoney(summary.totalCost)} />
-          <SummaryMetric label="Unrealised P/L" value={formatMoney(summary.unrealizedPl)} sub={formatSignedPct(summary.unrealizedPlPct)} tone={summary.unrealizedPl > 0 ? "positive" : summary.unrealizedPl < 0 ? "negative" : "flat"} />
-          <SummaryMetric label="Dividend income" value={formatMoney(summary.dividendIncome)} />
-          <SummaryMetric label="Cash" value={formatMoney(summary.cashBalance)} />
+          <SummaryMetric label="Total cost" value={<AnimatedMoney value={summary.totalCost} delay={120} />} />
+          <SummaryMetric label="Unrealised P/L" value={<AnimatedMoney value={summary.unrealizedPl} signed delay={180} />} sub={formatSignedPct(summary.unrealizedPlPct)} tone={summary.unrealizedPl > 0 ? "positive" : summary.unrealizedPl < 0 ? "negative" : "flat"} />
+          <SummaryMetric label="Dividend income" value={<AnimatedMoney value={summary.dividendIncome} delay={240} />} />
+          <SummaryMetric label="Cash" value={<AnimatedMoney value={summary.cashBalance} delay={300} />} />
         </div>
         <p className="mt-2 text-xs text-muted-foreground">{formatNumber(summary.holdingsCount, 0)} holdings · Largest holding: {summary.largestHolding ? `${summary.largestHolding.ticker}, ${summary.largestHolding.weight?.toFixed(1)}%` : "—"} · Largest sector: {summary.largestSector ? `${summary.largestSector.sector}, ${summary.largestSector.weight.toFixed(1)}%` : "—"}</p>
       </section>
@@ -171,10 +173,10 @@ export default async function DashboardPage() {
   );
 }
 
-function MetricInline({ label, value, sub, tone }: { label: string; value: string; sub: string; tone: "positive" | "negative" | "flat" }) {
+function MetricInline({ label, value, sub, tone }: { label: string; value: ReactNode; sub: string; tone: "positive" | "negative" | "flat" }) {
   return <div><span className="text-muted-foreground">{label} </span><span className={cn("font-semibold tabular-nums", tone === "positive" ? "text-emerald-700" : tone === "negative" ? "text-red-700" : "text-foreground")}>{value} ({sub})</span></div>;
 }
 
-function SummaryMetric({ label, value, sub, tone }: { label: string; value: string; sub?: string; tone?: "positive" | "negative" | "flat" }) {
+function SummaryMetric({ label, value, sub, tone }: { label: string; value: ReactNode; sub?: string; tone?: "positive" | "negative" | "flat" }) {
   return <div className="border-b border-border py-4 last:border-b-0 sm:border-b-0 sm:px-4 sm:first:pl-0 sm:border-r sm:last:border-r-0"><p className="text-xs font-medium text-muted-foreground">{label}</p><p className={cn("mt-1 text-lg font-semibold tabular-nums", tone === "positive" ? "text-emerald-700" : tone === "negative" ? "text-red-700" : "text-foreground")}>{value}</p>{sub && <p className="mt-0.5 text-xs text-muted-foreground">{sub}</p>}</div>;
 }

@@ -1,28 +1,28 @@
 @import "tailwindcss";
 
 :root {
-  /* Synex-inspired warm paper palette: editorial-minimal, premium, calm. */
-  --background: #f2f2f0;
-  --foreground: #05050c;
-  --card: #fbfbf9;
-  --card-foreground: #05050c;
-  --muted: #eaeae6;
-  --muted-foreground: #6b6b64;
-  --border: #e3e3dd;
-  --primary: #111111;
+  /* Quiet, high-contrast financial workspace palette. */
+  --background: #f6f6f4;
+  --foreground: #161716;
+  --card: #ffffff;
+  --card-foreground: #161716;
+  --muted: #eeefeb;
+  --muted-foreground: #6c6e68;
+  --border: #dedfda;
+  --primary: #1a1b1a;
   --primary-foreground: #ffffff;
-  --accent: #ecece8;
+  --accent: #e9eae6;
   --destructive: oklch(0.55 0.2 25);
   --ring: #b6b6ad;
-  --sidebar: #edede9;
-  --sidebar-foreground: #05050c;
-  --sidebar-muted: #6b6b64;
-  --sidebar-active: #111111;
+  --sidebar: #f1f2ee;
+  --sidebar-foreground: #161716;
+  --sidebar-muted: #676963;
+  --sidebar-active: #1a1b1a;
   /* Brand accent — matches the chart editorial indigo (INK.line). */
   --brand: #3450c8;
   --brand-soft: #eef1fb;
   /* Soft layered shadow used by cards & raised surfaces. */
-  --shadow-card: 0 1px 2px rgba(0, 0, 0, 0.04), 0 12px 32px -16px rgba(0, 0, 0, 0.12);
+  --shadow-card: 0 1px 2px rgba(13, 18, 15, 0.035), 0 14px 30px -20px rgba(13, 18, 15, 0.18);
 }
 
 @theme inline {
@@ -45,7 +45,7 @@
   --color-brand: var(--brand);
   --color-brand-soft: var(--brand-soft);
   --shadow-card: var(--shadow-card);
-  --font-sans: var(--font-inter-tight);
+  --font-sans: var(--font-manrope);
   --font-mono: var(--font-geist-mono);
 }
 
@@ -58,6 +58,10 @@ body {
   -webkit-tap-highlight-color: transparent;
   text-size-adjust: 100%;
   -webkit-text-size-adjust: 100%;
+  font-feature-settings: "kern" 1, "liga" 1, "tnum" 1;
+  font-kerning: normal;
+  letter-spacing: -0.012em;
+  line-height: 1.45;
 }
 
 html {
@@ -95,8 +99,8 @@ a {
 /* Small tracked uppercase label that sits above headings. */
 .eyebrow {
   font-size: 0.6875rem;
-  font-weight: 600;
-  letter-spacing: 0.14em;
+  font-weight: 700;
+  letter-spacing: 0.11em;
   text-transform: uppercase;
   color: color-mix(in oklab, var(--muted-foreground) 65%, var(--brand));
 }
@@ -108,7 +112,36 @@ a {
 
 /* Tighter optical tracking for large display headings. */
 .tracking-editorial {
-  letter-spacing: 0;
+  letter-spacing: -0.035em;
+}
+
+/* Shared polish for navigation, controls, data tables and raised surfaces. */
+button,
+input,
+select,
+textarea {
+  font-weight: 500;
+}
+
+button {
+  letter-spacing: -0.01em;
+}
+
+input::placeholder,
+textarea::placeholder {
+  color: color-mix(in oklab, var(--muted-foreground) 78%, transparent);
+}
+
+table {
+  font-variant-numeric: tabular-nums;
+}
+
+thead {
+  box-shadow: inset 0 -1px 0 var(--border);
+}
+
+::selection {
+  background: color-mix(in oklab, var(--brand) 18%, transparent);
 }
 
 /* Black pill CTA with the signature circular indicator (see .pill-dot). */
