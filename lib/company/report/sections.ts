@@ -1,7 +1,8 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { chatJson } from "@/lib/ai/openai";
-import type { AiReportNarrative, CompanyReportPayload, CompanyReportOptions } from "./types";
+import type { AiReportNarrative, CompanyReportPayload, CompanyReportOptions, AiReportInsight } from "./types";
 import { normalizeNarrative } from "./markdown";
+import { buildSectionPrompt } from "./prompt-builder";
 
 const SECTION_NARRATIVE_KEYS: Record<string, keyof AiReportNarrative> = {
   businessOverview: "businessOverview",
@@ -16,7 +17,7 @@ const SECTION_NARRATIVE_KEYS: Record<string, keyof AiReportNarrative> = {
   news: "recentDevelopments",
 };
 
-const SECTION_SYSTEM = `You write tightly constrained PSX research section insights. Use only supplied evidence. Cite source IDs. No buy/sell calls. Return JSON only.`;
+const SECTION_SYSTEM = `You write professional PSX research section insights. Return JSON only. No Markdown formatting block.`;
 
 export async function regenerateReportSection(
   sectionKey: string,
@@ -29,20 +30,49 @@ export async function regenerateReportSection(
   if (!narrativeKey) throw new Error(`Unknown section: ${sectionKey}`);
 
   const sectionEvidence = pickSectionEvidence(sectionKey, evidence);
-  const { data } = await chatJson<Record<string, AiReportNarrative[keyof AiReportNarrative]>>(
-    SECTION_SYSTEM,
-    [
-      `Ticker: ${symbol}`,
-      `Regenerate only the "${sectionKey}" section.`,
-      `Return JSON: {"${narrativeKey}":[{"text":"insight","citations":["S1"]}]}`,
-      "Evidence:",
-      JSON.stringify(sectionEvidence, null, 2),
-    ].join("\n"),
-    options.depth === "full" ? 1200 : 800
-  );
+  const company = evidence.company as { sector?: string } | undefined;
+  
+  const prompt = buildSectionPrompt(sectionKey, symbol, options, company?.sector ?? null);
+  const expectedShape = `{"${narrativeKey}":[{"text":"insight","citations":["S1"]}]}`;
 
-  const partial = normalizeNarrative(data as Partial<AiReportNarrative>);
-  return { [narrativeKey]: partial[narrativeKey] };
+  let lastErr: Error | null = null;
+  
+  for (let attempt = 1; attempt <= 3; attempt++) {
+    try {
+      const { data } = await chatJson<Record<string, AiReportInsight[]>>(
+        SECTION_SYSTEM,
+        [
+          prompt,
+          `Return exactly this JSON shape:`,
+          expectedShape,
+          "Evidence:",
+          JSON.stringify(sectionEvidence, null, 2),
+        ].join("\n"),
+        options.depth === "full" ? 1800 : 1200
+      );
+
+      // Validate response shape
+      if (!data || typeof data !== "object" || !Array.isArray(data[narrativeKey as string])) {
+        throw new Error(`Invalid JSON shape from model. Missing array for key: ${String(narrativeKey)}`);
+      }
+
+      const partial = normalizeNarrative(data as Partial<AiReportNarrative>);
+      
+      // Enforce substantive response
+      if (partial[narrativeKey].length === 0) {
+        throw new Error("Model returned empty insights array.");
+      }
+      
+      return { [narrativeKey]: partial[narrativeKey] };
+    } catch (err) {
+      lastErr = err instanceof Error ? err : new Error(String(err));
+      if (attempt === 3) break;
+      // Wait before retry
+      await new Promise(r => setTimeout(r, 1000 * attempt));
+    }
+  }
+
+  throw new Error(`Failed to regenerate section ${sectionKey} after 3 attempts: ${lastErr?.message}`);
 }
 
 export function mergeSectionNarrative(
