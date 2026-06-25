@@ -1,4 +1,4 @@
-import PDFDocument from "pdfkit";
+import PDFDocument from "pdfkit/js/pdfkit.standalone";
 import type { CompanyReportPayload, AiReportInsight } from "@/lib/company/report";
 
 type Doc = InstanceType<typeof PDFDocument>;
