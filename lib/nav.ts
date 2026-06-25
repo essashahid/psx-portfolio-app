@@ -14,7 +14,6 @@ import {
   Database,
   Activity,
   TrendingUp,
-  FileText,
 } from "lucide-react";
 import type { ComponentType } from "react";
 import type { ExperienceLevel, Profile } from "@/lib/types";
@@ -57,7 +56,6 @@ export const NAV_SECTIONS: { title: string; items: NavItemDef[] }[] = [
       { href: "/bulls-bears", label: "Bulls & Bears", icon: BarChart3, hint: "Weekly regime, picks and watchlist", tier: "advanced" },
       { href: "/news", label: "News Center", icon: Newspaper, hint: "Portfolio and market news", tier: "plus" },
       { href: "/chat", label: "Research Copilot", icon: Sparkles, hint: "Ask anything about your portfolio and PSX", tier: "core" },
-      { href: "/briefings", label: "AI Briefings", icon: FileText, hint: "Generated portfolio and market briefs", tier: "advanced" },
     ],
   },
   {

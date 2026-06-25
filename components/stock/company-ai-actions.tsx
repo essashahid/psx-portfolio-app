@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Markdown } from "@/components/markdown";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { GenerateReportDialog } from "@/components/stock/generate-report-dialog";
 import { Loader2, Sparkles } from "lucide-react";
 
 const ACTIONS = [
@@ -16,7 +17,6 @@ const ACTIONS = [
   { action: "explain_technicals", label: "Explain technical picture" },
   { action: "compare_portfolio", label: "Compare with my portfolio" },
   { action: "research_questions", label: "Questions to research" },
-  { action: "research_memo", label: "Generate research memo" },
 ] as const;
 
 export function CompanyAiActions({ ticker }: { ticker: string }) {
@@ -47,6 +47,9 @@ export function CompanyAiActions({ ticker }: { ticker: string }) {
 
   return (
     <div className="space-y-3">
+      <div>
+        <GenerateReportDialog ticker={ticker} label="Generate full company report" triggerVariant="default" triggerSize="sm" />
+      </div>
       <div className="flex flex-wrap gap-2">
         {ACTIONS.map((a) => (
           <Button key={a.action} variant="outline" size="sm" disabled={running !== null} onClick={() => run(a.action)}>

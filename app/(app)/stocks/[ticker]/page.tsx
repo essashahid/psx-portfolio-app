@@ -6,6 +6,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tabs } from "@/components/ui/tabs";
 import { WatchlistButton } from "@/components/stock/watchlist-button";
+import { GenerateReportDialog } from "@/components/stock/generate-report-dialog";
 import { CardSkeleton, TableSkeleton } from "@/components/page-skeleton";
 import { formatMoney, formatNumber, formatSignedPct, cn } from "@/lib/utils";
 import { ArrowLeft, Search } from "lucide-react";
@@ -109,7 +110,7 @@ export default async function StockCockpitPage({ params }: { params: Promise<{ t
                 {metadata.companyName ?? "Company name unavailable"}{metadata.sector ? ` · ${metadata.sector}` : ""}
               </p>
             </div>
-            <div className="flex items-center gap-4">
+            <div className="flex flex-wrap items-center justify-end gap-3">
               <div className="text-right">
                 <p className="text-2xl font-semibold tabular-nums">{quote.price !== null ? formatNumber(quote.price) : "—"}</p>
                 <p className={cn("text-xs tabular-nums", dayTone === "positive" && "text-emerald-600", dayTone === "negative" && "text-red-600", !dayTone && "text-muted-foreground")}>
@@ -118,6 +119,7 @@ export default async function StockCockpitPage({ params }: { params: Promise<{ t
                   {quote.asOf ? ` · ${quote.asOf}` : ""}
                 </p>
               </div>
+              <GenerateReportDialog ticker={ticker} companyName={metadata.companyName} />
               <WatchlistButton ticker={ticker} initialWatched={!!watch} size="default" />
             </div>
           </div>
