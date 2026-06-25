@@ -90,14 +90,14 @@ const MODULE_SECTION_MAP: Record<string, (payload: CompanyReportPayload) => { fo
   peers: (p) => {
     const hasPeers = hasEvidenceArray(p, "peers");
     const hasChartData = p.charts.peers.some((x) => x.value !== null);
-    const found = hasPeers && hasChartData;
+    const found = hasPeers;
     return {
       found,
       reason: found
-        ? undefined
-        : !hasPeers
-          ? "No peer data retrieved"
-          : "Peer data retrieved but all metric values are unavailable",
+        ? hasChartData
+          ? undefined
+          : "Peer data retrieved but metric values are unavailable"
+        : "No peer data retrieved",
     };
   },
   catalystsRisks: (p) => {
