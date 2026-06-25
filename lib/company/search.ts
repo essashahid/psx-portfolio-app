@@ -1,5 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { fetchPsxSymbols, type PsxSymbolInfo } from "@/lib/market-data/psx-dps";
+import { getPsxDirectory } from "@/lib/company/identity";
+import type { PsxSymbolInfo } from "@/lib/market-data/psx-dps";
 
 export interface StockSearchResult {
   ticker: string;
@@ -7,18 +8,10 @@ export interface StockSearchResult {
   sector: string | null;
 }
 
-// Module-level cache of the full PSX directory so search stays instant after
-// the first warm-up (the directory is ~1,050 rows from a single request).
-let directoryCache: { map: Map<string, PsxSymbolInfo>; at: number } | null = null;
-const DIRECTORY_TTL_MS = 1000 * 60 * 60 * 12;
+// Module-level cache lives in lib/company/identity (getPsxDirectory).
 
 async function getDirectory(): Promise<Map<string, PsxSymbolInfo>> {
-  if (directoryCache && Date.now() - directoryCache.at < DIRECTORY_TTL_MS && directoryCache.map.size > 0) {
-    return directoryCache.map;
-  }
-  const map = await fetchPsxSymbols();
-  if (map.size > 0) directoryCache = { map, at: Date.now() };
-  return map;
+  return getPsxDirectory().catch(() => new Map<string, PsxSymbolInfo>());
 }
 
 function score(query: string, ticker: string, name: string): number {
