@@ -39,3 +39,18 @@ export const ValueLine = dynamic(
   () => import("@/components/charts").then((m) => m.ValueLine),
   { ssr: false, loading: ChartFallback }
 );
+
+export const PerformanceWaterfall = dynamic(
+  () => import("@/components/charts").then((m) => m.PerformanceWaterfall),
+  { ssr: false, loading: ChartFallback }
+);
+
+export const PerformanceTimeline = dynamic(
+  () => import("@/components/charts").then((m) => m.PerformanceTimeline),
+  { ssr: false, loading: ChartFallback }
+);
+
+export const CostFrictionBars = dynamic(
+  () => import("@/components/charts").then((m) => m.CostFrictionBars),
+  { ssr: false, loading: ChartFallback }
+);

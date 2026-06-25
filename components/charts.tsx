@@ -16,6 +16,8 @@ import {
   ReferenceLine,
   AreaChart,
   Area,
+  ComposedChart,
+  Line,
 } from "recharts";
 import {
   INK,
@@ -383,6 +385,304 @@ export function ValueLine({ data }: { data: { date: string; value: number; cost:
             animationEasing={EASE}
           />
         </AreaChart>
+      </ResponsiveContainer>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Performance workspace charts
+// ---------------------------------------------------------------------------
+
+function downloadCsv(fileName: string, rows: Record<string, unknown>[]) {
+  if (!rows.length) return;
+  const headers = Object.keys(rows[0]);
+  const escape = (value: unknown) => {
+    if (value === null || value === undefined) return "";
+    const s = String(value);
+    return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+  };
+  const csv = [headers.join(","), ...rows.map((row) => headers.map((h) => escape(row[h])).join(","))].join("\n");
+  const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = fileName;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+export function PerformanceWaterfall({
+  data,
+}: {
+  data: { label: string; value: number; kind: "start" | "increase" | "decrease" | "end" | "audit"; includedInReconciliation: boolean }[];
+}) {
+  const animate = useChartMotion();
+  const rows = useMemo(() => {
+    return data
+      .filter((row) => row.kind !== "audit")
+      .reduce<{
+        running: number;
+        rows: (typeof data[number] & { base: number; amount: number; signed: number })[];
+      }>((acc, row) => {
+        if (row.kind === "start" || row.kind === "end") {
+          return {
+            running: row.kind === "start" ? row.value : acc.running,
+            rows: [...acc.rows, { ...row, base: 0, amount: Math.abs(row.value), signed: row.value }],
+          };
+        }
+        const next = acc.running + row.value;
+        const base = Math.min(acc.running, next);
+        const amount = Math.abs(row.value);
+        return {
+          running: next,
+          rows: [...acc.rows, { ...row, base, amount, signed: row.value }],
+        };
+      }, { running: 0, rows: [] }).rows;
+  }, [data]);
+
+  if (!rows.length) return <ChartEmpty note="No bridge components available." />;
+
+  return (
+    <div className="chart-reveal">
+      <div className="mb-2 flex justify-end">
+        <button
+          type="button"
+          className="rounded-md border border-border px-2 py-1 text-[11px] text-muted-foreground hover:text-foreground"
+          onClick={() => downloadCsv("wealth-bridge.csv", rows)}
+        >
+          Export CSV
+        </button>
+      </div>
+      <ResponsiveContainer width="100%" height={310}>
+        <BarChart data={rows} margin={{ top: 8, right: 14, bottom: 36, left: 10 }}>
+          <CartesianGrid strokeDasharray="3 3" stroke={INK.grid} vertical={false} />
+          <XAxis
+            dataKey="label"
+            tick={AXIS_TICK}
+            axisLine={false}
+            tickLine={false}
+            interval={0}
+            angle={-18}
+            textAnchor="end"
+            height={58}
+          />
+          <YAxis tick={AXIS_TICK} tickFormatter={fmtCompact} axisLine={false} tickLine={false} width={52} />
+          <Tooltip
+            cursor={{ fill: "rgba(0,0,0,0.035)" }}
+            content={({ active, payload }) => {
+              const row = active ? (payload?.[0]?.payload as (typeof rows)[number] | undefined) : null;
+              if (!row) return null;
+              return (
+                <div className="chart-tooltip">
+                  <p className="chart-tooltip-label">{row.label}</p>
+                  <div className="flex items-center justify-between gap-5 text-[11px]">
+                    <span className="text-muted-foreground">Value</span>
+                    <span className="font-semibold tabular-nums">{fmtPkr(row.signed)}</span>
+                  </div>
+                </div>
+              );
+            }}
+          />
+          <Bar dataKey="base" stackId="bridge" fill="transparent" isAnimationActive={false} />
+          <Bar
+            dataKey="amount"
+            stackId="bridge"
+            name="Bridge"
+            radius={[5, 5, 1, 1]}
+            maxBarSize={44}
+            isAnimationActive={animate}
+            animationDuration={DRAW_MS}
+            animationEasing={EASE}
+          >
+            {rows.map((row) => (
+              <Cell
+                key={row.label}
+                fill={
+                  row.kind === "start" || row.kind === "end"
+                    ? INK.line
+                    : row.value >= 0
+                      ? INK.up
+                      : INK.down
+                }
+              />
+            ))}
+          </Bar>
+          <ReferenceLine y={0} stroke={INK.neutral} />
+        </BarChart>
+      </ResponsiveContainer>
+    </div>
+  );
+}
+
+export function PerformanceTimeline({
+  data,
+}: {
+  data: {
+    date: string;
+    cumulativeContributions: number;
+    grossPurchases: number;
+    grossSales: number;
+    charges: number;
+    cashBalance: number;
+    netWorth: number | null;
+    eventLabels: string[];
+  }[];
+}) {
+  const animate = useChartMotion();
+  const [visible, setVisible] = useState({
+    cumulativeContributions: true,
+    grossPurchases: true,
+    grossSales: true,
+    charges: false,
+    cashBalance: true,
+    netWorth: true,
+  });
+
+  if (data.length < 2) return <ChartEmpty note="Ledger timeline requires at least two dated events." height={300} />;
+
+  const series = [
+    ["cumulativeContributions", "Contributions", INK.line],
+    ["grossPurchases", "Purchases", INK.amber],
+    ["grossSales", "Sales", INK.up],
+    ["charges", "Charges", INK.down],
+    ["cashBalance", "Cash", INK.neutral],
+    ["netWorth", "Net worth endpoint", INK.terracotta],
+  ] as const;
+
+  return (
+    <div className="chart-reveal">
+      <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+        <div className="flex flex-wrap gap-1">
+          {series.map(([key, label, color]) => (
+            <button
+              key={key}
+              type="button"
+              onClick={() => setVisible((prev) => ({ ...prev, [key]: !prev[key] }))}
+              className="inline-flex items-center gap-1.5 rounded-md border border-border px-2 py-1 text-[11px]"
+              style={{ color: visible[key] ? color : "#8b8b84" }}
+            >
+              <span className="h-2 w-2 rounded-full" style={{ background: visible[key] ? color : "#d6d6cf" }} />
+              {label}
+            </button>
+          ))}
+        </div>
+        <button
+          type="button"
+          className="rounded-md border border-border px-2 py-1 text-[11px] text-muted-foreground hover:text-foreground"
+          onClick={() => downloadCsv("performance-timeline.csv", data)}
+        >
+          Export CSV
+        </button>
+      </div>
+      <ResponsiveContainer width="100%" height={340}>
+        <ComposedChart data={data} margin={{ top: 8, right: 14, bottom: 8, left: 10 }}>
+          <FadeDefs defs={[{ id: "timelineContrib", color: INK.line, from: 0.16, to: 0.02 }]} />
+          <CartesianGrid strokeDasharray="3 3" stroke={INK.grid} vertical={false} />
+          <XAxis dataKey="date" tick={AXIS_TICK} axisLine={false} tickLine={false} minTickGap={28} />
+          <YAxis tick={AXIS_TICK} tickFormatter={fmtCompact} axisLine={false} tickLine={false} width={52} />
+          <Tooltip
+            cursor={CURSOR}
+            content={({ active, payload, label }) => {
+              if (!active || !payload?.length) return null;
+              const row = payload[0]?.payload as (typeof data)[number] | undefined;
+              return (
+                <div className="chart-tooltip">
+                  <p className="chart-tooltip-label">{String(label)}</p>
+                  <div className="space-y-1">
+                    {payload
+                      .filter((p) => p.value !== null && p.value !== undefined)
+                      .map((p) => (
+                        <div key={String(p.dataKey)} className="flex items-center justify-between gap-5 text-[11px]">
+                          <span className="text-muted-foreground">{p.name}</span>
+                          <span className="font-semibold tabular-nums">{fmtPkr(Number(p.value))}</span>
+                        </div>
+                      ))}
+                  </div>
+                  {!!row?.eventLabels.length && (
+                    <p className="mt-2 max-w-[240px] text-[11px] text-muted-foreground">{row.eventLabels.join(" · ")}</p>
+                  )}
+                </div>
+              );
+            }}
+          />
+          {visible.cumulativeContributions && (
+            <Area
+              type="monotone"
+              dataKey="cumulativeContributions"
+              name="Contributions"
+              stroke={INK.line}
+              fill="url(#timelineContrib)"
+              strokeWidth={2}
+              dot={false}
+              isAnimationActive={animate}
+              animationDuration={DRAW_MS}
+              animationEasing={EASE}
+            />
+          )}
+          {visible.grossPurchases && <Line type="monotone" dataKey="grossPurchases" name="Purchases" stroke={INK.amber} strokeWidth={1.8} dot={false} />}
+          {visible.grossSales && <Line type="monotone" dataKey="grossSales" name="Sales" stroke={INK.up} strokeWidth={1.8} dot={false} />}
+          {visible.charges && <Line type="monotone" dataKey="charges" name="Charges" stroke={INK.down} strokeWidth={1.8} dot={false} />}
+          {visible.cashBalance && <Line type="monotone" dataKey="cashBalance" name="Cash" stroke={INK.neutral} strokeWidth={1.6} strokeDasharray="5 4" dot={false} />}
+          {visible.netWorth && <Line type="monotone" dataKey="netWorth" name="Net worth endpoint" stroke={INK.terracotta} strokeWidth={2} connectNulls dot={{ r: 3 }} />}
+        </ComposedChart>
+      </ResponsiveContainer>
+    </div>
+  );
+}
+
+export function CostFrictionBars({
+  data,
+}: {
+  data: { category: string; amount: number; note: string }[];
+}) {
+  const animate = useChartMotion();
+  const rows = data.filter((row) => row.amount > 0);
+  if (!rows.length) return <ChartEmpty note="No recorded costs available." />;
+  return (
+    <div className="chart-reveal">
+      <div className="mb-2 flex justify-end">
+        <button
+          type="button"
+          className="rounded-md border border-border px-2 py-1 text-[11px] text-muted-foreground hover:text-foreground"
+          onClick={() => downloadCsv("cost-friction.csv", data)}
+        >
+          Export CSV
+        </button>
+      </div>
+      <ResponsiveContainer width="100%" height={Math.max(240, rows.length * 42 + 54)}>
+        <BarChart data={rows} layout="vertical" margin={{ top: 8, right: 14, bottom: 8, left: 14 }}>
+          <CartesianGrid strokeDasharray="3 3" stroke={INK.grid} horizontal={false} />
+          <XAxis type="number" tick={AXIS_TICK} tickFormatter={fmtCompact} axisLine={false} tickLine={false} />
+          <YAxis type="category" dataKey="category" tick={AXIS_TICK} width={140} axisLine={false} tickLine={false} />
+          <Tooltip
+            cursor={{ fill: "rgba(0,0,0,0.035)" }}
+            content={({ active, payload }) => {
+              const row = active ? (payload?.[0]?.payload as (typeof rows)[number] | undefined) : null;
+              if (!row) return null;
+              return (
+                <div className="chart-tooltip">
+                  <p className="chart-tooltip-label">{row.category}</p>
+                  <div className="flex items-center justify-between gap-5 text-[11px]">
+                    <span className="text-muted-foreground">Recorded</span>
+                    <span className="font-semibold tabular-nums">{fmtPkr(row.amount)}</span>
+                  </div>
+                  <p className="mt-2 max-w-[240px] text-[11px] text-muted-foreground">{row.note}</p>
+                </div>
+              );
+            }}
+          />
+          <Bar
+            dataKey="amount"
+            name="Cost"
+            fill={INK.down}
+            radius={[0, 5, 5, 0]}
+            maxBarSize={30}
+            isAnimationActive={animate}
+            animationDuration={DRAW_MS}
+            animationEasing={EASE}
+          />
+        </BarChart>
       </ResponsiveContainer>
     </div>
   );
