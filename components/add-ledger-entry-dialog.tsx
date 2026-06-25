@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Loader2, Pencil, Plus } from "lucide-react";
 import { Dialog } from "@/components/ui/dialog";
@@ -34,6 +34,58 @@ type Initial =
   | { kind: "trade"; transaction: Txn }
   | { kind: "cash"; cash: Cash };
 
+const defaultDate = () => new Date().toISOString().slice(0, 10);
+
+function initialForm(initial?: Initial) {
+  if (initial?.kind === "trade") {
+    const t = initial.transaction;
+    return {
+      date: t.trade_date ?? defaultDate(),
+      ticker: t.ticker ?? "",
+      txnType: t.type,
+      cashType: "CASH_IN",
+      quantity: t.quantity !== null && t.quantity !== undefined ? String(t.quantity) : "",
+      price: t.price !== null && t.price !== undefined ? String(t.price) : "",
+      commission: t.commission !== null && t.commission !== undefined ? String(t.commission) : "",
+      tax: t.tax !== null && t.tax !== undefined ? String(t.tax) : "",
+      netAmount: t.net_amount !== null && t.net_amount !== undefined ? String(t.net_amount) : "",
+      amount: "",
+      description: t.notes ?? "",
+    };
+  }
+
+  if (initial?.kind === "cash") {
+    const c = initial.cash;
+    return {
+      date: c.movement_date ?? defaultDate(),
+      ticker: "",
+      txnType: "BUY",
+      cashType: c.type,
+      quantity: "",
+      price: "",
+      commission: "",
+      tax: "",
+      netAmount: "",
+      amount: String(c.amount),
+      description: c.description ?? "",
+    };
+  }
+
+  return {
+    date: defaultDate(),
+    ticker: "",
+    txnType: "BUY",
+    cashType: "CASH_IN",
+    quantity: "",
+    price: "",
+    commission: "",
+    tax: "",
+    netAmount: "",
+    amount: "",
+    description: "",
+  };
+}
+
 export function AddLedgerEntryDialog({
   initial,
   label,
@@ -49,56 +101,7 @@ export function AddLedgerEntryDialog({
   const [mode, setMode] = useState<"trade" | "cash">(initial?.kind ?? "trade");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [form, setForm] = useState({
-    date: new Date().toISOString().slice(0, 10),
-    ticker: "",
-    txnType: "BUY",
-    cashType: "CASH_IN",
-    quantity: "",
-    price: "",
-    commission: "",
-    tax: "",
-    netAmount: "",
-    amount: "",
-    description: "",
-  });
-
-  useEffect(() => {
-    if (!initial) return;
-    if (initial.kind === "trade") {
-      const t = initial.transaction;
-      setMode("trade");
-      setForm({
-        date: t.trade_date ?? new Date().toISOString().slice(0, 10),
-        ticker: t.ticker ?? "",
-        txnType: t.type,
-        cashType: "CASH_IN",
-        quantity: t.quantity !== null && t.quantity !== undefined ? String(t.quantity) : "",
-        price: t.price !== null && t.price !== undefined ? String(t.price) : "",
-        commission: t.commission !== null && t.commission !== undefined ? String(t.commission) : "",
-        tax: t.tax !== null && t.tax !== undefined ? String(t.tax) : "",
-        netAmount: t.net_amount !== null && t.net_amount !== undefined ? String(t.net_amount) : "",
-        amount: "",
-        description: t.notes ?? "",
-      });
-    } else {
-      const c = initial.cash;
-      setMode("cash");
-      setForm({
-        date: c.movement_date ?? new Date().toISOString().slice(0, 10),
-        ticker: "",
-        txnType: "BUY",
-        cashType: c.type,
-        quantity: "",
-        price: "",
-        commission: "",
-        tax: "",
-        netAmount: "",
-        amount: String(c.amount),
-        description: c.description ?? "",
-      });
-    }
-  }, [initial]);
+  const [form, setForm] = useState(() => initialForm(initial));
 
   function set(k: keyof typeof form, v: string) {
     setForm((f) => ({ ...f, [k]: v }));

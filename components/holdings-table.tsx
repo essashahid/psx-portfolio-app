@@ -17,6 +17,7 @@ import { formatMoney, formatNumber, formatSignedPct, cn } from "@/lib/utils";
 import { Badge, thesisStatusVariant } from "@/components/ui/badge";
 import { SectorChip } from "@/components/sector-chip";
 import { AddTransactionDialog } from "@/components/add-transaction-dialog";
+import { GenerateReportDialog } from "@/components/stock/generate-report-dialog";
 import { Input } from "@/components/ui/input";
 import { ArrowUpDown, ChevronDown, MoreHorizontal, Search, X } from "lucide-react";
 
@@ -234,7 +235,15 @@ function HoldingActionMenu({ holding }: { holding: EnrichedHolding }) {
         <MoreHorizontal className="h-4 w-4" />
       </summary>
       <div className="absolute right-0 z-20 mt-1 flex w-48 flex-col gap-1 rounded-md border border-border bg-card p-1.5 text-xs shadow-[var(--shadow-card)]">
-        <Link href={`/stocks/${holding.ticker}`} className="rounded px-2 py-1.5 hover:bg-muted">View holding</Link>
+        <Link href={`/stocks/${holding.ticker}`} className="rounded px-2 py-1.5 hover:bg-muted">View research</Link>
+        <GenerateReportDialog
+          ticker={holding.ticker}
+          companyName={holding.company_name}
+          label="Generate company report"
+          triggerVariant="ghost"
+          triggerSize="sm"
+          triggerClassName="h-auto justify-start px-2 py-1.5 text-xs font-normal"
+        />
         <AddTransactionDialog defaultTicker={holding.ticker} label="Add transaction" />
         <Link href="/dividends" className="rounded px-2 py-1.5 hover:bg-muted">Record dividend</Link>
         <Link href={`/stocks/${holding.ticker}`} className="rounded px-2 py-1.5 hover:bg-muted">Edit target</Link>
