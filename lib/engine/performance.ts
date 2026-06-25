@@ -1,4 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { existsSync, readFileSync } from "node:fs";
+import path from "node:path";
 import { parseAkdStatement } from "@/lib/import/akd-statement";
 import {
   analyzeLedger,
@@ -11,6 +13,23 @@ import {
   type DeploymentSummary,
   type ConcentrationSummary,
 } from "@/lib/engine/ledger-analytics";
+
+async function analyzePdfBuffer(
+  buffer: Buffer,
+  source: LedgerAnalytics["source"]
+): Promise<LedgerAnalytics | null> {
+  const { PDFParse } = await import("pdf-parse");
+  const parser = new PDFParse({ data: new Uint8Array(buffer) });
+  const result = await parser.getText();
+  await parser.destroy();
+
+  const stmt = parseAkdStatement(result.text ?? "");
+  if (!stmt) return null;
+  return analyzeLedger(stmt, {
+    includeConfirmedAdjustments: true,
+    source,
+  });
+}
 
 // Try to download the most recent committed AKD PDF from Storage and parse it.
 async function getPdfAnalytics(
@@ -38,13 +57,37 @@ async function getPdfAnalytics(
       if (error || !blob) continue;
 
       const buffer = Buffer.from(await blob.arrayBuffer());
-      const { PDFParse } = await import("pdf-parse");
-      const parser = new PDFParse({ data: new Uint8Array(buffer) });
-      const result = await parser.getText();
-      await parser.destroy();
+      const analytics = await analyzePdfBuffer(buffer, {
+        type: "akd_statement",
+        label: "Committed AKD PDF",
+        status: "complete",
+        detail: "Parsed from Supabase Storage and validated against the AKD statement controls.",
+      });
+      if (analytics) return analytics;
+    } catch {
+      continue;
+    }
+  }
+  return null;
+}
 
-      const stmt = parseAkdStatement(result.text ?? "");
-      if (stmt) return analyzeLedger(stmt);
+async function getLocalPdfAnalytics(): Promise<LedgerAnalytics | null> {
+  const candidates = [
+    process.env.AKD_LEDGER_PDF_PATH,
+    path.join(process.cwd(), "COAF5632.PDF"),
+  ].filter((p): p is string => !!p);
+
+  for (const candidate of candidates) {
+    if (!existsSync(candidate)) continue;
+    try {
+      const analytics = await analyzePdfBuffer(readFileSync(candidate), {
+        type: "local_akd_pdf",
+        label: path.basename(candidate),
+        status: "complete",
+        detail:
+          "Parsed from the local canonical AKD PDF in this workspace because no committed Supabase copy was available.",
+      });
+      if (analytics) return analytics;
     } catch {
       continue;
     }
@@ -235,6 +278,30 @@ async function getDbAnalytics(
     realizedPl,
     unrealizedPl,
     totalFriction,
+    startDate: firstTxnDate,
+    endDate: lastTxnDate,
+    externalCashFlowEvents: cashIn.length,
+    endingValue: netWorth,
+    dividendTreatment:
+      "Database fallback uses stored cash movements only; import the full AKD statement for authoritative dividend and cash-flow treatment.",
+    manualAdjustmentsUsed: [],
+    xirrStatus: xirrPct === null ? "unavailable" : "calculated",
+    xirrFailureReason:
+      xirrPct === null
+        ? "Database fallback lacks enough dated external cash flows or a full ending value."
+        : null,
+    cashflows:
+      cashIn.length >= 1 && lastTxnDate
+        ? [
+            ...cashIn.map((c) => ({
+              date: (c.movement_date as string | null) ?? lastTxnDate,
+              amount: -Number(c.amount),
+              label: "Stored cash movement",
+              source: "cash_movements",
+            })),
+            { date: lastTxnDate, amount: netWorth, label: "Ending value", source: "database" },
+          ]
+        : [],
   };
 
   // ── Friction ──────────────────────────────────────────────────────────────
@@ -260,6 +327,12 @@ async function getDbAnalytics(
         return gross >= b.min && gross < b.max;
       });
       if (!bucket.length) return null;
+      const grossTradedValue = round2(
+        bucket.reduce((s, t) => s + t.quantity * t.price, 0)
+      );
+      const totalFees = round2(
+        bucket.reduce((s, t) => s + t.commission + t.tax, 0)
+      );
       const avgGross = round2(
         bucket.reduce((s, t) => s + t.quantity * t.price, 0) / bucket.length
       );
@@ -271,9 +344,10 @@ async function getDbAnalytics(
           bucket.length) *
           100
       );
-      return { bucket: b.bucket, trades: bucket.length, avgGross, avgFeePct };
+      return { bucket: b.bucket, trades: bucket.length, grossTradedValue, avgGross, totalFees, avgFeePct };
     })
     .filter((b): b is NonNullable<typeof b> => b !== null);
+  const grossTradedValue = round2(txns.reduce((s, t) => s + t.quantity * t.price, 0));
 
   const friction: FrictionSummary = {
     commission,
@@ -282,14 +356,38 @@ async function getDbAnalytics(
     tradeFeesTotal: totalFriction,
     cgt: 0,
     accountFees: 0,
+    unknownManualTradeFees: 0,
     total: totalFriction,
     pctOfDeposits:
       totalDeposited > 0 ? round2((totalFriction / totalDeposited) * 100) : 0,
     pctOfGains: grossProfit > 0 ? round2((totalFriction / grossProfit) * 100) : null,
+    grossTradedValue,
+    averageFeePerOrder: txns.length ? round2(totalFriction / txns.length) : null,
+    feePctGrossTraded: grossTradedValue > 0 ? round2((totalFriction / grossTradedValue) * 100) : null,
     perTicker: [...perTickerMap.entries()]
       .map(([ticker, v]) => ({ ticker, fees: round2(v.fees), trades: v.trades }))
       .sort((a, b) => b.fees - a.fees),
     bySize,
+    byCategory: [
+      { category: "Commission", amount: commission, note: "Database transaction field" },
+      { category: "Tax/fees", amount: taxTotal, note: "Database transaction tax field" },
+    ],
+    highestCostOrders: txns
+      .map((t) => {
+        const gross = t.quantity * t.price;
+        const fees = t.commission + t.tax;
+        return {
+          date: t.trade_date,
+          orderNo: `${t.ticker}-${t.trade_date ?? "undated"}`,
+          side: t.type === "SELL" ? "SELL" as const : "BUY" as const,
+          tickers: t.ticker,
+          gross,
+          fees,
+          feePct: gross > 0 ? round2((fees / gross) * 100) : 0,
+        };
+      })
+      .sort((a, b) => b.fees - a.fees)
+      .slice(0, 8),
   };
 
   // ── By year ───────────────────────────────────────────────────────────────
@@ -299,11 +397,25 @@ async function getDbAnalytics(
       yearMap.set(y, {
         year: y,
         deposits: 0,
+        manualExternalAcquisitions: 0,
         buys: 0,
         sells: 0,
+        netCapitalDeployed: 0,
         realizedPl: 0,
+        dividends: 0,
+        tradingCharges: 0,
+        accountCharges: 0,
+        cgtTariffs: 0,
         friction: 0,
         tradeCount: 0,
+        buyLines: 0,
+        buyOrders: 0,
+        sellLines: 0,
+        sellOrders: 0,
+        endingNetWorth: null,
+        xirrPct: null,
+        kse100MatchedResult: null,
+        realReturnAfterInflation: null,
       });
     }
     return yearMap.get(y)!;
@@ -315,22 +427,35 @@ async function getDbAnalytics(
   for (const t of txns) {
     const y = (t.trade_date ?? "????").slice(0, 4);
     const row = ensureYear(y);
-    if (t.type === "BUY") row.buys += t.net_amount;
+    if (t.type === "BUY") {
+      row.buys += t.net_amount;
+      row.buyLines += 1;
+      row.buyOrders += 1;
+    }
     else {
       row.sells += t.net_amount;
       row.realizedPl += t.realized_pl ?? 0;
+      row.sellLines += 1;
+      row.sellOrders += 1;
     }
     row.friction += t.commission + t.tax;
+    row.tradingCharges += t.commission + t.tax;
     row.tradeCount += 1;
   }
   const byYear: YearRow[] = [...yearMap.values()]
     .map((r) => ({
       ...r,
       deposits: round2(r.deposits),
+      manualExternalAcquisitions: round2(r.manualExternalAcquisitions),
       buys: round2(r.buys),
       sells: round2(r.sells),
+      netCapitalDeployed: round2(r.buys - r.sells),
       realizedPl: round2(r.realizedPl),
+      tradingCharges: round2(r.tradingCharges),
+      accountCharges: round2(r.accountCharges),
+      cgtTariffs: round2(r.cgtTariffs),
       friction: round2(r.friction),
+      endingNetWorth: r.year === (lastTxnDate ?? "").slice(0, 4) ? netWorth : null,
     }))
     .sort((a, b) => a.year.localeCompare(b.year));
 
@@ -342,6 +467,9 @@ async function getDbAnalytics(
     buysWithin24h: 0,
     buysTotal,
     pctDeployedWithin24h: null,
+    largestIdleCashDays: null,
+    saleProceedsLeftUninvested: cashBalance > 0 ? cashBalance : 0,
+    pctCapitalCurrentlyCash: netWorth > 0 ? round2((cashBalance / netWorth) * 100) : null,
   };
   if (cashIn.length > 0) {
     const depositDates = cashIn
@@ -373,6 +501,9 @@ async function getDbAnalytics(
       buysWithin24h: within24h,
       buysTotal,
       pctDeployedWithin24h: buysTotal ? round2((within24h / buysTotal) * 100) : null,
+      largestIdleCashDays: lags.length ? Math.max(...lags) : null,
+      saleProceedsLeftUninvested: cashBalance > 0 ? cashBalance : 0,
+      pctCapitalCurrentlyCash: netWorth > 0 ? round2((cashBalance / netWorth) * 100) : null,
     };
   }
 
@@ -430,7 +561,93 @@ async function getDbAnalytics(
       : null,
   };
 
-  return { returns, costBasis, friction, byYear, deployment, concentration, sales: [] };
+  const wealthBridgeDifference = round2(
+    netWorth - (totalDeposited + realizedPl + unrealizedPl)
+  );
+
+  return {
+    source: {
+      type: "database_fallback",
+      label: "Database fallback",
+      status: "incomplete",
+      detail:
+        "Full AKD statement was not available, so this uses stored transactions, holdings and cash movements. Reconciliation counts may be incomplete.",
+    },
+    returns,
+    costBasis,
+    friction,
+    byYear,
+    deployment,
+    concentration,
+    sales: [],
+    normalizedEvents: [],
+    positionBuild: costBasis.map((row) => ({
+      ticker: row.ticker,
+      firstAcquisitionDate: null,
+      latestAcquisitionDate: null,
+      purchaseCount: 0,
+      totalQuantityAcquired: row.quantity,
+      quantitySold: 0,
+      corporateActionQuantity: 0,
+      currentQuantity: row.quantity,
+      lowestPurchasePrice: null,
+      highestPurchasePrice: null,
+      weightedAverageCost: row.avgCost,
+      currentPrice: row.currentPrice,
+      averageHoldingAgeDays: null,
+      amountInvested: row.totalInvested,
+      currentValue: row.marketValue,
+      unrealizedPl: row.unrealizedPl,
+    })),
+    quantityReconciliation: [],
+    checkpoints: {
+      externalBrokerDepositsImported: cashIn.length,
+      brokerBuyLinesImported: buys.length,
+      brokerBuyOrdersImported: buys.length,
+      brokerSellLinesImported: sells.length,
+      brokerSellOrdersImported: sells.length,
+      manualPurchasesApplied: 0,
+      ipoAcquisitionsApplied: 0,
+      stockSplitsApplied: 0,
+      mergerConversionsApplied: 0,
+      currentHoldingsReconciled: 0,
+      unexplainedQuantityDifferences: 0,
+      expectedTotalQuantity: holdings.reduce((s, h) => s + h.quantity, 0),
+      tradingFeesExtracted: totalFriction,
+      accountChargesExtracted: 0,
+      cgtEntriesExtracted: 0,
+      dividendRecordsLinked: 0,
+      unknownTransactionFeeFields: 0,
+      xirrCashFlowCount: returns.cashflows.length,
+      wealthBridgeDifference,
+    },
+    wealthBridge: [
+      { label: "External capital contributed", value: totalDeposited, kind: "start", includedInReconciliation: true, note: "Stored cash movements or DB fallback estimate" },
+      { label: "Realised trading P/L", value: realizedPl, kind: realizedPl >= 0 ? "increase" : "decrease", includedInReconciliation: true, note: "Stored realised P/L" },
+      { label: "Unrealised P/L", value: unrealizedPl, kind: unrealizedPl >= 0 ? "increase" : "decrease", includedInReconciliation: true, note: "Current holdings less cost basis" },
+      { label: "Current net worth", value: netWorth, kind: "end", includedInReconciliation: true, note: "DB market value plus DB cash" },
+    ],
+    timeline: [],
+    benchmarkStatus: {
+      kse100: {
+        available: false,
+        reason: "No KSE-100 total-return index history table is present in this project.",
+        methodology:
+          "Each external contribution must be matched to the same-date KSE-100 total-return index level and carried to the ending date.",
+      },
+      inflation: {
+        available: false,
+        reason: "No Pakistan National CPI or Urban CPI time series is stored in this project.",
+        methodology:
+          "Each contribution must be inflated from its contribution-date CPI value to the current CPI value, then summed.",
+      },
+      drawdown: {
+        available: false,
+        reason:
+          "Drawdown analysis requires a complete historical portfolio-value series.",
+      },
+    },
+  };
 }
 
 /**
@@ -446,5 +663,7 @@ export async function getPerformanceAnalytics(
 ): Promise<LedgerAnalytics | null> {
   const pdf = await getPdfAnalytics(supabase, userId);
   if (pdf) return pdf;
+  const localPdf = await getLocalPdfAnalytics();
+  if (localPdf) return localPdf;
   return getDbAnalytics(supabase, userId);
 }
