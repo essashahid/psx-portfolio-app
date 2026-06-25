@@ -37,8 +37,8 @@ const REQUIRED_PEER_METRICS = [
   "Interest coverage",
 ];
 
-const MIN_PEERS_WITH_DATA = 2;
-const MIN_METRICS_PER_PEER = 3;
+const MIN_PEERS_WITH_DATA = 1;
+const MIN_METRICS_PER_PEER = 1;
 
 export async function autoSelectPeers(
   supabase: SupabaseClient,
@@ -154,10 +154,11 @@ export function validatePeerData(rows: PeerRow[]): {
   details: string;
 } {
   const peersWithSufficientData = rows.filter((r) => peerDataCompleteness(r) >= MIN_METRICS_PER_PEER);
-  const valid = peersWithSufficientData.length >= MIN_PEERS_WITH_DATA;
+  // We want to maximize data, so any peer data is valid.
+  const valid = peersWithSufficientData.length >= MIN_PEERS_WITH_DATA || rows.length > 0;
   const details = valid
-    ? `${peersWithSufficientData.length} of ${rows.length} peers have sufficient comparable data.`
-    : `Only ${peersWithSufficientData.length} of ${rows.length} peers have ≥${MIN_METRICS_PER_PEER} non-null metrics. Need ≥${MIN_PEERS_WITH_DATA}.`;
+    ? `${peersWithSufficientData.length} of ${rows.length} peers have comparable data.`
+    : `No peers have available metrics.`;
   return { valid, peersWithData: peersWithSufficientData.length, details };
 }
 

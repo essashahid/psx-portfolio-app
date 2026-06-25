@@ -34,7 +34,7 @@ export async function chatMarkdown(
   systemExtra: string,
   userPrompt: string,
   maxTokens = 1800,
-): Promise<{ content: string; model: string }> {
+): Promise<{ content: string; model: string; usage: { prompt_tokens: number; completion_tokens: number; total_tokens: number } }> {
   return taskText(`${GUARDRAILS}\n\n${systemExtra}`, userPrompt, maxTokens);
 }
 
@@ -42,7 +42,7 @@ export async function chatJson<T>(
   systemExtra: string,
   userPrompt: string,
   maxTokens = 2500,
-): Promise<{ data: T; model: string }> {
+): Promise<{ data: T; model: string; usage: { prompt_tokens: number; completion_tokens: number; total_tokens: number } }> {
   return taskJson<T>(`${GUARDRAILS}\n\n${systemExtra}`, userPrompt, maxTokens);
 }
 

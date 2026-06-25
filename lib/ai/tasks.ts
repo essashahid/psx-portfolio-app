@@ -40,7 +40,13 @@ interface ChatMessage {
   content: string;
 }
 
-async function complete(messages: ChatMessage[], opts: { maxTokens: number; json: boolean; temperature: number }): Promise<string> {
+interface TokenUsage {
+  prompt_tokens: number;
+  completion_tokens: number;
+  total_tokens: number;
+}
+
+async function complete(messages: ChatMessage[], opts: { maxTokens: number; json: boolean; temperature: number }): Promise<{ content: string; usage: TokenUsage }> {
   if (tasksDisabled()) throw new Error("Tasks AI is disabled (TASKS_DISABLED=true).");
   const key = tasksKey();
   if (!key) throw new Error("No tasks API key (set TASKS_API_KEY or DEEP_SEEK_API_KEY).");
@@ -63,14 +69,14 @@ async function complete(messages: ChatMessage[], opts: { maxTokens: number; json
     const detail = await res.text().catch(() => "");
     throw new Error(`Tasks provider HTTP ${res.status}: ${detail.slice(0, 200)}`);
   }
-  const data = (await res.json()) as { choices?: { message?: { content?: string }; finish_reason?: string }[] };
+  const data = (await res.json()) as { choices?: { message?: { content?: string }; finish_reason?: string }[]; usage?: TokenUsage };
   const choice = data.choices?.[0];
   const content = choice?.message?.content?.trim();
   if (choice?.finish_reason === "length") {
     throw new Error(`Tasks response hit the ${opts.maxTokens}-token limit before completing — raise maxTokens.`);
   }
   if (!content) throw new Error("Tasks provider returned an empty response.");
-  return content;
+  return { content, usage: data.usage ?? { prompt_tokens: 0, completion_tokens: 0, total_tokens: 0 } };
 }
 
 /** Strip ```json fences a model may wrap JSON in, then parse. */
@@ -79,15 +85,15 @@ function parseJson<T>(raw: string): T {
   return JSON.parse(cleaned) as T;
 }
 
-export async function taskText(system: string, user: string, maxTokens = 1800): Promise<{ content: string; model: string }> {
-  const content = await complete([{ role: "system", content: system }, { role: "user", content: user }], { maxTokens, json: false, temperature: 0.4 });
-  return { content, model: tasksModel() };
+export async function taskText(system: string, user: string, maxTokens = 1800): Promise<{ content: string; model: string; usage: TokenUsage }> {
+  const { content, usage } = await complete([{ role: "system", content: system }, { role: "user", content: user }], { maxTokens, json: false, temperature: 0.4 });
+  return { content, model: tasksModel(), usage };
 }
 
-export async function taskJson<T>(system: string, user: string, maxTokens = 4000): Promise<{ data: T; model: string }> {
-  const content = await complete(
+export async function taskJson<T>(system: string, user: string, maxTokens = 4000): Promise<{ data: T; model: string; usage: TokenUsage }> {
+  const { content, usage } = await complete(
     [{ role: "system", content: `${system}\n\nRespond with a single valid JSON object only — no prose, no code fences.` }, { role: "user", content: user }],
     { maxTokens, json: true, temperature: 0.2 }
   );
-  return { data: parseJson<T>(content), model: tasksModel() };
+  return { data: parseJson<T>(content), model: tasksModel(), usage };
 }
