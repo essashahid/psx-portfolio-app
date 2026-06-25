@@ -1,6 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { fetchPsxSymbols } from "@/lib/market-data/psx-dps";
+import { hasCompleteIdentity, resolveCompanyIdentity } from "@/lib/company/identity";
 import { freshnessFor, isStaleOrMissing, TTL_MINUTES } from "@/lib/company/freshness";
 import type { CompanyMetadata, Freshness } from "@/lib/company/types";
 
@@ -51,10 +51,10 @@ function toMetadata(ticker: string, row: MetadataRow | null, freshness: Freshnes
 
 /**
  * Company profile, served cache-first. On a cache miss/stale row it backfills
- * cheap fields (name, sector, face value) from stock_master and — only when
- * those are still blank — the official PSX symbol directory, then caches the
- * result. The expensive AI description is generated separately, on demand,
- * via refreshCompanyDescription so the page shell never waits on it.
+ * cheap fields (name, sector, face value) from stock_universe, stock_master,
+ * and the official PSX symbol directory, then caches the result. The expensive
+ * AI description is generated separately, on demand, via refreshCompanyDescription
+ * so the page shell never waits on it.
  */
 export async function getCompanyMetadata(
   supabase: SupabaseClient,
@@ -68,19 +68,40 @@ export async function getCompanyMetadata(
     .maybeSingle();
 
   const freshness = freshnessFor(cached?.last_fetched_at ?? null, TTL_MINUTES.metadata);
-  if (cached && !isStaleOrMissing(freshness)) {
-    return toMetadata(t, cached as MetadataRow, freshness);
+  const cachedRow = cached as MetadataRow | null;
+  if (
+    cachedRow &&
+    !isStaleOrMissing(freshness) &&
+    hasCompleteIdentity(cachedRow.company_name, cachedRow.sector)
+  ) {
+    return toMetadata(t, cachedRow, freshness);
   }
 
   // Refresh cheap fields. Never throw — a flaky upstream must not break the page.
   try {
-    const fresh = await buildBaseMetadata(supabase, t, cached as MetadataRow | null);
-    if (fresh) return fresh;
+    const fresh = await buildBaseMetadata(supabase, t, cachedRow);
+    if (fresh?.companyName) return fresh;
+  } catch {
+    /* fall through */
+  }
+
+  try {
+    const identity = await resolveCompanyIdentity(supabase, t);
+    if (hasCompleteIdentity(identity.companyName, identity.sector)) {
+      const merged = {
+        ...(cachedRow ?? { ticker: t }),
+        ticker: t,
+        company_name: identity.companyName,
+        sector: identity.sector,
+        source: identity.source ?? cachedRow?.source ?? null,
+      } as MetadataRow;
+      return toMetadata(t, merged, "fresh");
+    }
   } catch {
     /* fall through to whatever we already had */
   }
 
-  return toMetadata(t, (cached as MetadataRow) ?? null, cached ? "stale" : "missing");
+  return toMetadata(t, cachedRow ?? null, cached ? "stale" : "missing");
 }
 
 async function buildBaseMetadata(
@@ -88,33 +109,21 @@ async function buildBaseMetadata(
   ticker: string,
   existing: MetadataRow | null
 ): Promise<CompanyMetadata | null> {
-  let companyName = existing?.company_name ?? null;
-  let sector = existing?.sector ?? null;
   let faceValue = existing?.face_value ?? null;
-  let source = existing?.source ?? null;
 
   const { data: master } = await supabase
     .from("stock_master")
-    .select("company_name, sector, face_value")
+    .select("face_value")
     .eq("ticker", ticker)
     .maybeSingle();
-  if (master) {
-    companyName = companyName ?? master.company_name ?? null;
-    sector = sector ?? master.sector ?? null;
-    faceValue = faceValue ?? master.face_value ?? null;
-    source = source ?? "stock-master";
+  if (master?.face_value != null) {
+    faceValue = faceValue ?? master.face_value;
   }
 
-  // Only pay for the directory request when we still lack the basics.
-  if (!companyName || !sector) {
-    const directory = await fetchPsxSymbols();
-    const official = directory.get(ticker);
-    if (official) {
-      companyName = companyName ?? official.name;
-      sector = sector ?? (official.sector || null);
-      source = "psx-directory";
-    }
-  }
+  const identity = await resolveCompanyIdentity(supabase, ticker);
+  const companyName = existing?.company_name?.trim() ? existing.company_name : identity.companyName;
+  const sector = existing?.sector?.trim() ? existing.sector : identity.sector;
+  const source = identity.source ?? existing?.source ?? null;
 
   const row: Partial<MetadataRow> = {
     ticker,
@@ -131,7 +140,8 @@ async function buildBaseMetadata(
   };
 
   await cacheMetadata(row);
-  return toMetadata(ticker, { ...(existing ?? {}), ...row } as MetadataRow, companyName ? "fresh" : "partial");
+  const freshness: Freshness = hasCompleteIdentity(companyName, sector) ? "fresh" : "partial";
+  return toMetadata(ticker, { ...(existing ?? {}), ...row } as MetadataRow, freshness);
 }
 
 async function cacheMetadata(row: Partial<MetadataRow>): Promise<void> {
