@@ -475,7 +475,7 @@ function addPageNumbers(doc: Doc, contentPages: Set<number>) {
     if (!contentPages.has(i)) continue;
     pageNum++;
     doc.switchToPage(i);
-    doc.fillColor(COLORS.muted).fontSize(8).text(`Page ${pageNum} of ${total}`, 470, 810, { width: 80, align: "right" });
+    doc.fillColor(COLORS.muted).fontSize(8).text(`Page ${pageNum} of ${total}`, 470, 810, { width: 80, align: "right", lineBreak: false });
   }
 }
 
