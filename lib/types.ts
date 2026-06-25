@@ -36,7 +36,8 @@ export type BriefingType =
   | "news_brief"
   | "dividend_review"
   | "journal_analysis"
-  | "stock_review";
+  | "stock_review"
+  | "company_report";
 
 export type ExperienceLevel = "beginner" | "intermediate" | "advanced";
 export type RiskProfile = "conservative" | "balanced" | "aggressive";

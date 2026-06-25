@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { Search, Loader2, Star, Briefcase, Clock } from "lucide-react";
+import { GenerateReportDialog } from "@/components/stock/generate-report-dialog";
 import { cn, formatNumber, formatSignedPct } from "@/lib/utils";
 
 interface Result {
@@ -187,6 +188,14 @@ export function StockSearch({ autoFocus = false }: { autoFocus?: boolean }) {
                     )}
                   </div>
                 )}
+                <GenerateReportDialog
+                  ticker={r.ticker}
+                  companyName={r.companyName}
+                  label="Report"
+                  triggerVariant="ghost"
+                  triggerSize="sm"
+                  triggerClassName="h-8 shrink-0 px-2 text-[11px]"
+                />
               </button>
             ))}
         </div>

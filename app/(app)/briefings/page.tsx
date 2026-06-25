@@ -28,6 +28,7 @@ const TYPE_BADGE: Record<string, string> = {
   thesis_review: "Thesis",
   journal_analysis: "Journal",
   stock_review: "Stock",
+  company_report: "Company report",
 };
 
 export default async function BriefingsPage({
@@ -54,8 +55,11 @@ export default async function BriefingsPage({
       <PageHeader
         eyebrow="Intelligence"
         title="AI Briefings"
-        description="Generated from your actual portfolio, news and journal. Stored permanently, never financial advice."
+        description="Generated from your actual portfolio, news and journal. Company reports live in Saved Reports."
       />
+      <p className="text-xs text-muted-foreground">
+        <a href="/research" className="font-medium text-primary hover:underline">Open Saved Reports library →</a>
+      </p>
 
       <Card>
         <CardHeader>

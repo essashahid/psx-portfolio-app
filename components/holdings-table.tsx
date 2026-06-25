@@ -235,7 +235,7 @@ function HoldingActionMenu({ holding }: { holding: EnrichedHolding }) {
         <MoreHorizontal className="h-4 w-4" />
       </summary>
       <div className="absolute right-0 z-20 mt-1 flex w-48 flex-col gap-1 rounded-md border border-border bg-card p-1.5 text-xs shadow-[var(--shadow-card)]">
-        <Link href={`/stocks/${holding.ticker}`} className="rounded px-2 py-1.5 hover:bg-muted">View research</Link>
+        <Link href={`/stocks/${holding.ticker}`} className="rounded px-2 py-1.5 hover:bg-muted">View company research</Link>
         <GenerateReportDialog
           ticker={holding.ticker}
           companyName={holding.company_name}

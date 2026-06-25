@@ -104,6 +104,22 @@ export const CHAT_TOOLS: Anthropic.Tool[] = [
     description: "Search the web for recent news / context NOT in the internal PSX data — e.g. WHY a stock or sector moved, macro events (IMF, policy rate, inflation, PKR), management/industry news. Returns recent articles with URLs. Prefer credible Pakistani business sources, and always cite the URLs you use. Use only when internal tools can't answer.",
     input_schema: { type: "object", properties: { query: { type: "string", description: "Search query — include the company/sector and 'Pakistan' for relevance" }, days: { type: "number", description: "How many days back to search (default 14)" } }, required: ["query"] },
   },
+  {
+    name: "list_company_reports",
+    description: "List saved equity-research company reports for a ticker or across the portfolio.",
+    input_schema: { type: "object", properties: { ticker: { type: "string", description: "Optional PSX ticker filter" } } },
+  },
+  {
+    name: "get_company_report",
+    description: "Fetch a saved company research report summary (executive summary, version, link).",
+    input_schema: {
+      type: "object",
+      properties: {
+        ticker: { type: "string" },
+        report_id: { type: "string", description: "Specific saved report id" },
+      },
+    },
+  },
 ];
 
 /** Execute one tool call and return a compact JSON-able result. */
@@ -227,6 +243,63 @@ export async function executeTool(
       } catch (e) {
         return { error: e instanceof Error ? e.message : "search failed" };
       }
+    }
+    case "list_company_reports": {
+      let q = db.from("ai_briefings")
+        .select("id, ticker, title, created_at, meta")
+        .eq("user_id", userId)
+        .eq("briefing_type", "company_report")
+        .order("created_at", { ascending: false })
+        .limit(10);
+      if (typeof input.ticker === "string" && input.ticker.trim()) {
+        q = q.eq("ticker", input.ticker.toUpperCase().trim());
+      }
+      const { data } = await q;
+      return {
+        reports: (data ?? []).map((r) => ({
+          id: r.id,
+          ticker: r.ticker,
+          title: r.title,
+          version: (r.meta as { reportVersion?: number })?.reportVersion ?? 1,
+          createdAt: r.created_at,
+        })),
+      };
+    }
+    case "get_company_report": {
+      const reportId = typeof input.report_id === "string" ? input.report_id : null;
+      const ticker = typeof input.ticker === "string" ? input.ticker.toUpperCase().trim() : null;
+      let row;
+      if (reportId) {
+        const { data } = await db.from("ai_briefings").select("id, ticker, title, meta, created_at").eq("id", reportId).eq("user_id", userId).maybeSingle();
+        row = data;
+      } else if (ticker) {
+        const { data } = await db
+          .from("ai_briefings")
+          .select("id, ticker, title, meta, created_at")
+          .eq("user_id", userId)
+          .eq("ticker", ticker)
+          .eq("briefing_type", "company_report")
+          .order("created_at", { ascending: false })
+          .limit(1)
+          .maybeSingle();
+        row = data;
+      } else {
+        return { error: "ticker or report_id required" };
+      }
+      if (!row) return { error: "no report found" };
+      const payload = (row.meta as { reportPayload?: Record<string, unknown> })?.reportPayload;
+      const company = payload?.evidence as { company?: { companyName?: string; sector?: string } } | undefined;
+      return {
+        id: row.id,
+        ticker: row.ticker,
+        title: row.title,
+        version: (row.meta as { reportVersion?: number })?.reportVersion ?? 1,
+        createdAt: row.created_at,
+        companyName: company?.company?.companyName,
+        sector: company?.company?.sector,
+        executiveSummary: (payload as { narrative?: { executiveSummary?: unknown[] } })?.narrative?.executiveSummary?.slice(0, 4),
+        link: `/research?id=${row.id}`,
+      };
     }
     default:
       return { error: `unknown tool ${name}` };
