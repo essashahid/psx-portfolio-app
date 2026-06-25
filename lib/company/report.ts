@@ -21,6 +21,7 @@ import {
   toChartSeries,
 } from "./report/financials";
 import { buildReportMarkdown, normalizeNarrative } from "./report/markdown";
+import { enrichNarrativeFromEvidence } from "./report/narrative-fallbacks";
 import {
   buildCompanyContext,
   filterAndDedupeNews,
@@ -424,9 +425,20 @@ export async function generateCompanyReport(
     : [];
 
   const title = `${options.depth === "full" ? "Full Equity Research Report" : "Investment Brief"} — ${symbol}`;
-  const { narrative, model } = await stage("narrative", "Writing sourced interpretation", () =>
+  const aiResult = await stage("narrative", "Writing sourced interpretation", () =>
     generateAiNarrative(symbol, evidence, options)
-  ) ?? { narrative: emptyNarrative(), model: "none" };
+  );
+  const narrative = enrichNarrativeFromEvidence(
+    aiResult?.narrative ?? emptyNarrative(),
+    options,
+    {
+      portfolioSlice,
+      financialPoints: normalizedFin.all,
+      displayUnit: normalizedFin.displayUnit,
+      sources: sourceRegister,
+    }
+  );
+  const model = aiResult?.model ?? "none";
 
   const dataTimestamps = {
     marketPrice: quote?.last_fetched_at ?? quote?.as_of ?? null,
@@ -672,6 +684,9 @@ async function generateAiNarrative(
     [
       `Ticker: ${symbol}`,
       `Depth: ${options.depth}; period: ${options.periodYears} years.`,
+      `Sections to populate (only these): ${JSON.stringify(options.include)}`,
+      "When portfolio.held is true in evidence, portfolio must contain at least two cited insights.",
+      "When financials array is non-empty, financialPerformance must contain at least two cited insights.",
       "Return exactly this JSON shape:",
       `{"businessOverview":[],"executiveSummary":[],"financialPerformance":[],"financialQuality":[],"valuation":[],"dividends":[],"pricePerformance":[],"catalysts":[],"risks":[],"recentDevelopments":[],"portfolio":[],"monitoring":[],"dataGaps":[]}`,
       "Populate sections requested in options.include only. Keep each text under 36 words.",

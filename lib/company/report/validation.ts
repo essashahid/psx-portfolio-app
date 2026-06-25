@@ -45,7 +45,12 @@ export function validateCompanyResolution(
 
 const MODULE_SECTION_MAP: Record<string, (payload: CompanyReportPayload) => boolean> = {
   businessOverview: (p) => p.narrative.businessOverview.length > 0 || hasEvidence(p, "company"),
-  financials: (p) => p.charts.financialsAnnual.length > 0 || p.narrative.financialPerformance.length > 0,
+  financials: (p) =>
+    p.charts.financialsAnnual.length > 0 ||
+    p.charts.financialsQuarterly.length > 0 ||
+    p.charts.financialsCumulative.length > 0 ||
+    p.narrative.financialPerformance.length > 0 ||
+    hasEvidenceArray(p, "financials"),
   financialQuality: (p) => p.narrative.financialQuality.length > 0,
   valuation: (p) => p.narrative.valuation.length > 0 || p.charts.valuation.some((v) => v.value !== null),
   dividends: (p) => p.charts.dividends.length > 0 || p.narrative.dividends.length > 0,
@@ -56,10 +61,10 @@ const MODULE_SECTION_MAP: Record<string, (payload: CompanyReportPayload) => bool
   catalystsRisks: (p) => p.narrative.catalysts.length > 0 && p.narrative.risks.length > 0,
   scenarioAnalysis: (p) => p.scenarios.length >= 3,
   portfolio: (p) => {
-    const portfolio = p.evidence.portfolio as { held?: boolean } | undefined;
+    const portfolio = p.evidence.portfolio as { held?: boolean; quantity?: number } | undefined;
     if (!portfolio) return false;
     if (portfolio.held === false) return true;
-    return p.narrative.portfolio.length > 0 || portfolio.held === true;
+    return p.narrative.portfolio.length > 0 || portfolio.quantity != null;
   },
   monitoring: (p) => p.narrative.monitoring.length > 0,
 };
@@ -106,8 +111,13 @@ export function validateReportBeforePublish(
     criticalFailures.push("Peer comparison selected but peer data not delivered.");
   }
 
-  const portfolio = payload.evidence.portfolio as { held?: boolean } | undefined;
-  if (options.include.portfolio && portfolio?.held && payload.narrative.portfolio.length === 0) {
+  const portfolio = payload.evidence.portfolio as { held?: boolean; quantity?: number } | undefined;
+  if (
+    options.include.portfolio &&
+    portfolio?.held &&
+    payload.narrative.portfolio.length === 0 &&
+    portfolio.quantity == null
+  ) {
     criticalFailures.push("Portfolio position selected but portfolio section is empty.");
   }
 

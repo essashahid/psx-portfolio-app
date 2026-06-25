@@ -47,6 +47,7 @@ const sampleFinancials = [
 const normalized = normalizeFinancialRows(sampleFinancials as never, 2020);
 assert("Financial units explicit", normalized.displayUnit === "PKR million");
 assert("Quarterly separated from cumulative", normalized.quarterly.length >= 1 && normalized.cumulative.length >= 1);
+assert("FY annual periods in annual bucket", normalized.annual.some((p) => p.fiscalPeriod === "FY"));
 assert("Missing PAT not rendered as zero", normalized.quarterly.some((p) => p.fiscalPeriod === "Q3" && p.profitAfterTax === null));
 
 // News relevance

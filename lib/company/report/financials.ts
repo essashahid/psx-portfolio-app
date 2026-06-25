@@ -13,15 +13,15 @@ interface RawFinancialRow {
   data: Record<string, number | string | null>;
 }
 
-const CUMULATIVE_PERIODS = new Set(["H1", "9M", "FY", "HALF", "NINE_MONTHS", "FULL_YEAR"]);
+const CUMULATIVE_PERIODS = new Set(["H1", "9M", "HALF", "NINE_MONTHS"]);
 const QUARTERLY_PERIODS = new Set(["Q1", "Q2", "Q3", "Q4"]);
+const ANNUAL_PERIODS = new Set(["FY", "FULL_YEAR", "ANNUAL"]);
 
 function periodKind(fiscalPeriod: string | null, periodType: string): NormalizedFinancialPoint["periodKind"] {
   const p = (fiscalPeriod ?? periodType).toUpperCase().replace(/\s+/g, "");
-  if (QUARTERLY_PERIODS.has(p)) return "quarterly";
+  if (periodType === "annual" || ANNUAL_PERIODS.has(p)) return "annual";
+  if (QUARTERLY_PERIODS.has(p) || /^Q[1-4]$/.test(p)) return "quarterly";
   if (CUMULATIVE_PERIODS.has(p) || p.includes("9M") || p.includes("H1")) return "cumulative";
-  if (p === "ANNUAL" || periodType === "annual") return "annual";
-  if (/^Q[1-4]$/.test(p)) return "quarterly";
   return "annual";
 }
 
