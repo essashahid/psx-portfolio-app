@@ -16,6 +16,7 @@ export interface ReportIncludeOptions {
   scenarioAnalysis: boolean;
   portfolio: boolean;
   monitoring: boolean;
+  references: boolean;
 }
 
 export interface ReportOutputOptions {
@@ -177,6 +178,7 @@ export interface CompanyReportPayload {
   sources: ReportSource[];
   validation: ReportValidationResult;
   dataTimestamps: Record<string, string | null>;
+  estimatedCost?: { prompt: number; completion: number; totalUsd: number };
 }
 
 export const DEFAULT_INCLUDE: ReportIncludeOptions = {
@@ -193,6 +195,7 @@ export const DEFAULT_INCLUDE: ReportIncludeOptions = {
   scenarioAnalysis: true,
   portfolio: true,
   monitoring: true,
+  references: true,
 };
 
 export const BRIEF_INCLUDE: ReportIncludeOptions = {
@@ -209,6 +212,7 @@ export const BRIEF_INCLUDE: ReportIncludeOptions = {
   scenarioAnalysis: false,
   portfolio: true,
   monitoring: false,
+  references: false,
 };
 
 export const DEFAULT_OUTPUT: ReportOutputOptions = {

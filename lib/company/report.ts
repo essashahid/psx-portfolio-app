@@ -476,6 +476,14 @@ export async function generateCompanyReport(
     previousForDiff = parentMeta?.reportPayload ?? previousForDiff;
   }
 
+  const estimatedCost = aiResult?.usage
+    ? {
+        prompt: aiResult.usage.prompt_tokens,
+        completion: aiResult.usage.completion_tokens,
+        totalUsd: (aiResult.usage.prompt_tokens / 1_000_000) * 0.15 + (aiResult.usage.completion_tokens / 1_000_000) * 0.6,
+      }
+    : undefined;
+
   const payload: CompanyReportPayload = {
     generatedAt: evidence.generatedAt,
     reportVersion,
@@ -523,6 +531,7 @@ export async function generateCompanyReport(
       validation: { passed: true, criticalFailures: [], warnings: [], moduleChecks: [] },
       dataTimestamps,
     }),
+    estimatedCost,
   };
 
   payload.validation = validateReportBeforePublish(payload, options, dataTimestamps.marketPrice);
@@ -702,8 +711,8 @@ async function generateAiNarrative(
   symbol: string,
   evidence: unknown,
   options: CompanyReportOptions
-): Promise<{ narrative: AiReportNarrative; model: string }> {
-  const { data, model } = await chatJson<AiReportNarrative>(
+): Promise<{ narrative: AiReportNarrative; model: string; usage: { prompt_tokens: number; completion_tokens: number; total_tokens: number } }> {
+  const { data, model, usage } = await chatJson<AiReportNarrative>(
     REPORT_SYSTEM_PROMPT,
     [
       `Ticker: ${symbol}`,
@@ -711,16 +720,16 @@ async function generateAiNarrative(
       `Sections to populate (only these): ${JSON.stringify(options.include)}`,
       "",
       "MINIMUM REQUIREMENTS:",
-      "- executiveSummary: At least 3 insights covering business, financials, and outlook.",
-      "- businessOverview: At least 2 insights about the company's operations and sector position.",
-      "- financialPerformance: At least 2 insights citing specific financial figures.",
+      "- executiveSummary: At least 3 detailed insights covering business, financials, and outlook.",
+      "- businessOverview: At least 2 detailed insights about the company's operations and sector position.",
+      "- financialPerformance: At least 2 extensive insights citing specific financial figures and margins.",
       "- catalysts: At least 2 company-specific positive factors with evidence.",
       "- risks: At least 2 company-specific risk factors with evidence.",
-      "- recentDevelopments: At least 1 insight about recent filings or news.",
+      "- recentDevelopments: At least 2 detailed insights about recent filings or news.",
       "- portfolio: When portfolio.held is true, at least 2 insights about the position.",
       "- dataGaps: At least 1 insight about data limitations.",
       "",
-      "Each insight should be a substantive sentence (40-80 words). Do NOT use placeholder text.",
+      "CRITICAL RULE: Provide comprehensive, highly detailed, and exhaustive insights. Do NOT limit your word count. Maximize the utility of all available data. Elaborate on trends, ratios, news, and filings to give maximum professional context. Do NOT use placeholder text.",
       "",
       "Return exactly this JSON shape (each value is an array of {text: string, citations: string[]}):",
       `{"businessOverview":[],"executiveSummary":[],"financialPerformance":[],"financialQuality":[],"valuation":[],"dividends":[],"pricePerformance":[],"catalysts":[],"risks":[],"recentDevelopments":[],"portfolio":[],"monitoring":[],"dataGaps":[]}`,
@@ -728,10 +737,10 @@ async function generateAiNarrative(
       "Structured evidence:",
       JSON.stringify(compactEvidenceForAi(evidence), null, 2),
     ].join("\n"),
-    options.depth === "full" ? 4500 : 2200
+    options.depth === "full" ? 8000 : 4000
   );
 
-  return { narrative: normalizeNarrative(data), model };
+  return { narrative: normalizeNarrative(data), model, usage };
 }
 
 function emptyNarrative(): AiReportNarrative {

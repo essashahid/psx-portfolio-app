@@ -102,7 +102,7 @@ export function buildSectionPrompt(
   const base = `Regenerate only the "${sectionKey}" section for ${ticker}.
 ${sectorGuide}
 Use only the structured evidence provided. Cite source IDs. Do NOT invent data.
-Each insight must be 40-80 words, company-specific, and substantive.`;
+Each insight must be highly detailed, exhaustive, company-specific, and substantive. Do NOT limit your word count.`;
 
   switch (sectionKey) {
     case "financials":

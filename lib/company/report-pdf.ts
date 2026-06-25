@@ -23,7 +23,6 @@ export async function renderCompanyReportPdf(payload: CompanyReportPayload): Pro
   const chunks: Buffer[] = [];
   doc.on("data", (chunk) => chunks.push(Buffer.from(chunk)));
 
-  // Track which pages have real content
   const contentPages = new Set<number>();
   let currentPageIndex = 0;
 
@@ -37,6 +36,16 @@ export async function renderCompanyReportPdf(payload: CompanyReportPayload): Pro
     markPage();
   }
 
+  const cursor = { y: PAGE_BOTTOM + 100 }; // Force new page on first check
+
+  function checkSpace(needed: number, title: string) {
+    if (cursor.y + needed > PAGE_BOTTOM - 30) {
+      addContentPage();
+      pageHeader(doc, payload, title);
+      cursor.y = 78;
+    }
+  }
+
   return new Promise((resolve, reject) => {
     doc.on("end", () => resolve(Buffer.concat(chunks)));
     doc.on("error", reject);
@@ -45,57 +54,58 @@ export async function renderCompanyReportPdf(payload: CompanyReportPayload): Pro
     markPage();
     cover(doc, payload);
 
-    // Snapshot page
-    addContentPage();
-    snapshot(doc, payload);
+    // Snapshot
+    checkSpace(600, "Evidence Snapshot");
+    snapshot(doc, payload, cursor, checkSpace);
 
-    // Charts page — only if we have data
+    // Charts
     if (payload.charts.price.length > 0 || payload.charts.financialsAnnual.length > 0) {
-      addContentPage();
-      chartsPage(doc, payload);
+      chartsSection(doc, payload, cursor, checkSpace);
     }
 
-    // Tables page — only if we have data
+    // Tables
     if (payload.charts.financialsAnnual.length > 0 || payload.charts.financialsQuarterly.length > 0 || payload.charts.dividends.length > 0) {
-      addContentPage();
-      tablesPage(doc, payload);
+      tablesSection(doc, payload, cursor, checkSpace);
     }
 
-    // Filings and news page — only if we have content
+    // Filings & News
     const officialFilings = (payload.evidence.officialFilings as { date: string | null; title: string; category: string }[]) ?? [];
     const independentNews = (payload.evidence.independentNews as { publishedAt: string | null; title: string; source: string | null }[]) ?? [];
     if (officialFilings.length > 0 || independentNews.length > 0) {
-      addContentPage();
-      filingsAndNewsPage(doc, payload, officialFilings, independentNews);
+      filingsAndNewsSection(doc, payload, officialFilings, independentNews, cursor, checkSpace);
     }
 
-    // Scenario analysis page — only if we have scenarios
+    // Scenarios
     if (payload.options.include.scenarioAnalysis && payload.scenarios.length >= 3) {
-      addContentPage();
-      scenarioPage(doc, payload);
+      scenarioSection(doc, payload, cursor, checkSpace);
     }
 
-    // Peers page — only if we have peer data
+    // Peers
     const peers = (payload.evidence.peers as { ticker: string; companyName?: string | null; selectionReason?: string; quote?: { price?: number | null } | null }[]) ?? [];
     if (payload.options.include.peers && peers.length > 0) {
-      addContentPage();
-      peersPage(doc, payload);
+      peersSection(doc, payload, cursor, checkSpace);
     }
 
-    // Portfolio page — only if held
+    // Portfolio
     const portfolio = payload.evidence.portfolio as { held?: boolean } | undefined;
     if (payload.options.include.portfolio && portfolio?.held) {
-      addContentPage();
-      portfolioPage(doc, payload);
+      portfolioSection(doc, payload, cursor, checkSpace);
     }
 
-    // Sources page
-    addContentPage();
-    sourcesPage(doc, payload);
+    // Sources
+    if (payload.options.include.references !== false) {
+      sourcesSection(doc, payload, cursor, checkSpace);
+    } else {
+      // Just print disclaimer if sources are skipped
+      checkSpace(50, "Disclaimer");
+      doc.fillColor(COLORS.muted).fontSize(8).text(
+        "Disclaimer: This report is for informational purposes only and is not investment advice. All financial values and calculations are sourced from official filings and verified market data.",
+        36, cursor.y + 10, { width: 505 }
+      );
+      cursor.y += 40;
+    }
 
-    // Add page numbers ONLY to content pages
     addPageNumbers(doc, contentPages);
-
     doc.end();
   });
 }
@@ -131,14 +141,14 @@ function cover(doc: Doc, payload: CompanyReportPayload) {
   );
 
   section(doc, "Executive Summary", 36, 250);
-  insightList(doc, payload.narrative.executiveSummary, 36, 275, 510);
+  const showRefs = payload.options.include.references !== false;
+  insightList(doc, payload.narrative.executiveSummary, 36, 275, 510, undefined, undefined, showRefs);
 
   section(doc, "Catalysts and Risks", 36, 430);
-  twoColumnInsights(doc, "Catalysts", payload.narrative.catalysts, "Risks", payload.narrative.risks, 455);
+  twoColumnInsights(doc, "Catalysts", payload.narrative.catalysts, "Risks", payload.narrative.risks, 455, showRefs);
 }
 
-function snapshot(doc: Doc, payload: CompanyReportPayload) {
-  pageHeader(doc, payload, "Evidence Snapshot");
+function snapshot(doc: Doc, payload: CompanyReportPayload, cursor: { y: number }, checkSpace: (h: number, title: string) => void) {
   const quote = payload.evidence.quote as { price?: number | null; day_change_pct?: number | null; as_of?: string | null } | null;
   const technicals = payload.evidence.technicals as {
     volatility?: number | null;
@@ -160,88 +170,113 @@ function snapshot(doc: Doc, payload: CompanyReportPayload) {
     ["Div yield", pct(val("Dividend yield (TTM)")), "TTM"],
     ["Volatility", pct(technicals?.volatility), "annualized"],
   ];
-  cards.forEach((card, i) => metricCard(doc, 36 + (i % 4) * 128, 86 + Math.floor(i / 4) * 82, 116, 62, card[0], card[1], card[2]));
+  cards.forEach((card, i) => metricCard(doc, 36 + (i % 4) * 128, cursor.y + 8 + Math.floor(i / 4) * 82, 116, 62, card[0], card[1], card[2]));
+  cursor.y += 180;
 
-  section(doc, "Recent Developments", 36, 265);
-  insightList(doc, payload.narrative.recentDevelopments, 36, 290, 510);
+  const showRefs = payload.options.include.references !== false;
+  
+  checkSpace(100, "Evidence Snapshot");
+  section(doc, "Recent Developments", 36, cursor.y);
+  cursor.y += 25;
+  cursor.y = insightList(doc, payload.narrative.recentDevelopments, 36, cursor.y, 510, cursor, checkSpace, showRefs);
 
-  section(doc, "Data Gaps", 36, 420);
-  insightList(doc, payload.narrative.dataGaps, 36, 445, 510);
+  checkSpace(80, "Evidence Snapshot");
+  section(doc, "Data Gaps", 36, cursor.y);
+  cursor.y += 25;
+  cursor.y = insightList(doc, payload.narrative.dataGaps, 36, cursor.y, 510, cursor, checkSpace, showRefs);
 
-  // Business overview
-  section(doc, "Business Overview", 36, 560);
-  insightList(doc, payload.narrative.businessOverview, 36, 585, 510);
+  checkSpace(120, "Business Overview");
+  section(doc, "Business Overview", 36, cursor.y);
+  cursor.y += 25;
+  cursor.y = insightList(doc, payload.narrative.businessOverview, 36, cursor.y, 510, cursor, checkSpace, showRefs);
 }
 
-function chartsPage(doc: Doc, payload: CompanyReportPayload) {
-  pageHeader(doc, payload, "Visual Analysis");
-  section(doc, "Price History", 36, 78);
+function chartsSection(doc: Doc, payload: CompanyReportPayload, cursor: { y: number }, checkSpace: (h: number, title: string) => void) {
+  checkSpace(250, "Visual Analysis");
+  section(doc, "Price History", 36, cursor.y);
 
   if (payload.charts.price.length >= 2) {
-    lineChartWithAxes(doc, payload.charts.price, 36, 104, 505, 200);
+    lineChartWithAxes(doc, payload.charts.price, 36, cursor.y + 26, 505, 200);
   } else {
-    noData(doc, 36, 104, 505, 200);
+    noData(doc, 36, cursor.y + 26, 505, 200);
   }
+  cursor.y += 240;
 
-  section(doc, "Annual Financial Trend", 36, 330);
+  checkSpace(220, "Visual Analysis");
+  section(doc, "Annual Financial Trend", 36, cursor.y);
   if (payload.charts.financialsAnnual.length > 0) {
-    groupedBarChartWithLabels(doc, payload.charts.financialsAnnual, 36, 358, 505, 170, payload.displayUnit);
+    groupedBarChartWithLabels(doc, payload.charts.financialsAnnual, 36, cursor.y + 28, 505, 170, payload.displayUnit);
   } else {
-    noData(doc, 36, 358, 505, 170);
+    noData(doc, 36, cursor.y + 28, 505, 170);
   }
+  cursor.y += 210;
 }
 
-function tablesPage(doc: Doc, payload: CompanyReportPayload) {
-  pageHeader(doc, payload, "Detailed Tables");
-  section(doc, "Annual Financials (" + payload.displayUnit + ")", 36, 78);
-  simpleTable(
+function tablesSection(doc: Doc, payload: CompanyReportPayload, cursor: { y: number }, checkSpace: (h: number, title: string) => void) {
+  checkSpace(120, "Detailed Tables");
+  section(doc, "Annual Financials (" + payload.displayUnit + ")", 36, cursor.y);
+  const aRows = payload.charts.financialsAnnual.slice(-6);
+  cursor.y = simpleTable(
     doc,
     ["Period", "Revenue", "PAT", "EPS"],
-    payload.charts.financialsAnnual.slice(-6).map((r) => [r.period, formatFin(r.revenue), formatFin(r.profitAfterTax), formatFin(r.eps)]),
+    aRows.map((r) => [r.period, formatFin(r.revenue), formatFin(r.profitAfterTax), formatFin(r.eps)]),
     36,
-    104,
-    [128, 128, 128, 92]
+    cursor.y + 26,
+    [128, 128, 128, 92],
+    cursor,
+    checkSpace,
+    "Detailed Tables"
   );
+  cursor.y += 20;
 
-  const qTableY = 104 + 20 + payload.charts.financialsAnnual.slice(-6).length * 22 + 30;
-  section(doc, "Quarterly (standalone)", 36, qTableY);
-  simpleTable(
+  checkSpace(120, "Detailed Tables");
+  section(doc, "Quarterly (standalone)", 36, cursor.y);
+  const qRows = payload.charts.financialsQuarterly.slice(-6);
+  cursor.y = simpleTable(
     doc,
     ["Period", "Revenue", "PAT", "EPS"],
-    payload.charts.financialsQuarterly.slice(-6).map((r) => [r.period, formatFin(r.revenue), formatFin(r.profitAfterTax), formatFin(r.eps)]),
+    qRows.map((r) => [r.period, formatFin(r.revenue), formatFin(r.profitAfterTax), formatFin(r.eps)]),
     36,
-    qTableY + 26,
-    [128, 128, 128, 92]
+    cursor.y + 26,
+    [128, 128, 128, 92],
+    cursor,
+    checkSpace,
+    "Detailed Tables"
   );
+  cursor.y += 20;
 
-  const dTableY = qTableY + 26 + 20 + payload.charts.financialsQuarterly.slice(-6).length * 22 + 30;
-  if (dTableY < PAGE_BOTTOM - 100) {
-    section(doc, "Dividends / Payouts", 36, dTableY);
-    simpleTable(
+  const dRows = payload.charts.dividends.slice(-8);
+  if (dRows.length > 0) {
+    checkSpace(100, "Detailed Tables");
+    section(doc, "Dividends / Payouts", 36, cursor.y);
+    cursor.y = simpleTable(
       doc,
       ["Date", "Kind", "DPS"],
-      payload.charts.dividends.slice(-8).map((r) => [r.date ?? "n/a", r.kind, num(r.dps)]),
+      dRows.map((r) => [r.date ?? "n/a", r.kind, num(r.dps)]),
       36,
-      dTableY + 26,
-      [180, 150, 120]
+      cursor.y + 26,
+      [180, 150, 120],
+      cursor,
+      checkSpace,
+      "Detailed Tables"
     );
+    cursor.y += 20;
   }
 }
 
-function filingsAndNewsPage(
+function filingsAndNewsSection(
   doc: Doc,
   payload: CompanyReportPayload,
   filings: { date: string | null; title: string; category: string }[],
-  news: { publishedAt: string | null; title: string; source: string | null }[]
+  news: { publishedAt: string | null; title: string; source: string | null }[],
+  cursor: { y: number },
+  checkSpace: (h: number, title: string) => void
 ) {
-  pageHeader(doc, payload, "Filings and News");
-  let y = 78;
-
   if (filings.length > 0) {
-    section(doc, "Official Company Disclosures", 36, y);
-    y += 22;
+    checkSpace(120, "Filings and News");
+    section(doc, "Official Company Disclosures", 36, cursor.y);
+    cursor.y += 22;
 
-    // Group filings by category
     const categories = new Map<string, typeof filings>();
     for (const f of filings.slice(0, 12)) {
       const cat = f.category || "other";
@@ -251,84 +286,86 @@ function filingsAndNewsPage(
     }
 
     for (const [cat, items] of categories) {
-      doc.fillColor(COLORS.primary).font("Helvetica-Bold").fontSize(9).text(cat.toUpperCase(), 36, y);
-      y += 14;
+      checkSpace(40, "Filings and News");
+      doc.fillColor(COLORS.primary).font("Helvetica-Bold").fontSize(9).text(cat.toUpperCase(), 36, cursor.y);
+      cursor.y += 14;
       for (const f of items) {
-        if (y > PAGE_BOTTOM - 30) break;
+        checkSpace(20, "Filings and News");
         doc.fillColor(COLORS.ink).font("Helvetica").fontSize(8.5).text(
           `${f.date ?? "n/a"} · ${f.title}`,
-          48, y, { width: 490 }
+          48, cursor.y, { width: 490 }
         );
-        y += doc.heightOfString(`${f.date ?? "n/a"} · ${f.title}`, { width: 490 }) + 6;
+        cursor.y += doc.heightOfString(`${f.date ?? "n/a"} · ${f.title}`, { width: 490 }) + 6;
       }
-      y += 6;
+      cursor.y += 6;
     }
   }
 
-  if (news.length > 0 && y < PAGE_BOTTOM - 80) {
-    y += 10;
-    section(doc, "Independent Company News", 36, y);
-    y += 22;
+  if (news.length > 0) {
+    cursor.y += 10;
+    checkSpace(100, "Filings and News");
+    section(doc, "Independent Company News", 36, cursor.y);
+    cursor.y += 22;
     for (const n of news.slice(0, 8)) {
-      if (y > PAGE_BOTTOM - 30) break;
+      checkSpace(30, "Filings and News");
       const text = `${n.publishedAt?.slice(0, 10) ?? "n/a"} · ${n.source ?? "source"}: ${n.title}`;
-      doc.fillColor(COLORS.ink).font("Helvetica").fontSize(8.5).text(text, 48, y, { width: 490 });
-      y += doc.heightOfString(text, { width: 490 }) + 6;
+      doc.fillColor(COLORS.ink).font("Helvetica").fontSize(8.5).text(text, 48, cursor.y, { width: 490 });
+      cursor.y += doc.heightOfString(text, { width: 490 }) + 6;
     }
   }
 }
 
-function scenarioPage(doc: Doc, payload: CompanyReportPayload) {
-  pageHeader(doc, payload, "Scenario Analysis");
-  let y = 78;
-  section(doc, "Deterministic Scenario Analysis", 36, y);
-  y += 22;
+function scenarioSection(doc: Doc, payload: CompanyReportPayload, cursor: { y: number }, checkSpace: (h: number, title: string) => void) {
+  checkSpace(150, "Scenario Analysis");
+  section(doc, "Deterministic Scenario Analysis", 36, cursor.y);
+  cursor.y += 22;
 
   doc.fillColor(COLORS.muted).font("Helvetica").fontSize(8).text(
     "These scenarios are analytical illustrations based on deterministic assumptions, not forecasts or recommendations.",
-    36, y, { width: 505 }
+    36, cursor.y, { width: 505 }
   );
-  y += 20;
+  cursor.y += 20;
 
   for (const s of payload.scenarios) {
-    if (y > PAGE_BOTTOM - 120) break;
+    checkSpace(140, "Scenario Analysis");
 
-    doc.roundedRect(36, y, 505, 120, 8).fill(COLORS.panel).strokeColor(COLORS.line).stroke();
+    doc.roundedRect(36, cursor.y, 505, 120, 8).fill(COLORS.panel).strokeColor(COLORS.line).stroke();
 
     doc.fillColor(COLORS.ink).font("Helvetica-Bold").fontSize(11).text(
-      `${s.label.toUpperCase()} CASE`, 48, y + 10
+      `${s.label.toUpperCase()} CASE`, 48, cursor.y + 10
     );
-    doc.fillColor(COLORS.muted).font("Helvetica").fontSize(8.5).text(s.notes, 48, y + 26, { width: 480 });
+    doc.fillColor(COLORS.muted).font("Helvetica").fontSize(8.5).text(s.notes, 48, cursor.y + 26, { width: 480 });
 
-    let ay = y + 44;
+    let ay = cursor.y + 44;
     for (const [k, v] of Object.entries(s.assumptions)) {
       doc.fillColor(COLORS.ink).font("Helvetica").fontSize(8).text(`${k}: ${v}`, 60, ay);
       ay += 14;
-      if (ay > y + 100) break;
+      if (ay > cursor.y + 100) break;
     }
 
     doc.fillColor(COLORS.primary).font("Helvetica-Bold").fontSize(9).text(
       `Implied EPS: ${s.impliedEps !== null ? s.impliedEps.toFixed(2) : "n/a"} · Multiple: ${s.impliedValuationMultiple !== null ? s.impliedValuationMultiple.toFixed(1) + "x" : "n/a"}`,
-      48, y + 104, { width: 480 }
+      48, cursor.y + 104, { width: 480 }
     );
 
-    y += 130;
+    cursor.y += 130;
   }
 }
 
-function peersPage(doc: Doc, payload: CompanyReportPayload) {
-  pageHeader(doc, payload, "Peer Comparison");
+function peersSection(doc: Doc, payload: CompanyReportPayload, cursor: { y: number }, checkSpace: (h: number, title: string) => void) {
+  checkSpace(180, "Peer Comparison");
   const peers = (payload.evidence.peers as { ticker: string; companyName?: string | null; selectionReason?: string; quote?: { price?: number | null } | null; ratios?: { ratio_name: string; ratio_value: number | null }[] }[]) ?? [];
-  let y = 78;
-  section(doc, "Selected Peers", 36, y);
-  y += 22;
+  section(doc, "Selected Peers", 36, cursor.y);
+  cursor.y += 22;
   for (const p of peers.slice(0, 5)) {
-    doc.fillColor(COLORS.ink).font("Helvetica-Bold").fontSize(9).text(`${p.ticker} — ${p.companyName ?? ""}`, 36, y);
-    doc.fillColor(COLORS.muted).font("Helvetica").fontSize(8).text(p.selectionReason ?? "sector peer", 36, y + 12, { width: 505 });
-    y += 32;
+    checkSpace(40, "Peer Comparison");
+    doc.fillColor(COLORS.ink).font("Helvetica-Bold").fontSize(9).text(`${p.ticker} — ${p.companyName ?? ""}`, 36, cursor.y);
+    doc.fillColor(COLORS.muted).font("Helvetica").fontSize(8).text(p.selectionReason ?? "sector peer", 36, cursor.y + 12, { width: 505 });
+    cursor.y += 32;
   }
 
-  section(doc, "Peer Valuation Table", 36, y + 8);
+  checkSpace(100, "Peer Comparison");
+  section(doc, "Peer Valuation Table", 36, cursor.y + 8);
   const metrics = ["P/E", "P/B", "ROE", "Net margin", "Revenue growth", "Debt-to-equity"];
   const rows: string[][] = [];
   for (const m of metrics) {
@@ -344,10 +381,11 @@ function peersPage(doc: Doc, payload: CompanyReportPayload) {
     rows.push([m, ...cells]);
   }
   const widths = [80, ...peers.map(() => Math.min(100, Math.floor(440 / peers.length)))].slice(0, 6);
-  simpleTable(doc, ["Metric", ...peers.map((p) => p.ticker)], rows, 36, y + 36, widths);
+  cursor.y = simpleTable(doc, ["Metric", ...peers.map((p) => p.ticker)], rows, 36, cursor.y + 36, widths, cursor, checkSpace, "Peer Comparison");
+  cursor.y += 20;
 }
 
-function portfolioPage(doc: Doc, payload: CompanyReportPayload) {
+function portfolioSection(doc: Doc, payload: CompanyReportPayload, cursor: { y: number }, checkSpace: (h: number, title: string) => void) {
   const portfolio = payload.evidence.portfolio as {
     held?: boolean;
     quantity?: number;
@@ -364,8 +402,8 @@ function portfolioPage(doc: Doc, payload: CompanyReportPayload) {
   };
   if (!portfolio?.held) return;
 
-  pageHeader(doc, payload, "Portfolio Position");
-  section(doc, "Your Position", 36, 78);
+  checkSpace(350, "Portfolio Position");
+  section(doc, "Your Position", 36, cursor.y);
   const cards = [
     ["Shares", num(portfolio.quantity), "held"],
     ["Avg cost", num(portfolio.avgCost), "PKR"],
@@ -377,45 +415,50 @@ function portfolioPage(doc: Doc, payload: CompanyReportPayload) {
     ["Total return", pct(portfolio.totalReturn), "incl. dividends"],
     ["Yield on cost", pct(portfolio.yieldOnCost), "dividends / cost"],
   ];
-  cards.forEach((card, i) => metricCard(doc, 36 + (i % 3) * 172, 104 + Math.floor(i / 3) * 82, 160, 62, card[0], card[1], card[2]));
+  cards.forEach((card, i) => metricCard(doc, 36 + (i % 3) * 172, cursor.y + 26 + Math.floor(i / 3) * 82, 160, 62, card[0], card[1], card[2]));
+  cursor.y += 290;
 
-  section(doc, "Portfolio Analysis", 36, 370);
-  insightList(doc, payload.narrative.portfolio, 36, 395, 510);
+  const showRefs = payload.options.include.references !== false;
+  checkSpace(100, "Portfolio Position");
+  section(doc, "Portfolio Analysis", 36, cursor.y);
+  cursor.y += 25;
+  cursor.y = insightList(doc, payload.narrative.portfolio, 36, cursor.y, 510, cursor, checkSpace, showRefs);
 }
 
-function sourcesPage(doc: Doc, payload: CompanyReportPayload) {
-  pageHeader(doc, payload, "Source Register");
-  let y = 80;
+function sourcesSection(doc: Doc, payload: CompanyReportPayload, cursor: { y: number }, checkSpace: (h: number, title: string) => void) {
+  checkSpace(100, "Source Register");
+  section(doc, "Source Register", 36, cursor.y);
+  cursor.y += 22;
+
   for (const source of payload.sources) {
-    if (y > PAGE_BOTTOM - 40) {
-      doc.addPage();
-      pageHeader(doc, payload, "Source Register");
-      y = 80;
-    }
-    doc.fillColor(COLORS.ink).font("Helvetica-Bold").fontSize(9).text(`[${source.id}] ${source.label}`, 36, y, { width: 505 });
-    y += doc.heightOfString(`[${source.id}] ${source.label}`, { width: 505 }) + 2;
+    checkSpace(30, "Source Register");
+    doc.fillColor(COLORS.ink).font("Helvetica-Bold").fontSize(9).text(`[${source.id}] ${source.label}`, 36, cursor.y, { width: 505 });
+    cursor.y += doc.heightOfString(`[${source.id}] ${source.label}`, { width: 505 }) + 2;
     const meta = [source.asOf ? `As of ${source.asOf}` : null, source.url].filter(Boolean).join(" · ");
     if (meta) {
-      doc.fillColor(COLORS.muted).font("Helvetica").fontSize(8).text(meta, 36, y, { width: 505, link: source.url ?? undefined });
-      y += 14;
+      doc.fillColor(COLORS.muted).font("Helvetica").fontSize(8).text(meta, 36, cursor.y, { width: 505, link: source.url ?? undefined });
+      cursor.y += 14;
     }
-    y += 10;
+    cursor.y += 10;
   }
 
   // Monitoring checklist
-  if (payload.narrative.monitoring.length > 0 && y < PAGE_BOTTOM - 120) {
-    y += 10;
-    section(doc, "Monitoring Checklist", 36, y);
-    y += 22;
-    insightList(doc, payload.narrative.monitoring, 36, y, 510);
+  if (payload.narrative.monitoring.length > 0) {
+    cursor.y += 10;
+    checkSpace(120, "Monitoring Checklist");
+    section(doc, "Monitoring Checklist", 36, cursor.y);
+    cursor.y += 22;
+    cursor.y = insightList(doc, payload.narrative.monitoring, 36, cursor.y, 510, cursor, checkSpace, false); // No refs in checklist
   }
 
+  checkSpace(50, "Disclaimer");
   doc.fillColor(COLORS.muted).fontSize(8).text(
     "Disclaimer: This report is for informational purposes only and is not investment advice. All financial values and calculations are sourced from official filings and verified market data.",
     36,
-    PAGE_BOTTOM - 10,
+    cursor.y + 10,
     { width: 505 }
   );
+  cursor.y += 40;
 }
 
 function pageHeader(doc: Doc, payload: CompanyReportPayload, label: string) {
@@ -440,28 +483,37 @@ function section(doc: Doc, title: string, x: number, y: number) {
   doc.fillColor(COLORS.primary).font("Helvetica-Bold").fontSize(11).text(title.toUpperCase(), x, y);
 }
 
-function insightList(doc: Doc, items: AiReportInsight[], x: number, y: number, width: number) {
-  let cursor = y;
-  for (const item of items.slice(0, 6)) {
-    if (cursor > PAGE_BOTTOM - 30) break;
-    doc.circle(x + 4, cursor + 5, 2).fill(COLORS.primary);
-    const text = `${item.text} ${cite(item)}`;
-    doc.fillColor(COLORS.ink).font("Helvetica").fontSize(10).text(text, x + 14, cursor, { width, lineGap: 2 });
-    cursor += doc.heightOfString(text, { width }) + 8;
+function insightList(doc: Doc, items: AiReportInsight[], x: number, y: number, width: number, cursor?: { y: number }, checkSpace?: (h: number, title: string) => void, showReferences = true): number {
+  let localY = y;
+  for (const item of items.slice(0, 10)) { // increased from 6 to 10
+    const text = `${item.text} ${cite(item, showReferences)}`;
+    const height = doc.heightOfString(text, { width }) + 8;
+    if (checkSpace && cursor) {
+      checkSpace(height + 15, "Analysis");
+      localY = cursor.y; // Update local if cursor was modified
+    } else if (localY > PAGE_BOTTOM - 30) {
+      break;
+    }
+
+    doc.circle(x + 4, localY + 5, 2).fill(COLORS.primary);
+    doc.fillColor(COLORS.ink).font("Helvetica").fontSize(10).text(text, x + 14, localY, { width, lineGap: 2 });
+    localY += height;
+    if (cursor) cursor.y = localY;
   }
+  return localY;
 }
 
-function twoColumnInsights(doc: Doc, leftTitle: string, left: AiReportInsight[], rightTitle: string, right: AiReportInsight[], y: number) {
-  insightPanel(doc, leftTitle, left, 36, y, 245, 150);
-  insightPanel(doc, rightTitle, right, 296, y, 245, 150);
+function twoColumnInsights(doc: Doc, leftTitle: string, left: AiReportInsight[], rightTitle: string, right: AiReportInsight[], y: number, showReferences = true) {
+  insightPanel(doc, leftTitle, left, 36, y, 245, 150, showReferences);
+  insightPanel(doc, rightTitle, right, 296, y, 245, 150, showReferences);
 }
 
-function insightPanel(doc: Doc, title: string, items: AiReportInsight[], x: number, y: number, w: number, h: number) {
+function insightPanel(doc: Doc, title: string, items: AiReportInsight[], x: number, y: number, w: number, h: number, showReferences = true) {
   doc.roundedRect(x, y, w, h, 8).fill(COLORS.panel).strokeColor(COLORS.line).stroke();
   doc.fillColor(COLORS.ink).font("Helvetica-Bold").fontSize(10).text(title, x + 12, y + 12);
   let cursor = y + 34;
   for (const item of items.slice(0, 4)) {
-    const text = `${item.text} ${cite(item)}`;
+    const text = `${item.text} ${cite(item, showReferences)}`;
     doc.fillColor(COLORS.ink).font("Helvetica").fontSize(8.6).text(text, x + 12, cursor, { width: w - 24, lineGap: 1 });
     cursor += doc.heightOfString(text, { width: w - 24 }) + 7;
     if (cursor > y + h - 16) break;
@@ -580,27 +632,42 @@ function groupedBarChartWithLabels(doc: Doc, data: FinRow[], x: number, y: numbe
   legend(doc, chartX + chartW - 140, y + 4, [["Revenue", COLORS.primary], ["PAT", COLORS.accent]]);
 }
 
-function simpleTable(doc: Doc, headers: string[], rows: string[][], x: number, y: number, widths: number[], fontSize = 8.5) {
-  let cursor = y;
+function simpleTable(doc: Doc, headers: string[], rows: string[][], x: number, y: number, widths: number[], cursor?: { y: number }, checkSpace?: (h: number, title: string) => void, title?: string): number {
+  let localY = y;
   const totalW = widths.reduce((a, b) => a + b, 0);
-  doc.rect(x, cursor, totalW, 20).fill(COLORS.navy);
+
+  if (checkSpace && cursor) {
+    checkSpace(40, title ?? "Tables");
+    localY = cursor.y;
+  }
+
+  doc.rect(x, localY, totalW, 20).fill(COLORS.navy);
   let cx = x;
   headers.forEach((h, i) => {
-    doc.fillColor("#FFFFFF").font("Helvetica-Bold").fontSize(fontSize).text(h, cx + 6, cursor + 6, { width: widths[i] - 12 });
+    doc.fillColor("#FFFFFF").font("Helvetica-Bold").fontSize(8.5).text(h, cx + 6, localY + 6, { width: widths[i] - 12 });
     cx += widths[i];
   });
-  cursor += 20;
+  localY += 20;
+
   rows.forEach((row, ri) => {
-    if (cursor > PAGE_BOTTOM - 20) return; // Prevent overflow
     const height = 22;
-    doc.rect(x, cursor, totalW, height).fill(ri % 2 ? "#FFFFFF" : COLORS.panel);
+    if (checkSpace && cursor) {
+      checkSpace(height + 10, title ?? "Tables");
+      localY = cursor.y;
+    } else if (localY > PAGE_BOTTOM - 20) {
+      return;
+    }
+
+    doc.rect(x, localY, totalW, height).fill(ri % 2 ? "#FFFFFF" : COLORS.panel);
     cx = x;
     row.forEach((cell, i) => {
-      doc.fillColor(COLORS.ink).font("Helvetica").fontSize(fontSize).text(cell, cx + 6, cursor + 6, { width: widths[i] - 12, height: height - 8, ellipsis: true });
+      doc.fillColor(COLORS.ink).font("Helvetica").fontSize(8.5).text(cell, cx + 6, localY + 6, { width: widths[i] - 12, height: height - 8, ellipsis: true });
       cx += widths[i];
     });
-    cursor += height;
+    localY += height;
+    if (cursor) cursor.y = localY;
   });
+  return localY;
 }
 
 function chartFrame(doc: Doc, x: number, y: number, w: number, h: number) {
@@ -620,7 +687,8 @@ function legend(doc: Doc, x: number, y: number, items: [string, string][]) {
   }
 }
 
-function cite(item: AiReportInsight): string {
+function cite(item: AiReportInsight, showReferences = true): string {
+  if (!showReferences) return "";
   return item.citations.length ? `[${item.citations.join(", ")}]` : "";
 }
 
