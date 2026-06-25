@@ -1,16 +1,14 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { requireUser, errorResponse } from "@/lib/api-helpers";
-import { recomputeHoldingsFromTransactions, takeSnapshot } from "@/lib/portfolio";
-import { refreshAlerts } from "@/lib/alerts";
-import { enrichHoldingsMetadata } from "@/lib/holdings/enrichment";
+import { recomputeAll } from "@/lib/holdings/recompute-cascade";
 
 export const maxDuration = 60;
 
 const txnSchema = z.object({
   ticker: z.string().min(2).max(10),
   trade_date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
-  type: z.enum(["BUY", "SELL", "DIVIDEND", "BONUS", "RIGHT"]),
+  type: z.enum(["BUY", "SELL", "DIVIDEND", "BONUS", "RIGHT", "SPLIT", "ADJUST"]),
   quantity: z.number().positive().optional(),
   price: z.number().nonnegative().optional(),
   commission: z.number().nonnegative().optional(),
@@ -62,8 +60,8 @@ export async function POST(request: Request) {
     if ((t.type === "BUY" || t.type === "SELL") && (!t.quantity || t.price === undefined)) {
       return NextResponse.json({ error: "Buy/sell needs quantity and price." }, { status: 422 });
     }
-    if ((t.type === "BONUS" || t.type === "RIGHT") && !t.quantity) {
-      return NextResponse.json({ error: "Bonus/right needs a quantity." }, { status: 422 });
+    if ((t.type === "BONUS" || t.type === "RIGHT" || t.type === "SPLIT" || t.type === "ADJUST") && !t.quantity) {
+      return NextResponse.json({ error: `${t.type} needs a quantity.` }, { status: 422 });
     }
 
     const { error: insErr } = await supabase.from("transactions").insert({
@@ -82,20 +80,11 @@ export async function POST(request: Request) {
     });
     if (insErr) throw insErr;
 
-    await recomputeHoldingsFromTransactions(supabase, user.id);
-    let enrichmentMessage: string | null = null;
-    try {
-      const enrichment = await enrichHoldingsMetadata(supabase, user.id, { tickers: [ticker] });
-      enrichmentMessage = enrichment.updatedFromAi + enrichment.updatedFromMaster > 0 ? enrichment.message : null;
-    } catch {
-      enrichmentMessage = null;
-    }
-    await takeSnapshot(supabase, user.id);
-    await refreshAlerts(supabase, user.id);
+    await recomputeAll(supabase, user.id, { changedTickers: [ticker] });
 
     return NextResponse.json({
       ok: true,
-      message: enrichmentMessage ?? "Transaction recorded and holdings recalculated.",
+      message: "Transaction recorded and portfolio recomputed.",
     });
   } catch (err) {
     return errorResponse(err);

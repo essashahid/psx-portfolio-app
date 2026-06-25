@@ -17,7 +17,7 @@ export async function getPortfolio(
   supabase: SupabaseClient,
   userId: string
 ): Promise<PortfolioSummary> {
-  const [holdingsRes, pricesRes, targetsRes, thesesRes, divRes, realizedRes, cashRes, profileRes] =
+  const [holdingsRes, pricesRes, targetsRes, thesesRes, divRes, realizedRes, cashRes] =
     await Promise.all([
       supabase.from("holdings").select("*").eq("user_id", userId).gt("quantity", 0).order("ticker"),
       supabase
@@ -29,9 +29,8 @@ export async function getPortfolio(
       supabase.from("targets").select("*").eq("user_id", userId),
       supabase.from("theses").select("*").eq("user_id", userId),
       supabase.from("dividends").select("ticker, amount, net_amount, status").eq("user_id", userId),
-      supabase.from("transactions").select("realized_pl").eq("user_id", userId).not("realized_pl", "is", null),
+      supabase.from("transactions").select("type, net_amount, realized_pl").eq("user_id", userId),
       supabase.from("cash_movements").select("type, amount").eq("user_id", userId),
-      supabase.from("profiles").select("free_cash").eq("id", userId).maybeSingle(),
     ]);
 
   const holdings = (holdingsRes.data ?? []) as Holding[];
@@ -75,12 +74,19 @@ export async function getPortfolio(
     0
   );
 
-  let cashBalance = Number(profileRes.data?.free_cash ?? 0);
+  // Broker cash on hand, derived from the full ledger so it always reconciles:
+  // deposits and sale proceeds add, buys, withdrawals, fees and CGT subtract.
+  let cashBalance = 0;
   for (const c of cashRes.data ?? []) {
     const amt = Number(c.amount ?? 0);
     if (c.type === "CASH_IN" || c.type === "DIVIDEND") cashBalance += Math.abs(amt);
     else if (c.type === "CASH_OUT" || c.type === "FEE" || c.type === "TAX") cashBalance -= Math.abs(amt);
     else cashBalance += amt;
+  }
+  for (const t of realizedRes.data ?? []) {
+    const net = Math.abs(Number(t.net_amount ?? 0));
+    if (t.type === "SELL") cashBalance += net;
+    else if (t.type === "BUY" || t.type === "RIGHT") cashBalance -= net;
   }
 
   // First pass: market values
@@ -233,6 +239,34 @@ export function rebuildHoldings(transactions: TxnLike[]): RebuildResult {
       case "BONUS": {
         pos.quantity += qty;
         pos.avgCost = pos.quantity > 0 ? pos.totalCost / pos.quantity : 0;
+        break;
+      }
+      case "ADJUST": {
+        // Manual reconciliation entry from a holdings edit. Quantity is signed:
+        // positive adds shares at the given price/cost, negative removes at
+        // weighted-average cost. No realized P/L (it is a correction, not a sale).
+        const delta = Number(t.quantity ?? 0);
+        if (delta > 0) {
+          const costIn =
+            t.net_amount !== null && t.net_amount !== undefined && Number(t.net_amount) > 0
+              ? Number(t.net_amount)
+              : delta * price;
+          pos.totalCost += costIn;
+          pos.quantity += delta;
+        } else if (delta < 0) {
+          const removeQty = Math.min(Math.abs(delta), pos.quantity);
+          pos.totalCost -= pos.avgCost * removeQty;
+          pos.quantity -= removeQty;
+        } else if (price > 0 && pos.quantity > 0) {
+          pos.totalCost = pos.quantity * price;
+        }
+        if (pos.quantity <= 0) {
+          pos.quantity = 0;
+          pos.totalCost = 0;
+          pos.avgCost = 0;
+        } else {
+          pos.avgCost = pos.totalCost / pos.quantity;
+        }
         break;
       }
       case "SELL": {

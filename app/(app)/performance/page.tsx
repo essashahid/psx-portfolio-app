@@ -2,9 +2,11 @@
 import Link from "next/link";
 import { createClient, getUser } from "@/lib/supabase/server";
 import { getPerformanceAnalytics } from "@/lib/engine/performance";
+import { buildLedgerRows, type LedgerCashInput, type LedgerTxnInput } from "@/lib/engine/ledger-view";
 import { getPortfolio } from "@/lib/portfolio";
 import { EmptyState } from "@/components/empty-state";
 import { ActionButton } from "@/components/action-button";
+import { LedgerTable } from "@/components/ledger-table";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs } from "@/components/ui/tabs";
@@ -27,9 +29,19 @@ export default async function PerformancePage() {
   const user = await getUser();
   if (!user) return null;
 
-  const [analytics, portfolio] = await Promise.all([
+  const [analytics, portfolio, txnsRes, cashRes] = await Promise.all([
     getPerformanceAnalytics(supabase, user.id),
     getPortfolio(supabase, user.id),
+    supabase
+      .from("transactions")
+      .select("id, trade_date, type, ticker, quantity, price, commission, tax, net_amount, notes")
+      .eq("user_id", user.id)
+      .order("trade_date", { ascending: true }),
+    supabase
+      .from("cash_movements")
+      .select("id, movement_date, type, amount, description")
+      .eq("user_id", user.id)
+      .order("movement_date", { ascending: true }),
   ]);
 
   if (!analytics) {
@@ -112,8 +124,22 @@ export default async function PerformancePage() {
     : analytics.wealthBridge;
   const netGain = currentWorth - returns.totalDeposited;
   const bridgeDifference = usePlatformCurrent ? 0 : checkpoints.wealthBridgeDifference;
+  const transactions = (txnsRes.data ?? []).map((t) => ({
+    ...t,
+    quantity: t.quantity !== null ? Number(t.quantity) : null,
+    price: t.price !== null ? Number(t.price) : null,
+    commission: t.commission !== null ? Number(t.commission) : null,
+    tax: t.tax !== null ? Number(t.tax) : null,
+    net_amount: t.net_amount !== null ? Number(t.net_amount) : null,
+  })) as (LedgerTxnInput & { commission?: number | null; tax?: number | null })[];
+  const cashMovements = (cashRes.data ?? []).map((c) => ({
+    ...c,
+    amount: Number(c.amount),
+  })) as LedgerCashInput[];
+  const ledger = buildLedgerRows(transactions, cashMovements);
 
-  const sourceComplete = analytics.source.status === "complete";
+  const sourceComplete = analytics.source.status === "complete" || analytics.source.status === "reconciled";
+  const sourceReconciled = analytics.source.status === "reconciled";
 
   return (
     <div className="space-y-8 pb-6">
@@ -126,16 +152,16 @@ export default async function PerformancePage() {
               Ledger-backed capital, realised return, unrealised return, costs and reconciliation.
             </p>
             <div className="mt-3 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
-              <Badge variant={sourceComplete ? "green" : "amber"}>{analytics.source.label}</Badge>
+              <Badge variant={sourceReconciled ? "green" : sourceComplete ? "blue" : "amber"}>{analytics.source.label}</Badge>
               <span>{analytics.source.detail}</span>
             </div>
           </div>
           <div className="flex flex-wrap items-start gap-2">
             <ActionButton
-              endpoint="/api/import/sync-cash"
+              endpoint="/api/portfolio/rebuild"
               label={
                 <>
-                  <RefreshCw className="h-3.5 w-3.5" /> Sync ledger
+                  <RefreshCw className="h-3.5 w-3.5" /> Rebuild
                 </>
               }
               variant="outline"
@@ -163,6 +189,12 @@ export default async function PerformancePage() {
               Full AKD statement data is unavailable. This page is intentionally marked incomplete instead of
               presenting the old partial counts as final performance.
             </p>
+          </div>
+        )}
+        {sourceReconciled && (
+          <div className="mt-4 flex gap-2 border-l-2 border-emerald-600 pl-3 text-sm text-emerald-800">
+            <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0" />
+            <p>{analytics.source.detail}</p>
           </div>
         )}
       </header>
@@ -199,6 +231,8 @@ export default async function PerformancePage() {
           <Metric label="Recorded deductions" value={formatMoney(friction.total)} sub={`${friction.pctOfDeposits}% of external capital`} tone="negative" />
         </div>
       </section>
+
+      <LedgerTable rows={ledger.rows} transactions={transactions} cashMovements={cashMovements} />
 
       <section className="border-t border-border pt-5">
         <div className="flex flex-wrap items-start justify-between gap-4">
