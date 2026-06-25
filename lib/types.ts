@@ -13,6 +13,7 @@ export type TxnType =
   | "BONUS"
   | "RIGHT"
   | "SPLIT"
+  | "ADJUST"
   | "UNKNOWN";
 
 export type ThesisStatus = "Active" | "Watch" | "Weakening" | "Broken" | "Closed";

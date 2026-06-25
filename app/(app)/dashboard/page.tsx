@@ -10,6 +10,7 @@ import { ActionButton } from "@/components/action-button";
 import { Button } from "@/components/ui/button";
 import { ImportantPsxEvents, type PsxEventRow } from "@/components/important-psx-events";
 import { DashboardAllocation, DashboardPerformance, DashboardReportButton, PortfolioContribution } from "@/components/dashboard-visuals";
+import { BenchmarkGrowthChart, type BenchmarkPointRow } from "@/components/benchmark-growth-chart";
 import { CircleAlert, RefreshCw, Upload } from "lucide-react";
 
 export const dynamic = "force-dynamic";
@@ -36,7 +37,7 @@ export default async function DashboardPage() {
   const user = await getUser();
   if (!user) return null;
 
-  const [summary, dailyPerformance, snapshotsRes, profileRes] = await Promise.all([
+  const [summary, dailyPerformance, snapshotsRes, benchmarkRes, profileRes] = await Promise.all([
     getPortfolio(supabase, user.id),
     getDailyHoldingPerformance(supabase, user.id),
     supabase
@@ -45,6 +46,11 @@ export default async function DashboardPage() {
       .eq("user_id", user.id)
       .order("snapshot_date", { ascending: true })
       .limit(365),
+    supabase
+      .from("benchmark_series")
+      .select("point_date, contributed, portfolio, kse100, inflation, cpi")
+      .eq("user_id", user.id)
+      .order("point_date", { ascending: true }),
     supabase.from("profiles").select("demo_mode, full_name").eq("id", user.id).maybeSingle(),
   ]);
 
@@ -85,6 +91,14 @@ export default async function DashboardPage() {
     date: snapshot.snapshot_date,
     value: Number(snapshot.total_value),
     cost: Number(snapshot.total_cost),
+  }));
+  const benchmarkSeries: BenchmarkPointRow[] = (benchmarkRes.data ?? []).map((point) => ({
+    date: point.point_date,
+    contributed: Number(point.contributed),
+    portfolio: Number(point.portfolio),
+    kse100: Number(point.kse100),
+    inflation: Number(point.inflation),
+    cpi: point.cpi !== null ? Number(point.cpi) : null,
   }));
   const sectorAllocations = summary.sectorWeights.map((sector) => ({
     label: sector.sector,
@@ -140,6 +154,8 @@ export default async function DashboardPage() {
       </header>
 
       {profileRes.data?.demo_mode && <p className="rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800">Demo mode: the portfolio data below is illustrative sample data.</p>}
+
+      {benchmarkSeries.length >= 2 && <BenchmarkGrowthChart data={benchmarkSeries} />}
 
       <DashboardPerformance data={datedSnapshots} />
 

@@ -524,7 +524,7 @@ export interface BenchmarkStatus {
 export interface LedgerSource {
   type: "akd_statement" | "local_akd_pdf" | "database_fallback";
   label: string;
-  status: "complete" | "incomplete";
+  status: "complete" | "incomplete" | "reconciled";
   detail: string;
 }
 

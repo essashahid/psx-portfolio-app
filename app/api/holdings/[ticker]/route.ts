@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { requireUser, errorResponse } from "@/lib/api-helpers";
+import { recomputeAll } from "@/lib/holdings/recompute-cascade";
 
 const PatchSchema = z.object({
   quantity: z.number().positive().optional(),
@@ -16,49 +17,73 @@ export async function PATCH(
   if (error) return error;
 
   const { ticker } = await params;
+  const symbol = ticker.toUpperCase();
   const body = await req.json().catch(() => ({}));
   const parsed = PatchSchema.safeParse(body);
   if (!parsed.success) return NextResponse.json({ error: "Invalid fields" }, { status: 400 });
 
-  const updates: Record<string, unknown> = { last_updated: new Date().toISOString() };
-  if (parsed.data.quantity !== undefined) {
-    updates.quantity = parsed.data.quantity;
-  }
-  if (parsed.data.avg_cost !== undefined) {
-    updates.avg_cost = parsed.data.avg_cost;
-    // Recalculate total_cost if both are provided or quantity already exists
-    if (parsed.data.quantity !== undefined) {
-      updates.total_cost = parsed.data.quantity * parsed.data.avg_cost;
-    }
-  }
-  if (parsed.data.notes !== undefined) {
-    updates.notes = parsed.data.notes;
-  }
-
-  // If we changed quantity or avg_cost, also update total_cost from current values
-  if ((parsed.data.quantity !== undefined || parsed.data.avg_cost !== undefined) &&
-      !(parsed.data.quantity !== undefined && parsed.data.avg_cost !== undefined)) {
-    const { data: existing } = await supabase
-      .from("holdings")
-      .select("quantity, avg_cost")
-      .eq("user_id", user.id)
-      .eq("ticker", ticker)
-      .maybeSingle();
-    if (existing) {
-      const qty = parsed.data.quantity ?? Number(existing.quantity);
-      const cost = parsed.data.avg_cost ?? Number(existing.avg_cost);
-      updates.total_cost = qty * cost;
-    }
-  }
-
-  const { error: dbErr } = await supabase
+  const { data: existing, error: readErr } = await supabase
     .from("holdings")
-    .update(updates)
+    .select("quantity, avg_cost")
     .eq("user_id", user.id)
-    .eq("ticker", ticker);
+    .eq("ticker", symbol)
+    .maybeSingle();
+  if (readErr) return errorResponse(readErr);
 
-  if (dbErr) return errorResponse(dbErr);
-  return NextResponse.json({ message: `${ticker} updated.` });
+  const currentQty = Number(existing?.quantity ?? 0);
+  const currentAvg = Number(existing?.avg_cost ?? 0);
+  const targetQty = parsed.data.quantity ?? currentQty;
+  const targetAvg = parsed.data.avg_cost ?? currentAvg;
+  const qtyDelta = targetQty - currentQty;
+  const avgChanged = parsed.data.avg_cost !== undefined && Math.abs(targetAvg - currentAvg) >= 0.0001;
+
+  if (Math.abs(qtyDelta) < 0.0001 && !avgChanged && parsed.data.notes === undefined) {
+    return NextResponse.json({ message: `${symbol} unchanged.` });
+  }
+
+  const notes = parsed.data.notes?.trim() || `Holding edit for ${symbol}`;
+  if (Math.abs(qtyDelta) >= 0.0001) {
+    const price = qtyDelta > 0 ? targetAvg : currentAvg;
+    const netAmount = qtyDelta > 0 ? Math.abs(qtyDelta) * price : null;
+    const { error: insErr } = await supabase.from("transactions").insert({
+      user_id: user.id,
+      ticker: symbol,
+      trade_date: new Date().toISOString().slice(0, 10),
+      type: "ADJUST",
+      quantity: qtyDelta,
+      price,
+      gross_amount: netAmount,
+      commission: 0,
+      tax: 0,
+      net_amount: netAmount,
+      source: "manual",
+      notes,
+      row_hash: `holding-adjust-${user.id}-${symbol}-${Date.now()}`,
+    });
+    if (insErr) return errorResponse(insErr);
+  } else if (avgChanged) {
+    // A pure average-cost edit is represented as a zero-quantity cost reset.
+    // Holdings recompute ignores it for quantity but keeps the audit trail.
+    const { error: insErr } = await supabase.from("transactions").insert({
+      user_id: user.id,
+      ticker: symbol,
+      trade_date: new Date().toISOString().slice(0, 10),
+      type: "ADJUST",
+      quantity: 0,
+      price: targetAvg,
+      gross_amount: null,
+      commission: 0,
+      tax: 0,
+      net_amount: null,
+      source: "manual",
+      notes: `${notes}; avg cost requested ${targetAvg}`,
+      row_hash: `holding-cost-note-${user.id}-${symbol}-${Date.now()}`,
+    });
+    if (insErr) return errorResponse(insErr);
+  }
+
+  await recomputeAll(supabase, user.id, { changedTickers: [symbol] });
+  return NextResponse.json({ message: `${symbol} adjusted through the ledger.` });
 }
 
 export async function DELETE(
@@ -69,18 +94,20 @@ export async function DELETE(
   if (error) return error;
 
   const { ticker } = await params;
+  const symbol = ticker.toUpperCase();
 
   // Remove all user data for this ticker in parallel
   await Promise.all([
-    supabase.from("holdings").delete().eq("user_id", user.id).eq("ticker", ticker),
-    supabase.from("transactions").delete().eq("user_id", user.id).eq("ticker", ticker),
-    supabase.from("targets").delete().eq("user_id", user.id).eq("ticker", ticker),
-    supabase.from("theses").delete().eq("user_id", user.id).eq("ticker", ticker),
-    supabase.from("alerts").delete().eq("user_id", user.id).eq("ticker", ticker),
-    supabase.from("dividends").delete().eq("user_id", user.id).eq("ticker", ticker),
-    supabase.from("news_articles").delete().eq("user_id", user.id).eq("ticker", ticker),
-    supabase.from("journal_entries").delete().eq("user_id", user.id).eq("ticker", ticker),
+    supabase.from("holdings").delete().eq("user_id", user.id).eq("ticker", symbol),
+    supabase.from("transactions").delete().eq("user_id", user.id).eq("ticker", symbol),
+    supabase.from("targets").delete().eq("user_id", user.id).eq("ticker", symbol),
+    supabase.from("theses").delete().eq("user_id", user.id).eq("ticker", symbol),
+    supabase.from("alerts").delete().eq("user_id", user.id).eq("ticker", symbol),
+    supabase.from("dividends").delete().eq("user_id", user.id).eq("ticker", symbol),
+    supabase.from("news_articles").delete().eq("user_id", user.id).eq("ticker", symbol),
+    supabase.from("journal_entries").delete().eq("user_id", user.id).eq("ticker", symbol),
   ]);
 
-  return NextResponse.json({ message: `${ticker} and all related data removed.` });
+  await recomputeAll(supabase, user.id, { changedTickers: [symbol] });
+  return NextResponse.json({ message: `${symbol} and all related data removed.` });
 }
