@@ -9,6 +9,9 @@ const REJECT_PATTERNS = [
   /\bcrypto\b|\bbitcoin\b/i,
 ];
 
+const QUALITY_SOURCES = ["dawn", "tribune", "business recorder", "mgn", "brecorder", "reuters", "bloomberg", "profit", "mettis", "darson", "arif habib", "topline", "capital stake", "invest capital"];
+const LOW_QUALITY_SOURCES = ["reddit", "twitter", "facebook", "forum", "blog", "youtube", "tiktok", "instagram"];
+
 const OFFICIAL_DISCLOSURE_HINTS = [
   "financial result",
   "board meeting",
@@ -50,7 +53,7 @@ export function buildCompanyContext(ticker: string, companyName: string, sector:
 }
 
 export function scoreNewsRelevance(
-  article: { title: string; snippet?: string | null; url?: string },
+  article: { title: string; snippet?: string | null; url?: string; source?: string | null },
   ctx: CompanyContext
 ): { score: number; explanation: string } {
   const text = [article.title, article.snippet ?? ""].join(" ");
@@ -100,6 +103,21 @@ export function scoreNewsRelevance(
     score = Math.max(score, 0.55);
     if (!reasons.length) reasons.push("holding text match");
   }
+
+  // Publication quality scoring
+  let sourceMultiplier = 1.0;
+  if (article.source) {
+    const s = article.source.toLowerCase();
+    if (QUALITY_SOURCES.some(q => s.includes(q))) {
+      sourceMultiplier = 1.25; // 25% boost for premium financial journalism
+      reasons.push("high-quality source");
+    } else if (LOW_QUALITY_SOURCES.some(q => s.includes(q))) {
+      sourceMultiplier = 0.6; // Heavy penalty for social/unverified media
+      reasons.push("low-quality source penalty");
+    }
+  }
+
+  score *= sourceMultiplier;
 
   return { score: Math.max(0, Math.min(1, score)), explanation: reasons.join("; ") || "weak overlap" };
 }

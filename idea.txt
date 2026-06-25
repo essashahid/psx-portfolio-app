@@ -1,0 +1,11 @@
+What i am thinking is a way my platform gets the transcript of the video's which release and then uses LLM or some way to get information from them. We have a new tab called Bulls & Bears where we see insights like new stocks to get anything that the video recommends. Once we like the insights the information these videos provide we can then learn and add our own things?
+
+
+
+so what im saying having visualizations, charts anything that the video talks about related to stocks, or news should be present in this bulls & Bears tab.
+
+
+
+
+
+Platform --> Watches the youtube video (transcript) --> Extracts content and then adds to the tab --> displays it visually --> when next video comes, it can 

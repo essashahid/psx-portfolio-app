@@ -78,6 +78,8 @@ export interface NormalizedFinancialPoint {
   eps: number | null;
   isDerived: boolean;
   derivationNote?: string;
+  sourceUrl?: string | null;
+  sourceType?: string | null;
 }
 
 export interface NewsItem {

@@ -43,40 +43,128 @@ export function validateCompanyResolution(
   };
 }
 
-const MODULE_SECTION_MAP: Record<string, (payload: CompanyReportPayload) => boolean> = {
-  businessOverview: (p) => p.narrative.businessOverview.length > 0 || hasEvidence(p, "company"),
-  financials: (p) =>
-    p.charts.financialsAnnual.length > 0 ||
-    p.charts.financialsQuarterly.length > 0 ||
-    p.charts.financialsCumulative.length > 0 ||
-    p.narrative.financialPerformance.length > 0 ||
-    hasEvidenceArray(p, "financials"),
-  financialQuality: (p) => p.narrative.financialQuality.length > 0,
-  valuation: (p) => p.narrative.valuation.length > 0 || p.charts.valuation.some((v) => v.value !== null),
-  dividends: (p) => p.charts.dividends.length > 0 || p.narrative.dividends.length > 0,
-  pricePerformance: (p) => p.charts.price.length > 0 || p.narrative.pricePerformance.length > 0,
-  filings: (p) => hasEvidenceArray(p, "officialFilings"),
-  news: (p) => hasEvidenceArray(p, "independentNews"),
-  peers: (p) => hasEvidenceArray(p, "peers") && p.charts.peers.length > 0,
-  catalystsRisks: (p) => p.narrative.catalysts.length > 0 && p.narrative.risks.length > 0,
-  scenarioAnalysis: (p) => p.scenarios.length >= 3,
+/**
+ * Strict module checks. A module "passes" only when it has substantive content —
+ * not merely because some evidence key exists. Empty narrative sections are NOT acceptable.
+ */
+const MODULE_SECTION_MAP: Record<string, (payload: CompanyReportPayload) => { found: boolean; reason?: string }> = {
+  businessOverview: (p) => {
+    const has = p.narrative.businessOverview.length > 0;
+    return { found: has, reason: has ? undefined : "Business overview narrative is empty" };
+  },
+  financials: (p) => {
+    const hasData =
+      p.charts.financialsAnnual.length > 0 ||
+      p.charts.financialsQuarterly.length > 0 ||
+      p.charts.financialsCumulative.length > 0;
+    const hasNarrative = p.narrative.financialPerformance.length > 0;
+    const found = hasData || hasNarrative;
+    return { found, reason: found ? undefined : "No financial data or narrative generated" };
+  },
+  financialQuality: (p) => {
+    const has = p.narrative.financialQuality.length > 0;
+    return { found: has, reason: has ? undefined : "Financial quality narrative is empty" };
+  },
+  valuation: (p) => {
+    const hasNarrative = p.narrative.valuation.length > 0;
+    const hasData = p.charts.valuation.some((v) => v.value !== null);
+    const found = hasNarrative || hasData;
+    return { found, reason: found ? undefined : "No valuation data or narrative" };
+  },
+  dividends: (p) => {
+    const found = p.charts.dividends.length > 0 || p.narrative.dividends.length > 0;
+    return { found, reason: found ? undefined : "No dividend data or narrative" };
+  },
+  pricePerformance: (p) => {
+    const found = p.charts.price.length > 0 || p.narrative.pricePerformance.length > 0;
+    return { found, reason: found ? undefined : "No price performance data or narrative" };
+  },
+  filings: (p) => {
+    const found = hasEvidenceArray(p, "officialFilings");
+    return { found, reason: found ? undefined : "No official filings retrieved" };
+  },
+  news: (p) => {
+    const found = hasEvidenceArray(p, "independentNews");
+    return { found, reason: found ? undefined : "No independent news articles retrieved" };
+  },
+  peers: (p) => {
+    const hasPeers = hasEvidenceArray(p, "peers");
+    const hasChartData = p.charts.peers.some((x) => x.value !== null);
+    const found = hasPeers && hasChartData;
+    return {
+      found,
+      reason: found
+        ? undefined
+        : !hasPeers
+          ? "No peer data retrieved"
+          : "Peer data retrieved but all metric values are unavailable",
+    };
+  },
+  catalystsRisks: (p) => {
+    const hasCatalysts = p.narrative.catalysts.length > 0;
+    const hasRisks = p.narrative.risks.length > 0;
+    const found = hasCatalysts && hasRisks;
+    return {
+      found,
+      reason: found
+        ? undefined
+        : !hasCatalysts && !hasRisks
+          ? "Both catalysts and risks narratives are empty"
+          : !hasCatalysts
+            ? "Catalysts narrative is empty"
+            : "Risks narrative is empty",
+    };
+  },
+  scenarioAnalysis: (p) => {
+    const found = p.scenarios.length >= 3;
+    return { found, reason: found ? undefined : "Fewer than 3 scenario cases generated" };
+  },
   portfolio: (p) => {
     const portfolio = p.evidence.portfolio as { held?: boolean; quantity?: number } | undefined;
-    if (!portfolio) return false;
-    if (portfolio.held === false) return true;
-    return p.narrative.portfolio.length > 0 || portfolio.quantity != null;
+    if (!portfolio) return { found: false, reason: "No portfolio data" };
+    if (portfolio.held === false) return { found: true };
+    const hasNarrative = p.narrative.portfolio.length > 0;
+    const hasData = portfolio.quantity != null;
+    const found = hasNarrative || hasData;
+    return { found, reason: found ? undefined : "Portfolio position selected but no data or narrative" };
   },
-  monitoring: (p) => p.narrative.monitoring.length > 0,
+  monitoring: (p) => {
+    const has = p.narrative.monitoring.length > 0;
+    return { found: has, reason: has ? undefined : "Monitoring checklist is empty" };
+  },
 };
-
-function hasEvidence(payload: CompanyReportPayload, key: string): boolean {
-  return payload.evidence[key] !== undefined && payload.evidence[key] !== null;
-}
 
 function hasEvidenceArray(payload: CompanyReportPayload, key: string): boolean {
   const val = payload.evidence[key];
   return Array.isArray(val) && val.length > 0;
 }
+
+/**
+ * Modules that must have substantive content when selected.
+ * If any of these fail, the report receives a critical failure.
+ */
+const CRITICAL_MODULES = new Set([
+  "financials",
+  "peers",
+  "filings",
+  "portfolio",
+  "scenarioAnalysis",
+  "catalystsRisks",
+]);
+
+/**
+ * Modules that produce warnings (not critical failures) when content is missing.
+ * The report can still be published but will note limited content.
+ */
+const WARNING_MODULES = new Set([
+  "businessOverview",
+  "financialQuality",
+  "valuation",
+  "dividends",
+  "pricePerformance",
+  "news",
+  "monitoring",
+]);
 
 export function validateReportBeforePublish(
   payload: CompanyReportPayload,
@@ -87,38 +175,57 @@ export function validateReportBeforePublish(
   const warnings: string[] = [];
   const moduleChecks: ReportValidationResult["moduleChecks"] = [];
 
+  // Company identity checks
   const company = payload.evidence.company as { companyName?: string; sector?: string; exchange?: string } | undefined;
   if (!company?.companyName) criticalFailures.push("Company name not resolved.");
   if (!company?.sector) criticalFailures.push("Sector not resolved.");
   if (!company?.exchange) criticalFailures.push("Exchange not resolved.");
   if (!quoteTimestamp) warnings.push("Current price timestamp missing.");
 
+  // Executive summary is always required
+  if (payload.narrative.executiveSummary.length === 0) {
+    criticalFailures.push("Executive summary narrative is empty — report must have a sourced executive summary.");
+  }
+
+  // Module checks
   for (const [key, selected] of Object.entries(options.include)) {
     if (!selected) continue;
     const checker = MODULE_SECTION_MAP[key];
-    const found = checker ? checker(payload) : true;
-    moduleChecks.push({ module: key, selected: true, found });
-    // Structural modules must be present; narrative-only gaps are warnings.
-    const structural = ["financials", "peers", "filings", "news", "scenarioAnalysis", "portfolio"];
-    if (!found && structural.includes(key)) {
-      criticalFailures.push(`Selected module "${key}" is missing from the generated report.`);
-    } else if (!found) {
-      warnings.push(`Selected module "${key}" has limited narrative content.`);
+    if (!checker) {
+      moduleChecks.push({ module: key, selected: true, found: true });
+      continue;
+    }
+
+    const result = checker(payload);
+    moduleChecks.push({ module: key, selected: true, found: result.found });
+
+    if (!result.found) {
+      if (CRITICAL_MODULES.has(key)) {
+        criticalFailures.push(`Selected module "${key}" failed: ${result.reason ?? "missing from report"}`);
+      } else {
+        warnings.push(`Selected module "${key}" has limited content: ${result.reason ?? "narrative empty"}`);
+      }
     }
   }
 
-  if (options.include.peers && !hasEvidenceArray(payload, "peers")) {
-    criticalFailures.push("Peer comparison selected but peer data not delivered.");
-  }
-
-  const portfolio = payload.evidence.portfolio as { held?: boolean; quantity?: number } | undefined;
+  // Portfolio reconciliation check
+  const portfolio = payload.evidence.portfolio as {
+    held?: boolean;
+    dividendIncome?: number;
+    totalReturn?: number | null;
+    priceReturnPct?: number | null;
+    unrealizedPlPct?: number | null;
+  } | undefined;
   if (
     options.include.portfolio &&
     portfolio?.held &&
-    payload.narrative.portfolio.length === 0 &&
-    portfolio.quantity == null
+    portfolio.dividendIncome != null &&
+    portfolio.dividendIncome > 0 &&
+    portfolio.totalReturn != null &&
+    portfolio.priceReturnPct != null &&
+    Math.abs(portfolio.totalReturn - portfolio.priceReturnPct) < 0.01
   ) {
-    criticalFailures.push("Portfolio position selected but portfolio section is empty.");
+    warnings.push("Total return including dividends equals price-only return despite recorded dividend income — check portfolio calculation.");
   }
 
   return {

@@ -17,6 +17,13 @@ const CUMULATIVE_PERIODS = new Set(["H1", "9M", "HALF", "NINE_MONTHS"]);
 const QUARTERLY_PERIODS = new Set(["Q1", "Q2", "Q3", "Q4"]);
 const ANNUAL_PERIODS = new Set(["FY", "FULL_YEAR", "ANNUAL"]);
 
+/** Canonical order within a fiscal year for sorting. */
+const PERIOD_SORT_ORDER: Record<string, number> = {
+  Q1: 1, Q2: 2, Q3: 3, Q4: 4,
+  H1: 10, "9M": 11,
+  FY: 20, FULL_YEAR: 20, ANNUAL: 20,
+};
+
 function periodKind(fiscalPeriod: string | null, periodType: string): NormalizedFinancialPoint["periodKind"] {
   const p = (fiscalPeriod ?? periodType).toUpperCase().replace(/\s+/g, "");
   if (periodType === "annual" || ANNUAL_PERIODS.has(p)) return "annual";
@@ -42,12 +49,73 @@ function periodLabel(row: RawFinancialRow): string {
   return `${fy} ${fp}`.trim();
 }
 
+function sortKey(p: NormalizedFinancialPoint): string {
+  const year = p.fiscalYear ?? 0;
+  const order = PERIOD_SORT_ORDER[(p.fiscalPeriod ?? "FY").toUpperCase()] ?? 20;
+  return `${String(year).padStart(5, "0")}-${String(order).padStart(3, "0")}`;
+}
+
+/** Sort points chronologically: by fiscal year, then by period order within the year. */
+function sortChronologically(points: NormalizedFinancialPoint[]): NormalizedFinancialPoint[] {
+  return [...points].sort((a, b) => sortKey(a).localeCompare(sortKey(b)));
+}
+
+export interface FinancialDataIssue {
+  type: "duplicate" | "suspicious_repeat" | "quarterly_exceeds_annual" | "missing_source";
+  description: string;
+  periods: string[];
+  field?: string;
+}
+
+/** Detect duplicate and suspicious financial records. */
+function detectDataIssues(points: NormalizedFinancialPoint[]): FinancialDataIssue[] {
+  const issues: FinancialDataIssue[] = [];
+
+  // Detect exact duplicate period labels
+  const seen = new Map<string, NormalizedFinancialPoint>();
+  for (const p of points) {
+    const key = `${p.periodKind}:${p.periodLabel}`;
+    if (seen.has(key)) {
+      issues.push({
+        type: "duplicate",
+        description: `Duplicate period record for ${p.periodLabel} (${p.periodKind})`,
+        periods: [p.periodLabel],
+      });
+    }
+    seen.set(key, p);
+  }
+
+  // Detect suspicious identical values across different annual periods
+  const annuals = points.filter((p) => p.periodKind === "annual");
+  for (let i = 0; i < annuals.length; i++) {
+    for (let j = i + 1; j < annuals.length; j++) {
+      const a = annuals[i];
+      const b = annuals[j];
+      if (
+        a.revenue !== null && b.revenue !== null && a.revenue === b.revenue &&
+        a.profitAfterTax !== null && b.profitAfterTax !== null && a.profitAfterTax === b.profitAfterTax &&
+        a.periodLabel !== b.periodLabel
+      ) {
+        issues.push({
+          type: "suspicious_repeat",
+          description: `Identical revenue and PAT values in ${a.periodLabel} and ${b.periodLabel} — possible data duplication`,
+          periods: [a.periodLabel, b.periodLabel],
+          field: "revenue+PAT",
+        });
+      }
+    }
+  }
+
+  return issues;
+}
+
 export function normalizeFinancialRows(rows: RawFinancialRow[], minYear: number): {
   all: NormalizedFinancialPoint[];
   annual: NormalizedFinancialPoint[];
   quarterly: NormalizedFinancialPoint[];
   cumulative: NormalizedFinancialPoint[];
   displayUnit: string;
+  dataIssues: FinancialDataIssue[];
 } {
   const income = rows
     .filter((r) => r.statement_type === "income_statement")
@@ -55,7 +123,17 @@ export function normalizeFinancialRows(rows: RawFinancialRow[], minYear: number)
 
   const unit = income.length ? extractUnit(income[0].data) : "PKR million";
 
-  const base: NormalizedFinancialPoint[] = income.map((r) => ({
+  // Deduplicate: keep the row with the most recent reported_date for each period
+  const deduped = new Map<string, RawFinancialRow>();
+  for (const r of income) {
+    const key = `${r.fiscal_year ?? "?"}-${(r.fiscal_period ?? r.period_type).toUpperCase()}`;
+    const existing = deduped.get(key);
+    if (!existing || (r.reported_date ?? "") > (existing.reported_date ?? "")) {
+      deduped.set(key, r);
+    }
+  }
+
+  const base: NormalizedFinancialPoint[] = [...deduped.values()].map((r) => ({
     periodLabel: periodLabel(r),
     periodKind: periodKind(r.fiscal_period, r.period_type),
     fiscalYear: r.fiscal_year,
@@ -68,14 +146,21 @@ export function normalizeFinancialRows(rows: RawFinancialRow[], minYear: number)
     profitAfterTax: num(r.data, "profit_after_tax"),
     eps: num(r.data, "eps"),
     isDerived: false,
+    sourceUrl: r.source_url,
+    sourceType: r.source_type,
   }));
 
   const withDerived = deriveStandaloneQuarters(base);
-  const annual = withDerived.filter((p) => p.periodKind === "annual");
-  const quarterly = withDerived.filter((p) => p.periodKind === "quarterly");
-  const cumulative = withDerived.filter((p) => p.periodKind === "cumulative");
 
-  return { all: withDerived, annual, quarterly, cumulative, displayUnit: unit };
+  // Sort ALL arrays chronologically
+  const annual = sortChronologically(withDerived.filter((p) => p.periodKind === "annual"));
+  const quarterly = sortChronologically(withDerived.filter((p) => p.periodKind === "quarterly"));
+  const cumulative = sortChronologically(withDerived.filter((p) => p.periodKind === "cumulative"));
+  const all = sortChronologically(withDerived);
+
+  const dataIssues = detectDataIssues(all);
+
+  return { all, annual, quarterly, cumulative, displayUnit: unit, dataIssues };
 }
 
 function deriveStandaloneQuarters(points: NormalizedFinancialPoint[]): NormalizedFinancialPoint[] {
@@ -112,8 +197,9 @@ function subtractPoint(
   year: number
 ): NormalizedFinancialPoint | null {
   if (cumulative.unit !== prior.unit) return null;
+  // Allow negative results (valid for negative-growth quarters)
   const sub = (a: number | null, b: number | null) =>
-    a !== null && b !== null && a >= b ? a - b : null;
+    a !== null && b !== null ? a - b : null;
   const pat = sub(cumulative.profitAfterTax, prior.profitAfterTax);
   const rev = sub(cumulative.revenue, prior.revenue);
   if (pat === null && rev === null) return null;
@@ -130,7 +216,7 @@ function subtractPoint(
     profitAfterTax: pat,
     eps: null,
     isDerived: true,
-    derivationNote: "Calculated standalone quarter from cumulative disclosure",
+    derivationNote: `Calculated standalone quarter: ${cumulative.periodLabel} minus ${prior.periodLabel}`,
   };
 }
 
@@ -173,4 +259,45 @@ export function summarizeFinancialsForEvidence(points: NormalizedFinancialPoint[
     isDerived: p.isDerived,
     derivationNote: p.derivationNote,
   }));
+}
+
+/** Build a concise trend summary for the AI prompt (more useful than raw rows). */
+export function buildFinancialTrendSummary(points: NormalizedFinancialPoint[], displayUnit: string): string {
+  const annual = points.filter((p) => p.periodKind === "annual");
+  if (!annual.length) return "No annual financial data available.";
+
+  const lines: string[] = [`Financial values in ${displayUnit}.`];
+
+  for (const p of annual) {
+    const rev = p.revenue !== null ? p.revenue.toLocaleString("en-US") : "n/a";
+    const pat = p.profitAfterTax !== null ? p.profitAfterTax.toLocaleString("en-US") : "n/a";
+    const eps = p.eps !== null ? `PKR ${p.eps.toFixed(2)}` : "n/a";
+    lines.push(`${p.periodLabel}: Revenue ${rev}, PAT ${pat}, EPS ${eps}`);
+  }
+
+  // Add growth rates
+  if (annual.length >= 2) {
+    const latest = annual[annual.length - 1];
+    const prior = annual[annual.length - 2];
+    if (latest.revenue && prior.revenue && prior.revenue > 0) {
+      const g = ((latest.revenue - prior.revenue) / prior.revenue * 100).toFixed(1);
+      lines.push(`Revenue growth (${prior.periodLabel} → ${latest.periodLabel}): ${g}%`);
+    }
+    if (latest.profitAfterTax && prior.profitAfterTax && prior.profitAfterTax > 0) {
+      const g = ((latest.profitAfterTax - prior.profitAfterTax) / prior.profitAfterTax * 100).toFixed(1);
+      lines.push(`PAT growth (${prior.periodLabel} → ${latest.periodLabel}): ${g}%`);
+    }
+  }
+
+  const quarterly = points.filter((p) => p.periodKind === "quarterly");
+  if (quarterly.length) {
+    lines.push("", "Recent quarters:");
+    for (const q of quarterly.slice(-4)) {
+      const rev = q.revenue !== null ? q.revenue.toLocaleString("en-US") : "n/a";
+      const pat = q.profitAfterTax !== null ? q.profitAfterTax.toLocaleString("en-US") : "n/a";
+      lines.push(`${q.periodLabel}${q.isDerived ? "*" : ""}: Revenue ${rev}, PAT ${pat}`);
+    }
+  }
+
+  return lines.join("\n");
 }

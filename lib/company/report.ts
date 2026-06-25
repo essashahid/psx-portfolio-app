@@ -19,6 +19,7 @@ import {
   normalizeFinancialRows,
   summarizeFinancialsForEvidence,
   toChartSeries,
+  buildFinancialTrendSummary,
 } from "./report/financials";
 import { buildReportMarkdown, normalizeNarrative } from "./report/markdown";
 import { enrichNarrativeFromEvidence } from "./report/narrative-fallbacks";
@@ -27,7 +28,7 @@ import {
   filterAndDedupeNews,
   separateFilingsFromNews,
 } from "./report/news";
-import { autoSelectPeers, buildPeerChartData, buildPeerRows, peerMedian } from "./report/peers";
+import { autoSelectPeers, buildPeerChartData, buildPeerRows, peerMedian, buildPeerComparisonSummary } from "./report/peers";
 import {
   buildScenarioAnalysis,
   extractGrossMargin,
@@ -40,6 +41,7 @@ import {
   validateCompanyResolution,
   validateReportBeforePublish,
 } from "./report/validation";
+import type { EnrichmentContext } from "./report/narrative-fallbacks";
 import {
   completeReportJob,
   createReportJob,
@@ -428,15 +430,32 @@ export async function generateCompanyReport(
   const aiResult = await stage("narrative", "Writing sourced interpretation", () =>
     generateAiNarrative(symbol, evidence, options)
   );
+  const enrichCtx: EnrichmentContext = {
+    portfolioSlice,
+    financialPoints: normalizedFin.all,
+    displayUnit: normalizedFin.displayUnit,
+    sources: sourceRegister,
+    companyName: resolved.companyName,
+    sector: resolved.sector,
+    description: resolved.metadata.description,
+    businessLines: resolved.metadata.businessLines,
+    technicals: {
+      latestPrice: technicals.latestPrice,
+      dayChangePct: technicals.dayChangePct,
+      fiftyTwoWeekHigh: technicals.fiftyTwoWeekHigh,
+      fiftyTwoWeekLow: technicals.fiftyTwoWeekLow,
+      volatility: technicals.volatility,
+      pricePerformance: pricePerformance ?? null,
+    },
+    filings: (filings ?? []).map((f) => ({ title: f.title, url: f.url, date: f.date, category: f.category })),
+    news: independentNews.map((n) => ({ title: n.title, publishedAt: n.publishedAt, source: n.source })),
+    ratios: ratios.map((r) => ({ name: r.ratio_name, value: r.ratio_value })),
+    hasPeers: (peerRows ?? []).length >= 2,
+  };
   const narrative = enrichNarrativeFromEvidence(
     aiResult?.narrative ?? emptyNarrative(),
     options,
-    {
-      portfolioSlice,
-      financialPoints: normalizedFin.all,
-      displayUnit: normalizedFin.displayUnit,
-      sources: sourceRegister,
-    }
+    enrichCtx
   );
   const model = aiResult?.model ?? "none";
 
@@ -660,9 +679,9 @@ export async function getReportPreview(
   };
 }
 
-const REPORT_SYSTEM_PROMPT = `You write tightly constrained Pakistan Stock Exchange research insights.
+const REPORT_SYSTEM_PROMPT = `You write professional Pakistan Stock Exchange equity research insights.
 
-Use only the structured evidence in the prompt. DeepSeek is the synthesis/writing model only; do not invent market data, financials, news, filings, valuation inputs or calculations.
+Use only the structured evidence in the prompt. You are the synthesis and writing layer only; do not invent market data, financials, news, filings, valuation inputs or calculations.
 
 Rules:
 - Every insight must cite source IDs from the source register, such as S1 or S4.
@@ -670,9 +689,14 @@ Rules:
 - Do not create buy/sell/hold calls, target prices, guaranteed upside/downside, or "safe investment" labels.
 - Clearly separate official company/PSX disclosures from independent interpretation.
 - For banks, insurers, REITs, funds or other financial institutions, avoid forcing industrial metrics when unavailable or inappropriate.
-- Return concise JSON only. No Markdown.
+- Return JSON only. No Markdown wrapping.
 - Do not reveal hidden reasoning or chain-of-thought.
-- Provide company-specific analysis, not generic filler.`;
+- Provide company-specific analysis, not generic filler.
+- Each section MUST contain substantive, company-specific insights — not placeholder text.
+- executiveSummary MUST contain at least 3 insights covering business direction, financial trends, and key developments.
+- catalysts and risks MUST contain at least 2 company-specific items each, citing evidence.
+- recentDevelopments MUST summarize the most significant recent filings or news.
+- dataGaps MUST identify specific missing data fields or limitations.`;
 
 async function generateAiNarrative(
   symbol: string,
@@ -685,15 +709,26 @@ async function generateAiNarrative(
       `Ticker: ${symbol}`,
       `Depth: ${options.depth}; period: ${options.periodYears} years.`,
       `Sections to populate (only these): ${JSON.stringify(options.include)}`,
-      "When portfolio.held is true in evidence, portfolio must contain at least two cited insights.",
-      "When financials array is non-empty, financialPerformance must contain at least two cited insights.",
-      "Return exactly this JSON shape:",
+      "",
+      "MINIMUM REQUIREMENTS:",
+      "- executiveSummary: At least 3 insights covering business, financials, and outlook.",
+      "- businessOverview: At least 2 insights about the company's operations and sector position.",
+      "- financialPerformance: At least 2 insights citing specific financial figures.",
+      "- catalysts: At least 2 company-specific positive factors with evidence.",
+      "- risks: At least 2 company-specific risk factors with evidence.",
+      "- recentDevelopments: At least 1 insight about recent filings or news.",
+      "- portfolio: When portfolio.held is true, at least 2 insights about the position.",
+      "- dataGaps: At least 1 insight about data limitations.",
+      "",
+      "Each insight should be a substantive sentence (40-80 words). Do NOT use placeholder text.",
+      "",
+      "Return exactly this JSON shape (each value is an array of {text: string, citations: string[]}):",
       `{"businessOverview":[],"executiveSummary":[],"financialPerformance":[],"financialQuality":[],"valuation":[],"dividends":[],"pricePerformance":[],"catalysts":[],"risks":[],"recentDevelopments":[],"portfolio":[],"monitoring":[],"dataGaps":[]}`,
-      "Populate sections requested in options.include only. Keep each text under 36 words.",
+      "",
       "Structured evidence:",
       JSON.stringify(compactEvidenceForAi(evidence), null, 2),
     ].join("\n"),
-    options.depth === "full" ? 2800 : 1600
+    options.depth === "full" ? 4500 : 2200
   );
 
   return { narrative: normalizeNarrative(data), model };
@@ -705,11 +740,23 @@ function emptyNarrative(): AiReportNarrative {
 
 function compactEvidenceForAi(evidence: unknown): unknown {
   const e = evidence as Record<string, unknown>;
+  // Build a financial trend summary for better AI context
+  const finPoints = e.financials as { periodLabel: string; periodKind: string; revenue: number | null; profitAfterTax: number | null; eps: number | null }[] | undefined;
+  const displayUnit = (e.displayUnit as string) ?? "PKR million";
+  let financialSummary: string | undefined;
+  if (finPoints?.length) {
+    financialSummary = buildFinancialTrendSummary(
+      finPoints as import("./report/types").NormalizedFinancialPoint[],
+      displayUnit
+    );
+  }
+
   return {
     company: e.company,
     quote: e.quote,
     technicals: e.technicals,
-    financials: (e.financials as unknown[])?.slice(0, 16),
+    financialSummary,
+    financials: (e.financials as unknown[])?.slice(0, 20),
     ratios: (e.ratios as unknown[])?.slice(0, 50),
     payouts: (e.payouts as unknown[])?.slice(0, 12),
     officialFilings: (e.officialFilings as unknown[])?.slice(0, 12),
@@ -728,11 +775,26 @@ function buildPortfolioSlice(
   userDividends: CompanyDividendRow[]
 ) {
   if (!holding) return { held: false };
-  const dividendTotal = userDividends.reduce((s, d) => s + (d.perShare ?? 0) * holding.quantity, 0);
+
+  // Use the platform's aggregated dividend_income as primary source (already reconciled)
+  // Fall back to per-share calculation only when dividend_income is unavailable
+  const platformDividendIncome = holding.dividend_income ?? 0;
+  const calculatedDividendIncome = userDividends.reduce((s, d) => s + (d.perShare ?? 0) * holding.quantity, 0);
+  const dividendTotal = platformDividendIncome > 0 ? platformDividendIncome : calculatedDividendIncome;
+
   const costBasis = holding.avg_cost * holding.quantity;
   const marketValue = holding.market_value ?? holding.quantity * (currentPrice ?? holding.latest_price ?? 0);
-  const totalReturn = costBasis > 0 ? ((marketValue + dividendTotal - costBasis) / costBasis) * 100 : null;
-  const yieldOnCost = holding.avg_cost > 0 && dividendTotal > 0 ? (dividendTotal / costBasis) * 100 : null;
+
+  // Price-only return
+  const priceReturnPct = costBasis > 0 ? ((marketValue - costBasis) / costBasis) * 100 : null;
+
+  // Total return including dividends
+  const totalReturnAmount = (marketValue - costBasis) + dividendTotal;
+  const totalReturn = costBasis > 0 ? (totalReturnAmount / costBasis) * 100 : null;
+
+  // Yield on cost = dividends / cost basis
+  const yieldOnCost = costBasis > 0 && dividendTotal > 0 ? (dividendTotal / costBasis) * 100 : null;
+
   return {
     held: true,
     quantity: holding.quantity,
@@ -741,10 +803,12 @@ function buildPortfolioSlice(
     marketValue,
     unrealizedPl: holding.unrealized_pl,
     unrealizedPlPct: holding.unrealized_pl_pct,
-    dividendIncome: holding.dividend_income,
+    dividendIncome: dividendTotal > 0 ? dividendTotal : holding.dividend_income,
     weight: holding.weight,
     sectorWeight: portfolio?.sectorWeights.find((s) => s.sector === holding.sector)?.weight ?? null,
+    priceReturnPct,
     totalReturn,
+    totalReturnAmount,
     yieldOnCost,
   };
 }

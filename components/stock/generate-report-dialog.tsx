@@ -438,9 +438,22 @@ export function GenerateReportDialog({
             )}
 
             {error && (
-              <div className="flex items-start gap-2 rounded-md bg-red-50 px-3 py-2 text-xs text-red-700">
-                <XCircle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
-                {error}
+              <div className="flex items-start gap-2 rounded-md bg-red-50 px-3 py-2 text-red-700">
+                <XCircle className="mt-0.5 h-4 w-4 shrink-0" />
+                <div>
+                  <p className="text-sm font-semibold">Generation Failed</p>
+                  <div className="mt-1 text-xs space-y-1">
+                    {error.includes("Report validation failed:") ? (
+                      <ul className="list-disc pl-4">
+                        {error.replace("Report validation failed: ", "").split("; ").map((err, i) => (
+                          <li key={i}>{err}</li>
+                        ))}
+                      </ul>
+                    ) : (
+                      <p>{error}</p>
+                    )}
+                  </div>
+                </div>
               </div>
             )}
 

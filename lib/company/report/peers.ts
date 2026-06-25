@@ -2,6 +2,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { getCompanyMetadata } from "@/lib/company/metadata";
 import { computeRatios, refreshRatios } from "@/lib/engine/ratios";
 import { refreshQuote } from "@/lib/engine/market-data";
+import { populateAllFundamentals } from "@/lib/engine/fundamentals";
 import type { PeerRow } from "./types";
 
 const SECTOR_PEER_PRESETS: Record<string, string[]> = {
@@ -10,8 +11,34 @@ const SECTOR_PEER_PRESETS: Record<string, string[]> = {
   "commercial banks": ["HBL", "UBL", "MCB", "BAFL", "MEBL"],
   fertilizer: ["FFC", "FATIMA", "EFERT"],
   oil: ["OGDC", "PPL", "POL"],
+  "oil & gas exploration": ["OGDC", "PPL", "POL"],
+  "oil & gas marketing": ["PSO", "SHEL", "APL"],
   textile: ["GATM", "NML", "KTML"],
+  automobile: ["INDU", "PSMC", "HCAR", "MTL"],
+  "automobile assembler": ["INDU", "PSMC", "HCAR", "MTL"],
+  technology: ["SYS", "TRG", "NETSOL"],
+  "technology & communication": ["SYS", "TRG", "NETSOL"],
+  power: ["HUBC", "KEL", "KAPCO", "NCPL"],
+  "power generation & distribution": ["HUBC", "KEL", "KAPCO", "NCPL"],
+  pharmaceutical: ["SEARL", "GLAXO", "AGP", "HINOON"],
+  "pharmaceuticals": ["SEARL", "GLAXO", "AGP", "HINOON"],
+  food: ["NESTLE", "UNITY", "QUICE"],
+  "food & personal care": ["NESTLE", "UNITY", "FFL"],
+  "refinery": ["NRL", "ATRL", "PRL"],
+  "chemical": ["ICI", "LOTCHEM", "ENGRO"],
+  "insurance": ["JSGCL", "AICL", "EFUG"],
+  "real estate": ["DHA", "DLAI"],
 };
+
+const REQUIRED_PEER_METRICS = [
+  "P/E", "P/B", "P/S", "EV/EBITDA", "Dividend yield (TTM)",
+  "ROE", "ROA", "Net margin", "Gross margin",
+  "Revenue growth", "EPS growth", "Debt-to-equity",
+  "Interest coverage",
+];
+
+const MIN_PEERS_WITH_DATA = 2;
+const MIN_METRICS_PER_PEER = 3;
 
 export async function autoSelectPeers(
   supabase: SupabaseClient,
@@ -64,6 +91,15 @@ export async function buildPeerRows(
     : await autoSelectPeers(supabase, ticker, sector, marketCap);
   const symbols = peers.filter((p) => p !== ticker).slice(0, 5);
 
+  // Critical fix: populate fundamentals for each peer BEFORE computing ratios
+  // This was the root cause of all-n/a peer data
+  await Promise.allSettled(
+    symbols.map((p) =>
+      populateAllFundamentals(p, { maxFilings: 1 }).catch(() => null)
+    )
+  );
+
+  // Then refresh quotes and ratios
   await Promise.allSettled(symbols.map((p) => refreshQuote(p)));
   await Promise.allSettled(symbols.map((p) => refreshRatios(supabase, p)));
 
@@ -78,6 +114,15 @@ export async function buildPeerRows(
         .maybeSingle(),
       computeRatios(supabase, peer),
     ]);
+
+    const filteredRatios = ratios
+      .filter((r) => REQUIRED_PEER_METRICS.includes(r.ratio_name))
+      .map((r) => ({
+        ratio_name: r.ratio_name,
+        ratio_value: r.ratio_value,
+        source_period: r.source_period,
+      }));
+
     rows.push({
       ticker: peer,
       companyName: meta.companyName,
@@ -90,17 +135,30 @@ export async function buildPeerRows(
             last_fetched_at: quoteRes.data.last_fetched_at as string | null,
           }
         : null,
-      ratios: ratios
-        .filter((r) =>
-          ["P/E", "P/B", "P/S", "Dividend yield (TTM)", "ROE", "Net margin", "Revenue growth", "EPS growth", "Debt-to-equity"].includes(
-            r.ratio_name
-          )
-        )
-        .map((r) => ({ ratio_name: r.ratio_name, ratio_value: r.ratio_value, source_period: r.source_period })),
+      ratios: filteredRatios,
       selectionReason: peerSelectionReason(peer, sector, preset),
     });
   }
   return rows;
+}
+
+/** Count how many non-null ratio values a peer has. */
+function peerDataCompleteness(row: PeerRow): number {
+  return row.ratios.filter((r) => r.ratio_value !== null && Number.isFinite(r.ratio_value)).length;
+}
+
+/** Validate that the peer module has enough data to be meaningful. */
+export function validatePeerData(rows: PeerRow[]): {
+  valid: boolean;
+  peersWithData: number;
+  details: string;
+} {
+  const peersWithSufficientData = rows.filter((r) => peerDataCompleteness(r) >= MIN_METRICS_PER_PEER);
+  const valid = peersWithSufficientData.length >= MIN_PEERS_WITH_DATA;
+  const details = valid
+    ? `${peersWithSufficientData.length} of ${rows.length} peers have sufficient comparable data.`
+    : `Only ${peersWithSufficientData.length} of ${rows.length} peers have ≥${MIN_METRICS_PER_PEER} non-null metrics. Need ≥${MIN_PEERS_WITH_DATA}.`;
+  return { valid, peersWithData: peersWithSufficientData.length, details };
 }
 
 export function peerMedian(rows: PeerRow[], ratioName: string): number | null {
@@ -114,7 +172,7 @@ export function peerMedian(rows: PeerRow[], ratioName: string): number | null {
 }
 
 export function buildPeerChartData(rows: PeerRow[]): { ticker: string; metric: string; value: number | null }[] {
-  const metrics = ["P/E", "P/B", "ROE", "Net margin", "Dividend yield (TTM)"];
+  const metrics = ["P/E", "P/B", "ROE", "Net margin", "Dividend yield (TTM)", "Revenue growth", "Debt-to-equity"];
   const out: { ticker: string; metric: string; value: number | null }[] = [];
   for (const metric of metrics) {
     for (const row of rows) {
@@ -123,4 +181,30 @@ export function buildPeerChartData(rows: PeerRow[]): { ticker: string; metric: s
     }
   }
   return out;
+}
+
+/** Build a peer comparison summary string for the AI prompt. */
+export function buildPeerComparisonSummary(rows: PeerRow[], subjectTicker: string): string {
+  if (!rows.length) return "No peer data available.";
+
+  const lines: string[] = [`Peer comparison for ${subjectTicker}:`];
+  const metrics = ["P/E", "P/B", "ROE", "Net margin", "Dividend yield (TTM)", "Revenue growth", "Debt-to-equity"];
+
+  // Header
+  const tickers = rows.map((r) => r.ticker);
+  lines.push(`| Metric | ${tickers.join(" | ")} | Peer Median |`);
+  lines.push(`| --- | ${tickers.map(() => "---").join(" | ")} | --- |`);
+
+  for (const metric of metrics) {
+    const values = rows.map((r) => {
+      const ratio = r.ratios.find((x) => x.ratio_name === metric);
+      return ratio?.ratio_value !== null && ratio?.ratio_value !== undefined
+        ? ratio.ratio_value.toFixed(2)
+        : "n/a";
+    });
+    const median = peerMedian(rows, metric);
+    lines.push(`| ${metric} | ${values.join(" | ")} | ${median !== null ? median.toFixed(2) : "n/a"} |`);
+  }
+
+  return lines.join("\n");
 }
