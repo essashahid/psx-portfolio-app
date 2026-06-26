@@ -17,6 +17,7 @@ import {
   type BenchmarkSeriesPoint,
   type BenchmarkSummary,
   type PositionBuildRow,
+  type RealizedSale,
 } from "@/lib/engine/ledger-analytics";
 import { summarizeBenchmarkSeries } from "@/lib/engine/benchmark-growth";
 
@@ -191,6 +192,71 @@ function buildDbPositionBuild(
       unrealizedPl: h.unrealizedPl,
     } satisfies PositionBuildRow;
   });
+}
+
+// Turn each stored sell transaction into a realised-sale line. Cost allocated is
+// backed out of the stored realised P/L (proceeds − realised), and the holding
+// status comes from whether any shares of that ticker remain on the books. The
+// average holding age is derived from the ticker's earliest buy before the sale.
+type DbSaleTxn = {
+  ticker: string;
+  trade_date: string | null;
+  type: string;
+  quantity: number;
+  price: number;
+  commission: number;
+  tax: number;
+  net_amount: number;
+  realized_pl: number | null;
+};
+function buildDbSales(
+  txns: DbSaleTxn[],
+  currentQtyByTicker: Map<string, number>,
+  round2: (n: number) => number
+): RealizedSale[] {
+  const DAY_MS = 86_400_000;
+  // Earliest dated buy per ticker, for a holding-age estimate.
+  const firstBuyDate = new Map<string, string>();
+  for (const t of txns) {
+    if (t.type !== "BUY" && t.type !== "RIGHT") continue;
+    if (!t.trade_date) continue;
+    const current = firstBuyDate.get(t.ticker);
+    if (!current || t.trade_date < current) firstBuyDate.set(t.ticker, t.trade_date);
+  }
+
+  return txns
+    .filter((t) => t.type === "SELL")
+    .sort((a, b) => (a.trade_date ?? "").localeCompare(b.trade_date ?? ""))
+    .map((t) => {
+      const grossProceeds = round2(t.quantity * t.price);
+      const saleFees = round2(t.commission + t.tax);
+      const proceeds = round2(t.net_amount);
+      const realized = round2(t.realized_pl ?? 0);
+      const costOut = round2(proceeds - realized);
+      const remainingQuantity = round2(currentQtyByTicker.get(t.ticker) ?? 0);
+      const firstBuy = firstBuyDate.get(t.ticker);
+      const averageHoldingDays =
+        firstBuy && t.trade_date
+          ? Math.max(0, Math.round((Date.parse(t.trade_date) - Date.parse(firstBuy)) / DAY_MS))
+          : null;
+      return {
+        date: t.trade_date,
+        ticker: t.ticker,
+        quantity: round2(t.quantity),
+        grossProceeds,
+        saleFees,
+        proceeds,
+        costOut,
+        realized,
+        realizedReturnPct: costOut > 0 ? round2((realized / costOut) * 100) : null,
+        averageHoldingDays,
+        remainingQuantity,
+        status: remainingQuantity > 0.0001 ? "Partially realised" : "Closed",
+        brokerOrderNo: null,
+        sourceEntryNos: [`${t.ticker} ${t.trade_date ?? "undated"}`],
+        formula: `Net proceeds ${proceeds.toLocaleString("en-PK")} less weighted-average cost ${costOut.toLocaleString("en-PK")} = realised ${realized.toLocaleString("en-PK")}`,
+      } satisfies RealizedSale;
+    });
 }
 
 async function analyzePdfBuffer(
@@ -903,7 +969,7 @@ async function getDbAnalytics(
     byYear,
     deployment,
     concentration,
-    sales: [],
+    sales: buildDbSales(txns, new Map(holdings.map((h) => [h.ticker, h.quantity])), round2),
     normalizedEvents: [],
     positionBuild: buildDbPositionBuild(
       costBasis.map((row) => ({
