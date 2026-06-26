@@ -16,6 +16,7 @@ import {
   type TimelinePoint,
   type BenchmarkSeriesPoint,
   type BenchmarkSummary,
+  type PositionBuildRow,
 } from "@/lib/engine/ledger-analytics";
 import { summarizeBenchmarkSeries } from "@/lib/engine/benchmark-growth";
 
@@ -111,6 +112,85 @@ function buildDbTimeline(
     });
   });
   return points;
+}
+
+// Reconstruct per-ticker acquisition history from stored transactions so the
+// position build-up table shows real first/latest dates, purchase counts,
+// price ranges, sold quantity and quantity-weighted holding age instead of the
+// placeholder zeros the DB path used to emit.
+type DbPositionHolding = {
+  ticker: string;
+  quantity: number;
+  avgCost: number;
+  totalInvested: number;
+  currentPrice: number | null;
+  marketValue: number | null;
+  unrealizedPl: number | null;
+};
+type DbPositionTxn = {
+  ticker: string;
+  trade_date: string | null;
+  type: string;
+  quantity: number;
+  price: number;
+};
+function buildDbPositionBuild(
+  holdings: DbPositionHolding[],
+  txns: DbPositionTxn[],
+  round2: (n: number) => number,
+  today: string
+): PositionBuildRow[] {
+  const byTicker = new Map<string, DbPositionTxn[]>();
+  for (const t of txns) byTicker.set(t.ticker, [...(byTicker.get(t.ticker) ?? []), t]);
+  const DAY_MS = 86_400_000;
+  const todayMs = Date.parse(today);
+
+  return holdings.map((h) => {
+    const rows = byTicker.get(h.ticker) ?? [];
+    const buys = rows.filter((t) => t.type === "BUY" || t.type === "RIGHT");
+    const sells = rows.filter((t) => t.type === "SELL");
+    const buyDates = buys
+      .map((t) => t.trade_date)
+      .filter((d): d is string => !!d)
+      .sort((a, b) => a.localeCompare(b));
+    const buyPrices = buys.map((t) => t.price).filter((p) => p > 0);
+    const totalQuantityAcquired = round2(buys.reduce((s, t) => s + t.quantity, 0));
+    const quantitySold = round2(sells.reduce((s, t) => s + t.quantity, 0));
+    // Whatever the current book quantity has beyond buys minus sells must have
+    // come from splits, mergers, bonus issues or IPO allotments.
+    const corporateActionQuantity = round2(h.quantity - (totalQuantityAcquired - quantitySold));
+
+    // Quantity-weighted average age of the buy lots, in days to today.
+    let ageWeighted = 0;
+    let ageQty = 0;
+    for (const b of buys) {
+      if (!b.trade_date || b.quantity <= 0) continue;
+      const ageDays = (todayMs - Date.parse(b.trade_date)) / DAY_MS;
+      if (!Number.isFinite(ageDays)) continue;
+      ageWeighted += ageDays * b.quantity;
+      ageQty += b.quantity;
+    }
+    const averageHoldingAgeDays = ageQty > 0 ? Math.round(ageWeighted / ageQty) : null;
+
+    return {
+      ticker: h.ticker,
+      firstAcquisitionDate: buyDates[0] ?? null,
+      latestAcquisitionDate: buyDates[buyDates.length - 1] ?? null,
+      purchaseCount: buys.length,
+      totalQuantityAcquired,
+      quantitySold,
+      corporateActionQuantity,
+      currentQuantity: h.quantity,
+      lowestPurchasePrice: buyPrices.length ? round2(Math.min(...buyPrices)) : null,
+      highestPurchasePrice: buyPrices.length ? round2(Math.max(...buyPrices)) : null,
+      weightedAverageCost: h.avgCost,
+      currentPrice: h.currentPrice,
+      averageHoldingAgeDays,
+      amountInvested: h.totalInvested,
+      currentValue: h.marketValue,
+      unrealizedPl: h.unrealizedPl,
+    } satisfies PositionBuildRow;
+  });
 }
 
 async function analyzePdfBuffer(
@@ -751,6 +831,23 @@ async function getDbAnalytics(
     cpi: row.cpi !== null && row.cpi !== undefined ? Number(row.cpi) : null,
   }));
   const benchmark: BenchmarkSummary | null = summarizeBenchmarkSeries(benchmarkRows);
+
+  // Fill the by-year KSE-100, real-return and (past-year) ending net-worth
+  // columns from the benchmark NAV path: the last monthly point in each year is
+  // that year's end. The current year keeps the live net worth set above.
+  if (benchmark) {
+    const benchmarkByYear = new Map<string, BenchmarkSeriesPoint>();
+    for (const point of benchmark.series) benchmarkByYear.set(point.date.slice(0, 4), point);
+    for (const row of byYear) {
+      const point = benchmarkByYear.get(row.year);
+      if (!point) continue;
+      if (row.endingNetWorth === null) row.endingNetWorth = round2(point.portfolio);
+      row.kse100MatchedResult = round2(point.kse100);
+      row.realReturnAfterInflation =
+        point.inflation > 0 ? round2((point.portfolio / point.inflation - 1) * 100) : null;
+    }
+  }
+
   const benchmarkPending =
     "No benchmark series is stored yet. Use Rebuild to fetch KSE-100 and PSX price history, then this comparison populates automatically.";
   const benchmarkStatus = {
@@ -808,24 +905,20 @@ async function getDbAnalytics(
     concentration,
     sales: [],
     normalizedEvents: [],
-    positionBuild: costBasis.map((row) => ({
-      ticker: row.ticker,
-      firstAcquisitionDate: null,
-      latestAcquisitionDate: null,
-      purchaseCount: 0,
-      totalQuantityAcquired: row.quantity,
-      quantitySold: 0,
-      corporateActionQuantity: 0,
-      currentQuantity: row.quantity,
-      lowestPurchasePrice: null,
-      highestPurchasePrice: null,
-      weightedAverageCost: row.avgCost,
-      currentPrice: row.currentPrice,
-      averageHoldingAgeDays: null,
-      amountInvested: row.totalInvested,
-      currentValue: row.marketValue,
-      unrealizedPl: row.unrealizedPl,
-    })),
+    positionBuild: buildDbPositionBuild(
+      costBasis.map((row) => ({
+        ticker: row.ticker,
+        quantity: row.quantity,
+        avgCost: row.avgCost,
+        totalInvested: row.totalInvested,
+        currentPrice: row.currentPrice,
+        marketValue: row.marketValue,
+        unrealizedPl: row.unrealizedPl,
+      })),
+      txns,
+      round2,
+      new Date().toISOString().slice(0, 10)
+    ),
     quantityReconciliation,
     checkpoints: {
       externalBrokerDepositsImported: cashIn.length,
