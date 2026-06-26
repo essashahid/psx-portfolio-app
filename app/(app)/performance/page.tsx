@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs } from "@/components/ui/tabs";
 import { CostFrictionBars, PerformanceTimeline, PerformanceWaterfall } from "@/components/charts-lazy";
+import { BenchmarkGrowthChart } from "@/components/benchmark-growth-chart";
 import { cn, formatMoney, formatNumber, formatSignedPct } from "@/lib/utils";
 import {
   AlertTriangle,
@@ -305,7 +306,9 @@ export default async function PerformancePage() {
       <section className="border-t border-border pt-5">
         <h2 className="text-lg font-semibold">Performance versus benchmarks</h2>
         <p className="mt-1 max-w-3xl text-xs text-muted-foreground">
-          Benchmark and inflation comparisons are disabled until the required historical series are stored.
+          {analytics.benchmark
+            ? `Your contribution schedule valued against the KSE-100 (total return) and PBS inflation through ${analytics.benchmark.asOf}.`
+            : "Benchmark and inflation comparisons populate once the portfolio series has been built. Use Rebuild to fetch KSE-100 and PSX price history."}
         </p>
         <div className="mt-4 grid gap-4 lg:grid-cols-3">
           <StatusBlock
@@ -329,9 +332,52 @@ export default async function PerformancePage() {
         </div>
         <div className="mt-4 grid gap-4 border-y border-border py-4 sm:grid-cols-3">
           <Metric label="Nominal gain" value={formatMoney(netGain)} sub="Current net worth less external capital" tone={netGain >= 0 ? "positive" : "negative"} />
-          <Metric label="Inflation-adjusted capital" value="Unavailable" sub="Requires Pakistan CPI history" />
-          <Metric label="Excess return vs KSE-100" value="Unavailable" sub="Requires cash-flow-matched total-return index" />
+          <Metric
+            label="Inflation-adjusted capital"
+            value={analytics.benchmark ? formatMoney(analytics.benchmark.inflationEquivalent) : "Unavailable"}
+            sub={
+              analytics.benchmark
+                ? `Real value of contributions kept at PBS CPI · ${formatSignedPct(analytics.benchmark.inflationEquivalent ? (analytics.benchmark.excessVsInflation / analytics.benchmark.inflationEquivalent) * 100 : null)} purchasing power`
+                : "Requires Pakistan CPI history"
+            }
+            tone={analytics.benchmark ? (analytics.benchmark.excessVsInflation >= 0 ? "positive" : "negative") : undefined}
+          />
+          <Metric
+            label="Excess return vs KSE-100"
+            value={analytics.benchmark ? formatMoney(analytics.benchmark.excessVsKse100) : "Unavailable"}
+            sub={
+              analytics.benchmark
+                ? `Portfolio less KSE-100 total-return equivalent (${formatMoney(analytics.benchmark.kse100Equivalent)})`
+                : "Requires cash-flow-matched total-return index"
+            }
+            tone={analytics.benchmark ? (analytics.benchmark.excessVsKse100 >= 0 ? "positive" : "negative") : undefined}
+          />
         </div>
+        {analytics.benchmark && analytics.benchmark.maxDrawdownPct !== null && (
+          <div className="mt-4 grid gap-4 sm:grid-cols-3">
+            <Metric
+              label="Max drawdown"
+              value={`${analytics.benchmark.maxDrawdownPct}%`}
+              sub={`${formatMoney(analytics.benchmark.maxDrawdownValue ?? 0)} peak-to-trough`}
+              tone="negative"
+            />
+            <Metric
+              label="Drawdown peak"
+              value={analytics.benchmark.drawdownPeakDate ?? "—"}
+              sub="Highest portfolio NAV before the decline"
+            />
+            <Metric
+              label="Drawdown trough"
+              value={analytics.benchmark.drawdownTroughDate ?? "—"}
+              sub="Lowest point reached after the peak"
+            />
+          </div>
+        )}
+        {analytics.benchmark && analytics.benchmark.series.length >= 2 && (
+          <div className="mt-4">
+            <BenchmarkGrowthChart data={analytics.benchmark.series} />
+          </div>
+        )}
       </section>
 
       <Tabs
