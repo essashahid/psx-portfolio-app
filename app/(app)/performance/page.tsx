@@ -662,8 +662,20 @@ function YearTable({ rows }: { rows: NonNullable<Awaited<ReturnType<typeof getPe
                 <td className="px-2 py-2 text-right tabular-nums">{row.buyLines}/{row.buyOrders}</td>
                 <td className="px-2 py-2 text-right tabular-nums">{row.sellLines}/{row.sellOrders}</td>
                 <td className="px-2 py-2 text-right tabular-nums">{formatMoney(row.endingNetWorth)}</td>
-                <td className="px-2 py-2 text-right text-muted-foreground">Unavailable</td>
-                <td className="px-2 py-2 text-right text-muted-foreground">Unavailable</td>
+                <td className="px-2 py-2 text-right tabular-nums">
+                  {row.kse100MatchedResult !== null ? (
+                    formatMoney(row.kse100MatchedResult)
+                  ) : (
+                    <span className="text-muted-foreground">Unavailable</span>
+                  )}
+                </td>
+                <td className="px-2 py-2 text-right tabular-nums">
+                  {row.realReturnAfterInflation !== null ? (
+                    formatSignedPct(row.realReturnAfterInflation)
+                  ) : (
+                    <span className="text-muted-foreground">Unavailable</span>
+                  )}
+                </td>
               </tr>
             ))}
           </tbody>
