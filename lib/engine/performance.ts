@@ -13,7 +13,105 @@ import {
   type DeploymentSummary,
   type ConcentrationSummary,
   type QuantityReconciliationRow,
+  type TimelinePoint,
+  type BenchmarkSeriesPoint,
+  type BenchmarkSummary,
 } from "@/lib/engine/ledger-analytics";
+import { summarizeBenchmarkSeries } from "@/lib/engine/benchmark-growth";
+
+// Build the dated capital/net-worth timeline directly from stored transactions
+// and cash movements. Mirrors the shape produced by the PDF path's buildTimeline
+// so the chart on /performance renders identically regardless of data source.
+// Only dated events are placed; the terminal net worth is attached to the last point.
+type DbTimelineTxn = {
+  trade_date: string | null;
+  type: string;
+  quantity: number;
+  price: number;
+  net_amount: number;
+  ticker: string;
+};
+type DbTimelineCash = {
+  movement_date: string | null;
+  type: string;
+  amount: number;
+};
+function buildDbTimeline(
+  txns: DbTimelineTxn[],
+  cashRows: DbTimelineCash[],
+  terminalNetWorth: number,
+  round2: (n: number) => number
+): TimelinePoint[] {
+  type Dated =
+    | { date: string; kind: "txn"; txn: DbTimelineTxn }
+    | { date: string; kind: "cash"; cash: DbTimelineCash };
+  const dated: Dated[] = [];
+  for (const txn of txns) {
+    if (txn.trade_date) dated.push({ date: txn.trade_date, kind: "txn", txn });
+  }
+  for (const cash of cashRows) {
+    if (cash.movement_date) dated.push({ date: cash.movement_date, kind: "cash", cash });
+  }
+  dated.sort((a, b) => a.date.localeCompare(b.date));
+
+  const byDate = new Map<string, Dated[]>();
+  for (const row of dated) byDate.set(row.date, [...(byDate.get(row.date) ?? []), row]);
+  const dates = [...byDate.keys()].sort();
+
+  let cumulativeContributions = 0;
+  let grossPurchases = 0;
+  let grossSales = 0;
+  let charges = 0;
+  let cashBalance = 0;
+  const points: TimelinePoint[] = [];
+
+  dates.forEach((date, index) => {
+    const day = byDate.get(date) ?? [];
+    const labels: string[] = [];
+    for (const row of day) {
+      if (row.kind === "txn") {
+        const t = row.txn;
+        const gross = t.quantity * t.price;
+        if (t.type === "SELL") {
+          grossSales += gross;
+          cashBalance += t.net_amount;
+          labels.push(`${t.ticker} sale`);
+        } else {
+          // BUY, RIGHT and any other acquisition type
+          grossPurchases += gross;
+          cashBalance -= t.net_amount;
+        }
+      } else {
+        const c = row.cash;
+        const amt = Math.abs(Number(c.amount ?? 0));
+        if (c.type === "CASH_IN") {
+          cumulativeContributions += amt;
+          cashBalance += amt;
+        } else if (c.type === "DIVIDEND") {
+          cashBalance += amt;
+        } else if (c.type === "CASH_OUT") {
+          cashBalance -= amt;
+        } else if (c.type === "FEE" || c.type === "TAX") {
+          charges += amt;
+          cashBalance -= amt;
+        } else {
+          cashBalance += Number(c.amount ?? 0);
+        }
+      }
+    }
+    points.push({
+      date,
+      cumulativeContributions: round2(cumulativeContributions),
+      grossPurchases: round2(grossPurchases),
+      grossSales: round2(grossSales),
+      charges: round2(charges),
+      cashBalance: round2(cashBalance),
+      netWorth: index === dates.length - 1 ? round2(terminalNetWorth) : null,
+      eventLabels: labels,
+    });
+  });
+  return points;
+}
 
 async function analyzePdfBuffer(
   buffer: Buffer,
@@ -109,7 +207,7 @@ async function getDbAnalytics(
   const SELL_COST_RATE = 0.0018;
   const CGT_RATE = 0.15;
 
-  const [txnsRes, holdingsRes, pricesRes, cashRes, checkpointRes] = await Promise.all([
+  const [txnsRes, holdingsRes, pricesRes, cashRes, checkpointRes, benchmarkRes] = await Promise.all([
     supabase
       .from("transactions")
       .select("ticker, trade_date, type, quantity, price, commission, tax, net_amount, realized_pl, notes")
@@ -138,6 +236,11 @@ async function getDbAnalytics(
       .order("as_of", { ascending: false })
       .limit(1)
       .maybeSingle(),
+    supabase
+      .from("benchmark_series")
+      .select("point_date, contributed, portfolio, kse100, inflation, cpi")
+      .eq("user_id", userId)
+      .order("point_date", { ascending: true }),
   ]);
 
   const txns = (txnsRes.data ?? []).map((t) => ({
@@ -635,6 +738,59 @@ async function getDbAnalytics(
   const unresolvedQuantityDiffs = quantityReconciliation.filter((r) => r.status === "Difference").length;
   const reconciled = !!checkpoint && unresolvedQuantityDiffs === 0 && quantityReconciliation.length > 0;
 
+  // ── Benchmark series (KSE-100, inflation, drawdown) ───────────────────────
+  // Pre-computed monthly NAV path written by rebuildBenchmarkSeries on every
+  // ledger edit. When present it unlocks the index, purchasing-power and
+  // drawdown comparisons; otherwise they stay marked unavailable.
+  const benchmarkRows: BenchmarkSeriesPoint[] = (benchmarkRes.data ?? []).map((row) => ({
+    date: row.point_date as string,
+    contributed: Number(row.contributed ?? 0),
+    portfolio: Number(row.portfolio ?? 0),
+    kse100: Number(row.kse100 ?? 0),
+    inflation: Number(row.inflation ?? 0),
+    cpi: row.cpi !== null && row.cpi !== undefined ? Number(row.cpi) : null,
+  }));
+  const benchmark: BenchmarkSummary | null = summarizeBenchmarkSeries(benchmarkRows);
+  const benchmarkPending =
+    "No benchmark series is stored yet. Use Rebuild to fetch KSE-100 and PSX price history, then this comparison populates automatically.";
+  const benchmarkStatus = {
+    kse100: benchmark
+      ? {
+          available: true,
+          reason: `Each external contribution is matched to the same-date KSE-100 total-return level and carried to ${benchmark.asOf}.`,
+          methodology:
+            "Money-weighted: every rupee buys the KSE-100 (total return) on its contribution date and is held forward, so the index path uses your real cash-flow schedule.",
+        }
+      : {
+          available: false,
+          reason: benchmarkPending,
+          methodology:
+            "Each external contribution must be matched to the same-date KSE-100 total-return index level and carried to the ending date.",
+        },
+    inflation: benchmark
+      ? {
+          available: true,
+          reason: `Each contribution is inflated from its contribution-date PBS National CPI value to the latest CPI as of ${benchmark.asOf}.`,
+          methodology:
+            "Money-weighted: every rupee merely keeps pace with PBS National CPI (General, 2015-16 = 100) from its contribution date forward.",
+        }
+      : {
+          available: false,
+          reason: benchmarkPending,
+          methodology:
+            "Each contribution must be inflated from its contribution-date CPI value to the current CPI value, then summed.",
+        },
+    drawdown: benchmark && benchmark.maxDrawdownPct !== null
+      ? {
+          available: true,
+          reason: `Worst peak-to-trough decline ${benchmark.maxDrawdownPct}% (${benchmark.drawdownPeakDate} → ${benchmark.drawdownTroughDate}) across the monthly portfolio NAV path.`,
+        }
+      : {
+          available: false,
+          reason: benchmarkPending,
+        },
+  };
+
   return {
     source: {
       type: "database_fallback",
@@ -698,26 +854,9 @@ async function getDbAnalytics(
       { label: "Unrealised P/L", value: unrealizedPl, kind: unrealizedPl >= 0 ? "increase" : "decrease", includedInReconciliation: true, note: "Current holdings less cost basis" },
       { label: "Current net worth", value: netWorth, kind: "end", includedInReconciliation: true, note: "DB market value plus DB cash" },
     ],
-    timeline: [],
-    benchmarkStatus: {
-      kse100: {
-        available: false,
-        reason: "No KSE-100 total-return index history table is present in this project.",
-        methodology:
-          "Each external contribution must be matched to the same-date KSE-100 total-return index level and carried to the ending date.",
-      },
-      inflation: {
-        available: false,
-        reason: "No Pakistan National CPI or Urban CPI time series is stored in this project.",
-        methodology:
-          "Each contribution must be inflated from its contribution-date CPI value to the current CPI value, then summed.",
-      },
-      drawdown: {
-        available: false,
-        reason:
-          "Drawdown analysis requires a complete historical portfolio-value series.",
-      },
-    },
+    timeline: buildDbTimeline(txns, cashRows, netWorth, round2),
+    benchmarkStatus,
+    benchmark,
   };
 }
 

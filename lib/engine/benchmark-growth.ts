@@ -1,4 +1,5 @@
 import { cpiForDate } from "@/lib/market-data/pbs-cpi";
+import type { BenchmarkSummary, BenchmarkSeriesPoint } from "@/lib/engine/ledger-analytics";
 
 /**
  * "Growth of invested capital" benchmark series.
@@ -154,4 +155,57 @@ export function buildBenchmarkSeries(inputs: BenchmarkInputs): BenchmarkPoint[] 
 
 function round2(n: number): number {
   return Math.round(n * 100) / 100;
+}
+
+/**
+ * Reduce a stored benchmark series into the headline comparison the performance
+ * page needs: where the portfolio ended versus its KSE-100 and inflation
+ * equivalents, plus the worst peak-to-trough decline on the portfolio NAV path.
+ * Returns null when there are too few points to compare.
+ */
+export function summarizeBenchmarkSeries(
+  rows: BenchmarkSeriesPoint[]
+): BenchmarkSummary | null {
+  if (rows.length < 2) return null;
+  const series = [...rows].sort((a, b) => a.date.localeCompare(b.date));
+  const last = series[series.length - 1];
+
+  // Max drawdown on the portfolio NAV path (running peak to trough).
+  let peak = -Infinity;
+  let peakDate: string | null = null;
+  let runningPeakDate: string | null = null;
+  let maxDrawdownPct: number | null = null;
+  let maxDrawdownValue: number | null = null;
+  let troughDate: string | null = null;
+  for (const point of series) {
+    if (point.portfolio > peak) {
+      peak = point.portfolio;
+      runningPeakDate = point.date;
+    }
+    if (peak > 0) {
+      const declineValue = point.portfolio - peak;
+      const declinePct = (declineValue / peak) * 100;
+      if (maxDrawdownPct === null || declinePct < maxDrawdownPct) {
+        maxDrawdownPct = declinePct;
+        maxDrawdownValue = declineValue;
+        peakDate = runningPeakDate;
+        troughDate = point.date;
+      }
+    }
+  }
+
+  return {
+    asOf: last.date,
+    contributed: round2(last.contributed),
+    portfolio: round2(last.portfolio),
+    kse100Equivalent: round2(last.kse100),
+    inflationEquivalent: round2(last.inflation),
+    excessVsKse100: round2(last.portfolio - last.kse100),
+    excessVsInflation: round2(last.portfolio - last.inflation),
+    maxDrawdownPct: maxDrawdownPct === null ? null : round2(maxDrawdownPct),
+    maxDrawdownValue: maxDrawdownValue === null ? null : round2(maxDrawdownValue),
+    drawdownPeakDate: peakDate,
+    drawdownTroughDate: troughDate,
+    series,
+  };
 }

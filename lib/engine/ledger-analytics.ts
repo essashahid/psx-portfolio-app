@@ -521,6 +521,39 @@ export interface BenchmarkStatus {
   };
 }
 
+/** One monthly checkpoint of the growth-of-capital benchmark series. */
+export interface BenchmarkSeriesPoint {
+  date: string;
+  contributed: number;
+  portfolio: number;
+  kse100: number;
+  inflation: number;
+  cpi: number | null;
+}
+
+/**
+ * Computed comparison of the portfolio against its KSE-100 and inflation
+ * equivalents, plus a peak-to-trough drawdown read off the portfolio NAV path.
+ * Null when the benchmark series has not been built for the user yet.
+ */
+export interface BenchmarkSummary {
+  asOf: string;
+  contributed: number;
+  portfolio: number;
+  kse100Equivalent: number;
+  inflationEquivalent: number;
+  /** portfolio − KSE-100 equivalent (positive = outperformed the index). */
+  excessVsKse100: number;
+  /** portfolio − inflation-protected equivalent (positive = beat inflation). */
+  excessVsInflation: number;
+  /** Most negative peak-to-trough decline on the portfolio NAV path, as a %. */
+  maxDrawdownPct: number | null;
+  maxDrawdownValue: number | null;
+  drawdownPeakDate: string | null;
+  drawdownTroughDate: string | null;
+  series: BenchmarkSeriesPoint[];
+}
+
 export interface LedgerSource {
   type: "akd_statement" | "local_akd_pdf" | "database_fallback";
   label: string;
@@ -544,6 +577,7 @@ export interface LedgerAnalytics {
   wealthBridge: WealthBridgeComponent[];
   timeline: TimelinePoint[];
   benchmarkStatus: BenchmarkStatus;
+  benchmark: BenchmarkSummary | null;
 }
 
 export interface AnalyzeLedgerOptions {
@@ -1649,5 +1683,6 @@ export function analyzeLedger(stmt: AkdStatement, options: AnalyzeLedgerOptions 
           "Drawdown analysis requires a continuous historical portfolio-value series; the broker ledger alone supplies trades, not daily valuation history.",
       },
     },
+    benchmark: null,
   };
 }
