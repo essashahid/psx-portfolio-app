@@ -34,25 +34,21 @@ export interface SessionUser {
   email: string;
 }
 
-/**
- * Fast per-request user lookup for server components.
- *
- * The proxy middleware already validates and refreshes the session on every
- * request, so pages don't need another auth-server round-trip: getClaims()
- * verifies the JWT locally (asymmetric keys, cached JWKS) and cache() dedupes
- * across layout + page. RLS still enforces ownership on every DB query.
- * API routes keep using requireUser()/auth.getUser() for full validation.
- */
 const IMPERSONATE_COOKIE = "x_admin_impersonate";
 
-export const getUser = cache(async (): Promise<SessionUser | null> => {
+/**
+ * The real signed-in user from the JWT. Never substituted by impersonation.
+ * Use this where you need the actual account (admin guards, billing, sign-out).
+ * All other server components should call getUser() which honours impersonation.
+ */
+export const getRealUser = cache(async (): Promise<SessionUser | null> => {
   const supabase = await createClient();
   const { data } = await supabase.auth.getClaims();
   const claims = data?.claims;
   if (claims?.sub) {
     return { id: claims.sub, email: (claims.email as string) ?? "" };
   }
-  // Fallback (e.g. symmetric-key projects where local verification is unavailable)
+  // Fallback for symmetric-key projects where local JWT verification is unavailable.
   const {
     data: { user },
   } = await supabase.auth.getUser();
@@ -66,13 +62,13 @@ export type EffectiveUser = {
 };
 
 /**
- * Like getUser() but resolves admin impersonation. Server components that need
- * to render data as a specific customer (e.g. the app layout) use this instead
- * of getUser(). The real user's identity is preserved in `realUser` so the
- * impersonation banner can show who is actually signed in.
+ * Resolves admin impersonation. Returns the customer being viewed as `user`
+ * and the real signed-in admin as `realUser`. When not impersonating, both
+ * are identical. The layout uses this to show the impersonation banner;
+ * getUser() delegates here so pages get the right user automatically.
  */
 export const getEffectiveUser = cache(async (): Promise<EffectiveUser | null> => {
-  const realUser = await getUser();
+  const realUser = await getRealUser();
   if (!realUser) return null;
 
   const cookieStore = await cookies();
@@ -99,9 +95,20 @@ export const getEffectiveUser = cache(async (): Promise<EffectiveUser | null> =>
     return { user: realUser, realUser, isImpersonating: false };
   }
 
-  const impersonatedUser: SessionUser = {
-    id: impersonateId,
-    email: data.user.email ?? "",
+  return {
+    user: { id: impersonateId, email: data.user.email ?? "" },
+    realUser,
+    isImpersonating: true,
   };
-  return { user: impersonatedUser, realUser, isImpersonating: true };
+});
+
+/**
+ * The effective user for the current request. During admin impersonation this
+ * returns the customer being viewed, so all 19 server-component pages
+ * automatically render that customer's data without any individual changes.
+ * When not impersonating, returns the real signed-in user.
+ */
+export const getUser = cache(async (): Promise<SessionUser | null> => {
+  const effective = await getEffectiveUser();
+  return effective?.user ?? null;
 });

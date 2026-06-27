@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { cache } from "react";
-import { createClient, getUser } from "@/lib/supabase/server";
+import { createClient, getRealUser } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import type { SupabaseClient, User } from "@supabase/supabase-js";
 
@@ -50,7 +50,9 @@ export async function requireAdmin(): Promise<
  */
 export const getAdminContext = cache(
   async (): Promise<{ user: { id: string; email: string } | null; isAdmin: boolean }> => {
-    const user = await getUser();
+    // Use getRealUser so admin panel access is always gated on the actual
+    // signed-in account, not the impersonated user.
+    const user = await getRealUser();
     if (!user) return { user: null, isAdmin: false };
     const supabase = await createClient();
     const { data } = await supabase
