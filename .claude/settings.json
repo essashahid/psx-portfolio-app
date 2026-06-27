@@ -27,7 +27,8 @@
       "Bash(wc -l /Users/essaarshad/Downloads/complete_english_translation.txt)",
       "Read(//Users/essaarshad/Downloads/**)",
       "Bash(grep -nA8 \"interface Candle\\\\|type Candle\" lib/company/types.ts)",
-      "Bash(grep -nA40 \"interface Technicals\" lib/company/types.ts)"
+      "Bash(grep -nA40 \"interface Technicals\" lib/company/types.ts)",
+      "Bash(npx next *)"
     ]
   }
 }

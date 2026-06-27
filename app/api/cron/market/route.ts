@@ -4,6 +4,7 @@ import { refreshMarketEvents } from "@/lib/market/events";
 import { generateMarketBrief } from "@/lib/market/brief";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { fetchAndIngestForeignFlows, foreignFlowsAutoConfigured } from "@/lib/market/foreign-flows-ingest";
+import { buildMacroAssetRows, writeMacroAssetRows } from "@/lib/market-data/macro-assets";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 300;
@@ -15,7 +16,7 @@ export const maxDuration = 300;
  *
  * Protected by CRON_SECRET (Bearer header or ?key=). Schedule it during/after
  * PSX hours; each run is two market-wide HTTP pulls plus one cheap LLM call.
- *   ?task=snapshot|events|brief|flows|all (default all)
+ *   ?task=snapshot|events|brief|flows|macro|all (default all)
  *   ?brief=1 to force brief regeneration
  */
 export async function GET(request: Request) {
@@ -46,6 +47,16 @@ export async function GET(request: Request) {
       report.flows = flows ?? { ingested: false, note: "source unreachable; manual entry remains the fallback" };
     } else {
       report.flows = { configured: false };
+    }
+  }
+  if (task === "all" || task === "macro") {
+    // Refresh the non-PSX asset cache (BTC, gold, USD/PKR, T-bill path).
+    try {
+      const { rows, fetched } = await buildMacroAssetRows();
+      const written = await writeMacroAssetRows(createAdminClient(), rows);
+      report.macro = { written, fetched };
+    } catch (err) {
+      report.macro = { error: err instanceof Error ? err.message : "macro refresh failed" };
     }
   }
   if (task === "all" || task === "brief") {
