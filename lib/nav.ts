@@ -15,6 +15,7 @@ import {
   Activity,
   TrendingUp,
   FileText,
+  PieChart,
 } from "lucide-react";
 import type { ComponentType } from "react";
 import type { ExperienceLevel, Profile } from "@/lib/types";
@@ -64,6 +65,7 @@ export const NAV_SECTIONS: { title: string; items: NavItemDef[] }[] = [
     title: "Planning",
     items: [
       { href: "/goals", label: "Goals & Targets", icon: Target, hint: "Targets and progress", tier: "plus" },
+      { href: "/allocation", label: "Capital Allocation", icon: PieChart, hint: "Where to deploy new capital across asset classes", tier: "plus" },
       { href: "/journal", label: "Journal", icon: NotebookPen, hint: "Your decisions and notes", tier: "advanced" },
       { href: "/alerts", label: "Alerts", icon: Bell, hint: "Triggered watch conditions", tier: "advanced" },
     ],
