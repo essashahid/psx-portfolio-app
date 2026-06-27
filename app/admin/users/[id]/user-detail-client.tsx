@@ -3,7 +3,7 @@
 import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { ArrowLeft, Loader2, KeyRound, Ban, Trash2, ShieldCheck } from "lucide-react";
+import { ArrowLeft, Loader2, KeyRound, Ban, Trash2, ShieldCheck, Eye } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -63,6 +63,7 @@ export function UserDetailClient({ userId }: { userId: string }) {
 
   const [pwOpen, setPwOpen] = useState(false);
   const [delOpen, setDelOpen] = useState(false);
+  const [viewingAs, setViewingAs] = useState(false);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -275,6 +276,31 @@ export function UserDetailClient({ userId }: { userId: string }) {
           Reset the password, suspend sign-in access, or permanently delete the account.
         </p>
         <div className="flex flex-wrap gap-2">
+          <Button
+            onClick={async () => {
+              setViewingAs(true);
+              try {
+                const res = await fetch("/api/admin/impersonate", {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({ userId }),
+                });
+                if (!res.ok) {
+                  const d = await res.json();
+                  setError(d.error ?? "Failed to switch view");
+                  return;
+                }
+                router.push("/dashboard");
+                router.refresh();
+              } finally {
+                setViewingAs(false);
+              }
+            }}
+            disabled={viewingAs}
+          >
+            {viewingAs ? <Loader2 className="h-4 w-4 animate-spin" /> : <Eye className="h-4 w-4" />}
+            View as this user
+          </Button>
           <Button variant="outline" onClick={() => setPwOpen(true)}>
             <KeyRound className="h-4 w-4" />
             Set password
