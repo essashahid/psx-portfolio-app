@@ -118,18 +118,36 @@ export interface LoadedReturns {
  * BTC (PKR) from macro_asset_history, cash from the T-bill step path.
  */
 export async function loadMonthlyReturns(supabase: SupabaseClient): Promise<LoadedReturns> {
-  const [{ data: kseRows }, gold, btc, usd] = await Promise.all([
-    supabase
-      .from("eod_history")
-      .select("trade_date, close")
-      .eq("ticker", "KSE100")
-      .order("trade_date", { ascending: true }),
+  // Supabase PostgREST enforces a server-side max_rows (typically 1,000).
+  // Paginate through the full KSE-100 history to get all available data.
+  async function fetchAllKse(): Promise<{ trade_date: string; close: number }[]> {
+    const PAGE = 1000;
+    const all: { trade_date: string; close: number }[] = [];
+    let offset = 0;
+    // eslint-disable-next-line no-constant-condition
+    while (true) {
+      const { data } = await supabase
+        .from("eod_history")
+        .select("trade_date, close")
+        .eq("ticker", "KSE100")
+        .order("trade_date", { ascending: true })
+        .range(offset, offset + PAGE - 1);
+      const rows = data ?? [];
+      all.push(...rows);
+      if (rows.length < PAGE) break;
+      offset += PAGE;
+    }
+    return all;
+  }
+
+  const [kseRows, gold, btc, usd] = await Promise.all([
+    fetchAllKse(),
     readMacroSeries(supabase, "GOLD"),
     readMacroSeries(supabase, "BTC"),
     readMacroSeries(supabase, "USDPKR"),
   ]);
 
-  const equityLevels: DailyPoint[] = (kseRows ?? []).map((r) => ({
+  const equityLevels: DailyPoint[] = kseRows.map((r) => ({
     date: r.trade_date as string,
     value: Number(r.close),
   }));

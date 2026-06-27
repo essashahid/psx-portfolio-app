@@ -263,20 +263,34 @@ export interface MacroSeries {
  *  - BTC/GOLD  -> PKR level (close_pkr)
  *  - USDPKR    -> the rate (close_native)
  *  - TBILL     -> yield % (close_native)
+ *
+ * Supabase PostgREST enforces a server-side max_rows (typically 1,000).
+ * We paginate through the full table to get all available history.
  */
 export async function readMacroSeries(
   supabase: SupabaseClient,
   asset: MacroAsset,
   asOf = new Date()
 ): Promise<MacroSeries> {
-  const { data } = await supabase
-    .from("macro_asset_history")
-    .select("asof_date, close_native, close_pkr")
-    .eq("asset", asset)
-    .order("asof_date", { ascending: true });
+  const PAGE = 1000;
+  const allRows: { asof_date: string; close_native: number; close_pkr: number | null }[] = [];
+  let offset = 0;
+  // eslint-disable-next-line no-constant-condition
+  while (true) {
+    const { data } = await supabase
+      .from("macro_asset_history")
+      .select("asof_date, close_native, close_pkr")
+      .eq("asset", asset)
+      .order("asof_date", { ascending: true })
+      .range(offset, offset + PAGE - 1);
+    const rows = data ?? [];
+    allRows.push(...rows);
+    if (rows.length < PAGE) break;  // last page
+    offset += PAGE;
+  }
 
   const usePkr = asset === "BTC" || asset === "GOLD";
-  const points: MacroPoint[] = (data ?? [])
+  const points: MacroPoint[] = allRows
     .map((r) => ({ date: r.asof_date as string, value: Number(usePkr ? r.close_pkr : r.close_native) }))
     .filter((p) => Number.isFinite(p.value) && p.value > 0);
 
