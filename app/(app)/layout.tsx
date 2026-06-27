@@ -20,7 +20,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
       .eq("status", "open"),
     supabase
       .from("profiles")
-      .select("onboarded, experience_level, extra_features, hidden_features")
+      .select("onboarded, experience_level, extra_features, hidden_features, is_admin")
       .eq("id", user.id)
       .maybeSingle(),
   ]);
@@ -28,6 +28,8 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   // First-time users finish onboarding before seeing the app. A missing profile
   // row is treated as not-onboarded so the wizard always runs once.
   if (!profileRes.data?.onboarded) redirect("/onboarding");
+
+  const isAdmin = Boolean(profileRes.data?.is_admin);
 
   const visibleHrefs = resolveVisibleHrefs({
     experience_level: (profileRes.data.experience_level as ExperienceLevel) ?? "intermediate",
@@ -39,7 +41,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
     <div className="min-h-dvh bg-background md:flex md:h-dvh md:overflow-hidden">
       <NavProgress />
       <AutoRefreshPrices />
-      <Sidebar email={user.email ?? ""} openAlerts={count ?? 0} visibleHrefs={visibleHrefs} />
+      <Sidebar email={user.email ?? ""} openAlerts={count ?? 0} visibleHrefs={visibleHrefs} isAdmin={isAdmin} />
       <div className="flex min-w-0 flex-1 flex-col md:h-dvh">
         <MobileTopBar openAlerts={count ?? 0} />
         <main className="scroll-touch flex-1 overflow-y-auto overscroll-y-contain px-3 py-3 pb-[calc(5.75rem+env(safe-area-inset-bottom))] sm:px-4 sm:py-4 md:p-8">
@@ -49,7 +51,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
           <p className="mx-auto max-w-7xl text-[11px] text-muted-foreground">{DISCLAIMER}</p>
         </footer>
       </div>
-      <MobileBottomNav email={user.email ?? ""} openAlerts={count ?? 0} visibleHrefs={visibleHrefs} />
+      <MobileBottomNav email={user.email ?? ""} openAlerts={count ?? 0} visibleHrefs={visibleHrefs} isAdmin={isAdmin} />
     </div>
   );
 }

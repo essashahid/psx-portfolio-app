@@ -12,6 +12,7 @@ import {
   X,
   Loader2,
   Bell,
+  ShieldCheck,
 } from "lucide-react";
 import { NAV, NAV_SECTIONS } from "@/lib/nav";
 
@@ -152,7 +153,7 @@ function BottomNavRow({
   );
 }
 
-export function Sidebar({ email, openAlerts, visibleHrefs }: { email: string; openAlerts: number; visibleHrefs: string[] }) {
+export function Sidebar({ email, openAlerts, visibleHrefs, isAdmin = false }: { email: string; openAlerts: number; visibleHrefs: string[]; isAdmin?: boolean }) {
   const pathname = usePathname();
   const router = useRouter();
   const sections = visibleSections(visibleHrefs);
@@ -192,6 +193,18 @@ export function Sidebar({ email, openAlerts, visibleHrefs }: { email: string; op
             })}
           </div>
         ))}
+        {isAdmin && (
+          <div className="space-y-0.5">
+            <p className="eyebrow px-3 pb-0.5 text-[9px]">Administration</p>
+            <Link href="/admin" className="block" title="Manage user accounts">
+              <SidebarRow
+                icon={ShieldCheck}
+                label="Admin"
+                active={pathname === "/admin" || pathname.startsWith("/admin/")}
+              />
+            </Link>
+          </div>
+        )}
       </nav>
       <div className="border-t border-border px-4 py-3">
         <p className="truncate text-[11px] text-sidebar-muted">{email}</p>
@@ -234,7 +247,7 @@ export function MobileTopBar({ openAlerts }: { openAlerts: number }) {
   );
 }
 
-export function MobileBottomNav({ email, openAlerts, visibleHrefs }: { email: string; openAlerts: number; visibleHrefs: string[] }) {
+export function MobileBottomNav({ email, openAlerts, visibleHrefs, isAdmin = false }: { email: string; openAlerts: number; visibleHrefs: string[]; isAdmin?: boolean }) {
   const pathname = usePathname();
   const router = useRouter();
   const [moreOpen, setMoreOpen] = useState(false);
@@ -317,6 +330,18 @@ export function MobileBottomNav({ email, openAlerts, visibleHrefs }: { email: st
                   })}
                 </div>
               ))}
+              {isAdmin && (
+                <div className="grid gap-1">
+                  <p className="eyebrow px-3 text-[9px]">Administration</p>
+                  <Link href="/admin" onClick={() => setMoreOpen(false)} className="block">
+                    <MobileMenuRow
+                      icon={ShieldCheck}
+                      label="Admin"
+                      active={pathname === "/admin" || pathname.startsWith("/admin/")}
+                    />
+                  </Link>
+                </div>
+              )}
             </nav>
             <div className="border-t border-border px-3 pt-3">
               <button onClick={signOut} className="flex min-h-11 w-full items-center gap-3 rounded-lg px-3 text-sm font-medium text-muted-foreground active:bg-muted">
