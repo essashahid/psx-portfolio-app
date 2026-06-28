@@ -1,6 +1,7 @@
 import { requireUser } from "@/lib/api-helpers";
 import { resolveMessage } from "@/lib/chat/resolver";
 import { gatherCards, briefFromCards, type Card } from "@/lib/chat/context";
+import { getLatestSessionDate } from "@/lib/chat/data";
 import { CHAT_TOOLS, executeTool } from "@/lib/chat/tools";
 import { claudeConfigured, getClaude, buildClaudeParams } from "@/lib/ai/claude";
 import { deepseekChatConfigured, runDeepSeekChat } from "@/lib/ai/deepseek-chat";
@@ -27,6 +28,10 @@ Investor profile (important):
 
 Rules:
 - Ground EVERY claim in the data provided in the <context> block or returned by a tool. Never invent prices, ratios, or figures. If a needed number is missing, say so plainly.
+- Dates and recency: each quote in the brief is tagged with the weekday and date of its last close, e.g. "as of Wed 24 Jun". Use only the weekday and date you are given. Never assert a different weekday or say a move happened "today" or "on Friday" unless the brief states that day. A multi-day gap between that date and today does NOT mean the data is stale: PSX is closed on weekends and public holidays (Eid, Ashura, Independence Day, etc.), so the last close is often several calendar days back and still current. Only treat a quote as stale when the brief itself flags it as "not updated to the latest PSX session"; in that case, open by stating the as-of date and do not describe the move as if it just happened.
+- No redundant metrics: never present a number and its reciprocal as two separate findings (P/E and earnings yield, FCF yield and its inverse). State each conclusion once (cheap, extended, high quality, strong cash conversion) with its single best supporting number, then move on. The data cards already list the full ratio set, so interpret the numbers, do not re-list them, and do not reach the same conclusion from three different angles.
+- Macro figures: label inflation, SPI, and rate numbers by their real basis (year-on-year, week-on-week, month-on-month). Never present a year-on-year level as if it were a one-week change.
+- Do not prompt the user to write a thesis or journal entry unless they ask. If none exists you may note its absence once, in a single short clause, and never both open and close the answer with it.
 - Amounts are in PKR. Be concise and concrete — lead with the answer, then the supporting numbers. A few tight sentences beat a long essay.
 - The user already sees rich data cards (quote, position, ratios, chart, news) rendered alongside your reply, so don't dump tables — interpret and connect the numbers.
 - For internal numbers (price, ratios, sectors, positions, filings) use the data/tools — never the web. The web is for what the internal data can't give: WHY something moved, macro/policy/industry news, recent events. When you use web_search, cite the source URLs inline, prefer credible Pakistani business outlets, and say it's from the web.
@@ -128,12 +133,16 @@ export async function POST(request: Request) {
         // 1. FREE layer — resolve, gather cards, render immediately.
         send({ type: "status", text: "Checking your portfolio and PSX context" });
         const resolved = await resolveMessage(supabase, message);
-        cards = await gatherCards(supabase, user.id, resolved);
+        const [gathered, latestSession] = await Promise.all([
+          gatherCards(supabase, user.id, resolved),
+          getLatestSessionDate(supabase),
+        ]);
+        cards = gathered;
         if (cards.length) {
           send({ type: "cards", cards });
           send({ type: "status", text: `Prepared ${cards.length} relevant data ${cards.length === 1 ? "view" : "views"}` });
         }
-        const brief = briefFromCards(cards);
+        const brief = briefFromCards(cards, latestSession);
 
         // 2. If the selected provider's AI is off, return a useful templated
         //    answer from the brief.
@@ -293,6 +302,7 @@ function toolActivityLabel(name: string): string {
     get_quote: "Fetching the latest market data",
     get_ratios: "Checking valuation and fundamentals",
     get_technicals: "Reviewing price structure and momentum",
+    compute_indicator: "Computing the requested indicator from price history",
     get_dividends: "Checking dividend history and income",
     get_news: "Reviewing PSX filings and announcements",
     get_market: "Reading the current PSX market snapshot",

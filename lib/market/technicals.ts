@@ -113,6 +113,20 @@ export function ema(values: number[], period: number): number | null {
   return s.length ? s[s.length - 1] : null;
 }
 
+/** Simple moving-average series aligned to `values` (null until the window fills). */
+export function smaSeries(values: number[], period: number): (number | null)[] {
+  const out: (number | null)[] = new Array(values.length).fill(null);
+  if (period < 1 || values.length < period) return out;
+  let sum = 0;
+  for (let i = 0; i < period; i++) sum += values[i];
+  out[period - 1] = sum / period;
+  for (let i = period; i < values.length; i++) {
+    sum += values[i] - values[i - period];
+    out[i] = sum / period;
+  }
+  return out;
+}
+
 /** Wilder's RSI series, aligned to `values`. */
 export function rsiSeries(values: number[], period = 14): (number | null)[] {
   const out: (number | null)[] = new Array(values.length).fill(null);

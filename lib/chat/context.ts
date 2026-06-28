@@ -80,12 +80,39 @@ export async function gatherCards(db: SupabaseClient, userId: string, resolved: 
   return cards;
 }
 
+/** "2026-06-24" -> "Wed 24 Jun"; passes the raw string through if unparseable. */
+function fmtCloseDate(iso: string): string {
+  const d = new Date(iso + "T00:00:00Z");
+  if (Number.isNaN(d.getTime())) return iso;
+  const wd = d.toLocaleDateString("en-GB", { weekday: "short", timeZone: "UTC" });
+  const dm = d.toLocaleDateString("en-GB", { day: "numeric", month: "short", timeZone: "UTC" });
+  return `${wd} ${dm}`;
+}
+
+/**
+ * Tag a quote's close date with its weekday and, when it lags the latest PSX
+ * session, flag that it is not live. Staleness is judged against the actual last
+ * session in the data (`latestSession`), not the calendar, so weekends and
+ * public holidays (Ashura, Eid, etc.) never count as missed sessions — there is
+ * simply no newer session to be behind. This stops the model from confabulating
+ * a weekday ("up 2.84% on Friday") or treating a holiday gap as stale data.
+ */
+function asOfLabel(asOf: string | null, latestSession: string | null): string {
+  if (!asOf) return "as of date n/a";
+  const label = fmtCloseDate(asOf);
+  if (latestSession && asOf < latestSession) {
+    return `as of ${label}, last close; not updated to the latest PSX session ${fmtCloseDate(latestSession)}`;
+  }
+  return `as of ${label}`;
+}
+
 /**
  * Render the gathered cards into a compact text brief for Claude — numbers
  * already digested, so the model writes the narrative without re-reading
- * anything. This is the single biggest cost lever.
+ * anything. This is the single biggest cost lever. `latestSession` is the most
+ * recent PSX session date on record, used to flag genuinely stale quotes.
  */
-export function briefFromCards(cards: Card[]): string {
+export function briefFromCards(cards: Card[], latestSession: string | null = null): string {
   const lines: string[] = [];
   for (const c of cards) {
     switch (c.kind) {
@@ -137,7 +164,7 @@ export function briefFromCards(cards: Card[]): string {
       }
       case "quote": {
         const q = c.data;
-        lines.push(`${q.ticker} (${q.companyName ?? ""}${q.sector ? `, ${q.sector}` : ""}): ${q.price ?? "n/a"} PKR, ${fmtPct(q.changePct)} today, vol ${fmtCompact(q.volume)}${q.marketCap ? `, mkt cap ${fmtCompact(q.marketCap)}` : ""} (as of ${q.asOf ?? "n/a"}).`);
+        lines.push(`${q.ticker} (${q.companyName ?? ""}${q.sector ? `, ${q.sector}` : ""}): ${q.price ?? "n/a"} PKR, ${fmtPct(q.changePct)} on the day, vol ${fmtCompact(q.volume)}${q.marketCap ? `, mkt cap ${fmtCompact(q.marketCap)}` : ""} (${asOfLabel(q.asOf, latestSession)}).`);
         break;
       }
       case "position": {
