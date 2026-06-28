@@ -26,9 +26,11 @@ import {
   FileSearch,
   Globe2,
   MessageSquareText,
+  PanelRight,
   Pencil,
   Plus,
   Send,
+  SlidersHorizontal,
   Sparkles,
   Trash2,
   X,
@@ -82,17 +84,17 @@ type ResearchMode = "Quick answer" | "Deep research" | "Portfolio analysis" | "C
 const RESEARCH_MODES: ResearchMode[] = ["Quick answer", "Deep research", "Portfolio analysis", "Company comparison", "Filing analysis"];
 
 const CHAT_MARKDOWN_COMPONENTS: Components = {
-  h1: ({ children }) => <h2 className="mb-3 mt-5 text-xl font-semibold tracking-editorial first:mt-0">{children}</h2>,
-  h2: ({ children }) => <h2 className="mb-3 mt-5 text-lg font-semibold tracking-editorial first:mt-0">{children}</h2>,
-  h3: ({ children }) => <h3 className="mb-2.5 mt-4 text-base font-semibold tracking-editorial first:mt-0">{children}</h3>,
-  h4: ({ children }) => <h4 className="mb-2 mt-3 text-sm font-semibold text-foreground">{children}</h4>,
-  p: ({ children }) => <p className="my-2 leading-6 text-foreground/85 sm:leading-7">{children}</p>,
+  h1: ({ children }) => <h2 className="mb-3 mt-6 text-xl font-semibold tracking-editorial first:mt-0">{children}</h2>,
+  h2: ({ children }) => <h2 className="mb-3 mt-6 text-lg font-semibold tracking-editorial first:mt-0">{children}</h2>,
+  h3: ({ children }) => <h3 className="mb-2.5 mt-5 text-base font-semibold tracking-editorial first:mt-0">{children}</h3>,
+  h4: ({ children }) => <h4 className="mb-2 mt-4 text-sm font-semibold text-foreground">{children}</h4>,
+  p: ({ children }) => <p className="my-3 leading-7 text-foreground/85">{children}</p>,
   ul: ({ children }) => <ul className="my-3 space-y-2 pl-0">{children}</ul>,
   ol: ({ children }) => <ol className="my-3 list-decimal space-y-3 pl-5 marker:text-muted-foreground">{children}</ol>,
-  li: ({ children }) => <li className="leading-6 text-foreground/85 sm:leading-7 [&>p]:my-0">{children}</li>,
+  li: ({ children }) => <li className="leading-7 text-foreground/85 [&>p]:my-0">{children}</li>,
   strong: ({ children }) => <strong className="font-semibold text-foreground">{children}</strong>,
   em: ({ children }) => <em className="text-foreground/75">{children}</em>,
-  hr: () => <div className="my-5 h-px bg-border" />,
+  hr: () => <div className="my-6 h-px bg-border" />,
   blockquote: ({ children }) => (
     <blockquote className="my-4 rounded-md border-l-2 border-emerald-500 bg-emerald-50/50 px-3 py-2 text-sm text-foreground/80">
       {children}
@@ -130,11 +132,13 @@ export function Chat({
   initialThreads = [],
   suggestions = [],
   sourceStatus = [],
+  dataUpdated = null,
 }: {
   providers: Record<ChatProvider, boolean>;
   initialThreads?: ChatThread[];
   suggestions?: string[];
   sourceStatus?: string[];
+  dataUpdated?: string | null;
 }) {
   const aiEnabled = providers.claude || providers.deepseek;
   const [messages, setMessages] = useState<Message[]>([]);
@@ -160,6 +164,7 @@ export function Chat({
     const query = searchThreads.trim().toLowerCase();
     return query ? threads.filter((thread) => `${thread.title} ${thread.summary ?? ""}`.toLowerCase().includes(query)) : threads;
   }, [threads, searchThreads]);
+  const groups = useMemo(() => groupThreads(filteredThreads), [filteredThreads]);
 
   const scrollToLatest = useCallback((behavior: ScrollBehavior = "smooth") => {
     const viewport = scrollRef.current;
@@ -191,18 +196,14 @@ export function Chat({
     textarea.style.height = `${Math.min(textarea.scrollHeight, 128)}px`;
   }, [input]);
 
+  // The history drawer overlays on every breakpoint now, so close it on Escape
+  // regardless of screen size. No body-scroll lock: the drawer is fixed and the
+  // scrim catches clicks, so locking would only cause a layout shift.
   useEffect(() => {
     if (!threadsOpen) return;
-    const isMobile = window.matchMedia("(max-width: 767px)").matches;
-    if (!isMobile) return;
-    const prev = document.body.style.overflow;
     const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") setThreadsOpen(false); };
-    document.body.style.overflow = "hidden";
     document.addEventListener("keydown", onKey);
-    return () => {
-      document.body.style.overflow = prev;
-      document.removeEventListener("keydown", onKey);
-    };
+    return () => document.removeEventListener("keydown", onKey);
   }, [threadsOpen]);
 
   function upsertThread(thread: ChatThread) {
@@ -345,205 +346,175 @@ export function Chat({
     }
   }
 
-  return (
-    <>
-    {/* On mobile: exact height = viewport minus top-bar, main-pt, and bottom-nav (using the same
-        env(safe-area-inset-*) values the shell uses). On desktop: the existing fixed grid height. */}
-    <div className="flex flex-col gap-3 h-[calc(100dvh-10rem-env(safe-area-inset-top)-env(safe-area-inset-bottom))] md:h-[calc(100dvh-9rem)] md:grid md:grid-cols-[18rem_minmax(0,1fr)]">
-      <aside className="hidden min-h-0 flex-col rounded-lg border border-border bg-card shadow-card md:flex md:max-h-none">
-        <div className={cn("flex items-center justify-between gap-2 px-3 py-2", (threadsOpen || threadError) && "border-b border-border", "md:border-b md:py-3")}>
-          <button
-            type="button"
-            onClick={() => setThreadsOpen((open) => !open)}
-            className="flex min-h-10 min-w-0 flex-1 items-center gap-2 text-left md:pointer-events-none"
-            aria-expanded={threadsOpen}
-            aria-controls="saved-chat-list"
-          >
-            <ChevronDown className={cn("h-4 w-4 shrink-0 transition-transform md:hidden", !threadsOpen && "-rotate-90")} />
-            <div className="min-w-0">
-            <p className="text-sm font-semibold">Saved research</p>
-            <p className="text-[11px] text-muted-foreground">{threads.length} conversation{threads.length === 1 ? "" : "s"}</p>
-            </div>
+  // One compact conversation row, reused across the Today / 7-day / Older groups.
+  // Rename and delete stay hidden until hover or keyboard focus to keep the list calm.
+  const renderThreadRow = (thread: ChatThread) => {
+    const active = thread.id === currentThreadId;
+    const loading = loadingThread === thread.id;
+    if (renamingId === thread.id) {
+      return (
+        <form
+          key={thread.id}
+          onSubmit={(e) => { e.preventDefault(); void renameThread(thread.id); }}
+          className="flex items-center gap-1 px-1.5 py-1"
+        >
+          <input
+            value={renameValue}
+            onChange={(e) => setRenameValue(e.target.value)}
+            autoFocus
+            className="h-9 min-w-0 flex-1 rounded-md border border-border bg-background px-2 text-[13px] outline-none focus:ring-2 focus:ring-ring"
+          />
+          <button type="submit" aria-label="Save chat name" className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-emerald-600 text-white">
+            <Check className="h-3.5 w-3.5" />
           </button>
-          <button
-            onClick={startNewChat}
-            disabled={busy}
-            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-md bg-primary text-primary-foreground transition-colors hover:bg-primary/90 disabled:opacity-50 md:h-8 md:w-8"
-            title="New chat"
-            aria-label="New chat"
-          >
-            <Plus className="h-4 w-4" />
+          <button type="button" onClick={() => setRenamingId(null)} aria-label="Cancel rename" className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md border border-border text-muted-foreground">
+            <X className="h-3.5 w-3.5" />
           </button>
-        </div>
-
-        {threadError && (
-          <p className="mx-3 mt-3 rounded-md border border-amber-200 bg-amber-50 px-2 py-1.5 text-[11px] text-amber-800">
-            {threadError}
-          </p>
+        </form>
+      );
+    }
+    return (
+      <div
+        key={thread.id}
+        className={cn(
+          "group relative flex items-center rounded-lg pr-1 transition-colors",
+          active ? "bg-muted" : "hover:bg-muted/60"
         )}
-
-        <div className="px-3 pb-2">
-          <input value={searchThreads} onChange={(event) => setSearchThreads(event.target.value)} placeholder="Search research…" className="h-8 w-full rounded-md border border-border bg-background px-2 text-xs outline-none focus:ring-2 focus:ring-ring" />
+      >
+        <button
+          onClick={() => void loadThread(thread.id)}
+          disabled={busy}
+          aria-current={active ? "true" : undefined}
+          className="flex min-w-0 flex-1 items-center gap-2 px-2.5 py-2 text-left disabled:opacity-60"
+        >
+          {loading ? (
+            <Loader2 className="h-3.5 w-3.5 shrink-0 animate-spin text-muted-foreground" />
+          ) : (
+            <MessageSquareText className={cn("h-3.5 w-3.5 shrink-0", active ? "text-emerald-600" : "text-muted-foreground")} />
+          )}
+          <span className="min-w-0 flex-1">
+            <span className="block truncate text-[13px] font-medium text-foreground">{thread.title}</span>
+            <span className="mt-0.5 flex items-center gap-1 text-[10px] text-muted-foreground">
+              <Clock3 className="h-2.5 w-2.5" /> {formatThreadTime(thread.last_message_at)}
+            </span>
+          </span>
+        </button>
+        <div className="flex shrink-0 items-center gap-0.5 opacity-0 transition-opacity focus-within:opacity-100 group-hover:opacity-100">
+          <button
+            onClick={() => { setRenamingId(thread.id); setRenameValue(thread.title); }}
+            title="Rename"
+            aria-label="Rename chat"
+            className="flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-background hover:text-foreground"
+          >
+            <Pencil className="h-3 w-3" />
+          </button>
+          <button
+            onClick={() => void deleteThread(thread.id)}
+            title="Delete"
+            aria-label="Delete chat"
+            className="flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-background hover:text-red-600"
+          >
+            <Trash2 className="h-3 w-3" />
+          </button>
         </div>
-        <div
-          id="saved-chat-list"
+      </div>
+    );
+  };
+
+  return (
+    <div className="flex h-[calc(100dvh-10rem-env(safe-area-inset-top)-env(safe-area-inset-bottom))] flex-col bg-background md:h-[calc(100dvh-2.75rem)]">
+      {/* Workspace header — compact, sticky top of the Copilot */}
+      <header className="flex h-14 shrink-0 items-center gap-1.5 border-b border-border/70 px-3 sm:px-5">
+        <button
+          type="button"
+          onClick={() => setThreadsOpen(true)}
+          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-muted md:hidden"
+          aria-label="Saved research"
+        >
+          <MessageSquareText className="h-4.5 w-4.5" />
+        </button>
+        <div className="min-w-0 flex-1">
+          <p className="truncate text-[15px] font-semibold tracking-[-0.015em]">{activeThread?.title ?? "Research Copilot"}</p>
+          <p className="truncate text-[11px] text-muted-foreground">{currentThreadId ? "Saved research" : "Portfolio-aware research workspace"}</p>
+        </div>
+        {busy && (
+          <span className="hidden shrink-0 items-center gap-1.5 rounded-full bg-muted px-2.5 py-1 text-[11px] text-muted-foreground sm:flex">
+            <Loader2 className="h-3 w-3 animate-spin" /> Researching
+          </span>
+        )}
+        {dataUpdated && (
+          <details className="relative hidden sm:block">
+            <summary className="flex h-9 cursor-pointer list-none items-center gap-1.5 rounded-lg px-2.5 text-[11px] text-muted-foreground transition-colors hover:bg-muted">
+              <Clock3 className="h-3.5 w-3.5" /> Data updated {dataUpdated}
+            </summary>
+            <div className="absolute right-0 top-11 z-30 w-72 rounded-lg border border-border bg-card p-3 text-xs shadow-card">
+              <p className="font-semibold">Data sources</p>
+              {sourceStatus.length ? (
+                <ul className="mt-2 space-y-1 text-muted-foreground">{sourceStatus.map((s) => <li key={s}>{s}</li>)}</ul>
+              ) : (
+                <p className="mt-2 text-muted-foreground">Availability is checked before each answer.</p>
+              )}
+            </div>
+          </details>
+        )}
+        <button
+          type="button"
+          onClick={startNewChat}
+          disabled={busy}
+          title="New conversation"
+          aria-label="New conversation"
+          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-muted disabled:opacity-50"
+        >
+          <Plus className="h-4.5 w-4.5" />
+        </button>
+        <button
+          type="button"
+          onClick={() => setThreadsOpen((o) => !o)}
+          aria-expanded={threadsOpen}
+          aria-controls="history-drawer"
+          title="Conversation history"
+          aria-label="Conversation history"
           className={cn(
-            "scroll-touch max-h-52 gap-2 overflow-x-auto p-3 md:flex md:max-h-none md:min-h-0 md:flex-1 md:flex-col md:overflow-y-auto",
-            threadsOpen ? "flex" : "hidden"
+            "hidden h-9 w-9 shrink-0 items-center justify-center rounded-lg transition-colors md:flex",
+            threadsOpen ? "bg-muted text-foreground" : "text-muted-foreground hover:bg-muted"
           )}
         >
-          {threads.length === 0 ? (
-            <div className="min-w-56 rounded-lg border border-dashed border-border p-3 text-xs text-muted-foreground md:min-w-0">
-              Your chats will appear here after the first message.
-            </div>
-          ) : (
-            filteredThreads.map((thread) => {
-              const active = thread.id === currentThreadId;
-              const loading = loadingThread === thread.id;
-              return (
-                <div
-                  key={thread.id}
-                  className={cn(
-                    "group min-w-64 rounded-lg border p-2 transition-colors sm:min-w-72 md:min-w-0",
-                    active ? "border-primary bg-primary text-primary-foreground" : "border-border bg-background/50 hover:bg-muted"
-                  )}
-                >
-                  {renamingId === thread.id ? (
-                    <form
-                      onSubmit={(e) => {
-                        e.preventDefault();
-                        void renameThread(thread.id);
-                      }}
-                      className="flex items-center gap-1"
-                    >
-                      <input
-                        value={renameValue}
-                        onChange={(e) => setRenameValue(e.target.value)}
-                        className="h-11 min-w-0 flex-1 rounded-md border border-border bg-card px-2 text-base text-foreground outline-none focus:ring-2 focus:ring-ring md:h-8 md:text-xs"
-                        autoFocus
-                      />
-                      <button type="submit" aria-label="Save chat name" className="flex h-11 w-11 shrink-0 items-center justify-center rounded-md bg-emerald-600 text-white md:h-8 md:w-8">
-                        <Check className="h-3.5 w-3.5" />
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setRenamingId(null)}
-                        aria-label="Cancel rename"
-                        className="flex h-11 w-11 shrink-0 items-center justify-center rounded-md border border-border bg-card text-muted-foreground md:h-8 md:w-8"
-                      >
-                        <X className="h-3.5 w-3.5" />
-                      </button>
-                    </form>
-                  ) : (
-                    <>
-                      <button
-                        onClick={() => void loadThread(thread.id)}
-                        disabled={busy}
-                        className="block w-full text-left disabled:opacity-60"
-                      >
-                        <span className="flex items-center gap-2">
-                          {loading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <MessageSquareText className="h-3.5 w-3.5 shrink-0" />}
-                          <span className="truncate text-xs font-semibold">{thread.title}</span>
-                        </span>
-                        <span className={cn("mt-1 block line-clamp-2 text-[11px] leading-relaxed", active ? "text-white/70" : "text-muted-foreground")}>
-                          {thread.summary ?? "No summary yet"}
-                        </span>
-                        <span className={cn("mt-1 flex items-center gap-1 text-[10px]", active ? "text-white/60" : "text-muted-foreground")}>
-                          <Clock3 className="h-3 w-3" /> {formatThreadTime(thread.last_message_at)}
-                        </span>
-                      </button>
-                      <div className="mt-2 flex items-center gap-1">
-                        <button
-                          onClick={() => {
-                            setRenamingId(thread.id);
-                            setRenameValue(thread.title);
-                          }}
-                          className={cn(
-                            "flex h-10 w-10 items-center justify-center rounded-md transition-colors md:h-7 md:w-7",
-                            active ? "text-white/70 hover:bg-white/10 hover:text-white" : "text-muted-foreground hover:bg-muted hover:text-foreground"
-                          )}
-                          title="Rename chat"
-                          aria-label="Rename chat"
-                        >
-                          <Pencil className="h-3.5 w-3.5" />
-                        </button>
-                        <button
-                          onClick={() => void deleteThread(thread.id)}
-                          className={cn(
-                            "flex h-10 w-10 items-center justify-center rounded-md transition-colors md:h-7 md:w-7",
-                            active ? "text-white/70 hover:bg-white/10 hover:text-white" : "text-muted-foreground hover:bg-red-50 hover:text-red-600"
-                          )}
-                          title="Delete chat"
-                          aria-label="Delete chat"
-                        >
-                          <Trash2 className="h-3.5 w-3.5" />
-                        </button>
-                      </div>
-                    </>
-                  )}
+          <PanelRight className="h-4.5 w-4.5" />
+        </button>
+      </header>
+
+      {/* Conversation canvas — the primary scrollable region, centered for readability */}
+      <div className="relative min-h-0 flex-1">
+        <div ref={scrollRef} onScroll={handleConversationScroll} className="scroll-touch h-full overflow-y-auto">
+          <div className="mx-auto w-full max-w-3xl space-y-7 px-4 py-6 sm:px-6 sm:py-8">
+            {messages.length === 0 && (
+              <div className="rise mx-auto mt-6 max-w-lg text-center sm:mt-12">
+                <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-2xl bg-emerald-50 text-emerald-600">
+                  <Sparkles className="h-5 w-5" />
                 </div>
-              );
-            })
-          )}
-        </div>
-      </aside>
-
-      <section className="flex flex-1 min-h-0 flex-col overflow-hidden rounded-lg border border-border bg-background/45">
-        <div className="flex items-center gap-2 border-b border-border/80 bg-card/70 px-3 py-2.5 backdrop-blur-sm">
-          <button
-            type="button"
-            onClick={() => setThreadsOpen(true)}
-            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg text-muted-foreground active:bg-muted md:hidden"
-          aria-label="Saved research"
-          >
-            <MessageSquareText className="h-4.5 w-4.5" />
-          </button>
-          <div className="min-w-0 flex-1">
-            <p className="truncate text-sm font-semibold tracking-[-0.015em]">{activeThread?.title ?? "Research Copilot"}</p>
-            <p className="text-[11px] text-muted-foreground">{currentThreadId ? "Saved research · sources and calculations remain traceable." : "Portfolio-aware research workspace."}</p>
-          </div>
-          {busy && (
-            <span className="flex shrink-0 items-center gap-1.5 rounded-full bg-muted px-2 py-1 text-[11px] text-muted-foreground">
-              <Loader2 className="h-3 w-3 animate-spin" /> Researching
-            </span>
-          )}
-          <button
-            type="button"
-            onClick={startNewChat}
-            disabled={busy}
-            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-primary text-primary-foreground disabled:opacity-50 md:hidden"
-            aria-label="New chat"
-          >
-            <Plus className="h-4 w-4" />
-          </button>
-        </div>
-
-        <div className="relative min-h-0 flex-1">
-        <div ref={scrollRef} onScroll={handleConversationScroll} className="scroll-touch h-full space-y-6 overflow-y-auto p-3 pb-8 sm:p-5 sm:pb-10">
-          {messages.length === 0 && (
-            <div className="rise mx-auto mt-8 max-w-lg text-center">
-              <div className="mx-auto mb-3 flex h-11 w-11 items-center justify-center rounded-xl bg-emerald-50 text-emerald-600">
-                <Sparkles className="h-5 w-5" />
+                <h2 className="text-lg font-semibold tracking-[-0.01em]">Research your portfolio</h2>
+                <p className="mx-auto mt-1.5 max-w-md text-sm leading-6 text-muted-foreground">
+                  Ask about your holdings, compare companies, review official filings, analyse valuation or understand what moved your portfolio.{aiEnabled ? "" : " (AI narration is off; you will still get live data cards.)"}
+                </p>
+                <div className="mt-6 space-y-1.5 text-left">
+                  {suggestions.map((s) => (
+                    <button
+                      key={s}
+                      onClick={() => send(s)}
+                      className="flex w-full items-center gap-2.5 rounded-xl border border-border/70 bg-card px-3.5 py-3 text-[13px] text-foreground/90 transition-colors hover:border-border hover:bg-muted/50"
+                    >
+                      <Sparkles className="h-3.5 w-3.5 shrink-0 text-emerald-600" />
+                      <span className="min-w-0">{s}</span>
+                    </button>
+                  ))}
+                </div>
               </div>
-              <h2 className="text-base font-semibold">Research your portfolio</h2>
-              <p className="mt-1 text-sm text-muted-foreground">
-                Ask about your holdings, compare companies, review official filings, analyse valuation or understand what moved your portfolio. {aiEnabled ? "" : "(AI narration is off; you will still get live data cards.)"}
-              </p>
-              <div className="mt-5 divide-y divide-border border-y border-border text-left">
-                {suggestions.map((s) => (
-                  <button key={s} onClick={() => send(s)} className="block w-full px-1 py-3 text-left text-xs transition-colors hover:text-brand">
-                    {s}
-                  </button>
-                ))}
-              </div>
-            </div>
-          )}
+            )}
 
-          {messages.map((m, i) => (
-            <div key={i} className={cn("flex", m.role === "user" ? "justify-end" : "justify-start")}>
-              <div className={cn("max-w-[96%] sm:max-w-[94%]", m.role === "user" ? "rounded-2xl rounded-br-sm bg-foreground px-4 py-2 text-sm text-background" : "w-full")}>
+            {messages.map((m, i) => (
+              <div key={i} className={cn("flex", m.role === "user" ? "justify-end" : "justify-start")}>
                 {m.role === "assistant" ? (
-                  <div className="space-y-3">
+                  <div className="w-full space-y-3">
                     {m.activity && m.activity.length > 0 && (
                       <ResearchActivity
                         steps={m.activity}
@@ -551,10 +522,12 @@ export function Chat({
                         complete={!!m.complete || !(busy && i === messages.length - 1)}
                       />
                     )}
-                    {m.cards && <div className="max-w-5xl"><ChatCards cards={m.cards} /></div>}
-                    {busy && i === messages.length - 1 && !m.content && !m.activity?.length && <p className="flex items-center gap-1.5 text-xs text-muted-foreground"><Loader2 className="h-3 w-3 animate-spin" /> Preparing research...</p>}
+                    {m.cards && <ChatCards cards={m.cards} />}
+                    {busy && i === messages.length - 1 && !m.content && !m.activity?.length && (
+                      <p className="flex items-center gap-1.5 text-xs text-muted-foreground"><Loader2 className="h-3 w-3 animate-spin" /> Preparing research...</p>
+                    )}
                     {m.content && (
-                      <div className="max-w-4xl rounded-2xl border border-border/80 bg-card px-4 py-4 text-sm shadow-[0_10px_35px_-24px_rgba(15,23,42,0.35)] sm:px-6 sm:py-5 sm:text-[15px]">
+                      <div className="text-[15px] leading-7">
                         <ReactMarkdown remarkPlugins={[remarkGfm]} components={CHAT_MARKDOWN_COMPONENTS}>
                           {formatAssistantContent(m.content)}
                         </ReactMarkdown>
@@ -562,165 +535,169 @@ export function Chat({
                     )}
                   </div>
                 ) : (
-                  m.content
+                  <div className="max-w-[85%] rounded-2xl rounded-br-md bg-foreground px-4 py-2.5 text-sm leading-6 text-background">{m.content}</div>
                 )}
               </div>
-            </div>
-          ))}
+            ))}
+          </div>
         </div>
         {showLatest && (
           <button
             type="button"
             onClick={() => scrollToLatest()}
-            className="absolute bottom-3 left-1/2 flex -translate-x-1/2 items-center gap-1.5 rounded-full border border-border bg-card px-3 py-2 text-xs font-medium text-foreground shadow-lg transition hover:bg-muted"
+            className="absolute bottom-4 left-1/2 flex -translate-x-1/2 items-center gap-1.5 rounded-full border border-border bg-card px-3 py-2 text-xs font-medium text-foreground shadow-lg transition hover:bg-muted"
           >
             <ArrowDown className="h-3.5 w-3.5" /> Latest response
           </button>
         )}
-        </div>
+      </div>
 
-        <div className="border-t border-border/80 bg-background/90 p-3 backdrop-blur-xl">
-          <div className="mb-2 flex flex-wrap items-center gap-2">
-            <select value={researchMode} onChange={(event) => setResearchMode(event.target.value as ResearchMode)} className="h-8 rounded-md border border-border bg-card px-2 text-[11px] font-medium text-foreground">
-              {RESEARCH_MODES.map((mode) => <option key={mode}>{mode}</option>)}
-            </select>
-            <details className="relative"><summary className="cursor-pointer list-none rounded-md bg-muted px-2.5 py-1 text-[11px] text-muted-foreground">Context: Portfolio · Transactions · Prices · Filings</summary><div className="absolute bottom-7 left-0 z-20 w-72 rounded-md border border-border bg-card p-3 text-xs shadow-[var(--shadow-card)]"><p className="font-semibold">Sources used in this answer</p>{sourceStatus.length ? <ul className="mt-2 space-y-1 text-muted-foreground">{sourceStatus.map((source) => <li key={source}>✓ {source}</li>)}</ul> : <p className="mt-2 text-muted-foreground">Data availability is checked before research.</p>}</div></details>
-            <details className="relative"><summary className="cursor-pointer text-[11px] text-muted-foreground hover:text-foreground">Advanced model settings</summary><div className="absolute bottom-6 left-0 z-20 mt-1 rounded-md border border-border bg-card p-2 shadow-[var(--shadow-card)]"><ModelPicker model={model} setModel={setModel} providers={providers} /></div></details>
-            {!aiEnabled && <span className="ml-auto text-[10px] text-amber-600">AI narration off - data only</span>}
-          </div>
-          <form onSubmit={(e) => { e.preventDefault(); send(input); }} className="flex items-end gap-2">
+      {/* Composer — sticky to the bottom, centered with the conversation */}
+      <div className="shrink-0 border-t border-border/70 bg-background/85 backdrop-blur-xl">
+        <div className="mx-auto w-full max-w-3xl px-4 py-3 sm:px-6">
+          <form
+            onSubmit={(e) => { e.preventDefault(); send(input); }}
+            className="rounded-2xl border border-border/90 bg-card shadow-[0_8px_28px_-24px_rgba(15,23,42,0.5)] transition focus-within:border-emerald-300 focus-within:ring-4 focus-within:ring-emerald-500/10"
+          >
             <textarea
               ref={inputRef}
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); send(input); } }}
-              placeholder="Ask about your portfolio or the PSX..."
+              placeholder="Ask about your portfolio, a PSX company, or the market"
               rows={1}
               enterKeyHint="send"
               aria-label="Message Research Copilot"
-              className="min-h-11 max-h-32 flex-1 resize-none overflow-y-auto rounded-2xl border border-border/90 bg-card px-4 py-2.5 text-base leading-6 shadow-[0_8px_28px_-24px_rgba(15,23,42,0.5)] outline-none transition focus:border-emerald-300 focus:ring-4 focus:ring-emerald-500/10 md:text-sm"
+              className="max-h-32 w-full resize-none overflow-y-auto bg-transparent px-4 pt-3 text-base leading-6 outline-none md:text-[15px]"
             />
-            <button type="submit" disabled={busy || !input.trim()} aria-label="Send message" className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-emerald-600 text-white shadow-[0_8px_20px_-10px_rgba(5,150,105,0.8)] transition hover:bg-emerald-700 disabled:opacity-40 md:h-10 md:w-10">
-              {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
-            </button>
-          </form>
-          <p className="mt-1.5 text-center text-[10px] text-muted-foreground">Research saves automatically. Structured portfolio data and official PSX sources are retrieved before synthesis.</p>
-        </div>
-      </section>
-
-      {/* Mobile saved-chats drawer — slides up from bottom */}
-      {threadsOpen && (
-        <div className="fixed inset-0 z-50 md:hidden" role="dialog" aria-modal="true" aria-label="Saved research">
-          <button className="absolute inset-0 bg-black/35" onClick={() => setThreadsOpen(false)} aria-label="Close saved chats" />
-          <div className="scroll-touch absolute inset-x-0 bottom-0 flex max-h-[85dvh] flex-col overflow-y-auto rounded-t-2xl border-t border-border bg-card pb-[calc(env(safe-area-inset-bottom)+1rem)] shadow-xl">
-            <div className="sticky top-0 z-10 flex items-center justify-between border-b border-border bg-card px-4 py-3">
-              <div className="min-w-0">
-                <p className="text-base font-semibold">Saved research</p>
-                <p className="truncate text-[11px] text-muted-foreground">
-                  {threads.length} conversation{threads.length === 1 ? "" : "s"}
-                </p>
-              </div>
-              <div className="flex items-center gap-2">
-                <button
-                  onClick={startNewChat}
-                  disabled={busy}
-                  className="flex h-11 w-11 items-center justify-center rounded-lg bg-primary text-primary-foreground disabled:opacity-50"
-                  aria-label="New chat"
-                >
-                  <Plus className="h-4 w-4" />
-                </button>
-                <button
-                  onClick={() => setThreadsOpen(false)}
-                  className="flex h-11 w-11 items-center justify-center rounded-lg text-muted-foreground active:bg-muted"
-                  aria-label="Close saved chats"
-                >
-                  <X className="h-5 w-5" />
-                </button>
-              </div>
-            </div>
-            {threadError && (
-              <p className="mx-3 mt-3 rounded-md border border-amber-200 bg-amber-50 px-2 py-1.5 text-[11px] text-amber-800">
-                {threadError}
-              </p>
-            )}
-            <div className="grid gap-2 p-3">
-              {threads.length === 0 ? (
-                <div className="rounded-lg border border-dashed border-border p-4 text-center text-sm text-muted-foreground">
-              Your saved research will appear here after the first message.
+            <div className="flex items-center gap-1.5 px-2 pb-2">
+              <select
+                value={researchMode}
+                onChange={(e) => setResearchMode(e.target.value as ResearchMode)}
+                aria-label="Research mode"
+                className="h-8 rounded-lg border border-border bg-background px-2 text-[11px] font-medium text-foreground outline-none"
+              >
+                {RESEARCH_MODES.map((mode) => <option key={mode}>{mode}</option>)}
+              </select>
+              <details className="relative">
+                <summary className="flex h-8 cursor-pointer list-none items-center gap-1.5 rounded-lg px-2 text-[11px] text-muted-foreground transition-colors hover:bg-muted">
+                  <Database className="h-3.5 w-3.5" /> Context
+                </summary>
+                <div className="absolute bottom-10 left-0 z-20 w-72 rounded-lg border border-border bg-card p-3 text-xs shadow-card">
+                  <p className="font-semibold">Sources used in this answer</p>
+                  {sourceStatus.length ? (
+                    <ul className="mt-2 space-y-1 text-muted-foreground">{sourceStatus.map((s) => <li key={s}>{s}</li>)}</ul>
+                  ) : (
+                    <p className="mt-2 text-muted-foreground">Data availability is checked before research.</p>
+                  )}
                 </div>
-              ) : (
-                threads.map((thread) => {
-                  const active = thread.id === currentThreadId;
-                  const loading = loadingThread === thread.id;
-                  return (
-                    <div
-                      key={thread.id}
-                      className={cn(
-                        "rounded-lg border p-2 transition-colors",
-                        active ? "border-primary bg-primary text-primary-foreground" : "border-border bg-background/50"
-                      )}
-                    >
-                      {renamingId === thread.id ? (
-                        <form
-                          onSubmit={(e) => { e.preventDefault(); void renameThread(thread.id); }}
-                          className="flex items-center gap-1"
-                        >
-                          <input
-                            value={renameValue}
-                            onChange={(e) => setRenameValue(e.target.value)}
-                            className="h-11 min-w-0 flex-1 rounded-md border border-border bg-card px-2 text-base text-foreground outline-none focus:ring-2 focus:ring-ring"
-                            autoFocus
-                          />
-                          <button type="submit" aria-label="Save chat name" className="flex h-11 w-11 shrink-0 items-center justify-center rounded-md bg-emerald-600 text-white">
-                            <Check className="h-3.5 w-3.5" />
-                          </button>
-                          <button type="button" onClick={() => setRenamingId(null)} aria-label="Cancel rename" className="flex h-11 w-11 shrink-0 items-center justify-center rounded-md border border-border bg-card text-muted-foreground">
-                            <X className="h-3.5 w-3.5" />
-                          </button>
-                        </form>
-                      ) : (
-                        <>
-                          <button onClick={() => void loadThread(thread.id)} disabled={busy} className="block w-full text-left disabled:opacity-60">
-                            <span className="flex items-center gap-2">
-                              {loading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <MessageSquareText className="h-3.5 w-3.5 shrink-0" />}
-                              <span className="truncate text-sm font-semibold">{thread.title}</span>
-                            </span>
-                            <span className={cn("mt-1 block line-clamp-2 text-xs leading-relaxed", active ? "text-white/70" : "text-muted-foreground")}>
-                              {thread.summary ?? "No summary yet"}
-                            </span>
-                            <span className={cn("mt-1 flex items-center gap-1 text-[10px]", active ? "text-white/60" : "text-muted-foreground")}>
-                              <Clock3 className="h-3 w-3" /> {formatThreadTime(thread.last_message_at)}
-                            </span>
-                          </button>
-                          <div className="mt-2 flex items-center gap-1">
-                            <button
-                              onClick={() => { setRenamingId(thread.id); setRenameValue(thread.title); }}
-                              className={cn("flex h-10 w-10 items-center justify-center rounded-md transition-colors", active ? "text-white/70 hover:bg-white/10 hover:text-white" : "text-muted-foreground hover:bg-muted hover:text-foreground")}
-                              aria-label="Rename chat"
-                            >
-                              <Pencil className="h-3.5 w-3.5" />
-                            </button>
-                            <button
-                              onClick={() => void deleteThread(thread.id)}
-                              className={cn("flex h-10 w-10 items-center justify-center rounded-md transition-colors", active ? "text-white/70 hover:bg-white/10 hover:text-white" : "text-muted-foreground hover:bg-red-50 hover:text-red-600")}
-                              aria-label="Delete chat"
-                            >
-                              <Trash2 className="h-3.5 w-3.5" />
-                            </button>
-                          </div>
-                        </>
-                      )}
-                    </div>
-                  );
-                })
-              )}
+              </details>
+              <details className="relative">
+                <summary className="flex h-8 w-8 cursor-pointer list-none items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-muted" title="Advanced model settings" aria-label="Advanced model settings">
+                  <SlidersHorizontal className="h-3.5 w-3.5" />
+                </summary>
+                <div className="absolute bottom-10 left-0 z-20 rounded-lg border border-border bg-card p-2 shadow-card">
+                  <p className="px-1 pb-1 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">Model</p>
+                  <ModelPicker model={model} setModel={setModel} providers={providers} />
+                </div>
+              </details>
+              {!aiEnabled && <span className="text-[10px] text-amber-600">AI narration off</span>}
+              <button
+                type="submit"
+                disabled={busy || !input.trim()}
+                aria-label="Send message"
+                className="ml-auto flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-emerald-600 text-white shadow-[0_8px_20px_-10px_rgba(5,150,105,0.8)] transition hover:bg-emerald-700 disabled:opacity-40"
+              >
+                {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+              </button>
             </div>
+          </form>
+          <p className="mt-2 text-center text-[10px] text-muted-foreground">Research saves automatically. Portfolio data and official PSX sources are retrieved before each answer.</p>
+        </div>
+      </div>
+
+      {/* Conversation history drawer — closed by default, overlays on every size */}
+      <div
+        className={cn("fixed inset-0 z-40 bg-black/30 transition-opacity duration-300", threadsOpen ? "opacity-100" : "pointer-events-none opacity-0")}
+        onClick={() => setThreadsOpen(false)}
+        aria-hidden="true"
+      />
+      <aside
+        id="history-drawer"
+        role="dialog"
+        aria-modal="true"
+        aria-label="Saved research"
+        className={cn(
+          "fixed inset-y-0 right-0 z-50 flex w-[min(20rem,90vw)] flex-col border-l border-border bg-card shadow-2xl transition-transform duration-300",
+          threadsOpen ? "translate-x-0" : "translate-x-full"
+        )}
+      >
+        <div className="flex h-14 shrink-0 items-center justify-between gap-2 border-b border-border px-4">
+          <div className="min-w-0">
+            <p className="text-sm font-semibold">Saved research</p>
+            <p className="text-[11px] text-muted-foreground">{threads.length} conversation{threads.length === 1 ? "" : "s"}</p>
+          </div>
+          <div className="flex items-center gap-1">
+            <button onClick={startNewChat} disabled={busy} title="New conversation" aria-label="New conversation" className="flex h-9 w-9 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-muted disabled:opacity-50">
+              <Plus className="h-4 w-4" />
+            </button>
+            <button onClick={() => setThreadsOpen(false)} aria-label="Close history" className="flex h-9 w-9 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-muted">
+              <X className="h-5 w-5" />
+            </button>
           </div>
         </div>
-      )}
+        <div className="px-3 py-2.5">
+          <input
+            value={searchThreads}
+            onChange={(e) => setSearchThreads(e.target.value)}
+            placeholder="Search research…"
+            className="h-9 w-full rounded-lg border border-border bg-background px-3 text-[13px] outline-none focus:ring-2 focus:ring-ring"
+          />
+        </div>
+        {threadError && (
+          <p className="mx-3 mb-2 rounded-md border border-amber-200 bg-amber-50 px-2 py-1.5 text-[11px] text-amber-800">{threadError}</p>
+        )}
+        <div className="scroll-touch min-h-0 flex-1 overflow-y-auto px-2 pb-4">
+          {threads.length === 0 ? (
+            <div className="m-2 rounded-lg border border-dashed border-border p-4 text-center text-xs text-muted-foreground">
+              Your conversations will appear here after the first message.
+            </div>
+          ) : filteredThreads.length === 0 ? (
+            <div className="m-2 rounded-lg border border-dashed border-border p-4 text-center text-xs text-muted-foreground">
+              No conversations match that search.
+            </div>
+          ) : (
+            <div className="space-y-4 pt-1">
+              {([["Today", groups.today], ["Previous 7 days", groups.week], ["Older", groups.older]] as const).map(([label, list]) =>
+                list.length ? (
+                  <div key={label}>
+                    <p className="px-2.5 pb-1 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">{label}</p>
+                    <div className="space-y-0.5">{list.map(renderThreadRow)}</div>
+                  </div>
+                ) : null
+              )}
+            </div>
+          )}
+        </div>
+      </aside>
     </div>
-    </>
   );
+}
+
+/** Bucket conversations into Today / Previous 7 days / Older by last activity. */
+function groupThreads(threads: ChatThread[]): { today: ChatThread[]; week: ChatThread[]; older: ChatThread[] } {
+  const now = Date.now();
+  const DAY = 86_400_000;
+  const today: ChatThread[] = [];
+  const week: ChatThread[] = [];
+  const older: ChatThread[] = [];
+  for (const thread of threads) {
+    const age = now - new Date(thread.last_message_at).getTime();
+    if (age < DAY) today.push(thread);
+    else if (age < 7 * DAY) week.push(thread);
+    else older.push(thread);
+  }
+  return { today, week, older };
 }
 
 function savedMessageToMessage(row: SavedMessage): Message {
@@ -851,7 +828,7 @@ function ResearchActivity({
   const expanded = active || open;
 
   return (
-    <div className="max-w-4xl overflow-hidden rounded-2xl border border-emerald-950/10 bg-[linear-gradient(135deg,rgba(236,253,245,0.85),rgba(255,255,255,0.9))] shadow-[0_14px_40px_-30px_rgba(5,150,105,0.55)]">
+    <div className="overflow-hidden rounded-2xl border border-emerald-950/10 bg-[linear-gradient(135deg,rgba(236,253,245,0.85),rgba(255,255,255,0.9))] shadow-[0_14px_40px_-30px_rgba(5,150,105,0.55)]">
       <button
         type="button"
         onClick={() => setOpen((value) => !value)}

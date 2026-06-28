@@ -15,7 +15,7 @@ import { TrendingUp, Briefcase, Calculator, Activity, HandCoins, FileText, Gauge
 export function ChatCards({ cards }: { cards: Card[] }) {
   if (!cards.length) return null;
   return (
-    <div className="mt-2 grid gap-2 sm:grid-cols-2">
+    <div className="grid gap-2 sm:grid-cols-2">
       {cards.map((c, i) => (
         <ChatCard key={i} card={c} />
       ))}
@@ -23,9 +23,12 @@ export function ChatCards({ cards }: { cards: Card[] }) {
   );
 }
 
-function Shell({ icon: Icon, title, href, children, accent }: { icon: typeof TrendingUp; title: string; href?: string; children: React.ReactNode; accent?: "green" | "red" }) {
+// Neutral surface for every card. Colour is reserved for the values inside
+// (positive/negative movement), never the card outline, so a screen of cards
+// stays calm rather than fencing each one in green or red.
+function Shell({ icon: Icon, title, href, children }: { icon: typeof TrendingUp; title: string; href?: string; children: React.ReactNode }) {
   const inner = (
-    <div className={cn("rounded-xl border bg-card p-3 transition-colors", href && "hover:border-emerald-300", accent === "green" ? "border-emerald-200" : accent === "red" ? "border-red-200" : "border-border")}>
+    <div className={cn("rounded-xl border border-border/70 bg-card p-3 transition-colors", href && "hover:border-border hover:bg-muted/30")}>
       <div className="mb-1.5 flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
         <Icon className="h-3 w-3" /> {title}
       </div>
@@ -55,7 +58,7 @@ function ChatCard({ card }: { card: Card }) {
       const q = card.data;
       const t = tone(q.changePct);
       return (
-        <Shell icon={TrendingUp} title={`${q.ticker} · Quote`} href={`/stocks/${q.ticker}`} accent={t === "positive" ? "green" : t === "negative" ? "red" : undefined}>
+        <Shell icon={TrendingUp} title={`${q.ticker} · Quote`} href={`/stocks/${q.ticker}`}>
           <div className="flex items-end justify-between">
             <Big value={fmtPrice(q.price)} sub={q.companyName ?? q.sector ?? ""} t={t} />
             <div className="text-right">
@@ -70,7 +73,7 @@ function ChatCard({ card }: { card: Card }) {
       const p = card.data;
       const t = tone(p.unrealizedPLPct);
       return (
-        <Shell icon={Briefcase} title={`${p.ticker} · Your position`} accent={t === "positive" ? "green" : t === "negative" ? "red" : undefined}>
+        <Shell icon={Briefcase} title={`${p.ticker} · Your position`}>
           <div className="flex items-end justify-between">
             <Big value={`${fmtCompact(p.marketValue)}`} sub={`${p.quantity} sh @ ${p.avgCost.toFixed(2)}`} />
             <div className="text-right">
@@ -146,7 +149,7 @@ function ChatCard({ card }: { card: Card }) {
       const m = card.data;
       const t = tone(m.indexChangePct);
       return (
-        <Shell icon={Gauge} title={`${m.indexName ?? "PSX"} · ${m.date}`} href="/market" accent={t === "positive" ? "green" : t === "negative" ? "red" : undefined}>
+        <Shell icon={Gauge} title={`${m.indexName ?? "PSX"} · ${m.date}`} href="/market">
           <div className="flex items-end justify-between">
             <Big value={m.indexValue?.toLocaleString("en-PK", { maximumFractionDigits: 0 }) ?? "—"} sub={`${m.advancers}↑ / ${m.decliners}↓`} t={t} />
             <p className={cn("text-sm font-semibold tabular-nums", t === "positive" ? "text-emerald-600" : t === "negative" ? "text-red-600" : "text-muted-foreground")}>{fmtPct(m.indexChangePct)}</p>
@@ -179,7 +182,7 @@ function ChatCard({ card }: { card: Card }) {
       const f = card.data;
       const t = tone(f.day.fipiNet);
       return (
-        <Shell icon={Globe2} title={`FIPI / LIPI · ${f.day.date}`} href="/market" accent={t === "positive" ? "green" : t === "negative" ? "red" : undefined}>
+        <Shell icon={Globe2} title={`FIPI / LIPI · ${f.day.date}`} href="/market">
           <div className="flex items-end justify-between">
             <Big value={`${fmtFlow(f.day.fipiNet)} ${f.day.currency} mn`} sub={f.stanceLabel} t={t} />
             <div className="text-right">
