@@ -551,6 +551,8 @@ export function Chat({
                         complete={!!m.complete || !(busy && i === messages.length - 1)}
                       />
                     )}
+                    {m.cards && <div className="max-w-5xl"><ChatCards cards={m.cards} /></div>}
+                    {busy && i === messages.length - 1 && !m.content && !m.activity?.length && <p className="flex items-center gap-1.5 text-xs text-muted-foreground"><Loader2 className="h-3 w-3 animate-spin" /> Preparing research...</p>}
                     {m.content && (
                       <div className="max-w-4xl rounded-2xl border border-border/80 bg-card px-4 py-4 text-sm shadow-[0_10px_35px_-24px_rgba(15,23,42,0.35)] sm:px-6 sm:py-5 sm:text-[15px]">
                         <ReactMarkdown remarkPlugins={[remarkGfm]} components={CHAT_MARKDOWN_COMPONENTS}>
@@ -558,8 +560,6 @@ export function Chat({
                         </ReactMarkdown>
                       </div>
                     )}
-                    {busy && i === messages.length - 1 && !m.content && !m.activity?.length && <p className="flex items-center gap-1.5 text-xs text-muted-foreground"><Loader2 className="h-3 w-3 animate-spin" /> Preparing research...</p>}
-                    {m.cards && <div className="max-w-5xl"><ChatCards cards={m.cards} /></div>}
                   </div>
                 ) : (
                   m.content

@@ -1,5 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
-import type { TechnicalSignals } from "@/lib/market/technicals";
+import type { Candle, TechnicalSignals } from "@/lib/market/technicals";
 
 /**
  * Compact, FREE data getters for the chat assistant — everything reads from
@@ -95,6 +95,38 @@ export async function getQuoteCard(db: SupabaseClient, ticker: string): Promise<
     marketCap: num(q?.market_cap),
     asOf: q?.as_of ?? null,
   };
+}
+
+/**
+ * The most recent PSX session date we hold data for (max as_of across all
+ * quotes). Used to judge whether a single stock's last close is genuinely stale
+ * or simply the latest session — which automatically respects weekends and
+ * public holidays (Ashura, Eid, etc.), since the market has no session, and so
+ * no newer as_of, on those days.
+ */
+export async function getLatestSessionDate(db: SupabaseClient): Promise<string | null> {
+  const { data } = await db
+    .from("market_quotes")
+    .select("as_of")
+    .order("as_of", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  return (data?.as_of as string) ?? null;
+}
+
+/**
+ * Daily close+volume candles for a ticker from the cached technicals bundle,
+ * oldest first. Powers on-demand indicator math (any-period EMA/SMA/RSI). The
+ * caller falls back to a live PSX fetch when the cache is empty.
+ */
+export async function getDailyCandles(db: SupabaseClient, ticker: string): Promise<Candle[]> {
+  const { data } = await db
+    .from("company_technicals")
+    .select("data")
+    .eq("ticker", ticker.toUpperCase())
+    .maybeSingle();
+  const hist = (data?.data as { history?: Candle[] } | null)?.history;
+  return Array.isArray(hist) ? hist : [];
 }
 
 export async function getPositionCard(db: SupabaseClient, userId: string, ticker: string): Promise<PositionCard | null> {

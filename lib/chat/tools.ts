@@ -2,11 +2,69 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import type Anthropic from "@anthropic-ai/sdk";
 import {
   getQuoteCard, getPositionCard, getRatioCard, getTechnicalCard, getDividendCard,
-  getNewsCard, getMarketCard, getHoldingsSummary, getSectorCard,
+  getNewsCard, getMarketCard, getHoldingsSummary, getSectorCard, getDailyCandles,
 } from "@/lib/chat/data";
 import { getForeignFlowCard } from "@/lib/market/foreign-flows";
 import { getPortfolio } from "@/lib/portfolio";
 import { tavilySearch, tavilyConfigured } from "@/lib/tavily";
+import { emaSeries, smaSeries, rsiSeries, toWeekly, type Candle } from "@/lib/market/technicals";
+import { fetchPsxEod } from "@/lib/market-data/psx-dps";
+
+type IndicatorKind = "ema" | "sma" | "rsi";
+
+/**
+ * Compute an arbitrary-period indicator from a daily close series, on the daily
+ * or weekly timeframe. Returns the latest value plus the last few values with
+ * their dates, so the model can answer precise indicator questions (a 5-day
+ * EMA, a 9-day RSI) it isn't handed in the standard technicals bundle.
+ */
+function computeIndicator(
+  ticker: string,
+  candles: Candle[],
+  indicator: IndicatorKind,
+  period: number,
+  timeframe: "daily" | "weekly"
+): Record<string, unknown> {
+  let series = candles
+    .filter((c) => Number.isFinite(c.close) && c.close > 0)
+    .sort((a, b) => (a.date < b.date ? -1 : 1));
+  if (timeframe === "weekly") series = toWeekly(series);
+  const closes = series.map((c) => c.close);
+
+  const valSeries =
+    indicator === "ema" ? emaSeries(closes, period)
+    : indicator === "sma" ? smaSeries(closes, period)
+    : rsiSeries(closes, period);
+
+  const dated = series
+    .map((c, i) => ({ date: c.date, value: valSeries[i] }))
+    .filter((x): x is { date: string; value: number } => x.value != null);
+
+  if (dated.length === 0) {
+    return {
+      ticker, indicator: indicator.toUpperCase(), period, timeframe,
+      value: null,
+      note: `Not enough ${timeframe} history to compute a ${period}-period ${indicator.toUpperCase()} (have ${closes.length} ${timeframe} closes).`,
+    };
+  }
+
+  const round3 = (n: number) => Math.round(n * 1000) / 1000;
+  const last = dated[dated.length - 1];
+  const shortDailyAvg = timeframe === "daily" && indicator !== "rsi" && period <= 20;
+  return {
+    ticker,
+    indicator: indicator.toUpperCase(),
+    period,
+    timeframe,
+    asOf: last.date,
+    value: round3(last.value),
+    recent: dated.slice(-6).map((d) => ({ date: d.date, value: round3(d.value) })),
+    closesUsed: closes.length,
+    ...(shortDailyAvg
+      ? { note: "Short-term daily average. The platform is built for long-term investing, so treat this as information, not a trade signal." }
+      : {}),
+  };
+}
 
 /**
  * Tools Claude can call when the pre-fetched brief isn't enough (a second
@@ -41,6 +99,20 @@ export const CHAT_TOOLS: Anthropic.Tool[] = [
     name: "get_technicals",
     description: "Long-term structure read for a ticker, written for investors rather than traders. It returns the 52-week range, RSI, and moving averages, plus the multi-year trend (weekly EMA21/55), momentum-divergence trend warnings, a healthy accumulation range (where to gradually accumulate a quality company, with no stop-loss, no price target, and no risk/reward), and multi-year seasonality for timing capital deployment. Use it to judge whether the price is an attractive long-term accumulation level, extended, or deteriorating. It is always secondary to fundamentals. Do not turn this into a swing-trade setup.",
     input_schema: { type: "object", properties: { ticker: { type: "string" } }, required: ["ticker"] },
+  },
+  {
+    name: "compute_indicator",
+    description: "Compute a precise technical indicator from the ticker's own daily close history for any period the standard technicals bundle doesn't already give you — e.g. a 5-day EMA, a 10-day SMA, or a 9-day RSI. Supports EMA, SMA and RSI on the daily or weekly timeframe. Returns the latest value plus the last few values with their dates. Use this whenever the user asks for a specific indicator value rather than guessing or saying it's unavailable. The long-term-investor framing still holds: report the number, but do not build a short-term trade signal around it.",
+    input_schema: {
+      type: "object",
+      properties: {
+        ticker: { type: "string" },
+        indicator: { type: "string", enum: ["ema", "sma", "rsi"], description: "ema, sma, or rsi" },
+        period: { type: "number", description: "Lookback period in bars, e.g. 5 for a 5-day EMA. 1-400." },
+        timeframe: { type: "string", enum: ["daily", "weekly"], description: "Bar timeframe. Default daily." },
+      },
+      required: ["ticker", "indicator", "period"],
+    },
   },
   {
     name: "get_dividends",
@@ -149,6 +221,24 @@ export async function executeTool(
       return ticker ? (await getRatioCard(db, ticker)) ?? { error: "no ratios — financials not loaded" } : { error: "ticker required" };
     case "get_technicals":
       return ticker ? (await getTechnicalCard(db, ticker)) ?? { error: "no technicals" } : { error: "ticker required" };
+    case "compute_indicator": {
+      if (!ticker) return { error: "ticker required" };
+      const indicator = String(input.indicator ?? "").toLowerCase();
+      if (indicator !== "ema" && indicator !== "sma" && indicator !== "rsi") {
+        return { error: "indicator must be one of ema, sma, rsi" };
+      }
+      const period = Math.round(Number(input.period));
+      if (!Number.isFinite(period) || period < 1 || period > 400) {
+        return { error: "period must be a number between 1 and 400" };
+      }
+      const timeframe = input.timeframe === "weekly" ? "weekly" : "daily";
+      // Cached daily history first; fall back to a live PSX fetch so the tool
+      // works even for a ticker the user has never opened.
+      let candles = await getDailyCandles(db, ticker);
+      if (candles.length === 0) candles = (await fetchPsxEod(ticker)) as Candle[];
+      if (candles.length === 0) return { error: `no price history available for ${ticker}` };
+      return computeIndicator(ticker, candles, indicator, period, timeframe);
+    }
     case "get_dividends":
       return ticker ? (await getDividendCard(db, ticker)) ?? { error: "no payouts on record" } : { error: "ticker required" };
     case "get_news":
