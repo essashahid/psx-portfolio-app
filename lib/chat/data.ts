@@ -97,6 +97,7 @@ export interface PositionHistoryCard {
     brokerAsOf: string | null;
     brokerSource: string | null;
     manualPurchaseQuantity: number;
+    postCheckpointTransactionDelta: number | null;
     expectedQuantity: number | null;
     holdingVsLedgerDifference: number | null;
     holdingVsBrokerExpectedDifference: number | null;
@@ -476,15 +477,24 @@ export async function getPositionHistoryCard(
   const brokerItem = checkpointData?.items?.find((x) => String(x.ticker ?? "").toUpperCase() === t);
   const checkpointHasInventory = !!checkpoint && Array.isArray(checkpointData?.items);
   const brokerInventoryQuantity = checkpointHasInventory ? numeric(brokerItem?.quantity) ?? 0 : null;
+  const brokerAsOf = checkpoint?.as_of ? String(checkpoint.as_of) : null;
+  const transactionLedgerQuantity = rows.length ? round2(ledgerQty) : null;
+  const ledgerQtyAtBrokerDate =
+    brokerAsOf && historyRows.length
+      ? [...historyRows].reverse().find((r) => r.date != null && r.date <= brokerAsOf)?.quantityAfter ?? 0
+      : null;
+  const postCheckpointTransactionDelta =
+    brokerAsOf && transactionLedgerQuantity != null && ledgerQtyAtBrokerDate != null
+      ? round2(transactionLedgerQuantity - ledgerQtyAtBrokerDate)
+      : null;
   const manualPurchaseQuantity = round2(
     (checkpointData?.manualPurchases ?? [])
       .filter((x) => String(x.ticker ?? "").toUpperCase() === t)
       .reduce((sum, x) => sum + (numeric(x.quantity) ?? 0), 0)
   );
   const expectedQuantity = brokerInventoryQuantity != null
-    ? round2(brokerInventoryQuantity + manualPurchaseQuantity)
+    ? round2(brokerInventoryQuantity + manualPurchaseQuantity + (postCheckpointTransactionDelta ?? 0))
     : null;
-  const transactionLedgerQuantity = rows.length ? round2(ledgerQty) : null;
   const holdingVsLedgerDifference =
     holdingQty != null && transactionLedgerQuantity != null
       ? round2(holdingQty - transactionLedgerQuantity)
@@ -612,9 +622,10 @@ export async function getPositionHistoryCard(
       holdingsQuantity: holdingQty,
       transactionLedgerQuantity,
       brokerInventoryQuantity,
-      brokerAsOf: checkpoint?.as_of ? String(checkpoint.as_of) : null,
+      brokerAsOf,
       brokerSource: checkpoint?.source ? String(checkpoint.source) : null,
       manualPurchaseQuantity,
+      postCheckpointTransactionDelta,
       expectedQuantity,
       holdingVsLedgerDifference,
       holdingVsBrokerExpectedDifference,
