@@ -3,8 +3,9 @@
  * GET /api/chart-data?ticker=FCCL&period=1Y
  *
  * Returns daily OHLCV candles trimmed to the requested period, plus the user's
- * average cost for the ticker (when they own it) so the chart can draw a cost-
- * basis overlay without embedding sensitive data in the model's output.
+ * average cost and user transaction markers for the ticker (when available) so
+ * the chart can draw overlays without embedding sensitive data in the model's
+ * output.
  */
 import { requireUser } from "@/lib/api-helpers";
 import { getDailyCandles } from "@/lib/chat/data";
@@ -85,11 +86,31 @@ export async function GET(request: Request) {
     .filter((d) => d.ex_date)
     .map((d) => ({ date: d.ex_date as string, amount: Number(d.amount) }));
 
+  // User transaction dates for optional buy/sell/corporate-action markers.
+  const { data: txnRows } = await supabase
+    .from("transactions")
+    .select("trade_date, type, quantity, price")
+    .eq("user_id", user.id)
+    .eq("ticker", ticker)
+    .gte("trade_date", cutoff)
+    .in("type", ["BUY", "SELL", "RIGHT", "BONUS", "SPLIT", "ADJUST"])
+    .order("trade_date", { ascending: true });
+
+  const transactions = (txnRows ?? [])
+    .filter((t) => t.trade_date)
+    .map((t) => ({
+      date: t.trade_date as string,
+      type: String(t.type ?? "UNKNOWN"),
+      quantity: t.quantity != null ? Number(t.quantity) : null,
+      price: t.price != null ? Number(t.price) : null,
+    }));
+
   return Response.json({
     ticker,
     period,
     candles: trimmed,
     avgCost,
     dividends,
+    transactions,
   });
 }

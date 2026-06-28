@@ -207,7 +207,7 @@ export function briefFromPositionHistory(h: PositionHistoryCard): string {
     ? `${h.quote.price.toFixed(2)} PKR${h.quote.asOf ? ` as of ${h.quote.asOf}` : ""}`
     : "price unavailable";
   lines.push(
-    `${h.ticker} DECISION EVIDENCE: current ${priceBit}; sector ${h.quote.sector ?? "n/a"}; cash ${fmtCompact(h.portfolio.cashBalance)} PKR; portfolio net worth ${fmtCompact(h.portfolio.netWorth)} PKR. Current weight: ${fmtPct(h.portfolio.currentNetWorthWeightPct)} of net worth (${fmtPct(h.portfolio.currentEquityWeightPct)} of equities). Sector weight: ${fmtPct(h.portfolio.sectorNetWorthWeightPct)} of net worth (${fmtPct(h.portfolio.sectorEquityWeightPct)} of equities).`
+    `${h.ticker} DECISION EVIDENCE: current ${priceBit}; sector ${h.quote.sector ?? "n/a"}; cash ${fmtCompact(h.portfolio.cashBalance)} PKR; portfolio net worth ${fmtCompact(h.portfolio.netWorth)} PKR. Current weight: ${fmtPct(h.portfolio.currentNetWorthWeightPct, false)} of net worth (${fmtPct(h.portfolio.currentEquityWeightPct, false)} of equities). Sector weight: ${fmtPct(h.portfolio.sectorNetWorthWeightPct, false)} of net worth (${fmtPct(h.portfolio.sectorEquityWeightPct, false)} of equities).`
   );
   if (h.holding) {
     lines.push(
@@ -218,7 +218,7 @@ export function briefFromPositionHistory(h: PositionHistoryCard): string {
   }
   const q = h.quantityReconciliation;
   lines.push(
-    `${h.ticker} QUANTITY RECONCILIATION: holdings ${q.holdingsQuantity ?? "n/a"}; transaction-ledger ${q.transactionLedgerQuantity ?? "n/a"}; broker inventory ${q.brokerInventoryQuantity ?? "n/a"}${q.brokerAsOf ? ` as of ${q.brokerAsOf}` : ""}; manual purchases after broker snapshot ${q.manualPurchaseQuantity}; expected ${q.expectedQuantity ?? "n/a"}; holding-ledger diff ${q.holdingVsLedgerDifference ?? "n/a"}; holding-broker diff ${q.holdingVsBrokerExpectedDifference ?? "n/a"}; status ${q.status}.`
+    `${h.ticker} QUANTITY RECONCILIATION: holdings ${q.holdingsQuantity ?? "n/a"}; transaction-ledger ${q.transactionLedgerQuantity ?? "n/a"}; broker inventory ${q.brokerInventoryQuantity ?? "n/a"}${q.brokerAsOf ? ` as of ${q.brokerAsOf}` : ""}; post-checkpoint transaction delta ${q.postCheckpointTransactionDelta ?? "n/a"}; manual purchases after broker snapshot ${q.manualPurchaseQuantity}; expected ${q.expectedQuantity ?? "n/a"}; holding-ledger diff ${q.holdingVsLedgerDifference ?? "n/a"}; holding-broker diff ${q.holdingVsBrokerExpectedDifference ?? "n/a"}; status ${q.status}.`
   );
   lines.push(
     `${h.ticker} LEDGER SUMMARY: ${h.ledger.transactionCount} rows; buys ${h.ledger.buyCount}, sells ${h.ledger.sellCount}; first buy ${h.ledger.firstBuyDate ?? "n/a"}, latest buy ${h.ledger.latestBuyDate ?? "n/a"}; bought ${h.ledger.totalBoughtQuantity} sh for ${fmtCompact(h.ledger.totalBuyCost)} PKR (weighted avg ${h.ledger.weightedAverageBuyCost?.toFixed(2) ?? "n/a"}); sold ${h.ledger.totalSoldQuantity} sh; current ledger avg ${h.ledger.avgCost?.toFixed(2) ?? "n/a"}; sources ${Object.entries(h.ledger.sourceBreakdown).map(([k, v]) => `${k}:${v}`).join(", ") || "n/a"}.`
@@ -236,7 +236,7 @@ export function briefFromPositionHistory(h: PositionHistoryCard): string {
     lines.push(
       `${h.ticker} ADDITION SCENARIOS: ${h.additionScenarios
         .map((s) =>
-          `${s.label}: amount ${fmtCompact(s.amount)} PKR, est shares ${s.estimatedShares ?? "n/a"}, new avg ${s.newAvgCost?.toFixed(2) ?? "n/a"}, weight ${fmtPct(s.currentWeightPct)} -> ${fmtPct(s.newWeightPct)}, sector weight after ${fmtPct(s.newSectorWeightPct)}, cash after ${s.cashAfter != null ? `${fmtCompact(s.cashAfter)} PKR` : "n/a"}, external capital ${s.externalCapitalRequired != null ? `${fmtCompact(s.externalCapitalRequired)} PKR` : "n/a"}`
+          `${s.label}: amount ${fmtCompact(s.amount)} PKR, est shares ${s.estimatedShares ?? "n/a"}, new avg ${s.newAvgCost?.toFixed(2) ?? "n/a"}, weight ${fmtPct(s.currentWeightPct, false)} -> ${fmtPct(s.newWeightPct, false)}, sector weight after ${fmtPct(s.newSectorWeightPct, false)}, cash after ${s.cashAfter != null ? `${fmtCompact(s.cashAfter)} PKR` : "n/a"}, external capital ${s.externalCapitalRequired != null ? `${fmtCompact(s.externalCapitalRequired)} PKR` : "n/a"}`
         )
         .join(" | ")}.`
     );

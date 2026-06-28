@@ -66,16 +66,18 @@ function ArtifactShell({
 // ── Price chart ───────────────────────────────────────────────────────────────
 
 interface PriceCandle { date: string; close: number; volume?: number | null; }
+interface PriceTransaction { date: string; type: string; quantity?: number | null; price?: number | null; }
 interface ChartDataState {
   candles: PriceCandle[];
   avgCost: number | null;
   dividends: { date: string; amount: number }[];
+  transactions: PriceTransaction[];
   loading: boolean;
   error: string | null;
 }
 
 function PriceChart({ spec }: { spec: PriceChartArtifact }) {
-  const [state, setState] = useState<ChartDataState>({ candles: [], avgCost: null, dividends: [], loading: true, error: null });
+  const [state, setState] = useState<ChartDataState>({ candles: [], avgCost: null, dividends: [], transactions: [], loading: true, error: null });
   const motion = useChartMotion();
 
   useEffect(() => {
@@ -86,7 +88,7 @@ function PriceChart({ spec }: { spec: PriceChartArtifact }) {
       .then((d) => {
         if (cancelled) return;
         if (d.error) { setState((s) => ({ ...s, loading: false, error: d.error as string })); return; }
-        setState({ candles: d.candles ?? [], avgCost: d.avgCost ?? null, dividends: d.dividends ?? [], loading: false, error: null });
+        setState({ candles: d.candles ?? [], avgCost: d.avgCost ?? null, dividends: d.dividends ?? [], transactions: d.transactions ?? [], loading: false, error: null });
       })
       .catch(() => { if (!cancelled) setState((s) => ({ ...s, loading: false, error: "Failed to load price data" })); });
     return () => { cancelled = true; };
@@ -94,6 +96,7 @@ function PriceChart({ spec }: { spec: PriceChartArtifact }) {
 
   const showCostBasis = spec.overlay?.includes("cost-basis") && state.avgCost != null;
   const showDividends = spec.overlay?.includes("dividends") && state.dividends.length > 0;
+  const showTransactions = spec.overlay?.includes("transactions") && state.transactions.length > 0;
 
   const yVals = state.candles.map((c) => c.close);
   const yMin = yVals.length ? Math.floor(Math.min(...yVals) * 0.97) : 0;
@@ -107,6 +110,11 @@ function PriceChart({ spec }: { spec: PriceChartArtifact }) {
   const fmtDateFull = (d: string | number) => {
     const dt = new Date(String(d) + "T00:00:00Z");
     return dt.toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric", timeZone: "UTC" });
+  };
+  const transactionStroke = (type: string) => {
+    if (type === "BUY" || type === "RIGHT") return INK.up;
+    if (type === "SELL") return INK.down;
+    return INK.amber;
   };
 
   // Thin the x-axis tick labels for readability.
@@ -177,6 +185,15 @@ function PriceChart({ spec }: { spec: PriceChartArtifact }) {
             {showDividends && state.dividends.map((d) => (
               <ReferenceLine key={d.date} x={d.date} stroke={INK.up} strokeWidth={1} strokeDasharray="2 2" />
             ))}
+            {showTransactions && state.transactions.map((t, i) => (
+              <ReferenceLine
+                key={`${t.date}-${t.type}-${i}`}
+                x={t.date}
+                stroke={transactionStroke(t.type)}
+                strokeWidth={1.4}
+                strokeDasharray={t.type === "SELL" ? "5 2" : "1 0"}
+              />
+            ))}
             <Line
               type="monotone"
               dataKey="close"
@@ -190,9 +207,12 @@ function PriceChart({ spec }: { spec: PriceChartArtifact }) {
             />
           </LineChart>
         </ResponsiveContainer>
-        {showDividends && (
+        {(showDividends || showTransactions) && (
           <p className="mt-1 px-2 text-[10px] text-muted-foreground">
-            Vertical marks indicate ex-dividend dates.
+            {[
+              showDividends ? "Dotted green marks indicate ex-dividend dates" : null,
+              showTransactions ? "solid green/red marks indicate buys/sells" : null,
+            ].filter(Boolean).join("; ")}.
           </p>
         )}
       </div>
