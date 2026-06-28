@@ -100,12 +100,12 @@ function PriceChart({ spec }: { spec: PriceChartArtifact }) {
   const yMax = yVals.length ? Math.ceil(Math.max(...yVals) * 1.03) : 100;
 
   const fmt = (v: number) => `PKR ${v.toLocaleString("en-PK", { maximumFractionDigits: 2 })}`;
-  const fmtDate = (d: string) => {
-    const dt = new Date(d + "T00:00:00Z");
+  const fmtDate = (d: string | number) => {
+    const dt = new Date(String(d) + "T00:00:00Z");
     return dt.toLocaleDateString("en-GB", { day: "numeric", month: "short", timeZone: "UTC" });
   };
-  const fmtDateFull = (d: string) => {
-    const dt = new Date(d + "T00:00:00Z");
+  const fmtDateFull = (d: string | number) => {
+    const dt = new Date(String(d) + "T00:00:00Z");
     return dt.toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric", timeZone: "UTC" });
   };
 

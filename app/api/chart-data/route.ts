@@ -13,6 +13,12 @@ import type { Candle } from "@/lib/market/technicals";
 
 export const dynamic = "force-dynamic";
 
+type ChartCandle = Candle & {
+  open?: number | null;
+  high?: number | null;
+  low?: number | null;
+};
+
 const PERIOD_DAYS: Record<string, number> = {
   "1M": 31,
   "3M": 92,
@@ -39,9 +45,9 @@ export async function GET(request: Request) {
   const cutoff = new Date(Date.now() - days * 86_400_000).toISOString().slice(0, 10);
 
   // Fetch candles — cached technicals first, live PSX as fallback.
-  let candles: Candle[] = await getDailyCandles(supabase, ticker);
+  let candles: ChartCandle[] = await getDailyCandles(supabase, ticker);
   if (candles.length === 0) {
-    candles = (await fetchPsxEod(ticker)) as Candle[];
+    candles = await fetchPsxEod(ticker);
   }
 
   const trimmed = candles
