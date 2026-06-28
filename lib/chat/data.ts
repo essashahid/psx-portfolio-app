@@ -1,5 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Candle, TechnicalSignals } from "@/lib/market/technicals";
+import { getPortfolio } from "@/lib/portfolio";
 
 /**
  * Compact, FREE data getters for the chat assistant — everything reads from
@@ -32,6 +33,92 @@ export interface PositionCard {
   unrealizedPL: number | null;
   unrealizedPLPct: number | null;
   dayChangePct: number | null;
+}
+
+export interface PositionHistoryCard {
+  ticker: string;
+  quote: {
+    price: number | null;
+    asOf: string | null;
+    sector: string | null;
+    companyName: string | null;
+  };
+  holding: {
+    quantity: number;
+    avgCost: number;
+    totalCost: number;
+    source: string | null;
+    lastUpdated: string | null;
+  } | null;
+  portfolio: {
+    equityValue: number;
+    cashBalance: number;
+    netWorth: number;
+    currentEquityWeightPct: number | null;
+    currentNetWorthWeightPct: number | null;
+    sector: string | null;
+    sectorEquityWeightPct: number | null;
+    sectorNetWorthWeightPct: number | null;
+  };
+  ledger: {
+    transactionCount: number;
+    buyCount: number;
+    sellCount: number;
+    firstBuyDate: string | null;
+    latestBuyDate: string | null;
+    totalBoughtQuantity: number;
+    totalSoldQuantity: number;
+    totalBuyCost: number;
+    weightedAverageBuyCost: number | null;
+    currentQuantity: number | null;
+    avgCost: number | null;
+    totalCost: number | null;
+    realizedPL: number;
+    sourceBreakdown: Record<string, number>;
+    rows: {
+      date: string | null;
+      type: string;
+      quantity: number | null;
+      price: number | null;
+      netAmount: number | null;
+      fees: number;
+      realizedPL: number | null;
+      quantityAfter: number;
+      avgCostAfter: number;
+      totalCostAfter: number;
+      source: string | null;
+      notes: string | null;
+    }[];
+  };
+  quantityReconciliation: {
+    holdingsQuantity: number | null;
+    transactionLedgerQuantity: number | null;
+    brokerInventoryQuantity: number | null;
+    brokerAsOf: string | null;
+    brokerSource: string | null;
+    manualPurchaseQuantity: number;
+    expectedQuantity: number | null;
+    holdingVsLedgerDifference: number | null;
+    holdingVsBrokerExpectedDifference: number | null;
+    ledgerVsBrokerExpectedDifference: number | null;
+    status: "reconciled" | "difference" | "partial" | "unavailable";
+  };
+  additionScenarios: {
+    label: string;
+    amount: number;
+    estimatedShares: number | null;
+    capitalRequired: number | null;
+    newQuantity: number | null;
+    newAvgCost: number | null;
+    newPositionValue: number | null;
+    currentWeightPct: number | null;
+    newWeightPct: number | null;
+    weightChangePct: number | null;
+    newSectorWeightPct: number | null;
+    cashAfter: number | null;
+    externalCapitalRequired: number | null;
+  }[];
+  notes: string[];
 }
 
 export interface RatioCard {
@@ -75,6 +162,53 @@ export interface MarketCard {
 }
 
 const num = (v: unknown): number | null => (typeof v === "number" && Number.isFinite(v) ? v : null);
+const numeric = (v: unknown): number | null => {
+  const n = typeof v === "number" ? v : typeof v === "string" ? Number(v) : NaN;
+  return Number.isFinite(n) ? n : null;
+};
+const round2 = (n: number) => Math.round(n * 100) / 100;
+
+function lastBuyAmount(rows: PositionHistoryCard["ledger"]["rows"]): number | null {
+  for (let i = rows.length - 1; i >= 0; i--) {
+    const r = rows[i];
+    if ((r.type === "BUY" || r.type === "RIGHT") && r.netAmount != null && r.netAmount > 0) {
+      return r.netAmount;
+    }
+  }
+  return null;
+}
+
+function chooseAdditionAmounts({
+  proposedAmount,
+  recentBuyAmount,
+  cashBalance,
+  netWorth,
+  currentPositionValue,
+}: {
+  proposedAmount?: number | null;
+  recentBuyAmount: number | null;
+  cashBalance: number;
+  netWorth: number;
+  currentPositionValue: number;
+}): { label: string; amount: number }[] {
+  const candidates: { label: string; amount: number }[] = [];
+  const push = (label: string, amount: number | null | undefined) => {
+    if (amount == null || !Number.isFinite(amount) || amount <= 0) return;
+    const rounded = round2(amount);
+    if (candidates.some((c) => Math.abs(c.amount - rounded) <= Math.max(100, rounded * 0.02))) return;
+    candidates.push({ label, amount: rounded });
+  };
+
+  push("Proposed amount", proposedAmount ?? null);
+  if (proposedAmount == null) {
+    push("Last buy size", recentBuyAmount);
+    push("1% of net worth", netWorth > 0 ? netWorth * 0.01 : null);
+    push("25% of current position", currentPositionValue > 0 ? currentPositionValue * 0.25 : null);
+    push("Available cash", cashBalance > 0 ? cashBalance : null);
+  }
+
+  return candidates.slice(0, 3);
+}
 
 export async function getQuoteCard(db: SupabaseClient, ticker: string): Promise<QuoteCard | null> {
   const t = ticker.toUpperCase();
@@ -83,6 +217,7 @@ export async function getQuoteCard(db: SupabaseClient, ticker: string): Promise<
     db.from("stock_universe").select("company_name, sector").eq("ticker", t).maybeSingle(),
   ]);
   if (!q && !meta) return null;
+
   return {
     ticker: t,
     companyName: meta?.company_name ?? null,
@@ -146,6 +281,7 @@ export async function getPositionCard(db: SupabaseClient, userId: string, ticker
   const totalCost = Number(h.total_cost) || quantity * avgCost;
   const marketValue = price != null ? price * quantity : null;
   const unrealizedPL = marketValue != null ? marketValue - totalCost : null;
+
   return {
     ticker: t,
     quantity,
@@ -156,6 +292,337 @@ export async function getPositionCard(db: SupabaseClient, userId: string, ticker
     unrealizedPL,
     unrealizedPLPct: unrealizedPL != null && totalCost > 0 ? (unrealizedPL / totalCost) * 100 : null,
     dayChangePct: num(q?.day_change_pct),
+  };
+}
+
+export async function getPositionHistoryCard(
+  db: SupabaseClient,
+  userId: string,
+  ticker: string,
+  proposedAmount?: number | null
+): Promise<PositionHistoryCard> {
+  const t = ticker.toUpperCase();
+  const [
+    { data: holding },
+    { data: txns },
+    quote,
+    portfolio,
+    { data: checkpoint },
+  ] = await Promise.all([
+    db
+      .from("holdings")
+      .select("ticker, quantity, avg_cost, total_cost, source, last_updated")
+      .eq("user_id", userId)
+      .eq("ticker", t)
+      .maybeSingle(),
+    db
+      .from("transactions")
+      .select("trade_date, type, quantity, price, gross_amount, commission, tax, net_amount, realized_pl, source, notes, created_at")
+      .eq("user_id", userId)
+      .eq("ticker", t)
+      .order("trade_date", { ascending: true }),
+    getQuoteCard(db, t),
+    getPortfolio(db, userId),
+    db
+      .from("reconciliation_checkpoints")
+      .select("as_of, source, data")
+      .eq("user_id", userId)
+      .order("as_of", { ascending: false })
+      .limit(1)
+      .maybeSingle(),
+  ]);
+
+  const rows = (txns ?? []).sort((a, b) =>
+    String(a.trade_date ?? a.created_at ?? "9999").localeCompare(String(b.trade_date ?? b.created_at ?? "9999"))
+  );
+  let ledgerQty = 0;
+  let ledgerCost = 0;
+  let ledgerAvg = 0;
+  let realizedPL = 0;
+  let buyCount = 0;
+  let sellCount = 0;
+  let totalBoughtQuantity = 0;
+  let totalSoldQuantity = 0;
+  let totalBuyCost = 0;
+  const buyDates: string[] = [];
+  const sourceBreakdown: Record<string, number> = {};
+
+  const historyRows: PositionHistoryCard["ledger"]["rows"] = rows.map((r) => {
+    const type = String(r.type ?? "UNKNOWN").toUpperCase();
+    const signedQty = numeric(r.quantity);
+    const qty = Math.abs(signedQty ?? 0);
+    const price = numeric(r.price);
+    const netAmount = numeric(r.net_amount);
+    const commission = numeric(r.commission) ?? 0;
+    const tax = numeric(r.tax) ?? 0;
+    const fees = round2(commission + tax);
+    const source = typeof r.source === "string" ? r.source : null;
+    if (source) sourceBreakdown[source] = (sourceBreakdown[source] ?? 0) + 1;
+    let rowRealized: number | null = null;
+
+    switch (type) {
+      case "BUY":
+      case "RIGHT": {
+        const costIn = netAmount != null && netAmount > 0
+          ? netAmount
+          : qty * (price ?? 0) + commission + tax;
+        ledgerQty += qty;
+        ledgerCost += costIn;
+        ledgerAvg = ledgerQty > 0 ? ledgerCost / ledgerQty : 0;
+        buyCount++;
+        totalBoughtQuantity += qty;
+        totalBuyCost += costIn;
+        if (r.trade_date) buyDates.push(String(r.trade_date));
+        break;
+      }
+      case "SELL": {
+        const sellQty = Math.min(qty, ledgerQty);
+        const proceeds = netAmount != null && netAmount > 0
+          ? netAmount
+          : qty * (price ?? 0) - commission - tax;
+        const costOut = ledgerAvg * sellQty;
+        rowRealized = numeric(r.realized_pl) ?? (proceeds - costOut);
+        realizedPL += rowRealized;
+        ledgerQty -= sellQty;
+        ledgerCost -= costOut;
+        if (ledgerQty <= 0) {
+          ledgerQty = 0;
+          ledgerCost = 0;
+          ledgerAvg = 0;
+        } else {
+          ledgerAvg = ledgerCost / ledgerQty;
+        }
+        sellCount++;
+        totalSoldQuantity += qty;
+        break;
+      }
+      case "BONUS": {
+        ledgerQty += qty;
+        ledgerAvg = ledgerQty > 0 ? ledgerCost / ledgerQty : 0;
+        break;
+      }
+      case "SPLIT": {
+        const factor = qty || 1;
+        if (factor > 0 && ledgerQty > 0) {
+          ledgerQty *= factor;
+          ledgerAvg = ledgerCost / ledgerQty;
+        }
+        break;
+      }
+      case "ADJUST": {
+        const delta = signedQty ?? 0;
+        if (delta > 0) {
+          const costIn = netAmount != null && netAmount > 0 ? netAmount : delta * (price ?? 0);
+          ledgerQty += delta;
+          ledgerCost += costIn;
+        } else if (delta < 0) {
+          const removeQty = Math.min(Math.abs(delta), ledgerQty);
+          ledgerCost -= ledgerAvg * removeQty;
+          ledgerQty -= removeQty;
+        } else if ((price ?? 0) > 0 && ledgerQty > 0) {
+          ledgerCost = ledgerQty * (price ?? 0);
+        }
+        if (ledgerQty <= 0) {
+          ledgerQty = 0;
+          ledgerCost = 0;
+          ledgerAvg = 0;
+        } else {
+          ledgerAvg = ledgerCost / ledgerQty;
+        }
+        break;
+      }
+      default:
+        break;
+    }
+
+    return {
+      date: r.trade_date ? String(r.trade_date) : null,
+      type,
+      quantity: signedQty,
+      price,
+      netAmount,
+      fees,
+      realizedPL: rowRealized != null ? round2(rowRealized) : null,
+      quantityAfter: round2(ledgerQty),
+      avgCostAfter: round2(ledgerAvg),
+      totalCostAfter: round2(ledgerCost),
+      source,
+      notes: typeof r.notes === "string" ? r.notes.slice(0, 160) : null,
+    };
+  });
+
+  const holdingQty = numeric(holding?.quantity);
+  const holdingCost = numeric(holding?.total_cost);
+  const holdingAvg = numeric(holding?.avg_cost);
+  const price = quote?.price ?? null;
+  const sector = quote?.sector ?? portfolio.holdings.find((h) => h.ticker === t)?.sector ?? null;
+  const portfolioHolding = portfolio.holdings.find((h) => h.ticker === t) ?? null;
+  const sectorWeight = sector ? portfolio.sectorWeights.find((s) => s.sector === sector) : null;
+  const sectorEquityValue = sectorWeight?.value ?? 0;
+  const equityValue = round2(portfolio.totalValue);
+  const cashBalance = round2(portfolio.cashBalance);
+  const netWorth = round2(equityValue + cashBalance);
+  const currentPositionValue =
+    portfolioHolding?.market_value ??
+    (price != null && holdingQty != null ? price * holdingQty : holdingCost ?? 0);
+
+  const checkpointData = checkpoint?.data as
+    | {
+        items?: { ticker?: string; quantity?: unknown }[];
+        manualPurchases?: { ticker?: string; quantity?: unknown }[];
+      }
+    | null
+    | undefined;
+  const brokerItem = checkpointData?.items?.find((x) => String(x.ticker ?? "").toUpperCase() === t);
+  const checkpointHasInventory = !!checkpoint && Array.isArray(checkpointData?.items);
+  const brokerInventoryQuantity = checkpointHasInventory ? numeric(brokerItem?.quantity) ?? 0 : null;
+  const manualPurchaseQuantity = round2(
+    (checkpointData?.manualPurchases ?? [])
+      .filter((x) => String(x.ticker ?? "").toUpperCase() === t)
+      .reduce((sum, x) => sum + (numeric(x.quantity) ?? 0), 0)
+  );
+  const expectedQuantity = brokerInventoryQuantity != null
+    ? round2(brokerInventoryQuantity + manualPurchaseQuantity)
+    : null;
+  const transactionLedgerQuantity = rows.length ? round2(ledgerQty) : null;
+  const holdingVsLedgerDifference =
+    holdingQty != null && transactionLedgerQuantity != null
+      ? round2(holdingQty - transactionLedgerQuantity)
+      : null;
+  const holdingVsBrokerExpectedDifference =
+    holdingQty != null && expectedQuantity != null
+      ? round2(holdingQty - expectedQuantity)
+      : null;
+  const ledgerVsBrokerExpectedDifference =
+    transactionLedgerQuantity != null && expectedQuantity != null
+      ? round2(transactionLedgerQuantity - expectedQuantity)
+      : null;
+  const diffs = [holdingVsLedgerDifference, holdingVsBrokerExpectedDifference, ledgerVsBrokerExpectedDifference]
+    .filter((v): v is number => v != null);
+  const reconStatus: PositionHistoryCard["quantityReconciliation"]["status"] =
+    diffs.length === 0
+      ? "unavailable"
+      : diffs.some((d) => Math.abs(d) >= 0.0001)
+        ? "difference"
+        : holdingVsLedgerDifference == null || holdingVsBrokerExpectedDifference == null
+          ? "partial"
+          : "reconciled";
+
+  const scenarioAmounts = chooseAdditionAmounts({
+    proposedAmount,
+    recentBuyAmount: lastBuyAmount(historyRows),
+    cashBalance,
+    netWorth,
+    currentPositionValue,
+  });
+  const additionScenarios = scenarioAmounts.map(({ label, amount }) => {
+    if (price == null || price <= 0 || holdingQty == null) {
+      return {
+        label,
+        amount: round2(amount),
+        estimatedShares: null,
+        capitalRequired: null,
+        newQuantity: null,
+        newAvgCost: null,
+        newPositionValue: null,
+        currentWeightPct: netWorth > 0 ? round2((currentPositionValue / netWorth) * 100) : null,
+        newWeightPct: null,
+        weightChangePct: null,
+        newSectorWeightPct: null,
+        cashAfter: null,
+        externalCapitalRequired: null,
+      };
+    }
+    const estimatedShares = Math.floor(amount / price);
+    const capitalRequired = round2(estimatedShares * price);
+    const baseCost = holdingCost ?? holdingQty * (holdingAvg ?? 0);
+    const newQuantity = round2(holdingQty + estimatedShares);
+    const newAvgCost = newQuantity > 0 ? round2((baseCost + capitalRequired) / newQuantity) : null;
+    const newPositionValue = round2(newQuantity * price);
+    const externalCapitalRequired = round2(Math.max(0, capitalRequired - Math.max(0, cashBalance)));
+    const newNetWorth = netWorth + externalCapitalRequired;
+    const currentWeightPct = netWorth > 0 ? round2((currentPositionValue / netWorth) * 100) : null;
+    const newWeightPct = newNetWorth > 0 ? round2((newPositionValue / newNetWorth) * 100) : null;
+    return {
+      label,
+      amount: round2(amount),
+      estimatedShares,
+      capitalRequired,
+      newQuantity,
+      newAvgCost,
+      newPositionValue,
+      currentWeightPct,
+      newWeightPct,
+      weightChangePct: currentWeightPct != null && newWeightPct != null ? round2(newWeightPct - currentWeightPct) : null,
+      newSectorWeightPct: newNetWorth > 0 ? round2(((sectorEquityValue + capitalRequired) / newNetWorth) * 100) : null,
+      cashAfter: round2(Math.max(0, cashBalance) - Math.min(Math.max(0, cashBalance), capitalRequired)),
+      externalCapitalRequired,
+    };
+  });
+
+  const notes: string[] = [];
+  if (rows.length === 0) notes.push("No transaction ledger rows are stored for this ticker; holdings may come from a snapshot or manual entry.");
+  if (!checkpoint) notes.push("No broker reconciliation checkpoint is stored, so broker-statement quantity cannot be independently checked.");
+  if (price == null) notes.push("No current market quote is available, so add-size share counts and weights are incomplete.");
+  const sortedBuyDates = buyDates.sort((a, b) => a.localeCompare(b));
+
+  return {
+    ticker: t,
+    quote: {
+      price,
+      asOf: quote?.asOf ?? null,
+      sector,
+      companyName: quote?.companyName ?? null,
+    },
+    holding: holdingQty != null ? {
+      quantity: holdingQty,
+      avgCost: holdingAvg ?? 0,
+      totalCost: holdingCost ?? holdingQty * (holdingAvg ?? 0),
+      source: typeof holding?.source === "string" ? holding.source : null,
+      lastUpdated: typeof holding?.last_updated === "string" ? holding.last_updated : null,
+    } : null,
+    portfolio: {
+      equityValue,
+      cashBalance,
+      netWorth,
+      currentEquityWeightPct: equityValue > 0 && currentPositionValue != null ? round2((currentPositionValue / equityValue) * 100) : null,
+      currentNetWorthWeightPct: netWorth > 0 && currentPositionValue != null ? round2((currentPositionValue / netWorth) * 100) : null,
+      sector,
+      sectorEquityWeightPct: sectorWeight?.weight != null ? round2(sectorWeight.weight) : null,
+      sectorNetWorthWeightPct: netWorth > 0 ? round2((sectorEquityValue / netWorth) * 100) : null,
+    },
+    ledger: {
+      transactionCount: rows.length,
+      buyCount,
+      sellCount,
+      firstBuyDate: sortedBuyDates[0] ?? null,
+      latestBuyDate: sortedBuyDates[sortedBuyDates.length - 1] ?? null,
+      totalBoughtQuantity: round2(totalBoughtQuantity),
+      totalSoldQuantity: round2(totalSoldQuantity),
+      totalBuyCost: round2(totalBuyCost),
+      weightedAverageBuyCost: totalBoughtQuantity > 0 ? round2(totalBuyCost / totalBoughtQuantity) : null,
+      currentQuantity: transactionLedgerQuantity,
+      avgCost: transactionLedgerQuantity != null ? round2(ledgerAvg) : null,
+      totalCost: transactionLedgerQuantity != null ? round2(ledgerCost) : null,
+      realizedPL: round2(realizedPL),
+      sourceBreakdown,
+      rows: historyRows,
+    },
+    quantityReconciliation: {
+      holdingsQuantity: holdingQty,
+      transactionLedgerQuantity,
+      brokerInventoryQuantity,
+      brokerAsOf: checkpoint?.as_of ? String(checkpoint.as_of) : null,
+      brokerSource: checkpoint?.source ? String(checkpoint.source) : null,
+      manualPurchaseQuantity,
+      expectedQuantity,
+      holdingVsLedgerDifference,
+      holdingVsBrokerExpectedDifference,
+      ledgerVsBrokerExpectedDifference,
+      status: reconStatus,
+    },
+    additionScenarios,
+    notes,
   };
 }
 

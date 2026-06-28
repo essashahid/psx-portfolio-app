@@ -21,7 +21,7 @@ const STOPWORDS = new Set([
   "HOW", "DOES", "DO", "THE", "AND", "FOR", "ARE", "WAS", "WHAT", "WHEN", "WHY", "WHO",
   "MY", "ME", "IS", "IT", "OF", "ON", "IN", "TO", "VS", "AT", "AS", "BE", "OR", "IF",
   "LOOK", "LIKE", "SHOW", "TELL", "GIVE", "POSITION", "STOCK", "SHARE", "PRICE", "NEWS",
-  "PSX", "BUY", "SELL", "HOLD", "GOOD", "BAD", "NOW", "TODAY", "WEEK", "YEAR", "PKR",
+  "PSX", "BUY", "SELL", "HOLD", "ADD", "MORE", "PURCHASE", "GOOD", "BAD", "NOW", "TODAY", "WEEK", "YEAR", "PKR",
 ]);
 
 export interface ResolvedMessage {
@@ -61,6 +61,9 @@ function detectIntent(msg: string): Intent {
   if (/\b(p\/e|pe ratio|valuation|cheap|expensive|overvalued|undervalued|ratio|roe|roa|margin|fundamental)\b/.test(m)) return "valuation";
   if (/\b(chart|trend|technical|52[- ]?week|rsi|moving average|support|resistance|momentum)\b/.test(m)) return "technical";
   if (/\b(news|filing|announce|happened|update|event)\b/.test(m)) return "news";
+  if (/\b(add|adding|increase|buy more|purchase more|additional purchase|average up|average down|accumulat\w*|position size|sizing|top up|add more)\b/.test(m)) {
+    return "position";
+  }
   // Portfolio / position questions — including diversification, concentration,
   // allocation and "do I have enough stocks" style questions that need the
   // user's holdings loaded, not just market data.
