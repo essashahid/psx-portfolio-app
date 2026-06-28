@@ -650,9 +650,6 @@ export function Chat({
           <div className="shrink-0 border-t border-border/70 bg-background/85 backdrop-blur-xl">
             <div className="mx-auto w-full max-w-3xl px-4 py-3 sm:px-6">
               {composerForm}
-              <p className="mt-2 text-center text-[11px] text-muted-foreground">
-                Portfolio tracking and research support only. Not financial advice.
-              </p>
             </div>
           </div>
         </div>
@@ -675,8 +672,8 @@ export function Chat({
         aria-modal="true"
         aria-label="Saved research"
         className={cn(
-          "fixed inset-y-0 right-0 z-50 flex w-[min(20rem,90vw)] flex-col border-l border-border bg-card shadow-2xl transition-transform duration-300",
-          threadsOpen ? "translate-x-0" : "translate-x-full"
+          "fixed inset-y-0 right-0 z-50 flex w-[min(20rem,90vw)] flex-col border-l border-border bg-card shadow-2xl transition-[transform,visibility] duration-300",
+          threadsOpen ? "translate-x-0 visible" : "translate-x-full invisible"
         )}
       >
         <div className="flex h-14 shrink-0 items-center justify-between gap-2 border-b border-border px-4">
