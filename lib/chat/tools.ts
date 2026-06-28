@@ -3,6 +3,7 @@ import type Anthropic from "@anthropic-ai/sdk";
 import {
   getQuoteCard, getPositionCard, getRatioCard, getTechnicalCard, getDividendCard,
   getNewsCard, getMarketCard, getHoldingsSummary, getSectorCard, getDailyCandles,
+  getPositionHistoryCard,
 } from "@/lib/chat/data";
 import { getForeignFlowCard } from "@/lib/market/foreign-flows";
 import { getPortfolio } from "@/lib/portfolio";
@@ -89,6 +90,18 @@ export const CHAT_TOOLS: Anthropic.Tool[] = [
     name: "get_position",
     description: "The user's holding in a ticker: quantity, average cost, market value, and unrealized profit/loss. Returns null if they don't own it.",
     input_schema: { type: "object", properties: { ticker: { type: "string" } }, required: ["ticker"] },
+  },
+  {
+    name: "get_position_history",
+    description: "Transaction-level evidence for an existing-holding decision: verified buy/sell/corporate-action rows, cost-basis evolution, quantity reconciliation across holdings, transaction ledger and broker checkpoint, current cash/portfolio weights, and add-size scenarios. Use before answering whether to add, average up/down, trim, or size an existing position.",
+    input_schema: {
+      type: "object",
+      properties: {
+        ticker: { type: "string" },
+        proposed_amount: { type: "number", description: "Optional PKR amount the user is considering adding. If omitted, the tool builds sensible scenarios from recent buy size, cash, position size and portfolio value." },
+      },
+      required: ["ticker"],
+    },
   },
   {
     name: "get_ratios",
@@ -217,6 +230,15 @@ export async function executeTool(
       return ticker ? (await getQuoteCard(db, ticker)) ?? { error: "no quote" } : { error: "ticker required" };
     case "get_position":
       return ticker ? (await getPositionCard(db, userId, ticker)) ?? { owned: false } : { error: "ticker required" };
+    case "get_position_history":
+      return ticker
+        ? await getPositionHistoryCard(
+            db,
+            userId,
+            ticker,
+            typeof input.proposed_amount === "number" ? input.proposed_amount : null
+          )
+        : { error: "ticker required" };
     case "get_ratios":
       return ticker ? (await getRatioCard(db, ticker)) ?? { error: "no ratios — financials not loaded" } : { error: "ticker required" };
     case "get_technicals":

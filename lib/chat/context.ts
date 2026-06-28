@@ -4,6 +4,7 @@ import {
   getQuoteCard, getPositionCard, getRatioCard, getTechnicalCard, getDividendCard,
   getNewsCard, getMarketCard, getHoldingsSummary, getSectorCard,
   type QuoteCard, type PositionCard, type RatioCard, type TechnicalCard, type DividendCard, type NewsCard, type MarketCard, type HoldingsSummary, type SectorCard,
+  type PositionHistoryCard,
 } from "@/lib/chat/data";
 import { getForeignFlowSnapshot, type ForeignFlowSnapshot } from "@/lib/market/foreign-flows";
 import { fmtPct, fmtCompact } from "@/lib/market/format";
@@ -197,6 +198,50 @@ export function briefFromCards(cards: Card[], latestSession: string | null = nul
       }
     }
   }
+  return lines.join("\n");
+}
+
+export function briefFromPositionHistory(h: PositionHistoryCard): string {
+  const lines: string[] = [];
+  const priceBit = h.quote.price != null
+    ? `${h.quote.price.toFixed(2)} PKR${h.quote.asOf ? ` as of ${h.quote.asOf}` : ""}`
+    : "price unavailable";
+  lines.push(
+    `${h.ticker} DECISION EVIDENCE: current ${priceBit}; sector ${h.quote.sector ?? "n/a"}; cash ${fmtCompact(h.portfolio.cashBalance)} PKR; portfolio net worth ${fmtCompact(h.portfolio.netWorth)} PKR. Current weight: ${fmtPct(h.portfolio.currentNetWorthWeightPct)} of net worth (${fmtPct(h.portfolio.currentEquityWeightPct)} of equities). Sector weight: ${fmtPct(h.portfolio.sectorNetWorthWeightPct)} of net worth (${fmtPct(h.portfolio.sectorEquityWeightPct)} of equities).`
+  );
+  if (h.holding) {
+    lines.push(
+      `${h.ticker} HOLDINGS ROW: ${h.holding.quantity} sh @ avg ${h.holding.avgCost.toFixed(2)}; cost ${fmtCompact(h.holding.totalCost)}; source ${h.holding.source ?? "n/a"}; updated ${h.holding.lastUpdated ?? "n/a"}.`
+    );
+  } else {
+    lines.push(`${h.ticker} HOLDINGS ROW: no open holding row found.`);
+  }
+  const q = h.quantityReconciliation;
+  lines.push(
+    `${h.ticker} QUANTITY RECONCILIATION: holdings ${q.holdingsQuantity ?? "n/a"}; transaction-ledger ${q.transactionLedgerQuantity ?? "n/a"}; broker inventory ${q.brokerInventoryQuantity ?? "n/a"}${q.brokerAsOf ? ` as of ${q.brokerAsOf}` : ""}; manual purchases after broker snapshot ${q.manualPurchaseQuantity}; expected ${q.expectedQuantity ?? "n/a"}; holding-ledger diff ${q.holdingVsLedgerDifference ?? "n/a"}; holding-broker diff ${q.holdingVsBrokerExpectedDifference ?? "n/a"}; status ${q.status}.`
+  );
+  lines.push(
+    `${h.ticker} LEDGER SUMMARY: ${h.ledger.transactionCount} rows; buys ${h.ledger.buyCount}, sells ${h.ledger.sellCount}; first buy ${h.ledger.firstBuyDate ?? "n/a"}, latest buy ${h.ledger.latestBuyDate ?? "n/a"}; bought ${h.ledger.totalBoughtQuantity} sh for ${fmtCompact(h.ledger.totalBuyCost)} PKR (weighted avg ${h.ledger.weightedAverageBuyCost?.toFixed(2) ?? "n/a"}); sold ${h.ledger.totalSoldQuantity} sh; current ledger avg ${h.ledger.avgCost?.toFixed(2) ?? "n/a"}; sources ${Object.entries(h.ledger.sourceBreakdown).map(([k, v]) => `${k}:${v}`).join(", ") || "n/a"}.`
+  );
+  if (h.ledger.rows.length) {
+    lines.push(
+      `${h.ticker} VERIFIED TRANSACTION ROWS: ${h.ledger.rows
+        .map((r) =>
+          `${r.date ?? "n/a"} ${r.type} qty ${r.quantity ?? "n/a"} @ ${r.price ?? "n/a"} net ${r.netAmount ?? "n/a"} fees ${r.fees} -> qty ${r.quantityAfter}, avg ${r.avgCostAfter} (${r.source ?? "n/a"})`
+        )
+        .join(" | ")}.`
+    );
+  }
+  if (h.additionScenarios.length) {
+    lines.push(
+      `${h.ticker} ADDITION SCENARIOS: ${h.additionScenarios
+        .map((s) =>
+          `${s.label}: amount ${fmtCompact(s.amount)} PKR, est shares ${s.estimatedShares ?? "n/a"}, new avg ${s.newAvgCost?.toFixed(2) ?? "n/a"}, weight ${fmtPct(s.currentWeightPct)} -> ${fmtPct(s.newWeightPct)}, sector weight after ${fmtPct(s.newSectorWeightPct)}, cash after ${s.cashAfter != null ? `${fmtCompact(s.cashAfter)} PKR` : "n/a"}, external capital ${s.externalCapitalRequired != null ? `${fmtCompact(s.externalCapitalRequired)} PKR` : "n/a"}`
+        )
+        .join(" | ")}.`
+    );
+  }
+  for (const note of h.notes) lines.push(`${h.ticker} DATA NOTE: ${note}`);
   return lines.join("\n");
 }
 

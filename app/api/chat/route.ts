@@ -1,7 +1,7 @@
 import { requireUser } from "@/lib/api-helpers";
 import { resolveMessage } from "@/lib/chat/resolver";
-import { gatherCards, briefFromCards, type Card } from "@/lib/chat/context";
-import { getLatestSessionDate } from "@/lib/chat/data";
+import { gatherCards, briefFromCards, briefFromPositionHistory, type Card } from "@/lib/chat/context";
+import { getLatestSessionDate, getPositionHistoryCard } from "@/lib/chat/data";
 import { CHAT_TOOLS, executeTool } from "@/lib/chat/tools";
 import { claudeConfigured, getClaude, buildClaudeParams } from "@/lib/ai/claude";
 import { deepseekChatConfigured, runDeepSeekChat } from "@/lib/ai/deepseek-chat";
@@ -44,6 +44,14 @@ Rules:
 - When the user asks WHY a stock moved, call web_search before answering. NEVER explain a move with generic sector narrative unless a tool result actually says so. If no specific catalyst is found, say so plainly.
 - Never open with "Let me check" or promise a lookup you won't do.
 - Never append disclaimers like "Not financial advice." — the platform handles that.
+
+Existing-holding and add-more decisions:
+- If the user asks whether to add, buy more, average up/down, trim, hold, size, or review an existing position, separate the company case from the portfolio case. A good company can still be a poor add if concentration, cash, sector exposure, or recent tranche pricing make the portfolio case weak.
+- Before saying portfolio allocation, cash, or quantity history is unavailable, inspect the available position, holdings, whole-portfolio summary, cash balance, sector weights, transaction ledger, broker reconciliation checkpoint, thesis and journal. With tools, call get_position_history plus get_portfolio_summary/list_holdings/get_thesis/get_journal as needed. Without tools, use any DECISION EVIDENCE in <context>.
+- Do not evaluate a new buy against blended average cost alone. Use the verified transaction rows to identify purchases, sales, fees, cost-basis evolution, source mix, quantity discrepancies, and whether recent tranches had materially less margin of safety than early tranches.
+- If the user gives an add amount, calculate that exact scenario. If not, use the provided add-size scenarios or state that the answer is conditional on sizing. Show shares, new average cost, new position weight, sector-weight impact, cash use and any external capital needed before recommending an addition.
+- Prefer decision artifacts that match the question: transaction-history table, cost-basis evolution table, allocation-impact table, position summary strip, price chart with cost/dividend/transaction overlays, or concentration visual. Do not use a headline ratio grid as the main evidence for an add-more decision.
+- Avoid unsupported investment claims: no market-average valuation comparisons, peer comparisons, audited-status claims, low-cost-producer/brand/distribution claims, dividend-growth claims, buyback/expansion optionality, sector outlook, book-value downside anchors, or original-thesis confirmation unless the specific evidence is present. Do not compare unrelated ratios such as P/E versus ROE as if the numerical relationship proves cheapness.
 
 Writing style:
 - Clear, plain, complete sentences. No em dashes. For ranges write "10 to 12". Sound like a sharp human analyst, not an AI.
@@ -197,7 +205,17 @@ export async function POST(request: Request) {
           send({ type: "cards", cards });
           send({ type: "status", text: `Prepared ${cards.length} relevant data ${cards.length === 1 ? "view" : "views"}` });
         }
-        const brief = briefFromCards(cards, latestSession);
+        const proposedAmount = extractProposedPkrAmount(message);
+        const positionHistoryBriefs =
+          resolved.intent === "position" && resolved.tickers.length
+            ? await Promise.all(
+                resolved.tickers.slice(0, 2).map(async (ticker) => {
+                  const history = await getPositionHistoryCard(supabase, user.id, ticker, proposedAmount);
+                  return briefFromPositionHistory(history);
+                })
+              )
+            : [];
+        const brief = [briefFromCards(cards, latestSession), ...positionHistoryBriefs].filter(Boolean).join("\n");
 
         // 2. If the selected provider's AI is off, return a useful templated
         //    answer from the brief.
@@ -376,6 +394,7 @@ function toolActivityLabel(name: string): string {
   const labels: Record<string, string> = {
     get_portfolio_summary: "Reviewing portfolio allocation and performance",
     get_position: "Reviewing the selected holding",
+    get_position_history: "Reviewing transactions and allocation impact",
     list_holdings: "Comparing portfolio holdings",
     get_thesis: "Reading your investment thesis",
     get_journal: "Reviewing your decision journal",
@@ -391,6 +410,30 @@ function toolActivityLabel(name: string): string {
     web_search: "Searching recent market coverage",
   };
   return labels[key] ?? `Reviewing ${key.replace(/_/g, " ")}`;
+}
+
+function extractProposedPkrAmount(message: string): number | null {
+  const text = message.toLowerCase().replace(/,/g, "");
+  const suffixMultiplier = (suffix: string | undefined) => {
+    if (!suffix) return 1;
+    if (suffix === "k") return 1_000;
+    if (suffix === "m" || suffix === "mn" || suffix === "million") return 1_000_000;
+    if (suffix === "lac" || suffix === "lakh") return 100_000;
+    if (suffix === "crore") return 10_000_000;
+    return 1;
+  };
+  const patterns = [
+    /(?:pkr|rs\.?|rupees?)\s*(\d+(?:\.\d+)?)\s*(k|m|mn|million|lac|lakh|crore)?\b/,
+    /\b(\d+(?:\.\d+)?)\s*(k|m|mn|million|lac|lakh|crore)?\s*(?:pkr|rs\.?|rupees?)\b/,
+    /\b(\d+(?:\.\d+)?)\s*(k|m|mn|million|lac|lakh|crore)\b/,
+  ];
+  for (const pattern of patterns) {
+    const match = text.match(pattern);
+    if (!match) continue;
+    const amount = Number(match[1]) * suffixMultiplier(match[2]);
+    if (Number.isFinite(amount) && amount > 0) return amount;
+  }
+  return null;
 }
 
 async function getOrCreateThread(
