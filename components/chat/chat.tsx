@@ -73,7 +73,6 @@ const MODEL_ICONS: Record<ChatModelId, typeof Zap> = {
   "deepseek-reasoner": Brain,
 };
 
-/** First selectable model whose provider has a key configured, else the default. */
 function firstAvailableModel(providers: Record<ChatProvider, boolean>): ChatModelId {
   const def = CHAT_MODELS.find((m) => m.id === DEFAULT_MODEL_ID);
   if (def && providers[def.provider]) return DEFAULT_MODEL_ID;
@@ -159,6 +158,7 @@ export function Chat({
   const [searchThreads, setSearchThreads] = useState("");
   const [researchMode, setResearchMode] = useState<ResearchMode>("Portfolio analysis");
 
+  const hasMessages = messages.length > 0;
   const activeThread = threads.find((thread) => thread.id === currentThreadId) ?? null;
   const filteredThreads = useMemo(() => {
     const query = searchThreads.trim().toLowerCase();
@@ -196,9 +196,6 @@ export function Chat({
     textarea.style.height = `${Math.min(textarea.scrollHeight, 128)}px`;
   }, [input]);
 
-  // The history drawer overlays on every breakpoint now, so close it on Escape
-  // regardless of screen size. No body-scroll lock: the drawer is fixed and the
-  // scrim catches clicks, so locking would only cause a layout shift.
   useEffect(() => {
     if (!threadsOpen) return;
     const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") setThreadsOpen(false); };
@@ -346,8 +343,6 @@ export function Chat({
     }
   }
 
-  // One compact conversation row, reused across the Today / 7-day / Older groups.
-  // Rename and delete stay hidden until hover or keyboard focus to keep the list calm.
   const renderThreadRow = (thread: ChatThread) => {
     const active = thread.id === currentThreadId;
     const loading = loadingThread === thread.id;
@@ -421,21 +416,91 @@ export function Chat({
     );
   };
 
+  // Shared composer form — rendered inline on the empty state and sticky on
+  // the active state. The ref and handlers are identical in both positions.
+  const composerForm = (
+    <form
+      onSubmit={(e) => { e.preventDefault(); send(input); }}
+      className="rounded-2xl border border-border/90 bg-card shadow-[0_8px_28px_-24px_rgba(15,23,42,0.5)] transition focus-within:border-emerald-300 focus-within:ring-4 focus-within:ring-emerald-500/10"
+    >
+      <textarea
+        ref={inputRef}
+        value={input}
+        onChange={(e) => setInput(e.target.value)}
+        onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); send(input); } }}
+        placeholder="Ask about your portfolio, a PSX company, or the market"
+        rows={1}
+        enterKeyHint="send"
+        aria-label="Message Research Copilot"
+        className="max-h-32 w-full resize-none overflow-y-auto bg-transparent px-4 pt-3 text-base leading-6 outline-none md:text-[15px]"
+      />
+      <div className="flex items-center gap-1.5 px-2 pb-2">
+        <select
+          value={researchMode}
+          onChange={(e) => setResearchMode(e.target.value as ResearchMode)}
+          aria-label="Research mode"
+          className="h-8 rounded-lg border border-border bg-background px-2 text-[11px] font-medium text-foreground outline-none"
+        >
+          {RESEARCH_MODES.map((mode) => <option key={mode}>{mode}</option>)}
+        </select>
+        <details className="relative">
+          <summary className="flex h-8 cursor-pointer list-none items-center gap-1.5 rounded-lg px-2 text-[11px] text-muted-foreground transition-colors hover:bg-muted">
+            <Database className="h-3.5 w-3.5" /> Context
+          </summary>
+          <div className="absolute bottom-10 left-0 z-20 w-72 rounded-lg border border-border bg-card p-3 text-xs shadow-card">
+            <p className="font-semibold">Sources used in this answer</p>
+            {sourceStatus.length ? (
+              <ul className="mt-2 space-y-1 text-muted-foreground">{sourceStatus.map((s) => <li key={s}>{s}</li>)}</ul>
+            ) : (
+              <p className="mt-2 text-muted-foreground">Data availability is checked before research.</p>
+            )}
+          </div>
+        </details>
+        <details className="relative">
+          <summary className="flex h-8 w-8 cursor-pointer list-none items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-muted" title="Advanced model settings" aria-label="Advanced model settings">
+            <SlidersHorizontal className="h-3.5 w-3.5" />
+          </summary>
+          <div className="absolute bottom-10 left-0 z-20 rounded-lg border border-border bg-card p-2 shadow-card">
+            <p className="px-1 pb-1 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">Model</p>
+            <ModelPicker model={model} setModel={setModel} providers={providers} />
+          </div>
+        </details>
+        {!aiEnabled && <span className="text-[10px] text-amber-600">AI narration off</span>}
+        <button
+          type="submit"
+          disabled={busy || !input.trim()}
+          aria-label="Send message"
+          className="ml-auto flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-emerald-600 text-white shadow-[0_8px_20px_-10px_rgba(5,150,105,0.8)] transition hover:bg-emerald-700 disabled:opacity-40"
+        >
+          {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+        </button>
+      </div>
+    </form>
+  );
+
   return (
-    <div className="flex h-[calc(100dvh-10rem-env(safe-area-inset-top)-env(safe-area-inset-bottom))] flex-col bg-background md:h-[calc(100dvh-2.75rem)]">
-      {/* Workspace header — compact, sticky top of the Copilot */}
+    // Mobile height: 100dvh minus top bar (3.5rem) and bottom nav pb (5.75rem) plus safe-area insets.
+    // Desktop height: 100dvh minus the app-shell footer (~2.75rem); md:-m-8 in page.tsx cancels main padding.
+    <div className="flex h-[calc(100dvh-9.25rem-env(safe-area-inset-top)-env(safe-area-inset-bottom))] flex-col bg-background md:h-[calc(100dvh-2.75rem)]">
+
+      {/* ── Compact workspace header ── */}
       <header className="flex h-14 shrink-0 items-center gap-1.5 border-b border-border/70 px-3 sm:px-5">
         <button
           type="button"
           onClick={() => setThreadsOpen(true)}
           className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-muted md:hidden"
           aria-label="Saved research"
+          title="Saved research"
         >
-          <MessageSquareText className="h-4.5 w-4.5" />
+          <MessageSquareText className="h-4 w-4" />
         </button>
         <div className="min-w-0 flex-1">
-          <p className="truncate text-[15px] font-semibold tracking-[-0.015em]">{activeThread?.title ?? "Research Copilot"}</p>
-          <p className="truncate text-[11px] text-muted-foreground">{currentThreadId ? "Saved research" : "Portfolio-aware research workspace"}</p>
+          <p className="truncate text-[15px] font-semibold tracking-[-0.015em]">
+            {activeThread?.title ?? "Research Copilot"}
+          </p>
+          <p className="truncate text-[11px] text-muted-foreground">
+            {currentThreadId ? "Saved research" : "Portfolio-aware research workspace"}
+          </p>
         </div>
         {busy && (
           <span className="hidden shrink-0 items-center gap-1.5 rounded-full bg-muted px-2.5 py-1 text-[11px] text-muted-foreground sm:flex">
@@ -465,7 +530,7 @@ export function Chat({
           aria-label="New conversation"
           className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-muted disabled:opacity-50"
         >
-          <Plus className="h-4.5 w-4.5" />
+          <Plus className="h-4 w-4" />
         </button>
         <button
           type="button"
@@ -479,149 +544,131 @@ export function Chat({
             threadsOpen ? "bg-muted text-foreground" : "text-muted-foreground hover:bg-muted"
           )}
         >
-          <PanelRight className="h-4.5 w-4.5" />
+          <PanelRight className="h-4 w-4" />
         </button>
       </header>
 
-      {/* Conversation canvas — the primary scrollable region, centered for readability */}
-      <div className="relative min-h-0 flex-1">
-        <div ref={scrollRef} onScroll={handleConversationScroll} className="scroll-touch h-full overflow-y-auto">
-          <div className="mx-auto w-full max-w-3xl space-y-7 px-4 py-6 sm:px-6 sm:py-8">
-            {messages.length === 0 && (
-              <div className="rise mx-auto mt-6 max-w-lg text-center sm:mt-12">
-                <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-2xl bg-emerald-50 text-emerald-600">
+      {/* ── Content region: two mutually exclusive states ── */}
+      {!hasMessages ? (
+        // ── EMPTY STATE — centered group with inline composer ──
+        <div className="scroll-touch flex-1 overflow-y-auto">
+          <div className="flex min-h-full flex-col items-center justify-center px-4 pb-10 pt-8">
+            <div className="w-full max-w-180">
+              {/* Welcome heading */}
+              <div className="rise mb-7 text-center">
+                <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-emerald-50 text-emerald-600">
                   <Sparkles className="h-5 w-5" />
                 </div>
                 <h2 className="text-lg font-semibold tracking-[-0.01em]">Research your portfolio</h2>
                 <p className="mx-auto mt-1.5 max-w-md text-sm leading-6 text-muted-foreground">
-                  Ask about your holdings, compare companies, review official filings, analyse valuation or understand what moved your portfolio.{aiEnabled ? "" : " (AI narration is off; you will still get live data cards.)"}
+                  Ask about your holdings, compare companies, review official filings, analyse valuation or understand what moved your portfolio.
+                  {!aiEnabled && " AI narration is off — live data cards will still appear."}
                 </p>
-                <div className="mt-6 space-y-1.5 text-left">
-                  {suggestions.map((s) => (
+              </div>
+
+              {/* 2 × 2 suggestion grid */}
+              {suggestions.length > 0 && (
+                <div className="mb-5 grid gap-2 sm:grid-cols-2">
+                  {suggestions.slice(0, 4).map((s) => (
                     <button
                       key={s}
                       onClick={() => send(s)}
-                      className="flex w-full items-center gap-2.5 rounded-xl border border-border/70 bg-card px-3.5 py-3 text-[13px] text-foreground/90 transition-colors hover:border-border hover:bg-muted/50"
+                      disabled={busy}
+                      className="flex items-center gap-2.5 rounded-xl border border-border/70 bg-card px-3.5 py-3 text-left text-[13px] text-foreground/90 transition-colors hover:border-border hover:bg-muted/40 disabled:opacity-50"
                     >
-                      <Sparkles className="h-3.5 w-3.5 shrink-0 text-emerald-600" />
+                      <Sparkles className="h-3.5 w-3.5 shrink-0 text-muted-foreground/70" />
                       <span className="min-w-0">{s}</span>
                     </button>
                   ))}
                 </div>
-              </div>
-            )}
+              )}
 
-            {messages.map((m, i) => (
-              <div key={i} className={cn("flex", m.role === "user" ? "justify-end" : "justify-start")}>
-                {m.role === "assistant" ? (
-                  <div className="w-full space-y-3">
-                    {m.activity && m.activity.length > 0 && (
-                      <ResearchActivity
-                        steps={m.activity}
-                        active={busy && i === messages.length - 1}
-                        complete={!!m.complete || !(busy && i === messages.length - 1)}
-                      />
-                    )}
-                    {m.cards && <ChatCards cards={m.cards} />}
-                    {busy && i === messages.length - 1 && !m.content && !m.activity?.length && (
-                      <p className="flex items-center gap-1.5 text-xs text-muted-foreground"><Loader2 className="h-3 w-3 animate-spin" /> Preparing research...</p>
-                    )}
-                    {m.content && (
-                      <div className="text-[15px] leading-7">
-                        <ReactMarkdown remarkPlugins={[remarkGfm]} components={CHAT_MARKDOWN_COMPONENTS}>
-                          {formatAssistantContent(m.content)}
-                        </ReactMarkdown>
+              {/* Inline composer */}
+              {composerForm}
+              <p className="mt-2 text-center text-[11px] text-muted-foreground">
+                Portfolio tracking and research support only. Not financial advice.
+              </p>
+            </div>
+          </div>
+        </div>
+      ) : (
+        // ── ACTIVE STATE — scrollable messages + sticky composer ──
+        <div className="flex min-h-0 flex-1 flex-col">
+          <div className="relative min-h-0 flex-1">
+            <div
+              ref={scrollRef}
+              onScroll={handleConversationScroll}
+              className="scroll-touch h-full overflow-y-auto"
+            >
+              <div className="mx-auto w-full max-w-3xl space-y-7 px-4 py-6 sm:px-6 sm:py-8">
+                {messages.map((m, i) => (
+                  <div key={i} className={cn("flex", m.role === "user" ? "justify-end" : "justify-start")}>
+                    {m.role === "assistant" ? (
+                      <div className="w-full space-y-3">
+                        {m.activity && m.activity.length > 0 && (
+                          <ResearchActivity
+                            steps={m.activity}
+                            active={busy && i === messages.length - 1}
+                            complete={!!m.complete || !(busy && i === messages.length - 1)}
+                          />
+                        )}
+                        {m.cards && <ChatCards cards={m.cards} />}
+                        {busy && i === messages.length - 1 && !m.content && !m.activity?.length && (
+                          <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                            <Loader2 className="h-3 w-3 animate-spin" /> Preparing research...
+                          </p>
+                        )}
+                        {m.content && (
+                          <div className="text-[15px] leading-7">
+                            <ReactMarkdown remarkPlugins={[remarkGfm]} components={CHAT_MARKDOWN_COMPONENTS}>
+                              {formatAssistantContent(m.content)}
+                            </ReactMarkdown>
+                          </div>
+                        )}
+                      </div>
+                    ) : (
+                      <div className="max-w-[85%] rounded-2xl rounded-br-md bg-foreground px-4 py-2.5 text-sm leading-6 text-background">
+                        {m.content}
                       </div>
                     )}
                   </div>
-                ) : (
-                  <div className="max-w-[85%] rounded-2xl rounded-br-md bg-foreground px-4 py-2.5 text-sm leading-6 text-background">{m.content}</div>
-                )}
+                ))}
               </div>
-            ))}
+            </div>
+            {showLatest && (
+              <button
+                type="button"
+                onClick={() => scrollToLatest()}
+                className="absolute bottom-4 left-1/2 flex -translate-x-1/2 items-center gap-1.5 rounded-full border border-border bg-card px-3 py-2 text-xs font-medium text-foreground shadow-lg transition hover:bg-muted"
+              >
+                <ArrowDown className="h-3.5 w-3.5" /> Latest response
+              </button>
+            )}
+          </div>
+
+          {/* Sticky composer — only shown in active state */}
+          <div className="shrink-0 border-t border-border/70 bg-background/85 backdrop-blur-xl">
+            <div className="mx-auto w-full max-w-3xl px-4 py-3 sm:px-6">
+              {composerForm}
+              <p className="mt-2 text-center text-[11px] text-muted-foreground">
+                Portfolio tracking and research support only. Not financial advice.
+              </p>
+            </div>
           </div>
         </div>
-        {showLatest && (
-          <button
-            type="button"
-            onClick={() => scrollToLatest()}
-            className="absolute bottom-4 left-1/2 flex -translate-x-1/2 items-center gap-1.5 rounded-full border border-border bg-card px-3 py-2 text-xs font-medium text-foreground shadow-lg transition hover:bg-muted"
-          >
-            <ArrowDown className="h-3.5 w-3.5" /> Latest response
-          </button>
-        )}
-      </div>
+      )}
 
-      {/* Composer — sticky to the bottom, centered with the conversation */}
-      <div className="shrink-0 border-t border-border/70 bg-background/85 backdrop-blur-xl">
-        <div className="mx-auto w-full max-w-3xl px-4 py-3 sm:px-6">
-          <form
-            onSubmit={(e) => { e.preventDefault(); send(input); }}
-            className="rounded-2xl border border-border/90 bg-card shadow-[0_8px_28px_-24px_rgba(15,23,42,0.5)] transition focus-within:border-emerald-300 focus-within:ring-4 focus-within:ring-emerald-500/10"
-          >
-            <textarea
-              ref={inputRef}
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); send(input); } }}
-              placeholder="Ask about your portfolio, a PSX company, or the market"
-              rows={1}
-              enterKeyHint="send"
-              aria-label="Message Research Copilot"
-              className="max-h-32 w-full resize-none overflow-y-auto bg-transparent px-4 pt-3 text-base leading-6 outline-none md:text-[15px]"
-            />
-            <div className="flex items-center gap-1.5 px-2 pb-2">
-              <select
-                value={researchMode}
-                onChange={(e) => setResearchMode(e.target.value as ResearchMode)}
-                aria-label="Research mode"
-                className="h-8 rounded-lg border border-border bg-background px-2 text-[11px] font-medium text-foreground outline-none"
-              >
-                {RESEARCH_MODES.map((mode) => <option key={mode}>{mode}</option>)}
-              </select>
-              <details className="relative">
-                <summary className="flex h-8 cursor-pointer list-none items-center gap-1.5 rounded-lg px-2 text-[11px] text-muted-foreground transition-colors hover:bg-muted">
-                  <Database className="h-3.5 w-3.5" /> Context
-                </summary>
-                <div className="absolute bottom-10 left-0 z-20 w-72 rounded-lg border border-border bg-card p-3 text-xs shadow-card">
-                  <p className="font-semibold">Sources used in this answer</p>
-                  {sourceStatus.length ? (
-                    <ul className="mt-2 space-y-1 text-muted-foreground">{sourceStatus.map((s) => <li key={s}>{s}</li>)}</ul>
-                  ) : (
-                    <p className="mt-2 text-muted-foreground">Data availability is checked before research.</p>
-                  )}
-                </div>
-              </details>
-              <details className="relative">
-                <summary className="flex h-8 w-8 cursor-pointer list-none items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-muted" title="Advanced model settings" aria-label="Advanced model settings">
-                  <SlidersHorizontal className="h-3.5 w-3.5" />
-                </summary>
-                <div className="absolute bottom-10 left-0 z-20 rounded-lg border border-border bg-card p-2 shadow-card">
-                  <p className="px-1 pb-1 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">Model</p>
-                  <ModelPicker model={model} setModel={setModel} providers={providers} />
-                </div>
-              </details>
-              {!aiEnabled && <span className="text-[10px] text-amber-600">AI narration off</span>}
-              <button
-                type="submit"
-                disabled={busy || !input.trim()}
-                aria-label="Send message"
-                className="ml-auto flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-emerald-600 text-white shadow-[0_8px_20px_-10px_rgba(5,150,105,0.8)] transition hover:bg-emerald-700 disabled:opacity-40"
-              >
-                {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
-              </button>
-            </div>
-          </form>
-          <p className="mt-2 text-center text-[10px] text-muted-foreground">Research saves automatically. Portfolio data and official PSX sources are retrieved before each answer.</p>
-        </div>
-      </div>
-
-      {/* Conversation history drawer — closed by default, overlays on every size */}
+      {/* ── History drawer backdrop ── */}
       <div
-        className={cn("fixed inset-0 z-40 bg-black/30 transition-opacity duration-300", threadsOpen ? "opacity-100" : "pointer-events-none opacity-0")}
+        className={cn(
+          "fixed inset-0 z-40 bg-black/30 transition-opacity duration-300",
+          threadsOpen ? "opacity-100" : "pointer-events-none opacity-0"
+        )}
         onClick={() => setThreadsOpen(false)}
         aria-hidden="true"
       />
+
+      {/* ── History drawer panel ── */}
       <aside
         id="history-drawer"
         role="dialog"
@@ -638,10 +685,20 @@ export function Chat({
             <p className="text-[11px] text-muted-foreground">{threads.length} conversation{threads.length === 1 ? "" : "s"}</p>
           </div>
           <div className="flex items-center gap-1">
-            <button onClick={startNewChat} disabled={busy} title="New conversation" aria-label="New conversation" className="flex h-9 w-9 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-muted disabled:opacity-50">
+            <button
+              onClick={startNewChat}
+              disabled={busy}
+              title="New conversation"
+              aria-label="New conversation"
+              className="flex h-9 w-9 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-muted disabled:opacity-50"
+            >
               <Plus className="h-4 w-4" />
             </button>
-            <button onClick={() => setThreadsOpen(false)} aria-label="Close history" className="flex h-9 w-9 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-muted">
+            <button
+              onClick={() => setThreadsOpen(false)}
+              aria-label="Close history"
+              className="flex h-9 w-9 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-muted"
+            >
               <X className="h-5 w-5" />
             </button>
           </div>
@@ -684,7 +741,6 @@ export function Chat({
   );
 }
 
-/** Bucket conversations into Today / Previous 7 days / Older by last activity. */
 function groupThreads(threads: ChatThread[]): { today: ChatThread[]; week: ChatThread[]; older: ChatThread[] } {
   const now = Date.now();
   const DAY = 86_400_000;
@@ -710,8 +766,6 @@ function savedMessageToMessage(row: SavedMessage): Message {
 }
 
 function formatAssistantContent(content: string): string {
-  // Hide leaked tool-call markup while it streams; the server resends a clean
-  // fallback once the turn ends.
   if (looksLikeToolLeak(content)) return "";
   return content
     .replace(/\r\n/g, "\n")
@@ -858,7 +912,7 @@ function ResearchActivity({
               const Icon = activityIcon(step);
               return (
                 <div key={`${step}-${index}`} className="relative flex min-h-9 items-start gap-3 pb-2 last:min-h-0 last:pb-0">
-                  {index < steps.length - 1 && <span className="absolute left-[11px] top-6 h-[calc(100%-0.25rem)] w-px bg-emerald-200" />}
+                  {index < steps.length - 1 && <span className="absolute left-2.75 top-6 h-[calc(100%-0.25rem)] w-px bg-emerald-200" />}
                   <span className={cn(
                     "relative z-10 flex h-6 w-6 shrink-0 items-center justify-center rounded-full border bg-white",
                     isCurrent ? "border-emerald-400 text-emerald-700 shadow-[0_0_0_3px_rgba(16,185,129,0.10)]" : "border-emerald-200 text-emerald-600"
