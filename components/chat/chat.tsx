@@ -4,7 +4,9 @@ import { useRef, useState, useEffect, useCallback, useMemo } from "react";
 import ReactMarkdown, { type Components } from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { ChatCards } from "@/components/chat/cards";
+import { ArtifactRenderer } from "@/components/chat/artifacts";
 import type { Card } from "@/lib/chat/context";
+import type { ArtifactSpec } from "@/lib/chat/artifacts";
 import {
   CHAT_MODELS,
   DEFAULT_MODEL_ID,
@@ -37,9 +39,15 @@ import {
   Zap,
 } from "lucide-react";
 
+// A message part is either a chunk of markdown prose or an inline artifact.
+type MessagePart =
+  | { type: "text"; content: string }
+  | { type: "artifact"; spec: ArtifactSpec };
+
 interface Message {
   role: "user" | "assistant";
-  content: string;
+  content: string; // full prose (persisted, search-friendly)
+  parts?: MessagePart[]; // runtime: text + inline artifact interleaved
   thinking?: string;
   cards?: Card[];
   status?: string;
@@ -321,17 +329,52 @@ export function Chat({
           if (evt.type === "thread") {
             setCurrentThreadId(evt.thread.id);
             upsertThread(evt.thread);
-          } else if (evt.type === "cards") update((m) => ({ ...m, cards: evt.cards }));
-          else if (evt.type === "thinking") continue;
-          else if (evt.type === "text") update((m) => ({ ...m, content: m.content + evt.delta }));
-          else if (evt.type === "reset") update((m) => ({ ...m, content: "" }));
-          else if (evt.type === "status") update((m) => ({
+          } else if (evt.type === "cards") {
+            // Filter out persisted artifact wrappers — they arrive separately as "artifact" events.
+            const dataCards = (evt.cards as { kind: string }[]).filter((c) => c.kind !== "artifact");
+            update((m) => ({ ...m, cards: dataCards as Card[] }));
+          } else if (evt.type === "artifact") {
+            // Append the spec as a new artifact part; it will render inline.
+            update((m) => {
+              const parts: MessagePart[] = m.parts
+                ? [...m.parts, { type: "artifact", spec: evt.spec as ArtifactSpec }]
+                : [{ type: "text", content: m.content }, { type: "artifact", spec: evt.spec as ArtifactSpec }];
+              return { ...m, parts };
+            });
+          } else if (evt.type === "thinking") continue;
+          else if (evt.type === "text") {
+            // Append delta to content (persisted prose) and to the last text part.
+            update((m) => {
+              const delta = evt.delta as string;
+              const existingParts = m.parts ?? [{ type: "text" as const, content: m.content }];
+              const last = existingParts[existingParts.length - 1];
+              let parts: MessagePart[];
+              if (last?.type === "text") {
+                parts = [...existingParts.slice(0, -1), { type: "text" as const, content: last.content + delta }];
+              } else {
+                parts = [...existingParts, { type: "text" as const, content: delta }];
+              }
+              return { ...m, content: m.content + delta, parts };
+            });
+          } else if (evt.type === "reset") {
+            update((m) => ({ ...m, content: "", parts: [{ type: "text" as const, content: "" }] }));
+          } else if (evt.type === "status") update((m) => ({
             ...m,
             status: evt.text,
             activity: [...(m.activity ?? []).filter((item) => item !== evt.text), evt.text],
           }));
           else if (evt.type === "done") update((m) => ({ ...m, status: undefined, complete: true }));
-          else if (evt.type === "error") update((m) => ({ ...m, content: (m.content || "") + `\n\nError: ${evt.message}` }));
+          else if (evt.type === "error") {
+            const errText = `\n\nError: ${evt.message as string}`;
+            update((m) => {
+              const existingParts = m.parts ?? [{ type: "text" as const, content: m.content }];
+              const last = existingParts[existingParts.length - 1];
+              const parts: MessagePart[] = last?.type === "text"
+                ? [...existingParts.slice(0, -1), { type: "text" as const, content: last.content + errText }]
+                : [...existingParts, { type: "text" as const, content: errText }];
+              return { ...m, content: (m.content || "") + errText, parts };
+            });
+          }
         }
       }
     } catch (e) {
@@ -618,13 +661,27 @@ export function Chat({
                             <Loader2 className="h-3 w-3 animate-spin" /> Preparing research...
                           </p>
                         )}
-                        {m.content && (
-                          <div className="text-[15px] leading-7">
-                            <ReactMarkdown remarkPlugins={[remarkGfm]} components={CHAT_MARKDOWN_COMPONENTS}>
-                              {formatAssistantContent(m.content)}
-                            </ReactMarkdown>
-                          </div>
-                        )}
+                        {/* Parts-based rendering: prose and inline artifacts interleaved */}
+                        {m.parts
+                          ? m.parts.map((part, pi) =>
+                              part.type === "artifact" ? (
+                                <ArtifactRenderer key={pi} spec={part.spec} />
+                              ) : part.content ? (
+                                <div key={pi} className="text-[15px] leading-7">
+                                  <ReactMarkdown remarkPlugins={[remarkGfm]} components={CHAT_MARKDOWN_COMPONENTS}>
+                                    {formatAssistantContent(part.content)}
+                                  </ReactMarkdown>
+                                </div>
+                              ) : null
+                            )
+                          : m.content && (
+                              <div className="text-[15px] leading-7">
+                                <ReactMarkdown remarkPlugins={[remarkGfm]} components={CHAT_MARKDOWN_COMPONENTS}>
+                                  {formatAssistantContent(m.content)}
+                                </ReactMarkdown>
+                              </div>
+                            )
+                        }
                       </div>
                     ) : (
                       <div className="max-w-[85%] rounded-2xl rounded-br-md bg-foreground px-4 py-2.5 text-sm leading-6 text-background">
@@ -754,11 +811,19 @@ function groupThreads(threads: ChatThread[]): { today: ChatThread[]; week: ChatT
 }
 
 function savedMessageToMessage(row: SavedMessage): Message {
+  const allCards = Array.isArray(row.cards) ? (row.cards as { kind: string; data: unknown }[]) : [];
+  // Separate data cards from persisted artifact specs.
+  const dataCards = allCards.filter((c) => c.kind !== "artifact") as Card[];
+  const artifactCards = allCards.filter((c) => c.kind === "artifact").map((c) => c.data as ArtifactSpec);
+  // Re-build a simple parts array: full prose first, then one artifact part each.
+  const parts: MessagePart[] = [{ type: "text", content: row.content }];
+  for (const spec of artifactCards) parts.push({ type: "artifact", spec });
   return {
     role: row.role,
     content: row.content,
+    parts,
     thinking: row.thinking ?? undefined,
-    cards: Array.isArray(row.cards) ? (row.cards as Card[]) : undefined,
+    cards: dataCards.length ? dataCards : undefined,
   };
 }
 
