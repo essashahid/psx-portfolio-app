@@ -17,15 +17,30 @@ export async function getPortfolio(
   supabase: SupabaseClient,
   userId: string
 ): Promise<PortfolioSummary> {
-  const [holdingsRes, pricesRes, targetsRes, thesesRes, divRes, realizedRes, cashRes] =
+  const holdingsRes = await supabase
+    .from("holdings")
+    .select("*")
+    .eq("user_id", userId)
+    .gt("quantity", 0)
+    .order("ticker");
+  const holdings = (holdingsRes.data ?? []) as Holding[];
+  const tickers = [...new Set(holdings.map((h) => h.ticker))];
+
+  const [priceLookups, targetsRes, thesesRes, divRes, realizedRes, cashRes] =
     await Promise.all([
-      supabase.from("holdings").select("*").eq("user_id", userId).gt("quantity", 0).order("ticker"),
-      supabase
-        .from("prices")
-        .select("ticker, price, price_date, source")
-        .eq("user_id", userId)
-        .order("price_date", { ascending: false })
-        .limit(500),
+      Promise.all(
+        tickers.map((ticker) =>
+          supabase
+            .from("prices")
+            .select("ticker, price, price_date, source")
+            .eq("user_id", userId)
+            .eq("ticker", ticker)
+            .order("price_date", { ascending: false })
+            .order("created_at", { ascending: false })
+            .limit(1)
+            .maybeSingle()
+        )
+      ),
       supabase.from("targets").select("*").eq("user_id", userId),
       supabase.from("theses").select("*").eq("user_id", userId),
       supabase.from("dividends").select("ticker, amount, net_amount, status").eq("user_id", userId),
@@ -33,11 +48,9 @@ export async function getPortfolio(
       supabase.from("cash_movements").select("type, amount").eq("user_id", userId),
     ]);
 
-  const holdings = (holdingsRes.data ?? []) as Holding[];
-
   // latest price per ticker (rows are ordered newest first)
   const latestPrice = new Map<string, { price: number; price_date: string; source: string }>();
-  for (const p of pricesRes.data ?? []) {
+  for (const p of priceLookups.flatMap((res) => (res.data ? [res.data] : []))) {
     if (!latestPrice.has(p.ticker)) {
       latestPrice.set(p.ticker, { price: Number(p.price), price_date: p.price_date, source: p.source });
     }

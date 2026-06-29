@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { requireUser, errorResponse } from "@/lib/api-helpers";
+import { accountHasFeature } from "@/lib/features";
 import { parseAkdStatement } from "@/lib/import/akd-statement";
 
 export const maxDuration = 60;
@@ -19,6 +20,10 @@ export async function POST() {
   if (error) return error;
 
   try {
+    if (!(await accountHasFeature(supabase, user.id, "/import"))) {
+      return NextResponse.json({ error: "Statement imports are disabled for this account." }, { status: 403 });
+    }
+
     // Find committed AKD PDFs ordered newest first.
     const { data: stmts } = await supabase
       .from("uploaded_statements")

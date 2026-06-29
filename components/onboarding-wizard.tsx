@@ -22,8 +22,6 @@ import {
   HandCoins,
   PiggyBank,
   GraduationCap,
-  Upload,
-  PenLine,
   ArrowRight,
   ArrowLeft,
 } from "lucide-react";
@@ -69,9 +67,9 @@ function ChoiceCard({ icon: Icon, title, description, selected, onClick }: Choic
 }
 
 const EXPERIENCE: { value: ExperienceLevel; title: string; description: string; icon: ChoiceCardProps["icon"] }[] = [
-  { value: "beginner", title: "New to investing", description: "Start with a clean, simple view. Just your holdings, income and a copilot to ask questions.", icon: Sprout },
-  { value: "intermediate", title: "Comfortable", description: "Add research, market pulse, news and goals alongside the basics.", icon: LineChart },
-  { value: "advanced", title: "Experienced", description: "Unlock everything, including briefings, alerts, journal and the data engine.", icon: Compass },
+  { value: "beginner", title: "New to investing", description: "Keep the analysis plain and focused on holdings, income and simple explanations.", icon: Sprout },
+  { value: "intermediate", title: "Comfortable", description: "Use more market and company context alongside the portfolio basics.", icon: LineChart },
+  { value: "advanced", title: "Experienced", description: "Use denser analysis and more technical market language when it is useful.", icon: Compass },
 ];
 
 const RISK: { value: RiskProfile; title: string; description: string; icon: ChoiceCardProps["icon"] }[] = [
@@ -87,12 +85,7 @@ const OBJECTIVE: { value: Objective; title: string; description: string; icon: C
   { value: "learning", title: "Learn as I go", description: "I am here to understand my portfolio and improve.", icon: GraduationCap },
 ];
 
-const SETUP: { value: "import" | "later"; title: string; description: string; icon: ChoiceCardProps["icon"] }[] = [
-  { value: "import", title: "Upload a statement now", description: "Import an AKD or CDC statement (CSV, Excel or PDF). We take it from there.", icon: Upload },
-  { value: "later", title: "I will add them later", description: "Explore the platform first and add holdings whenever you are ready.", icon: PenLine },
-];
-
-const TOTAL_STEPS = 5;
+const TOTAL_STEPS = 4;
 
 export function OnboardingWizard({
   initialName,
@@ -110,16 +103,14 @@ export function OnboardingWizard({
   const [experience, setExperience] = useState<ExperienceLevel>(initialExperience);
   const [risk, setRisk] = useState<RiskProfile | null>(null);
   const [objective, setObjective] = useState<Objective | null>(null);
-  const [setup, setSetup] = useState<"import" | "later" | null>(null);
 
   const canAdvance = useMemo(() => {
     if (step === 0) return name.trim().length > 0;
     if (step === 1) return !!experience;
     if (step === 2) return !!risk;
     if (step === 3) return !!objective;
-    if (step === 4) return !!setup;
     return false;
-  }, [step, name, experience, risk, objective, setup]);
+  }, [step, name, experience, risk, objective]);
 
   async function finish() {
     setSaving(true);
@@ -148,8 +139,7 @@ export function OnboardingWizard({
       setSaving(false);
       return;
     }
-    const destination = setup === "import" ? "/import" : "/dashboard";
-    router.push(destination);
+    router.push("/dashboard");
     router.refresh();
   }
 
@@ -186,8 +176,7 @@ export function OnboardingWizard({
             <div className="space-y-2">
               <h1 className="text-2xl font-medium tracking-tight">Welcome. Let us set up your view.</h1>
               <p className="text-sm text-muted-foreground">
-                A few quick questions so the platform shows what matters to you, and nothing it does not. You can change any
-                of this later in Settings.
+                A few quick questions so the platform can tune research language and portfolio context to you.
               </p>
             </div>
             <div className="space-y-1.5">
@@ -236,13 +225,6 @@ export function OnboardingWizard({
           </Step>
         )}
 
-        {step === 4 && (
-          <Step title="How would you like to add your holdings?" subtitle="You can always do this later or change your mind.">
-            {SETUP.map((o) => (
-              <ChoiceCard key={o.value} {...o} selected={setup === o.value} onClick={() => setSetup(o.value)} />
-            ))}
-          </Step>
-        )}
       </div>
 
       {error && <p className="mt-4 rounded-md bg-red-50 px-3 py-2 text-xs text-red-700">{error}</p>}

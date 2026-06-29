@@ -64,7 +64,13 @@ const num = (v: number | null | undefined) => (v === null || v === undefined ? "
 // 1. Overview
 // ---------------------------------------------------------------------------
 
-export async function OverviewPanel({ ticker }: { ticker: string }) {
+export async function OverviewPanel({
+  ticker,
+  companyEnrichmentEnabled = false,
+}: {
+  ticker: string;
+  companyEnrichmentEnabled?: boolean;
+}) {
   const supabase = await createClient();
   const user = await getUser();
   if (!user) return null;
@@ -88,7 +94,7 @@ export async function OverviewPanel({ ticker }: { ticker: string }) {
           <CardContent className="space-y-3">
             {metadata.description ? (
               <p className="text-sm leading-relaxed">{metadata.description}</p>
-            ) : (
+            ) : companyEnrichmentEnabled ? (
               <div className="space-y-2">
                 <Unavailable note="No company profile on file yet. Generate one from public knowledge (AI, cited as such)." />
                 <ActionButton
@@ -99,6 +105,8 @@ export async function OverviewPanel({ ticker }: { ticker: string }) {
                   size="sm"
                 />
               </div>
+            ) : (
+              <Unavailable note="No company profile on file yet." />
             )}
             <div className="flex flex-wrap items-center gap-2 text-xs">
               {metadata.sector && <SectorChip sector={metadata.sector} />}
@@ -113,7 +121,11 @@ export async function OverviewPanel({ ticker }: { ticker: string }) {
                 </ul>
               </div>
             )}
-            <SectionMeta meta={metadata.meta} ticker={ticker} refreshSection="description" />
+            <SectionMeta
+              meta={metadata.meta}
+              ticker={ticker}
+              refreshSection={companyEnrichmentEnabled ? "description" : undefined}
+            />
           </CardContent>
         </Card>
 

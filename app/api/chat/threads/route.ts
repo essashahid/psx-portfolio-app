@@ -1,9 +1,13 @@
 import { NextResponse } from "next/server";
 import { requireUser } from "@/lib/api-helpers";
+import { accountHasFeature } from "@/lib/features";
 
 export async function GET() {
   const { supabase, user, error } = await requireUser();
   if (error) return error;
+  if (!(await accountHasFeature(supabase, user.id, "/chat"))) {
+    return NextResponse.json({ error: "Research Copilot is disabled for this account." }, { status: 403 });
+  }
 
   const { data, error: dbError } = await supabase
     .from("chat_threads")
@@ -19,6 +23,9 @@ export async function GET() {
 export async function POST(request: Request) {
   const { supabase, user, error } = await requireUser();
   if (error) return error;
+  if (!(await accountHasFeature(supabase, user.id, "/chat"))) {
+    return NextResponse.json({ error: "Research Copilot is disabled for this account." }, { status: 403 });
+  }
 
   const body = (await request.json().catch(() => ({}))) as { title?: string };
   const title = cleanTitle(body.title) || "New chat";

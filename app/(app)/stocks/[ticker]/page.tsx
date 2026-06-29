@@ -9,6 +9,7 @@ import { WatchlistButton } from "@/components/stock/watchlist-button";
 import { GenerateReportDialog } from "@/components/stock/generate-report-dialog";
 import { CardSkeleton, TableSkeleton } from "@/components/page-skeleton";
 import { formatMoney, formatNumber, formatSignedPct, cn } from "@/lib/utils";
+import { normalizeEnabledFeatures } from "@/lib/features";
 import { ArrowLeft, Search } from "lucide-react";
 import {
   OverviewPanel, FinancialsPanel, EarningsPanel, RatiosPanel,
@@ -39,7 +40,7 @@ export default async function StockCockpitPage({ params }: { params: Promise<{ t
 
   // Shell: cache-first profile + live quote + 52w range, plus ownership/watch
   // status. Heavy per-section data streams in below via Suspense.
-  const [header, { data: holding }, { data: watch }, { data: latestIncome }, { data: divRows }] = await Promise.all([
+  const [header, { data: holding }, { data: watch }, { data: latestIncome }, { data: divRows }, profileRes] = await Promise.all([
     getCompanyHeader(supabase, ticker),
     supabase.from("holdings").select("quantity").eq("user_id", user.id).eq("ticker", ticker).gt("quantity", 0).maybeSingle(),
     supabase.from("stock_watchlist").select("ticker").eq("user_id", user.id).eq("ticker", ticker).maybeSingle(),
@@ -57,7 +58,11 @@ export default async function StockCockpitPage({ params }: { params: Promise<{ t
       .eq("ticker", ticker)
       .order("announcement_date", { ascending: false })
       .limit(12),
+    supabase.from("profiles").select("enabled_features").eq("id", user.id).maybeSingle(),
   ]);
+  const enabledFeatures = normalizeEnabledFeatures(profileRes.data?.enabled_features);
+  const companyEnrichmentEnabled = enabledFeatures.includes("company_enrichment");
+  const companyReportsEnabled = enabledFeatures.includes("company_reports");
 
   const { metadata, quote } = header;
   const dayTone = quote.dayChangePct ? (quote.dayChangePct > 0 ? "positive" : "negative") : undefined;
@@ -75,14 +80,16 @@ export default async function StockCockpitPage({ params }: { params: Promise<{ t
   const divYield = ttmDps > 0 && quote.price ? (ttmDps / quote.price) * 100 : null;
 
   const tabs = [
-    { id: "overview", label: "Overview", content: <Suspense fallback={<CardSkeleton lines={8} />}><OverviewPanel ticker={ticker} /></Suspense> },
+    { id: "overview", label: "Overview", content: <Suspense fallback={<CardSkeleton lines={8} />}><OverviewPanel ticker={ticker} companyEnrichmentEnabled={companyEnrichmentEnabled} /></Suspense> },
     { id: "financials", label: "Financials", content: <Suspense fallback={<TableSkeleton />}><FinancialsPanel ticker={ticker} /></Suspense> },
     { id: "earnings", label: "Earnings", content: <Suspense fallback={<CardSkeleton lines={6} />}><EarningsPanel ticker={ticker} /></Suspense> },
     { id: "ratios", label: "Ratios", content: <Suspense fallback={<TableSkeleton />}><RatiosPanel ticker={ticker} /></Suspense> },
     { id: "technicals", label: "Technicals", content: <Suspense fallback={<CardSkeleton lines={8} />}><TechnicalsPanel ticker={ticker} /></Suspense> },
     { id: "dividends", label: "Dividends", content: <Suspense fallback={<TableSkeleton />}><DividendsPanel ticker={ticker} /></Suspense> },
     { id: "news", label: "News & Filings", content: <Suspense fallback={<CardSkeleton lines={8} />}><NewsFilingsPanel ticker={ticker} /></Suspense> },
-    { id: "ai", label: "AI Analysis", content: <Suspense fallback={<CardSkeleton lines={6} />}><AiAnalysisPanel ticker={ticker} /></Suspense> },
+    ...(companyReportsEnabled
+      ? [{ id: "ai", label: "AI Analysis", content: <Suspense fallback={<CardSkeleton lines={6} />}><AiAnalysisPanel ticker={ticker} /></Suspense> }]
+      : []),
   ];
 
   return (
@@ -119,7 +126,7 @@ export default async function StockCockpitPage({ params }: { params: Promise<{ t
                   {quote.asOf ? ` · ${quote.asOf}` : ""}
                 </p>
               </div>
-              <GenerateReportDialog ticker={ticker} companyName={metadata.companyName} />
+              {companyReportsEnabled && <GenerateReportDialog ticker={ticker} companyName={metadata.companyName} />}
               <WatchlistButton ticker={ticker} initialWatched={!!watch} size="default" />
             </div>
           </div>

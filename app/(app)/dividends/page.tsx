@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { createClient, getUser } from "@/lib/supabase/server";
 import { getPortfolio } from "@/lib/portfolio";
 import { getDividends } from "@/lib/dividends";
@@ -45,13 +44,12 @@ export default async function DividendsPage() {
               <ActionButton endpoint="/api/dividends/forecast" label={<><TrendingUp className="h-3.5 w-3.5" /> Estimate future dividends</>} variant="ghost" size="sm" className="w-full justify-start px-2.5" />
               {/* eslint-disable-next-line @next/next/no-html-link-for-pages -- CSV download, not a page navigation */}
               <a href="/api/export/dividends" className="rounded px-2.5 py-2 text-xs hover:bg-muted"><Download className="mr-1.5 inline h-3.5 w-3.5" /> Export CSV</a>
-              <Link href="/settings" className="rounded px-2.5 py-2 text-xs hover:bg-muted">Tax settings</Link>
             </div>
           </details>
         </div>
       </header>
 
-      {!taxSettings.configured && <p className="rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-900">Tax profile is not saved. Amounts use the current default assumptions until you <Link href="/settings" className="underline">confirm tax settings</Link>.</p>}
+      {!taxSettings.configured && <p className="rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-900">Tax profile is not saved. Amounts use the current default assumptions.</p>}
 
       <DividendIncomeWorkspace dividends={dividends} events={events} holdings={summary.holdings} asOf={asOf} />
     </div>

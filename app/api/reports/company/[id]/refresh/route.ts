@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { requireUser, errorResponse } from "@/lib/api-helpers";
 import { generateCompanyReport } from "@/lib/company/report";
+import { accountHasFeature } from "@/lib/features";
 
 export const maxDuration = 300;
 
@@ -14,6 +15,10 @@ export async function POST(
   const { id } = await params;
 
   try {
+    if (!(await accountHasFeature(supabase, user.id, "company_reports"))) {
+      return NextResponse.json({ error: "Company report generation is disabled for this account." }, { status: 403 });
+    }
+
     const { data: existing } = await supabase
       .from("ai_briefings")
       .select("ticker, meta")

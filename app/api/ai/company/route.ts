@@ -7,6 +7,7 @@ import { getCompanyFilings } from "@/lib/company/filings";
 import { getCompanyDividends } from "@/lib/company/dividends";
 import { getPortfolio } from "@/lib/portfolio";
 import { formatNumber } from "@/lib/utils";
+import { accountHasFeature } from "@/lib/features";
 
 export const maxDuration = 120;
 
@@ -72,6 +73,10 @@ const PROMPTS: Record<Action, { title: string; prompt: string }> = {
 export async function POST(request: Request) {
   const { supabase, user, error } = await requireUser();
   if (error) return error;
+
+  if (!(await accountHasFeature(supabase, user.id, "company_reports"))) {
+    return NextResponse.json({ error: "Company AI analysis is disabled for this account." }, { status: 403 });
+  }
 
   if (!aiAvailable()) {
     return NextResponse.json({ error: "AI provider is not configured. Add TASKS_API_KEY or DEEPSEEK_API_KEY in .env.local." }, { status: 503 });

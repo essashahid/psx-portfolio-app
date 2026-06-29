@@ -10,6 +10,7 @@ import {
   type CompanyReportOptions,
 } from "@/lib/company/report";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { accountHasFeature } from "@/lib/features";
 
 export const maxDuration = 300;
 
@@ -48,6 +49,10 @@ export async function GET(request: Request) {
 export async function POST(request: Request) {
   const { supabase, user, error } = await requireUser();
   if (error) return error;
+
+  if (!(await accountHasFeature(supabase, user.id, "company_reports"))) {
+    return NextResponse.json({ error: "Company report generation is disabled for this account." }, { status: 403 });
+  }
 
   if (!aiAvailable()) {
     return NextResponse.json({ error: "AI provider is not configured." }, { status: 503 });

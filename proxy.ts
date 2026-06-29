@@ -1,5 +1,8 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
+import { featureAllowed, featureForPath } from "@/lib/features";
+
+const IMPERSONATE_COOKIE = "x_admin_impersonate";
 
 export default async function proxy(request: NextRequest) {
   let response = NextResponse.next({ request });
@@ -42,6 +45,32 @@ export default async function proxy(request: NextRequest) {
     const url = request.nextUrl.clone();
     url.pathname = "/dashboard";
     return NextResponse.redirect(url);
+  }
+
+  if (user && !path.startsWith("/api")) {
+    const gatedFeature = featureForPath(path);
+    if (gatedFeature) {
+      const { data: realProfile } = await supabase
+        .from("profiles")
+        .select("is_admin")
+        .eq("id", user.id)
+        .maybeSingle();
+      const realIsAdmin = Boolean(realProfile?.is_admin);
+      const impersonateId = request.cookies.get(IMPERSONATE_COOKIE)?.value;
+      const effectiveId = realIsAdmin && impersonateId ? impersonateId : user.id;
+      const { data: effectiveProfile } = await supabase
+        .from("profiles")
+        .select("enabled_features")
+        .eq("id", effectiveId)
+        .maybeSingle();
+
+      if (!featureAllowed(gatedFeature, effectiveProfile?.enabled_features, realIsAdmin)) {
+        const url = request.nextUrl.clone();
+        url.pathname = "/dashboard";
+        url.search = "";
+        return NextResponse.redirect(url);
+      }
+    }
   }
 
   return response;

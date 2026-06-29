@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { requireUser, errorResponse } from "@/lib/api-helpers";
+import { accountHasFeature } from "@/lib/features";
 import { commitBatch } from "@/lib/import/commit";
 import { refreshAlerts } from "@/lib/alerts";
 import { takeSnapshot } from "@/lib/portfolio";
@@ -13,6 +14,10 @@ export async function POST(request: Request) {
   if (error) return error;
 
   try {
+    if (!(await accountHasFeature(supabase, user.id, "/import"))) {
+      return NextResponse.json({ error: "Statement imports are disabled for this account." }, { status: 403 });
+    }
+
     const body = (await request.json()) as { batchId: string; excludedRowIds?: string[] };
     if (!body.batchId) return NextResponse.json({ error: "batchId is required" }, { status: 400 });
     const excluded = new Set(body.excludedRowIds ?? []);
@@ -96,7 +101,11 @@ export async function POST(request: Request) {
     let enrichment: Awaited<ReturnType<typeof enrichHoldingsMetadata>> | null = null;
     let enrichmentError: string | null = null;
     try {
-      enrichment = await enrichHoldingsMetadata(supabase, user.id, { tickers: result.holdingsTouched });
+      if (await accountHasFeature(supabase, user.id, "company_enrichment")) {
+        enrichment = await enrichHoldingsMetadata(supabase, user.id, { tickers: result.holdingsTouched });
+      } else {
+        enrichmentError = "Company enrichment is disabled for this account.";
+      }
     } catch (err) {
       enrichmentError = err instanceof Error ? err.message : String(err);
     }

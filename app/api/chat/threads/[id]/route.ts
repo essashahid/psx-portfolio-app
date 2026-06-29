@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { requireUser } from "@/lib/api-helpers";
+import { accountHasFeature } from "@/lib/features";
 
 type Params = {
   params: Promise<{ id: string }>;
@@ -8,6 +9,9 @@ type Params = {
 export async function GET(_request: Request, { params }: Params) {
   const { supabase, user, error } = await requireUser();
   if (error) return error;
+  if (!(await accountHasFeature(supabase, user.id, "/chat"))) {
+    return NextResponse.json({ error: "Research Copilot is disabled for this account." }, { status: 403 });
+  }
   const { id } = await params;
 
   const { data: thread, error: threadError } = await supabase
@@ -34,6 +38,9 @@ export async function GET(_request: Request, { params }: Params) {
 export async function PATCH(request: Request, { params }: Params) {
   const { supabase, user, error } = await requireUser();
   if (error) return error;
+  if (!(await accountHasFeature(supabase, user.id, "/chat"))) {
+    return NextResponse.json({ error: "Research Copilot is disabled for this account." }, { status: 403 });
+  }
   const { id } = await params;
 
   const body = (await request.json().catch(() => ({}))) as { title?: string };
@@ -56,6 +63,9 @@ export async function PATCH(request: Request, { params }: Params) {
 export async function DELETE(_request: Request, { params }: Params) {
   const { supabase, user, error } = await requireUser();
   if (error) return error;
+  if (!(await accountHasFeature(supabase, user.id, "/chat"))) {
+    return NextResponse.json({ error: "Research Copilot is disabled for this account." }, { status: 403 });
+  }
   const { id } = await params;
 
   const { error: dbError } = await supabase

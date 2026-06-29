@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { requireUser, errorResponse } from "@/lib/api-helpers";
+import { accountHasFeature } from "@/lib/features";
 import { normalizeRow, validateRow, type CanonicalField } from "@/lib/import/normalize";
 import type { StatementType } from "@/lib/types";
 
@@ -14,6 +15,10 @@ export async function POST(request: Request) {
   if (error) return error;
 
   try {
+    if (!(await accountHasFeature(supabase, user.id, "/import"))) {
+      return NextResponse.json({ error: "Statement imports are disabled for this account." }, { status: 403 });
+    }
+
     const body = (await request.json()) as {
       batchId: string;
       mapping: Record<string, CanonicalField | null>;

@@ -3,6 +3,7 @@ import { requireUser, errorResponse } from "@/lib/api-helpers";
 import { buildReportMarkdown } from "@/lib/company/report/markdown";
 import { refreshReportSectionData } from "@/lib/company/report/sections";
 import type { CompanyReportPayload } from "@/lib/company/report";
+import { accountHasFeature } from "@/lib/features";
 
 export const maxDuration = 120;
 
@@ -16,6 +17,10 @@ export async function POST(
   const { id, section } = await params;
 
   try {
+    if (!(await accountHasFeature(supabase, user.id, "company_reports"))) {
+      return NextResponse.json({ error: "Company report refresh is disabled for this account." }, { status: 403 });
+    }
+
     const { data: row } = await supabase
       .from("ai_briefings")
       .select("id, ticker, title, meta")

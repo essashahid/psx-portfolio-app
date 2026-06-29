@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { requireUser, errorResponse } from "@/lib/api-helpers";
+import { accountHasFeature } from "@/lib/features";
 import { parseFile } from "@/lib/import/parse";
 import {
   suggestMapping,
@@ -19,6 +20,10 @@ export async function POST(request: Request) {
   if (error) return error;
 
   try {
+    if (!(await accountHasFeature(supabase, user.id, "/import"))) {
+      return NextResponse.json({ error: "Statement imports are disabled for this account." }, { status: 403 });
+    }
+
     const form = await request.formData();
     const file = form.get("file");
     if (!(file instanceof File)) {

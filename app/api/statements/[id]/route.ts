@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { requireUser, errorResponse } from "@/lib/api-helpers";
+import { accountHasFeature } from "@/lib/features";
 
 /** Deletes one uploaded statement file + its import batches/rows. Committed portfolio data stays. */
 export async function DELETE(
@@ -10,6 +11,10 @@ export async function DELETE(
   if (error) return error;
 
   try {
+    if (!(await accountHasFeature(supabase, user.id, "/import"))) {
+      return NextResponse.json({ error: "Statement file management is disabled for this account." }, { status: 403 });
+    }
+
     const { id } = await params;
     const { data: stmt } = await supabase
       .from("uploaded_statements")
