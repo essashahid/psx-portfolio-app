@@ -41,11 +41,14 @@ export default async function AppLayout({ children }: { children: React.ReactNod
     ? true
     : Boolean(profileRes.data?.is_admin);
 
-  const visibleHrefs = resolveVisibleHrefs({
-    experience_level: (profileRes.data?.experience_level as ExperienceLevel) ?? "intermediate",
-    extra_features: profileRes.data?.extra_features ?? [],
-    hidden_features: profileRes.data?.hidden_features ?? [],
-  });
+  const visibleHrefs = resolveVisibleHrefs(
+    {
+      experience_level: (profileRes.data?.experience_level as ExperienceLevel) ?? "intermediate",
+      extra_features: profileRes.data?.extra_features ?? [],
+      hidden_features: profileRes.data?.hidden_features ?? [],
+    },
+    isAdmin
+  );
 
   return (
     <div className="min-h-dvh bg-background md:flex md:h-dvh md:overflow-hidden">

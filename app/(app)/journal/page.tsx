@@ -2,12 +2,11 @@ import Link from "next/link";
 import { createClient, getUser } from "@/lib/supabase/server";
 import { PageHeader } from "@/components/page-header";
 import { JournalForm } from "@/components/journal-form";
-import { ActionButton } from "@/components/action-button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Markdown } from "@/components/markdown";
 import { Button } from "@/components/ui/button";
-import { Sparkles, Download } from "lucide-react";
+import { Download } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 export const dynamic = "force-dynamic";
@@ -73,21 +72,12 @@ export default async function JournalPage({
       <PageHeader
         eyebrow="Decisions"
         title="Investment Journal"
-        description="Write down decisions before the market grades them. AI can analyze your patterns over time."
+        description="Write down decisions before the market grades them, then review them against what actually happened."
         actions={
-          <>
-            <ActionButton
-              endpoint="/api/ai/journal"
-              label={<><Sparkles className="h-3.5 w-3.5" /> Analyze my patterns</>}
-              variant="outline"
-              size="sm"
-              onSuccessMessage="Analysis saved — see AI Briefings."
-            />
-            {/* eslint-disable-next-line @next/next/no-html-link-for-pages -- CSV download, not a page navigation */}
-            <a href="/api/export/journal">
-              <Button variant="outline" size="sm"><Download className="h-3.5 w-3.5" /> Export CSV</Button>
-            </a>
-          </>
+          /* eslint-disable-next-line @next/next/no-html-link-for-pages -- CSV download, not a page navigation */
+          <a href="/api/export/journal">
+            <Button variant="outline" size="sm"><Download className="h-3.5 w-3.5" /> Export CSV</Button>
+          </a>
         }
       />
 

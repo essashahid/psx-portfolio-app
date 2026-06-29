@@ -1,4 +1,6 @@
+import { redirect } from "next/navigation";
 import { createClient, getUser } from "@/lib/supabase/server";
+import { getAdminContext } from "@/lib/admin/guard";
 import { providerConfigs } from "@/lib/providers/env";
 import { PageHeader } from "@/components/page-header";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -25,6 +27,9 @@ function Stat({ label, value, total }: { label: string; value: number; total?: n
 }
 
 export default async function CoveragePage() {
+  const { isAdmin } = await getAdminContext();
+  if (!isAdmin) redirect("/dashboard");
+
   const supabase = await createClient();
   const user = await getUser();
   if (!user) return null;

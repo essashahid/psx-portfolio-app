@@ -1,5 +1,7 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { createClient, getUser } from "@/lib/supabase/server";
+import { getAdminContext } from "@/lib/admin/guard";
 import { getBullsBears, type BudgetImpact, type BucketRow, type EarningsQualityFlag, type EnrichedTradeSetup, type PortfolioStrategyRow } from "@/lib/market/bulls-bears";
 import type { ScoredStock } from "@/lib/market/score";
 import { BUCKET_META, type SectorBucket } from "@/lib/market/sectors";
@@ -54,6 +56,9 @@ const BUCKET_ICON: Record<SectorBucket, typeof Activity> = {
 
 
 export default async function BullsBearsPage() {
+  const { isAdmin } = await getAdminContext();
+  if (!isAdmin) redirect("/dashboard");
+
   const user = await getUser();
   if (!user) return null;
 

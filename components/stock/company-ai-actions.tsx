@@ -59,8 +59,8 @@ export function CompanyAiActions({ ticker }: { ticker: string }) {
         ))}
       </div>
       <p className="text-[11px] text-muted-foreground">
-        Research support only — grounded in the data shown on this page. Outputs never recommend buying or selling and never
-        invent missing numbers. Saved under AI Briefings.
+        Research support only, grounded in the data shown on this page. Outputs never recommend buying or selling and never
+        invent missing numbers. The result appears below.
       </p>
       {error && <p className="rounded-md bg-red-50 px-3 py-2 text-xs text-red-700">{error}</p>}
       {running && (
