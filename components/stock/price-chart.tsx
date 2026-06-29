@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import {
   ComposedChart,
+  LineChart,
   Line,
   Area,
   Bar,
@@ -11,6 +12,7 @@ import {
   YAxis,
   CartesianGrid,
   Tooltip,
+  Legend,
   ReferenceArea,
   ReferenceLine,
   ReferenceDot,
@@ -46,11 +48,30 @@ function sma(values: number[], period: number, index: number): number | null {
   return sum / period;
 }
 
-export function StockPriceChart({ candles, signals }: { candles: Candle[]; signals?: TechnicalSignals | null }) {
+export interface BenchmarkPoint {
+  date: string; // YYYY-MM-DD
+  close: number;
+}
+
+export function StockPriceChart({
+  candles,
+  signals,
+  benchmark,
+  ticker,
+}: {
+  candles: Candle[];
+  signals?: TechnicalSignals | null;
+  benchmark?: BenchmarkPoint[];
+  ticker?: string;
+}) {
   const animate = useChartMotion();
   const [range, setRange] = useState("1Y");
   const [showMA, setShowMA] = useState(true);
   const [showStructure, setShowStructure] = useState(true);
+  const [mode, setMode] = useState<"price" | "relative">("price");
+
+  const hasBenchmark = !!benchmark && benchmark.length > 0;
+  const relative = mode === "relative" && hasBenchmark;
 
   const data = useMemo(() => {
     const closes = candles.map((c) => c.close);
@@ -96,6 +117,48 @@ export function StockPriceChart({ candles, signals }: { candles: Candle[]; signa
     return ((last - first) / first) * 100;
   }, [data]);
 
+  // "Growth of 100" relative view: the stock and the KSE-100 both rebased to 100
+  // at the first day of the visible range, so the lines compare growth, not
+  // price level. The benchmark is forward-filled onto the stock's trading days
+  // and the rebase anchor is the first day where both series have a value.
+  const relativeData = useMemo(() => {
+    if (!hasBenchmark) return [] as { date: string; stock: number; kse: number | null }[];
+    const days = RANGES.find((r) => r.id === range)?.days ?? 252;
+    const slice = candles.slice(-days);
+    const bench = benchmark!
+      .filter((p) => Number.isFinite(p.close) && p.close > 0)
+      .sort((a, b) => (a.date < b.date ? -1 : 1));
+    const out: { date: string; stock: number; kse: number | null }[] = [];
+    let bi = 0;
+    let lastBench: number | null = null;
+    let baseStock: number | null = null;
+    let baseBench: number | null = null;
+    for (const c of slice) {
+      if (!Number.isFinite(c.close) || c.close <= 0) continue;
+      while (bi < bench.length && bench[bi].date <= c.date) {
+        lastBench = bench[bi].close;
+        bi++;
+      }
+      if (baseStock === null && lastBench !== null) {
+        baseStock = c.close;
+        baseBench = lastBench;
+      }
+      if (baseStock === null) continue;
+      const stock = (c.close / baseStock) * 100;
+      const kse = baseBench !== null && lastBench !== null ? (lastBench / baseBench) * 100 : null;
+      out.push({ date: c.date, stock, kse });
+    }
+    return out;
+  }, [hasBenchmark, benchmark, candles, range]);
+
+  // Outperformance readout (percentage points) for the relative view.
+  const relPerf = useMemo(() => {
+    if (relativeData.length < 2) return null;
+    const last = relativeData[relativeData.length - 1];
+    if (last.kse === null) return null;
+    return { stock: last.stock - 100, kse: last.kse - 100, diff: last.stock - last.kse };
+  }, [relativeData]);
+
   if (candles.length === 0) {
     return (
       <div className="flex h-72 items-center justify-center">
@@ -106,7 +169,7 @@ export function StockPriceChart({ candles, signals }: { candles: Candle[]; signa
 
   const trendUp = rangeChange === null || rangeChange >= 0;
   const lineColor = trendUp ? INK.up : INK.down;
-  const tickEvery = Math.max(1, Math.floor(data.length / 6));
+  const tickEvery = Math.max(1, Math.floor((relative ? relativeData.length : data.length) / 6));
   // Long ranges: shorten the draw so 1,300-point sweeps still feel snappy.
   const drawMs = data.length > 400 ? 600 : DRAW_MS;
 
@@ -130,7 +193,7 @@ export function StockPriceChart({ candles, signals }: { candles: Candle[]; signa
               </button>
             ))}
           </div>
-          {rangeChange !== null && (
+          {!relative && rangeChange !== null && (
             <span
               className={cn(
                 "text-xs font-semibold tabular-nums transition-colors",
@@ -140,9 +203,32 @@ export function StockPriceChart({ candles, signals }: { candles: Candle[]; signa
               {formatSignedPct(rangeChange)}
             </span>
           )}
+          {relative && relPerf !== null && (
+            <span
+              className={cn(
+                "text-xs font-semibold tabular-nums transition-colors",
+                relPerf.diff >= 0 ? "text-emerald-600" : "text-red-600"
+              )}
+              title="The stock's total return over this range minus the KSE-100's, in percentage points."
+            >
+              {formatSignedPct(relPerf.diff)} pp vs KSE-100
+            </span>
+          )}
         </div>
         <div className="flex items-center gap-1.5">
-          {signals && (
+          {hasBenchmark && (
+            <button
+              onClick={() => setMode((m) => (m === "price" ? "relative" : "price"))}
+              title="Compare this stock against the KSE-100, both rebased to 100 at the start of the range."
+              className={cn(
+                "rounded-md px-2 py-1 text-[11px] font-medium transition-colors duration-200",
+                relative ? "bg-accent text-foreground" : "text-muted-foreground hover:bg-accent"
+              )}
+            >
+              vs KSE-100
+            </button>
+          )}
+          {!relative && signals && (
             <button
               onClick={() => setShowStructure((v) => !v)}
               title="Long-term accumulation band, 52-week range, support and momentum-divergence pivots"
@@ -154,18 +240,76 @@ export function StockPriceChart({ candles, signals }: { candles: Candle[]; signa
               {showStructure ? "Hide" : "Show"} structure
             </button>
           )}
-          <button
-            onClick={() => setShowMA((v) => !v)}
-            className={cn(
-              "rounded-md px-2 py-1 text-[11px] font-medium transition-colors duration-200",
-              showMA ? "bg-accent text-foreground" : "text-muted-foreground hover:bg-accent"
-            )}
-          >
-            {showMA ? "Hide" : "Show"} MA 50/200
-          </button>
+          {!relative && (
+            <button
+              onClick={() => setShowMA((v) => !v)}
+              className={cn(
+                "rounded-md px-2 py-1 text-[11px] font-medium transition-colors duration-200",
+                showMA ? "bg-accent text-foreground" : "text-muted-foreground hover:bg-accent"
+              )}
+            >
+              {showMA ? "Hide" : "Show"} MA 50/200
+            </button>
+          )}
         </div>
       </div>
 
+      {relative ? (
+        <ResponsiveContainer key={`rel-${range}`} width="100%" height={330}>
+          <LineChart data={relativeData} margin={{ top: 5, right: 8, bottom: 0, left: 8 }}>
+            <CartesianGrid strokeDasharray="3 3" stroke={INK.grid} vertical={false} />
+            <XAxis
+              dataKey="date"
+              tick={AXIS_TICK}
+              interval={tickEvery}
+              tickFormatter={(d: string) => d?.slice(2)}
+              axisLine={false}
+              tickLine={false}
+            />
+            <YAxis
+              tick={AXIS_TICK}
+              domain={["auto", "auto"]}
+              width={48}
+              tickFormatter={(v: number) => v.toFixed(0)}
+              axisLine={false}
+              tickLine={false}
+            />
+            <Tooltip
+              content={<GlassTooltip format={(v) => formatNumber(Number(v))} />}
+              cursor={CURSOR}
+            />
+            <Legend wrapperStyle={{ fontSize: 11, paddingTop: 6 }} iconType="plainline" iconSize={14} />
+            {/* Both paths start at 100, so this baseline marks break-even. */}
+            <ReferenceLine y={100} stroke={INK.neutral} strokeDasharray="2 3" strokeOpacity={0.5} />
+            <Line
+              type="monotone"
+              dataKey="kse"
+              name="KSE-100"
+              stroke={INK.neutral}
+              strokeWidth={1.8}
+              strokeDasharray="5 4"
+              dot={false}
+              connectNulls
+              isAnimationActive={animate}
+              animationDuration={drawMs}
+              animationEasing={EASE}
+            />
+            <Line
+              type="monotone"
+              dataKey="stock"
+              name={ticker ?? "This stock"}
+              stroke={INK.line}
+              strokeWidth={2.4}
+              dot={false}
+              isAnimationActive={animate}
+              animationDuration={drawMs}
+              animationBegin={animate ? 120 : 0}
+              animationEasing={EASE}
+            />
+          </LineChart>
+        </ResponsiveContainer>
+      ) : (
+      <>
       {/* key={range} re-triggers the draw sweep on every range switch */}
       <ResponsiveContainer key={range} width="100%" height={260}>
         <ComposedChart data={data} margin={{ top: 5, right: 8, bottom: 0, left: 8 }}>
@@ -334,6 +478,8 @@ export function StockPriceChart({ candles, signals }: { candles: Candle[]; signa
           </Bar>
         </ComposedChart>
       </ResponsiveContainer>
+      </>
+      )}
     </div>
   );
 }

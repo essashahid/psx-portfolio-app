@@ -1,6 +1,7 @@
 import { createClient, getUser } from "@/lib/supabase/server";
 import { getCompanyMetadata } from "@/lib/company/metadata";
 import { getTechnicals } from "@/lib/company/technicals";
+import { getCachedEod, KSE_SYMBOL } from "@/lib/market-data/eod-cache";
 import { computeSignals } from "@/lib/market/technicals";
 import { METRIC_HINTS } from "@/lib/market/glossary";
 import { getCompanyDividends } from "@/lib/company/dividends";
@@ -623,6 +624,10 @@ export async function TechnicalsPanel({ ticker }: { ticker: string }) {
   const technicals = await getTechnicals(supabase, ticker);
   const signals = computeSignals(technicals.history);
 
+  // KSE-100 closes power the "vs KSE-100" relative view on the price chart.
+  const eod = await getCachedEod(supabase, []);
+  const benchmark = (eod.get(KSE_SYMBOL) ?? []).map((p) => ({ date: p.date, close: p.close }));
+
   if (technicals.history.length === 0) {
     return (
       <EmptyState
@@ -640,7 +645,7 @@ export async function TechnicalsPanel({ ticker }: { ticker: string }) {
           <CardTitle>Price & volume</CardTitle>
         </CardHeader>
         <CardContent>
-          <StockPriceChart candles={technicals.history} signals={signals} />
+          <StockPriceChart candles={technicals.history} signals={signals} benchmark={benchmark} ticker={ticker} />
           <div className="mt-2"><SectionMeta meta={technicals.meta} ticker={ticker} refreshSection="technicals" /></div>
         </CardContent>
       </Card>
