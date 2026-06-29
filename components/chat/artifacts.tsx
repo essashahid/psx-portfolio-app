@@ -13,6 +13,7 @@ import { INK, GlassTooltip, FadeDefs, CURSOR, useChartMotion, SERIES_COLORS } fr
 import { cn } from "@/lib/utils";
 import type {
   ArtifactSpec,
+  ArtifactErrorSpec,
   PriceChartArtifact,
   BarChartArtifact,
   ComparisonTableArtifact,
@@ -33,7 +34,8 @@ export function ArtifactRenderer({ spec }: { spec: ArtifactSpec }) {
     case "table":              return <DataTable spec={spec} />;
     case "timeline":           return <EventTimeline spec={spec} />;
     case "portfolio-attribution": return <PortfolioAttribution spec={spec} />;
-    default:                   return null;
+    case "error":              return <ArtifactError spec={spec} />;
+    default:                   return <ArtifactFallback />;
   }
 }
 
@@ -347,7 +349,7 @@ function DataTable({ spec }: { spec: TableArtifact }) {
   }
   return (
     <ArtifactShell title={spec.title} description={spec.description}>
-      <div className="max-h-80 overflow-auto">
+      <div className="max-h-[70vh] overflow-auto">
         <table className="w-full border-collapse text-[13px]">
           <thead className="sticky top-0 bg-muted/80 backdrop-blur-sm">
             <tr>
@@ -460,5 +462,24 @@ function PortfolioAttribution({ spec }: { spec: PortfolioAttributionArtifact }) 
         })}
       </div>
     </ArtifactShell>
+  );
+}
+
+// ── Error / fallback ──────────────────────────────────────────────────────────
+
+function ArtifactError({ spec }: { spec: ArtifactErrorSpec }) {
+  return (
+    <div className="my-4 overflow-hidden rounded-xl border border-amber-200/70 bg-amber-50/50 px-4 py-3">
+      <p className="text-[11px] font-semibold text-amber-800">{spec.title}</p>
+      <p className="mt-0.5 text-[11px] text-amber-700">{spec.message}</p>
+    </div>
+  );
+}
+
+function ArtifactFallback() {
+  return (
+    <div className="my-4 overflow-hidden rounded-xl border border-border/50 bg-muted/30 px-4 py-3">
+      <p className="text-[11px] text-muted-foreground">This content could not be rendered as a visual. The analysis is available in the surrounding text.</p>
+    </div>
   );
 }

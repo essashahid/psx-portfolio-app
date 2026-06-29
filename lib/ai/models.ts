@@ -51,7 +51,7 @@ export const CHAT_MODELS: ChatModelDef[] = [
     hint: "Fastest, cheapest — quick lookups",
     apiModel: "claude-haiku-4-5",
     thinking: false,
-    maxTokens: 3000,
+    maxTokens: 4000,
   },
   {
     id: "claude-sonnet",
@@ -62,7 +62,7 @@ export const CHAT_MODELS: ChatModelDef[] = [
     apiModel: "claude-sonnet-4-6",
     thinking: true,
     effort: "medium",
-    maxTokens: 6000,
+    maxTokens: 12000,
   },
   {
     id: "claude-opus",
@@ -73,7 +73,7 @@ export const CHAT_MODELS: ChatModelDef[] = [
     apiModel: "claude-opus-4-8",
     thinking: true,
     effort: "high",
-    maxTokens: 8000,
+    maxTokens: 16000,
   },
   {
     id: "deepseek-chat",
@@ -83,7 +83,7 @@ export const CHAT_MODELS: ChatModelDef[] = [
     hint: "Fast general-purpose model",
     apiModel: "deepseek-chat",
     thinking: false,
-    maxTokens: 4000,
+    maxTokens: 6000,
     supportsTools: true,
     supportsTemperature: true,
   },
@@ -95,7 +95,7 @@ export const CHAT_MODELS: ChatModelDef[] = [
     hint: "Deep reasoning over your portfolio and the latest news",
     apiModel: "deepseek-reasoner",
     thinking: true,
-    maxTokens: 6000,
+    maxTokens: 10000,
     // R1 has no function calling on DeepSeek's API. If handed tools it writes
     // the call out as text, which trips the leak detector and replaces the
     // answer with a fallback. Keep this false so the route pre-fetches web
