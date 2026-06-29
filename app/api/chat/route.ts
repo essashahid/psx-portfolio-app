@@ -2,18 +2,23 @@ import { requireUser } from "@/lib/api-helpers";
 import { resolveMessage } from "@/lib/chat/resolver";
 import { gatherCards, briefFromCards, briefFromPositionHistory, type Card } from "@/lib/chat/context";
 import { getLatestSessionDate, getPositionHistoryCard } from "@/lib/chat/data";
-import { CHAT_TOOLS, executeTool } from "@/lib/chat/tools";
+import { CHAT_TOOLS, CLAUDE_TOOLS, executeTool } from "@/lib/chat/tools";
 import { claudeConfigured, getClaude, buildClaudeParams } from "@/lib/ai/claude";
 import { deepseekChatConfigured, runDeepSeekChat } from "@/lib/ai/deepseek-chat";
 import { getModelDef } from "@/lib/ai/models";
 import { looksLikeToolLeak, TOOL_LEAK_FALLBACK } from "@/lib/chat/sanitize";
 import { wantsWebContext, gatherWebContext } from "@/lib/chat/web-context";
 import { ArtifactExtractor, type ArtifactSpec } from "@/lib/chat/artifacts";
+import {
+  emptyMeta, normalizeStopReason, validateResponseCompletion,
+  buildContinuationPrompt, tokenBudgetNote,
+  type GenerationMeta,
+} from "@/lib/chat/completion";
 import type Anthropic from "@anthropic-ai/sdk";
 import type { SupabaseClient } from "@supabase/supabase-js";
 
 export const dynamic = "force-dynamic";
-export const maxDuration = 120;
+export const maxDuration = 180;
 
 // Max model round-trips per question. On the final turn tools are disabled so
 // the model is forced to synthesize an answer instead of leaving the budget
@@ -31,7 +36,12 @@ Adaptive response depth — choose the right level silently before writing:
 - Concise: one number, simple lookup, or a question answerable in a few sentences.
 - Moderate: interpretation required, company or event analysis, small set of calculations.
 - Comprehensive: user explicitly asks for deep research, multiple data sources needed, scenario analysis, full company/portfolio assessment, or the question requires substantial supporting evidence.
-Never use the full token budget unless it improves the answer. Always complete the conclusion, risks, portfolio implications, and data limitations within the available limit. Never stop mid-sentence or mid-section.
+Never use the full token budget unless it improves the answer. Always complete the conclusion, risks, portfolio implications, and data limitations within the available limit. Never stop mid-sentence or mid-section. If approaching the limit, compress supporting prose, prefer tables over verbose descriptions, and always preserve the conclusion.
+
+Decision questions:
+- For questions like "should I buy more", "should I add", "should I trim/sell/wait": begin with a 2-3 sentence provisional conclusion. The user should understand your preliminary view within 10 seconds. The conclusion must be clear, conditional, evidence-based, specific to their portfolio, and qualified where data is missing.
+- Then present the supporting evidence, separated into company case and portfolio case.
+- End with a clear final assessment and explicit decision conditions.
 
 Rules:
 - Ground EVERY claim in <context> data or tool results. Never invent prices, ratios, figures, transactions, filings, or news.
@@ -46,12 +56,67 @@ Rules:
 - Never append disclaimers like "Not financial advice." — the platform handles that.
 
 Existing-holding and add-more decisions:
-- If the user asks whether to add, buy more, average up/down, trim, hold, size, or review an existing position, separate the company case from the portfolio case. A good company can still be a poor add if concentration, cash, sector exposure, or recent tranche pricing make the portfolio case weak.
+- If the user asks whether to add, buy more, average up/down, trim, hold, size, or review an existing position, always evaluate TWO distinct questions:
+
+  Company case: Are fundamentals attractive? Is valuation supported by available evidence? Is earnings quality acceptable (revenue growth vs. one-time items vs. margin expansion)? What risks affect the company? Is current evidence timely?
+
+  Portfolio case: Current portfolio weight? Current sector weight? How does adding change concentration? Does the portfolio already contain similar exposures? Available capital? Alternative uses? Does the addition fit position-size limits?
+
+  A strong company can still be an inappropriate addition to an already concentrated portfolio. Do not issue an add recommendation based only on company ratios.
 - Before saying portfolio allocation, cash, or quantity history is unavailable, inspect the available position, holdings, whole-portfolio summary, cash balance, sector weights, transaction ledger, broker reconciliation checkpoint, thesis and journal. With tools, call get_position_history plus get_portfolio_summary/list_holdings/get_thesis/get_journal as needed. Without tools, use any DECISION EVIDENCE in <context>.
 - Do not evaluate a new buy against blended average cost alone. Use the verified transaction rows to identify purchases, sales, fees, cost-basis evolution, source mix, quantity discrepancies, and whether recent tranches had materially less margin of safety than early tranches.
 - If the user gives an add amount, calculate that exact scenario. If not, use the provided add-size scenarios or state that the answer is conditional on sizing. Show shares, new average cost, new position weight, sector-weight impact, cash use and any external capital needed before recommending an addition.
 - Prefer decision artifacts that match the question: transaction-history table, cost-basis evolution table, allocation-impact table, position summary strip, price chart with cost/dividend/transaction overlays, or concentration visual. Do not use a headline ratio grid as the main evidence for an add-more decision.
-- Avoid unsupported investment claims: no market-average valuation comparisons, peer comparisons, audited-status claims, low-cost-producer/brand/distribution claims, dividend-growth claims, buyback/expansion optionality, sector outlook, book-value downside anchors, or original-thesis confirmation unless the specific evidence is present. Do not compare unrelated ratios such as P/E versus ROE as if the numerical relationship proves cheapness.
+
+Purchase-tranche analysis:
+- For existing positions with multiple purchase tranches at different prices, identify and explain: whether early low-price purchases are carrying the blended average, whether recent purchases were close to the current price, and whether the blended average creates a misleading impression of margin of safety for new money.
+- Express this concretely: "Your blended average cost is heavily supported by the original low-price tranche. Most recent purchases were close to the current price, so the margin of safety on new money is much smaller than the overall unrealized gain implies."
+- Do not hardcode this for every stock. Derive it from the actual purchase tranches.
+
+Allocation impact:
+- For buy-more questions, the allocation impact is more important than a grid of financial ratios. Calculate: estimated shares at current price, new total shares and new average cost, new position value, current and new portfolio weight, current and new sector weight, and cash remaining after purchase.
+- Show this as a metric-strip or small table, not buried in prose.
+
+Data confidence:
+- Label data sources explicitly in your analysis:
+  - "Broker verified" for data from broker statement imports
+  - "User entered" or "platform recorded" for manual transactions not yet confirmed by a broker statement
+  - "Derived" for calculated figures (e.g., current quantity = broker snapshot + post-checkpoint transactions)
+  - "Pending confirmation" for user-entered trades awaiting next broker statement
+- Do not label user-entered transactions as "verified" until confirmed by broker statement, trade confirmation, or CDC record.
+- When presenting a transaction table, include a Source or Status column.
+
+Discrepancy reasoning:
+- When identifying quantity discrepancies, rank explanations by evidence. If the difference exactly matches a known transaction, state that as the most likely explanation. Use "most likely", "possible", "unlikely", "unresolved" rather than presenting all explanations equally. Do not claim certainty without verification.
+
+Financial claim discipline:
+- Do not describe a company as "well-run", "high quality", "a strong franchise", "a low-cost producer", or "a strong brand" unless you have specific evidence beyond financial ratios. Better: "The financial data indicates strong cash generation and low leverage, but does not by itself establish a durable competitive advantage."
+- Do not claim the market is mispricing something or compare to historical averages unless actual comparison data is present. Better: "The current multiple appears moderate on available earnings, but the evidence does not establish whether it is cheap relative to normalized earnings, peers, or history."
+- Do not assume one year's profit growth is sustainable without evaluating its drivers (revenue growth, margin expansion, other income, one-time items, input costs).
+- Avoid unsupported claims: no market-average valuation comparisons, peer comparisons, audited-status claims, low-cost-producer/brand/distribution claims, dividend-growth claims, buyback/expansion optionality, sector outlook, book-value downside anchors, or original-thesis confirmation unless the specific evidence is present. Do not compare unrelated ratios such as P/E versus ROE as if the numerical relationship proves cheapness.
+
+Technical indicators:
+- An RSI near 70 should be described as "elevated momentum" or "approaching the overbought threshold", not "overbought". An RSI near 30 is "depressed momentum" or "approaching oversold". RSI is a momentum indicator, not a valuation measure. Do not treat it as a buy or sell signal by itself.
+
+Metric presentation:
+- When presenting financial metrics, show only the most decision-relevant ones. Group related metrics:
+  - Valuation: P/E, FCF yield
+  - Financial strength: Net debt/equity, interest coverage
+  - Profitability: ROIC, margin trend
+  - Cash quality: OCF/PAT, dividend cover
+  - Momentum: RSI (visually separate from fundamentals)
+- Use a metric-strip with 4-6 key metrics rather than 8+ dense cards. Do not give equal visual weight to all metrics.
+
+Recommendation language:
+- Do not issue a recommendation merely because the user has a gain, the company has low debt, P/E appears low, or FCF yield appears high. The final assessment must explain: why adding may make sense, why waiting may make sense, whether the portfolio is already sufficiently exposed, how recent purchases affect margin of safety, what evidence is missing, and what allocation level would become excessive.
+- Every decision answer must include concise conditions:
+  - "Adding becomes more defensible if: [2-4 specific, evidence-backed conditions]"
+  - "Waiting becomes more defensible if: [2-4 specific, evidence-backed conditions]"
+  Select only conditions supported by available evidence.
+- Do not force a buy, hold, or sell label when evidence is insufficient.
+
+Artifact token efficiency:
+- Do not repeat the same data in prose, table rows, chart payload, and metadata. State a figure once in the most useful format and move on. Use compact artifact specs. If the prose already explains the insight, do not also create a chart that shows the same thing.
 
 Writing style:
 - Clear, plain, complete sentences. No em dashes. For ranges write "10 to 12". Sound like a sharp human analyst, not an AI.
@@ -150,6 +215,8 @@ type Evt =
   | { type: "thinking"; delta: string }
   | { type: "text"; delta: string }
   | { type: "reset" }
+  | { type: "meta"; meta: GenerationMeta }
+  | { type: "incomplete"; reason: string }
   | { type: "error"; message: string }
   | { type: "done" };
 
@@ -233,7 +300,8 @@ export async function POST(request: Request) {
         //    ones (DeepSeek R1) get the "answer from context, never promise a
         //    lookup" rule so they don't stall on a dangling promise.
         const canUseTools = modelDef.provider === "claude" || !!modelDef.supportsTools;
-        const systemPrompt = `${SYSTEM_PROMPT}\n${pktDateLine()}\n${canUseTools ? TOOL_RULE : NO_TOOL_RULE}`;
+        const budgetNote = tokenBudgetNote(modelDef.maxTokens, message);
+        const systemPrompt = `${SYSTEM_PROMPT}\n${pktDateLine()}${budgetNote}\n${canUseTools ? TOOL_RULE : NO_TOOL_RULE}`;
 
         // The brief is injected so most questions answer in one shot (no extra
         // tool round-trips).
@@ -288,7 +356,9 @@ export async function POST(request: Request) {
             const mstream = claude.messages.stream({
               ...params,
               system: [{ type: "text", text: systemPrompt, cache_control: { type: "ephemeral" } }],
-              tools: CHAT_TOOLS,
+              // CLAUDE_TOOLS swaps the Tavily-backed custom web_search for
+              // Anthropic's server-side one; it runs the search on their side.
+              tools: CLAUDE_TOOLS,
               // Final turn: forbid tools so the model must answer from what it has.
               ...(lastTurn ? { tool_choice: { type: "none" as const } } : {}),
               messages,
@@ -300,10 +370,88 @@ export async function POST(request: Request) {
             mstream.on("text", (delta: string) => {
               extractor.push(delta);
             });
+            // Server-side web_search runs inside Anthropic's turn (no client
+            // tool_use), so surface a status when its query block starts.
+            mstream.on("streamEvent", (event) => {
+              if (
+                event.type === "content_block_start" &&
+                event.content_block.type === "server_tool_use" &&
+                event.content_block.name === "web_search"
+              ) {
+                send({ type: "status", text: toolActivityLabel("web_search") });
+              }
+            });
 
             const final = await mstream.finalMessage();
             extractor.flush();
-            if (final.stop_reason !== "tool_use") break;
+
+            // Anthropic's server-side tool loop (web_search) can pause the turn
+            // when it hits its internal iteration cap. Re-send the conversation
+            // so it resumes — no client execution, no extra user message (the
+            // trailing server_tool_use block tells the server to continue). The
+            // text streamed so far is real answer text, so we keep it.
+            if (final.stop_reason === "pause_turn" && !lastTurn) {
+              messages.push({ role: "assistant", content: final.content });
+              continue;
+            }
+
+            // Track metadata from this turn.
+            const meta = emptyMeta(modelDef.apiModel, modelDef.maxTokens);
+            meta.inputTokens = final.usage?.input_tokens ?? null;
+            meta.outputTokens = final.usage?.output_tokens ?? null;
+            meta.rawStopReason = final.stop_reason ?? null;
+            meta.stopReason = normalizeStopReason(final.stop_reason);
+            meta.toolCallCount += final.content.filter((b) => b.type === "tool_use").length;
+
+            if (final.stop_reason !== "tool_use") {
+              // Check for completion and auto-continue if truncated.
+              meta.streamComplete = true;
+              meta.artifactCount = artifactSpecs.length;
+              meta.completionStatus = validateResponseCompletion(assistantContent, message, meta.stopReason);
+
+              if (
+                meta.stopReason === "length" &&
+                (meta.completionStatus === "definitely_incomplete" || meta.completionStatus === "possibly_incomplete")
+              ) {
+                // Auto-continuation: up to 2 attempts.
+                const MAX_CONTINUATIONS = 2;
+                for (let ci = 0; ci < MAX_CONTINUATIONS; ci++) {
+                  meta.continuationTriggered = true;
+                  meta.continuationCount++;
+                  send({ type: "status", text: "Completing the response" });
+                  const contPrompt = buildContinuationPrompt(message, assistantContent, modelDef.maxTokens);
+                  const contMessages: Anthropic.MessageParam[] = [
+                    ...messages,
+                    { role: "assistant", content: final.content },
+                    { role: "user", content: contPrompt },
+                  ];
+                  const contStream = claude.messages.stream({
+                    ...params,
+                    system: [{ type: "text", text: systemPrompt, cache_control: { type: "ephemeral" } }],
+                    tools: [] as Anthropic.ToolUnion[],
+                    tool_choice: { type: "none" as const },
+                    messages: contMessages,
+                  } as Anthropic.MessageCreateParamsStreaming);
+                  contStream.on("text", (delta: string) => { extractor.push(delta); });
+                  const contFinal = await contStream.finalMessage();
+                  extractor.flush();
+                  meta.outputTokens = (meta.outputTokens ?? 0) + (contFinal.usage?.output_tokens ?? 0);
+                  meta.rawStopReason = contFinal.stop_reason ?? null;
+                  meta.stopReason = normalizeStopReason(contFinal.stop_reason);
+                  meta.completionStatus = validateResponseCompletion(assistantContent, message, meta.stopReason);
+                  if (meta.completionStatus === "complete" || meta.stopReason === "complete") break;
+                }
+              }
+
+              // If still incomplete after continuations, inform the client.
+              if (meta.completionStatus === "definitely_incomplete" || meta.completionStatus === "structurally_invalid") {
+                send({ type: "incomplete", reason: `Response may be incomplete (${meta.completionStatus})` });
+              }
+
+              // Send metadata to client.
+              send({ type: "meta", meta });
+              break;
+            }
 
             // The visible text on a tool turn is planning narration ("let me
             // check…"), not the answer — move it to the reasoning panel and
@@ -376,7 +524,7 @@ export async function POST(request: Request) {
         await persistAssistantTurn(supabase, user.id, thread.id, assistantContent, assistantThinking, cards, artifactSpecs);
         send({ type: "done" });
         controller.close();
-      } catch (err) {
+      } catch (err: unknown) {
         send({ type: "error", message: err instanceof Error ? err.message : "Chat failed" });
         send({ type: "done" });
         controller.close();
