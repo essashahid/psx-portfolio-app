@@ -81,10 +81,16 @@ const MODEL_ICONS: Record<ChatModelId, typeof Zap> = {
   "deepseek-reasoner": Brain,
 };
 
-function firstAvailableModel(providers: Record<ChatProvider, boolean>): ChatModelId {
+type ProviderStatus = Record<ChatProvider, { configured: boolean; allowed: boolean }>;
+
+function providerReady(providers: ProviderStatus, provider: ChatProvider): boolean {
+  return providers[provider]?.configured && providers[provider]?.allowed;
+}
+
+function firstAvailableModel(providers: ProviderStatus): ChatModelId {
   const def = CHAT_MODELS.find((m) => m.id === DEFAULT_MODEL_ID);
-  if (def && providers[def.provider]) return DEFAULT_MODEL_ID;
-  return CHAT_MODELS.find((m) => providers[m.provider])?.id ?? DEFAULT_MODEL_ID;
+  if (def && providerReady(providers, def.provider)) return DEFAULT_MODEL_ID;
+  return CHAT_MODELS.find((m) => providerReady(providers, m.provider))?.id ?? DEFAULT_MODEL_ID;
 }
 
 type ResearchMode = "Quick answer" | "Deep research" | "Portfolio analysis" | "Company comparison" | "Filing analysis";
@@ -141,13 +147,13 @@ export function Chat({
   sourceStatus = [],
   dataUpdated = null,
 }: {
-  providers: Record<ChatProvider, boolean>;
+  providers: ProviderStatus;
   initialThreads?: ChatThread[];
   suggestions?: string[];
   sourceStatus?: string[];
   dataUpdated?: string | null;
 }) {
-  const aiEnabled = providers.claude || providers.deepseek;
+  const aiEnabled = providerReady(providers, "claude") || providerReady(providers, "deepseek");
   const [messages, setMessages] = useState<Message[]>([]);
   const [threads, setThreads] = useState<ChatThread[]>(initialThreads);
   const [currentThreadId, setCurrentThreadId] = useState<string | null>(null);
@@ -165,6 +171,12 @@ export function Chat({
   const [showLatest, setShowLatest] = useState(false);
   const [searchThreads, setSearchThreads] = useState("");
   const [researchMode, setResearchMode] = useState<ResearchMode>("Portfolio analysis");
+
+  useEffect(() => {
+    const selected = CHAT_MODELS.find((m) => m.id === model);
+    if (selected && providerReady(providers, selected.provider)) return;
+    setModel(firstAvailableModel(providers));
+  }, [model, providers]);
 
   const hasMessages = messages.length > 0;
   const activeThread = threads.find((thread) => thread.id === currentThreadId) ?? null;
@@ -849,7 +861,7 @@ function ModelPicker({
 }: {
   model: ChatModelId;
   setModel: (id: ChatModelId) => void;
-  providers: Record<ChatProvider, boolean>;
+  providers: ProviderStatus;
 }) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
@@ -891,7 +903,8 @@ function ModelPicker({
               <p className="px-3 pb-0.5 pt-1.5 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">{g.group}</p>
               {g.models.map((m) => {
                 const Icon = MODEL_ICONS[m.id];
-                const available = providers[m.provider];
+                const provider = providers[m.provider];
+                const available = providerReady(providers, m.provider);
                 const active = m.id === model;
                 return (
                   <button
@@ -914,7 +927,7 @@ function ModelPicker({
                     <span className="flex-1">
                       <span className="font-medium">{m.label}</span>
                       <span className="block text-[10px] leading-tight text-muted-foreground">
-                        {available ? m.hint : "API key not configured"}
+                        {available ? m.hint : provider?.allowed ? "API key not configured" : "Disabled for this account"}
                       </span>
                     </span>
                     {active && <Check className="h-3.5 w-3.5 shrink-0 text-emerald-600" />}

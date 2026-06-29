@@ -4,6 +4,7 @@ import { enrichHoldingsMetadata } from "@/lib/holdings/enrichment";
 import { refreshAlerts } from "@/lib/alerts";
 import { ensureEodCached } from "@/lib/market-data/eod-cache";
 import { rebuildBenchmarkSeries } from "@/lib/engine/benchmark-rebuild";
+import { accountHasFeature } from "@/lib/features";
 
 /**
  * The single recompute cascade run after any ledger mutation (add/edit/delete
@@ -26,7 +27,9 @@ export async function recomputeAll(
   // 2. Best-effort metadata enrichment for changed tickers.
   if (opts.changedTickers?.length) {
     try {
-      await enrichHoldingsMetadata(supabase, userId, { tickers: opts.changedTickers });
+      if (await accountHasFeature(supabase, userId, "company_enrichment")) {
+        await enrichHoldingsMetadata(supabase, userId, { tickers: opts.changedTickers });
+      }
     } catch {
       /* non-fatal */
     }

@@ -14,26 +14,21 @@ import {
 } from "@tanstack/react-table";
 import type { EnrichedHolding, PortfolioSummary } from "@/lib/types";
 import { formatMoney, formatNumber, formatSignedPct, cn } from "@/lib/utils";
-import { Badge, thesisStatusVariant } from "@/components/ui/badge";
+import { Badge } from "@/components/ui/badge";
 import { SectorChip } from "@/components/sector-chip";
 import { AddTransactionDialog } from "@/components/add-transaction-dialog";
 import { GenerateReportDialog } from "@/components/stock/generate-report-dialog";
 import { Input } from "@/components/ui/input";
-import { ArrowUpDown, ChevronDown, MoreHorizontal, Search, X } from "lucide-react";
+import { ArrowUpDown, MoreHorizontal, Search, X } from "lucide-react";
 
-type ViewTab = "performance" | "income" | "allocation" | "planning";
+type ViewTab = "performance" | "income" | "allocation";
 type QuickFilter =
   | "in_profit"
   | "below_cost"
   | "positive_today"
   | "negative_today"
   | "dividend_payers"
-  | "big_loss"
-  | "missing_target"
-  | "missing_thesis"
-  | "missing_company"
-  | "stale_price"
-  | "unclassified_sector";
+  | "big_loss";
 
 const col = createColumnHelper<EnrichedHolding>();
 
@@ -46,19 +41,10 @@ const PERFORMANCE_FILTERS: { key: QuickFilter; label: string }[] = [
   { key: "dividend_payers", label: "Dividend payers" },
 ];
 
-const MORE_FILTERS: { key: QuickFilter; label: string }[] = [
-  { key: "missing_target", label: "Missing target" },
-  { key: "missing_thesis", label: "Missing thesis" },
-  { key: "missing_company", label: "Missing company information" },
-  { key: "stale_price", label: "Missing or stale price" },
-  { key: "unclassified_sector", label: "Unclassified sector" },
-];
-
 const TABS: { key: ViewTab; label: string }[] = [
   { key: "performance", label: "Performance" },
   { key: "income", label: "Income" },
   { key: "allocation", label: "Allocation" },
-  { key: "planning", label: "Planning" },
 ];
 
 function allocationStatus(
@@ -102,9 +88,13 @@ function MobileMetric({
 function MobileHoldingCard({
   holding,
   tab,
+  companyReportsEnabled,
+  companyEnrichmentEnabled,
 }: {
   holding: EnrichedHolding;
   tab: ViewTab;
+  companyReportsEnabled: boolean;
+  companyEnrichmentEnabled: boolean;
 }) {
   const pl = holding.unrealized_pl;
   const plPct = holding.unrealized_pl_pct;
@@ -122,8 +112,6 @@ function MobileHoldingCard({
       ? holding.weight - holding.target_allocation
       : null;
   const allocStatus = allocationStatus(holding.weight, holding.target_allocation);
-  const reviewLabels = ["", "Watch", "Monitor", "Review", "Urgent", "Exit"];
-
   return (
     <article className="rounded-lg border border-border bg-card p-3 shadow-[var(--shadow-card)]">
       <div className="flex items-start justify-between gap-3">
@@ -143,7 +131,11 @@ function MobileHoldingCard({
             <SectorChip sector={holding.sector} size="xs" />
           </div>
         </div>
-        <HoldingActionMenu holding={holding} />
+        <HoldingActionMenu
+          holding={holding}
+          companyReportsEnabled={companyReportsEnabled}
+          companyEnrichmentEnabled={companyEnrichmentEnabled}
+        />
       </div>
 
       {tab === "performance" && (
@@ -185,46 +177,19 @@ function MobileHoldingCard({
           </div>
         </div>
       )}
-
-      {tab === "planning" && (
-        <div className="mt-3 grid grid-cols-2 gap-2">
-          <MobileMetric label="Price" value={holding.latest_price !== null ? formatNumber(holding.latest_price) : "no price"} tone={holding.latest_price === null ? "accent" : undefined} />
-          <MobileMetric label="Target" value={holding.target_price !== null ? formatNumber(holding.target_price) : "—"} />
-          <MobileMetric
-            label="To target"
-            value={holding.distance_to_target_pct !== null ? formatSignedPct(holding.distance_to_target_pct) : "—"}
-            tone={
-              holding.distance_to_target_pct === null
-                ? "muted"
-                : holding.distance_to_target_pct > 0
-                ? "positive"
-                : "negative"
-            }
-          />
-          <div className="min-w-0 rounded-md border border-border bg-background/55 px-2.5 py-2">
-            <p className="truncate text-[10px] font-medium uppercase text-muted-foreground">Thesis</p>
-            <div className="mt-1">
-              {holding.has_thesis ? (
-                <Badge variant={thesisStatusVariant(holding.thesis_status)}>
-                  {holding.thesis_status}
-                </Badge>
-              ) : (
-                <span className="text-xs text-muted-foreground">missing</span>
-              )}
-            </div>
-          </div>
-          <MobileMetric
-            label="Review"
-            value={holding.review_level !== null ? reviewLabels[holding.review_level] ?? holding.review_level : "—"}
-          />
-          <MobileMetric label="Next review" value={holding.review_date ?? "—"} tone={holding.review_date ? undefined : "muted"} />
-        </div>
-      )}
     </article>
   );
 }
 
-function HoldingActionMenu({ holding }: { holding: EnrichedHolding }) {
+function HoldingActionMenu({
+  holding,
+  companyReportsEnabled = false,
+  companyEnrichmentEnabled = false,
+}: {
+  holding: EnrichedHolding;
+  companyReportsEnabled?: boolean;
+  companyEnrichmentEnabled?: boolean;
+}) {
   return (
     <details className="relative">
       <summary
@@ -236,20 +201,23 @@ function HoldingActionMenu({ holding }: { holding: EnrichedHolding }) {
       </summary>
       <div className="absolute right-0 z-20 mt-1 flex w-48 flex-col gap-1 rounded-md border border-border bg-card p-1.5 text-xs shadow-[var(--shadow-card)]">
         <Link href={`/stocks/${holding.ticker}`} className="rounded px-2 py-1.5 hover:bg-muted">View company research</Link>
-        <GenerateReportDialog
-          ticker={holding.ticker}
-          companyName={holding.company_name}
-          label="Generate company report"
-          triggerVariant="ghost"
-          triggerSize="sm"
-          triggerClassName="h-auto justify-start px-2 py-1.5 text-xs font-normal"
-        />
+        {companyReportsEnabled && (
+          <GenerateReportDialog
+            ticker={holding.ticker}
+            companyName={holding.company_name}
+            label="Generate company report"
+            triggerVariant="ghost"
+            triggerSize="sm"
+            triggerClassName="h-auto justify-start px-2 py-1.5 text-xs font-normal"
+          />
+        )}
         <AddTransactionDialog defaultTicker={holding.ticker} label="Add transaction" />
         <Link href="/dividends" className="rounded px-2 py-1.5 hover:bg-muted">Record dividend</Link>
         <Link href={`/stocks/${holding.ticker}`} className="rounded px-2 py-1.5 hover:bg-muted">Edit target</Link>
         <Link href={`/stocks/${holding.ticker}`} className="rounded px-2 py-1.5 hover:bg-muted">Edit thesis</Link>
-        <Link href={`/journal?ticker=${holding.ticker}`} className="rounded px-2 py-1.5 hover:bg-muted">View transaction history</Link>
-        <Link href={`/stocks/${holding.ticker}`} className="rounded px-2 py-1.5 hover:bg-muted">Update company information</Link>
+        {companyEnrichmentEnabled && (
+          <Link href={`/stocks/${holding.ticker}`} className="rounded px-2 py-1.5 hover:bg-muted">Update company information</Link>
+        )}
       </div>
     </details>
   );
@@ -259,10 +227,14 @@ export function HoldingsTable({
   holdings,
   summary,
   dailyRows = [],
+  companyReportsEnabled = false,
+  companyEnrichmentEnabled = false,
 }: {
   holdings: EnrichedHolding[];
   summary: PortfolioSummary;
   dailyRows?: { ticker: string; dayChangePct: number | null; dayPnl: number | null }[];
+  companyReportsEnabled?: boolean;
+  companyEnrichmentEnabled?: boolean;
 }) {
   const [tab, setTab] = useState<ViewTab>("performance");
   const [search, setSearch] = useState("");
@@ -312,7 +284,13 @@ export function HoldingsTable({
     const actionsCol = col.display({
       id: "actions",
       header: "",
-      cell: (c) => <HoldingActionMenu holding={c.row.original} />,
+      cell: (c) => (
+        <HoldingActionMenu
+          holding={c.row.original}
+          companyReportsEnabled={companyReportsEnabled}
+          companyEnrichmentEnabled={companyEnrichmentEnabled}
+        />
+      ),
     });
     const sectorCol = col.accessor("sector", {
       header: "Sector",
@@ -500,107 +478,23 @@ export function HoldingsTable({
       actionsCol,
     ];
 
-    const planning = [
-      tickerCol,
-      col.accessor("latest_price", {
-        id: "price_planning",
-        header: "Price",
-        cell: (c) =>
-          c.getValue() !== null ? (
-            <span className="tabular-nums text-sm">{formatNumber(c.getValue())}</span>
-          ) : (
-            <span className="text-xs text-amber-600">no price</span>
-          ),
-      }),
-      col.accessor("target_price", {
-        header: "Target price",
-        cell: (c) => (
-          <span className="tabular-nums text-sm">
-            {c.getValue() !== null ? formatNumber(c.getValue()) : "—"}
-          </span>
-        ),
-      }),
-      col.accessor("distance_to_target_pct", {
-        header: "To target",
-        cell: (c) => {
-          const v = c.getValue();
-          if (v === null) return <span className="text-sm text-muted-foreground">—</span>;
-          const cls =
-            Math.abs(v) <= 5
-              ? "font-semibold text-amber-600"
-              : v > 0
-              ? "text-emerald-600"
-              : "text-red-600";
-          return <span className={cn("tabular-nums text-sm", cls)}>{formatSignedPct(v)}</span>;
-        },
-      }),
-      col.accessor("review_level", {
-        header: "Review level",
-        cell: (c) => {
-          const v = c.getValue();
-          if (v === null) return <span className="text-sm text-muted-foreground">—</span>;
-          const labels = ["", "Watch", "Monitor", "Review", "Urgent", "Exit"];
-          return <span className="text-xs">{labels[v] ?? v}</span>;
-        },
-      }),
-      col.accessor("thesis_status", {
-        header: "Thesis",
-        cell: (c) =>
-          c.row.original.has_thesis ? (
-            <Badge variant={thesisStatusVariant(c.getValue())}>{c.getValue()}</Badge>
-          ) : (
-            <span className="text-xs text-muted-foreground">missing</span>
-          ),
-      }),
-      col.accessor("review_date", {
-        header: "Next review",
-        cell: (c) => {
-          const v = c.getValue();
-          if (!v) return <span className="text-sm text-muted-foreground">—</span>;
-          const today = new Date().toISOString().slice(0, 10);
-          return (
-            <span
-              className={cn(
-                "tabular-nums text-xs",
-                v <= today && "font-semibold text-amber-600"
-              )}
-            >
-              {v}
-            </span>
-          );
-        },
-      }),
-      actionsCol,
-    ];
-
-    return { performance, income, allocation, planning };
+    return { performance, income, allocation };
     // Cells use the latest daily quote map and holding render helper.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [dailyByTicker]);
+  }, [dailyByTicker, companyReportsEnabled, companyEnrichmentEnabled]);
 
   const columns =
     tab === "performance"
       ? allColumns.performance
       : tab === "income"
       ? allColumns.income
-      : tab === "allocation"
-      ? allColumns.allocation
-      : allColumns.planning;
+      : allColumns.allocation;
 
   // Unique sectors for dropdown
   const sectors = useMemo(
     () => [...new Set(holdings.map((h) => h.sector).filter(Boolean))].sort() as string[],
     [holdings]
   );
-
-  function toggleFilter(f: QuickFilter) {
-    setActiveFilters((prev) => {
-      const next = new Set(prev);
-      if (next.has(f)) next.delete(f);
-      else next.add(f);
-      return next;
-    });
-  }
 
   const filtered = useMemo(() => {
     let rows = holdings;
@@ -619,14 +513,8 @@ export function HoldingsTable({
     if (activeFilters.has("negative_today")) rows = rows.filter((h) => (dailyByTicker.get(h.ticker)?.dayChangePct ?? 0) < 0);
     if (activeFilters.has("dividend_payers")) rows = rows.filter((h) => h.dividend_income > 0);
     if (activeFilters.has("big_loss")) rows = rows.filter((h) => (h.unrealized_pl_pct ?? 0) < -10);
-    if (activeFilters.has("missing_target"))
-      rows = rows.filter((h) => h.target_allocation === null && h.target_price === null);
-    if (activeFilters.has("missing_thesis")) rows = rows.filter((h) => !h.has_thesis);
-    if (activeFilters.has("missing_company")) rows = rows.filter((h) => !h.company_name?.trim());
-    if (activeFilters.has("stale_price")) rows = rows.filter((h) => !h.price_date || h.price_date !== latestPriceDate);
-    if (activeFilters.has("unclassified_sector")) rows = rows.filter((h) => !h.sector?.trim());
     return rows;
-  }, [holdings, search, sectorFilter, activeFilters, dailyByTicker, latestPriceDate]);
+  }, [holdings, search, sectorFilter, activeFilters, dailyByTicker]);
 
   // eslint-disable-next-line react-hooks/incompatible-library -- TanStack Table is the app's table engine; mobile cards consume the same row model.
   const table = useReactTable({
@@ -690,10 +578,6 @@ export function HoldingsTable({
           </select>
         )}
         <select value={selectedPerformance} onChange={(event) => selectPerformance(event.target.value)} className="h-10 rounded-md border border-border bg-background px-2 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-ring md:h-8 md:text-xs"><option value="">Performance</option>{PERFORMANCE_FILTERS.map((filter) => <option key={filter.key} value={filter.key}>{filter.label}</option>)}</select>
-        <details className="relative">
-          <summary className="flex h-10 cursor-pointer list-none items-center gap-1 rounded-md border border-border bg-background px-2 text-sm text-muted-foreground hover:text-foreground md:h-8 md:text-xs">More filters <ChevronDown className="h-3.5 w-3.5" /></summary>
-          <div className="absolute left-0 z-20 mt-1 w-56 rounded-md border border-border bg-card p-1.5 shadow-[var(--shadow-card)]">{MORE_FILTERS.map((filter) => <label key={filter.key} className="flex cursor-pointer items-center gap-2 rounded px-2 py-1.5 text-xs hover:bg-muted"><input type="checkbox" checked={activeFilters.has(filter.key)} onChange={() => toggleFilter(filter.key)} />{filter.label}</label>)}</div>
-        </details>
       </div>
 
       {activeFilterCount > 0 && <div className="flex items-center justify-between text-xs text-muted-foreground"><span>{activeFilterCount} filter{activeFilterCount === 1 ? "" : "s"} active · {filtered.length} holding{filtered.length === 1 ? "" : "s"} shown</span><button onClick={() => { setSearch(""); setSectorFilter(null); setActiveFilters(new Set()); }} className="underline underline-offset-2 hover:text-foreground">Clear filters</button></div>}
@@ -740,6 +624,8 @@ export function HoldingsTable({
                 key={row.id}
                 holding={row.original}
                 tab={tab}
+                companyReportsEnabled={companyReportsEnabled}
+                companyEnrichmentEnabled={companyEnrichmentEnabled}
               />
             ))
           )}

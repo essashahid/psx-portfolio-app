@@ -8,6 +8,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { EmptyState } from "@/components/empty-state";
 import { ActionButton } from "@/components/action-button";
 import { cn } from "@/lib/utils";
+import { normalizeEnabledFeatures } from "@/lib/features";
 import { Activity, RefreshCw, DatabaseZap, Layers } from "lucide-react";
 
 export const dynamic = "force-dynamic";
@@ -17,7 +18,11 @@ export default async function StockResearchPage() {
   const user = await getUser();
   if (!user) return null;
 
-  const d = await getScreenerData(supabase, user.id);
+  const [d, profileRes] = await Promise.all([
+    getScreenerData(supabase, user.id),
+    supabase.from("profiles").select("enabled_features").eq("id", user.id).maybeSingle(),
+  ]);
+  const companyReportsEnabled = normalizeEnabledFeatures(profileRes.data?.enabled_features).includes("company_reports");
   const indexTone = tone(d.index?.changePercent);
   const coveragePct = d.coverage.total ? Math.round((d.coverage.withSpark / d.coverage.total) * 100) : 0;
 
@@ -37,7 +42,7 @@ export default async function StockResearchPage() {
         actions={actions}
       />
 
-      <StockSearch autoFocus />
+      <StockSearch autoFocus companyReportsEnabled={companyReportsEnabled} />
 
       {!d.snapshotDate ? (
         <EmptyState

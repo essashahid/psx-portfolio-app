@@ -65,7 +65,10 @@ export default async function SettingsPage() {
     objective: null,
     extra_features: [],
     hidden_features: [],
+    enabled_features: ["/dashboard", "/holdings", "/dividends", "/stocks", "/market", "/chat"],
+    allowed_llm_providers: ["claude", "deepseek"],
   };
+  const importEnabled = profile.enabled_features.includes("/import");
 
   const keyStatus = [
     { name: "Supabase", ok: !!process.env.NEXT_PUBLIC_SUPABASE_URL, note: "database, auth, storage" },
@@ -108,7 +111,7 @@ export default async function SettingsPage() {
           <CardTitle>Your profile and view</CardTitle>
           <CardDescription>
             Set your experience level, risk comfort and objective. These personalize which sections appear and the tone of
-            insights. You can show or hide individual sections any time.
+            insights.
           </CardDescription>
         </CardHeader>
         <CardContent><PreferencesForm profile={profile} /></CardContent>
@@ -123,7 +126,7 @@ export default async function SettingsPage() {
         <CardHeader>
           <CardTitle>Cash balance</CardTitle>
           <CardDescription>
-            Enter your current brokerage cash balance. This is added to the cash derived from imported statements and shown as your total cash on the dashboard.
+            Enter your current brokerage cash balance. This is added to the manual ledger cash movements and shown as your total cash on the dashboard.
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -159,7 +162,7 @@ export default async function SettingsPage() {
           <CardTitle>Latest prices</CardTitle>
           <CardDescription>
             {marketProvider === "manual"
-              ? "Manual provider is active: edit prices here, upload a CSV, or let statement imports capture market prices automatically."
+              ? "Manual provider is active: edit prices here or upload a CSV."
               : `External provider is active: ${process.env.MARKET_DATA_PROVIDER || "psx"}. You can still override or backfill prices manually here.`}
           </CardDescription>
         </CardHeader>
@@ -206,10 +209,12 @@ export default async function SettingsPage() {
           </CardContent>
         </Card>
 
-        <Card>
-          <CardHeader><CardTitle>Saved import mappings</CardTitle></CardHeader>
-          <CardContent><SavedMappings mappings={mappingsRes.data ?? []} /></CardContent>
-        </Card>
+        {importEnabled && (
+          <Card>
+            <CardHeader><CardTitle>Saved import mappings</CardTitle></CardHeader>
+            <CardContent><SavedMappings mappings={mappingsRes.data ?? []} /></CardContent>
+          </Card>
+        )}
 
         <Card>
           <CardHeader>
@@ -226,13 +231,15 @@ export default async function SettingsPage() {
         </Card>
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Uploaded statements</CardTitle>
-          <CardDescription>Original files stored privately in Supabase Storage. Deleting a file keeps committed portfolio data.</CardDescription>
-        </CardHeader>
-        <CardContent><StatementsList statements={statementsRes.data ?? []} /></CardContent>
-      </Card>
+      {importEnabled && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Uploaded statements</CardTitle>
+            <CardDescription>Original files stored privately in Supabase Storage. Deleting a file keeps committed portfolio data.</CardDescription>
+          </CardHeader>
+          <CardContent><StatementsList statements={statementsRes.data ?? []} /></CardContent>
+        </Card>
+      )}
 
       <Card>
         <CardHeader>

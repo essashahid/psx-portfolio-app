@@ -1,4 +1,5 @@
 import { requireUser } from "@/lib/api-helpers";
+import { accountHasFeature, normalizeAllowedChatProviders } from "@/lib/features";
 import { resolveMessage } from "@/lib/chat/resolver";
 import { gatherCards, briefFromCards, briefFromPositionHistory, type Card } from "@/lib/chat/context";
 import { getLatestSessionDate, getPositionHistoryCard } from "@/lib/chat/data";
@@ -232,6 +233,9 @@ type ChatThread = {
 export async function POST(request: Request) {
   const { supabase, user, error } = await requireUser();
   if (error) return error;
+  if (!(await accountHasFeature(supabase, user.id, "/chat"))) {
+    return new Response(JSON.stringify({ error: "Research Copilot is disabled for this account." }), { status: 403 });
+  }
 
   const body = (await request.json().catch(() => ({}))) as {
     message?: string;
@@ -242,6 +246,13 @@ export async function POST(request: Request) {
   const message = (body.message ?? "").trim();
   if (!message) return new Response(JSON.stringify({ error: "Empty message" }), { status: 400 });
   const modelDef = getModelDef(body.model);
+  const { data: profile, error: profileErr } = await supabase
+    .from("profiles")
+    .select("allowed_llm_providers")
+    .eq("id", user.id)
+    .maybeSingle();
+  if (profileErr) return new Response(JSON.stringify({ error: profileErr.message }), { status: 500 });
+  const allowedProviders = normalizeAllowedChatProviders(profile?.allowed_llm_providers);
 
   const encoder = new TextEncoder();
   const stream = new ReadableStream<Uint8Array>({
@@ -286,7 +297,9 @@ export async function POST(request: Request) {
 
         // 2. If the selected provider's AI is off, return a useful templated
         //    answer from the brief.
-        const providerReady = modelDef.provider === "claude" ? claudeConfigured() : deepseekChatConfigured();
+        const providerAllowed = allowedProviders.includes(modelDef.provider);
+        const providerReady =
+          providerAllowed && (modelDef.provider === "claude" ? claudeConfigured() : deepseekChatConfigured());
         if (!providerReady) {
           assistantContent = fallbackAnswer(message, brief, cards.length);
           send({ type: "text", delta: assistantContent });

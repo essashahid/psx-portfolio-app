@@ -27,7 +27,13 @@ function loadRecent(): string[] {
   }
 }
 
-export function StockSearch({ autoFocus = false }: { autoFocus?: boolean }) {
+export function StockSearch({
+  autoFocus = false,
+  companyReportsEnabled = false,
+}: {
+  autoFocus?: boolean;
+  companyReportsEnabled?: boolean;
+}) {
   const router = useRouter();
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<Result[]>([]);
@@ -188,14 +194,16 @@ export function StockSearch({ autoFocus = false }: { autoFocus?: boolean }) {
                     )}
                   </div>
                 )}
-                <GenerateReportDialog
-                  ticker={r.ticker}
-                  companyName={r.companyName}
-                  label="Report"
-                  triggerVariant="ghost"
-                  triggerSize="sm"
-                  triggerClassName="h-8 shrink-0 px-2 text-[11px]"
-                />
+                {companyReportsEnabled && (
+                  <GenerateReportDialog
+                    ticker={r.ticker}
+                    companyName={r.companyName}
+                    label="Report"
+                    triggerVariant="ghost"
+                    triggerSize="sm"
+                    triggerClassName="h-8 shrink-0 px-2 text-[11px]"
+                  />
+                )}
               </button>
             ))}
         </div>

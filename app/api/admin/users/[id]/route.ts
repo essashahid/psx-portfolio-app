@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { requireAdmin } from "@/lib/admin/guard";
 import { errorResponse } from "@/lib/api-helpers";
+import { ALL_ACCOUNT_FEATURES, CHAT_PROVIDERS } from "@/lib/features";
 
 export const maxDuration = 60;
 
@@ -63,6 +64,15 @@ export async function GET(_request: Request, { params }: { params: Promise<{ id:
   }
 }
 
+const EnabledFeaturesSchema = z.array(z.enum(ALL_ACCOUNT_FEATURES)).superRefine((features, ctx) => {
+  if (!features.includes("/dashboard")) {
+    ctx.addIssue({
+      code: "custom",
+      message: "Dashboard must stay enabled.",
+    });
+  }
+});
+
 const UpdateSchema = z.object({
   email: z.string().email().optional(),
   full_name: z.string().max(120).nullable().optional(),
@@ -71,6 +81,8 @@ const UpdateSchema = z.object({
   demo_mode: z.boolean().optional(),
   base_currency: z.string().min(2).max(8).optional(),
   experience_level: z.enum(["beginner", "intermediate", "advanced"]).optional(),
+  enabled_features: EnabledFeaturesSchema.optional(),
+  allowed_llm_providers: z.array(z.enum(CHAT_PROVIDERS)).optional(),
 });
 
 // PATCH /api/admin/users/:id — edit account email and/or profile fields.

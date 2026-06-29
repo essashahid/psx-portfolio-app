@@ -4,6 +4,7 @@ import { deepseekChatConfigured } from "@/lib/ai/deepseek-chat";
 import { getDataFreshness } from "@/lib/market/read";
 import { getPortfolio } from "@/lib/portfolio";
 import { Chat, type ChatThread } from "@/components/chat/chat";
+import { normalizeAllowedChatProviders } from "@/lib/features";
 
 export const dynamic = "force-dynamic";
 
@@ -11,11 +12,13 @@ export default async function ChatPage() {
   const user = await getUser();
   if (!user) return null;
   const supabase = await createClient();
-  const [{ data: threads }, freshness, portfolio] = await Promise.all([
+  const [{ data: threads }, freshness, portfolio, profileRes] = await Promise.all([
     supabase.from("chat_threads").select("id, title, summary, created_at, updated_at, last_message_at").eq("user_id", user.id).order("last_message_at", { ascending: false }).limit(50),
     getDataFreshness(supabase, user.id),
     getPortfolio(supabase, user.id),
+    supabase.from("profiles").select("allowed_llm_providers").eq("id", user.id).maybeSingle(),
   ]);
+  const allowedProviders = normalizeAllowedChatProviders(profileRes.data?.allowed_llm_providers);
   const freshnessItems = freshness.filter((item) => item.date && item.key !== "brief");
   const sources = freshnessItems.map((item) => `${item.label} · ${item.date}`);
   const latestDate = freshnessItems.map((item) => item.date as string).sort().at(-1) ?? null;
@@ -34,7 +37,10 @@ export default async function ChatPage() {
   return (
     <div className="-mx-3 -mt-3 sm:-mx-4 sm:-mt-4 md:-m-8">
       <Chat
-        providers={{ claude: claudeConfigured(), deepseek: deepseekChatConfigured() }}
+        providers={{
+          claude: { configured: claudeConfigured(), allowed: allowedProviders.includes("claude") },
+          deepseek: { configured: deepseekChatConfigured(), allowed: allowedProviders.includes("deepseek") },
+        }}
         initialThreads={(threads ?? []) as ChatThread[]}
         suggestions={prompts}
         sourceStatus={sources}

@@ -11,6 +11,14 @@ import { Badge } from "@/components/ui/badge";
 import { Select } from "@/components/ui/select";
 import { Dialog } from "@/components/ui/dialog";
 import { Card } from "@/components/ui/card";
+import { NAV } from "@/lib/nav";
+import {
+  ACCOUNT_CAPABILITIES,
+  ALL_ACCOUNT_FEATURES,
+  CHAT_PROVIDERS,
+  LAUNCH_DEFAULT_FEATURES,
+  type ChatProvider,
+} from "@/lib/features";
 
 type Detail = {
   auth: {
@@ -28,6 +36,8 @@ type Detail = {
     demo_mode: boolean;
     base_currency: string;
     experience_level: string;
+    enabled_features: string[];
+    allowed_llm_providers: ChatProvider[];
   } | null;
   summary: { holdings: number; transactions: number; dividends: number; cash: number };
   holdings: Array<{
@@ -58,6 +68,8 @@ export function UserDetailClient({ userId }: { userId: string }) {
   const [isAdmin, setIsAdmin] = useState(false);
   const [onboarded, setOnboarded] = useState(false);
   const [demoMode, setDemoMode] = useState(false);
+  const [enabledFeatures, setEnabledFeatures] = useState<Set<string>>(() => new Set(LAUNCH_DEFAULT_FEATURES));
+  const [allowedLlm, setAllowedLlm] = useState<Set<ChatProvider>>(() => new Set(CHAT_PROVIDERS));
   const [saving, setSaving] = useState(false);
   const [savedMsg, setSavedMsg] = useState<string | null>(null);
 
@@ -81,6 +93,8 @@ export function UserDetailClient({ userId }: { userId: string }) {
       setIsAdmin(Boolean(d.profile?.is_admin));
       setOnboarded(Boolean(d.profile?.onboarded));
       setDemoMode(Boolean(d.profile?.demo_mode));
+      setEnabledFeatures(new Set(d.profile?.enabled_features?.length ? d.profile.enabled_features : LAUNCH_DEFAULT_FEATURES));
+      setAllowedLlm(new Set(d.profile?.allowed_llm_providers ?? CHAT_PROVIDERS));
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to load user");
     } finally {
@@ -93,8 +107,8 @@ export function UserDetailClient({ userId }: { userId: string }) {
     return () => clearTimeout(t);
   }, [load]);
 
-  async function saveProfile(e: React.FormEvent) {
-    e.preventDefault();
+  async function saveProfile(e?: React.FormEvent) {
+    e?.preventDefault();
     setSaving(true);
     setError(null);
     setSavedMsg(null);
@@ -110,6 +124,8 @@ export function UserDetailClient({ userId }: { userId: string }) {
           is_admin: isAdmin,
           onboarded,
           demo_mode: demoMode,
+          enabled_features: [...enabledFeatures],
+          allowed_llm_providers: [...allowedLlm],
         }),
       });
       const data = await res.json();
@@ -121,6 +137,38 @@ export function UserDetailClient({ userId }: { userId: string }) {
     } finally {
       setSaving(false);
     }
+  }
+
+  function toggleFeature(href: string) {
+    if (href === "/dashboard") return;
+    setEnabledFeatures((prev) => {
+      const next = new Set(prev);
+      if (next.has(href)) next.delete(href);
+      else next.add(href);
+      next.add("/dashboard");
+      return next;
+    });
+  }
+
+  function toggleProvider(provider: ChatProvider) {
+    setAllowedLlm((prev) => {
+      const next = new Set(prev);
+      if (next.has(provider)) next.delete(provider);
+      else next.add(provider);
+      return next;
+    });
+  }
+
+  function capabilityLabel(capability: string) {
+    if (capability === "company_enrichment") return "Update company details";
+    if (capability === "company_reports") return "Company reports and AI analysis";
+    return capability;
+  }
+
+  function capabilityHint(capability: string) {
+    if (capability === "company_enrichment") return "Allows AI-backed company profile and holdings metadata updates.";
+    if (capability === "company_reports") return "Allows company report generation and stock detail AI analysis.";
+    return "Account capability.";
   }
 
   async function toggleBan() {
@@ -240,6 +288,110 @@ export function UserDetailClient({ userId }: { userId: string }) {
             </Button>
           </div>
         </form>
+      </Card>
+
+      <Card className="p-4">
+        <div className="mb-3 flex flex-wrap items-start justify-between gap-3">
+          <div>
+            <h2 className="text-sm font-semibold">Feature access</h2>
+            <p className="mt-1 text-xs text-muted-foreground">
+              Account-level tabs and Research Copilot model providers. Admin-only tools still require admin access.
+            </p>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => setEnabledFeatures(new Set(LAUNCH_DEFAULT_FEATURES))}
+            >
+              Launch default
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => setEnabledFeatures(new Set(ALL_ACCOUNT_FEATURES))}
+            >
+              Enable everything
+            </Button>
+          </div>
+        </div>
+        <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+          {NAV.map((item) => {
+            const checked = enabledFeatures.has(item.href) || item.href === "/dashboard";
+            return (
+              <label
+                key={item.href}
+                className="flex cursor-pointer items-start gap-2.5 rounded-lg border border-border bg-card px-3 py-2 text-xs"
+              >
+                <input
+                  type="checkbox"
+                  checked={checked}
+                  disabled={item.href === "/dashboard"}
+                  onChange={() => toggleFeature(item.href)}
+                  className="mt-0.5 h-4 w-4 accent-emerald-600 disabled:opacity-60"
+                />
+                <span className="min-w-0">
+                  <span className="flex items-center gap-1.5 font-medium">
+                    {item.label}
+                    {item.adminOnly && <Badge variant="amber">Admin</Badge>}
+                  </span>
+                  <span className="mt-0.5 block leading-relaxed text-muted-foreground">{item.hint}</span>
+                </span>
+              </label>
+            );
+          })}
+        </div>
+        <div className="mt-4 border-t border-border pt-4">
+          <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">AI and report capabilities</h3>
+          <div className="mt-2 grid gap-2 sm:grid-cols-2">
+            {ACCOUNT_CAPABILITIES.map((capability) => (
+              <label
+                key={capability}
+                className="flex cursor-pointer items-start gap-2.5 rounded-lg border border-border bg-card px-3 py-2 text-xs"
+              >
+                <input
+                  type="checkbox"
+                  checked={enabledFeatures.has(capability)}
+                  onChange={() => toggleFeature(capability)}
+                  className="mt-0.5 h-4 w-4 accent-emerald-600"
+                />
+                <span>
+                  <span className="font-medium">{capabilityLabel(capability)}</span>
+                  <span className="mt-0.5 block leading-relaxed text-muted-foreground">{capabilityHint(capability)}</span>
+                </span>
+              </label>
+            ))}
+          </div>
+        </div>
+        <div className="mt-4 border-t border-border pt-4">
+          <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Research Copilot models</h3>
+          <div className="mt-2 flex flex-wrap gap-3">
+            {CHAT_PROVIDERS.map((provider) => (
+              <label key={provider} className="flex items-center gap-2 text-sm">
+                <input
+                  type="checkbox"
+                  checked={allowedLlm.has(provider)}
+                  onChange={() => toggleProvider(provider)}
+                  className="h-4 w-4 accent-emerald-600"
+                />
+                {provider === "claude" ? "Claude" : "DeepSeek"}
+              </label>
+            ))}
+          </div>
+        </div>
+        {(error || savedMsg) && (
+          <p className={`mt-4 rounded-md px-3 py-2 text-xs ${error ? "bg-red-50 text-red-700" : "bg-emerald-50 text-emerald-700"}`}>
+            {error ?? savedMsg}
+          </p>
+        )}
+        <div className="mt-4 flex justify-end">
+          <Button type="button" onClick={() => void saveProfile()} disabled={saving}>
+            {saving && <Loader2 className="h-4 w-4 animate-spin" />}
+            Save access
+          </Button>
+        </div>
       </Card>
 
       {detail.holdings.length > 0 && (

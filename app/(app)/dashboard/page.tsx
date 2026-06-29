@@ -7,11 +7,11 @@ import { cn, formatNumber, formatSignedPct } from "@/lib/utils";
 import { EmptyState } from "@/components/empty-state";
 import { AnimatedMoney } from "@/components/animated-money";
 import { ActionButton } from "@/components/action-button";
-import { Button } from "@/components/ui/button";
+import { AddTransactionDialog } from "@/components/add-transaction-dialog";
 import { ImportantPsxEvents, type PsxEventRow } from "@/components/important-psx-events";
-import { DashboardAllocation, DashboardPerformance, DashboardReportButton, PortfolioContribution } from "@/components/dashboard-visuals";
+import { DashboardAllocation, DashboardPerformance, PortfolioContribution } from "@/components/dashboard-visuals";
 import { BenchmarkGrowthChart, type BenchmarkPointRow } from "@/components/benchmark-growth-chart";
-import { CircleAlert, RefreshCw, Upload } from "lucide-react";
+import { Briefcase, CircleAlert, RefreshCw } from "lucide-react";
 
 export const dynamic = "force-dynamic";
 
@@ -60,14 +60,10 @@ export default async function DashboardPage() {
         <p className="eyebrow">Get started</p>
         <h1 className="mt-1 text-3xl font-semibold">Portfolio dashboard</h1>
         <EmptyState
-          icon={Upload}
+          icon={Briefcase}
           title="Your portfolio is empty"
-          description="Import an AKD or CDC statement to calculate your portfolio value, performance and allocations."
-          action={
-            <Link href="/import">
-              <Button><Upload className="h-4 w-4" /> Import a statement</Button>
-            </Link>
-          }
+          description="Add a manual buy transaction to start tracking holdings, dividends, portfolio value and allocations."
+          action={<AddTransactionDialog label="Add transaction" variant="default" />}
         />
       </div>
     );
@@ -147,8 +143,7 @@ export default async function DashboardPage() {
             <p className="mt-4 text-xs text-muted-foreground">Last updated: {formatUpdated(latestMarketDate, dailyPerformance.snapshotTime)}</p>
           </div>
           <div className="flex flex-wrap gap-2">
-            <ActionButton endpoint="/api/prices" body={{ refresh: true }} label={<><RefreshCw className="h-3.5 w-3.5" /> Update portfolio</>} size="sm" />
-            <DashboardReportButton />
+            <ActionButton endpoint="/api/prices" body={{ refresh: true }} label={<><RefreshCw className="h-3.5 w-3.5" /> Refresh prices</>} size="sm" />
           </div>
         </div>
       </header>

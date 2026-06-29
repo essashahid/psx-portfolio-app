@@ -11,7 +11,6 @@ import { Textarea } from "@/components/ui/textarea";
 import { Table, THead, TBody, TR, TH, TD } from "@/components/ui/table";
 import { formatNumber } from "@/lib/utils";
 import type { ExperienceLevel, Objective, Profile, RiskProfile } from "@/lib/types";
-import { OPTIONAL_NAV, isDefaultVisible, deriveFeaturePrefs, resolveVisibleHrefs } from "@/lib/nav";
 import { Loader2, Trash2, Plus } from "lucide-react";
 import Link from "next/link";
 
@@ -73,12 +72,12 @@ export function ProfileForm({ profile }: { profile: Profile }) {
 }
 
 // ---------------------------------------------------------------------------
-// Preferences — experience, risk, objective and which optional tabs are shown
+// Preferences — experience, risk and objective
 // ---------------------------------------------------------------------------
 const EXPERIENCE_OPTIONS: { value: ExperienceLevel; label: string }[] = [
-  { value: "beginner", label: "New to investing (simplest view)" },
-  { value: "intermediate", label: "Comfortable (adds research and planning)" },
-  { value: "advanced", label: "Experienced (everything unlocked)" },
+  { value: "beginner", label: "New to investing (plain-language analysis)" },
+  { value: "intermediate", label: "Comfortable (balanced analysis)" },
+  { value: "advanced", label: "Experienced (denser analysis)" },
 ];
 
 const RISK_OPTIONS: { value: RiskProfile; label: string }[] = [
@@ -101,24 +100,10 @@ export function PreferencesForm({ profile }: { profile: Profile }) {
   const [experience, setExperience] = useState<ExperienceLevel>(profile.experience_level);
   const [risk, setRisk] = useState<RiskProfile | "">(profile.risk_profile ?? "");
   const [objective, setObjective] = useState<Objective | "">(profile.objective ?? "");
-  const [visible, setVisible] = useState<Set<string>>(
-    () => new Set(resolveVisibleHrefs(profile))
-  );
-
-  function toggle(href: string) {
-    setVisible((prev) => {
-      const next = new Set(prev);
-      if (next.has(href)) next.delete(href);
-      else next.add(href);
-      return next;
-    });
-  }
 
   async function save(e: React.FormEvent) {
     e.preventDefault();
     setBusy(true);
-    const optionalVisible = new Set(OPTIONAL_NAV.filter((i) => visible.has(i.href)).map((i) => i.href));
-    const { extra_features, hidden_features } = deriveFeaturePrefs(experience, optionalVisible);
     const supabase = createClient();
     const { error } = await supabase
       .from("profiles")
@@ -126,8 +111,6 @@ export function PreferencesForm({ profile }: { profile: Profile }) {
         experience_level: experience,
         risk_profile: risk || null,
         objective: objective || null,
-        extra_features,
-        hidden_features,
       })
       .eq("id", profile.id);
     setBusy(false);
@@ -163,40 +146,6 @@ export function PreferencesForm({ profile }: { profile: Profile }) {
               <option key={o.value} value={o.value}>{o.label}</option>
             ))}
           </Select>
-        </div>
-      </div>
-
-      <div className="space-y-2">
-        <Label>Sections you see</Label>
-        <p className="text-xs text-muted-foreground">
-          Your experience level sets a sensible default. Turn individual sections on or off here. Core sections like
-          Dashboard, Holdings and Settings are always available.
-        </p>
-        <div className="grid gap-1.5 sm:grid-cols-2">
-          {OPTIONAL_NAV.map((item) => {
-            const on = visible.has(item.href);
-            const isDefault = isDefaultVisible(item, experience);
-            return (
-              <label
-                key={item.href}
-                className="flex cursor-pointer items-start gap-2.5 rounded-lg border border-border bg-card px-3 py-2"
-              >
-                <input
-                  type="checkbox"
-                  checked={on}
-                  onChange={() => toggle(item.href)}
-                  className="mt-0.5 h-4 w-4 accent-emerald-600"
-                />
-                <span className="min-w-0">
-                  <span className="block text-xs font-medium">{item.label}</span>
-                  <span className="block text-[11px] text-muted-foreground">
-                    {item.hint}
-                    {!isDefault ? " · beyond your level" : ""}
-                  </span>
-                </span>
-              </label>
-            );
-          })}
         </div>
       </div>
 

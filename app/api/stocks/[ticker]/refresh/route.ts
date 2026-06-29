@@ -6,6 +6,7 @@ import { aiAvailable, chatJson } from "@/lib/ai/openai";
 import { refreshQuote, refreshHistory, testProviderCoverage } from "@/lib/engine/market-data";
 import { populateAllFundamentals } from "@/lib/engine/fundamentals";
 import { refreshRatios } from "@/lib/engine/ratios";
+import { accountHasFeature } from "@/lib/features";
 
 export const maxDuration = 120;
 
@@ -23,7 +24,7 @@ export async function POST(
   request: Request,
   { params }: { params: Promise<{ ticker: string }> }
 ) {
-  const { supabase, error } = await requireUser();
+  const { supabase, user, error } = await requireUser();
   if (error) return error;
 
   try {
@@ -92,6 +93,9 @@ export async function POST(
     }
 
     if (section === "description") {
+      if (!(await accountHasFeature(supabase, user.id, "company_enrichment"))) {
+        return NextResponse.json({ error: "Company profile generation is disabled for this account." }, { status: 403 });
+      }
       if (!aiAvailable()) {
         return NextResponse.json({ error: "AI provider is not configured. Add TASKS_API_KEY or DEEPSEEK_API_KEY in .env.local." }, { status: 503 });
       }

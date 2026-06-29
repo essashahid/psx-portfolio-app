@@ -1,6 +1,5 @@
-import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
-import { FileText, ArrowRight } from "lucide-react";
+import { FileText } from "lucide-react";
 
 export interface PsxEventRow {
   id: string;
@@ -26,14 +25,11 @@ export function ImportantPsxEvents({ events }: { events: PsxEventRow[] }) {
           <FileText className="h-4 w-4 text-muted-foreground" />
           <h2 className="text-base font-semibold">Important PSX Events</h2>
         </div>
-        <Link href="/news" className="text-xs text-muted-foreground hover:text-foreground">
-          News Center <ArrowRight className="inline h-3 w-3" />
-        </Link>
       </div>
       <div className="mt-4 space-y-2">
         {events.length === 0 ? (
           <p className="py-4 text-center text-xs text-muted-foreground">
-            No recent PSX filings stored. Refresh from the News Center.
+            No recent PSX filings stored.
           </p>
         ) : (
           events.map((e) => {

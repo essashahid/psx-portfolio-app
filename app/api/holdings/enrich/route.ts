@@ -3,6 +3,7 @@ import { requireUser, errorResponse, logAgentRun } from "@/lib/api-helpers";
 import { enrichHoldingsMetadata } from "@/lib/holdings/enrichment";
 import { refreshAlerts } from "@/lib/alerts";
 import { takeSnapshot } from "@/lib/portfolio";
+import { accountHasFeature } from "@/lib/features";
 
 export const maxDuration = 120;
 
@@ -11,6 +12,10 @@ export async function POST(request: Request) {
   if (error) return error;
 
   try {
+    if (!(await accountHasFeature(supabase, user.id, "company_enrichment"))) {
+      return NextResponse.json({ error: "Company detail updates are disabled for this account." }, { status: 403 });
+    }
+
     const body = (await request.json().catch(() => ({}))) as { tickers?: string[]; useAi?: boolean };
     const output = await logAgentRun(
       supabase,

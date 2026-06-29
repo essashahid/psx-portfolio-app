@@ -26,7 +26,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
       .eq("status", "open"),
     supabase
       .from("profiles")
-      .select("onboarded, experience_level, extra_features, hidden_features, is_admin")
+      .select("onboarded, experience_level, extra_features, hidden_features, enabled_features, is_admin")
       .eq("id", user.id)
       .maybeSingle(),
   ]);
@@ -46,6 +46,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
       experience_level: (profileRes.data?.experience_level as ExperienceLevel) ?? "intermediate",
       extra_features: profileRes.data?.extra_features ?? [],
       hidden_features: profileRes.data?.hidden_features ?? [],
+      enabled_features: profileRes.data?.enabled_features ?? [],
     },
     isAdmin
   );

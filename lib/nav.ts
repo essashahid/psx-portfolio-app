@@ -19,6 +19,12 @@ import {
 } from "lucide-react";
 import type { ComponentType } from "react";
 import type { ExperienceLevel, Profile } from "@/lib/types";
+import {
+  ADMIN_ONLY_FEATURES,
+  LAUNCH_DEFAULT_FEATURES,
+  normalizeEnabledFeatures,
+  type AppFeatureHref,
+} from "@/lib/features";
 
 /**
  * Navigation is grouped into labelled sections and each item carries a `tier`.
@@ -88,6 +94,9 @@ export const NAV_SECTIONS: { title: string; items: NavItemDef[] }[] = [
 ];
 
 export const NAV = NAV_SECTIONS.flatMap((s) => s.items);
+const LAUNCH_DEFAULT_HREFS = new Set<string>(LAUNCH_DEFAULT_FEATURES);
+export const LAUNCH_DEFAULT_NAV = NAV.filter((item) => LAUNCH_DEFAULT_HREFS.has(item.href));
+const ADMIN_ONLY_HREFS = new Set<string>(ADMIN_ONLY_FEATURES);
 
 /**
  * Optional tabs a user can show or hide from Settings (everything above core,
@@ -127,22 +136,18 @@ export function deriveFeaturePrefs(
   return { extra_features: extra, hidden_features: hidden };
 }
 
-type NavPrefs = Pick<Profile, "experience_level" | "extra_features" | "hidden_features">;
+type NavPrefs = Pick<Profile, "enabled_features" | "experience_level" | "extra_features" | "hidden_features">;
 
 /**
- * Resolve the set of nav hrefs a user should see:
- *   tier defaults (by experience) ∪ explicit opt-ins, minus explicit opt-outs.
- * Core items can never be hidden so the app stays usable.
+ * Resolve the set of nav hrefs a user should see. Launch accounts use explicit
+ * account-level feature flags, not self-service tier defaults. `experience`
+ * still personalizes language and insight tone, but it no longer unlocks tabs.
  */
 export function resolveVisibleHrefs(prefs: NavPrefs, isAdmin = false): string[] {
-  const allowedTiers = new Set(tiersFor(prefs.experience_level ?? "intermediate"));
-  const extra = new Set(prefs.extra_features ?? []);
-  const hidden = new Set(prefs.hidden_features ?? []);
+  const enabled = new Set(normalizeEnabledFeatures(prefs.enabled_features));
   return NAV.filter((item) => {
-    // Admin-only tools are hidden from every public user, shown to admins.
-    if (item.adminOnly) return isAdmin;
-    if (item.tier === "core") return true;
-    if (hidden.has(item.href)) return false;
-    return allowedTiers.has(item.tier) || extra.has(item.href);
+    const href = item.href as AppFeatureHref;
+    if (item.adminOnly || ADMIN_ONLY_HREFS.has(item.href)) return isAdmin && enabled.has(href);
+    return enabled.has(href);
   }).map((item) => item.href);
 }
