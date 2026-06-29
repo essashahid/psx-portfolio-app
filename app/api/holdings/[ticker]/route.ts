@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { requireUser, errorResponse } from "@/lib/api-helpers";
 import { recomputeAll } from "@/lib/holdings/recompute-cascade";
+import { rejectDemoWrite } from "@/lib/demo-mode";
 
 const PatchSchema = z.object({
   quantity: z.number().positive().optional(),
@@ -15,6 +16,8 @@ export async function PATCH(
 ) {
   const { supabase, user, error } = await requireUser();
   if (error) return error;
+  const demoError = await rejectDemoWrite(supabase, user.id);
+  if (demoError) return demoError;
 
   const { ticker } = await params;
   const symbol = ticker.toUpperCase();
@@ -92,6 +95,8 @@ export async function DELETE(
 ) {
   const { supabase, user, error } = await requireUser();
   if (error) return error;
+  const demoError = await rejectDemoWrite(supabase, user.id);
+  if (demoError) return demoError;
 
   const { ticker } = await params;
   const symbol = ticker.toUpperCase();

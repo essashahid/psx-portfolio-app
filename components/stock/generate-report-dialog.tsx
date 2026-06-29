@@ -1,9 +1,9 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Check, Download, FileText, Loader2, RefreshCw, XCircle } from "lucide-react";
+import { Check, FileText, Loader2, RefreshCw, XCircle } from "lucide-react";
 import { Button, type ButtonProps } from "@/components/ui/button";
 import { Dialog } from "@/components/ui/dialog";
 import { CompanyReportViewer } from "@/components/stock/company-report-viewer";
@@ -166,16 +166,17 @@ export function GenerateReportDialog({
     }
   }, [ticker, peerText]);
 
-  useEffect(() => {
-    if (!open) return;
+  function openDialog() {
+    setOpen(true);
     loadPreview();
     setError(null);
     setReport(null);
     setStages([]);
-  }, [open, loadPreview]);
+  }
 
-  useEffect(() => {
-    if (depth === "brief") {
+  function applyDepth(nextDepth: "full" | "brief") {
+    setDepth(nextDepth);
+    if (nextDepth === "brief") {
       setPeriodYears(3);
       setInclude(BRIEF_DEFAULTS);
       setNewsPeriodDays(90);
@@ -183,7 +184,7 @@ export function GenerateReportDialog({
       setPeriodYears(5);
       setInclude(FULL_DEFAULTS);
     }
-  }, [depth]);
+  }
 
   function toggleInclude(key: IncludeKey) {
     setInclude((c) => ({ ...c, [key]: !c[key] }));
@@ -269,7 +270,7 @@ export function GenerateReportDialog({
 
   return (
     <>
-      <Button variant={triggerVariant} size={triggerSize} className={triggerClassName} onClick={() => setOpen(true)}>
+      <Button variant={triggerVariant} size={triggerSize} className={triggerClassName} onClick={openDialog}>
         <FileText className="h-3.5 w-3.5" />
         {label}
       </Button>
@@ -324,14 +325,14 @@ export function GenerateReportDialog({
                   <fieldset className="space-y-1.5">
                     <legend className="text-xs font-semibold">Report type</legend>
                     <label className="flex items-start gap-2 text-sm">
-                      <input type="radio" className="mt-0.5" checked={depth === "full"} onChange={() => setDepth("full")} />
+                        <input type="radio" className="mt-0.5" checked={depth === "full"} onChange={() => applyDepth("full")} />
                       <span>
                         <span className="font-medium">Full equity-research report</span>
                         <span className="block text-[11px] text-muted-foreground">Approximately 15–25 pages</span>
                       </span>
                     </label>
                     <label className="flex items-start gap-2 text-sm">
-                      <input type="radio" className="mt-0.5" checked={depth === "brief"} onChange={() => setDepth("brief")} />
+                        <input type="radio" className="mt-0.5" checked={depth === "brief"} onChange={() => applyDepth("brief")} />
                       <span>
                         <span className="font-medium">Concise investment brief</span>
                         <span className="block text-[11px] text-muted-foreground">Approximately 4–6 pages</span>

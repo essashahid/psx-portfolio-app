@@ -20,13 +20,14 @@ export default async function StockResearchPage() {
 
   const [d, profileRes] = await Promise.all([
     getScreenerData(supabase, user.id),
-    supabase.from("profiles").select("enabled_features").eq("id", user.id).maybeSingle(),
+    supabase.from("profiles").select("enabled_features, demo_mode").eq("id", user.id).maybeSingle(),
   ]);
+  const isDemo = Boolean(profileRes.data?.demo_mode);
   const companyReportsEnabled = normalizeEnabledFeatures(profileRes.data?.enabled_features).includes("company_reports");
   const indexTone = tone(d.index?.changePercent);
   const coveragePct = d.coverage.total ? Math.round((d.coverage.withSpark / d.coverage.total) * 100) : 0;
 
-  const actions = (
+  const actions = isDemo ? null : (
     <div className="flex items-center gap-2">
       <ActionButton endpoint="/api/market/refresh" body={{ section: "snapshot" }} label={<><RefreshCw className="h-3.5 w-3.5" /> Refresh prices</>} variant="outline" size="sm" />
       <ActionButton endpoint="/api/market/backfill" body={{ limit: 60 }} label={<><DatabaseZap className="h-3.5 w-3.5" /> Build deep data</>} variant="outline" size="sm" />
@@ -49,7 +50,7 @@ export default async function StockResearchPage() {
           icon={Activity}
           title="No market data yet"
           description="The screener is powered by the daily market snapshot. Refresh prices to pull the whole PSX, then build deep data for sparklines and 52-week ranges."
-          action={actions}
+          action={actions ?? undefined}
         />
       ) : (
         <>

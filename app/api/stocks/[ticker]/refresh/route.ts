@@ -7,6 +7,7 @@ import { refreshQuote, refreshHistory, testProviderCoverage } from "@/lib/engine
 import { populateAllFundamentals } from "@/lib/engine/fundamentals";
 import { refreshRatios } from "@/lib/engine/ratios";
 import { accountHasFeature } from "@/lib/features";
+import { rejectDemoWrite } from "@/lib/demo-mode";
 
 export const maxDuration = 120;
 
@@ -26,6 +27,8 @@ export async function POST(
 ) {
   const { supabase, user, error } = await requireUser();
   if (error) return error;
+  const demoError = await rejectDemoWrite(supabase, user.id);
+  if (demoError) return demoError;
 
   try {
     const { ticker: raw } = await params;

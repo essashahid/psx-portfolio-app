@@ -4,6 +4,7 @@ import { buildReportMarkdown } from "@/lib/company/report/markdown";
 import { refreshReportSectionData } from "@/lib/company/report/sections";
 import type { CompanyReportPayload } from "@/lib/company/report";
 import { accountHasFeature } from "@/lib/features";
+import { rejectDemoWrite } from "@/lib/demo-mode";
 
 export const maxDuration = 120;
 
@@ -13,6 +14,8 @@ export async function POST(
 ) {
   const { supabase, user, error } = await requireUser();
   if (error) return error;
+  const demoError = await rejectDemoWrite(supabase, user.id);
+  if (demoError) return demoError;
 
   const { id, section } = await params;
 

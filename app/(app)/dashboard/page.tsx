@@ -81,6 +81,7 @@ export default async function DashboardPage() {
     .limit(5);
 
   const firstName = (profileRes.data?.full_name ?? "").trim().split(/\s+/)[0] || null;
+  const isDemo = Boolean(profileRes.data?.demo_mode);
   const dayPnl = dailyPerformance.totalDayPnl;
   const dayTone = dayPnl !== null && dayPnl > 0 ? "positive" : dayPnl !== null && dayPnl < 0 ? "negative" : "flat";
   const datedSnapshots = (snapshotsRes.data ?? []).map((snapshot) => ({
@@ -143,12 +144,12 @@ export default async function DashboardPage() {
             <p className="mt-4 text-xs text-muted-foreground">Last updated: {formatUpdated(latestMarketDate, dailyPerformance.snapshotTime)}</p>
           </div>
           <div className="flex flex-wrap gap-2">
-            <ActionButton endpoint="/api/prices" body={{ refresh: true }} label={<><RefreshCw className="h-3.5 w-3.5" /> Refresh prices</>} size="sm" />
+            {!isDemo && <ActionButton endpoint="/api/prices" body={{ refresh: true }} label={<><RefreshCw className="h-3.5 w-3.5" /> Refresh prices</>} size="sm" />}
           </div>
         </div>
       </header>
 
-      {profileRes.data?.demo_mode && <p className="rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800">Demo mode: the portfolio data below is illustrative sample data.</p>}
+      {isDemo && <p className="rounded-md border border-blue-200 bg-blue-50 px-3 py-2 text-xs text-blue-900">Read-only demo: the portfolio data below is seeded for exploration.</p>}
 
       {benchmarkSeries.length >= 2 && <BenchmarkGrowthChart data={benchmarkSeries} />}
 

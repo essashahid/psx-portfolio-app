@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { requireUser, errorResponse, logAgentRun } from "@/lib/api-helpers";
 import { chatMarkdown, aiAvailable } from "@/lib/ai/openai";
 import { getPortfolio } from "@/lib/portfolio";
+import { rejectDemoWrite } from "@/lib/demo-mode";
 
 export const maxDuration = 120;
 
@@ -50,6 +51,8 @@ const ACTION_PROMPTS: Record<StockAction, { title: string; prompt: string; saveT
 export async function POST(request: Request) {
   const { supabase, user, error } = await requireUser();
   if (error) return error;
+  const demoError = await rejectDemoWrite(supabase, user.id);
+  if (demoError) return demoError;
 
   if (!aiAvailable()) {
     return NextResponse.json(

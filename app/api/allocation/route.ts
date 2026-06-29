@@ -3,6 +3,7 @@ import { requireUser, errorResponse, logAgentRun } from "@/lib/api-helpers";
 import { gatherForecastInputs } from "@/lib/engine/allocation/load";
 import { buildForecast } from "@/lib/engine/allocation";
 import { narrateForecast } from "@/lib/engine/allocation/narrate";
+import { rejectDemoWrite } from "@/lib/demo-mode";
 
 export const maxDuration = 120;
 
@@ -14,6 +15,8 @@ export const maxDuration = 120;
 export async function POST() {
   const { supabase, user, error } = await requireUser();
   if (error) return error;
+  const demoError = await rejectDemoWrite(supabase, user.id);
+  if (demoError) return demoError;
 
   try {
     const output = await logAgentRun(supabase, user.id, "allocation_forecast", {}, async () => {

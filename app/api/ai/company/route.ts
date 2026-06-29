@@ -8,6 +8,7 @@ import { getCompanyDividends } from "@/lib/company/dividends";
 import { getPortfolio } from "@/lib/portfolio";
 import { formatNumber } from "@/lib/utils";
 import { accountHasFeature } from "@/lib/features";
+import { rejectDemoWrite } from "@/lib/demo-mode";
 
 export const maxDuration = 120;
 
@@ -73,6 +74,8 @@ const PROMPTS: Record<Action, { title: string; prompt: string }> = {
 export async function POST(request: Request) {
   const { supabase, user, error } = await requireUser();
   if (error) return error;
+  const demoError = await rejectDemoWrite(supabase, user.id);
+  if (demoError) return demoError;
 
   if (!(await accountHasFeature(supabase, user.id, "company_reports"))) {
     return NextResponse.json({ error: "Company AI analysis is disabled for this account." }, { status: 403 });

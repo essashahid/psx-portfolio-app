@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { requireUser, errorResponse } from "@/lib/api-helpers";
 import { fetchPsxSymbols } from "@/lib/market-data/psx-dps";
+import { rejectDemoWrite } from "@/lib/demo-mode";
 
 export const maxDuration = 120;
 
@@ -19,8 +20,10 @@ function cronAuthorized(request: Request): boolean {
  */
 export async function POST(request: Request) {
   if (!cronAuthorized(request)) {
-    const { error } = await requireUser();
+    const { supabase, user, error } = await requireUser();
     if (error) return error;
+    const demoError = await rejectDemoWrite(supabase, user.id);
+    if (demoError) return demoError;
   }
   return syncUniverse();
 }

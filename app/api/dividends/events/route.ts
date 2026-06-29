@@ -3,6 +3,7 @@ import { z } from "zod";
 import { requireUser, errorResponse } from "@/lib/api-helpers";
 import { reconcile, round2 } from "@/lib/dividends/engine";
 import { takeSnapshot } from "@/lib/portfolio";
+import { rejectDemoWrite } from "@/lib/demo-mode";
 
 const date = z.string().regex(/^\d{4}-\d{2}-\d{2}$/);
 
@@ -32,6 +33,8 @@ const actionSchema = z.discriminatedUnion("action", [
 export async function PATCH(request: Request) {
   const { supabase, user, error } = await requireUser();
   if (error) return error;
+  const demoError = await rejectDemoWrite(supabase, user.id);
+  if (demoError) return demoError;
 
   try {
     const parsed = actionSchema.safeParse(await request.json());
@@ -169,6 +172,8 @@ export async function PATCH(request: Request) {
 export async function DELETE(request: Request) {
   const { supabase, user, error } = await requireUser();
   if (error) return error;
+  const demoError = await rejectDemoWrite(supabase, user.id);
+  if (demoError) return demoError;
   try {
     const body = (await request.json()) as { id?: string };
     if (!body.id) return NextResponse.json({ error: "id is required" }, { status: 400 });

@@ -1,4 +1,5 @@
 import { AdminUsersClient } from "./admin-users-client";
+import { AdminWaitlistClient } from "./admin-waitlist-client";
 
 export const metadata = { title: "Admin · Users" };
 
@@ -12,6 +13,7 @@ export default function AdminUsersPage() {
         </p>
       </div>
       <AdminUsersClient />
+      <AdminWaitlistClient />
     </div>
   );
 }

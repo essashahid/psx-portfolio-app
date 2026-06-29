@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { requireUser, errorResponse } from "@/lib/api-helpers";
+import { rejectDemoWrite } from "@/lib/demo-mode";
 
 export const maxDuration = 120;
 
@@ -7,6 +8,8 @@ export const maxDuration = 120;
 export async function POST(request: Request) {
   const { supabase, user, error } = await requireUser();
   if (error) return error;
+  const demoError = await rejectDemoWrite(supabase, user.id);
+  if (demoError) return demoError;
 
   try {
     const body = (await request.json().catch(() => ({}))) as { confirm?: string };

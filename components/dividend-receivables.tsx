@@ -30,10 +30,12 @@ export function DividendReceivables({
   events,
   received,
   showLowConfidence,
+  readOnly = false,
 }: {
   events: DividendEvent[];
   received: Dividend[];
   showLowConfidence: boolean;
+  readOnly?: boolean;
 }) {
   const router = useRouter();
   const [tab, setTab] = useState<Tab>("upcoming");
@@ -194,7 +196,7 @@ export function DividendReceivables({
                 </div>
               )}
 
-              {e.is_possible_duplicate && (
+              {e.is_possible_duplicate && !readOnly && (
                 <div className="mt-2 flex flex-wrap items-center gap-2 rounded-md border border-amber-200 bg-amber-50 px-2.5 py-1.5">
                   <span className="text-[11px] text-amber-700">
                     Looks like a duplicate of another event for {e.ticker} — excluded from totals to avoid double counting.
@@ -208,40 +210,42 @@ export function DividendReceivables({
                 </div>
               )}
 
-              <div className="mt-2.5 flex flex-wrap gap-1.5">
-                {e.eligibility_status !== "eligible" && (
-                  <Button size="sm" variant="outline" disabled={busyId === e.id} onClick={() => act(e.id, { action: "confirm_eligibility" })}>
-                    <CheckCircle2 className="h-3 w-3" /> Confirm eligibility
+              {!readOnly && (
+                <div className="mt-2.5 flex flex-wrap gap-1.5">
+                  {e.eligibility_status !== "eligible" && (
+                    <Button size="sm" variant="outline" disabled={busyId === e.id} onClick={() => act(e.id, { action: "confirm_eligibility" })}>
+                      <CheckCircle2 className="h-3 w-3" /> Confirm eligibility
+                    </Button>
+                  )}
+                  <Button size="sm" variant="outline" disabled={busyId === e.id}
+                    onClick={() => { setQtyDialog(e); setQtyValue(String(e.eligible_quantity ?? "")); }}>
+                    <Pencil className="h-3 w-3" /> Edit eligible qty
                   </Button>
-                )}
-                <Button size="sm" variant="outline" disabled={busyId === e.id}
-                  onClick={() => { setQtyDialog(e); setQtyValue(String(e.eligible_quantity ?? "")); }}>
-                  <Pencil className="h-3 w-3" /> Edit eligible qty
-                </Button>
-                <Button size="sm" disabled={busyId === e.id}
-                  onClick={() => {
-                    setReceiveDialog(e);
-                    setReceiveForm({
-                      date: new Date().toISOString().slice(0, 10),
-                      gross: e.gross_expected !== null ? String(e.gross_expected) : "",
-                      tax: e.estimated_tax !== null ? String(e.estimated_tax) : "",
-                    });
-                  }}>
-                  Mark received
-                </Button>
-                {e.status === "needs_review" && (
-                  <Button size="sm" variant="outline" disabled={busyId === e.id} onClick={() => act(e.id, { action: "confirm" })}>
-                    Confirm
+                  <Button size="sm" disabled={busyId === e.id}
+                    onClick={() => {
+                      setReceiveDialog(e);
+                      setReceiveForm({
+                        date: new Date().toISOString().slice(0, 10),
+                        gross: e.gross_expected !== null ? String(e.gross_expected) : "",
+                        tax: e.estimated_tax !== null ? String(e.estimated_tax) : "",
+                      });
+                    }}>
+                    Mark received
                   </Button>
-                )}
-                <Button size="sm" variant="ghost" disabled={busyId === e.id} onClick={() => act(e.id, { action: "not_eligible" })}>
-                  Not eligible
-                </Button>
-                <Button size="sm" variant="ghost" disabled={busyId === e.id} onClick={() => act(e.id, { action: "ignore" })}>
-                  Ignore
-                </Button>
-                {busyId === e.id && <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />}
-              </div>
+                  {e.status === "needs_review" && (
+                    <Button size="sm" variant="outline" disabled={busyId === e.id} onClick={() => act(e.id, { action: "confirm" })}>
+                      Confirm
+                    </Button>
+                  )}
+                  <Button size="sm" variant="ghost" disabled={busyId === e.id} onClick={() => act(e.id, { action: "not_eligible" })}>
+                    Not eligible
+                  </Button>
+                  <Button size="sm" variant="ghost" disabled={busyId === e.id} onClick={() => act(e.id, { action: "ignore" })}>
+                    Ignore
+                  </Button>
+                  {busyId === e.id && <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />}
+                </div>
+              )}
             </div>
           ))}
         </div>
@@ -281,12 +285,14 @@ export function DividendReceivables({
                 <span>Qty: {fmt(e.eligible_quantity)}</span>
               </div>
               {e.forecast_basis && <p className="mt-1.5 text-[11px] text-muted-foreground">Basis: {e.forecast_basis}</p>}
-              <div className="mt-2.5 flex flex-wrap gap-1.5">
-                <Button size="sm" variant="outline" disabled={busyId === e.id} onClick={() => act(e.id, { action: "watch" })}>Watch</Button>
-                <Button size="sm" variant="outline" disabled={busyId === e.id} onClick={() => act(e.id, { action: "confirm" })}>Convert to confirmed</Button>
-                <Button size="sm" variant="ghost" disabled={busyId === e.id} onClick={() => act(e.id, { action: "ignore" })}>Ignore</Button>
-                {busyId === e.id && <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />}
-              </div>
+              {!readOnly && (
+                <div className="mt-2.5 flex flex-wrap gap-1.5">
+                  <Button size="sm" variant="outline" disabled={busyId === e.id} onClick={() => act(e.id, { action: "watch" })}>Watch</Button>
+                  <Button size="sm" variant="outline" disabled={busyId === e.id} onClick={() => act(e.id, { action: "confirm" })}>Convert to confirmed</Button>
+                  <Button size="sm" variant="ghost" disabled={busyId === e.id} onClick={() => act(e.id, { action: "ignore" })}>Ignore</Button>
+                  {busyId === e.id && <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />}
+                </div>
+              )}
             </div>
           ))}
         </div>

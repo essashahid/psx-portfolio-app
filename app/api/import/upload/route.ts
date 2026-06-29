@@ -9,6 +9,7 @@ import {
   validateRow,
   hashFile,
 } from "@/lib/import/normalize";
+import { rejectDemoWrite } from "@/lib/demo-mode";
 
 export const maxDuration = 60;
 
@@ -18,6 +19,8 @@ const MAX_FILE_MB = 10;
 export async function POST(request: Request) {
   const { supabase, user, error } = await requireUser();
   if (error) return error;
+  const demoError = await rejectDemoWrite(supabase, user.id);
+  if (demoError) return demoError;
 
   try {
     if (!(await accountHasFeature(supabase, user.id, "/import"))) {

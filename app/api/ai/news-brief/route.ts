@@ -4,6 +4,7 @@ import { aiAvailable } from "@/lib/ai/openai";
 import { taskText } from "@/lib/ai/tasks";
 import { getClaude, claudeConfigured, buildClaudeParams } from "@/lib/ai/claude";
 import { getModelDef } from "@/lib/ai/models";
+import { rejectDemoWrite } from "@/lib/demo-mode";
 
 export const maxDuration = 120;
 
@@ -12,6 +13,8 @@ type BriefModel = "deepseek" | "claude-sonnet" | "claude-opus";
 export async function POST(request: Request) {
   const { supabase, user, error } = await requireUser();
   if (error) return error;
+  const demoError = await rejectDemoWrite(supabase, user.id);
+  if (demoError) return demoError;
 
   const body = (await request.json().catch(() => ({}))) as { model?: BriefModel };
   const model: BriefModel = body.model ?? "deepseek";

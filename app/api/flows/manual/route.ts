@@ -8,6 +8,7 @@ import {
   parseAmount,
   type FlowIngestPayload,
 } from "@/lib/market/foreign-flows-ingest";
+import { rejectDemoWrite } from "@/lib/demo-mode";
 
 export const dynamic = "force-dynamic";
 
@@ -20,8 +21,10 @@ export const dynamic = "force-dynamic";
  * sectorsText / participantsText are forgiving "Sector, net" lines (one per row).
  */
 export async function POST(request: Request) {
-  const { user, error } = await requireUser();
+  const { supabase, user, error } = await requireUser();
   if (error) return error;
+  const demoError = await rejectDemoWrite(supabase, user.id);
+  if (demoError) return demoError;
 
   try {
     const body = (await request.json().catch(() => ({}))) as {

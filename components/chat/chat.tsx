@@ -146,12 +146,14 @@ export function Chat({
   suggestions = [],
   sourceStatus = [],
   dataUpdated = null,
+  readOnly = false,
 }: {
   providers: ProviderStatus;
   initialThreads?: ChatThread[];
   suggestions?: string[];
   sourceStatus?: string[];
   dataUpdated?: string | null;
+  readOnly?: boolean;
 }) {
   const aiEnabled = providerReady(providers, "claude") || providerReady(providers, "deepseek");
   const [messages, setMessages] = useState<Message[]>([]);
@@ -168,6 +170,7 @@ export function Chat({
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const followStreamRef = useRef(true);
+  const autoLoadedReadOnlyRef = useRef(false);
   const [showLatest, setShowLatest] = useState(false);
   const [searchThreads, setSearchThreads] = useState("");
   const [researchMode, setResearchMode] = useState<ResearchMode>("Portfolio analysis");
@@ -259,6 +262,7 @@ export function Chat({
   }
 
   function startNewChat() {
+    if (readOnly) return;
     if (busy) return;
     setCurrentThreadId(null);
     setMessages([]);
@@ -267,6 +271,7 @@ export function Chat({
   }
 
   async function renameThread(id: string) {
+    if (readOnly) return;
     const title = renameValue.trim();
     if (!title) return;
     const res = await fetch(`/api/chat/threads/${id}`, {
@@ -285,6 +290,7 @@ export function Chat({
   }
 
   async function deleteThread(id: string) {
+    if (readOnly) return;
     if (!window.confirm("Delete this saved chat?")) return;
     const res = await fetch(`/api/chat/threads/${id}`, { method: "DELETE" });
     if (!res.ok) {
@@ -297,6 +303,7 @@ export function Chat({
   }
 
   async function send(text: string) {
+    if (readOnly) return;
     const q = text.trim();
     if (!q || busy) return;
     setInput("");
@@ -398,10 +405,18 @@ export function Chat({
     }
   }
 
+  useEffect(() => {
+    if (!readOnly || autoLoadedReadOnlyRef.current || currentThreadId || !threads[0]) return;
+    autoLoadedReadOnlyRef.current = true;
+    void loadThread(threads[0].id);
+    // loadThread intentionally stays out of deps; this is a one-time demo-library bootstrap.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [readOnly, currentThreadId, threads]);
+
   const renderThreadRow = (thread: ChatThread) => {
     const active = thread.id === currentThreadId;
     const loading = loadingThread === thread.id;
-    if (renamingId === thread.id) {
+    if (!readOnly && renamingId === thread.id) {
       return (
         <form
           key={thread.id}
@@ -449,31 +464,37 @@ export function Chat({
             </span>
           </span>
         </button>
-        <div className="flex shrink-0 items-center gap-0.5 opacity-0 transition-opacity focus-within:opacity-100 group-hover:opacity-100">
-          <button
-            onClick={() => { setRenamingId(thread.id); setRenameValue(thread.title); }}
-            title="Rename"
-            aria-label="Rename chat"
-            className="flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-background hover:text-foreground"
-          >
-            <Pencil className="h-3 w-3" />
-          </button>
-          <button
-            onClick={() => void deleteThread(thread.id)}
-            title="Delete"
-            aria-label="Delete chat"
-            className="flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-background hover:text-red-600"
-          >
-            <Trash2 className="h-3 w-3" />
-          </button>
-        </div>
+        {!readOnly && (
+          <div className="flex shrink-0 items-center gap-0.5 opacity-0 transition-opacity focus-within:opacity-100 group-hover:opacity-100">
+            <button
+              onClick={() => { setRenamingId(thread.id); setRenameValue(thread.title); }}
+              title="Rename"
+              aria-label="Rename chat"
+              className="flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-background hover:text-foreground"
+            >
+              <Pencil className="h-3 w-3" />
+            </button>
+            <button
+              onClick={() => void deleteThread(thread.id)}
+              title="Delete"
+              aria-label="Delete chat"
+              className="flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-background hover:text-red-600"
+            >
+              <Trash2 className="h-3 w-3" />
+            </button>
+          </div>
+        )}
       </div>
     );
   };
 
   // Shared composer form — rendered inline on the empty state and sticky on
   // the active state. The ref and handlers are identical in both positions.
-  const composerForm = (
+  const composerForm = readOnly ? (
+    <div className="rounded-2xl border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-900">
+      Read-only demo: browse the curated research library. Follow-up questions are available after private onboarding.
+    </div>
+  ) : (
     <form
       onSubmit={(e) => { e.preventDefault(); send(input); }}
       className="rounded-2xl border border-border/90 bg-card shadow-[0_8px_28px_-24px_rgba(15,23,42,0.5)] transition focus-within:border-emerald-300 focus-within:ring-4 focus-within:ring-emerald-500/10"
@@ -554,7 +575,7 @@ export function Chat({
             {activeThread?.title ?? "Research Copilot"}
           </p>
           <p className="truncate text-[11px] text-muted-foreground">
-            {currentThreadId ? "Saved research" : "Portfolio-aware research workspace"}
+            {readOnly ? "Read-only demo research library" : currentThreadId ? "Saved research" : "Portfolio-aware research workspace"}
           </p>
         </div>
         {busy && (
@@ -577,16 +598,18 @@ export function Chat({
             </div>
           </details>
         )}
-        <button
-          type="button"
-          onClick={startNewChat}
-          disabled={busy}
-          title="New conversation"
-          aria-label="New conversation"
-          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-muted disabled:opacity-50"
-        >
-          <Plus className="h-4 w-4" />
-        </button>
+        {!readOnly && (
+          <button
+            type="button"
+            onClick={startNewChat}
+            disabled={busy}
+            title="New conversation"
+            aria-label="New conversation"
+            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-muted disabled:opacity-50"
+          >
+            <Plus className="h-4 w-4" />
+          </button>
+        )}
         <button
           type="button"
           onClick={() => setThreadsOpen((o) => !o)}
@@ -614,15 +637,17 @@ export function Chat({
                 <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-emerald-50 text-emerald-600">
                   <Sparkles className="h-5 w-5" />
                 </div>
-                <h2 className="text-lg font-semibold tracking-[-0.01em]">Research your portfolio</h2>
+                <h2 className="text-lg font-semibold tracking-[-0.01em]">{readOnly ? "Browse demo research" : "Research your portfolio"}</h2>
                 <p className="mx-auto mt-1.5 max-w-md text-sm leading-6 text-muted-foreground">
-                  Ask about your holdings, compare companies, review official filings, analyse valuation or understand what moved your portfolio.
-                  {!aiEnabled && " AI narration is off — live data cards will still appear."}
+                  {readOnly
+                    ? "Open a curated conversation to see labelled answers, charts and tables based on the demo portfolio."
+                    : "Ask about your holdings, compare companies, review official filings, analyse valuation or understand what moved your portfolio."}
+                  {!readOnly && !aiEnabled && " AI narration is off — live data cards will still appear."}
                 </p>
               </div>
 
               {/* 2 × 2 suggestion grid */}
-              {suggestions.length > 0 && (
+              {!readOnly && suggestions.length > 0 && (
                 <div className="mb-5 grid gap-2 sm:grid-cols-2">
                   {suggestions.slice(0, 4).map((s) => (
                     <button
@@ -751,15 +776,17 @@ export function Chat({
             <p className="text-[11px] text-muted-foreground">{threads.length} conversation{threads.length === 1 ? "" : "s"}</p>
           </div>
           <div className="flex items-center gap-1">
-            <button
-              onClick={startNewChat}
-              disabled={busy}
-              title="New conversation"
-              aria-label="New conversation"
-              className="flex h-9 w-9 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-muted disabled:opacity-50"
-            >
-              <Plus className="h-4 w-4" />
-            </button>
+            {!readOnly && (
+              <button
+                onClick={startNewChat}
+                disabled={busy}
+                title="New conversation"
+                aria-label="New conversation"
+                className="flex h-9 w-9 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-muted disabled:opacity-50"
+              >
+                <Plus className="h-4 w-4" />
+              </button>
+            )}
             <button
               onClick={() => setThreadsOpen(false)}
               aria-label="Close history"
@@ -783,7 +810,7 @@ export function Chat({
         <div className="scroll-touch min-h-0 flex-1 overflow-y-auto px-2 pb-4">
           {threads.length === 0 ? (
             <div className="m-2 rounded-lg border border-dashed border-border p-4 text-center text-xs text-muted-foreground">
-              Your conversations will appear here after the first message.
+              {readOnly ? "Curated demo conversations will appear here." : "Your conversations will appear here after the first message."}
             </div>
           ) : filteredThreads.length === 0 ? (
             <div className="m-2 rounded-lg border border-dashed border-border p-4 text-center text-xs text-muted-foreground">

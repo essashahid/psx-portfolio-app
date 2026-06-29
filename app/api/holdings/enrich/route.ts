@@ -4,12 +4,15 @@ import { enrichHoldingsMetadata } from "@/lib/holdings/enrichment";
 import { refreshAlerts } from "@/lib/alerts";
 import { takeSnapshot } from "@/lib/portfolio";
 import { accountHasFeature } from "@/lib/features";
+import { rejectDemoWrite } from "@/lib/demo-mode";
 
 export const maxDuration = 120;
 
 export async function POST(request: Request) {
   const { supabase, user, error } = await requireUser();
   if (error) return error;
+  const demoError = await rejectDemoWrite(supabase, user.id);
+  if (demoError) return demoError;
 
   try {
     if (!(await accountHasFeature(supabase, user.id, "company_enrichment"))) {

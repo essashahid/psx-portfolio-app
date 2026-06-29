@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { requireUser } from "@/lib/api-helpers";
 import { accountHasFeature } from "@/lib/features";
+import { rejectDemoWrite } from "@/lib/demo-mode";
 
 export async function GET() {
   const { supabase, user, error } = await requireUser();
@@ -26,6 +27,8 @@ export async function POST(request: Request) {
   if (!(await accountHasFeature(supabase, user.id, "/chat"))) {
     return NextResponse.json({ error: "Research Copilot is disabled for this account." }, { status: 403 });
   }
+  const demoError = await rejectDemoWrite(supabase, user.id, "The demo Copilot is read-only.");
+  if (demoError) return demoError;
 
   const body = (await request.json().catch(() => ({}))) as { title?: string };
   const title = cleanTitle(body.title) || "New chat";

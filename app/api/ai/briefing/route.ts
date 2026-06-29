@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { requireUser, errorResponse, logAgentRun } from "@/lib/api-helpers";
 import { generateBriefing } from "@/lib/ai/briefings";
 import { aiAvailable } from "@/lib/ai/openai";
+import { rejectDemoWrite } from "@/lib/demo-mode";
 import type { BriefingType } from "@/lib/types";
 
 export const maxDuration = 120;
@@ -18,6 +19,8 @@ const ALLOWED: BriefingType[] = [
 export async function POST(request: Request) {
   const { supabase, user, error } = await requireUser();
   if (error) return error;
+  const demoError = await rejectDemoWrite(supabase, user.id);
+  if (demoError) return demoError;
 
   if (!aiAvailable()) {
     return NextResponse.json(

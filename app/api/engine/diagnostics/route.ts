@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { requireUser, errorResponse } from "@/lib/api-helpers";
 import { providerConfigs } from "@/lib/providers/env";
 import { testProviderCoverage } from "@/lib/engine/market-data";
+import { rejectDemoWrite } from "@/lib/demo-mode";
 
 export const maxDuration = 60;
 
@@ -65,8 +66,10 @@ export async function GET() {
 
 /** POST { ticker } — live provider coverage probe for one ticker. */
 export async function POST(request: Request) {
-  const { error } = await requireUser();
+  const { supabase, user, error } = await requireUser();
   if (error) return error;
+  const demoError = await rejectDemoWrite(supabase, user.id);
+  if (demoError) return demoError;
   try {
     const body = (await request.json()) as { ticker?: string };
     const ticker = (body.ticker ?? "").toUpperCase().trim();

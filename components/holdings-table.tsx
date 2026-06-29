@@ -90,11 +90,13 @@ function MobileHoldingCard({
   tab,
   companyReportsEnabled,
   companyEnrichmentEnabled,
+  readOnly,
 }: {
   holding: EnrichedHolding;
   tab: ViewTab;
   companyReportsEnabled: boolean;
   companyEnrichmentEnabled: boolean;
+  readOnly: boolean;
 }) {
   const pl = holding.unrealized_pl;
   const plPct = holding.unrealized_pl_pct;
@@ -135,6 +137,7 @@ function MobileHoldingCard({
           holding={holding}
           companyReportsEnabled={companyReportsEnabled}
           companyEnrichmentEnabled={companyEnrichmentEnabled}
+          readOnly={readOnly}
         />
       </div>
 
@@ -185,10 +188,12 @@ function HoldingActionMenu({
   holding,
   companyReportsEnabled = false,
   companyEnrichmentEnabled = false,
+  readOnly = false,
 }: {
   holding: EnrichedHolding;
   companyReportsEnabled?: boolean;
   companyEnrichmentEnabled?: boolean;
+  readOnly?: boolean;
 }) {
   return (
     <details className="relative">
@@ -211,10 +216,10 @@ function HoldingActionMenu({
             triggerClassName="h-auto justify-start px-2 py-1.5 text-xs font-normal"
           />
         )}
-        <AddTransactionDialog defaultTicker={holding.ticker} label="Add transaction" />
+        {!readOnly && <AddTransactionDialog defaultTicker={holding.ticker} label="Add transaction" />}
         <Link href="/dividends" className="rounded px-2 py-1.5 hover:bg-muted">Record dividend</Link>
-        <Link href={`/stocks/${holding.ticker}`} className="rounded px-2 py-1.5 hover:bg-muted">Edit target</Link>
-        <Link href={`/stocks/${holding.ticker}`} className="rounded px-2 py-1.5 hover:bg-muted">Edit thesis</Link>
+        {!readOnly && <Link href={`/stocks/${holding.ticker}`} className="rounded px-2 py-1.5 hover:bg-muted">Edit target</Link>}
+        {!readOnly && <Link href={`/stocks/${holding.ticker}`} className="rounded px-2 py-1.5 hover:bg-muted">Edit thesis</Link>}
         {companyEnrichmentEnabled && (
           <Link href={`/stocks/${holding.ticker}`} className="rounded px-2 py-1.5 hover:bg-muted">Update company information</Link>
         )}
@@ -229,12 +234,14 @@ export function HoldingsTable({
   dailyRows = [],
   companyReportsEnabled = false,
   companyEnrichmentEnabled = false,
+  readOnly = false,
 }: {
   holdings: EnrichedHolding[];
   summary: PortfolioSummary;
   dailyRows?: { ticker: string; dayChangePct: number | null; dayPnl: number | null }[];
   companyReportsEnabled?: boolean;
   companyEnrichmentEnabled?: boolean;
+  readOnly?: boolean;
 }) {
   const [tab, setTab] = useState<ViewTab>("performance");
   const [search, setSearch] = useState("");
@@ -289,6 +296,7 @@ export function HoldingsTable({
           holding={c.row.original}
           companyReportsEnabled={companyReportsEnabled}
           companyEnrichmentEnabled={companyEnrichmentEnabled}
+          readOnly={readOnly}
         />
       ),
     });
@@ -481,7 +489,7 @@ export function HoldingsTable({
     return { performance, income, allocation };
     // Cells use the latest daily quote map and holding render helper.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [dailyByTicker, companyReportsEnabled, companyEnrichmentEnabled]);
+  }, [dailyByTicker, companyReportsEnabled, companyEnrichmentEnabled, readOnly]);
 
   const columns =
     tab === "performance"
@@ -626,6 +634,7 @@ export function HoldingsTable({
                 tab={tab}
                 companyReportsEnabled={companyReportsEnabled}
                 companyEnrichmentEnabled={companyEnrichmentEnabled}
+                readOnly={readOnly}
               />
             ))
           )}
