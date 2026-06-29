@@ -23,7 +23,6 @@ import {
   PiggyBank,
   GraduationCap,
   Upload,
-  Send,
   PenLine,
   ArrowRight,
   ArrowLeft,
@@ -88,9 +87,8 @@ const OBJECTIVE: { value: Objective; title: string; description: string; icon: C
   { value: "learning", title: "Learn as I go", description: "I am here to understand my portfolio and improve.", icon: GraduationCap },
 ];
 
-const SETUP: { value: "import" | "manager" | "later"; title: string; description: string; icon: ChoiceCardProps["icon"] }[] = [
+const SETUP: { value: "import" | "later"; title: string; description: string; icon: ChoiceCardProps["icon"] }[] = [
   { value: "import", title: "Upload a statement now", description: "Import an AKD or CDC statement (CSV, Excel or PDF). We take it from there.", icon: Upload },
-  { value: "manager", title: "Send them to my manager", description: "Share your holdings or photos and they will be added for you.", icon: Send },
   { value: "later", title: "I will add them later", description: "Explore the platform first and add holdings whenever you are ready.", icon: PenLine },
 ];
 
@@ -112,7 +110,7 @@ export function OnboardingWizard({
   const [experience, setExperience] = useState<ExperienceLevel>(initialExperience);
   const [risk, setRisk] = useState<RiskProfile | null>(null);
   const [objective, setObjective] = useState<Objective | null>(null);
-  const [setup, setSetup] = useState<"import" | "manager" | "later" | null>(null);
+  const [setup, setSetup] = useState<"import" | "later" | null>(null);
 
   const canAdvance = useMemo(() => {
     if (step === 0) return name.trim().length > 0;

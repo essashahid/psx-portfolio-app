@@ -38,6 +38,13 @@ export type NavItemDef = {
   icon: ComponentType<{ className?: string }>;
   hint: string;
   tier: NavTier;
+  /**
+   * Admin-only destinations are hidden from every public user regardless of
+   * tier or opt-in, and only appear for accounts with profiles.is_admin. Used
+   * for internal tooling and features kept out of the public launch (the data
+   * engine, the weekly Bulls & Bears brief, the allocation forecaster).
+   */
+  adminOnly?: boolean;
 };
 
 export const NAV_SECTIONS: { title: string; items: NavItemDef[] }[] = [
@@ -56,7 +63,7 @@ export const NAV_SECTIONS: { title: string; items: NavItemDef[] }[] = [
       { href: "/research", label: "Saved Reports", icon: FileText, hint: "Company research reports library", tier: "plus" },
       { href: "/stocks", label: "Stock Research", icon: Search, hint: "Fundamentals, ratios and structure per stock", tier: "plus" },
       { href: "/market", label: "Market Pulse", icon: Activity, hint: "Index, breadth, sectors and flows", tier: "plus" },
-      { href: "/bulls-bears", label: "Bulls & Bears", icon: BarChart3, hint: "Weekly regime, picks and watchlist", tier: "advanced" },
+      { href: "/bulls-bears", label: "Bulls & Bears", icon: BarChart3, hint: "Weekly regime, picks and watchlist", tier: "advanced", adminOnly: true },
       { href: "/news", label: "News Center", icon: Newspaper, hint: "Portfolio and market news", tier: "plus" },
       { href: "/chat", label: "Research Copilot", icon: Sparkles, hint: "Ask anything about your portfolio and PSX", tier: "core" },
     ],
@@ -65,7 +72,7 @@ export const NAV_SECTIONS: { title: string; items: NavItemDef[] }[] = [
     title: "Planning",
     items: [
       { href: "/goals", label: "Goals & Targets", icon: Target, hint: "Targets and progress", tier: "plus" },
-      { href: "/allocation", label: "Capital Allocation", icon: PieChart, hint: "Where to deploy new capital across asset classes", tier: "plus" },
+      { href: "/allocation", label: "Capital Allocation", icon: PieChart, hint: "Where to deploy new capital across asset classes", tier: "plus", adminOnly: true },
       { href: "/journal", label: "Journal", icon: NotebookPen, hint: "Your decisions and notes", tier: "advanced" },
       { href: "/alerts", label: "Alerts", icon: Bell, hint: "Triggered watch conditions", tier: "advanced" },
     ],
@@ -74,7 +81,7 @@ export const NAV_SECTIONS: { title: string; items: NavItemDef[] }[] = [
     title: "Data & setup",
     items: [
       { href: "/import", label: "Import Center", icon: Upload, hint: "Import statements and transactions", tier: "core" },
-      { href: "/coverage", label: "Data Engine", icon: Database, hint: "Data coverage and provider health", tier: "advanced" },
+      { href: "/coverage", label: "Data Engine", icon: Database, hint: "Data coverage and provider health", tier: "advanced", adminOnly: true },
       { href: "/settings", label: "Settings", icon: Settings, hint: "Preferences and account", tier: "core" },
     ],
   },
@@ -82,8 +89,11 @@ export const NAV_SECTIONS: { title: string; items: NavItemDef[] }[] = [
 
 export const NAV = NAV_SECTIONS.flatMap((s) => s.items);
 
-/** Optional tabs a user can show or hide from Settings (everything above core). */
-export const OPTIONAL_NAV = NAV.filter((item) => item.tier !== "core");
+/**
+ * Optional tabs a user can show or hide from Settings (everything above core,
+ * excluding admin-only tools which are never user-configurable).
+ */
+export const OPTIONAL_NAV = NAV.filter((item) => item.tier !== "core" && !item.adminOnly);
 
 export function tiersFor(level: ExperienceLevel): NavTier[] {
   if (level === "beginner") return ["core"];
@@ -124,11 +134,13 @@ type NavPrefs = Pick<Profile, "experience_level" | "extra_features" | "hidden_fe
  *   tier defaults (by experience) ∪ explicit opt-ins, minus explicit opt-outs.
  * Core items can never be hidden so the app stays usable.
  */
-export function resolveVisibleHrefs(prefs: NavPrefs): string[] {
+export function resolveVisibleHrefs(prefs: NavPrefs, isAdmin = false): string[] {
   const allowedTiers = new Set(tiersFor(prefs.experience_level ?? "intermediate"));
   const extra = new Set(prefs.extra_features ?? []);
   const hidden = new Set(prefs.hidden_features ?? []);
   return NAV.filter((item) => {
+    // Admin-only tools are hidden from every public user, shown to admins.
+    if (item.adminOnly) return isAdmin;
     if (item.tier === "core") return true;
     if (hidden.has(item.href)) return false;
     return allowedTiers.has(item.tier) || extra.has(item.href);

@@ -1,4 +1,6 @@
+import { redirect } from "next/navigation";
 import { createClient, getUser } from "@/lib/supabase/server";
+import { getAdminContext } from "@/lib/admin/guard";
 import { PageHeader } from "@/components/page-header";
 import { AllocationView } from "@/components/allocation/allocation-view";
 import type { AllocationForecast } from "@/lib/engine/allocation";
@@ -6,6 +8,9 @@ import type { AllocationForecast } from "@/lib/engine/allocation";
 export const dynamic = "force-dynamic";
 
 export default async function AllocationPage() {
+  const { isAdmin } = await getAdminContext();
+  if (!isAdmin) redirect("/dashboard");
+
   const supabase = await createClient();
   const user = await getUser();
   if (!user) return null;
