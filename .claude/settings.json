@@ -28,7 +28,8 @@
       "Read(//Users/essaarshad/Downloads/**)",
       "Bash(grep -nA8 \"interface Candle\\\\|type Candle\" lib/company/types.ts)",
       "Bash(grep -nA40 \"interface Technicals\" lib/company/types.ts)",
-      "Bash(npx next *)"
+      "Bash(npx next *)",
+      "Bash(perl -pi -e 's/h-\\\\[18px\\\\] w-\\\\[18px\\\\]/h-4.5 w-4.5/g' components/chat/chat.tsx)"
     ]
   }
 }

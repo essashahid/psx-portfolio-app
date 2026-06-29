@@ -108,6 +108,12 @@ export interface PortfolioAttributionArtifact {
   fallback?: string;
 }
 
+export interface ArtifactErrorSpec {
+  kind: "error";
+  title: string;
+  message: string;
+}
+
 export type ArtifactSpec =
   | PriceChartArtifact
   | BarChartArtifact
@@ -115,7 +121,8 @@ export type ArtifactSpec =
   | MetricStripArtifact
   | TableArtifact
   | TimelineArtifact
-  | PortfolioAttributionArtifact;
+  | PortfolioAttributionArtifact
+  | ArtifactErrorSpec;
 
 // ── Streaming extractor ──────────────────────────────────────────────────────
 
@@ -218,11 +225,54 @@ export class ArtifactExtractor {
           const spec = JSON.parse(raw) as ArtifactSpec;
           if (spec && typeof spec.kind === "string") this.onArtifact(spec);
         } catch {
-          // Malformed block — pass it back as text so nothing disappears.
-          this.onText("```\n" + this.artifactBuf + "\n```\n");
+          // Attempt partial JSON recovery: close unclosed braces/brackets.
+          const recovered = tryRecoverJson(this.artifactBuf.trim());
+          if (recovered && typeof recovered.kind === "string") {
+            this.onArtifact(recovered as ArtifactSpec);
+          } else {
+            // Emit as error artifact so nothing silently disappears.
+            this.onArtifact({
+              kind: "error",
+              title: "Rendering failed",
+              message: "This artifact could not be rendered. The underlying analysis is in the surrounding text.",
+            });
+          }
         }
         this.artifactBuf = "";
       }
     }
+  }
+}
+
+/**
+ * Attempt to recover truncated JSON by closing unclosed braces and brackets.
+ * Returns the parsed object if successful, null otherwise.
+ */
+function tryRecoverJson(raw: string): Record<string, unknown> | null {
+  if (!raw) return null;
+  let attempt = raw;
+  // Count unclosed brackets/braces.
+  let braces = 0;
+  let brackets = 0;
+  let inString = false;
+  let escaped = false;
+  for (const ch of attempt) {
+    if (escaped) { escaped = false; continue; }
+    if (ch === "\\") { escaped = true; continue; }
+    if (ch === '"') { inString = !inString; continue; }
+    if (inString) continue;
+    if (ch === "{") braces++;
+    else if (ch === "}") braces--;
+    else if (ch === "[") brackets++;
+    else if (ch === "]") brackets--;
+  }
+  // Close any open strings/brackets/braces.
+  if (inString) attempt += '"';
+  while (brackets > 0) { attempt += "]"; brackets--; }
+  while (braces > 0) { attempt += "}"; braces--; }
+  try {
+    return JSON.parse(attempt) as Record<string, unknown>;
+  } catch {
+    return null;
   }
 }
