@@ -228,7 +228,7 @@ export class ArtifactExtractor {
           // Attempt partial JSON recovery: close unclosed braces/brackets.
           const recovered = tryRecoverJson(this.artifactBuf.trim());
           if (recovered && typeof recovered.kind === "string") {
-            this.onArtifact(recovered as ArtifactSpec);
+            this.onArtifact(recovered as unknown as ArtifactSpec);
           } else {
             // Emit as error artifact so nothing silently disappears.
             this.onArtifact({
