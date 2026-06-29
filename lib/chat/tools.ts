@@ -207,6 +207,37 @@ export const CHAT_TOOLS: Anthropic.Tool[] = [
   },
 ];
 
+/**
+ * Anthropic's native, server-side web search. Claude runs the search on
+ * Anthropic's own infrastructure and returns cited results inline — no Tavily,
+ * no API key of ours, no client-side execution. It replaces the Tavily-backed
+ * custom `web_search` tool (same tool name) for Claude models only; DeepSeek
+ * keeps the custom tool in CHAT_TOOLS since it has no equivalent server tool.
+ *
+ * We use the basic `web_search_20250305` version: supported on every Claude
+ * model we offer (Haiku, Sonnet, Opus) with no extra dependency. The
+ * dynamic-filtering versions (web_search_20260209+) require the code-execution
+ * tool to be enabled and are limited to Opus 4.6+/Sonnet 4.6 — not worth the
+ * complexity for lightweight PSX catalyst/news lookups.
+ *
+ * Note: the org admin must enable web search in the Claude Console for this to
+ * work; billed by Anthropic at ~$10 per 1,000 searches.
+ */
+const NATIVE_WEB_SEARCH: Anthropic.WebSearchTool20250305 = {
+  type: "web_search_20250305",
+  name: "web_search",
+  max_uses: 5,
+};
+
+/**
+ * Tool set sent to Claude: the deterministic data tools, but with the
+ * Tavily-backed custom `web_search` swapped for Anthropic's server-side one.
+ */
+export const CLAUDE_TOOLS: Anthropic.ToolUnion[] = [
+  ...CHAT_TOOLS.filter((t) => t.name !== "web_search"),
+  NATIVE_WEB_SEARCH,
+];
+
 /** Execute one tool call and return a compact JSON-able result. */
 export async function executeTool(
   db: SupabaseClient,
