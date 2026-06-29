@@ -5,6 +5,7 @@ import { commitBatch } from "@/lib/import/commit";
 import { refreshAlerts } from "@/lib/alerts";
 import { takeSnapshot } from "@/lib/portfolio";
 import { enrichHoldingsMetadata } from "@/lib/holdings/enrichment";
+import { rejectDemoWrite } from "@/lib/demo-mode";
 import type { NormalizedRow, StatementType } from "@/lib/types";
 
 export const maxDuration = 120;
@@ -12,6 +13,8 @@ export const maxDuration = 120;
 export async function POST(request: Request) {
   const { supabase, user, error } = await requireUser();
   if (error) return error;
+  const demoError = await rejectDemoWrite(supabase, user.id);
+  if (demoError) return demoError;
 
   try {
     if (!(await accountHasFeature(supabase, user.id, "/import"))) {

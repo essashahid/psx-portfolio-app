@@ -26,7 +26,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
       .eq("status", "open"),
     supabase
       .from("profiles")
-      .select("onboarded, experience_level, extra_features, hidden_features, enabled_features, is_admin")
+      .select("onboarded, experience_level, extra_features, hidden_features, enabled_features, is_admin, demo_mode")
       .eq("id", user.id)
       .maybeSingle(),
   ]);
@@ -40,6 +40,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   const isAdmin = isImpersonating
     ? true
     : Boolean(profileRes.data?.is_admin);
+  const isDemo = Boolean(profileRes.data?.demo_mode);
 
   const visibleHrefs = resolveVisibleHrefs(
     {
@@ -65,6 +66,11 @@ export default async function AppLayout({ children }: { children: React.ReactNod
           />
         )}
         <main className="scroll-touch flex-1 overflow-y-auto overscroll-y-contain px-3 py-3 pb-[calc(5.75rem+env(safe-area-inset-bottom))] sm:px-4 sm:py-4 md:p-8">
+          {isDemo && (
+            <div className="mx-auto mb-3 w-full max-w-7xl rounded-md border border-blue-200 bg-blue-50 px-3 py-2 text-xs text-blue-900">
+              Read-only demo: explore the launch tabs and curated Copilot research. Editing, refreshes and AI generation are disabled.
+            </div>
+          )}
           <div className="mx-auto w-full max-w-7xl">{children}</div>
         </main>
         <footer className="hidden border-t border-border bg-card px-6 py-2 md:block">

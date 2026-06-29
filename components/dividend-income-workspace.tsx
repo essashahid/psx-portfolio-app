@@ -60,11 +60,13 @@ export function DividendIncomeWorkspace({
   events,
   holdings,
   asOf,
+  readOnly = false,
 }: {
   dividends: Dividend[];
   events: DividendEvent[];
   holdings: EnrichedHolding[];
   asOf: string;
+  readOnly?: boolean;
 }) {
   const [period, setPeriod] = useState<Period>("ytd");
   const [granularity, setGranularity] = useState<Granularity>("monthly");
@@ -140,9 +142,9 @@ export function DividendIncomeWorkspace({
         <section className="border-t border-border pt-4"><h2 className="text-base font-semibold">Net income by holding</h2><p className="mt-1 text-xs text-muted-foreground">Received income by holding in the selected period.</p><div className="mt-5 space-y-4">{byHolding.length ? byHolding.map((row) => <div key={row.ticker}><div className="mb-1 flex items-baseline justify-between gap-3 text-xs"><span className="font-semibold">{row.ticker}</span><span className="tabular-nums text-muted-foreground">{formatMoney(row.net)} · {net > 0 ? ((row.net / net) * 100).toFixed(1) : "0.0"}% · {row.payments} payment{row.payments === 1 ? "" : "s"}</span></div><div className="h-2 overflow-hidden rounded-full bg-muted"><div className="h-full rounded-full bg-brand" style={{ width: `${(row.net / maxHolding) * 100}%` }} /></div></div>) : <p className="py-10 text-center text-sm text-muted-foreground">No holding income to display.</p>}</div></section>
       </div>
 
-      <DividendReceivables events={periodEvents} received={received} showLowConfidence={false} />
+      <DividendReceivables events={periodEvents} received={received} showLowConfidence={false} readOnly={readOnly} />
 
-      <details className="border-t border-border pt-4"><summary className="cursor-pointer text-sm font-semibold">Manage recorded dividends</summary><p className="mt-1 text-xs text-muted-foreground">Add, edit or remove manual and imported dividend records.</p><div className="mt-4"><DividendManager dividends={received} holdings={holdings} /></div></details>
+      {!readOnly && <details className="border-t border-border pt-4"><summary className="cursor-pointer text-sm font-semibold">Manage recorded dividends</summary><p className="mt-1 text-xs text-muted-foreground">Add, edit or remove manual and imported dividend records.</p><div className="mt-4"><DividendManager dividends={received} holdings={holdings} /></div></details>}
     </div>
   );
 }

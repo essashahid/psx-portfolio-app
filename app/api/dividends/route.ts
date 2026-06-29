@@ -3,6 +3,7 @@ import { z } from "zod";
 import { requireUser, errorResponse } from "@/lib/api-helpers";
 import { refreshAlerts } from "@/lib/alerts";
 import { takeSnapshot } from "@/lib/portfolio";
+import { rejectDemoWrite } from "@/lib/demo-mode";
 
 export const maxDuration = 60;
 
@@ -27,6 +28,8 @@ const dividendSchema = z.object({
 export async function POST(request: Request) {
   const { supabase, user, error } = await requireUser();
   if (error) return error;
+  const demoError = await rejectDemoWrite(supabase, user.id);
+  if (demoError) return demoError;
 
   try {
     const parsed = dividendSchema.safeParse(await request.json());
@@ -53,6 +56,8 @@ export async function POST(request: Request) {
 export async function PATCH(request: Request) {
   const { supabase, user, error } = await requireUser();
   if (error) return error;
+  const demoError = await rejectDemoWrite(supabase, user.id);
+  if (demoError) return demoError;
 
   try {
     const parsed = dividendSchema.safeParse(await request.json());
@@ -78,6 +83,8 @@ export async function PATCH(request: Request) {
 export async function DELETE(request: Request) {
   const { supabase, user, error } = await requireUser();
   if (error) return error;
+  const demoError = await rejectDemoWrite(supabase, user.id);
+  if (demoError) return demoError;
 
   try {
     const body = (await request.json()) as { id?: string };

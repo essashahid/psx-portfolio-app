@@ -16,8 +16,9 @@ export default async function ChatPage() {
     supabase.from("chat_threads").select("id, title, summary, created_at, updated_at, last_message_at").eq("user_id", user.id).order("last_message_at", { ascending: false }).limit(50),
     getDataFreshness(supabase, user.id),
     getPortfolio(supabase, user.id),
-    supabase.from("profiles").select("allowed_llm_providers").eq("id", user.id).maybeSingle(),
+    supabase.from("profiles").select("allowed_llm_providers, demo_mode").eq("id", user.id).maybeSingle(),
   ]);
+  const isDemo = Boolean(profileRes.data?.demo_mode);
   const allowedProviders = normalizeAllowedChatProviders(profileRes.data?.allowed_llm_providers);
   const freshnessItems = freshness.filter((item) => item.date && item.key !== "brief");
   const sources = freshnessItems.map((item) => `${item.label} · ${item.date}`);
@@ -38,13 +39,14 @@ export default async function ChatPage() {
     <div className="-mx-3 -mt-3 sm:-mx-4 sm:-mt-4 md:-m-8">
       <Chat
         providers={{
-          claude: { configured: claudeConfigured(), allowed: allowedProviders.includes("claude") },
-          deepseek: { configured: deepseekChatConfigured(), allowed: allowedProviders.includes("deepseek") },
+          claude: { configured: claudeConfigured(), allowed: !isDemo && allowedProviders.includes("claude") },
+          deepseek: { configured: deepseekChatConfigured(), allowed: !isDemo && allowedProviders.includes("deepseek") },
         }}
         initialThreads={(threads ?? []) as ChatThread[]}
         suggestions={prompts}
         sourceStatus={sources}
         dataUpdated={dataUpdated}
+        readOnly={isDemo}
       />
     </div>
   );

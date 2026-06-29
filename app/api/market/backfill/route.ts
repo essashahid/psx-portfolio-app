@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { requireUser, errorResponse } from "@/lib/api-helpers";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { refreshTechnicals } from "@/lib/company/technicals";
+import { rejectDemoWrite } from "@/lib/demo-mode";
 
 export const maxDuration = 120;
 
@@ -12,8 +13,10 @@ export const maxDuration = 120;
  * coverage without re-doing fresh rows.
  */
 export async function POST(request: Request) {
-  const { error } = await requireUser();
+  const { supabase, user, error } = await requireUser();
   if (error) return error;
+  const demoError = await rejectDemoWrite(supabase, user.id);
+  if (demoError) return demoError;
   if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
     return NextResponse.json({ error: "Server is missing SUPABASE_SERVICE_ROLE_KEY." }, { status: 503 });
   }

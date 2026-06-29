@@ -11,6 +11,7 @@ import {
 } from "@/lib/company/report";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { accountHasFeature } from "@/lib/features";
+import { rejectDemoWrite } from "@/lib/demo-mode";
 
 export const maxDuration = 300;
 
@@ -49,6 +50,8 @@ export async function GET(request: Request) {
 export async function POST(request: Request) {
   const { supabase, user, error } = await requireUser();
   if (error) return error;
+  const demoError = await rejectDemoWrite(supabase, user.id);
+  if (demoError) return demoError;
 
   if (!(await accountHasFeature(supabase, user.id, "company_reports"))) {
     return NextResponse.json({ error: "Company report generation is disabled for this account." }, { status: 403 });

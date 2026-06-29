@@ -107,6 +107,30 @@ To restore statement imports later:
 3. Revisit `components/import-wizard.tsx`, `lib/import/*`, and the guarded API routes above.
 4. Re-enable statement management in Settings by enabling both `/settings` and `/import`.
 
+## Closed signup, waitlist, and demo mode
+
+Public signup is removed from `app/login/page.tsx`. The login page now has:
+
+- Approved-account sign in.
+- Read-only demo entry via `app/api/demo/session/route.ts`.
+- Waitlist capture via `app/api/waitlist/route.ts`.
+
+Waitlist entries are stored in `public.waitlist_entries` and managed from the admin panel through `app/admin/admin-waitlist-client.tsx` and `app/api/admin/waitlist/route.ts`.
+
+The shared demo account is controlled by:
+
+- `DEMO_ACCOUNT_EMAIL`
+- `DEMO_ACCOUNT_PASSWORD`
+
+The demo session route creates/seeds that account if needed, marks `profiles.demo_mode = true`, applies the six launch tabs, and disables LLM providers for the demo account.
+
+`lib/demo.ts` now seeds curated read-only Research Copilot threads under the `Demo library:` summary prefix. Those chats are intentionally prewritten with labelled research answers and artifact cards; demo users can browse them but cannot send follow-ups, rename, delete, or create threads.
+
+Demo write protection is enforced in two places:
+
+- Database RLS via `public.is_demo_account()` in `0025_waitlist_readonly_demo.sql`.
+- Server route guards via `lib/demo-mode.ts` on mutating user endpoints, refresh endpoints, AI endpoints, report endpoints, import endpoints, and provider-work endpoints.
+
 ## LLM model access
 
 `profiles.allowed_llm_providers` controls Research Copilot provider access at account level.

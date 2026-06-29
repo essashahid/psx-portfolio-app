@@ -15,8 +15,11 @@ const DEMO_HOLDINGS = [
   { ticker: "ENGRO", company_name: "Engro Holdings Limited", sector: "Conglomerate", quantity: 400, avg_cost: 312.8, price: 298.5 },
 ];
 
+const DEMO_CHAT_SUMMARY_PREFIX = "Demo library:";
+
 export async function loadDemoData(supabase: SupabaseClient, userId: string) {
   const daysAgo = (n: number) => new Date(Date.now() - n * 86400000).toISOString().slice(0, 10);
+  await clearDemoRows(supabase, userId);
 
   for (const h of DEMO_HOLDINGS) {
     await supabase.from("holdings").upsert(
@@ -227,13 +230,13 @@ export async function loadDemoData(supabase: SupabaseClient, userId: string) {
     model: "demo",
   });
 
+  await seedDemoChatThreads(supabase, userId);
   await supabase.from("profiles").update({ demo_mode: true }).eq("id", userId);
   await takeSnapshot(supabase, userId);
   await refreshAlerts(supabase, userId);
 }
 
-/** Removes everything tagged as demo data. Real (imported/manual) data is untouched. */
-export async function clearDemoData(supabase: SupabaseClient, userId: string) {
+async function clearDemoRows(supabase: SupabaseClient, userId: string) {
   const demoTickers = DEMO_HOLDINGS.map((h) => h.ticker);
   await supabase.from("holdings").delete().eq("user_id", userId).eq("source", "demo");
   await supabase.from("prices").delete().eq("user_id", userId).eq("source", "demo");
@@ -241,6 +244,13 @@ export async function clearDemoData(supabase: SupabaseClient, userId: string) {
   await supabase.from("journal_entries").delete().eq("user_id", userId).eq("source", "demo");
   await supabase.from("news_articles").delete().eq("user_id", userId).eq("source", "Demo Data");
   await supabase.from("ai_briefings").delete().eq("user_id", userId).eq("model", "demo");
+  const { data: demoThreads } = await supabase
+    .from("chat_threads")
+    .select("id")
+    .eq("user_id", userId)
+    .like("summary", `${DEMO_CHAT_SUMMARY_PREFIX}%`);
+  const demoThreadIds = (demoThreads ?? []).map((thread) => thread.id as string);
+  if (demoThreadIds.length) await supabase.from("chat_threads").delete().in("id", demoThreadIds);
   // demo targets/theses only removed where the demo holding is gone
   const { data: remaining } = await supabase
     .from("holdings")
@@ -255,6 +265,214 @@ export async function clearDemoData(supabase: SupabaseClient, userId: string) {
       await supabase.from("alerts").delete().eq("user_id", userId).eq("ticker", t);
     }
   }
+}
+
+/** Removes everything tagged as demo data. Real (imported/manual) data is untouched. */
+export async function clearDemoData(supabase: SupabaseClient, userId: string) {
+  await clearDemoRows(supabase, userId);
   await supabase.from("profiles").update({ demo_mode: false }).eq("id", userId);
   await refreshAlerts(supabase, userId);
+}
+
+async function seedDemoChatThreads(supabase: SupabaseClient, userId: string) {
+  const now = Date.now();
+  const iso = (minutesAgo: number) => new Date(now - minutesAgo * 60_000).toISOString();
+  const threads = [
+    {
+      title: "Portfolio health check",
+      summary: `${DEMO_CHAT_SUMMARY_PREFIX} concentration, laggards and next review priorities`,
+      user: "Give me a portfolio health check and show what needs attention.",
+      assistant: `## Short answer
+The demo portfolio is healthy enough to review, but it is not "set and forget." The main watch item is **HUBC**, where the thesis is already marked weakening and the review date has passed. The second issue is process quality: **ENGRO has no written thesis**, so the position needs a documented reason to keep holding.
+
+## What I would review first
+- **HUBC**: unrealized loss plus IPP renegotiation risk means the original cash-flow case needs confirmation.
+- **ENGRO**: no thesis on file. Decide whether this is a deliberate conglomerate exposure or just legacy portfolio drift.
+- **MEBL and SYS**: both are working positions. The question is sizing discipline, not urgency.
+
+## Portfolio read
+This is a concentrated five-stock PSX portfolio with exposure across banks, fertilizer, power, technology and conglomerates. That is a useful demo shape: it shows gains, losses, dividends, thesis tracking and market relevance without needing imported statements.
+
+## Next actions I would take
+1. Read HUBC's latest official filings and dividend posture before adding any money.
+2. Write a one-paragraph thesis for ENGRO or remove it from the "conviction" bucket.
+3. Keep MEBL and FFC on normal review cadence unless position weight drifts materially above target.`,
+      cards: [
+        {
+          kind: "metric-strip",
+          title: "Demo portfolio snapshot",
+          metrics: [
+            { label: "Holdings", value: "5" },
+            { label: "Largest position", value: "SYS", detail: "Technology exporter" },
+            { label: "Needs review", value: "2", tone: "negative", detail: "HUBC and ENGRO" },
+            { label: "Dividend names", value: "2", detail: "FFC, MEBL" },
+          ],
+        },
+        {
+          kind: "portfolio-attribution",
+          title: "What is driving demo portfolio P/L",
+          description: "Illustrative unrealized contribution by holding",
+          items: [
+            { label: "SYS", value: 17190, percent: 45, tone: "positive" },
+            { label: "MEBL", value: 16250, percent: 35, tone: "positive" },
+            { label: "FFC", value: 12920, percent: 27, tone: "positive" },
+            { label: "ENGRO", value: -5720, percent: -12, tone: "negative" },
+            { label: "HUBC", value: -9150, percent: -19, tone: "negative" },
+          ],
+        },
+      ],
+    },
+    {
+      title: "MEBL position review",
+      summary: `${DEMO_CHAT_SUMMARY_PREFIX} bank thesis, price action and portfolio fit`,
+      user: "Review MEBL for a long-term investor. Should I add, hold, or wait?",
+      assistant: `## Provisional view
+For this demo portfolio, **MEBL is a hold / selective add-on-weakness candidate**, not an urgent buy. The thesis quality is strong: Islamic banking leadership, deposit growth and high ROE. The portfolio question is whether adding would over-concentrate the financials sleeve.
+
+## Company case
+MEBL is the cleanest thesis in the demo data. The recorded thesis says the bank has structurally stronger Islamic deposit growth and best-in-class profitability. The demo news also supports the thesis with record quarterly profit driven by deposits and stable spreads.
+
+## Portfolio case
+You already own 500 shares at an average cost of PKR 215.50. The latest demo price is around PKR 248, so the position is profitable. Adding here would average up, which can be fine, but only if the bank's ROE and deposit growth remain intact through a rate-cut cycle.
+
+## Decision conditions
+- Add only if deposit growth remains above sector average and valuation does not price in perfection.
+- Hold if spreads begin normalizing but asset quality stays strong.
+- Revisit the thesis if ROE falls below the recorded sell-condition threshold for two consecutive years.`,
+      cards: [
+        {
+          kind: "price-chart",
+          title: "MEBL demo price vs cost basis",
+          ticker: "MEBL",
+          period: "3M",
+          overlay: ["cost-basis", "transactions"],
+          description: "Uses the seeded demo price history and holding cost.",
+        },
+        {
+          kind: "table",
+          title: "MEBL decision checklist",
+          columns: [
+            { key: "item", label: "Check" },
+            { key: "status", label: "Status" },
+            { key: "read", label: "Read" },
+          ],
+          rows: [
+            { item: "Thesis written", status: "Yes", read: "Largest Islamic bank, deposit-led growth" },
+            { item: "Position P/L", status: "Positive", read: "Demo price above average cost" },
+            { item: "Main risk", status: "Rate cuts", read: "Margin compression can reduce earnings momentum" },
+            { item: "Action", status: "Hold", read: "Add only if valuation and deposit growth still support it" },
+          ],
+        },
+      ],
+    },
+    {
+      title: "Dividend income review",
+      summary: `${DEMO_CHAT_SUMMARY_PREFIX} received income, yield quality and next checks`,
+      user: "Summarise dividend income and what I should watch next.",
+      assistant: `## Short answer
+The demo income stream is concentrated in **FFC and MEBL**. That is acceptable for a starter PSX portfolio, but it means the income case depends heavily on fertilizer payout stability and bank profitability.
+
+## What was received
+The seeded demo records show received dividends from FFC and MEBL. FFC is the clearer income holding because the thesis explicitly depends on reliable payout. MEBL contributes income, but its primary case is quality growth rather than yield.
+
+## What to watch
+- **FFC**: gas pricing, urea price controls and payout ratio.
+- **MEBL**: whether profitability remains high enough to support both growth and dividends.
+- **HUBC**: do not count it as an income holding until dividend resumption is clear.
+
+## Portfolio implication
+Dividend income is useful here, but not broad enough to treat the full portfolio as an income portfolio. It is still a balanced growth/income demo portfolio.`,
+      cards: [
+        {
+          kind: "bar-chart",
+          title: "Received demo dividends",
+          xKey: "ticker",
+          yUnit: "PKR",
+          bars: [{ key: "net", label: "Net received", color: "#059669" }],
+          data: [
+            { ticker: "FFC", net: 3740 },
+            { ticker: "MEBL", net: 2975 },
+          ],
+        },
+        {
+          kind: "timeline",
+          title: "Dividend timeline",
+          events: [
+            { date: "40 days ago", label: "FFC dividend received", type: "dividend", value: "PKR 3,740 net" },
+            { date: "25 days ago", label: "MEBL dividend received", type: "dividend", value: "PKR 2,975 net" },
+            { date: "Next review", label: "Check payout consistency", type: "other", detail: "Confirm whether payout matches the written thesis." },
+          ],
+        },
+      ],
+    },
+    {
+      title: "Market pulse impact",
+      summary: `${DEMO_CHAT_SUMMARY_PREFIX} how market moves affect the demo portfolio`,
+      user: "Explain today's market pulse through the lens of my holdings.",
+      assistant: `## Read of the market
+The right demo workflow is not "what moved the index?" but "which market moves matter to my holdings?" In this portfolio, banks, fertilizer, power and technology each respond to different drivers, so one index move is not enough.
+
+## Holding sensitivity
+- **MEBL** responds most to rates, deposit growth, asset quality and banking-sector sentiment.
+- **FFC** responds to gas pricing, fertilizer demand, urea policy and dividend expectations.
+- **HUBC** responds to circular debt, PPA renegotiation and dividend visibility.
+- **SYS** responds to IT exports, PKR movement and global tech spending.
+
+## Practical use
+Use Market Pulse to separate broad market noise from holding-specific signal. A weak index day is less important than a filing or policy item that directly touches one of your recorded theses.`,
+      cards: [
+        {
+          kind: "comparison-table",
+          title: "Market driver map",
+          columns: [
+            { key: "holding", label: "Holding" },
+            { key: "driver", label: "Primary driver" },
+            { key: "watch", label: "What to watch" },
+          ],
+          rows: [
+            { holding: "MEBL", driver: "Rates and deposits", watch: "Deposit growth vs sector" },
+            { holding: "FFC", driver: "Fertilizer policy", watch: "Gas pricing and payout ratio" },
+            { holding: "HUBC", driver: "Power policy", watch: "PPA/circular debt updates" },
+            { holding: "SYS", driver: "IT exports", watch: "Export growth and margins" },
+          ],
+        },
+      ],
+    },
+  ];
+
+  for (let index = 0; index < threads.length; index += 1) {
+    const item = threads[index];
+    const threadTime = iso(240 - index * 45);
+    const { data: thread, error: threadError } = await supabase
+      .from("chat_threads")
+      .insert({
+        user_id: userId,
+        title: item.title,
+        summary: item.summary,
+        created_at: threadTime,
+        updated_at: threadTime,
+        last_message_at: threadTime,
+      })
+      .select("id")
+      .single();
+    if (threadError || !thread) throw threadError;
+
+    await supabase.from("chat_messages").insert([
+      {
+        user_id: userId,
+        thread_id: thread.id,
+        role: "user",
+        content: item.user,
+        created_at: iso(239 - index * 45),
+      },
+      {
+        user_id: userId,
+        thread_id: thread.id,
+        role: "assistant",
+        content: item.assistant,
+        cards: item.cards.map((spec) => ({ kind: "artifact", data: spec })),
+        created_at: iso(238 - index * 45),
+      },
+    ]);
+  }
 }

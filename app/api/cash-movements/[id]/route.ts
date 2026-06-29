@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { requireUser, errorResponse } from "@/lib/api-helpers";
 import { recomputeAll } from "@/lib/holdings/recompute-cascade";
+import { rejectDemoWrite } from "@/lib/demo-mode";
 
 export const maxDuration = 60;
 
@@ -18,6 +19,8 @@ export async function PATCH(
 ) {
   const { supabase, user, error } = await requireUser();
   if (error) return error;
+  const demoError = await rejectDemoWrite(supabase, user.id);
+  if (demoError) return demoError;
 
   try {
     const { id } = await params;
@@ -52,6 +55,8 @@ export async function DELETE(
 ) {
   const { supabase, user, error } = await requireUser();
   if (error) return error;
+  const demoError = await rejectDemoWrite(supabase, user.id);
+  if (demoError) return demoError;
 
   try {
     const { id } = await params;

@@ -2,12 +2,15 @@ import { NextResponse } from "next/server";
 import { requireUser, errorResponse } from "@/lib/api-helpers";
 import { recomputeAll } from "@/lib/holdings/recompute-cascade";
 import { ensureEodCached } from "@/lib/market-data/eod-cache";
+import { rejectDemoWrite } from "@/lib/demo-mode";
 
 export const maxDuration = 120;
 
 export async function POST() {
   const { supabase, user, error } = await requireUser();
   if (error) return error;
+  const demoError = await rejectDemoWrite(supabase, user.id);
+  if (demoError) return demoError;
 
   try {
     const { data: txns, error: txnErr } = await supabase

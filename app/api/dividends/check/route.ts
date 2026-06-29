@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { requireUser, errorResponse, logAgentRun } from "@/lib/api-helpers";
 import { checkUpcomingDividends, type DetectResult } from "@/lib/dividends/detect";
+import { rejectDemoWrite } from "@/lib/demo-mode";
 
 export const maxDuration = 120;
 
@@ -8,6 +9,8 @@ export const maxDuration = 120;
 export async function POST() {
   const { supabase, user, error } = await requireUser();
   if (error) return error;
+  const demoError = await rejectDemoWrite(supabase, user.id);
+  if (demoError) return demoError;
 
   try {
     const result = (await logAgentRun(supabase, user.id, "dividend_detection", {}, async () =>

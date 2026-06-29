@@ -24,10 +24,9 @@ export function SectionRefreshButton({
   sectionId: string;
   onUpdated?: (payload: CompanyReportPayload) => void;
 }) {
+  const [loading, setLoading] = useState(false);
   const apiSection = SECTION_MAP[sectionId];
   if (!apiSection) return null;
-
-  const [loading, setLoading] = useState(false);
 
   async function refresh() {
     setLoading(true);

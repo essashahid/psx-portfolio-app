@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { requireUser, errorResponse } from "@/lib/api-helpers";
 import { rebuildHoldings, recomputeHoldingsFromTransactions } from "@/lib/portfolio";
+import { rejectDemoWrite } from "@/lib/demo-mode";
 import type { TxnType } from "@/lib/types";
 
 export const maxDuration = 60;
@@ -44,6 +45,8 @@ const bodySchema = z.discriminatedUnion("action", [ipoBuySchema, mergerSchema]);
 export async function POST(request: Request) {
   const { supabase, user, error } = await requireUser();
   if (error) return error;
+  const demoError = await rejectDemoWrite(supabase, user.id);
+  if (demoError) return demoError;
 
   try {
     const raw = await request.json();

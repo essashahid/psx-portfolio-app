@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { requireUser, errorResponse, logAgentRun } from "@/lib/api-helpers";
 import { chatMarkdown, aiAvailable } from "@/lib/ai/openai";
+import { rejectDemoWrite } from "@/lib/demo-mode";
 
 export const maxDuration = 120;
 
@@ -8,6 +9,8 @@ export const maxDuration = 120;
 export async function POST() {
   const { supabase, user, error } = await requireUser();
   if (error) return error;
+  const demoError = await rejectDemoWrite(supabase, user.id);
+  if (demoError) return demoError;
 
   if (!aiAvailable()) {
     return NextResponse.json(

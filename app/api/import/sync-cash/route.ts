@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { requireUser, errorResponse } from "@/lib/api-helpers";
 import { accountHasFeature } from "@/lib/features";
 import { parseAkdStatement } from "@/lib/import/akd-statement";
+import { rejectDemoWrite } from "@/lib/demo-mode";
 
 export const maxDuration = 60;
 
@@ -18,6 +19,8 @@ export const maxDuration = 60;
 export async function POST() {
   const { supabase, user, error } = await requireUser();
   if (error) return error;
+  const demoError = await rejectDemoWrite(supabase, user.id);
+  if (demoError) return demoError;
 
   try {
     if (!(await accountHasFeature(supabase, user.id, "/import"))) {

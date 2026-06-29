@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { requireUser, errorResponse, logAgentRun } from "@/lib/api-helpers";
 import { runDailyUpdate, type DailyUpdateSummary } from "@/lib/dividends/daily";
+import { rejectDemoWrite } from "@/lib/demo-mode";
 
 export const maxDuration = 300;
 
@@ -12,6 +13,8 @@ export const maxDuration = 300;
 export async function POST() {
   const { supabase, user, error } = await requireUser();
   if (error) return error;
+  const demoError = await rejectDemoWrite(supabase, user.id);
+  if (demoError) return demoError;
 
   try {
     const summary = (await logAgentRun(supabase, user.id, "daily_update", {}, async () =>

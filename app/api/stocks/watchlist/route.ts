@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { requireUser, errorResponse } from "@/lib/api-helpers";
+import { rejectDemoWrite } from "@/lib/demo-mode";
 
 export const maxDuration = 15;
 
@@ -7,6 +8,8 @@ export const maxDuration = 15;
 export async function POST(request: Request) {
   const { supabase, user, error } = await requireUser();
   if (error) return error;
+  const demoError = await rejectDemoWrite(supabase, user.id);
+  if (demoError) return demoError;
 
   try {
     const body = (await request.json()) as { ticker?: string; action?: "add" | "remove" | "toggle" };
@@ -44,6 +47,8 @@ export async function POST(request: Request) {
 export async function DELETE(request: Request) {
   const { supabase, user, error } = await requireUser();
   if (error) return error;
+  const demoError = await rejectDemoWrite(supabase, user.id);
+  if (demoError) return demoError;
   try {
     const ticker = (new URL(request.url).searchParams.get("ticker") ?? "").toUpperCase().trim();
     if (!ticker) return NextResponse.json({ error: "ticker is required" }, { status: 400 });

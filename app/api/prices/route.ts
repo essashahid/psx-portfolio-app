@@ -6,6 +6,7 @@ import { takeSnapshot } from "@/lib/portfolio";
 import { getMarketDataProvider } from "@/lib/market-data/adapter";
 import { needsRefresh, PSX_PRICE_SOURCE } from "@/lib/market-data/psx-dps";
 import { parseNumberLoose, parseDateLoose } from "@/lib/utils";
+import { rejectDemoWrite } from "@/lib/demo-mode";
 
 export const maxDuration = 60;
 
@@ -18,6 +19,8 @@ export const maxDuration = 60;
 export async function POST(request: Request) {
   const { supabase, user, error } = await requireUser();
   if (error) return error;
+  const demoError = await rejectDemoWrite(supabase, user.id);
+  if (demoError) return demoError;
 
   try {
     const body = (await request.json()) as {

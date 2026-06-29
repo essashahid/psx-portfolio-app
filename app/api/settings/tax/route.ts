@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { requireUser, errorResponse } from "@/lib/api-helpers";
+import { rejectDemoWrite } from "@/lib/demo-mode";
 
 const schema = z.object({
   taxpayer_status: z.enum(["filer", "non-filer"]),
@@ -16,6 +17,8 @@ const schema = z.object({
 export async function POST(request: Request) {
   const { supabase, user, error } = await requireUser();
   if (error) return error;
+  const demoError = await rejectDemoWrite(supabase, user.id);
+  if (demoError) return demoError;
 
   try {
     const parsed = schema.safeParse(await request.json());

@@ -67,9 +67,11 @@ const num = (v: number | null | undefined) => (v === null || v === undefined ? "
 export async function OverviewPanel({
   ticker,
   companyEnrichmentEnabled = false,
+  readOnly = false,
 }: {
   ticker: string;
   companyEnrichmentEnabled?: boolean;
+  readOnly?: boolean;
 }) {
   const supabase = await createClient();
   const user = await getUser();
@@ -165,7 +167,7 @@ export async function OverviewPanel({
             ) : (
               <div className="space-y-3 py-2">
                 <p className="text-sm text-muted-foreground">Not currently held.</p>
-                <WatchlistButton ticker={ticker} initialWatched={false} />
+                {!readOnly && <WatchlistButton ticker={ticker} initialWatched={false} />}
               </div>
             )}
           </CardContent>
@@ -206,7 +208,8 @@ const LINE_LABELS: Record<string, string> = {
   financing_cash_flow: "Financing cash flow", capex: "Capex", cash_balance: "Cash balance",
 };
 
-function FetchFinancialsButton({ ticker }: { ticker: string }) {
+function FetchFinancialsButton({ ticker, readOnly = false }: { ticker: string; readOnly?: boolean }) {
+  if (readOnly) return null;
   return (
     <ActionButton
       endpoint={`/api/stocks/${ticker}/refresh`}
@@ -218,7 +221,7 @@ function FetchFinancialsButton({ ticker }: { ticker: string }) {
   );
 }
 
-export async function FinancialsPanel({ ticker }: { ticker: string }) {
+export async function FinancialsPanel({ ticker, readOnly = false }: { ticker: string; readOnly?: boolean }) {
   const supabase = await createClient();
   const [{ data }, { data: lastLog }] = await Promise.all([
     supabase
@@ -250,7 +253,7 @@ export async function FinancialsPanel({ ticker }: { ticker: string }) {
               ? `Last fetch attempt: ${String(lastLog.created_at).slice(0, 16).replace("T", " ")} via ${lastLog.source} — ${lastLog.status}${lastLog.detail ? ` (${lastLog.detail})` : ""}. The engine reads the official PSX company page; numbers are echoed from PSX, never invented.`
               : `No data has been loaded for ${ticker} yet. The engine reads the official PSX company page (sales, EPS, margins) — numbers are echoed from PSX, never invented.`
           }
-          action={<FetchFinancialsButton ticker={ticker} />}
+          action={<FetchFinancialsButton ticker={ticker} readOnly={readOnly} />}
         />
       </div>
     );
@@ -266,7 +269,7 @@ export async function FinancialsPanel({ ticker }: { ticker: string }) {
         <p className="text-[11px] text-muted-foreground">
           Figures {units}; EPS in rupees. Sourced from the official PSX company page — open the source to verify.
         </p>
-        <FetchFinancialsButton ticker={ticker} />
+        <FetchFinancialsButton ticker={ticker} readOnly={readOnly} />
       </div>
       {["income_statement", "balance_sheet", "cash_flow"].map((type) => {
         const periods = byType(type);
@@ -320,7 +323,7 @@ export async function FinancialsPanel({ ticker }: { ticker: string }) {
 // 3. Earnings
 // ---------------------------------------------------------------------------
 
-export async function EarningsPanel({ ticker }: { ticker: string }) {
+export async function EarningsPanel({ ticker, readOnly = false }: { ticker: string; readOnly?: boolean }) {
   const supabase = await createClient();
   const [filings, { data: finData }] = await Promise.all([
     getCompanyFilings(ticker, 25),
@@ -382,7 +385,7 @@ export async function EarningsPanel({ ticker }: { ticker: string }) {
           icon={TrendingUp}
           title="No earnings loaded yet"
           description={`Load ${ticker}'s revenue, profit, and EPS from the official PSX company page. Numbers are echoed from PSX, never invented.`}
-          action={<FetchFinancialsButton ticker={ticker} />}
+          action={<FetchFinancialsButton ticker={ticker} readOnly={readOnly} />}
         />
       )}
 
@@ -539,7 +542,7 @@ function buildRatioFactors(ratios: RatioRow[]): { factor: string; score: number;
   ].filter((r): r is { factor: string; score: number; summary: string } => r !== null);
 }
 
-export async function RatiosPanel({ ticker }: { ticker: string }) {
+export async function RatiosPanel({ ticker, readOnly = false }: { ticker: string; readOnly?: boolean }) {
   const supabase = await createClient();
 
   // Always compute live from stored inputs — the engine is pure reads, so the
@@ -565,7 +568,7 @@ export async function RatiosPanel({ ticker }: { ticker: string }) {
           icon={Calculator}
           title="Most ratios need financials loaded"
           description={`Only market-data ratios can be computed for ${ticker} right now. Load the official PSX company page to unlock P/E, margins, and growth ratios.`}
-          action={<FetchFinancialsButton ticker={ticker} />}
+          action={<FetchFinancialsButton ticker={ticker} readOnly={readOnly} />}
         />
       )}
       {factorRows.length > 0 && (
@@ -631,7 +634,7 @@ export async function RatiosPanel({ ticker }: { ticker: string }) {
 // 5. Technicals
 // ---------------------------------------------------------------------------
 
-export async function TechnicalsPanel({ ticker }: { ticker: string }) {
+export async function TechnicalsPanel({ ticker, readOnly = false }: { ticker: string; readOnly?: boolean }) {
   const supabase = await createClient();
   const technicals = await getTechnicals(supabase, ticker);
   const signals = computeSignals(technicals.history);
@@ -658,7 +661,7 @@ export async function TechnicalsPanel({ ticker }: { ticker: string }) {
         </CardHeader>
         <CardContent>
           <StockPriceChart candles={technicals.history} signals={signals} benchmark={benchmark} ticker={ticker} />
-          <div className="mt-2"><SectionMeta meta={technicals.meta} ticker={ticker} refreshSection="technicals" /></div>
+          <div className="mt-2"><SectionMeta meta={technicals.meta} ticker={ticker} refreshSection={readOnly ? undefined : "technicals"} /></div>
         </CardContent>
       </Card>
 

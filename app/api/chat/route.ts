@@ -1,5 +1,6 @@
 import { requireUser } from "@/lib/api-helpers";
 import { accountHasFeature, normalizeAllowedChatProviders } from "@/lib/features";
+import { rejectDemoWrite } from "@/lib/demo-mode";
 import { resolveMessage } from "@/lib/chat/resolver";
 import { gatherCards, briefFromCards, briefFromPositionHistory, type Card } from "@/lib/chat/context";
 import { getLatestSessionDate, getPositionHistoryCard } from "@/lib/chat/data";
@@ -236,6 +237,8 @@ export async function POST(request: Request) {
   if (!(await accountHasFeature(supabase, user.id, "/chat"))) {
     return new Response(JSON.stringify({ error: "Research Copilot is disabled for this account." }), { status: 403 });
   }
+  const demoError = await rejectDemoWrite(supabase, user.id, "The demo Copilot is read-only. Browse the curated saved research instead.");
+  if (demoError) return demoError;
 
   const body = (await request.json().catch(() => ({}))) as {
     message?: string;

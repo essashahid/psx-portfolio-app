@@ -20,8 +20,9 @@ export default async function HoldingsPage() {
   const [summary, dailyPerformance, profileRes] = await Promise.all([
     getPortfolio(supabase, user.id),
     getDailyHoldingPerformance(supabase, user.id),
-    supabase.from("profiles").select("enabled_features").eq("id", user.id).maybeSingle(),
+    supabase.from("profiles").select("enabled_features, demo_mode").eq("id", user.id).maybeSingle(),
   ]);
+  const isDemo = Boolean(profileRes.data?.demo_mode);
   const enabledFeatures = normalizeEnabledFeatures(profileRes.data?.enabled_features);
   const companyEnrichmentEnabled = enabledFeatures.includes("company_enrichment");
   const companyReportsEnabled = enabledFeatures.includes("company_reports");
@@ -41,13 +42,13 @@ export default async function HoldingsPage() {
           <p className="mt-1 text-xs text-muted-foreground">{formatNumber(summary.holdingsCount, 0)} positions · {latestPriceDate ? `Prices updated ${latestPriceDate}` : "No prices available"} · {summary.pricedHoldings} of {summary.holdingsCount} priced{unpriced ? ` · ${unpriced} valued at cost` : ""}</p>
         </div>
         <div className="flex flex-wrap items-start gap-2">
-          <AddTransactionDialog variant="default" />
-          <ActionButton endpoint="/api/prices" body={{ refresh: true }} label={<><RefreshCw className="h-3.5 w-3.5" /> Refresh prices</>} variant="outline" size="sm" />
+          {!isDemo && <AddTransactionDialog variant="default" />}
+          {!isDemo && <ActionButton endpoint="/api/prices" body={{ refresh: true }} label={<><RefreshCw className="h-3.5 w-3.5" /> Refresh prices</>} variant="outline" size="sm" />}
           <details className="relative">
             <summary className="inline-flex h-10 cursor-pointer list-none items-center justify-center gap-1.5 rounded-md border border-border bg-card px-3 text-xs font-medium transition-colors hover:bg-accent md:h-8"><span>More</span><ChevronDown className="h-3.5 w-3.5" /></summary>
             <div className="absolute right-0 z-10 mt-1 flex w-52 flex-col gap-1 rounded-md border border-border bg-card p-1.5 shadow-[var(--shadow-card)]">
               <Link href="/dividends" className="rounded px-2.5 py-2 text-xs hover:bg-muted">Record dividend</Link>
-              {companyEnrichmentEnabled && (
+              {companyEnrichmentEnabled && !isDemo && (
                 <ActionButton endpoint="/api/holdings/enrich" label={<><Sparkles className="h-3.5 w-3.5" /> Update company details</>} variant="ghost" size="sm" className="w-full justify-start px-2.5" />
               )}
               {/* eslint-disable-next-line @next/next/no-html-link-for-pages -- CSV download, not a page navigation */}
@@ -61,7 +62,7 @@ export default async function HoldingsPage() {
           icon={Briefcase}
           title="No holdings yet"
           description="Add a manual buy transaction to start tracking positions and prices."
-          action={<AddTransactionDialog label="Add transaction" variant="default" />}
+          action={isDemo ? undefined : <AddTransactionDialog label="Add transaction" variant="default" />}
         />
       ) : (
         <>
@@ -74,8 +75,8 @@ export default async function HoldingsPage() {
             </div>
             <p className="mt-2 text-xs text-muted-foreground">{summary.holdingsCount} holdings · Largest position: {summary.largestHolding ? `${summary.largestHolding.ticker} ${summary.largestHolding.weight?.toFixed(1)}%` : "—"} · {belowCost} position{belowCost === 1 ? "" : "s"} below cost</p>
           </section>
-          {(missingCompany > 0 || unclassified > 0 || unpriced > 0) && <div className="flex flex-wrap items-center justify-between gap-2 rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-900"><span><strong>Portfolio data</strong> · {[missingCompany && `${missingCompany} holding${missingCompany === 1 ? "" : "s"} missing company information`, unclassified && `${unclassified} unclassified sector${unclassified === 1 ? "" : "s"}`, unpriced && `${unpriced} unpriced position${unpriced === 1 ? "" : "s"}`].filter(Boolean).join(" · ")}</span>{companyEnrichmentEnabled && <ActionButton endpoint="/api/holdings/enrich" label={<>Review issues</>} variant="outline" size="sm" />}</div>}
-          <HoldingsTable holdings={summary.holdings} summary={summary} dailyRows={dailyPerformance.rows.map((row) => ({ ticker: row.ticker, dayChangePct: row.dayChangePct, dayPnl: row.dayPnl }))} companyReportsEnabled={companyReportsEnabled} companyEnrichmentEnabled={companyEnrichmentEnabled} />
+          {(missingCompany > 0 || unclassified > 0 || unpriced > 0) && <div className="flex flex-wrap items-center justify-between gap-2 rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-900"><span><strong>Portfolio data</strong> · {[missingCompany && `${missingCompany} holding${missingCompany === 1 ? "" : "s"} missing company information`, unclassified && `${unclassified} unclassified sector${unclassified === 1 ? "" : "s"}`, unpriced && `${unpriced} unpriced position${unpriced === 1 ? "" : "s"}`].filter(Boolean).join(" · ")}</span>{companyEnrichmentEnabled && !isDemo && <ActionButton endpoint="/api/holdings/enrich" label={<>Review issues</>} variant="outline" size="sm" />}</div>}
+          <HoldingsTable holdings={summary.holdings} summary={summary} dailyRows={dailyPerformance.rows.map((row) => ({ ticker: row.ticker, dayChangePct: row.dayChangePct, dayPnl: row.dayPnl }))} companyReportsEnabled={companyReportsEnabled && !isDemo} companyEnrichmentEnabled={companyEnrichmentEnabled && !isDemo} readOnly={isDemo} />
         </>
       )}
     </div>

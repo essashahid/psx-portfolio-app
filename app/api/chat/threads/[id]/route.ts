@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { requireUser } from "@/lib/api-helpers";
 import { accountHasFeature } from "@/lib/features";
+import { rejectDemoWrite } from "@/lib/demo-mode";
 
 type Params = {
   params: Promise<{ id: string }>;
@@ -41,6 +42,8 @@ export async function PATCH(request: Request, { params }: Params) {
   if (!(await accountHasFeature(supabase, user.id, "/chat"))) {
     return NextResponse.json({ error: "Research Copilot is disabled for this account." }, { status: 403 });
   }
+  const demoError = await rejectDemoWrite(supabase, user.id, "The demo Copilot is read-only.");
+  if (demoError) return demoError;
   const { id } = await params;
 
   const body = (await request.json().catch(() => ({}))) as { title?: string };
@@ -66,6 +69,8 @@ export async function DELETE(_request: Request, { params }: Params) {
   if (!(await accountHasFeature(supabase, user.id, "/chat"))) {
     return NextResponse.json({ error: "Research Copilot is disabled for this account." }, { status: 403 });
   }
+  const demoError = await rejectDemoWrite(supabase, user.id, "The demo Copilot is read-only.");
+  if (demoError) return demoError;
   const { id } = await params;
 
   const { error: dbError } = await supabase

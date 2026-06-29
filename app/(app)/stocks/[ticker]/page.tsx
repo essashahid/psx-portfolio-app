@@ -58,11 +58,12 @@ export default async function StockCockpitPage({ params }: { params: Promise<{ t
       .eq("ticker", ticker)
       .order("announcement_date", { ascending: false })
       .limit(12),
-    supabase.from("profiles").select("enabled_features").eq("id", user.id).maybeSingle(),
+    supabase.from("profiles").select("enabled_features, demo_mode").eq("id", user.id).maybeSingle(),
   ]);
   const enabledFeatures = normalizeEnabledFeatures(profileRes.data?.enabled_features);
-  const companyEnrichmentEnabled = enabledFeatures.includes("company_enrichment");
-  const companyReportsEnabled = enabledFeatures.includes("company_reports");
+  const isDemo = Boolean(profileRes.data?.demo_mode);
+  const companyEnrichmentEnabled = enabledFeatures.includes("company_enrichment") && !isDemo;
+  const companyReportsEnabled = enabledFeatures.includes("company_reports") && !isDemo;
 
   const { metadata, quote } = header;
   const dayTone = quote.dayChangePct ? (quote.dayChangePct > 0 ? "positive" : "negative") : undefined;
@@ -80,11 +81,11 @@ export default async function StockCockpitPage({ params }: { params: Promise<{ t
   const divYield = ttmDps > 0 && quote.price ? (ttmDps / quote.price) * 100 : null;
 
   const tabs = [
-    { id: "overview", label: "Overview", content: <Suspense fallback={<CardSkeleton lines={8} />}><OverviewPanel ticker={ticker} companyEnrichmentEnabled={companyEnrichmentEnabled} /></Suspense> },
-    { id: "financials", label: "Financials", content: <Suspense fallback={<TableSkeleton />}><FinancialsPanel ticker={ticker} /></Suspense> },
-    { id: "earnings", label: "Earnings", content: <Suspense fallback={<CardSkeleton lines={6} />}><EarningsPanel ticker={ticker} /></Suspense> },
-    { id: "ratios", label: "Ratios", content: <Suspense fallback={<TableSkeleton />}><RatiosPanel ticker={ticker} /></Suspense> },
-    { id: "technicals", label: "Technicals", content: <Suspense fallback={<CardSkeleton lines={8} />}><TechnicalsPanel ticker={ticker} /></Suspense> },
+    { id: "overview", label: "Overview", content: <Suspense fallback={<CardSkeleton lines={8} />}><OverviewPanel ticker={ticker} companyEnrichmentEnabled={companyEnrichmentEnabled} readOnly={isDemo} /></Suspense> },
+    { id: "financials", label: "Financials", content: <Suspense fallback={<TableSkeleton />}><FinancialsPanel ticker={ticker} readOnly={isDemo} /></Suspense> },
+    { id: "earnings", label: "Earnings", content: <Suspense fallback={<CardSkeleton lines={6} />}><EarningsPanel ticker={ticker} readOnly={isDemo} /></Suspense> },
+    { id: "ratios", label: "Ratios", content: <Suspense fallback={<TableSkeleton />}><RatiosPanel ticker={ticker} readOnly={isDemo} /></Suspense> },
+    { id: "technicals", label: "Technicals", content: <Suspense fallback={<CardSkeleton lines={8} />}><TechnicalsPanel ticker={ticker} readOnly={isDemo} /></Suspense> },
     { id: "dividends", label: "Dividends", content: <Suspense fallback={<TableSkeleton />}><DividendsPanel ticker={ticker} /></Suspense> },
     { id: "news", label: "News & Filings", content: <Suspense fallback={<CardSkeleton lines={8} />}><NewsFilingsPanel ticker={ticker} /></Suspense> },
     ...(companyReportsEnabled
@@ -127,7 +128,7 @@ export default async function StockCockpitPage({ params }: { params: Promise<{ t
                 </p>
               </div>
               {companyReportsEnabled && <GenerateReportDialog ticker={ticker} companyName={metadata.companyName} />}
-              <WatchlistButton ticker={ticker} initialWatched={!!watch} size="default" />
+              {!isDemo && <WatchlistButton ticker={ticker} initialWatched={!!watch} size="default" />}
             </div>
           </div>
 

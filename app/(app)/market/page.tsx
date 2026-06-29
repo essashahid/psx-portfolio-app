@@ -16,15 +16,17 @@ export default async function MarketPulsePage() {
   if (!user) return null;
   const supabase = await createClient();
   const foreignFlow = await getForeignFlowSnapshot(supabase, 90);
-  const [market, flowHistory, flowExposure] = await Promise.all([
+  const [market, flowHistory, flowExposure, profileRes] = await Promise.all([
     getMarketDashboard(supabase, user.id),
     getForeignFlowHistory(supabase, 90),
     getPortfolioFlowExposure(supabase, user.id, foreignFlow),
+    supabase.from("profiles").select("demo_mode").eq("id", user.id).maybeSingle(),
   ]);
-  const refresh = <ActionButton endpoint="/api/market/refresh" body={{ section: "all" }} label={<><RefreshCw className="h-3.5 w-3.5" /> Refresh market</>} variant="outline" size="sm" />;
+  const isDemo = Boolean(profileRes.data?.demo_mode);
+  const refresh = isDemo ? null : <ActionButton endpoint="/api/market/refresh" body={{ section: "all" }} label={<><RefreshCw className="h-3.5 w-3.5" /> Refresh market</>} variant="outline" size="sm" />;
 
   if (!market.snapshot) {
-    return <div className="space-y-6"><header><p className="eyebrow">PSX · Market Pulse</p><h1 className="mt-1 text-2xl font-semibold">Market Pulse</h1></header><EmptyState icon={Activity} title="No market snapshot yet" description="Refresh the PSX market snapshot to load breadth, sector and mover data." action={refresh} /></div>;
+    return <div className="space-y-6"><header><p className="eyebrow">PSX · Market Pulse</p><h1 className="mt-1 text-2xl font-semibold">Market Pulse</h1></header><EmptyState icon={Activity} title="No market snapshot yet" description="Refresh the PSX market snapshot to load breadth, sector and mover data." action={refresh ?? undefined} /></div>;
   }
 
   const snapshot = market.snapshot;

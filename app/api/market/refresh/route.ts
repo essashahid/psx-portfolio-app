@@ -5,6 +5,7 @@ import { refreshMarketEvents } from "@/lib/market/events";
 import { generateMarketBrief } from "@/lib/market/brief";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { fetchAndIngestForeignFlows, foreignFlowsAutoConfigured } from "@/lib/market/foreign-flows-ingest";
+import { rejectDemoWrite } from "@/lib/demo-mode";
 
 export const maxDuration = 120;
 
@@ -14,8 +15,10 @@ export const maxDuration = 120;
  * builders. Body: { section?: "all" | "snapshot" | "events" | "brief" }.
  */
 export async function POST(request: Request) {
-  const { error } = await requireUser();
+  const { supabase, user, error } = await requireUser();
   if (error) return error;
+  const demoError = await rejectDemoWrite(supabase, user.id);
+  if (demoError) return demoError;
   if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
     return NextResponse.json({ error: "Server is missing SUPABASE_SERVICE_ROLE_KEY." }, { status: 503 });
   }

@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { requireUser, errorResponse } from "@/lib/api-helpers";
 import { accountHasFeature } from "@/lib/features";
 import { normalizeRow, validateRow, type CanonicalField } from "@/lib/import/normalize";
+import { rejectDemoWrite } from "@/lib/demo-mode";
 import type { StatementType } from "@/lib/types";
 
 export const maxDuration = 60;
@@ -13,6 +14,8 @@ export const maxDuration = 60;
 export async function POST(request: Request) {
   const { supabase, user, error } = await requireUser();
   if (error) return error;
+  const demoError = await rejectDemoWrite(supabase, user.id);
+  if (demoError) return demoError;
 
   try {
     if (!(await accountHasFeature(supabase, user.id, "/import"))) {
