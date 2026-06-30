@@ -18,13 +18,13 @@ import { ActionButton } from "@/components/action-button";
 import { WatchlistButton } from "@/components/stock/watchlist-button";
 import { CompanyAiActions } from "@/components/stock/company-ai-actions";
 import { Markdown } from "@/components/markdown";
-import { RatioSnapshotChart } from "@/components/charts-lazy";
 import { StockPriceChart } from "@/components/stock/price-chart-lazy";
 import { FinancialsWorkspace, type FinancialWorkspaceRow } from "@/components/stock/financials-workspace";
 import { EarningsWorkspace } from "@/components/stock/earnings-workspace";
+import { RatiosWorkspace, type RatiosFinancialRow, type RatiosPeerRow, type RatiosQuoteRow } from "@/components/stock/ratios-workspace";
 import { formatMoney, formatNumber, formatSignedPct, formatFinancialPeriod, cn } from "@/lib/utils";
 import {
-  AlertTriangle, Banknote, BriefcaseBusiness, Calculator, FileText, Info, Newspaper, Sparkles, TrendingUp,
+  AlertTriangle, Banknote, BriefcaseBusiness, FileText, Info, Newspaper, Sparkles, TrendingUp,
 } from "lucide-react";
 
 // ---------------------------------------------------------------------------
@@ -698,102 +698,27 @@ export async function EarningsPanel({ ticker, readOnly = false }: { ticker: stri
 // 4. Ratios
 // ---------------------------------------------------------------------------
 
-function clampScore(value: number): number {
-  return Math.max(0, Math.min(100, value));
-}
-
-function highScore(value: number | null | undefined, low: number, high: number): number | null {
-  if (value === null || value === undefined || !Number.isFinite(value)) return null;
-  return clampScore(((value - low) / (high - low)) * 100);
-}
-
-function lowScore(value: number | null | undefined, good: number, bad: number): number | null {
-  if (value === null || value === undefined || !Number.isFinite(value)) return null;
-  return clampScore(((bad - value) / (bad - good)) * 100);
-}
-
-function lowPositiveScore(value: number | null | undefined, good: number, bad: number): number | null {
-  if (value === null || value === undefined || value <= 0 || !Number.isFinite(value)) return null;
-  return lowScore(value, good, bad);
-}
-
-function avgScore(values: (number | null)[]): number | null {
-  const scored = values.filter((v): v is number => v !== null && Number.isFinite(v));
-  if (!scored.length) return null;
-  return Math.round(scored.reduce((sum, v) => sum + v, 0) / scored.length);
-}
-
-function buildRatioFactors(ratios: RatioRow[]): { factor: string; score: number; summary: string }[] {
-  const byName = new Map(ratios.map((r) => [r.ratio_name, r.ratio_value]));
-  const v = (name: string) => byName.get(name) ?? null;
-  const pctText = (name: string) => formatSignedPct(v(name), 1);
-  const numText = (name: string) => formatNumber(v(name), 2);
-  const row = (factor: string, scores: (number | null)[], summary: string) => {
-    const score = avgScore(scores);
-    return score === null ? null : { factor, score, summary };
-  };
-
-  return [
-    row(
-      "Value",
-      [
-        highScore(v("Earnings yield"), 0, 20),
-        highScore(v("FCF yield"), 0, 15),
-        lowPositiveScore(v("P/E"), 5, 30),
-        lowPositiveScore(v("P/B"), 0.5, 3),
-        lowPositiveScore(v("P/S"), 0.5, 5),
-        lowPositiveScore(v("EV/EBIT"), 3, 25),
-      ],
-      `P/E ${numText("P/E")}, P/B ${numText("P/B")}, FCF yield ${pctText("FCF yield")}.`
-    ),
-    row(
-      "Quality",
-      [
-        highScore(v("ROE"), 0, 30),
-        highScore(v("ROIC"), 0, 25),
-        highScore(v("Net margin"), 0, 25),
-        highScore(v("Interest coverage"), 0, 8),
-        highScore(v("OCF / PAT"), 0, 1.5),
-        lowScore(v("Accrual ratio"), -0.1, 0.2),
-      ],
-      `ROE ${pctText("ROE")}, ROIC ${pctText("ROIC")}, OCF/PAT ${numText("OCF / PAT")}.`
-    ),
-    row(
-      "Balance sheet",
-      [
-        lowScore(v("Debt-to-equity"), 0, 2),
-        lowScore(v("Net debt-to-equity"), -0.5, 1.5),
-        lowScore(v("Liabilities / assets"), 0.2, 0.8),
-        highScore(v("Current ratio"), 0.6, 2),
-        highScore(v("Cash ratio"), 0, 1),
-      ],
-      `Debt/equity ${numText("Debt-to-equity")}, net debt/equity ${numText("Net debt-to-equity")}, current ratio ${numText("Current ratio")}.`
-    ),
-    row(
-      "Growth",
-      [
-        highScore(v("EPS growth"), -10, 30),
-        highScore(v("Revenue growth"), -10, 25),
-        highScore(v("Profit growth"), -10, 30),
-        highScore(v("EPS CAGR"), 0, 20),
-        highScore(v("Revenue CAGR"), 0, 20),
-        highScore(v("Gross margin change"), -5, 5),
-      ],
-      `EPS growth ${pctText("EPS growth")}, revenue growth ${pctText("Revenue growth")}, revenue CAGR ${pctText("Revenue CAGR")}.`
-    ),
-    row(
-      "Cash flow",
-      [
-        highScore(v("FCF margin"), -5, 20),
-        highScore(v("FCF yield"), 0, 15),
-        highScore(v("OCF / PAT"), 0, 1.5),
-        highScore(v("Cash conversion"), 0, 1.5),
-        lowScore(v("Accrual ratio"), -0.1, 0.2),
-      ],
-      `FCF margin ${pctText("FCF margin")}, cash conversion ${numText("Cash conversion")}, accrual ratio ${numText("Accrual ratio")}.`
-    ),
-  ].filter((r): r is { factor: string; score: number; summary: string } => r !== null);
-}
+const RATIO_PEER_METRICS = [
+  "P/E",
+  "P/B",
+  "P/S",
+  "EV/Sales",
+  "EV/EBIT",
+  "FCF yield",
+  "Dividend yield (TTM)",
+  "Gross margin",
+  "Net margin",
+  "ROE",
+  "ROA",
+  "ROIC",
+  "Revenue growth",
+  "EPS growth",
+  "Debt-to-equity",
+  "Net debt-to-equity",
+  "Interest coverage",
+  "Current ratio",
+  "OCF / PAT",
+] as const;
 
 export async function RatiosPanel({ ticker, readOnly = false }: { ticker: string; readOnly?: boolean }) {
   const supabase = await createClient();
@@ -801,85 +726,69 @@ export async function RatiosPanel({ ticker, readOnly = false }: { ticker: string
   // Always compute live from stored inputs — the engine is pure reads, so the
   // tab reflects the newest extracted financials and quote without waiting on
   // a persisted snapshot.
-  const ratios = await computeRatios(supabase, ticker);
-  const available = ratios.filter((r) => r.ratio_value !== null);
-  const hasFinancials = ratios.some((r) => r.source !== null);
-  const factorRows = buildRatioFactors(ratios);
+  const [ratios, metadata, quoteRes, financialsRes] = await Promise.all([
+    computeRatios(supabase, ticker),
+    getCompanyMetadata(supabase, ticker),
+    supabase
+      .from("market_quotes")
+      .select("price, as_of, last_fetched_at")
+      .eq("ticker", ticker.toUpperCase())
+      .maybeSingle(),
+    supabase
+      .from("company_financials")
+      .select("ticker, period_type, fiscal_year, fiscal_period, statement_type, reported_date, source_type, source_url, confidence, updated_at, data")
+      .eq("ticker", ticker.toUpperCase())
+      .order("reported_date", { ascending: false })
+      .limit(120),
+  ]);
 
-  const fmtVal = (r: (typeof ratios)[number]): string => {
-    if (r.ratio_value === null) return "—";
-    if (/Days sales outstanding/i.test(r.ratio_name)) return `${r.ratio_value.toFixed(0)} days`;
-    if (/^(Shares outstanding|Market cap)/i.test(r.ratio_name)) return formatNumber(r.ratio_value, 0);
-    const pctNames = /yield|margin|growth|ROE|ROA|ROIC|Payout|tax rate|CAGR|change|% of/i;
-    return pctNames.test(r.ratio_name) ? `${r.ratio_value.toFixed(2)}%` : r.ratio_value.toFixed(2);
-  };
+  const financialRows = (financialsRes.data ?? []) as RatiosFinancialRow[];
+  const quote = (quoteRes.data ?? null) as RatiosQuoteRow | null;
+  let peers: RatiosPeerRow[] = [];
+
+  if (metadata.sector) {
+    const { data: peerMasters } = await supabase
+      .from("stock_master")
+      .select("ticker, company_name, sector")
+      .eq("sector", metadata.sector)
+      .neq("ticker", ticker.toUpperCase())
+      .limit(8);
+    const peerRows = (peerMasters ?? []) as { ticker: string; company_name: string | null; sector: string | null }[];
+    const peerTickers = peerRows.map((row) => row.ticker).filter(Boolean);
+    if (peerTickers.length) {
+      const { data: peerRatioRows } = await supabase
+        .from("company_ratios")
+        .select("ticker, ratio_name, ratio_value, source_period, computed_at")
+        .in("ticker", peerTickers)
+        .in("ratio_name", [...RATIO_PEER_METRICS]);
+      const grouped = new Map<string, RatiosPeerRow["ratios"]>();
+      for (const row of (peerRatioRows ?? []) as { ticker: string; ratio_name: string; ratio_value: number | null; source_period: string | null; computed_at: string | null }[]) {
+        grouped.set(row.ticker, [...(grouped.get(row.ticker) ?? []), {
+          ratio_name: row.ratio_name,
+          ratio_value: row.ratio_value,
+          source_period: row.source_period,
+          computed_at: row.computed_at,
+        }]);
+      }
+      peers = peerRows.map((row) => ({
+        ticker: row.ticker,
+        companyName: row.company_name,
+        sector: row.sector,
+        ratios: grouped.get(row.ticker) ?? [],
+      }));
+    }
+  }
 
   return (
-    <div className="space-y-3">
-      {!hasFinancials && (
-        <EmptyState
-          icon={Calculator}
-          title="Most ratios need financials loaded"
-          description={`Only market-data ratios can be computed for ${ticker} right now. Load the official PSX company page to unlock P/E, margins, and growth ratios.`}
-          action={<FetchFinancialsButton ticker={ticker} readOnly={readOnly} />}
-        />
-      )}
-      {factorRows.length > 0 && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2"><TrendingUp className="h-4 w-4" /> Fundamental factor snapshot</CardTitle>
-            <CardDescription>
-              A quick visual read of the company&apos;s value, quality, balance sheet, growth, and cash-flow profile. Scores only use ratios that are available below.
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <RatioSnapshotChart data={factorRows} />
-          </CardContent>
-        </Card>
-      )}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2"><Calculator className="h-4 w-4" /> Fundamental ratios</CardTitle>
-          <CardDescription>
-            {available.length} of {ratios.length} computable from stored, sourced data. Uncomputable rows name the exact missing input — nothing is estimated.
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="overflow-x-auto">
-          <Table>
-            <THead>
-              <TR><TH>Ratio</TH><TH className="text-right">Value</TH><TH>Formula</TH><TH>Period</TH></TR>
-            </THead>
-            <TBody>
-              {ratios.map((r) => (
-                <TR key={r.ratio_name}>
-                  <TD className="text-xs font-medium">
-                    {METRIC_HINTS[r.ratio_name] ? (
-                      <span className="cursor-help decoration-muted-foreground/40 underline decoration-dotted underline-offset-2" title={METRIC_HINTS[r.ratio_name]}>
-                        {r.ratio_name}
-                      </span>
-                    ) : (
-                      r.ratio_name
-                    )}
-                  </TD>
-                  <TD
-                    className={cn("text-right text-xs tabular-nums", r.ratio_value === null && "text-muted-foreground")}
-                    title={r.missing ?? undefined}
-                  >
-                    {fmtVal(r)}
-                  </TD>
-                  <TD className="text-[11px] text-muted-foreground">{r.formula}{r.missing ? <span className="block text-[10px] italic">{r.missing}</span> : null}</TD>
-                  <TD className="text-[11px] text-muted-foreground">{r.source_period ?? "—"}</TD>
-                </TR>
-              ))}
-            </TBody>
-          </Table>
-          <p className="mt-3 text-[11px] text-muted-foreground">
-            Inputs: official PSX company page + live quote + recorded dividends · computed {new Date().toISOString().slice(0, 10)}
-            {ratios[0]?.source ? <> · <a href={ratios[0].source} target="_blank" rel="noopener noreferrer" className="underline hover:text-foreground">PSX source</a></> : null}
-          </p>
-        </CardContent>
-      </Card>
-    </div>
+    <RatiosWorkspace
+      ticker={ticker.toUpperCase()}
+      ratios={ratios}
+      financialRows={financialRows}
+      metadata={metadata}
+      quote={quote}
+      peers={peers}
+      readOnly={readOnly}
+    />
   );
 }
 
