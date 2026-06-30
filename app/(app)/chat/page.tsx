@@ -4,6 +4,7 @@ import { deepseekChatConfigured } from "@/lib/ai/deepseek-chat";
 import { getDataFreshness } from "@/lib/market/read";
 import { getPortfolio } from "@/lib/portfolio";
 import { Chat, type ChatThread } from "@/components/chat/chat";
+import type { PromptContext } from "@/lib/chat/prompt-suggestions";
 import { normalizeAllowedChatProviders } from "@/lib/features";
 
 export const dynamic = "force-dynamic";
@@ -12,11 +13,12 @@ export default async function ChatPage() {
   const user = await getUser();
   if (!user) return null;
   const supabase = await createClient();
-  const [{ data: threads }, freshness, portfolio, profileRes] = await Promise.all([
+  const [{ data: threads }, freshness, portfolio, profileRes, txCountRes] = await Promise.all([
     supabase.from("chat_threads").select("id, title, summary, created_at, updated_at, last_message_at").eq("user_id", user.id).order("last_message_at", { ascending: false }).limit(50),
     getDataFreshness(supabase, user.id),
     getPortfolio(supabase, user.id),
     supabase.from("profiles").select("allowed_llm_providers, demo_mode").eq("id", user.id).maybeSingle(),
+    supabase.from("transactions").select("id", { count: "exact", head: true }).eq("user_id", user.id),
   ]);
   const isDemo = Boolean(profileRes.data?.demo_mode);
   const allowedProviders = normalizeAllowedChatProviders(profileRes.data?.allowed_llm_providers);
@@ -26,12 +28,20 @@ export default async function ChatPage() {
   const dataUpdated = latestDate
     ? new Date(latestDate).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })
     : null;
-  const prompts = [
-    portfolio.largestHolding ? `Why is ${portfolio.largestHolding.ticker} my largest portfolio contributor?` : "Which holdings created the most total return after dividends and fees?",
-    `How has my ${portfolio.holdings.find((holding) => holding.ticker === "UBL")?.ticker ?? portfolio.holdings[0]?.ticker ?? "largest"} position performed after dividends?`,
-    "Summarise today’s official filings affecting my holdings.",
-    "Which of my holdings outperformed their sectors today?",
-  ];
+
+  // Compact, structured signals the client uses to build model-aware sample
+  // prompts (see lib/chat/prompt-suggestions). Top holdings by weight, the
+  // heaviest sector, available cash for add-size, and whether a ledger exists.
+  const promptContext: PromptContext = {
+    hasLedger: (txCountRes.count ?? 0) > 0,
+    holdingsCount: portfolio.holdingsCount,
+    cashBalance: portfolio.cashBalance ?? null,
+    top: [...portfolio.holdings]
+      .sort((a, b) => (b.weight ?? 0) - (a.weight ?? 0))
+      .slice(0, 4)
+      .map((h) => ({ ticker: h.ticker, sector: h.sector ?? null, weightPct: h.weight ?? null })),
+    topSector: portfolio.largestSector?.sector ?? null,
+  };
 
   // Escape every padding tier of the shared app-shell main so the Copilot
   // fills the full content area edge to edge at every breakpoint.
@@ -43,7 +53,7 @@ export default async function ChatPage() {
           deepseek: { configured: deepseekChatConfigured(), allowed: !isDemo && allowedProviders.includes("deepseek") },
         }}
         initialThreads={(threads ?? []) as ChatThread[]}
-        suggestions={prompts}
+        promptContext={promptContext}
         sourceStatus={sources}
         dataUpdated={dataUpdated}
         readOnly={isDemo}
