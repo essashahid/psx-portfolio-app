@@ -30,6 +30,8 @@ export interface PromptContext {
   topSector: string | null;
   /** Distinct sector names the user holds, heaviest first. */
   sectors: string[];
+  /** True when at least one holding has a saved thesis (enables thesis-drift prompts). */
+  hasThesis: boolean;
 }
 
 type Tier = "focused" | "medium" | "deep";
@@ -68,6 +70,7 @@ export function buildSuggestions(model: ChatModelId, ctx?: PromptContext | null)
   const amount = amountFor(ctx?.cashBalance ?? null);
   const hasHoldings = (ctx?.holdingsCount ?? 0) > 0 && !!t1;
   const hasLedger = !!ctx?.hasLedger;
+  const hasThesis = !!ctx?.hasThesis;
 
   const out: string[] = [];
   const add = (s: string | null | undefined) => {
@@ -84,6 +87,11 @@ export function buildSuggestions(model: ChatModelId, ctx?: PromptContext | null)
       add(`Which of my holdings no longer earn their place, and should I trim any?`);
       add(`Which of my holdings carry my dividend income, and is any payout at risk?`);
       add(sector1 ? `Am I over-concentrated in ${sector1}? Compare it to the rest of my book.` : `Show my sector weights and where I'm over- or under-exposed.`);
+      // Cross-holding pattern questions — the platform's edge.
+      add(`Which of my holdings share a sector or risk driver, and where am I doubling up?`);
+      add(`What single event or risk would hit the most of my holdings at once?`);
+      add(`What's my biggest hidden concentration across the whole book?`);
+      if (hasThesis) add(`Which of my holdings have drifted from the thesis I wrote for them?`);
       if (hasLedger) {
         add(`Find any discrepancies between my holdings, transaction ledger, and broker records.`);
         add(`Which holdings drove my realized and unrealized gains the most, after dividends and fees?`);
@@ -97,6 +105,8 @@ export function buildSuggestions(model: ChatModelId, ctx?: PromptContext | null)
     } else if (tier === "medium") {
       add(`Which of my holdings look most attractively valued today?`);
       add(`Which of my holdings carry my dividend income?`);
+      add(`Which of my holdings overlap in sector or risk?`);
+      if (hasThesis) add(`Which of my holdings still match the thesis I wrote, and which have drifted?`);
       add(t2 ? `Compare ${t1} and ${t2} for a long-term hold, and which deserves ${amount} more.` : null);
       for (const s of sectors.slice(0, 3)) add(`Is the ${s} sector still a good place for my long-term capital?`);
       for (const t of tickers.slice(0, 6)) {
@@ -110,6 +120,7 @@ export function buildSuggestions(model: ChatModelId, ctx?: PromptContext | null)
         add(`Is ${t} attractively valued right now for a long-term investor?`);
         add(`How has my ${t} position performed after dividends and fees?`);
         add(`What's the latest news affecting ${t}?`);
+        if (hasThesis) add(`Does my ${t} position still match the thesis I wrote for it?`);
         if (hasLedger) add(`Review my ${t} cost basis: did recent buys have less margin of safety?`);
       }
     }
