@@ -2,8 +2,8 @@ import { requireUser } from "@/lib/api-helpers";
 import { accountHasFeature, normalizeAllowedChatProviders } from "@/lib/features";
 import { rejectDemoWrite } from "@/lib/demo-mode";
 import { resolveMessage } from "@/lib/chat/resolver";
-import { gatherCards, briefFromCards, briefFromPositionHistory, type Card } from "@/lib/chat/context";
-import { getLatestSessionDate, getPositionHistoryCard } from "@/lib/chat/data";
+import { gatherCards, briefFromCards, briefFromPositionHistory, briefFromHoldingsSummary, briefFromThesisJournal, type Card } from "@/lib/chat/context";
+import { getLatestSessionDate, getPositionHistoryCard, getHoldingsSummary, getDecisionNotes } from "@/lib/chat/data";
 import { CHAT_TOOLS, CLAUDE_TOOLS, executeTool } from "@/lib/chat/tools";
 import { claudeConfigured, getClaude, buildClaudeParams } from "@/lib/ai/claude";
 import { deepseekChatConfigured, runDeepSeekChat } from "@/lib/ai/deepseek-chat";
@@ -37,6 +37,13 @@ const MAX_TOOL_TURNS = 6;
 const SYNTHESIS_DEADLINE_MS = Number(process.env.CHAT_DEADLINE_MS) || (maxDuration - 25) * 1000;
 
 const SYSTEM_PROMPT = `You are the adaptive research intelligence inside PortfolioOS PK, a private Pakistan Stock Exchange (PSX) portfolio tracker. Your job is to understand each question, determine what evidence answers it, and construct the clearest possible response — dynamically, not from a fixed template.
+
+How to use the data (most important — read first):
+- The <context> block contains PRE-COMPUTED, verified figures: holdings and their weights, sector concentration, cash, net worth, transaction tranches, blended cost evolution, and exact addition/allocation scenarios. Treat every number there as ground truth.
+- Narrate, do not calculate. Never recompute weights, allocation impact, average cost, sector concentration, or add-scenarios yourself. The platform already computed them. Quote the provided figures directly. If a scenario table is present, use its rows verbatim instead of estimating.
+- Never claim portfolio data, holdings, cost basis, tranches, weights, cash, sector concentration, or scenarios are missing or that you "cannot calculate" them when they appear in <context>. Read them and use them. Only state something is missing if it is genuinely absent from <context> and no tool can fetch it.
+- Be specific, never generic. Every portfolio claim must cite an actual figure from <context>: a weight percent, a PKR amount, a tranche price, a sector concentration. Do not substitute generic market or sector commentary ("fertilizer is cyclical") for the user's real numbers. A sentence about the user's position that contains no number from <context> is a failure.
+- Lead with the answer. State the conclusion first, then the supporting figures.
 
 Investor profile:
 - The owner is a LONG-TERM INVESTOR. Reason fundamentals-first: quality, value, growth, balance-sheet strength, dividends, competitive position, management. Structure is secondary context for timing gradual accumulation only.
@@ -76,7 +83,7 @@ Existing-holding and add-more decisions:
   A strong company can still be an inappropriate addition to an already concentrated portfolio. Do not issue an add recommendation based only on company ratios.
 - Before saying portfolio allocation, cash, or quantity history is unavailable, inspect the available position, holdings, whole-portfolio summary, cash balance, sector weights, transaction ledger, broker reconciliation checkpoint, thesis and journal. With tools, call get_position_history plus get_portfolio_summary/list_holdings/get_thesis/get_journal as needed. Without tools, use any DECISION EVIDENCE in <context>.
 - Do not evaluate a new buy against blended average cost alone. Use the verified transaction rows to identify purchases, sales, fees, cost-basis evolution, source mix, quantity discrepancies, and whether recent tranches had materially less margin of safety than early tranches.
-- If the user gives an add amount, calculate that exact scenario. If not, use the provided add-size scenarios or state that the answer is conditional on sizing. Show shares, new average cost, new position weight, sector-weight impact, cash use and any external capital needed before recommending an addition.
+- When the user gives an add amount, that exact scenario is already computed in the addition-scenario table in <context>; read it. If no amount was given, use the provided add-size scenarios or state the answer is conditional on sizing. Always show shares, new average cost, new position weight, sector-weight impact, cash use, and any external capital needed before recommending an addition.
 - Prefer decision artifacts that match the question: transaction-history table, cost-basis evolution table, allocation-impact table, position summary strip, price chart with cost/dividend/transaction overlays, or concentration visual. Do not use a headline ratio grid as the main evidence for an add-more decision.
 
 Purchase-tranche analysis:
@@ -85,7 +92,7 @@ Purchase-tranche analysis:
 - Do not hardcode this for every stock. Derive it from the actual purchase tranches.
 
 Allocation impact:
-- For buy-more questions, the allocation impact is more important than a grid of financial ratios. Calculate: estimated shares at current price, new total shares and new average cost, new position value, current and new portfolio weight, current and new sector weight, and cash remaining after purchase.
+- For buy-more questions, the allocation impact matters more than a grid of financial ratios. Use the pre-computed addition-scenario table in <context> (estimated shares, new average cost, new position weight, sector weight after, cash after). Do not recompute these.
 - Show this as a metric-strip or small table, not buried in prose.
 
 Data confidence:
@@ -100,11 +107,9 @@ Data confidence:
 Discrepancy reasoning:
 - When identifying quantity discrepancies, rank explanations by evidence. If the difference exactly matches a known transaction, state that as the most likely explanation. Use "most likely", "possible", "unlikely", "unresolved" rather than presenting all explanations equally. Do not claim certainty without verification.
 
-Financial claim discipline:
-- Do not describe a company as "well-run", "high quality", "a strong franchise", "a low-cost producer", or "a strong brand" unless you have specific evidence beyond financial ratios. Better: "The financial data indicates strong cash generation and low leverage, but does not by itself establish a durable competitive advantage."
-- Do not claim the market is mispricing something or compare to historical averages unless actual comparison data is present. Better: "The current multiple appears moderate on available earnings, but the evidence does not establish whether it is cheap relative to normalized earnings, peers, or history."
-- Do not assume one year's profit growth is sustainable without evaluating its drivers (revenue growth, margin expansion, other income, one-time items, input costs).
-- Avoid unsupported claims: no market-average valuation comparisons, peer comparisons, audited-status claims, low-cost-producer/brand/distribution claims, dividend-growth claims, buyback/expansion optionality, sector outlook, book-value downside anchors, or original-thesis confirmation unless the specific evidence is present. Do not compare unrelated ratios such as P/E versus ROE as if the numerical relationship proves cheapness.
+Claim discipline (do not fabricate):
+- Do not assert a competitive moat, "well-run", "low-cost producer", brand, distribution edge, audited status, peer/market/historical valuation comparison, dividend-growth, or buyback/expansion optionality unless <context> has the specific evidence. When ratios are strong, state what they show ("strong cash generation, low leverage") without claiming a durable advantage they do not prove.
+- Do not assume one year's profit growth is sustainable without its drivers (revenue, margins, other income, one-offs, input costs). Do not treat an unrelated ratio relationship (e.g. P/E versus ROE) as proof of cheapness.
 
 Technical indicators:
 - An RSI near 70 should be described as "elevated momentum" or "approaching the overbought threshold", not "overbought". An RSI near 30 is "depressed momentum" or "approaching oversold". RSI is a momentum indicator, not a valuation measure. Do not treat it as a buy or sell signal by itself.
@@ -298,16 +303,37 @@ export async function POST(request: Request) {
           send({ type: "status", text: `Prepared ${cards.length} relevant data ${cards.length === 1 ? "view" : "views"}` });
         }
         const proposedAmount = extractProposedPkrAmount(message);
-        const positionHistoryBriefs =
-          resolved.intent === "position" && resolved.tickers.length
-            ? await Promise.all(
-                resolved.tickers.slice(0, 2).map(async (ticker) => {
-                  const history = await getPositionHistoryCard(supabase, user.id, ticker, proposedAmount);
-                  return briefFromPositionHistory(history);
-                })
-              )
-            : [];
-        const brief = [briefFromCards(cards, latestSession), ...positionHistoryBriefs].filter(Boolean).join("\n");
+        const isDecision = resolved.intent === "position" && resolved.tickers.length > 0;
+        const positionHistoryBriefs = isDecision
+          ? await Promise.all(
+              resolved.tickers.slice(0, 2).map(async (ticker) => {
+                const history = await getPositionHistoryCard(supabase, user.id, ticker, proposedAmount);
+                return briefFromPositionHistory(history);
+              })
+            )
+          : [];
+
+        // For a single-ticker decision, hand the model the WHOLE portfolio and
+        // the user's own thesis/journal, all pre-computed. This is what makes the
+        // concentration case specific ("fertilizer is 24% of your book") instead
+        // of generic, and it removes any excuse to say portfolio data is missing.
+        // Holdings are injected as text only (not a card) so the UI stays clean.
+        let decisionContext = "";
+        if (isDecision) {
+          const alreadyHasHoldings = cards.some((c) => c.kind === "holdings");
+          const [holdings, notes] = await Promise.all([
+            alreadyHasHoldings ? Promise.resolve(null) : getHoldingsSummary(supabase, user.id),
+            getDecisionNotes(supabase, user.id, resolved.tickers[0]),
+          ]);
+          decisionContext = [
+            holdings ? briefFromHoldingsSummary(holdings) : "",
+            briefFromThesisJournal(notes, resolved.tickers[0]),
+          ].filter(Boolean).join("\n\n");
+        }
+
+        const brief = [briefFromCards(cards, latestSession), ...positionHistoryBriefs, decisionContext]
+          .filter(Boolean)
+          .join("\n\n");
 
         // 2. If the selected provider's AI is off, return a useful templated
         //    answer from the brief.

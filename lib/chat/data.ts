@@ -909,3 +909,54 @@ export async function getHoldingsSummary(db: SupabaseClient, userId: string): Pr
     sectors,
   };
 }
+
+export interface ThesisRow {
+  why_bought: string | null;
+  expectation: string | null;
+  time_horizon: string | null;
+  key_risks: string | null;
+  add_conditions: string | null;
+  sell_conditions: string | null;
+  confidence: number | null;
+  status: string | null;
+}
+export interface JournalRow {
+  entry_date: string | null;
+  entry_type: string | null;
+  title: string | null;
+  body: string | null;
+}
+export interface DecisionNotes {
+  thesis: ThesisRow | null;
+  journal: JournalRow[];
+}
+
+/**
+ * The user's own thesis and recent journal for a ticker — what they decided and
+ * why. Injected into decision questions so the answer grounds in the user's
+ * stated reasoning instead of generic commentary.
+ */
+export async function getDecisionNotes(db: SupabaseClient, userId: string, ticker: string): Promise<DecisionNotes> {
+  const t = ticker.toUpperCase();
+  const [thesisRes, journalRes] = await Promise.all([
+    db
+      .from("theses")
+      .select("why_bought, expectation, time_horizon, key_risks, add_conditions, sell_conditions, confidence, status")
+      .eq("user_id", userId)
+      .eq("ticker", t)
+      .order("updated_at", { ascending: false })
+      .limit(1)
+      .maybeSingle(),
+    db
+      .from("journal_entries")
+      .select("entry_date, entry_type, title, body")
+      .eq("user_id", userId)
+      .eq("ticker", t)
+      .order("entry_date", { ascending: false })
+      .limit(3),
+  ]);
+  return {
+    thesis: (thesisRes.data as ThesisRow | null) ?? null,
+    journal: (journalRes.data as JournalRow[] | null) ?? [],
+  };
+}
