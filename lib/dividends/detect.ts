@@ -1,4 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { getStockMasterMap } from "@/lib/stock-master";
 import { getCompanyAnnouncements, type PsxAnnouncement } from "@/lib/news/psx-announcements";
 import { getTaxSettings } from "@/lib/dividends/tax";
 import { extractDividendDetailsFromPdf, type PdfDividendDetails } from "@/lib/dividends/pdf-extract";
@@ -98,16 +99,16 @@ export async function checkUpcomingDividends(
   const today = new Date().toISOString().slice(0, 10);
   const errors: string[] = [];
 
-  const [{ data: holdings }, { data: masters }] = await Promise.all([
+  const [{ data: holdings }, masterMap] = await Promise.all([
     supabase
       .from("holdings")
       .select("ticker, company_name, quantity")
       .eq("user_id", userId)
       .gt("quantity", 0),
-    supabase.from("stock_master").select("ticker, face_value"),
+    getStockMasterMap(),
   ]);
   const faceValues = new Map(
-    (masters ?? []).map((m) => [String(m.ticker), m.face_value !== null ? Number(m.face_value) : null])
+    [...masterMap.values()].map((m) => [m.ticker, m.face_value !== null ? Number(m.face_value) : null])
   );
   const list = (holdings ?? []).map((h) => ({
     ticker: String(h.ticker),
