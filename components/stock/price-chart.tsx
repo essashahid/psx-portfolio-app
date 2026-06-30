@@ -32,12 +32,12 @@ import {
 import type { Candle } from "@/lib/company/types";
 import type { TechnicalSignals } from "@/lib/market/technicals";
 
-const RANGES: { id: string; days: number; label: string }[] = [
+const RANGES: { id: string; days: number | null; label: string }[] = [
   { id: "1M", days: 22, label: "1M" },
   { id: "3M", days: 66, label: "3M" },
   { id: "6M", days: 132, label: "6M" },
+  { id: "YTD", days: null, label: "YTD" },
   { id: "1Y", days: 252, label: "1Y" },
-  { id: "3Y", days: 756, label: "3Y" },
   { id: "5Y", days: 1300, label: "5Y" },
 ];
 
@@ -58,11 +58,15 @@ export function StockPriceChart({
   signals,
   benchmark,
   ticker,
+  averageCostLine,
+  showCurrentPriceLine = false,
 }: {
   candles: Candle[];
   signals?: TechnicalSignals | null;
   benchmark?: BenchmarkPoint[];
   ticker?: string;
+  averageCostLine?: number | null;
+  showCurrentPriceLine?: boolean;
 }) {
   const animate = useChartMotion();
   const [range, setRange] = useState("1Y");
@@ -83,6 +87,11 @@ export function StockPriceChart({
       ma50: sma(closes, 50, i),
       ma200: sma(closes, 200, i),
     }));
+    if (range === "YTD") {
+      const year = new Date().getFullYear();
+      const start = `${year}-01-01`;
+      return enriched.filter((c) => c.date >= start);
+    }
     const days = RANGES.find((r) => r.id === range)?.days ?? 252;
     return enriched.slice(-days);
   }, [candles, range]);
@@ -123,8 +132,11 @@ export function StockPriceChart({
   // and the rebase anchor is the first day where both series have a value.
   const relativeData = useMemo(() => {
     if (!hasBenchmark) return [] as { date: string; stock: number; kse: number | null }[];
-    const days = RANGES.find((r) => r.id === range)?.days ?? 252;
-    const slice = candles.slice(-days);
+    const rangeDef = RANGES.find((r) => r.id === range);
+    const slice =
+      range === "YTD"
+        ? candles.filter((c) => c.date >= `${new Date().getFullYear()}-01-01`)
+        : candles.slice(-(rangeDef?.days ?? 252));
     const bench = benchmark!
       .filter((p) => Number.isFinite(p.close) && p.close > 0)
       .sort((a, b) => (a.date < b.date ? -1 : 1));
@@ -169,6 +181,7 @@ export function StockPriceChart({
 
   const trendUp = rangeChange === null || rangeChange >= 0;
   const lineColor = trendUp ? INK.up : INK.down;
+  const currentPrice = data[data.length - 1]?.close ?? null;
   const tickEvery = Math.max(1, Math.floor((relative ? relativeData.length : data.length) / 6));
   // Long ranges: shorten the draw so 1,300-point sweeps still feel snappy.
   const drawMs = data.length > 400 ? 600 : DRAW_MS;
@@ -425,6 +438,28 @@ export function StockPriceChart({
                 label={{ value: "52w low", position: "right", fontSize: 9.5, fill: INK.neutral }}
               />
             </>
+          )}
+          {showCurrentPriceLine && currentPrice !== null && (
+            <ReferenceLine
+              yAxisId="price"
+              y={currentPrice}
+              ifOverflow="hidden"
+              stroke={lineColor}
+              strokeDasharray="2 3"
+              strokeOpacity={0.5}
+              label={{ value: "Current", position: "right", fontSize: 9.5, fill: lineColor }}
+            />
+          )}
+          {averageCostLine !== null && averageCostLine !== undefined && averageCostLine > 0 && (
+            <ReferenceLine
+              yAxisId="price"
+              y={averageCostLine}
+              ifOverflow="extendDomain"
+              stroke={INK.amber}
+              strokeDasharray="6 4"
+              strokeOpacity={0.9}
+              label={{ value: "Avg cost", position: "left", fontSize: 9.5, fill: INK.amber }}
+            />
           )}
           {hasStructure && acc?.majorSupport != null && (
             <ReferenceLine

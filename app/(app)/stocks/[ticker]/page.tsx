@@ -8,7 +8,7 @@ import { Tabs } from "@/components/ui/tabs";
 import { WatchlistButton } from "@/components/stock/watchlist-button";
 import { GenerateReportDialog } from "@/components/stock/generate-report-dialog";
 import { CardSkeleton, TableSkeleton } from "@/components/page-skeleton";
-import { formatMoney, formatNumber, formatSignedPct, cn } from "@/lib/utils";
+import { formatNumber, formatSignedPct, cn } from "@/lib/utils";
 import { normalizeEnabledFeatures } from "@/lib/features";
 import { ArrowLeft, Search } from "lucide-react";
 import {
@@ -18,16 +18,27 @@ import {
 
 export const dynamic = "force-dynamic";
 
-const num = (v: number | null | undefined) => (v === null || v === undefined ? "—" : formatNumber(v));
-
 function HeaderMetric({ label, value, sub, tone }: { label: string; value: string; sub?: string; tone?: "positive" | "negative" }) {
   return (
-    <div>
+    <div className="min-w-[7rem]">
       <p className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">{label}</p>
-      <p className={cn("mt-0.5 text-sm font-semibold tabular-nums", tone === "positive" && "text-emerald-600", tone === "negative" && "text-red-600")}>{value}</p>
+      <p className={cn("mt-0.5 text-sm font-semibold tabular-nums text-foreground", tone === "positive" && "text-emerald-600", tone === "negative" && "text-red-600")}>{value}</p>
       {sub && <p className="text-[10px] text-muted-foreground">{sub}</p>}
     </div>
   );
+}
+
+function compactNumber(value: number | null | undefined, digits = 1): string {
+  if (value === null || value === undefined || Number.isNaN(value)) return "—";
+  return new Intl.NumberFormat("en-PK", {
+    notation: "compact",
+    maximumFractionDigits: digits,
+  }).format(value);
+}
+
+function compactMoney(value: number | null | undefined): string {
+  if (value === null || value === undefined || Number.isNaN(value)) return "—";
+  return `PKR ${compactNumber(value)}`;
 }
 
 export default async function StockCockpitPage({ params }: { params: Promise<{ ticker: string }> }) {
@@ -79,6 +90,12 @@ export default async function StockCockpitPage({ params }: { params: Promise<{ t
     .filter((d) => d.dividend_per_share && ttmCutoff && (d.announcement_date ?? "") >= ttmCutoff)
     .reduce((s, d) => s + Number(d.dividend_per_share), 0);
   const divYield = ttmDps > 0 && quote.price ? (ttmDps / quote.price) * 100 : null;
+  const range52 =
+    header.technicals?.fiftyTwoWeekLow !== null && header.technicals?.fiftyTwoWeekLow !== undefined &&
+    header.technicals?.fiftyTwoWeekHigh !== null && header.technicals?.fiftyTwoWeekHigh !== undefined
+      ? `${formatNumber(header.technicals.fiftyTwoWeekLow)}-${formatNumber(header.technicals.fiftyTwoWeekHigh)}`
+      : "—";
+  const lastUpdated = quote.asOf ?? metadata.meta.lastUpdated?.slice(0, 10) ?? null;
 
   const tabs = [
     { id: "overview", label: "Overview", content: <Suspense fallback={<CardSkeleton lines={8} />}><OverviewPanel ticker={ticker} companyEnrichmentEnabled={companyEnrichmentEnabled} readOnly={isDemo} /></Suspense> },
@@ -104,43 +121,48 @@ export default async function StockCockpitPage({ params }: { params: Promise<{ t
         </Link>
       </div>
 
-      {/* Top summary */}
-      <Card>
-        <CardContent className="p-5">
-          <div className="flex flex-wrap items-start justify-between gap-4">
-            <div>
-              <div className="flex items-center gap-2">
-                <h1 className="text-2xl font-semibold tracking-tight">{ticker}</h1>
+      <Card className="overflow-hidden border-slate-200 bg-white shadow-sm">
+        <CardContent className="p-4 sm:p-5">
+          <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+            <div className="min-w-0">
+              <div className="flex flex-wrap items-center gap-2">
+                <h1 className="text-2xl font-semibold tracking-tight text-slate-950">{ticker}</h1>
                 {holding && <Badge variant="green">Owned</Badge>}
-                <Badge variant="secondary">PSX</Badge>
               </div>
-              <p className="mt-0.5 text-sm text-muted-foreground">
-                {metadata.companyName ?? "Company name unavailable"}{metadata.sector ? ` · ${metadata.sector}` : ""}
+              <p className="mt-1 text-sm font-medium text-slate-700">{metadata.companyName ?? "Company name unavailable"}</p>
+              <p className="mt-0.5 text-xs text-muted-foreground">
+                {[metadata.sector, metadata.exchange ?? "PSX"].filter(Boolean).join(" · ")}
               </p>
             </div>
-            <div className="flex flex-wrap items-center justify-end gap-3">
-              <div className="text-right">
-                <p className="text-2xl font-semibold tabular-nums">{quote.price !== null ? formatNumber(quote.price) : "—"}</p>
-                <p className={cn("text-xs tabular-nums", dayTone === "positive" && "text-emerald-600", dayTone === "negative" && "text-red-600", !dayTone && "text-muted-foreground")}>
-                  {quote.dayChange !== null ? `${quote.dayChange > 0 ? "+" : ""}${formatNumber(quote.dayChange)}` : "—"}
-                  {quote.dayChangePct !== null ? ` (${formatSignedPct(quote.dayChangePct)})` : ""}
-                  {quote.asOf ? ` · ${quote.asOf}` : ""}
+
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center lg:justify-end">
+              <div className="sm:text-right">
+                <p className="text-[11px] uppercase tracking-wide text-muted-foreground">Current price</p>
+                <p className="text-3xl font-semibold leading-tight tabular-nums text-slate-950">
+                  {quote.price !== null ? `PKR ${formatNumber(quote.price)}` : "—"}
+                </p>
+                <p className={cn("mt-0.5 text-xs font-medium tabular-nums", dayTone === "positive" && "text-emerald-600", dayTone === "negative" && "text-red-600", !dayTone && "text-muted-foreground")}>
+                  {quote.dayChangePct !== null ? formatSignedPct(quote.dayChangePct) : "—"}
+                  {quote.dayChange !== null ? ` · ${quote.dayChange > 0 ? "+" : ""}${formatNumber(quote.dayChange)}` : ""}
+                  {lastUpdated ? <span className="font-normal text-muted-foreground"> · Updated {lastUpdated}</span> : null}
                 </p>
               </div>
-              {companyReportsEnabled && <GenerateReportDialog ticker={ticker} companyName={metadata.companyName} />}
-              {!isDemo && <WatchlistButton ticker={ticker} initialWatched={!!watch} size="default" />}
+              <div className="flex flex-wrap items-center gap-2">
+                {companyReportsEnabled && <GenerateReportDialog ticker={ticker} companyName={metadata.companyName} />}
+                {!isDemo && <WatchlistButton ticker={ticker} initialWatched={!!watch} size="default" />}
+              </div>
             </div>
           </div>
 
-          <div className="mt-5 grid grid-cols-4 gap-3 border-t border-border pt-4 lg:grid-cols-8">
-            <HeaderMetric label="Market cap" value={metadata.marketCap !== null ? formatMoney(metadata.marketCap) : "—"} />
-            <HeaderMetric label="52-wk high" value={num(header.technicals?.fiftyTwoWeekHigh)} />
-            <HeaderMetric label="52-wk low" value={num(header.technicals?.fiftyTwoWeekLow)} />
-            <HeaderMetric label="EPS" value={eps !== null ? formatNumber(eps) : "—"} sub={eps !== null ? epsPeriod ?? undefined : "extract filings"} />
-            <HeaderMetric label="P/E" value={pe !== null ? pe.toFixed(1) : "—"} sub={pe === null ? (eps === null ? "needs EPS" : "needs price") : undefined} />
-            <HeaderMetric label="Div yield" value={divYield !== null ? `${divYield.toFixed(2)}%` : "—"} sub={divYield !== null ? "TTM recorded" : "no dividends recorded"} />
-            <HeaderMetric label="Volume" value={quote.volume !== null ? formatNumber(quote.volume, 0) : "—"} />
-            <HeaderMetric label="Updated" value={quote.asOf ?? metadata.meta.lastUpdated?.slice(0, 10) ?? "—"} sub={quote.meta.source ? `via ${quote.meta.source}` : undefined} />
+          <div className="mt-5 overflow-x-auto border-t border-slate-200 pt-4">
+            <div className="grid min-w-[760px] grid-cols-6 gap-4">
+              <HeaderMetric label="Market cap" value={compactMoney(metadata.marketCap)} />
+              <HeaderMetric label="P/E" value={pe !== null ? `${pe.toFixed(1)}x` : "—"} sub={pe === null ? (eps === null ? "needs EPS" : "needs price") : undefined} />
+              <HeaderMetric label="EPS" value={eps !== null ? formatNumber(eps) : "—"} sub={eps !== null ? epsPeriod ?? undefined : "extract filings"} />
+              <HeaderMetric label="Dividend yield" value={divYield !== null ? `${divYield.toFixed(2)}%` : "Incomplete"} sub={divYield !== null ? "TTM recorded" : latestDividendDate ? "needs verified DPS" : "unverified"} tone={divYield === null && latestDividendDate ? "negative" : undefined} />
+              <HeaderMetric label="Volume" value={quote.volume !== null ? compactNumber(quote.volume) : "—"} />
+              <HeaderMetric label="52-week range" value={range52} />
+            </div>
           </div>
         </CardContent>
       </Card>
