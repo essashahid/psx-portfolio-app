@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { createClient, getUser } from "@/lib/supabase/server";
 import { getCompanyMetadata } from "@/lib/company/metadata";
 import { getTechnicals } from "@/lib/company/technicals";
@@ -13,7 +14,6 @@ import { Badge } from "@/components/ui/badge";
 import { Table, THead, TBody, TR, TH, TD } from "@/components/ui/table";
 import { EmptyState } from "@/components/empty-state";
 import { SectionMeta } from "@/components/stock/section-meta";
-import { SectorChip } from "@/components/sector-chip";
 import { ActionButton } from "@/components/action-button";
 import { WatchlistButton } from "@/components/stock/watchlist-button";
 import { CompanyAiActions } from "@/components/stock/company-ai-actions";
@@ -22,7 +22,7 @@ import { RatioSnapshotChart } from "@/components/charts-lazy";
 import { StockPriceChart } from "@/components/stock/price-chart-lazy";
 import { formatMoney, formatNumber, formatSignedPct, cn } from "@/lib/utils";
 import {
-  FileText, Sparkles, TrendingUp, Banknote, Calculator, Building2, Info,
+  AlertTriangle, Banknote, BriefcaseBusiness, Calculator, FileText, Info, Newspaper, Sparkles, TrendingUp,
 } from "lucide-react";
 
 // ---------------------------------------------------------------------------
@@ -60,6 +60,114 @@ function Unavailable({ note }: { note: string }) {
 
 const num = (v: number | null | undefined) => (v === null || v === undefined ? "—" : formatNumber(v));
 
+function compactNumber(value: number | null | undefined, digits = 1): string {
+  if (value === null || value === undefined || Number.isNaN(value)) return "—";
+  return new Intl.NumberFormat("en-PK", {
+    notation: "compact",
+    maximumFractionDigits: digits,
+  }).format(value);
+}
+
+function compactMoney(value: number | null | undefined): string {
+  if (value === null || value === undefined || Number.isNaN(value)) return "—";
+  return `PKR ${compactNumber(value)}`;
+}
+
+function StatusBadge({
+  label,
+  tone = "secondary",
+}: {
+  label: string;
+  tone?: "green" | "amber" | "red" | "blue" | "secondary";
+}) {
+  return <Badge variant={tone}>{label}</Badge>;
+}
+
+function freshnessBadge(freshness: string | null | undefined) {
+  if (freshness === "fresh") return <StatusBadge label="Fresh" tone="green" />;
+  if (freshness === "partial") return <StatusBadge label="Partial" tone="amber" />;
+  if (freshness === "stale") return <StatusBadge label="Stale" tone="amber" />;
+  if (freshness === "needs_review") return <StatusBadge label="Unverified" tone="amber" />;
+  return <StatusBadge label="Missing" tone="red" />;
+}
+
+function shortDescription(description: string | null): string | null {
+  if (!description) return null;
+  const cleaned = description.replace(/\s+/g, " ").trim();
+  if (cleaned.length <= 155) return cleaned;
+  const firstSentence = cleaned.match(/^.{40,155}?[.!?](\s|$)/)?.[0]?.trim();
+  return firstSentence ?? `${cleaned.slice(0, 152).trim()}...`;
+}
+
+function ratioByName(rows: RatioRow[], name: string): RatioRow | null {
+  return rows.find((r) => r.ratio_name === name) ?? null;
+}
+
+function ratioText(row: RatioRow | null, kind: "multiple" | "percent" | "number" = "number"): string {
+  if (!row || row.ratio_value === null) return "—";
+  if (kind === "multiple") return `${row.ratio_value.toFixed(1)}x`;
+  if (kind === "percent") return `${row.ratio_value.toFixed(1)}%`;
+  return formatNumber(row.ratio_value);
+}
+
+function latestRatioYear(rows: RatioRow[]): number | null {
+  const years = rows
+    .map((r) => r.source_period?.match(/\b(20\d{2})\b/)?.[1])
+    .filter((v): v is string => Boolean(v))
+    .map(Number);
+  return years.length ? Math.max(...years) : null;
+}
+
+function OverviewMetric({
+  label,
+  value,
+  sub,
+  tone,
+}: {
+  label: string;
+  value: string;
+  sub?: string;
+  tone?: "positive" | "negative" | "warning";
+}) {
+  return (
+    <div className="min-w-0">
+      <p className="text-[11px] text-muted-foreground">{label}</p>
+      <p
+        className={cn(
+          "mt-0.5 truncate text-sm font-semibold tabular-nums text-slate-950",
+          tone === "positive" && "text-emerald-700",
+          tone === "negative" && "text-red-700",
+          tone === "warning" && "text-amber-700"
+        )}
+      >
+        {value}
+      </p>
+      {sub ? <p className="mt-0.5 truncate text-[10px] text-muted-foreground">{sub}</p> : null}
+    </div>
+  );
+}
+
+function SignalGroup({
+  title,
+  items,
+}: {
+  title: string;
+  items: { label: string; value: string; sub?: string; tone?: "positive" | "negative" | "warning" }[];
+}) {
+  const visible = items.filter((item) => item.value !== "—");
+  if (visible.length === 0) return null;
+  return (
+    <div className="rounded-xl border border-slate-200 bg-slate-50/60 p-3">
+      <p className="text-xs font-semibold text-slate-900">{title}</p>
+      <div className="mt-3 grid gap-3 sm:grid-cols-3 lg:grid-cols-1 xl:grid-cols-3">
+        {visible.map((item) => (
+          <OverviewMetric key={item.label} {...item} />
+        ))}
+      </div>
+    </div>
+  );
+}
+
 // ---------------------------------------------------------------------------
 // 1. Overview
 // ---------------------------------------------------------------------------
@@ -77,28 +185,168 @@ export async function OverviewPanel({
   const user = await getUser();
   if (!user) return null;
 
-  const [metadata, technicals, dividends, portfolio] = await Promise.all([
+  const [metadata, technicals, dividends, portfolio, ratios, filings, eod] = await Promise.all([
     getCompanyMetadata(supabase, ticker),
     getTechnicals(supabase, ticker),
     getCompanyDividends(supabase, user.id, ticker),
     getPortfolio(supabase, user.id),
+    computeRatios(supabase, ticker),
+    getCompanyFilings(ticker, 12),
+    getCachedEod(supabase, []),
   ]);
   const holding = portfolio.holdings.find((h) => h.ticker === ticker);
   const latestDiv = dividends[0];
+  const currentPrice = technicals.latestPrice ?? holding?.latest_price ?? null;
+  const marketValue =
+    holding && currentPrice !== null ? holding.quantity * currentPrice : holding?.market_value ?? null;
+  const totalCost = holding?.total_cost ?? null;
+  const positionPl = marketValue !== null && totalCost !== null ? marketValue - totalCost : holding?.unrealized_pl ?? null;
+  const positionReturn = positionPl !== null && totalCost && totalCost > 0 ? (positionPl / totalCost) * 100 : holding?.unrealized_pl_pct ?? null;
+  const positionTone = positionPl === null ? undefined : positionPl >= 0 ? "positive" : "negative";
+  const hasReceipt = Boolean(holding && holding.dividend_income > 0);
+  const dividendComplete = Boolean(latestDiv?.perShare !== null && latestDiv?.perShare !== undefined && (latestDiv.exDate || latestDiv.payDate || latestDiv.announcementDate));
+  const dividendIncomplete = Boolean((latestDiv && !dividendComplete) || (!latestDiv && hasReceipt));
+  const companySummary = shortDescription(metadata.description);
+  const marketsLabel = metadata.description
+    ? /export/i.test(metadata.description)
+      ? "Domestic and export"
+      : "Unverified"
+    : "Unverified";
+  const marketsSub = metadata.description && /export/i.test(metadata.description)
+    ? "from company profile"
+    : "needs source";
+  const signals = computeSignals(technicals.history);
+  const benchmark = (eod.get(KSE_SYMBOL) ?? []).map((p) => ({ date: p.date, close: p.close }));
+  const latestDevelopment =
+    filings.find((f) => f.category === "material") ??
+    filings.find((f) => f.category === "result") ??
+    filings[0] ??
+    null;
+
+  const pe = ratioByName(ratios, "P/E");
+  const pb = ratioByName(ratios, "P/B");
+  const earningsYield = ratioByName(ratios, "Earnings yield");
+  const eps = ratios.find((r) => r.ratio_name === "P/E")?.inputs.eps;
+  const epsValue = typeof eps === "number" && Number.isFinite(eps) ? eps : null;
+  const roe = ratioByName(ratios, "ROE");
+  const netMargin = ratioByName(ratios, "Net margin");
+  const debtEquity = ratioByName(ratios, "Debt-to-equity");
+  const interestCoverage = ratioByName(ratios, "Interest coverage");
+  const cashQuality = ratioByName(ratios, "OCF / PAT");
+  const ratioYear = latestRatioYear(ratios);
+  const currentYear = new Date().getFullYear();
+  const financialTone = ratioYear === null ? "red" : ratioYear < currentYear - 1 ? "amber" : "green";
+  const financialStatus = ratioYear === null ? "Missing" : ratioYear < currentYear - 1 ? "Stale" : "Fresh";
 
   return (
-    <div className="grid gap-4 lg:grid-cols-3">
-      <div className="space-y-4 lg:col-span-2">
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2"><Building2 className="h-4 w-4" /> Business overview</CardTitle>
+    <div className="space-y-4">
+      <div className="grid gap-4 lg:grid-cols-[minmax(0,2fr)_minmax(320px,1fr)]">
+        <Card className="border-slate-200 bg-white shadow-sm">
+          <CardHeader className="flex-row items-start justify-between gap-3 p-5 pb-2">
+            <div>
+              <CardTitle className="text-base">Price performance</CardTitle>
+              <CardDescription>
+                Historical close, volume, 52-week structure, average cost, and benchmark comparison.
+              </CardDescription>
+            </div>
+            <div className="flex flex-wrap justify-end gap-1.5">
+              {freshnessBadge(technicals.meta.freshness)}
+              {technicals.asOfDate ? <Badge variant="secondary">Price {technicals.asOfDate}</Badge> : null}
+            </div>
           </CardHeader>
-          <CardContent className="space-y-3">
-            {metadata.description ? (
-              <p className="text-sm leading-relaxed">{metadata.description}</p>
+          <CardContent className="p-5 pt-3">
+            {technicals.history.length > 0 ? (
+              <StockPriceChart
+                candles={technicals.history}
+                signals={signals}
+                benchmark={benchmark}
+                ticker={ticker}
+                averageCostLine={holding?.avg_cost ?? null}
+                showCurrentPriceLine
+              />
+            ) : (
+              <Unavailable note="No price history available from the PSX portal." />
+            )}
+            <div className="mt-3">
+              <SectionMeta meta={technicals.meta} ticker={ticker} refreshSection={readOnly ? undefined : "technicals"} />
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="border-slate-200 bg-white shadow-sm">
+          <CardHeader className="p-5 pb-2">
+            <div className="flex items-center justify-between gap-3">
+              <CardTitle className="text-base">Your position</CardTitle>
+              {holding ? <StatusBadge label="Owned" tone="green" /> : <StatusBadge label="Not held" />}
+            </div>
+            {holding?.price_date ? <CardDescription>Portfolio snapshot {holding.price_date}</CardDescription> : null}
+          </CardHeader>
+          <CardContent className="space-y-4 p-5 pt-3">
+            {holding ? (
+              <>
+                <div>
+                  <p className="text-xs text-muted-foreground">Market value</p>
+                  <p className="mt-1 text-3xl font-semibold tabular-nums text-slate-950">{compactMoney(marketValue)}</p>
+                  <div
+                    className={cn(
+                      "mt-3 rounded-xl px-3 py-2",
+                      positionTone === "positive" && "bg-emerald-50 text-emerald-800",
+                      positionTone === "negative" && "bg-red-50 text-red-800",
+                      !positionTone && "bg-slate-50 text-slate-700"
+                    )}
+                  >
+                    <p className="text-sm font-semibold tabular-nums">
+                      {positionPl !== null ? formatMoney(positionPl) : "—"}
+                      {positionReturn !== null ? ` · ${formatSignedPct(positionReturn)}` : ""}
+                    </p>
+                    <p className="text-[11px] opacity-80">Total unrealized return</p>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-x-4 gap-y-3">
+                  <OverviewMetric label="Average cost" value={holding.avg_cost !== null ? `PKR ${formatNumber(holding.avg_cost)}` : "—"} />
+                  <OverviewMetric label="Current price" value={currentPrice !== null ? `PKR ${formatNumber(currentPrice)}` : "—"} />
+                  <OverviewMetric label="Portfolio weight" value={holding.weight !== null ? `${holding.weight.toFixed(1)}%` : "—"} />
+                  <OverviewMetric label="Quantity" value={formatNumber(holding.quantity, 0)} />
+                  <OverviewMetric label="Dividends received" value={formatMoney(holding.dividend_income)} />
+                </div>
+
+                <Link
+                  href={`/holdings?ticker=${encodeURIComponent(ticker)}`}
+                  className="inline-flex h-9 items-center justify-center rounded-md border border-slate-200 px-3 text-xs font-medium hover:bg-slate-50"
+                >
+                  View transactions
+                </Link>
+              </>
+            ) : (
+              <div className="space-y-3 py-2">
+                <p className="text-sm text-muted-foreground">This stock is not currently in your portfolio.</p>
+                {!readOnly && <WatchlistButton ticker={ticker} initialWatched={false} />}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+
+      <div className="grid gap-4 lg:grid-cols-2">
+        <Card className="border-slate-200 bg-white shadow-sm">
+          <CardHeader className="p-5 pb-2">
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <CardTitle className="flex items-center gap-2 text-base"><BriefcaseBusiness className="h-4 w-4" /> Company at a glance</CardTitle>
+                <CardDescription>
+                  Source {metadata.meta.source ?? "unavailable"}{metadata.meta.lastUpdated ? ` · updated ${metadata.meta.lastUpdated.slice(0, 10)}` : ""}
+                </CardDescription>
+              </div>
+              {freshnessBadge(metadata.meta.freshness)}
+            </div>
+          </CardHeader>
+          <CardContent className="space-y-4 p-5 pt-3">
+            {companySummary ? (
+              <p className="text-sm leading-relaxed text-slate-800">{companySummary}</p>
             ) : companyEnrichmentEnabled ? (
               <div className="space-y-2">
-                <Unavailable note="No company profile on file yet. Generate one from public knowledge (AI, cited as such)." />
+                <Unavailable note="No company profile on file yet. Generate one from public knowledge, cited as AI." />
                 <ActionButton
                   endpoint={`/api/stocks/${ticker}/refresh`}
                   body={{ section: "description" }}
@@ -110,19 +358,21 @@ export async function OverviewPanel({
             ) : (
               <Unavailable note="No company profile on file yet." />
             )}
-            <div className="flex flex-wrap items-center gap-2 text-xs">
-              {metadata.sector && <SectorChip sector={metadata.sector} />}
-              {metadata.industry && <Badge variant="outline">{metadata.industry}</Badge>}
-              <Badge variant="secondary">PSX</Badge>
+
+            <div className="grid grid-cols-2 gap-3">
+              <OverviewMetric label="Sector" value={metadata.sector ?? "—"} />
+              <OverviewMetric label="Business" value={metadata.industry ?? metadata.businessLines[0] ?? "—"} />
+              <OverviewMetric label="Markets" value={marketsLabel} sub={marketsSub} tone={marketsLabel === "Unverified" ? "warning" : undefined} />
+              <OverviewMetric label="Exchange" value={metadata.exchange ?? "PSX"} />
             </div>
-            {metadata.businessLines.length > 0 && (
-              <div>
-                <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">Key business lines</p>
-                <ul className="mt-1 list-inside list-disc text-xs text-muted-foreground">
-                  {metadata.businessLines.map((b) => <li key={b}>{b}</li>)}
-                </ul>
-              </div>
-            )}
+
+            {metadata.description ? (
+              <details className="rounded-xl border border-slate-200 bg-slate-50/60 p-3 text-xs">
+                <summary className="cursor-pointer font-medium text-slate-900">Read full profile</summary>
+                <p className="mt-2 leading-relaxed text-muted-foreground">{metadata.description}</p>
+              </details>
+            ) : null}
+
             <SectionMeta
               meta={metadata.meta}
               ticker={ticker}
@@ -131,58 +381,118 @@ export async function OverviewPanel({
           </CardContent>
         </Card>
 
-        <Card>
-          <CardHeader><CardTitle>Key snapshot</CardTitle></CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-4 gap-2">
-              <Metric label="Price" value={num(technicals.latestPrice)} sub={technicals.asOfDate ? `as of ${technicals.asOfDate}` : undefined} />
-              <Metric label="Day change" value={technicals.dayChangePct !== null ? formatSignedPct(technicals.dayChangePct) : "—"} tone={technicals.dayChangePct ? (technicals.dayChangePct > 0 ? "positive" : "negative") : undefined} />
-              <Metric label="52-wk high" value={num(technicals.fiftyTwoWeekHigh)} />
-              <Metric label="52-wk low" value={num(technicals.fiftyTwoWeekLow)} />
-              <Metric label="50-day MA" value={num(technicals.ma50)} />
-              <Metric label="200-day MA" value={num(technicals.ma200)} />
-              <Metric label="RSI (14)" value={technicals.rsi !== null ? technicals.rsi.toFixed(0) : "—"} />
-              <Metric label="Volatility" value={technicals.volatility !== null ? `${technicals.volatility.toFixed(1)}%` : "—"} sub="annualized" />
+        <Card className="border-slate-200 bg-white shadow-sm">
+          <CardHeader className="p-5 pb-2">
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <CardTitle className="text-base">Key signals</CardTitle>
+                <CardDescription>
+                  Select ratios only. Full tables and technical indicators remain in their dedicated tabs.
+                </CardDescription>
+              </div>
+              <StatusBadge label={financialStatus} tone={financialTone} />
             </div>
+          </CardHeader>
+          <CardContent className="space-y-3 p-5 pt-3">
+            <SignalGroup
+              title="Valuation"
+              items={[
+                { label: "P/E", value: ratioText(pe, "multiple"), sub: pe?.source_period ?? undefined },
+                { label: "P/B", value: ratioText(pb, "multiple"), sub: pb?.source_period ?? undefined },
+                { label: "Earnings yield", value: ratioText(earningsYield, "percent"), sub: earningsYield?.source_period ?? undefined },
+              ]}
+            />
+            <SignalGroup
+              title="Profitability"
+              items={[
+                { label: "EPS", value: epsValue !== null ? formatNumber(epsValue) : "—", sub: pe?.source_period ?? undefined },
+                { label: "ROE", value: ratioText(roe, "percent"), sub: roe?.source_period ?? undefined },
+                { label: "Net margin", value: ratioText(netMargin, "percent"), sub: netMargin?.source_period ?? undefined },
+              ]}
+            />
+            <SignalGroup
+              title="Financial strength"
+              items={[
+                { label: "Debt/equity", value: ratioText(debtEquity), sub: debtEquity?.source_period ?? undefined },
+                { label: "Interest cover", value: ratioText(interestCoverage, "multiple"), sub: interestCoverage?.source_period ?? undefined },
+                { label: "Cash-flow quality", value: ratioText(cashQuality), sub: cashQuality?.source_period ?? undefined },
+              ]}
+            />
+            {ratioYear !== null && ratioYear < currentYear - 1 ? (
+              <div className="flex items-start gap-2 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800">
+                <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+                Financial ratios include FY{ratioYear} inputs while price data is from {technicals.asOfDate ?? "the latest available quote"}.
+              </div>
+            ) : null}
+            {ratios.every((r) => r.ratio_value === null) ? (
+              <Unavailable note="Key financial signals are unavailable until sourced financials are loaded." />
+            ) : null}
           </CardContent>
         </Card>
       </div>
 
-      <div className="space-y-4">
-        <Card>
-          <CardHeader><CardTitle>Your position</CardTitle></CardHeader>
-          <CardContent className="space-y-2">
-            {holding ? (
-              <>
-                <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
-                  <Metric label="Quantity" value={formatNumber(holding.quantity, 0)} />
-                  <Metric label="Avg cost" value={num(holding.avg_cost)} />
-                  <Metric label="Market value" value={holding.market_value !== null ? formatMoney(holding.market_value) : "—"} />
-                  <Metric label="Unrealized P/L" value={holding.unrealized_pl !== null ? formatMoney(holding.unrealized_pl) : "—"} tone={holding.unrealized_pl ? (holding.unrealized_pl > 0 ? "positive" : "negative") : undefined} />
-                  <Metric label="Portfolio weight" value={holding.weight !== null ? `${holding.weight.toFixed(1)}%` : "—"} />
-                  <Metric label="Dividends received" value={formatMoney(holding.dividend_income)} />
-                </div>
-                <Badge variant="green">In your portfolio</Badge>
-              </>
-            ) : (
-              <div className="space-y-3 py-2">
-                <p className="text-sm text-muted-foreground">Not currently held.</p>
-                {!readOnly && <WatchlistButton ticker={ticker} initialWatched={false} />}
+      <div className="grid gap-4 lg:grid-cols-2">
+        <Card className="border-slate-200 bg-white shadow-sm">
+          <CardHeader className="p-5 pb-2">
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <CardTitle className="flex items-center gap-2 text-base"><Newspaper className="h-4 w-4" /> Latest development</CardTitle>
+                <CardDescription>Most recent material filing, result, or announcement found for {ticker}.</CardDescription>
               </div>
+              {latestDevelopment ? <Badge variant={latestDevelopment.category === "material" ? "amber" : "blue"}>{latestDevelopment.category.replace(/_/g, " ")}</Badge> : null}
+            </div>
+          </CardHeader>
+          <CardContent className="p-5 pt-3">
+            {latestDevelopment ? (
+              <div>
+                <a href={latestDevelopment.url} target="_blank" rel="noopener noreferrer" className="text-sm font-semibold leading-snug text-slate-950 hover:underline">
+                  {latestDevelopment.title}
+                </a>
+                <p className="mt-1 text-[11px] text-muted-foreground">
+                  {latestDevelopment.date ?? "Date unavailable"} · {latestDevelopment.source}
+                </p>
+              </div>
+            ) : (
+              <Unavailable note="No recent PSX filings retrieved for this company." />
             )}
           </CardContent>
         </Card>
 
-        <Card>
-          <CardHeader><CardTitle>Latest dividend</CardTitle></CardHeader>
-          <CardContent>
-            {latestDiv ? (
-              <div className="space-y-1 text-xs">
-                <p><span className="font-semibold">{latestDiv.kind}</span> · {latestDiv.perShare !== null ? `${formatNumber(latestDiv.perShare)}/share` : "amount n/a"}</p>
-                <p className="text-muted-foreground">Announced {latestDiv.announcementDate ?? "—"} · Ex {latestDiv.exDate ?? "—"} · Pay {latestDiv.payDate ?? "—"}</p>
+        <Card className="border-slate-200 bg-white shadow-sm">
+          <CardHeader className="p-5 pb-2">
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <CardTitle className="flex items-center gap-2 text-base"><Banknote className="h-4 w-4" /> Dividend status</CardTitle>
+                <CardDescription>User receipts and detected dividend records are reconciled here.</CardDescription>
+              </div>
+              {dividendIncomplete ? <StatusBadge label="Incomplete" tone="amber" /> : dividendComplete ? <StatusBadge label="Verified" tone="green" /> : <StatusBadge label="Unverified" tone="secondary" />}
+            </div>
+          </CardHeader>
+          <CardContent className="space-y-3 p-5 pt-3">
+            {dividendComplete && latestDiv ? (
+              <>
+                <div>
+                  <p className="text-xs text-muted-foreground">Latest dividend</p>
+                  <p className="mt-1 text-xl font-semibold tabular-nums text-slate-950">
+                    PKR {formatNumber(latestDiv.perShare)} per share
+                  </p>
+                  <p className="mt-1 text-[11px] text-muted-foreground">
+                    {latestDiv.exDate ? `Ex-date ${latestDiv.exDate}` : "Ex-date unverified"}
+                    {latestDiv.payDate ? ` · Payment ${latestDiv.payDate}` : ""}
+                  </p>
+                </div>
+                {holding ? <OverviewMetric label="Amount received" value={formatMoney(holding.dividend_income)} /> : null}
+              </>
+            ) : dividendIncomplete ? (
+              <div className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900">
+                <p className="font-semibold">Dividend data incomplete</p>
+                <p className="mt-1 text-xs leading-relaxed">
+                  A payment record exists, but the dividend amount or timing has not been fully verified.
+                </p>
+                {holding ? <p className="mt-2 text-xs tabular-nums">Recorded receipts: {formatMoney(holding.dividend_income)}</p> : null}
               </div>
             ) : (
-              <p className="py-2 text-xs text-muted-foreground">No dividends recorded for {ticker} yet.</p>
+              <Unavailable note="No verified dividend records or user receipts are available yet." />
             )}
           </CardContent>
         </Card>

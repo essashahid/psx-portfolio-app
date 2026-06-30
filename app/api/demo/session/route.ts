@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { loadDemoData } from "@/lib/demo";
+import { loadDemoData, DEMO_THREAD_COUNT } from "@/lib/demo";
 import { LAUNCH_DEFAULT_FEATURES } from "@/lib/features";
 import { errorResponse } from "@/lib/api-helpers";
 
@@ -64,7 +64,7 @@ export async function POST() {
         .eq("user_id", userId)
         .like("summary", "Demo library:%"),
     ]);
-    if (!holdingCount || (threadCount ?? 0) < 4) {
+    if (!holdingCount || (threadCount ?? 0) < DEMO_THREAD_COUNT) {
       await loadDemoData(admin, userId);
       await admin
         .from("profiles")
