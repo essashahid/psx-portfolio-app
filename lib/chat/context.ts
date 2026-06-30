@@ -4,7 +4,7 @@ import {
   getQuoteCard, getPositionCard, getRatioCard, getTechnicalCard, getDividendCard,
   getNewsCard, getMarketCard, getHoldingsSummary, getSectorCard,
   type QuoteCard, type PositionCard, type RatioCard, type TechnicalCard, type DividendCard, type NewsCard, type MarketCard, type HoldingsSummary, type SectorCard,
-  type PositionHistoryCard,
+  type PositionHistoryCard, type DecisionNotes,
 } from "@/lib/chat/data";
 import { getForeignFlowSnapshot, type ForeignFlowSnapshot } from "@/lib/market/foreign-flows";
 import { fmtPct, fmtCompact } from "@/lib/market/format";
@@ -123,26 +123,7 @@ export function briefFromCards(cards: Card[], latestSession: string | null = nul
         break;
       }
       case "holdings": {
-        const h = c.data;
-        const up = h.holdings.filter((x) => (x.changePct ?? 0) > 0).length;
-        const valueBit =
-          h.totalValue != null
-            ? ` Total value ${fmtCompact(h.totalValue)} PKR, cost ${fmtCompact(h.totalCost)}${h.unrealizedPL != null ? `, unrealized ${fmtCompact(h.unrealizedPL)}` : ""} (${h.pricedCount}/${h.count} priced).`
-            : " (no live prices — value/weights unavailable).";
-        lines.push(`YOUR HOLDINGS: ${h.count} positions, ${up} up today.${valueBit}`);
-        if (h.sectors.length) {
-          lines.push(
-            `SECTOR CONCENTRATION (by value): ${h.sectors
-              .map((s) => `${s.sector} ${s.weightPct.toFixed(0)}% (${s.count} stock${s.count === 1 ? "" : "s"})`)
-              .join(", ")}.`
-          );
-        }
-        const byWeight = [...h.holdings].sort((a, b) => (b.weightPct ?? -1) - (a.weightPct ?? -1));
-        lines.push(
-          `POSITIONS (by weight): ${byWeight
-            .map((x) => `${x.ticker} [${x.sector ?? "Unclassified"}] ${x.weightPct != null ? `${x.weightPct.toFixed(0)}%` : "unpriced"} ${fmtPct(x.changePct)}`)
-            .join(", ")}.`
-        );
+        lines.push(briefFromHoldingsSummary(c.data));
         break;
       }
       case "sector": {
@@ -201,48 +182,130 @@ export function briefFromCards(cards: Card[], latestSession: string | null = nul
   return lines.join("\n");
 }
 
+/**
+ * Decision evidence for an add/trim/hold question, formatted as labeled sections
+ * and Markdown tables. Everything is PRE-COMPUTED here: weights, allocation
+ * impact, blended-cost evolution, tranche margins. The model reads these numbers
+ * and narrates; it must never recompute them. Clear structure (headings + small
+ * tables) is deliberate — weaker models skim dense run-on lines but reliably read
+ * tables, and this is the most decision-relevant block in the whole context.
+ */
 export function briefFromPositionHistory(h: PositionHistoryCard): string {
-  const lines: string[] = [];
+  const p = h.portfolio;
+  const out: string[] = [];
   const priceBit = h.quote.price != null
-    ? `${h.quote.price.toFixed(2)} PKR${h.quote.asOf ? ` as of ${h.quote.asOf}` : ""}`
-    : "price unavailable";
-  lines.push(
-    `${h.ticker} DECISION EVIDENCE: current ${priceBit}; sector ${h.quote.sector ?? "n/a"}; cash ${fmtCompact(h.portfolio.cashBalance)} PKR; portfolio net worth ${fmtCompact(h.portfolio.netWorth)} PKR. Current weight: ${fmtPct(h.portfolio.currentNetWorthWeightPct, false)} of net worth (${fmtPct(h.portfolio.currentEquityWeightPct, false)} of equities). Sector weight: ${fmtPct(h.portfolio.sectorNetWorthWeightPct, false)} of net worth (${fmtPct(h.portfolio.sectorEquityWeightPct, false)} of equities).`
+    ? `${h.quote.price.toFixed(2)} PKR${h.quote.asOf ? ` (as of ${h.quote.asOf})` : ""}`
+    : "unavailable";
+
+  out.push(`## ${h.ticker} — decision evidence (all figures pre-computed; do not recalculate)`);
+  out.push(
+    [
+      `- Current price: ${priceBit}`,
+      `- Sector: ${h.quote.sector ?? "n/a"}`,
+      `- Cash available: ${fmtCompact(p.cashBalance)} PKR`,
+      `- Portfolio net worth: ${fmtCompact(p.netWorth)} PKR`,
+      `- ${h.ticker} weight: ${fmtPct(p.currentNetWorthWeightPct, false)} of net worth (${fmtPct(p.currentEquityWeightPct, false)} of equities)`,
+      `- ${h.quote.sector ?? "Sector"} weight: ${fmtPct(p.sectorNetWorthWeightPct, false)} of net worth (${fmtPct(p.sectorEquityWeightPct, false)} of equities)`,
+    ].join("\n")
   );
+
   if (h.holding) {
-    lines.push(
-      `${h.ticker} HOLDINGS ROW: ${h.holding.quantity} sh @ avg ${h.holding.avgCost.toFixed(2)}; cost ${fmtCompact(h.holding.totalCost)}; source ${h.holding.source ?? "n/a"}; updated ${h.holding.lastUpdated ?? "n/a"}.`
+    out.push(
+      `### Current holding\n${h.holding.quantity} sh @ avg ${h.holding.avgCost.toFixed(2)}; cost ${fmtCompact(h.holding.totalCost)} PKR; source ${h.holding.source ?? "n/a"}; updated ${h.holding.lastUpdated ?? "n/a"}.`
     );
   } else {
-    lines.push(`${h.ticker} HOLDINGS ROW: no open holding row found.`);
+    out.push(`### Current holding\nNo open holding row found.`);
   }
-  const q = h.quantityReconciliation;
-  lines.push(
-    `${h.ticker} QUANTITY RECONCILIATION: holdings ${q.holdingsQuantity ?? "n/a"}; transaction-ledger ${q.transactionLedgerQuantity ?? "n/a"}; broker inventory ${q.brokerInventoryQuantity ?? "n/a"}${q.brokerAsOf ? ` as of ${q.brokerAsOf}` : ""}; post-checkpoint transaction delta ${q.postCheckpointTransactionDelta ?? "n/a"}; manual purchases after broker snapshot ${q.manualPurchaseQuantity}; expected ${q.expectedQuantity ?? "n/a"}; holding-ledger diff ${q.holdingVsLedgerDifference ?? "n/a"}; holding-broker diff ${q.holdingVsBrokerExpectedDifference ?? "n/a"}; status ${q.status}.`
+
+  out.push(
+    `### Ledger summary\n${h.ledger.transactionCount} rows (${h.ledger.buyCount} buys, ${h.ledger.sellCount} sells); first buy ${h.ledger.firstBuyDate ?? "n/a"}, latest buy ${h.ledger.latestBuyDate ?? "n/a"}; bought ${h.ledger.totalBoughtQuantity} sh for ${fmtCompact(h.ledger.totalBuyCost)} PKR (weighted avg ${h.ledger.weightedAverageBuyCost?.toFixed(2) ?? "n/a"}); sold ${h.ledger.totalSoldQuantity} sh; current ledger avg ${h.ledger.avgCost?.toFixed(2) ?? "n/a"}.`
   );
-  lines.push(
-    `${h.ticker} LEDGER SUMMARY: ${h.ledger.transactionCount} rows; buys ${h.ledger.buyCount}, sells ${h.ledger.sellCount}; first buy ${h.ledger.firstBuyDate ?? "n/a"}, latest buy ${h.ledger.latestBuyDate ?? "n/a"}; bought ${h.ledger.totalBoughtQuantity} sh for ${fmtCompact(h.ledger.totalBuyCost)} PKR (weighted avg ${h.ledger.weightedAverageBuyCost?.toFixed(2) ?? "n/a"}); sold ${h.ledger.totalSoldQuantity} sh; current ledger avg ${h.ledger.avgCost?.toFixed(2) ?? "n/a"}; sources ${Object.entries(h.ledger.sourceBreakdown).map(([k, v]) => `${k}:${v}`).join(", ") || "n/a"}.`
-  );
+
   if (h.ledger.rows.length) {
-    lines.push(
-      `${h.ticker} VERIFIED TRANSACTION ROWS: ${h.ledger.rows
-        .map((r) =>
-          `${r.date ?? "n/a"} ${r.type} qty ${r.quantity ?? "n/a"} @ ${r.price ?? "n/a"} net ${r.netAmount ?? "n/a"} fees ${r.fees} -> qty ${r.quantityAfter}, avg ${r.avgCostAfter} (${r.source ?? "n/a"})`
-        )
-        .join(" | ")}.`
+    const rows = h.ledger.rows
+      .map((r) => `| ${r.date ?? "n/a"} | ${r.type} | ${r.quantity ?? "n/a"} | ${r.price ?? "n/a"} | ${r.quantityAfter} | ${r.avgCostAfter} | ${r.source ?? "n/a"} |`)
+      .join("\n");
+    out.push(
+      `### Verified transaction tranches\n| Date | Type | Qty | Price | Qty after | Avg cost after | Source |\n|---|---|---|---|---|---|---|\n${rows}\nUse these rows to judge tranche margins directly. The current price is ${h.quote.price?.toFixed(2) ?? "n/a"}; compare each tranche price to it.`
     );
   }
+
   if (h.additionScenarios.length) {
-    lines.push(
-      `${h.ticker} ADDITION SCENARIOS: ${h.additionScenarios
-        .map((s) =>
-          `${s.label}: amount ${fmtCompact(s.amount)} PKR, est shares ${s.estimatedShares ?? "n/a"}, new avg ${s.newAvgCost?.toFixed(2) ?? "n/a"}, weight ${fmtPct(s.currentWeightPct, false)} -> ${fmtPct(s.newWeightPct, false)}, sector weight after ${fmtPct(s.newSectorWeightPct, false)}, cash after ${s.cashAfter != null ? `${fmtCompact(s.cashAfter)} PKR` : "n/a"}, external capital ${s.externalCapitalRequired != null ? `${fmtCompact(s.externalCapitalRequired)} PKR` : "n/a"}`
-        )
-        .join(" | ")}.`
+    const rows = h.additionScenarios
+      .map((s) =>
+        `| ${s.label} | ${fmtCompact(s.amount)} | ${s.estimatedShares ?? "n/a"} | ${s.newAvgCost?.toFixed(2) ?? "n/a"} | ${fmtPct(s.currentWeightPct, false)} → ${fmtPct(s.newWeightPct, false)} | ${fmtPct(s.newSectorWeightPct, false)} | ${s.cashAfter != null ? fmtCompact(s.cashAfter) : "n/a"} | ${s.externalCapitalRequired != null ? fmtCompact(s.externalCapitalRequired) : "n/a"} |`
+      )
+      .join("\n");
+    out.push(
+      `### Addition scenarios (pre-computed)\n| Scenario | Amount PKR | Est shares | New avg cost | Weight → | Sector wt after | Cash after | External capital |\n|---|---|---|---|---|---|---|---|\n${rows}`
     );
   }
-  for (const note of h.notes) lines.push(`${h.ticker} DATA NOTE: ${note}`);
-  return lines.join("\n");
+
+  const q = h.quantityReconciliation;
+  if (q.status !== "reconciled" || q.holdingVsLedgerDifference || q.holdingVsBrokerExpectedDifference) {
+    out.push(
+      `### Quantity reconciliation\nholdings ${q.holdingsQuantity ?? "n/a"}; ledger ${q.transactionLedgerQuantity ?? "n/a"}; broker ${q.brokerInventoryQuantity ?? "n/a"}${q.brokerAsOf ? ` (as of ${q.brokerAsOf})` : ""}; expected ${q.expectedQuantity ?? "n/a"}; holding-vs-ledger diff ${q.holdingVsLedgerDifference ?? "n/a"}; holding-vs-broker diff ${q.holdingVsBrokerExpectedDifference ?? "n/a"}; status ${q.status}.`
+    );
+  }
+
+  if (h.notes.length) out.push(`### Data notes\n${h.notes.map((n) => `- ${n}`).join("\n")}`);
+  return out.join("\n\n");
+}
+
+/**
+ * Whole-portfolio overview as labeled text plus a positions table and a sector
+ * table. Used both as a rendered card brief and injected into single-ticker
+ * decision questions, so the model can assess concentration against the user's
+ * actual book instead of guessing. All weights are pre-computed.
+ */
+export function briefFromHoldingsSummary(h: HoldingsSummary): string {
+  const out: string[] = [];
+  const up = h.holdings.filter((x) => (x.changePct ?? 0) > 0).length;
+  const valueBit =
+    h.totalValue != null
+      ? `total value ${fmtCompact(h.totalValue)} PKR, cost ${fmtCompact(h.totalCost)}${h.unrealizedPL != null ? `, unrealized ${fmtCompact(h.unrealizedPL)}` : ""} (${h.pricedCount}/${h.count} priced)`
+      : "no live prices, so value/weights are unavailable";
+  out.push(`## Your portfolio (pre-computed; do not recalculate)\n${h.count} positions, ${up} up today; ${valueBit}.`);
+
+  const byWeight = [...h.holdings].sort((a, b) => (b.weightPct ?? -1) - (a.weightPct ?? -1));
+  const posRows = byWeight
+    .map((x) => `| ${x.ticker} | ${x.sector ?? "Unclassified"} | ${x.weightPct != null ? `${x.weightPct.toFixed(1)}%` : "unpriced"} | ${fmtPct(x.changePct)} |`)
+    .join("\n");
+  out.push(`### Positions by weight\n| Ticker | Sector | Weight | Day |\n|---|---|---|---|\n${posRows}`);
+
+  if (h.sectors.length) {
+    const secRows = h.sectors
+      .map((s) => `| ${s.sector} | ${s.weightPct.toFixed(1)}% | ${s.count} |`)
+      .join("\n");
+    out.push(`### Sector concentration\n| Sector | Weight | Stocks |\n|---|---|---|\n${secRows}`);
+  }
+  return out.join("\n\n");
+}
+
+/** Compact brief of the user's own thesis + recent journal for a ticker. */
+export function briefFromThesisJournal(notes: DecisionNotes, ticker: string): string {
+  const out: string[] = [];
+  const t = notes.thesis;
+  if (t) {
+    const bits = [
+      t.why_bought ? `why bought: ${t.why_bought}` : null,
+      t.expectation ? `expectation: ${t.expectation}` : null,
+      t.time_horizon ? `horizon: ${t.time_horizon}` : null,
+      t.key_risks ? `key risks: ${t.key_risks}` : null,
+      t.add_conditions ? `add when: ${t.add_conditions}` : null,
+      t.sell_conditions ? `sell when: ${t.sell_conditions}` : null,
+      t.confidence != null ? `confidence: ${t.confidence}` : null,
+      t.status ? `status: ${t.status}` : null,
+    ].filter(Boolean);
+    if (bits.length) out.push(`### ${ticker} — your thesis\n${bits.map((b) => `- ${b}`).join("\n")}`);
+  }
+  if (notes.journal.length) {
+    const rows = notes.journal
+      .map((e) => `- ${e.entry_date ?? "n/a"} (${e.entry_type ?? "note"})${e.title ? ` ${e.title}` : ""}: ${(e.body ?? "").slice(0, 240)}`)
+      .join("\n");
+    out.push(`### ${ticker} — your recent journal\n${rows}`);
+  }
+  return out.join("\n\n");
 }
 
 /**

@@ -38,9 +38,10 @@ export default async function ChatPage() {
     cashBalance: portfolio.cashBalance ?? null,
     top: [...portfolio.holdings]
       .sort((a, b) => (b.weight ?? 0) - (a.weight ?? 0))
-      .slice(0, 4)
+      .slice(0, 8)
       .map((h) => ({ ticker: h.ticker, sector: h.sector ?? null, weightPct: h.weight ?? null })),
     topSector: portfolio.largestSector?.sector ?? null,
+    sectors: portfolio.sectorWeights.map((s) => s.sector).filter((s) => s && s !== "Uncategorized").slice(0, 5),
   };
 
   // Escape every padding tier of the shared app-shell main so the Copilot
