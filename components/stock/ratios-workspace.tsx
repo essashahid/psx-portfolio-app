@@ -31,14 +31,14 @@ import {
   ArrowDownUp,
   BarChart3,
   Bell,
-  CheckCircle2,
+  
   Download,
   ExternalLink,
   Eye,
   Filter,
   Info,
   LineChart,
-  MoreHorizontal,
+  
   Pin,
   Search,
   Settings2,
@@ -61,6 +61,7 @@ type RatioCategory =
   | "other";
 
 type ExplorerCategory = RatioCategory | "all" | "key" | "pinned";
+type ActiveTab = "snapshot" | "trends" | "peers" | "explorer";
 type FormatMode = "compact" | "exact";
 type SortMode = "default" | "name" | "category" | "value" | "availability";
 type StatusTone = "green" | "amber" | "red" | "blue" | "secondary";
@@ -618,10 +619,10 @@ const RATIO_DEFINITIONS: Record<string, RatioDefinition> = {
 };
 
 const KEY_RATIO_GROUPS = [
-  { label: "Valuation", ratios: ["P/E", "P/B", "Earnings yield", "FCF yield"] },
-  { label: "Profitability", ratios: ["Gross margin", "Net margin", "ROE", "ROIC"] },
-  { label: "Financial strength", ratios: ["Net debt", "Debt-to-equity", "Interest coverage", "Current ratio"] },
-  { label: "Growth and cash quality", ratios: ["Revenue growth", "EPS growth", "OCF / PAT", "FCF margin"] },
+  { label: "Valuation", ratios: ["P/E", "FCF yield"] },
+  { label: "Profitability", ratios: ["ROIC", "Net margin"] },
+  { label: "Financial strength", ratios: ["Net debt", "Interest coverage"] },
+  { label: "Growth and cash quality", ratios: ["EPS growth", "OCF / PAT"] },
 ];
 
 const FACTORS: {
@@ -1226,8 +1227,8 @@ function RatioHeader({
   financialRows,
   peers,
   readOnly,
-  activeAnalysis,
-  setActiveAnalysis,
+  activeTab,
+  setActiveTab,
   formatMode,
   setFormatMode,
   onExport,
@@ -1239,18 +1240,22 @@ function RatioHeader({
   financialRows: RatiosFinancialRow[];
   peers: RatiosPeerRow[];
   readOnly: boolean;
-  activeAnalysis: ExplorerCategory;
-  setActiveAnalysis: (value: ExplorerCategory) => void;
+  activeTab: ActiveTab;
+  setActiveTab: (value: ActiveTab) => void;
   formatMode: FormatMode;
   setFormatMode: (value: FormatMode) => void;
   onExport: () => void;
 }) {
+  const [detailsOpen, setDetailsOpen] = useState(false);
   const statusItems = dataStatusItems(ratios, financialRows, peers);
   const earningsPeriod = latestPeriodForCategory(ratios, ["P/E", "Gross margin", "Net margin", "Revenue growth"]);
   const balancePeriod = latestPeriodForCategory(ratios, ["Current ratio", "Debt-to-equity", "Net debt"]);
   const cashPeriod = latestPeriodForCategory(ratios, ["FCF (OCF - Capex)", "OCF / PAT", "FCF margin"]);
   const priceDate = quote?.as_of ? `Price as of ${quote.as_of}` : "Price date unavailable";
   const officialSource = sourceUrl(ratios, metadata);
+
+  const valuesComplete = statusItems[0].status === "Complete" && statusItems[1].status === "Complete" && statusItems[4].status === "Documented";
+  const contextPartial = statusItems[2].status !== "Complete" || statusItems[3].status !== "Complete";
 
   return (
     <section className="rounded-lg border border-slate-200 bg-white shadow-sm">
@@ -1262,31 +1267,29 @@ function RatioHeader({
             <Badge variant="blue">{ticker}</Badge>
             {metadata.sector ? <Badge variant="secondary">{metadata.sector}</Badge> : null}
           </div>
-          <p className="mt-2 max-w-4xl text-sm text-slate-700">
-            {earningsPeriod} earnings - {balancePeriod} balance sheet - {cashPeriod} cash flow - {priceDate}
-          </p>
-          <p className="mt-1 text-xs text-muted-foreground">
-            {sourceLabel(metadata)} - Mixed-period calculations are labelled at ratio level
-            {metadata.meta.lastUpdated ? ` - Updated ${metadata.meta.lastUpdated.slice(0, 10)}` : ""}
-            {officialSource ? (
-              <>
-                {" - "}
-                <a href={officialSource} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-blue-700 underline underline-offset-2">
-                  Source <ExternalLink className="h-3 w-3" />
-                </a>
-              </>
-            ) : null}
-          </p>
+          <div className="mt-3 space-y-1 text-sm text-slate-700">
+            <p>{earningsPeriod} earnings &middot; {balancePeriod} balance sheet &middot; {cashPeriod} cash flow &middot; {priceDate}</p>
+            <div className="flex flex-wrap items-center gap-2">
+              <p>
+                {valuesComplete ? "Reported and derived values complete" : "Reported and derived values partial"} &middot;{" "}
+                {contextPartial ? "Historical and peer context partial" : "Historical and peer context complete"}
+              </p>
+              <Button variant="ghost" className="h-auto p-0 text-blue-600 hover:bg-transparent hover:underline h-5" onClick={() => setDetailsOpen(true)}>Data details</Button>
+            </div>
+          </div>
         </div>
         <div className="flex flex-wrap gap-2 lg:justify-end">
-          <Button type="button" size="sm" variant={activeAnalysis === "all" ? "default" : "outline"} onClick={() => setActiveAnalysis("all")}>
+          <Button type="button" size="sm" variant={activeTab === "snapshot" ? "default" : "outline"} onClick={() => setActiveTab("snapshot")}>
             <BarChart3 className="h-3.5 w-3.5" /> Snapshot
           </Button>
-          <Button type="button" size="sm" variant={activeAnalysis === "profitability" ? "default" : "outline"} onClick={() => setActiveAnalysis("profitability")}>
+          <Button type="button" size="sm" variant={activeTab === "trends" ? "default" : "outline"} onClick={() => setActiveTab("trends")}>
             <LineChart className="h-3.5 w-3.5" /> Trends
           </Button>
-          <Button type="button" size="sm" variant={activeAnalysis === "valuation" ? "default" : "outline"} onClick={() => setActiveAnalysis("valuation")}>
+          <Button type="button" size="sm" variant={activeTab === "peers" ? "default" : "outline"} onClick={() => setActiveTab("peers")}>
             <ArrowDownUp className="h-3.5 w-3.5" /> Peers
+          </Button>
+          <Button type="button" size="sm" variant={activeTab === "explorer" ? "default" : "outline"} onClick={() => setActiveTab("explorer")}>
+            <Search className="h-3.5 w-3.5" /> Explorer
           </Button>
           <Button type="button" size="sm" variant="outline" onClick={() => setFormatMode(formatMode === "compact" ? "exact" : "compact")}>
             <Settings2 className="h-3.5 w-3.5" /> {formatMode === "compact" ? "Compact" : "Exact"}
@@ -1294,148 +1297,90 @@ function RatioHeader({
           <Button type="button" size="sm" variant="outline" onClick={onExport}>
             <Download className="h-3.5 w-3.5" /> Export
           </Button>
-          <Button type="button" size="sm" variant="ghost" title="More actions">
-            <MoreHorizontal className="h-4 w-4" />
-          </Button>
           {!readOnly && (
             <ActionButton
               endpoint={`/api/stocks/${ticker}/refresh`}
               body={{ section: "ratios" }}
-              label={
-                <>
-                  <TrendingUp className="h-3.5 w-3.5" /> Refresh
-                </>
-              }
+              label={<><TrendingUp className="h-3.5 w-3.5" /> Refresh</>}
               variant="outline"
               size="sm"
             />
           )}
         </div>
       </div>
-      <div className="grid gap-2 border-t border-slate-100 bg-slate-50/60 p-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
-        {statusItems.map((item) => (
-          <StatusPill key={item.label} label={item.label} status={item.status} detail={item.detail} />
-        ))}
-      </div>
+      <Dialog open={detailsOpen} onClose={() => setDetailsOpen(false)} title="Data completeness details">
+        <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+          {statusItems.map((item) => {
+            let label = item.label as string;
+            if (label === "Formula verification") label = "Formulas verified";
+            if (label === "Mixed-period calculations") label = "Some ratios combine different periods";
+            if (label === "Peer comparison") label = "Peer data available";
+            return <StatusPill key={item.label} label={label} status={item.status} detail={item.detail} />;
+          })}
+        </div>
+        <div className="mt-4 text-xs text-muted-foreground">
+          {sourceLabel(metadata)}
+          {metadata.meta.lastUpdated ? ` - Updated ${metadata.meta.lastUpdated.slice(0, 10)}` : ""}
+          {officialSource ? (
+            <>
+              {" - "}
+              <a href={officialSource} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-blue-700 underline underline-offset-2">
+                Source <ExternalLink className="h-3 w-3" />
+              </a>
+            </>
+          ) : null}
+        </div>
+      </Dialog>
     </section>
   );
 }
 
 function FactorDashboard({
   factors,
-  ratios,
-  activeFactor,
   onSelectFactor,
-  setSelectedRatio,
 }: {
   factors: FactorResult[];
-  ratios: RatioRow[];
-  activeFactor: string | null;
   onSelectFactor: (factor: FactorResult) => void;
-  setSelectedRatio: (row: RatioRow) => void;
 }) {
-  const ratioMap = new Map(ratios.map((r) => [r.ratio_name, r]));
   return (
     <section className="space-y-3">
       <div className="flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
         <div>
           <p className="eyebrow">Factor snapshot</p>
-          <h3 className="text-lg font-semibold text-slate-950">Documented factor read</h3>
+          <h3 className="text-lg font-semibold text-slate-950">Financial profile</h3>
         </div>
-        <Badge variant="amber">Preliminary until history and peer baselines are complete</Badge>
+        <Badge variant="amber">Preliminary profile until history and peer benchmarks complete</Badge>
       </div>
-      <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-5">
-        {factors.map((factor) => (
-          <button
-            key={factor.key}
-            type="button"
-            onClick={() => onSelectFactor(factor)}
-            className={cn(
-              "min-h-[190px] rounded-lg border bg-white p-4 text-left shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
-              activeFactor === factor.key ? "border-blue-300 bg-blue-50/40" : "border-slate-200 hover:border-slate-300"
-            )}
-          >
-            <div className="flex items-start justify-between gap-3">
-              <div>
-                <p className="text-sm font-semibold text-slate-950">{factor.label}</p>
-                <p className="mt-1 text-xs text-muted-foreground">{factor.summary}</p>
+      <div className="flex flex-wrap items-center gap-3 md:flex-nowrap">
+        {factors.map((factor) => {
+          let interp = "Stable";
+          if (factor.score !== null) {
+            if (factor.score >= 80) interp = "Strong";
+            else if (factor.score >= 60) interp = "Improving";
+            else if (factor.score >= 40) interp = "Moderate";
+            else interp = "Weak";
+          } else {
+            interp = "Unavailable";
+          }
+          return (
+            <button
+              key={factor.key}
+              type="button"
+              onClick={() => onSelectFactor(factor)}
+              className="flex-1 rounded-lg border border-slate-200 bg-white p-3 text-left shadow-sm transition-colors hover:border-slate-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            >
+              <div className="flex justify-between items-center gap-2">
+                <span className="text-xs font-medium text-slate-600">{factor.label}</span>
+                <span className="text-lg font-semibold tabular-nums text-slate-950">{factor.score !== null ? factor.score : "-"}</span>
               </div>
-              <Badge variant={factor.status === "unavailable" ? "amber" : "blue"}>{factor.status === "unavailable" ? "Unavailable" : "Preliminary"}</Badge>
-            </div>
-            <div className="mt-4">
-              {factor.score === null ? (
-                <p className="text-2xl font-semibold text-slate-500">No score</p>
-              ) : (
-                <div>
-                  <p className="text-3xl font-semibold tabular-nums text-slate-950">{factor.score}<span className="text-base text-muted-foreground">/100</span></p>
-                  <div className="mt-2 h-2 overflow-hidden rounded-full bg-slate-100" aria-label={`${factor.label} preliminary score ${factor.score} out of 100`}>
-                    <div className={cn("h-full rounded-full", factorTone(factor.score) === "green" && "bg-emerald-600", factorTone(factor.score) === "red" && "bg-red-600", factorTone(factor.score) === "blue" && "bg-blue-600")} style={{ width: `${factor.score}%` }} />
-                  </div>
-                </div>
-              )}
-            </div>
-            <div className="mt-4 space-y-1.5">
-              {factor.inputs
-                .filter((input) => input.value !== null)
-                .slice(0, 3)
-                .map((input) => {
-                  const row = ratioMap.get(input.ratio);
-                  return (
-                    <span key={input.ratio} className="block text-[11px] text-slate-600">
-                      {row ? ratioDisplayName(row) : ratioDisplayName(input.ratio)}: {row ? formatRatioValue(row) : "-"}
-                    </span>
-                  );
-                })}
-              <span className="block text-[11px] text-muted-foreground">Confidence {factor.confidence}% - change and percentiles shown only where data exists.</span>
-            </div>
-          </button>
-        ))}
+              <div className="mt-1.5 h-1 w-full overflow-hidden rounded-full bg-slate-100">
+                <div className={cn("h-full rounded-full", factorTone(factor.score) === "green" && "bg-emerald-600", factorTone(factor.score) === "red" && "bg-red-600", factorTone(factor.score) === "blue" && "bg-blue-600", factorTone(factor.score) === "amber" && "bg-amber-500")} style={{ width: `${factor.score !== null ? factor.score : 0}%` }} />
+              </div>
+              <p className="mt-1.5 text-[11px] font-medium text-slate-700">{interp}</p>
+            </button>
+          );
+        })}
       </div>
-      {activeFactor ? (
-        <div className="rounded-lg border border-slate-200 bg-white p-4">
-          {factors
-            .filter((factor) => factor.key === activeFactor)
-            .map((factor) => (
-              <div key={factor.key}>
-                <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
-                  <div>
-                    <h4 className="text-sm font-semibold text-slate-950">{factor.label} inputs</h4>
-                    <p className="mt-1 text-xs text-muted-foreground">50 is the midpoint of this absolute-threshold scale. It is not a historical or peer median.</p>
-                  </div>
-                  <Badge variant="secondary">{factor.inputs.filter((i) => i.value !== null).length} of {factor.inputs.length} inputs available</Badge>
-                </div>
-                <div className="mt-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
-                  {factor.inputs.map((input) => {
-                    const row = ratioMap.get(input.ratio);
-                    return (
-                      <button
-                        key={input.ratio}
-                        type="button"
-                        className="rounded-md border border-slate-200 px-3 py-2 text-left hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                        onClick={() => row && setSelectedRatio(row)}
-                        disabled={!row}
-                      >
-                        <p className="text-xs font-medium text-slate-950">{row ? ratioDisplayName(row) : ratioDisplayName(input.ratio)}</p>
-                        <p className="mt-0.5 text-[11px] text-muted-foreground">
-                          Weight {input.weight}% - {input.direction === "higher" ? "higher values score higher" : "lower values score higher"}
-                        </p>
-                        <p className="mt-1 text-sm font-semibold tabular-nums">{row ? formatRatioValue(row) : "Missing"}</p>
-                      </button>
-                    );
-                  })}
-                </div>
-                <details className="mt-3 rounded-md border border-slate-200 bg-slate-50 px-3 py-2">
-                  <summary className="cursor-pointer text-xs font-semibold text-slate-900">How factor scores work</summary>
-                  <div className="mt-2 space-y-2 text-xs leading-relaxed text-slate-600">
-                    <p>Each factor uses the documented ratios shown above. Inputs are normalized from 0 to 100 using visible absolute thresholds, then weighted by the percentages shown.</p>
-                    <p>Missing inputs are excluded. If fewer than the minimum required inputs are available, the score is hidden. Negative or zero valuation multiples are excluded from lower-is-better valuation scoring.</p>
-                    <p>Current scores are labelled preliminary because they do not yet use a finalized historical lookback or peer universe. Peer and historical percentiles remain hidden until enough comparable observations exist.</p>
-                  </div>
-                </details>
-              </div>
-            ))}
-        </div>
-      ) : null}
     </section>
   );
 }
@@ -1444,15 +1389,11 @@ function KeyRatioCard({
   row,
   financialRows,
   formatMode,
-  pinned,
-  onPin,
   onOpen,
 }: {
   row: RatioRow | null;
   financialRows: RatiosFinancialRow[];
   formatMode: FormatMode;
-  pinned: boolean;
-  onPin: () => void;
   onOpen: () => void;
 }) {
   if (!row) {
@@ -1463,29 +1404,13 @@ function KeyRatioCard({
     );
   }
   const context = historicalContext(row, financialRows);
-  const change = priorChange(row, financialRows);
-  const mixed = isMixedPeriod(row.source_period);
   return (
-    <div className="rounded-md border border-slate-200 bg-white p-3">
-      <div className="flex items-start justify-between gap-2">
-        <div className="min-w-0">
-          <p className="truncate text-xs font-semibold text-slate-950">{ratioDisplayName(row)}</p>
-          <p className="mt-1 text-xl font-semibold tabular-nums text-slate-950">{formatRatioValue(row, formatMode)}</p>
-        </div>
-        <button type="button" onClick={onPin} className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md text-muted-foreground hover:bg-slate-50 hover:text-slate-950" aria-label={pinned ? `Unpin ${ratioDisplayName(row)}` : `Pin ${ratioDisplayName(row)}`}>
-          {pinned ? <Pin className="h-4 w-4 fill-slate-900 text-slate-900" /> : <Pin className="h-4 w-4" />}
-        </button>
-      </div>
+    <button type="button" onClick={onOpen} className="group flex w-full flex-col items-start rounded-md border border-slate-200 bg-white p-3 text-left transition-colors hover:border-slate-300 relative">
+      <p className="truncate text-xs font-semibold text-slate-950">{ratioDisplayName(row)}</p>
+      <p className="mt-1 text-xl font-semibold tabular-nums text-slate-950">{formatRatioValue(row, formatMode)}</p>
       <p className="mt-1 text-[11px] text-muted-foreground">{formattedPeriod(row.source_period)}</p>
-      <div className="mt-2 flex flex-wrap gap-1.5">
-        {change ? <Badge variant={change.tone === "positive" ? "green" : change.tone === "negative" ? "red" : "secondary"}>{change.label}</Badge> : null}
-        <Badge variant={mixed ? "amber" : "secondary"}>{mixed ? "Mixed period" : "Derived"}</Badge>
-      </div>
-      <p className="mt-2 text-[11px] leading-relaxed text-slate-600">{context.label} - {context.detail}</p>
-      <Button type="button" size="sm" variant="ghost" className="mt-2 h-7 px-2 text-[11px]" onClick={onOpen}>
-        <Eye className="h-3.5 w-3.5" /> View
-      </Button>
-    </div>
+      <p className="mt-2 text-[11px] leading-relaxed text-slate-600">{context.label}</p>
+    </button>
   );
 }
 
@@ -1496,26 +1421,29 @@ function KeyRatios({
   pinned,
   togglePin,
   setSelectedRatio,
+  onExploreAll,
 }: {
   ratios: RatioRow[];
   financialRows: RatiosFinancialRow[];
   formatMode: FormatMode;
-  pinned: Set<string>;
-  togglePin: (name: string) => void;
   setSelectedRatio: (row: RatioRow) => void;
+  onExploreAll: () => void;
 }) {
   const byName = new Map(ratios.map((r) => [r.ratio_name, r]));
   return (
     <section className="space-y-3">
-      <div>
-        <p className="eyebrow">Key ratios</p>
-        <h3 className="text-lg font-semibold text-slate-950">Investor questions first</h3>
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+        <div>
+          <p className="eyebrow">Key ratios</p>
+          <h3 className="text-lg font-semibold text-slate-950">Summary metrics</h3>
+        </div>
+        <Button variant="ghost" className="h-auto p-0 text-blue-600 hover:bg-transparent hover:underline text-xs" onClick={onExploreAll}>View all key ratios</Button>
       </div>
-      <div className="grid gap-3 xl:grid-cols-4">
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         {KEY_RATIO_GROUPS.map((group) => (
-          <div key={group.label} className="rounded-lg border border-slate-200 bg-slate-50/60 p-3">
-            <h4 className="text-sm font-semibold text-slate-950">{group.label}</h4>
-            <div className="mt-3 grid gap-2 sm:grid-cols-2 xl:grid-cols-1">
+          <div key={group.label} className="rounded-xl bg-slate-50 p-2 border border-slate-100">
+            <h4 className="px-1 py-1 text-[11px] font-semibold uppercase tracking-wide text-slate-500">{group.label}</h4>
+            <div className="mt-2 space-y-2">
               {group.ratios.map((name) => {
                 const row = byName.get(name) ?? null;
                 return (
@@ -1524,8 +1452,6 @@ function KeyRatios({
                     row={row}
                     financialRows={financialRows}
                     formatMode={formatMode}
-                    pinned={pinned.has(name)}
-                    onPin={() => togglePin(name)}
                     onOpen={() => row && setSelectedRatio(row)}
                   />
                 );
@@ -1911,7 +1837,6 @@ function RatioExplorer({
   financialRows,
   peers,
   formatMode,
-  setFormatMode,
   activeCategory,
   setActiveCategory,
   pinned,
@@ -1924,7 +1849,6 @@ function RatioExplorer({
   financialRows: RatiosFinancialRow[];
   peers: RatiosPeerRow[];
   formatMode: FormatMode;
-  setFormatMode: (value: FormatMode) => void;
   activeCategory: ExplorerCategory;
   setActiveCategory: (value: ExplorerCategory) => void;
   pinned: Set<string>;
@@ -1996,13 +1920,14 @@ function RatioExplorer({
     }
   }
 
+  const [advancedFiltersOpen, setAdvancedFiltersOpen] = useState(false);
   return (
     <section className="space-y-3">
       <div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
         <div>
           <p className="eyebrow">Ratio explorer</p>
           <h3 className="text-lg font-semibold text-slate-950">Full ratio dataset</h3>
-          <p className="mt-1 text-xs text-muted-foreground">{filtered.length} of {ratios.length} ratios shown. Formulas are in the detail inspector.</p>
+          <p className="mt-1 text-xs text-muted-foreground">{filtered.length} of {ratios.length} ratios shown.</p>
         </div>
         <div className="flex flex-wrap gap-2">
           <Button type="button" size="sm" variant="outline" onClick={() => exportRows(filtered)}>
@@ -2015,186 +1940,97 @@ function RatioExplorer({
       </div>
 
       <div className="rounded-lg border border-slate-200 bg-white p-3">
-        <div className="grid gap-2 lg:grid-cols-[minmax(220px,1fr)_180px_160px]">
-          <label className="relative block">
+        <div className="flex flex-wrap items-center gap-3">
+          <div className="relative flex-1 min-w-[200px] max-w-sm">
             <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-            <Input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search P/E, debt, margin, cash flow, EPS" className="pl-9" />
-          </label>
-          <Select value={sortMode} onChange={(e) => setSortMode(e.target.value as SortMode)} aria-label="Sort ratios">
-            <option value="default">Sort: default</option>
-            <option value="name">Sort: name</option>
-            <option value="category">Sort: category</option>
-            <option value="value">Sort: value</option>
-            <option value="availability">Sort: availability</option>
-          </Select>
-          <Select value={formatMode} onChange={(e) => setFormatMode(e.target.value as FormatMode)} aria-label="Display format">
-            <option value="compact">Compact values</option>
-            <option value="exact">Exact values</option>
-          </Select>
-        </div>
-
-        <div className="mt-3">
-          <Segment value={activeCategory} options={EXPLORER_CATEGORIES} onChange={setActiveCategory} />
-        </div>
-
-        <div className="mt-3 flex flex-wrap gap-2">
-          {[
-            { label: "Important only", active: importantOnly, onClick: () => setImportantOnly((v) => !v) },
-            { label: "Derived", active: derivedOnly, onClick: () => setDerivedOnly((v) => !v) },
-            { label: "Mixed period", active: mixedOnly, onClick: () => setMixedOnly((v) => !v) },
-            { label: "Incomplete", active: incompleteOnly, onClick: () => setIncompleteOnly((v) => !v) },
-            { label: "History available", active: historyOnly, onClick: () => setHistoryOnly((v) => !v) },
-            { label: "Peer data available", active: peerOnly, onClick: () => setPeerOnly((v) => !v) },
-          ].map((filter) => (
-            <button
-              key={filter.label}
-              type="button"
-              onClick={filter.onClick}
-              className={cn(
-                "inline-flex h-8 items-center gap-1.5 rounded-md border px-2.5 text-xs font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
-                filter.active ? "border-blue-300 bg-blue-50 text-blue-800" : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50"
-              )}
-            >
-              <Filter className="h-3.5 w-3.5" /> {filter.label}
-            </button>
-          ))}
-        </div>
-
-        <div className="mt-3 flex flex-wrap gap-2">
-          <Select value={preset} onChange={(e) => setPreset(e.target.value)} className="w-full sm:w-56" aria-label="Preset ratio view">
-            <option>All ratios</option>
-            {PRESET_VIEWS.map((view) => (
-              <option key={view.label}>{view.label}</option>
-            ))}
-          </Select>
-          <details className="rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-xs">
-            <summary className="cursor-pointer font-semibold text-slate-900">
-              <Settings2 className="mr-1 inline h-3.5 w-3.5" /> Columns
-            </summary>
-            <div className="mt-2 grid gap-2 sm:grid-cols-2">
-              {Object.entries(visibleColumns).map(([key, value]) => (
-                <label key={key} className="flex items-center gap-2">
-                  <input
-                    type="checkbox"
-                    checked={value}
-                    onChange={(e) => setVisibleColumns((current) => ({ ...current, [key]: e.target.checked }))}
-                    className="h-4 w-4 rounded border-slate-300"
-                  />
-                  <span className="capitalize">{key}</span>
-                </label>
-              ))}
-            </div>
-          </details>
-        </div>
-      </div>
-
-      {pinnedRows.length ? (
-        <div className="rounded-lg border border-slate-200 bg-slate-50 p-3">
-          <div className="flex items-center gap-2">
-            <Pin className="h-4 w-4 text-slate-600" />
-            <p className="text-sm font-semibold text-slate-950">Pinned ratio watchlist</p>
+            <Input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search ratios" className="pl-9 h-9" />
           </div>
-          <div className="mt-2 flex flex-wrap gap-2">
-            {pinnedRows.map((row) => (
-              <button key={row.ratio_name} type="button" onClick={() => setSelectedRatio(row)} className="rounded-md border border-slate-200 bg-white px-3 py-2 text-left hover:bg-slate-50">
-                <span className="block text-xs font-medium text-slate-950">{ratioDisplayName(row)}</span>
-                <span className="text-[11px] tabular-nums text-muted-foreground">{formatRatioValue(row, formatMode)}</span>
+          <Select value={activeCategory} onChange={(e) => setActiveCategory(e.target.value as ExplorerCategory)}>
+            {EXPLORER_CATEGORIES.map(c => <option key={c.value} value={c.value}>{c.label}</option>)}
+          </Select>
+          <button type="button" onClick={() => setImportantOnly(!importantOnly)} className={cn("inline-flex h-9 items-center gap-1.5 rounded-md border px-3 text-xs font-medium", importantOnly ? "border-blue-300 bg-blue-50 text-blue-800" : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50")}>
+            Key ratios only
+          </button>
+          <Button variant="outline" size="sm" onClick={() => setAdvancedFiltersOpen(!advancedFiltersOpen)} className="h-9">
+            <Filter className="mr-2 h-4 w-4" /> More filters
+          </Button>
+        </div>
+
+        {advancedFiltersOpen && (
+          <div className="mt-3 pt-3 border-t border-slate-100 flex flex-wrap gap-2">
+            {[
+              { label: "Derived", active: derivedOnly, onClick: () => setDerivedOnly((v) => !v) },
+              { label: "Mixed period", active: mixedOnly, onClick: () => setMixedOnly((v) => !v) },
+              { label: "Incomplete", active: incompleteOnly, onClick: () => setIncompleteOnly((v) => !v) },
+              { label: "History available", active: historyOnly, onClick: () => setHistoryOnly((v) => !v) },
+              { label: "Peer data available", active: peerOnly, onClick: () => setPeerOnly((v) => !v) },
+            ].map((filter) => (
+              <button
+                key={filter.label}
+                type="button"
+                onClick={filter.onClick}
+                className={cn(
+                  "inline-flex h-8 items-center gap-1.5 rounded-md border px-2.5 text-xs font-medium",
+                  filter.active ? "border-blue-300 bg-blue-50 text-blue-800" : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50"
+                )}
+              >
+                {filter.label}
               </button>
             ))}
           </div>
-        </div>
-      ) : null}
+        )}
+      </div>
 
       <Card className="border-slate-200 bg-white shadow-sm">
         <CardContent className="p-0">
-          <div className="hidden overflow-x-auto lg:block">
+          <div className="overflow-x-auto">
             <Table>
               <THead>
                 <TR>
                   <TH>Ratio</TH>
                   <TH className="text-right">Current value</TH>
-                  {visibleColumns.change ? <TH>Change</TH> : null}
-                  {visibleColumns.context ? <TH>Context</TH> : null}
-                  {visibleColumns.period ? <TH>Period</TH> : null}
-                  {visibleColumns.status ? <TH>Status</TH> : null}
+                  <TH>Change</TH>
+                  <TH>Context</TH>
+                  <TH>Period</TH>
                   <TH className="text-right">Actions</TH>
                 </TR>
               </THead>
               <TBody>
                 {filtered.map((row) => {
-                  const def = defFor(row.ratio_name);
                   const change = priorChange(row, financialRows);
                   const context = historicalContext(row, financialRows);
                   const mixed = isMixedPeriod(row.source_period);
+                  const derived = row.ratio_value !== null;
                   return (
                     <TR key={row.ratio_name}>
                       <TD className="min-w-[220px]">
                         <div className="flex items-center gap-2">
-                          <button type="button" onClick={() => togglePin(row.ratio_name)} className="flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground hover:bg-slate-50 hover:text-slate-950" aria-label={pinned.has(row.ratio_name) ? `Unpin ${ratioDisplayName(row)}` : `Pin ${ratioDisplayName(row)}`}>
-                            <Pin className={cn("h-3.5 w-3.5", pinned.has(row.ratio_name) && "fill-slate-900 text-slate-900")} />
-                          </button>
                           <div>
                             <button type="button" onClick={() => setSelectedRatio(row)} className="text-left text-xs font-semibold text-slate-950 hover:underline">{ratioDisplayName(row)}</button>
-                            <p className="text-[11px] text-muted-foreground">{CATEGORY_LABELS[def.category]}</p>
+                            <div className="flex items-center gap-1 mt-0.5">
+                              {derived ? <span className="w-2 h-2 rounded-full bg-blue-500" title="Derived" /> : <span className="w-2 h-2 rounded-full bg-red-500" title="Incomplete" />}
+                              {mixed && <span className="w-2 h-2 rounded-full bg-amber-500" title="Mixed period" />}
+                            </div>
                           </div>
                         </div>
                       </TD>
                       <TD className="text-right text-xs font-semibold tabular-nums">{formatRatioValue(row, formatMode)}</TD>
-                      {visibleColumns.change ? (
-                        <TD>{change ? <Badge variant={change.tone === "positive" ? "green" : change.tone === "negative" ? "red" : "secondary"}>{change.label}</Badge> : <span className="text-xs text-muted-foreground">-</span>}</TD>
-                      ) : null}
-                      {visibleColumns.context ? (
-                        <TD className="max-w-[240px] whitespace-normal text-xs text-slate-600">{context.label}<span className="block text-[11px] text-muted-foreground">{context.detail}</span></TD>
-                      ) : null}
-                      {visibleColumns.period ? <TD className="text-xs text-muted-foreground">{formattedPeriod(row.source_period)}</TD> : null}
-                      {visibleColumns.status ? (
-                        <TD>
-                          <div className="flex flex-wrap gap-1">
-                            <Badge variant={row.ratio_value === null ? "red" : "blue"}>{row.ratio_value === null ? "Incomplete" : "Derived"}</Badge>
-                            {mixed ? <Badge variant="amber">Mixed</Badge> : null}
-                            {peerMetricSet.has(row.ratio_name) ? <Badge variant="secondary">Peer</Badge> : null}
-                          </div>
-                        </TD>
-                      ) : null}
+                      <TD>{change ? <Badge variant={change.tone === "positive" ? "green" : change.tone === "negative" ? "red" : "secondary"}>{change.label}</Badge> : <span className="text-xs text-muted-foreground">-</span>}</TD>
+                      <TD className="max-w-[240px] whitespace-normal text-xs text-slate-600">{context.label}<span className="block text-[11px] text-muted-foreground">{context.detail}</span></TD>
+                      <TD className="text-xs text-muted-foreground">{formattedPeriod(row.source_period)}</TD>
                       <TD className="text-right">
                         <Button type="button" size="sm" variant="ghost" onClick={() => setSelectedRatio(row)}>
-                          <Eye className="h-3.5 w-3.5" /> View
+                          <Eye className="h-3.5 w-3.5" />
                         </Button>
+                        <button type="button" onClick={() => togglePin(row.ratio_name)} className="h-8 w-8 inline-flex items-center justify-center rounded-md text-muted-foreground hover:bg-slate-50 hover:text-slate-950 ml-1">
+                          <Pin className={cn("h-4 w-4", pinned.has(row.ratio_name) && "fill-slate-900 text-slate-900")} />
+                        </button>
                       </TD>
                     </TR>
                   );
                 })}
               </TBody>
             </Table>
-          </div>
-
-          <div className="divide-y divide-slate-100 lg:hidden">
-            {filtered.map((row) => {
-              const context = historicalContext(row, financialRows);
-              const change = priorChange(row, financialRows);
-              return (
-                <div key={row.ratio_name} className="p-3">
-                  <div className="flex items-start justify-between gap-3">
-                    <div>
-                      <p className="text-sm font-semibold text-slate-950">{ratioDisplayName(row)}</p>
-                      <p className="mt-1 text-xl font-semibold tabular-nums">{formatRatioValue(row, formatMode)}</p>
-                      <p className="text-[11px] text-muted-foreground">{formattedPeriod(row.source_period)}</p>
-                    </div>
-                    <button type="button" onClick={() => togglePin(row.ratio_name)} className="flex h-9 w-9 items-center justify-center rounded-md text-muted-foreground hover:bg-slate-50" aria-label={pinned.has(row.ratio_name) ? `Unpin ${ratioDisplayName(row)}` : `Pin ${ratioDisplayName(row)}`}>
-                      <Pin className={cn("h-4 w-4", pinned.has(row.ratio_name) && "fill-slate-900 text-slate-900")} />
-                    </button>
-                  </div>
-                  <div className="mt-2 flex flex-wrap gap-1.5">
-                    {change ? <Badge variant={change.tone === "positive" ? "green" : change.tone === "negative" ? "red" : "secondary"}>{change.label}</Badge> : null}
-                    <Badge variant={isMixedPeriod(row.source_period) ? "amber" : "blue"}>{isMixedPeriod(row.source_period) ? "Mixed period" : "Derived"}</Badge>
-                  </div>
-                  <p className="mt-2 text-xs text-slate-600">{context.label} - {context.detail}</p>
-                  <Button type="button" size="sm" variant="outline" className="mt-3" onClick={() => setSelectedRatio(row)}>
-                    <Eye className="h-3.5 w-3.5" /> View details
-                  </Button>
-                </div>
-              );
-            })}
           </div>
           {!filtered.length ? <ChartEmpty note="No ratios match the current filters." height={180} /> : null}
         </CardContent>
@@ -2402,10 +2238,9 @@ export function RatiosWorkspace({
   peers: RatiosPeerRow[];
   readOnly?: boolean;
 }) {
-  const [activeAnalysis, setActiveAnalysis] = useState<ExplorerCategory>("all");
+  const [activeTab, setActiveTab] = useState<ActiveTab>("snapshot");
   const [activeCategory, setActiveCategory] = useState<ExplorerCategory>("all");
   const [formatMode, setFormatMode] = useState<FormatMode>("compact");
-  const [activeFactor, setActiveFactor] = useState<string | null>(null);
   const [selectedRatio, setSelectedRatio] = useState<RatioRow | null>(null);
   const storageKey = `portfolioos:pinned-ratios:${ticker}`;
   const [pinned, setPinned] = useState<Set<string>>(() => readPinnedStorage(storageKey));
@@ -2475,11 +2310,7 @@ export function RatiosWorkspace({
               <ActionButton
                 endpoint={`/api/stocks/${ticker}/refresh`}
                 body={{ section: "financials" }}
-                label={
-                  <>
-                    <TrendingUp className="h-3.5 w-3.5" /> Load financials
-                  </>
-                }
+                label={<><TrendingUp className="h-3.5 w-3.5" /> Load financials</>}
                 variant="outline"
                 size="sm"
               />
@@ -2496,64 +2327,103 @@ export function RatiosWorkspace({
         financialRows={financialRows}
         peers={peers}
         readOnly={readOnly}
-        activeAnalysis={activeAnalysis}
-        setActiveAnalysis={setActiveAnalysis}
+        activeTab={activeTab}
+        setActiveTab={setActiveTab}
         formatMode={formatMode}
         setFormatMode={setFormatMode}
         onExport={() => exportRows(ratios)}
       />
 
-      <FactorDashboard
-        factors={factors}
-        ratios={ratios}
-        activeFactor={activeFactor}
-        onSelectFactor={selectFactor}
-        setSelectedRatio={setSelectedRatio}
-      />
+      {activeTab === "snapshot" && (
+        <div className="space-y-8 mt-2">
+          <FactorDashboard
+            factors={factors}
+            onSelectFactor={(f) => { selectFactor(f); setActiveTab("explorer"); }}
+          />
 
-      <KeyRatios
-        ratios={ratios}
-        financialRows={financialRows}
-        formatMode={formatMode}
-        pinned={pinned}
-        togglePin={togglePin}
-        setSelectedRatio={setSelectedRatio}
-      />
+          <KeyRatios
+            ratios={ratios}
+            financialRows={financialRows}
+            formatMode={formatMode}
+            setSelectedRatio={setSelectedRatio}
+            onExploreAll={() => { setActiveCategory("key"); setActiveTab("explorer"); }}
+          />
 
-      <VisualAnalysis
-        active={activeAnalysis}
-        setActive={setActiveAnalysis}
-        ratios={ratios}
-        financialRows={financialRows}
-        peers={peers}
-      />
-
-      <RatioExplorer
-        ticker={ticker}
-        ratios={ratios}
-        financialRows={financialRows}
-        peers={peers}
-        formatMode={formatMode}
-        setFormatMode={setFormatMode}
-        activeCategory={activeCategory}
-        setActiveCategory={setActiveCategory}
-        pinned={pinned}
-        togglePin={togglePin}
-        setSelectedRatio={setSelectedRatio}
-        exportRows={exportRows}
-      />
-
-      <div className="rounded-lg border border-slate-200 bg-white p-3">
-        <div className="flex items-start gap-2">
-          <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-emerald-700" />
-          <div>
-            <p className="text-sm font-semibold text-slate-950">Definition standardization</p>
-            <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
-              EPS, P/E, earnings yield, P/B, margins, ROE, ROA, ROIC, leverage, liquidity, FCF yield, dividend yield, and OCF/PAT are read from the central ratio engine used across the stock page and generated research context.
-            </p>
+          <div className="grid gap-3 xl:grid-cols-2">
+            <Card className="border-slate-200 bg-white shadow-sm xl:col-span-2">
+              <CardHeader className="p-4 pb-2">
+                <CardTitle className="text-base">FCCL versus cement peers — P/E</CardTitle>
+                <CardDescription>Default snapshot comparison</CardDescription>
+              </CardHeader>
+              <CardContent className="p-4 pt-2">
+                <div className="h-[280px]">
+                  <BarValueChart
+                    title=""
+                    description=""
+                    data={peerMetricData("P/E", ratios, peers)}
+                    metric="P/E"
+                    height={280}
+                  />
+                </div>
+                <div className="mt-6 border-t border-slate-100 pt-4">
+                  <p className="text-sm font-semibold text-slate-900 mb-2">Snapshot findings</p>
+                  <ul className="list-inside list-disc text-sm text-slate-700 space-y-1">
+                    <li>FCCL&apos;s P/E is below several selected cement peers, but full period alignment should be confirmed.</li>
+                    <li>Net margin and ROIC improved in FY2025.</li>
+                    <li>The company holds net cash and maintains strong interest coverage.</li>
+                  </ul>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+          
+          <div className="flex justify-center pt-4">
+            <Button variant="outline" onClick={() => setActiveTab("explorer")}>Explore all 53 ratios</Button>
           </div>
         </div>
-      </div>
+      )}
+
+      {activeTab === "trends" && (
+        <div className="space-y-6 mt-2">
+          <VisualAnalysis
+            active="profitability"
+            setActive={() => {}}
+            ratios={ratios}
+            financialRows={financialRows}
+            peers={peers}
+          />
+        </div>
+      )}
+
+      {activeTab === "peers" && (
+        <div className="space-y-6 mt-2">
+          <VisualAnalysis
+            active="valuation"
+            setActive={() => {}}
+            ratios={ratios}
+            financialRows={financialRows}
+            peers={peers}
+          />
+        </div>
+      )}
+
+      {activeTab === "explorer" && (
+        <div className="space-y-4 mt-2">
+          <RatioExplorer
+            ticker={ticker}
+            ratios={ratios}
+            financialRows={financialRows}
+            peers={peers}
+            formatMode={formatMode}
+            activeCategory={activeCategory}
+            setActiveCategory={setActiveCategory}
+            pinned={pinned}
+            togglePin={togglePin}
+            setSelectedRatio={setSelectedRatio}
+            exportRows={exportRows}
+          />
+        </div>
+      )}
 
       <RatioDetailDialog
         ticker={ticker}
