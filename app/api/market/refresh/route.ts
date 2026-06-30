@@ -1,8 +1,10 @@
 import { NextResponse } from "next/server";
+import { revalidateTag } from "next/cache";
 import { requireUser, errorResponse } from "@/lib/api-helpers";
 import { buildMarketSnapshot } from "@/lib/market/snapshot";
 import { refreshMarketEvents } from "@/lib/market/events";
 import { generateMarketBrief } from "@/lib/market/brief";
+import { MARKET_SNAPSHOT_TAG } from "@/lib/market/read";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { fetchAndIngestForeignFlows, foreignFlowsAutoConfigured } from "@/lib/market/foreign-flows-ingest";
 import { rejectDemoWrite } from "@/lib/demo-mode";
@@ -29,12 +31,14 @@ export async function POST(request: Request) {
 
     if (section === "events") {
       const ev = await refreshMarketEvents();
+      revalidateTag(MARKET_SNAPSHOT_TAG, "max");
       return NextResponse.json({ message: `${ev.saved} event(s) refreshed.`, detail: ev });
     }
     if (section === "brief") {
       if (foreignFlowsAutoConfigured()) await fetchAndIngestForeignFlows(createAdminClient()).catch(() => null);
       const date = new Date().toLocaleDateString("en-CA", { timeZone: "Asia/Karachi" });
       const b = await generateMarketBrief(date, { force: true });
+      revalidateTag(MARKET_SNAPSHOT_TAG, "max");
       return NextResponse.json({ message: b.error ? `Brief failed: ${b.error}` : "Market brief regenerated.", detail: b });
     }
 
@@ -48,6 +52,7 @@ export async function POST(request: Request) {
       if (foreignFlowsAutoConfigured()) await fetchAndIngestForeignFlows(createAdminClient()).catch(() => null);
       await generateMarketBrief(snap.date, { force: true }).catch(() => null);
     }
+    revalidateTag(MARKET_SNAPSHOT_TAG, "max");
     return NextResponse.json({
       message: `Snapshot rebuilt — ${snap.items} stocks, ${snap.advancers} up / ${snap.decliners} down${snap.index ? ` · ${snap.index}` : ""}.`,
       detail: snap,

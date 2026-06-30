@@ -1,7 +1,9 @@
 import { NextResponse } from "next/server";
+import { revalidateTag } from "next/cache";
 import { buildMarketSnapshot } from "@/lib/market/snapshot";
 import { refreshMarketEvents } from "@/lib/market/events";
 import { generateMarketBrief } from "@/lib/market/brief";
+import { MARKET_SNAPSHOT_TAG } from "@/lib/market/read";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { fetchAndIngestForeignFlows, foreignFlowsAutoConfigured } from "@/lib/market/foreign-flows-ingest";
 import { buildMacroAssetRows, writeMacroAssetRows } from "@/lib/market-data/macro-assets";
@@ -64,6 +66,10 @@ export async function GET(request: Request) {
     const brief = await generateMarketBrief(date, { force: url.searchParams.get("brief") === "1" || task === "brief" });
     report.brief = { generated: brief.generated, error: brief.error };
   }
+
+  // Any of the above tasks rewrites global market data — drop the cached read so
+  // the next Market Pulse render serves the fresh snapshot.
+  revalidateTag(MARKET_SNAPSHOT_TAG, "max");
 
   return NextResponse.json({ ok: true, ...report });
 }

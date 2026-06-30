@@ -1,4 +1,10 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { unstable_cache } from "next/cache";
+import { createAdminClient } from "@/lib/supabase/admin";
+
+// Tag that invalidates the cached global market read. The market cron and the
+// manual refresh route call revalidateTag(MARKET_SNAPSHOT_TAG) after writing.
+export const MARKET_SNAPSHOT_TAG = "market-snapshot";
 
 /**
  * Read model for the Market Pulse page. Everything the page renders comes from
@@ -116,43 +122,85 @@ export interface FreshnessItem {
 
 const HEATMAP_LIMIT = 150;
 
+interface MarketGlobal {
+  snapshot: SnapshotRow | null;
+  sectors: SectorRow[];
+  movers: MoverRow[];
+  heatmap: ItemRow[];
+  events: EventRow[];
+  brief: MarketDashboard["brief"];
+}
+
+/**
+ * Global Market Pulse data — identical for every user and only rewritten by the
+ * market cron job. Read once with the service-role client and held in Next's
+ * data cache (tag: market-snapshot), so per-request renders skip these ~7 DB
+ * round-trips entirely. The cron and manual refresh routes call
+ * revalidateTag(MARKET_SNAPSHOT_TAG) after writing; the 10-minute revalidate is
+ * a safety net in case a tag bust is ever missed.
+ */
+export const getCachedMarketGlobal = unstable_cache(
+  async (): Promise<MarketGlobal> => {
+    const supabase = createAdminClient();
+    const { data: snap } = await supabase
+      .from("market_snapshots")
+      .select("*")
+      .eq("market", "PSX")
+      .order("snapshot_date", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    const snapshot = (snap ?? null) as SnapshotRow | null;
+    if (!snapshot) {
+      return { snapshot: null, sectors: [], movers: [], heatmap: [], events: [], brief: null };
+    }
+
+    const [{ data: sectors }, { data: movers }, { data: items }, { data: events }, { data: brief }, { data: latestFlow }] = await Promise.all([
+      supabase.from("sector_snapshots").select("*").eq("snapshot_id", snapshot.id).order("average_return", { ascending: false }),
+      supabase.from("market_movers").select("category, ticker, company_name, sector, price, change_percent, volume, value_traded, rank").eq("snapshot_id", snapshot.id).order("rank"),
+      supabase.from("market_snapshot_items").select("ticker, company_name, sector, price, change_percent, volume, value_traded, market_cap, near_high, near_low, unusual_volume").eq("snapshot_id", snapshot.id).order("value_traded", { ascending: false, nullsFirst: false }).limit(HEATMAP_LIMIT),
+      supabase.from("market_events").select("ticker, company_name, sector, event_type, title, source_url, source_quality, event_date, event_time").eq("event_date", snapshot.snapshot_date).order("event_time", { ascending: false }),
+      supabase.from("market_ai_briefs").select("title, content, created_at, model, structured_output").eq("snapshot_date", snapshot.snapshot_date).maybeSingle(),
+      supabase.from("foreign_flow_days").select("flow_date").eq("market", "PSX").order("flow_date", { ascending: false }).limit(1).maybeSingle(),
+    ]);
+
+    return {
+      snapshot,
+      sectors: (sectors ?? []) as SectorRow[],
+      movers: (movers ?? []) as MoverRow[],
+      heatmap: (items ?? []) as ItemRow[],
+      events: (events ?? []) as EventRow[],
+      brief: brief && briefMatchesLatestFlow(brief.structured_output, latestFlow?.flow_date ? String(latestFlow.flow_date) : null)
+        ? { title: brief.title, content: brief.content, created_at: brief.created_at, model: brief.model }
+        : null,
+    };
+  },
+  ["market-global-v1"],
+  { tags: [MARKET_SNAPSHOT_TAG], revalidate: 600 }
+);
+
 export async function getMarketDashboard(supabase: SupabaseClient, userId: string): Promise<MarketDashboard> {
-  const { data: snap } = await supabase
-    .from("market_snapshots")
-    .select("*")
-    .eq("market", "PSX")
-    .order("snapshot_date", { ascending: false })
-    .limit(1)
-    .maybeSingle();
-
-  const snapshot = (snap ?? null) as SnapshotRow | null;
-
-  // Ownership + watchlist always resolve (needed even with no snapshot).
-  const [{ data: holdings }, { data: watch }] = await Promise.all([
+  // Shared market data comes from the data cache; only the personal
+  // ownership/watchlist overlay needs the per-request RLS client.
+  const [global, { data: holdings }, { data: watch }] = await Promise.all([
+    getCachedMarketGlobal(),
     supabase.from("holdings").select("ticker, company_name, sector, quantity").eq("user_id", userId),
     supabase.from("stock_watchlist").select("ticker").eq("user_id", userId),
   ]);
+
   const ownedTickers = new Set((holdings ?? []).filter((h) => Number(h.quantity) > 0).map((h) => (h.ticker as string).toUpperCase()));
   const watchTickers = new Set((watch ?? []).map((w) => (w.ticker as string).toUpperCase()));
 
+  const { snapshot } = global;
   if (!snapshot) {
     return { snapshot: null, sectors: [], movers: {}, heatmap: [], events: [], brief: null, ownedTickers, watchTickers, owned: [], updatedLabel: null };
   }
 
-  const [{ data: sectors }, { data: movers }, { data: items }, { data: events }, { data: brief }, { data: latestFlow }] = await Promise.all([
-    supabase.from("sector_snapshots").select("*").eq("snapshot_id", snapshot.id).order("average_return", { ascending: false }),
-    supabase.from("market_movers").select("category, ticker, company_name, sector, price, change_percent, volume, value_traded, rank").eq("snapshot_id", snapshot.id).order("rank"),
-    supabase.from("market_snapshot_items").select("ticker, company_name, sector, price, change_percent, volume, value_traded, market_cap, near_high, near_low, unusual_volume").eq("snapshot_id", snapshot.id).order("value_traded", { ascending: false, nullsFirst: false }).limit(HEATMAP_LIMIT),
-    supabase.from("market_events").select("ticker, company_name, sector, event_type, title, source_url, source_quality, event_date, event_time").eq("event_date", snapshot.snapshot_date).order("event_time", { ascending: false }),
-    supabase.from("market_ai_briefs").select("title, content, created_at, model, structured_output").eq("snapshot_date", snapshot.snapshot_date).maybeSingle(),
-    supabase.from("foreign_flow_days").select("flow_date").eq("market", "PSX").order("flow_date", { ascending: false }).limit(1).maybeSingle(),
-  ]);
-
   const moversByCat: Record<string, MoverRow[]> = {};
-  for (const m of (movers ?? []) as MoverRow[]) (moversByCat[m.category] ??= []).push(m);
+  for (const m of global.movers) (moversByCat[m.category] ??= []).push(m);
 
   // Personal: owned stocks present in today's snapshot, with sector-relative perf.
-  const sectorAvg = new Map((sectors ?? []).map((s) => [s.sector, s.average_return]));
+  const sectorAvg = new Map(global.sectors.map((s) => [s.sector, s.average_return]));
   const ownedRows: OwnedPerf[] = [];
   if (ownedTickers.size) {
     const { data: ownedItems } = await supabase
@@ -178,13 +226,11 @@ export async function getMarketDashboard(supabase: SupabaseClient, userId: strin
 
   return {
     snapshot,
-    sectors: (sectors ?? []) as SectorRow[],
+    sectors: global.sectors,
     movers: moversByCat,
-    heatmap: (items ?? []) as ItemRow[],
-    events: (events ?? []) as EventRow[],
-    brief: brief && briefMatchesLatestFlow(brief.structured_output, latestFlow?.flow_date ? String(latestFlow.flow_date) : null)
-      ? { title: brief.title, content: brief.content, created_at: brief.created_at, model: brief.model }
-      : null,
+    heatmap: global.heatmap,
+    events: global.events,
+    brief: global.brief,
     ownedTickers,
     watchTickers,
     owned: ownedRows,
