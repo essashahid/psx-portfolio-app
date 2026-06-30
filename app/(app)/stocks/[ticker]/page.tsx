@@ -2,13 +2,14 @@ import { Suspense } from "react";
 import Link from "next/link";
 import { createClient, getUser } from "@/lib/supabase/server";
 import { getCompanyHeader } from "@/lib/company/service";
+import { computeRatios } from "@/lib/engine/ratios";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tabs } from "@/components/ui/tabs";
 import { WatchlistButton } from "@/components/stock/watchlist-button";
 import { GenerateReportDialog } from "@/components/stock/generate-report-dialog";
 import { CardSkeleton, TableSkeleton } from "@/components/page-skeleton";
-import { formatNumber, formatSignedPct, cn } from "@/lib/utils";
+import { formatNumber, formatSignedPct, formatFinancialPeriod, cn } from "@/lib/utils";
 import { normalizeEnabledFeatures } from "@/lib/features";
 import { ArrowLeft, Search } from "lucide-react";
 import {
@@ -51,24 +52,17 @@ export default async function StockCockpitPage({ params }: { params: Promise<{ t
 
   // Shell: cache-first profile + live quote + 52w range, plus ownership/watch
   // status. Heavy per-section data streams in below via Suspense.
-  const [header, { data: holding }, { data: watch }, { data: latestIncome }, { data: divRows }, profileRes] = await Promise.all([
+  //
+  // Valuation metrics (P/E, EPS, dividend yield) come from the ratio engine —
+  // the single source of truth shared with the Overview tab — so the header can
+  // never disagree with Key signals on the period or the value. The engine
+  // already selects the latest reliable financial period per stock, so this is
+  // correct for every ticker, not just the one on screen.
+  const [header, { data: holding }, { data: watch }, ratios, profileRes] = await Promise.all([
     getCompanyHeader(supabase, ticker),
     supabase.from("holdings").select("quantity").eq("user_id", user.id).eq("ticker", ticker).gt("quantity", 0).maybeSingle(),
     supabase.from("stock_watchlist").select("ticker").eq("user_id", user.id).eq("ticker", ticker).maybeSingle(),
-    supabase
-      .from("company_financials")
-      .select("fiscal_year, fiscal_period, data")
-      .eq("ticker", ticker)
-      .eq("statement_type", "income_statement")
-      .order("reported_date", { ascending: false })
-      .limit(1)
-      .maybeSingle(),
-    supabase
-      .from("dividends")
-      .select("dividend_per_share, announcement_date")
-      .eq("ticker", ticker)
-      .order("announcement_date", { ascending: false })
-      .limit(12),
+    computeRatios(supabase, ticker),
     supabase.from("profiles").select("enabled_features, demo_mode").eq("id", user.id).maybeSingle(),
   ]);
   const enabledFeatures = normalizeEnabledFeatures(profileRes.data?.enabled_features);
@@ -79,17 +73,15 @@ export default async function StockCockpitPage({ params }: { params: Promise<{ t
   const { metadata, quote } = header;
   const dayTone = quote.dayChangePct ? (quote.dayChangePct > 0 ? "positive" : "negative") : undefined;
 
-  // Header fundamentals from extracted filings + recorded dividends (no live calls).
-  const epsRaw = (latestIncome?.data as Record<string, unknown> | undefined)?.eps;
+  // Header fundamentals, read from the ratio engine so value + period + source
+  // match the Overview exactly. Each metric keeps the engine's own period label.
+  const peRatio = ratios.find((r) => r.ratio_name === "P/E") ?? null;
+  const divYieldRatio = ratios.find((r) => r.ratio_name === "Dividend yield (TTM)") ?? null;
+  const pe = peRatio?.ratio_value ?? null;
+  const epsRaw = peRatio?.inputs.eps;
   const eps = typeof epsRaw === "number" && Number.isFinite(epsRaw) ? epsRaw : null;
-  const epsPeriod = latestIncome ? `${latestIncome.fiscal_year ?? ""} ${latestIncome.fiscal_period ?? ""}`.trim() : null;
-  const pe = eps && quote.price ? quote.price / eps : null;
-  const latestDividendDate = divRows?.[0]?.announcement_date ?? null;
-  const ttmCutoff = latestDividendDate ? new Date(new Date(latestDividendDate).getTime() - 365 * 86400_000).toISOString().slice(0, 10) : null;
-  const ttmDps = (divRows ?? [])
-    .filter((d) => d.dividend_per_share && ttmCutoff && (d.announcement_date ?? "") >= ttmCutoff)
-    .reduce((s, d) => s + Number(d.dividend_per_share), 0);
-  const divYield = ttmDps > 0 && quote.price ? (ttmDps / quote.price) * 100 : null;
+  const epsPeriod = formatFinancialPeriod(peRatio?.source_period);
+  const divYield = divYieldRatio?.ratio_value ?? null;
   const range52 =
     header.technicals?.fiftyTwoWeekLow !== null && header.technicals?.fiftyTwoWeekLow !== undefined &&
     header.technicals?.fiftyTwoWeekHigh !== null && header.technicals?.fiftyTwoWeekHigh !== undefined
@@ -142,8 +134,8 @@ export default async function StockCockpitPage({ params }: { params: Promise<{ t
                   {quote.price !== null ? `PKR ${formatNumber(quote.price)}` : "—"}
                 </p>
                 <p className={cn("mt-0.5 text-xs font-medium tabular-nums", dayTone === "positive" && "text-emerald-600", dayTone === "negative" && "text-red-600", !dayTone && "text-muted-foreground")}>
-                  {quote.dayChangePct !== null ? formatSignedPct(quote.dayChangePct) : "—"}
-                  {quote.dayChange !== null ? ` · ${quote.dayChange > 0 ? "+" : ""}${formatNumber(quote.dayChange)}` : ""}
+                  {quote.dayChange !== null ? `${quote.dayChange > 0 ? "+" : quote.dayChange < 0 ? "−" : ""}PKR ${formatNumber(Math.abs(quote.dayChange))}` : ""}
+                  {quote.dayChangePct !== null ? `${quote.dayChange !== null ? " · " : ""}${formatSignedPct(quote.dayChangePct)} today` : quote.dayChange === null ? "—" : ""}
                   {lastUpdated ? <span className="font-normal text-muted-foreground"> · Updated {lastUpdated}</span> : null}
                 </p>
               </div>
@@ -157,9 +149,9 @@ export default async function StockCockpitPage({ params }: { params: Promise<{ t
           <div className="mt-5 overflow-x-auto border-t border-slate-200 pt-4">
             <div className="grid min-w-[760px] grid-cols-6 gap-4">
               <HeaderMetric label="Market cap" value={compactMoney(metadata.marketCap)} />
-              <HeaderMetric label="P/E" value={pe !== null ? `${pe.toFixed(1)}x` : "—"} sub={pe === null ? (eps === null ? "needs EPS" : "needs price") : undefined} />
-              <HeaderMetric label="EPS" value={eps !== null ? formatNumber(eps) : "—"} sub={eps !== null ? epsPeriod ?? undefined : "extract filings"} />
-              <HeaderMetric label="Dividend yield" value={divYield !== null ? `${divYield.toFixed(2)}%` : "Incomplete"} sub={divYield !== null ? "TTM recorded" : latestDividendDate ? "needs verified DPS" : "unverified"} tone={divYield === null && latestDividendDate ? "negative" : undefined} />
+              <HeaderMetric label="P/E" value={pe !== null ? `${pe.toFixed(1)}x` : "—"} sub={pe !== null && epsPeriod ? `Based on ${epsPeriod} EPS` : pe === null ? "needs financials" : undefined} />
+              <HeaderMetric label="EPS" value={eps !== null ? `PKR ${formatNumber(eps)}` : "—"} sub={eps !== null ? epsPeriod ?? undefined : "needs financials"} />
+              <HeaderMetric label="Dividend yield" value={divYield !== null ? `${divYield.toFixed(2)}%` : "Incomplete"} sub={divYield !== null ? "Trailing 12m" : "DPS unverified"} tone={undefined} />
               <HeaderMetric label="Volume" value={quote.volume !== null ? compactNumber(quote.volume) : "—"} />
               <HeaderMetric label="52-week range" value={range52} />
             </div>
