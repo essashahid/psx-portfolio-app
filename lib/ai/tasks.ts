@@ -6,7 +6,7 @@
  * no code change). The interactive Research Copilot stays on Claude.
  *
  *   TASKS_BASE_URL  default https://api.deepseek.com/v1
- *   TASKS_MODEL     default deepseek-chat
+ *   TASKS_MODEL     default deepseek-v4-flash
  *   TASKS_API_KEY   required to enable
  *   TASKS_DISABLED  independent kill switch (see also AI_DISABLED in lib/ai/openai.ts)
  *
@@ -14,7 +14,8 @@
  */
 
 const DEFAULT_BASE_URL = "https://api.deepseek.com/v1";
-const DEFAULT_MODEL = "deepseek-chat";
+// DeepSeek V4 (deepseek-chat/deepseek-reasoner are deprecated 2026-07-24).
+const DEFAULT_MODEL = "deepseek-v4-flash";
 const REQUEST_TIMEOUT_MS = 120_000;
 
 function tasksDisabled(): boolean {
@@ -61,6 +62,10 @@ async function complete(messages: ChatMessage[], opts: { maxTokens: number; json
       messages,
       max_tokens: opts.maxTokens,
       temperature: opts.temperature,
+      // V4 defaults to thinking ON; force it off so batch jobs stay fast, cheap,
+      // and reliable for JSON-mode extraction. Only sent for V4 models so a
+      // swapped-in non-DeepSeek backend never sees an unknown parameter.
+      ...(tasksModel().startsWith("deepseek-v4") ? { thinking: { type: "disabled" } } : {}),
       ...(opts.json ? { response_format: { type: "json_object" } } : {}),
     }),
   });

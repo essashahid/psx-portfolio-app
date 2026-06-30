@@ -37,10 +37,9 @@ function tierFor(model: ChatModelId): Tier {
     case "claude-opus":
     case "claude-sonnet":
       return "deep";
-    case "deepseek-chat":
+    case "deepseek-flash":
       return "medium";
     case "claude-haiku":
-    case "deepseek-reasoner":
     default:
       return "focused";
   }

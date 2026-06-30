@@ -9,8 +9,10 @@ import type { ChatModelDef } from "./models";
  * shape with `stream: true` and function-calling, so DeepSeek gets the same
  * tool loop as Claude — the same 11 tools, just converted to OpenAI's schema.
  *
- * deepseek-reasoner streams its chain of thought via `reasoning_content`, which
- * we surface in the same thinking panel as Claude's adaptive thinking.
+ * In thinking mode V4 streams its chain of thought via `reasoning_content`,
+ * which we surface in the same thinking panel as Claude's adaptive thinking. The
+ * Copilot's Flash entry runs non-thinking for a reliable tool loop, but the
+ * reasoning_content plumbing stays so a thinking model can be enabled later.
  *
  * Config (shared with tasks.ts): TASKS_API_KEY / DEEP_SEEK_API_KEY, optional
  * TASKS_BASE_URL. Gated by the chat kill switch CHAT_DISABLED (not the cron one).
@@ -101,6 +103,16 @@ export async function runDeepSeekChat(opts: DeepSeekChatOptions): Promise<void> 
         messages,
         stream: true,
         max_tokens: opts.def.maxTokens,
+        // V4 defaults to thinking ON; we set it explicitly. Non-thinking is the
+        // reliable path for the multi-turn tool loop, and it keeps sampling
+        // params (temperature) effective. Only sent for V4 models so a non-V4
+        // override never sees an unknown parameter.
+        ...(opts.def.apiModel.startsWith("deepseek-v4")
+          ? {
+              thinking: { type: opts.def.thinking ? "enabled" : "disabled" },
+              ...(opts.def.thinking ? { reasoning_effort: "high" as const } : {}),
+            }
+          : {}),
         ...(opts.def.supportsTemperature ? { temperature: 0.4 } : {}),
         ...(sendTools ? { tools: toOpenAITools(opts.tools), tool_choice: "auto" as const } : {}),
       }),

@@ -210,8 +210,9 @@ function pktDateLine(): string {
   return `Today's date is ${today} (Pakistan time). Interpret "today", "this week", and "recent" relative to this date, and treat anything materially older as not current news.`;
 }
 
-// Appended for tool-less models (e.g. DeepSeek R1): they cannot fetch, so they
-// must answer from the pre-loaded <context> and never promise a lookup.
+// Appended for any tool-less model (none ship today — DeepSeek moved to V4
+// Flash with tools): they cannot fetch, so they must answer from the pre-loaded
+// <context> and never promise a lookup. Kept for a future tool-less model.
 const NO_TOOL_RULE = `
 Answering without tools:
 - You cannot call tools on this turn. Answer using only the data in the <context> block.
@@ -322,9 +323,9 @@ export async function POST(request: Request) {
           return;
         }
 
-        // 3. Narrative. Tool-capable models get retrieval guidance; tool-less
-        //    ones (DeepSeek R1) get the "answer from context, never promise a
-        //    lookup" rule so they don't stall on a dangling promise.
+        // 3. Narrative. Tool-capable models get retrieval guidance; any
+        //    tool-less model gets the "answer from context, never promise a
+        //    lookup" rule so it doesn't stall on a dangling promise.
         const canUseTools = modelDef.provider === "claude" || !!modelDef.supportsTools;
         const budgetNote = tokenBudgetNote(modelDef.maxTokens, message);
         const systemPrompt = `${SYSTEM_PROMPT}\n${pktDateLine()}${budgetNote}\n${canUseTools ? TOOL_RULE : NO_TOOL_RULE}`;
@@ -336,9 +337,9 @@ export async function POST(request: Request) {
           : `Question: ${message}\n(No pre-loaded data matched — use tools to fetch what you need.)`;
         const trimmedHistory = (body.history ?? []).slice(-6);
 
-        // Models that can't call tools (DeepSeek R1) can't web_search on their
-        // own, so pre-fetch web context for "why did it move" questions and
-        // inject it — gives them the same catalyst lookup the tool models get.
+        // A tool-less model can't web_search on its own, so pre-fetch web
+        // context for "why did it move" questions and inject it. Inactive while
+        // every model supports tools, but kept for a future tool-less model.
         const toolless = modelDef.provider === "deepseek" && !modelDef.supportsTools;
         if (toolless && wantsWebContext(message)) {
           send({ type: "status", text: "Searching recent market coverage" });
@@ -579,7 +580,7 @@ export async function POST(request: Request) {
         }
 
         // Backstop: if the model leaked a tool call as text instead of
-        // invoking it (DeepSeek R1 with tools), replace the garbage answer.
+        // invoking it, replace the garbage answer.
         if (looksLikeToolLeak(assistantContent)) {
           send({ type: "reset" });
           assistantContent = TOOL_LEAK_FALLBACK;
