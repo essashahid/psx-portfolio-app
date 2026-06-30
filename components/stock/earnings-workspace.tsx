@@ -12,7 +12,6 @@ import {
   Tooltip as RechartsTooltip,
   XAxis,
   YAxis,
-  Area,
 } from "recharts";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -20,7 +19,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Select } from "@/components/ui/select";
 import { Table, TBody, TD, TH, THead, TR } from "@/components/ui/table";
 import { ActionButton } from "@/components/action-button";
-import { AXIS_TICK, ChartEmpty, CURSOR, fmtCompact } from "@/components/chart-kit";
+import { AXIS_TICK, CURSOR, fmtCompact } from "@/components/chart-kit";
 import { cn } from "@/lib/utils";
 import { AlertTriangle, Download, ExternalLink, MoreHorizontal, RefreshCw, FileText, Info, TrendingUp, Presentation, Clock, CheckCircle2 } from "lucide-react";
 import type { FinancialWorkspaceRow } from "@/components/stock/financials-workspace";
@@ -33,6 +32,15 @@ import type { Filing } from "@/lib/company/types";
 type PeriodMode = "annual" | "quarterly" | "cumulative";
 type ValueMode = "compact" | "exact";
 type TrendView = "profit" | "eps" | "margins" | "drivers";
+type Status = "Complete" | "Partial" | "Unavailable";
+type SummaryCardItem = {
+  key: string;
+  label: string;
+  metricKey: string;
+  val: number | null;
+  priorVal: number | null;
+  isMargin?: boolean;
+};
 type ChartClickEvent = {
   activePayload?: Array<{
     payload?: {
@@ -42,7 +50,6 @@ type ChartClickEvent = {
 };
 
 const PERIOD_ORDER: Record<string, number> = { Q1: 1, Q2: 2, H1: 2, Q3: 3, "9M": 3, Q4: 4, FY: 4 };
-
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
@@ -84,6 +91,44 @@ function value(row: FinancialWorkspaceRow | null | undefined, key: string): numb
   if (key === "operating_margin") return margin(row, "operating_profit");
   if (key === "net_margin") return margin(row, "profit_after_tax");
   return raw(row, key);
+}
+
+function resultValueStatus(row: FinancialWorkspaceRow | null): Status {
+  if (!row) return "Unavailable";
+  const essentials = ["revenue", "profit_after_tax", "eps"];
+  const present = essentials.filter((key) => value(row, key) !== null).length;
+  if (present === essentials.length) return "Complete";
+  if (present > 0) return "Partial";
+  return "Unavailable";
+}
+
+function resultMetadataStatus(row: FinancialWorkspaceRow | null): Status {
+  if (!row) return "Unavailable";
+  const fields = [row.reported_date, row.source_url, row.fiscal_year, row.fiscal_period ?? row.period_type];
+  const present = fields.filter(Boolean).length;
+  if (present === fields.length) return "Complete";
+  if (present > 0) return "Partial";
+  return "Unavailable";
+}
+
+function statusVariant(status: Status): "green" | "amber" | "red" {
+  if (status === "Complete") return "green";
+  if (status === "Partial") return "amber";
+  return "red";
+}
+
+function comparisonLabel(comparison: "YoY" | "QoQ"): string {
+  return comparison === "YoY" ? "Prior-year comparison" : "Previous-quarter comparison";
+}
+
+function comparisonShortLabel(comparison: "YoY" | "QoQ"): string {
+  return comparison === "YoY" ? "YoY" : "QoQ";
+}
+
+function changeSentence(label: string, change: ReturnType<typeof changeInfo> | null, comparison: "YoY" | "QoQ"): string | null {
+  if (!change) return null;
+  const verb = change.raw > 0 ? "rose" : change.raw < 0 ? "fell" : "was flat";
+  return `${label} ${verb} ${Math.abs(change.raw).toFixed(1)}${change.text.includes("pp") ? " pp" : "%"} ${comparisonShortLabel(comparison)}.`;
 }
 
 function formatValue(v: number | null, key: string, mode: ValueMode): string {
@@ -182,7 +227,7 @@ function Segment<T extends string>({ value, options, onChange }: { value: T; opt
   );
 }
 
-function SummaryCard({ label, val, isMargin, priorVal, priorLabel, valueMode, comparison }: { label: string; val: number | null; isMargin?: boolean; priorVal: number | null; priorLabel: string; valueMode: ValueMode; comparison: "YoY" | "QoQ" }) {
+function SummaryCard({ label, metricKey, val, isMargin, priorVal, priorLabel, valueMode, comparison }: { label: string; metricKey: string; val: number | null; isMargin?: boolean; priorVal: number | null; priorLabel: string; valueMode: ValueMode; comparison: "YoY" | "QoQ" }) {
     const chg = changeInfo(val, priorVal, isMargin ?? false);
     return (
         <Card className="border-slate-200 bg-white shadow-sm flex flex-col justify-between min-h-[104px]">
@@ -190,11 +235,11 @@ function SummaryCard({ label, val, isMargin, priorVal, priorLabel, valueMode, co
                 <div>
                     <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">{label}</p>
                     <p className={cn("mt-1.5 font-semibold tabular-nums text-slate-950", ["Revenue", "Profit after tax", "Net margin"].includes(label) ? "text-2xl" : "text-xl")}>
-                        {val === null ? "—" : (isMargin ? `${val.toFixed(1)}%` : formatValue(val, label.toLowerCase(), valueMode))}
+                        {val === null ? "—" : (isMargin ? `${val.toFixed(1)}%` : formatValue(val, metricKey, valueMode))}
                     </p>
                 </div>
                 {chg ? (
-                    <div className="mt-2 text-xs font-medium" title={`Current: ${val === null ? "—" : isMargin ? val.toFixed(1) + "%" : formatValue(val, label.toLowerCase(), valueMode)}\n${priorLabel}: ${priorVal === null ? "—" : isMargin ? priorVal.toFixed(1) + "%" : formatValue(priorVal, label.toLowerCase(), valueMode)}\nChange: ${chg.text}`}>
+                    <div className="mt-2 text-xs font-medium" title={`Current: ${val === null ? "—" : isMargin ? val.toFixed(1) + "%" : formatValue(val, metricKey, valueMode)}\n${priorLabel}: ${priorVal === null ? "—" : isMargin ? priorVal.toFixed(1) + "%" : formatValue(priorVal, metricKey, valueMode)}\nChange: ${chg.text}`}>
                         <span className={cn(
                             chg.tone === "positive" ? "text-emerald-700" : chg.tone === "negative" ? "text-red-700" : "text-slate-600"
                         )}>
@@ -203,7 +248,7 @@ function SummaryCard({ label, val, isMargin, priorVal, priorLabel, valueMode, co
                     </div>
                 ) : priorLabel !== "—" ? (
                     <div className="mt-2 text-[10px] text-muted-foreground">
-                        {priorLabel} data unavailable
+                        {comparison === "YoY" ? "Prior-year" : "Previous-quarter"} comparison unavailable
                     </div>
                 ) : (
                     <div className="mt-2 text-[10px] text-muted-foreground">
@@ -250,6 +295,10 @@ export function EarningsWorkspace({
   }, [activePeriod, rows, comparison]);
 
   const priorLabel = labelPeriod(priorPeriod);
+  const latestFiling = useMemo(() => [...rows].sort((a,b) => rank(b) - rank(a))[0] ?? null, [rows]);
+  const valueStatus = resultValueStatus(activePeriod);
+  const metadataStatus = resultMetadataStatus(activePeriod);
+  const sourceStatus: Status = activePeriod?.source_url ? "Complete" : "Unavailable";
 
   // Metrics
   const metrics = useMemo(() => {
@@ -263,6 +312,21 @@ export function EarningsWorkspace({
         finance: { val: value(activePeriod, "finance_cost"), priorVal: value(priorPeriod, "finance_cost") }
     };
   }, [activePeriod, priorPeriod]);
+
+  const summaryCards = useMemo<SummaryCardItem[]>(() => {
+      const core: SummaryCardItem[] = [
+          { key: "revenue", label: "Revenue", metricKey: "revenue", val: metrics.revenue.val, priorVal: metrics.revenue.priorVal },
+          { key: "profit_after_tax", label: "Profit after tax", metricKey: "profit_after_tax", val: metrics.pat.val, priorVal: metrics.pat.priorVal },
+          { key: "eps", label: "EPS", metricKey: "eps", val: metrics.eps.val, priorVal: metrics.eps.priorVal },
+          { key: "gross_margin", label: "Gross margin", metricKey: "gross_margin", val: metrics.gm.val, priorVal: metrics.gm.priorVal, isMargin: true },
+          { key: "net_margin", label: "Net margin", metricKey: "net_margin", val: metrics.nm.val, priorVal: metrics.nm.priorVal, isMargin: true },
+      ];
+      const driver = ([
+          { key: "operating_profit", label: "Operating profit", metricKey: "operating_profit", val: metrics.op.val, priorVal: metrics.op.priorVal },
+          { key: "finance_cost", label: "Finance cost", metricKey: "finance_cost", val: metrics.finance.val, priorVal: metrics.finance.priorVal },
+      ] satisfies SummaryCardItem[]).find((item) => item.val !== null);
+      return [...core, ...(driver ? [driver] : [])].filter((item) => item.val !== null);
+  }, [metrics]);
 
   // Insights / Takeaways
   const takeaways = useMemo(() => {
@@ -293,19 +357,25 @@ export function EarningsWorkspace({
   }, [metrics, activePeriod, priorPeriod, comparison]);
 
   const conclusion = useMemo(() => {
-     if (takeaways.length >= 2) {
-         const revPos = metrics.revenue.val && metrics.revenue.priorVal && metrics.revenue.val > metrics.revenue.priorVal;
-         const patPos = metrics.pat.val && metrics.pat.priorVal && metrics.pat.val > metrics.pat.priorVal;
-         const marginPos = metrics.nm.val && metrics.nm.priorVal && metrics.nm.val > metrics.nm.priorVal;
-         
-         if (revPos && patPos && marginPos) return `Revenue and profit increased compared with the equivalent period, with margin expansion contributing to stronger earnings.`;
-         if (revPos && patPos && !marginPos) return `Revenue and profit increased, though margins contracted slightly compared with the equivalent period.`;
-         if (!revPos && !patPos) return `Revenue and profit both declined compared with the equivalent period, reflecting a weaker earnings environment.`;
-         if (revPos && !patPos) return `Revenue increased, but profit declined, driven by margin compression or higher costs.`;
-         if (!revPos && patPos) return `Revenue declined, but profit improved, supported by margin expansion or cost discipline.`;
+     if (!activePeriod) return "No results available.";
+     const label = labelPeriod(activePeriod);
+     const revChg = changeInfo(metrics.revenue.val, metrics.revenue.priorVal, false);
+     const patChg = changeInfo(metrics.pat.val, metrics.pat.priorVal, false);
+     const gmChg = changeInfo(metrics.gm.val, metrics.gm.priorVal, true);
+     const nmChg = changeInfo(metrics.nm.val, metrics.nm.priorVal, true);
+     if (revChg && patChg) {
+         const revenueVerb = revChg.raw > 0 ? "rose" : revChg.raw < 0 ? "fell" : "was flat";
+         const patVerb = patChg.raw > 0 ? "increased" : patChg.raw < 0 ? "declined" : "was flat";
+         const driver = gmChg
+             ? `Gross margin ${gmChg.raw > 0 ? "expansion" : "contraction"} of ${Math.abs(gmChg.raw).toFixed(1)} pp was the clearest verified driver.`
+             : nmChg
+                 ? `Net margin ${nmChg.raw > 0 ? "improved" : "weakened"} by ${Math.abs(nmChg.raw).toFixed(1)} pp.`
+                 : "No margin driver is verified for this comparison.";
+         return `${label} revenue ${revenueVerb} ${Math.abs(revChg.raw).toFixed(1)}% ${comparisonShortLabel(comparison)}, while profit after tax ${patVerb} ${Math.abs(patChg.raw).toFixed(1)}%. ${driver}`;
      }
-     return activePeriod ? `Earnings result for ${labelPeriod(activePeriod)}.` : "No results available.";
-  }, [metrics, takeaways, activePeriod]);
+     const fallback = changeSentence("Revenue", revChg, comparison) ?? changeSentence("Profit after tax", patChg, comparison);
+     return fallback ? `${label}: ${fallback}` : `${label} has insufficient comparable data for a result conclusion.`;
+  }, [metrics, activePeriod, comparison]);
 
   // Watchpoints
   const watchpoints = useMemo(() => {
@@ -320,7 +390,6 @@ export function EarningsWorkspace({
   const events = useMemo(() => {
       // Group filings by result events. A result event maps to an activeRow roughly.
       // We'll just show filings that are "result" category or close in date.
-      const resultFilings = filings.filter(f => f.category === "result" || f.category === "dividend");
       // This is a simplified timeline grouping
       const timelineMap = new Map<string, { period: string, date: string, primary: Filing, related: Filing[] }>();
       
@@ -365,6 +434,11 @@ export function EarningsWorkspace({
       });
   }, [activeRows, comparison, rows]);
 
+  const selectChartPeriod = (e: unknown) => {
+      const periodId = (e as ChartClickEvent | null)?.activePayload?.[0]?.payload?.id;
+      if (periodId) setSelectedPeriodId(periodId);
+  };
+
   return (
     <div className="space-y-4">
       {/* HEADER */}
@@ -373,21 +447,26 @@ export function EarningsWorkspace({
               <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
                   <div>
                       <CardTitle className="text-lg">Earnings</CardTitle>
-                      <CardDescription className="mt-1">
-                          <span className="font-medium text-slate-700">{activePeriod ? labelPeriod(activePeriod) : "No result"} · {mode === "annual" ? "Annual" : mode === "quarterly" ? "Quarterly" : "Cumulative"}</span>
-                          {activePeriod?.data?._period_end ? ` · Period ended ${formatDate(String(activePeriod.data._period_end))}` : ""}
-                          {activePeriod?.reported_date ? ` · Announced ${formatDate(activePeriod.reported_date)}` : ""}
+                      <CardDescription className="mt-2 space-y-1 text-xs">
+                          <span className="block">
+                              <span className="font-medium text-slate-700">Selected result:</span>{" "}
+                              {activePeriod ? `${labelPeriod(activePeriod)} · ${mode === "annual" ? "Annual" : mode === "quarterly" ? "Quarterly" : "Cumulative"}` : "No result"}
+                              {activePeriod?.data?._period_end ? ` · Period ended ${formatDate(String(activePeriod.data._period_end))}` : ""}
+                          </span>
+                          <span className="block">
+                              <span className="font-medium text-slate-700">Latest filing available:</span>{" "}
+                              {latestFiling ? labelPeriod(latestFiling) : "Unavailable"}
+                              {latestFiling?.reported_date ? ` · Announced ${formatDate(latestFiling.reported_date)}` : ""}
+                          </span>
+                          <span className="block">
+                              <span className="font-medium text-slate-700">Source:</span>{" "}
+                              {activePeriod?.source_url ? "Official PSX filing" : "Source mapping unverified"}
+                          </span>
                       </CardDescription>
-                      <div className="mt-2 flex flex-wrap items-center gap-2">
-                          {activePeriod?.source_url ? (
-                               <a href={activePeriod.source_url} target="_blank" rel="noopener noreferrer" className="text-[11px] font-medium text-blue-600 hover:underline inline-flex items-center gap-1">
-                                  <FileText className="w-3 h-3"/> Official PSX filing
-                               </a>
-                          ) : <span className="text-[11px] text-muted-foreground">Source mapping unverified</span>}
-                          <span className="text-muted-foreground text-[11px]">·</span>
-                          <Badge variant={activePeriod ? (Object.keys(activePeriod.data||{}).length > 6 ? "green" : "amber") : "secondary"}>
-                              Data status: {activePeriod ? (Object.keys(activePeriod.data||{}).length > 6 ? "Complete" : "Partial") : "Unavailable"}
-                          </Badge>
+                      <div className="mt-3 flex flex-wrap items-center gap-2">
+                          <Badge variant={statusVariant(valueStatus)}>Financial values {valueStatus}</Badge>
+                          <Badge variant={statusVariant(metadataStatus)}>Announcement metadata {metadataStatus}</Badge>
+                          <Badge variant={statusVariant(sourceStatus)}>Source classification {sourceStatus}</Badge>
                       </div>
                   </div>
                   <div className="flex flex-col gap-2 xl:items-end">
@@ -411,6 +490,28 @@ export function EarningsWorkspace({
                               options={mode === "quarterly" ? [{ value: "YoY", label: "Prior Year (YoY)" }, { value: "QoQ", label: "Prior Qtr (QoQ)" }] : [{ value: "YoY", label: "Prior Year (YoY)" }]}
                           />
                       </div>
+                      <div className="flex flex-wrap items-center justify-end gap-2">
+                          {!readOnly && (
+                              <ActionButton
+                                  endpoint={`/api/stocks/${ticker}/refresh`}
+                                  body={{ section: "financials" }}
+                                  label={<><RefreshCw className="h-3.5 w-3.5" /> Refresh result</>}
+                                  variant="outline"
+                                  size="sm"
+                              />
+                          )}
+                          {activePeriod?.source_url ? (
+                              <Button variant="outline" size="sm" onClick={() => window.open(activePeriod.source_url!, "_blank", "noopener,noreferrer")}>
+                                  <ExternalLink className="h-3.5 w-3.5" /> View official result
+                              </Button>
+                          ) : null}
+                          <Button variant="outline" size="sm" disabled>
+                              <Download className="h-3.5 w-3.5" /> Export
+                          </Button>
+                          <Button variant="ghost" size="sm" disabled aria-label="More actions">
+                              <MoreHorizontal className="h-4 w-4" />
+                          </Button>
+                      </div>
                   </div>
               </div>
           </CardHeader>
@@ -419,12 +520,19 @@ export function EarningsWorkspace({
       {/* SUMMARY */}
       {activePeriod && (
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
-              <SummaryCard label="Revenue" val={metrics.revenue.val} priorVal={metrics.revenue.priorVal} priorLabel={priorLabel} valueMode={valueMode} comparison={comparison} />
-              <SummaryCard label="Profit after tax" val={metrics.pat.val} priorVal={metrics.pat.priorVal} priorLabel={priorLabel} valueMode={valueMode} comparison={comparison} />
-              <SummaryCard label="EPS" val={metrics.eps.val} priorVal={metrics.eps.priorVal} priorLabel={priorLabel} valueMode={valueMode} comparison={comparison} />
-              <SummaryCard label="Gross margin" val={metrics.gm.val} isMargin priorVal={metrics.gm.priorVal} priorLabel={priorLabel} valueMode={valueMode} comparison={comparison} />
-              <SummaryCard label="Net margin" val={metrics.nm.val} isMargin priorVal={metrics.nm.priorVal} priorLabel={priorLabel} valueMode={valueMode} comparison={comparison} />
-              <SummaryCard label="Finance cost" val={metrics.finance.val} priorVal={metrics.finance.priorVal} priorLabel={priorLabel} valueMode={valueMode} comparison={comparison} />
+              {summaryCards.map((card) => (
+                  <SummaryCard
+                      key={card.key}
+                      label={card.label}
+                      metricKey={card.metricKey}
+                      val={card.val}
+                      isMargin={card.isMargin}
+                      priorVal={card.priorVal}
+                      priorLabel={priorLabel}
+                      valueMode={valueMode}
+                      comparison={comparison}
+                  />
+              ))}
           </div>
       )}
 
@@ -440,12 +548,15 @@ export function EarningsWorkspace({
       <Card className="border-slate-200 bg-white shadow-sm overflow-hidden">
         <CardHeader className="border-b border-border bg-slate-50/50 p-4">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-             <CardTitle className="text-sm flex items-center gap-2"><TrendingUp className="w-4 h-4 text-slate-500" /> Earnings trend</CardTitle>
+             <div>
+                 <CardTitle className="text-sm flex items-center gap-2"><TrendingUp className="w-4 h-4 text-slate-500" /> Earnings dashboard</CardTitle>
+                 <CardDescription className="mt-1 text-xs">Focused on result events and comparable-period signals; full statements remain in Financials.</CardDescription>
+             </div>
              <Segment
                  value={trendView}
                  onChange={setTrendView}
                  options={[
-                     { value: "profit", label: "Revenue & profit" },
+                     { value: "profit", label: "Revenue / PAT" },
                      { value: "eps", label: "EPS" },
                      { value: "margins", label: "Margins" },
                      { value: "drivers", label: "Drivers" },
@@ -454,14 +565,45 @@ export function EarningsWorkspace({
           </div>
         </CardHeader>
         <CardContent className="p-0">
+          {trendView === "profit" ? (
+            <div className="grid gap-3 p-4 lg:grid-cols-2">
+                {[
+                    { key: "revenue", label: "Revenue trend", fill: "#2563eb", question: "Is the business growing?" },
+                    { key: "pat", label: "Profit after tax trend", fill: "#b45309", question: "Are earnings growing?" },
+                ].map((chart) => (
+                    <div key={chart.key} className="rounded-lg border border-slate-200 p-3">
+                        <div className="mb-2 flex items-center justify-between gap-2">
+                            <div>
+                                <p className="text-xs font-semibold text-slate-900">{chart.label}</p>
+                                <p className="text-[10px] text-muted-foreground">{chart.question}</p>
+                            </div>
+                            <Badge variant="blue">{comparisonShortLabel(comparison)}</Badge>
+                        </div>
+                        <div className="h-[240px]">
+                            <ResponsiveContainer width="100%" height="100%">
+                                <BarChart data={chartData} onClick={selectChartPeriod} margin={{ top: 8, right: 12, bottom: 8, left: 6 }}>
+                                    <CartesianGrid vertical={false} strokeDasharray="4 4" stroke="#e2e8f0" />
+                                    <XAxis dataKey="period" {...AXIS_TICK} tickMargin={8} axisLine={false} tickLine={false} />
+                                    <YAxis {...AXIS_TICK} tickFormatter={fmtCompact} width={62} axisLine={false} tickLine={false} />
+                                    <RechartsTooltip
+                                        cursor={{ fill: "rgba(15, 23, 42, 0.04)" }}
+                                        contentStyle={{ borderRadius: "8px", border: "1px solid #e2e8f0", boxShadow: "0 4px 6px -1px rgb(0 0 0 / 0.1)", fontSize: "12px" }}
+                                        formatter={(value: unknown) => {
+                                            const numericValue = typeof value === "number" ? value : Number(value);
+                                            return [Number.isFinite(numericValue) ? formatRawCompact(numericValue / 1000) : "—", chart.label.replace(" trend", "")];
+                                        }}
+                                    />
+                                    <Bar dataKey={chart.key} name={chart.label.replace(" trend", "")} fill={chart.fill} radius={[4,4,0,0]} maxBarSize={34} />
+                                </BarChart>
+                            </ResponsiveContainer>
+                        </div>
+                    </div>
+                ))}
+            </div>
+          ) : (
           <div className="h-[320px] w-full p-4 pb-0 pl-0">
               <ResponsiveContainer width="100%" height="100%">
-                  <ComposedChart data={chartData} onClick={(e: unknown) => {
-                      const periodId = (e as ChartClickEvent | null)?.activePayload?.[0]?.payload?.id;
-                      if (periodId) {
-                          setSelectedPeriodId(periodId);
-                      }
-                  }}>
+                  <ComposedChart data={chartData} onClick={selectChartPeriod}>
                       <CartesianGrid vertical={false} strokeDasharray="4 4" stroke="#e2e8f0" />
                       <XAxis dataKey="period" {...AXIS_TICK} tickMargin={10} axisLine={false} tickLine={false} />
                       <YAxis yAxisId="left" {...AXIS_TICK} tickFormatter={trendView === "eps" ? (v) => v.toFixed(1) : trendView === "margins" ? (v) => v.toFixed(0) + "%" : fmtCompact} width={65} axisLine={false} tickLine={false} />
@@ -479,24 +621,18 @@ export function EarningsWorkspace({
                       />
                       <Legend iconType="circle" wrapperStyle={{ fontSize: "12px", paddingTop: "10px" }} />
                       
-                      {trendView === "profit" && (
-                          <>
-                              <Bar yAxisId="left" dataKey="revenue" name="Revenue" fill="#94a3b8" radius={[4,4,0,0]} barSize={24} />
-                              <Line yAxisId="left" type="monotone" dataKey="pat" name="Profit after tax" stroke="#0ea5e9" strokeWidth={3} dot={{ r: 4, strokeWidth: 2 }} />
-                          </>
-                      )}
                       {trendView === "eps" && (
-                          <Bar yAxisId="left" dataKey="eps" name="EPS" fill="#0ea5e9" radius={[4,4,0,0]} barSize={24} />
+                          <Bar yAxisId="left" dataKey="eps" name="EPS" fill="#4f46e5" radius={[4,4,0,0]} barSize={24} />
                       )}
                       {trendView === "margins" && (
                           <>
-                              <Line yAxisId="left" type="monotone" dataKey="gm" name="Gross margin" stroke="#64748b" strokeWidth={2} dot={{ r: 3 }} />
-                              <Line yAxisId="left" type="monotone" dataKey="nm" name="Net margin" stroke="#0ea5e9" strokeWidth={3} dot={{ r: 4, strokeWidth: 2 }} />
+                              <Line yAxisId="left" type="monotone" dataKey="gm" name="Gross margin" stroke="#16a34a" strokeWidth={2} dot={{ r: 3 }} />
+                              <Line yAxisId="left" type="monotone" dataKey="nm" name="Net margin" stroke="#b45309" strokeWidth={3} dot={{ r: 4, strokeWidth: 2 }} />
                           </>
                       )}
                       {trendView === "drivers" && (
                            <>
-                              <Bar yAxisId="left" dataKey="op" name="Operating Profit" fill="#94a3b8" radius={[4,4,0,0]} barSize={24} />
+                              <Bar yAxisId="left" dataKey="op" name="Operating Profit" fill="#2563eb" radius={[4,4,0,0]} barSize={24} />
                               <Line yAxisId="left" type="monotone" dataKey="finance" name="Finance cost" stroke="#f43f5e" strokeWidth={2} dot={{ r: 3 }} />
                               <Line yAxisId="left" type="monotone" dataKey="tax" name="Tax" stroke="#f59e0b" strokeWidth={2} dot={{ r: 3 }} />
                           </>
@@ -504,6 +640,7 @@ export function EarningsWorkspace({
                   </ComposedChart>
               </ResponsiveContainer>
           </div>
+          )}
         </CardContent>
       </Card>
 
@@ -586,7 +723,10 @@ export function EarningsWorkspace({
           <Card className="border-slate-200 bg-white shadow-sm overflow-hidden">
               <CardHeader className="p-4 pb-2 border-b border-border bg-slate-50/50">
                    <div className="flex items-center justify-between">
-                       <CardTitle className="text-sm">Earnings history</CardTitle>
+                       <div>
+                           <CardTitle className="text-sm">Earnings history</CardTitle>
+                           <CardDescription className="mt-1 text-xs">Event log focused on comparisons and official filing support.</CardDescription>
+                       </div>
                        <label className="flex items-center gap-2">
                             <Select value={valueMode} onChange={(e) => setValueMode(e.target.value as ValueMode)} className="h-7 text-[11px] w-[130px]">
                                 <option value="compact">Compact values</option>
@@ -600,13 +740,10 @@ export function EarningsWorkspace({
                       <THead>
                           <TR className="bg-slate-50/50 border-b border-border">
                               <TH className="text-xs py-2 whitespace-nowrap sticky left-0 bg-slate-50/95 backdrop-blur z-10 font-semibold text-slate-900 shadow-[1px_0_0_0_#e2e8f0]">Period</TH>
-                              <TH className="text-right text-xs py-2 whitespace-nowrap">Revenue</TH>
-                              <TH className="text-right text-xs py-2 whitespace-nowrap">PAT</TH>
-                              <TH className="text-right text-xs py-2 whitespace-nowrap">EPS</TH>
-                              <TH className="text-right text-xs py-2 whitespace-nowrap">Gross margin</TH>
-                              <TH className="text-right text-xs py-2 whitespace-nowrap">Net margin</TH>
-                              <TH className="text-right text-xs py-2 whitespace-nowrap">{comparison} change</TH>
-                              <TH className="text-xs py-2 whitespace-nowrap pl-4">Announced</TH>
+                              <TH className="text-xs py-2 whitespace-nowrap">Result signal</TH>
+                              <TH className="text-xs py-2 whitespace-nowrap">{comparisonShortLabel(comparison)} comparison</TH>
+                              <TH className="text-xs py-2 whitespace-nowrap">Filing support</TH>
+                              <TH className="text-xs py-2 whitespace-nowrap">Data status</TH>
                           </TR>
                       </THead>
                       <TBody>
@@ -614,6 +751,15 @@ export function EarningsWorkspace({
                               const isSelected = activePeriod && rank(r) === rank(activePeriod);
                               const prior = findPriorEquivalent(rows, r, comparison);
                               const revChg = changeInfo(raw(r, "revenue"), raw(prior, "revenue"), false);
+                              const patChg = changeInfo(raw(r, "profit_after_tax"), raw(prior, "profit_after_tax"), false);
+                              const epsChg = changeInfo(raw(r, "eps"), raw(prior, "eps"), false);
+                              const rowValueStatus = resultValueStatus(r);
+                              const rowMetadataStatus = resultMetadataStatus(r);
+                              const signalParts = [
+                                  revChg ? `Revenue ${revChg.text}` : null,
+                                  patChg ? `PAT ${patChg.text}` : null,
+                                  epsChg ? `EPS ${epsChg.text}` : null,
+                              ].filter(Boolean);
                               return (
                                   <TR key={rank(r)} 
                                       className={cn(
@@ -625,25 +771,38 @@ export function EarningsWorkspace({
                                       <TD className={cn("text-xs font-medium py-2.5 whitespace-nowrap sticky left-0 bg-white z-10 shadow-[1px_0_0_0_#e2e8f0]", isSelected && "bg-blue-50/50 text-blue-800")}>
                                           {labelPeriod(r)}
                                       </TD>
-                                      <TD className="text-right text-xs py-2.5 tabular-nums">{formatValue(raw(r, "revenue"), "revenue", valueMode)}</TD>
-                                      <TD className="text-right text-xs py-2.5 tabular-nums">{formatValue(raw(r, "profit_after_tax"), "profit_after_tax", valueMode)}</TD>
-                                      <TD className="text-right text-xs py-2.5 tabular-nums">{raw(r, "eps") !== null ? `PKR ${raw(r,"eps")?.toFixed(2)}` : "—"}</TD>
-                                      <TD className="text-right text-xs py-2.5 tabular-nums">{margin(r, "gross_profit") !== null ? `${margin(r, "gross_profit")?.toFixed(1)}%` : "—"}</TD>
-                                      <TD className="text-right text-xs py-2.5 tabular-nums">{margin(r, "profit_after_tax") !== null ? `${margin(r, "profit_after_tax")?.toFixed(1)}%` : "—"}</TD>
-                                      <TD className="text-right text-xs py-2.5 whitespace-nowrap">
-                                          {revChg ? (
-                                              <span className={cn(revChg.tone === "positive" ? "text-emerald-700" : revChg.tone === "negative" ? "text-red-700" : "text-slate-600")}>
-                                                  {revChg.text}
-                                              </span>
-                                          ) : "—"}
+                                      <TD className="text-xs py-2.5">
+                                          <div className="max-w-[300px] leading-relaxed text-slate-700">
+                                              {signalParts.length ? signalParts.join(" · ") : "Comparable result signal unavailable"}
+                                          </div>
                                       </TD>
-                                      <TD className="text-xs py-2.5 text-muted-foreground whitespace-nowrap pl-4">{formatDate(r.reported_date)}</TD>
+                                      <TD className="text-xs py-2.5 text-muted-foreground whitespace-nowrap">
+                                          {prior ? `${comparisonLabel(comparison)} vs ${labelPeriod(prior)}` : `${comparisonLabel(comparison)} unavailable`}
+                                      </TD>
+                                      <TD className="text-xs py-2.5 whitespace-nowrap">
+                                          <div className="flex flex-col gap-1">
+                                              <span className="text-muted-foreground">{r.reported_date ? `Announced ${formatDate(r.reported_date)}` : "Announcement date unverified"}</span>
+                                              {r.source_url ? (
+                                                  <a href={r.source_url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 font-medium text-blue-700 hover:underline" onClick={(e) => e.stopPropagation()}>
+                                                      <FileText className="h-3 w-3" /> Official filing
+                                                  </a>
+                                              ) : (
+                                                  <span className="text-amber-700">Source mapping unverified</span>
+                                              )}
+                                          </div>
+                                      </TD>
+                                      <TD className="text-xs py-2.5 whitespace-nowrap">
+                                          <div className="flex flex-wrap gap-1.5">
+                                              <Badge variant={statusVariant(rowValueStatus)}>Values {rowValueStatus}</Badge>
+                                              <Badge variant={statusVariant(rowMetadataStatus)}>Metadata {rowMetadataStatus}</Badge>
+                                          </div>
+                                      </TD>
                                   </TR>
                               );
                           })}
                           {activeRows.length === 0 && (
                               <TR>
-                                  <TD colSpan={8} className="text-center py-6 text-sm text-muted-foreground">
+                                  <TD colSpan={5} className="text-center py-6 text-sm text-muted-foreground">
                                       No {mode} periods found.
                                   </TD>
                               </TR>
