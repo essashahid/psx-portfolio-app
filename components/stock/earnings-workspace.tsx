@@ -33,6 +33,13 @@ import type { Filing } from "@/lib/company/types";
 type PeriodMode = "annual" | "quarterly" | "cumulative";
 type ValueMode = "compact" | "exact";
 type TrendView = "profit" | "eps" | "margins" | "drivers";
+type ChartClickEvent = {
+  activePayload?: Array<{
+    payload?: {
+      id?: string;
+    };
+  }>;
+};
 
 const PERIOD_ORDER: Record<string, number> = { Q1: 1, Q2: 2, H1: 2, Q3: 3, "9M": 3, Q4: 4, FY: 4 };
 
@@ -449,9 +456,10 @@ export function EarningsWorkspace({
         <CardContent className="p-0">
           <div className="h-[320px] w-full p-4 pb-0 pl-0">
               <ResponsiveContainer width="100%" height="100%">
-                  <ComposedChart data={chartData} onClick={(e) => {
-                      if (e && e.activePayload && e.activePayload.length > 0) {
-                          setSelectedPeriodId(e.activePayload[0].payload.id);
+                  <ComposedChart data={chartData} onClick={(e: unknown) => {
+                      const periodId = (e as ChartClickEvent | null)?.activePayload?.[0]?.payload?.id;
+                      if (periodId) {
+                          setSelectedPeriodId(periodId);
                       }
                   }}>
                       <CartesianGrid vertical={false} strokeDasharray="4 4" stroke="#e2e8f0" />
@@ -460,10 +468,13 @@ export function EarningsWorkspace({
                       <RechartsTooltip 
                           cursor={CURSOR}
                           contentStyle={{ borderRadius: "8px", border: "1px solid #e2e8f0", boxShadow: "0 4px 6px -1px rgb(0 0 0 / 0.1)", fontSize: "12px" }}
-                          formatter={(value: any, name: string) => {
-                              if (name === "EPS") return [`PKR ${value.toFixed(2)}`, name];
-                              if (name.includes("margin")) return [`${value.toFixed(1)}%`, name];
-                              return [formatRawCompact(value/1000), name];
+                          formatter={(value: unknown, name: unknown) => {
+                              const label = String(name ?? "");
+                              const numericValue = typeof value === "number" ? value : Number(value);
+                              if (!Number.isFinite(numericValue)) return ["—", label];
+                              if (label === "EPS") return [`PKR ${numericValue.toFixed(2)}`, label];
+                              if (label.includes("margin")) return [`${numericValue.toFixed(1)}%`, label];
+                              return [formatRawCompact(numericValue / 1000), label];
                           }}
                       />
                       <Legend iconType="circle" wrapperStyle={{ fontSize: "12px", paddingTop: "10px" }} />
