@@ -3,7 +3,7 @@ import { createClient, getUser } from "@/lib/supabase/server";
 import { getCompanyMetadata } from "@/lib/company/metadata";
 import { getTechnicals } from "@/lib/company/technicals";
 import { getCachedEod, KSE_SYMBOL } from "@/lib/market-data/eod-cache";
-import { computeSignals } from "@/lib/market/technicals";
+import { computeSignals, findSwings, detectSupportResistanceZones, toCanonicalOHLCV } from "@/lib/market/technicals";
 import { METRIC_HINTS } from "@/lib/market/glossary";
 import { getCompanyDividends } from "@/lib/company/dividends";
 import { getCompanyFilings } from "@/lib/company/filings";
@@ -19,6 +19,7 @@ import { WatchlistButton } from "@/components/stock/watchlist-button";
 import { CompanyAiActions } from "@/components/stock/company-ai-actions";
 import { Markdown } from "@/components/markdown";
 import { StockPriceChart } from "@/components/stock/price-chart-lazy";
+import { TechnicalWorkstation } from "@/components/technicals/workstation";
 import { FinancialsWorkspace, type FinancialWorkspaceRow } from "@/components/stock/financials-workspace";
 import { EarningsWorkspace } from "@/components/stock/earnings-workspace";
 import { RatiosWorkspace, type RatiosFinancialRow, type RatiosPeerRow, type RatiosQuoteRow } from "@/components/stock/ratios-workspace";
@@ -801,10 +802,6 @@ export async function TechnicalsPanel({ ticker, readOnly = false }: { ticker: st
   const technicals = await getTechnicals(supabase, ticker);
   const signals = computeSignals(technicals.history);
 
-  // KSE-100 closes power the "vs KSE-100" relative view on the price chart.
-  const eod = await getCachedEod(supabase, []);
-  const benchmark = (eod.get(KSE_SYMBOL) ?? []).map((p) => ({ date: p.date, close: p.close }));
-
   if (technicals.history.length === 0) {
     return (
       <EmptyState
@@ -815,77 +812,17 @@ export async function TechnicalsPanel({ ticker, readOnly = false }: { ticker: st
     );
   }
 
+  const swings = findSwings(technicals.history, 8);
+  const zones = detectSupportResistanceZones(technicals.history, swings, signals.lastClose ?? 0);
+  const ohlcvData = toCanonicalOHLCV(ticker, technicals.history);
+
   return (
-    <div className="space-y-4">
-      <Card>
-        <CardHeader className="flex-row items-center justify-between">
-          <CardTitle>Price & volume</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <StockPriceChart candles={technicals.history} signals={signals} benchmark={benchmark} ticker={ticker} />
-          <div className="mt-2"><SectionMeta meta={technicals.meta} ticker={ticker} refreshSection={readOnly ? undefined : "technicals"} /></div>
-        </CardContent>
-      </Card>
-
-      {signals.accumulation && (
-        <Card className="chart-reveal">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <TrendingUp className="h-4 w-4" /> Long-term structure
-            </CardTitle>
-            <CardDescription>This helps with accumulation timing. Your fundamentals should drive the decision, not the chart.</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-2.5 text-sm">
-            <p className="font-medium">
-              The long-term trend is{" "}
-              <span className={cn(signals.longTermTrend === "uptrend" && "text-emerald-600", signals.longTermTrend === "downtrend" && "text-red-600")}>
-                {signals.longTermTrend === "uptrend" ? "rising" : signals.longTermTrend === "downtrend" ? "falling" : "sideways"}
-              </span>{" "}
-              and the price is{" "}
-              <span className={cn(signals.accumulation.status === "attractive" && "text-emerald-600", signals.accumulation.status === "deteriorating" && "text-red-600", signals.accumulation.status === "extended" && "text-amber-600")}>
-                {signals.accumulation.status === "attractive" ? "at a healthy accumulation level" : signals.accumulation.status === "extended" ? "extended above its recent base" : signals.accumulation.status === "deteriorating" ? "below its normal pullback range" : "at an unclear level"}
-              </span>
-              {signals.divergences[0] ? `. There is a ${signals.divergences[0].kind} momentum divergence.` : "."}
-            </p>
-            <p className="text-xs leading-relaxed text-muted-foreground">{signals.accumulation.note}</p>
-            {signals.seasonality.length > 0 && (
-              <p className="text-xs leading-relaxed text-muted-foreground">
-                <span className="font-medium text-foreground">Seasonality.</span>{" "}
-                {signals.seasonality
-                  .map((w) => `In the past, ${w.label} closed positive in ${w.positive} of ${w.years} years (${w.winRatePct.toFixed(0)}%), with an average move of ${w.avgReturnPct >= 0 ? "+" : ""}${w.avgReturnPct.toFixed(1)}%.`)
-                  .join(" ")}
-              </p>
-            )}
-          </CardContent>
-        </Card>
-      )}
-
-      <div className="grid gap-3 sm:grid-cols-3 lg:grid-cols-6">
-        <Metric label="20-day MA" value={num(technicals.ma20)} />
-        <Metric label="50-day MA" value={num(technicals.ma50)} />
-        <Metric label="100-day MA" value={num(technicals.ma100)} />
-        <Metric label="200-day MA" value={num(technicals.ma200)} />
-        <Metric label="RSI (14)" value={technicals.rsi !== null ? technicals.rsi.toFixed(0) : "—"} />
-        <Metric label="Avg volume (30d)" value={num(technicals.averageVolume)} />
-        <Metric label="52-wk high" value={num(technicals.fiftyTwoWeekHigh)} sub={technicals.distanceFromHighPct !== null ? `${formatSignedPct(technicals.distanceFromHighPct)} away` : undefined} />
-        <Metric label="52-wk low" value={num(technicals.fiftyTwoWeekLow)} sub={technicals.distanceFromLowPct !== null ? `${formatSignedPct(technicals.distanceFromLowPct)} away` : undefined} />
-        <Metric label="Volume (last)" value={num(technicals.volume)} />
-        <Metric label="Volatility" value={technicals.volatility !== null ? `${technicals.volatility.toFixed(1)}%` : "—"} sub="annualized" />
-      </div>
-
-      <Card>
-        <CardHeader><CardTitle>Trend signals</CardTitle><CardDescription>Neutral observations, not trading signals.</CardDescription></CardHeader>
-        <CardContent className="flex flex-wrap gap-2">
-          {technicals.flags.length === 0 ? (
-            <p className="text-xs text-muted-foreground">Not enough history to derive trend signals.</p>
-          ) : (
-            technicals.flags.map((f, i) => (
-              <Badge key={i} variant={f.tone === "positive" ? "green" : f.tone === "negative" ? "red" : "secondary"}>{f.label}</Badge>
-            ))
-          )}
-        </CardContent>
-      </Card>
-    </div>
+    <TechnicalWorkstation 
+      ticker={ticker}
+      ohlcvData={ohlcvData}
+      signals={signals}
+      supportResistanceZones={zones}
+    />
   );
 }
 

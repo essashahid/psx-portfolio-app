@@ -447,3 +447,107 @@ export function computeSignals(candles: Candle[]): TechnicalSignals {
     seasonality,
   };
 }
+
+// ---------------------------------------------------------------------------
+// Support and Resistance Engine
+// ---------------------------------------------------------------------------
+
+export interface SupportResistanceZone {
+  id: string;
+  kind: "support" | "resistance";
+  low: number;
+  high: number;
+  timeframe: "daily" | "weekly";
+  confidence: "High" | "Medium" | "Low";
+  touches: number;
+  lastTested: string;
+  method: string;
+}
+
+export function detectSupportResistanceZones(candles: Candle[], swings: Swing[], currentPrice: number): SupportResistanceZone[] {
+  if (swings.length < 3) return [];
+  const zones: SupportResistanceZone[] = [];
+  const tolerance = currentPrice * 0.02; // 2% cluster tolerance
+
+  // Group nearby swings
+  const clusters: { kind: "support"| "resistance"; prices: number[]; dates: string[] }[] = [];
+  
+  for (const s of swings) {
+    const sKind = s.kind === "high" ? "resistance" : "support";
+    let found = false;
+    for (const c of clusters) {
+      if (c.kind === sKind) {
+        const avg = c.prices.reduce((a, b) => a + b, 0) / c.prices.length;
+        if (Math.abs(s.price - avg) <= tolerance) {
+          c.prices.push(s.price);
+          c.dates.push(s.date);
+          found = true;
+          break;
+        }
+      }
+    }
+    if (!found) {
+      clusters.push({ kind: sKind, prices: [s.price], dates: [s.date] });
+    }
+  }
+
+  // Score clusters
+  let idCounter = 1;
+  for (const c of clusters) {
+    if (c.prices.length < 2) continue; // Need at least 2 touches
+    
+    const max = Math.max(...c.prices);
+    const min = Math.min(...c.prices);
+    
+    // Sort dates to find last tested
+    c.dates.sort();
+    const lastTested = c.dates[c.dates.length - 1];
+    
+    let confidence: "High" | "Medium" | "Low" = "Low";
+    if (c.prices.length >= 4) confidence = "High";
+    else if (c.prices.length === 3) confidence = "Medium";
+
+    zones.push({
+      id: `sr_zone_${idCounter++}`,
+      kind: c.kind,
+      low: min - tolerance/2,
+      high: max + tolerance/2,
+      timeframe: "daily",
+      confidence,
+      touches: c.prices.length,
+      lastTested,
+      method: "Swing cluster detection"
+    });
+  }
+
+  return zones;
+}
+
+// ---------------------------------------------------------------------------
+// OHLCV Conversion
+// ---------------------------------------------------------------------------
+
+export function toCanonicalOHLCV(ticker: string, candles: Candle[]): any {
+  // Fallback CanonicalOHLCV when we only have close + volume
+  // In Phase 1, we set open=high=low=close and status=unverified if not real OHLC
+  return {
+    symbol: ticker,
+    exchange: "PSX",
+    resolution: "1D",
+    timezone: "Asia/Karachi",
+    bars: candles.map(c => ({
+      time: new Date(c.date + "T00:00:00Z").getTime(),
+      open: c.close,
+      high: c.close,
+      low: c.close,
+      close: c.close,
+      volume: c.volume ?? 0,
+      status: "unverified"
+    })),
+    latestMarketDate: candles.length > 0 ? candles[candles.length - 1].date : "",
+    refreshedAt: new Date().toISOString(),
+    adjustmentStatus: "unadjusted",
+    dataQuality: "close-only"
+  };
+}
+
