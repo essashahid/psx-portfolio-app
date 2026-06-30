@@ -1,10 +1,11 @@
 import Link from "next/link";
-import type { ReactNode } from "react";
+import { Suspense, type ReactNode } from "react";
 import { createClient, getUser } from "@/lib/supabase/server";
 import { getPortfolio } from "@/lib/portfolio";
 import { getDailyHoldingPerformance } from "@/lib/portfolio/daily-performance";
 import { cn, formatNumber, formatSignedPct } from "@/lib/utils";
 import { EmptyState } from "@/components/empty-state";
+import { Skeleton } from "@/components/ui/skeleton";
 import { AnimatedMoney } from "@/components/animated-money";
 import { ActionButton } from "@/components/action-button";
 import { AddTransactionDialog } from "@/components/add-transaction-dialog";
@@ -37,20 +38,12 @@ export default async function DashboardPage() {
   const user = await getUser();
   if (!user) return null;
 
-  const [summary, dailyPerformance, snapshotsRes, benchmarkRes, profileRes] = await Promise.all([
+  // Critical path: only the data the hero, summary and allocations need to
+  // paint. The charts and PSX events fetch their own slices and stream in
+  // behind Suspense, so the page shell and headline numbers render immediately.
+  const [summary, dailyPerformance, profileRes] = await Promise.all([
     getPortfolio(supabase, user.id),
     getDailyHoldingPerformance(supabase, user.id),
-    supabase
-      .from("portfolio_snapshots")
-      .select("snapshot_date, total_value, total_cost")
-      .eq("user_id", user.id)
-      .order("snapshot_date", { ascending: true })
-      .limit(365),
-    supabase
-      .from("benchmark_series")
-      .select("point_date, contributed, portfolio, kse100, inflation, cpi")
-      .eq("user_id", user.id)
-      .order("point_date", { ascending: true }),
     supabase.from("profiles").select("demo_mode, full_name").eq("id", user.id).maybeSingle(),
   ]);
 
@@ -70,33 +63,10 @@ export default async function DashboardPage() {
   }
 
   const tickers = summary.holdings.map((holding) => holding.ticker);
-  const { data: eventsData } = await supabase
-    .from("news_articles")
-    .select("id, ticker, title, url, category, published_at")
-    .eq("user_id", user.id)
-    .eq("ignored", false)
-    .in("ticker", tickers)
-    .in("category", ["dividend", "result", "corporate_announcement"])
-    .order("published_at", { ascending: false })
-    .limit(5);
-
   const firstName = (profileRes.data?.full_name ?? "").trim().split(/\s+/)[0] || null;
   const isDemo = Boolean(profileRes.data?.demo_mode);
   const dayPnl = dailyPerformance.totalDayPnl;
   const dayTone = dayPnl !== null && dayPnl > 0 ? "positive" : dayPnl !== null && dayPnl < 0 ? "negative" : "flat";
-  const datedSnapshots = (snapshotsRes.data ?? []).map((snapshot) => ({
-    date: snapshot.snapshot_date,
-    value: Number(snapshot.total_value),
-    cost: Number(snapshot.total_cost),
-  }));
-  const benchmarkSeries: BenchmarkPointRow[] = (benchmarkRes.data ?? []).map((point) => ({
-    date: point.point_date,
-    contributed: Number(point.contributed),
-    portfolio: Number(point.portfolio),
-    kse100: Number(point.kse100),
-    inflation: Number(point.inflation),
-    cpi: point.cpi !== null ? Number(point.cpi) : null,
-  }));
   const sectorAllocations = summary.sectorWeights.map((sector) => ({
     label: sector.sector,
     value: sector.value,
@@ -128,7 +98,7 @@ export default async function DashboardPage() {
       .map((row) => ({ title: "Large daily move", detail: `${row.ticker} moved ${formatSignedPct(row.dayChangePct)} today.`, href: `/stocks/${row.ticker}` })),
   ].slice(0, 4);
 
-  const latestMarketDate = dailyPerformance.asOf ?? datedSnapshots.at(-1)?.date ?? null;
+  const latestMarketDate = dailyPerformance.asOf ?? null;
   return (
     <div className="space-y-6 pb-4">
       <header className="border-b border-border pb-6">
@@ -151,9 +121,9 @@ export default async function DashboardPage() {
 
       {isDemo && <p className="rounded-md border border-blue-200 bg-blue-50 px-3 py-2 text-xs text-blue-900">Read-only demo: the portfolio data below is seeded for exploration.</p>}
 
-      {benchmarkSeries.length >= 2 && <BenchmarkGrowthChart data={benchmarkSeries} />}
-
-      <DashboardPerformance data={datedSnapshots} />
+      <Suspense fallback={<ChartsSkeleton />}>
+        <DashboardCharts userId={user.id} />
+      </Suspense>
 
       <section>
         <div className="grid border-y border-border sm:grid-cols-2 lg:grid-cols-4">
@@ -179,9 +149,97 @@ export default async function DashboardPage() {
             </div>
           </section>
         )}
-        <ImportantPsxEvents events={(eventsData ?? []) as PsxEventRow[]} />
+        <Suspense fallback={<EventsSkeleton />}>
+          <DashboardEvents userId={user.id} tickers={tickers} />
+        </Suspense>
       </div>
     </div>
+  );
+}
+
+/**
+ * Snapshot-history and benchmark charts. Fetched in its own boundary so the two
+ * larger time-series queries never block the headline numbers from painting.
+ */
+async function DashboardCharts({ userId }: { userId: string }) {
+  const supabase = await createClient();
+  const [snapshotsRes, benchmarkRes] = await Promise.all([
+    supabase
+      .from("portfolio_snapshots")
+      .select("snapshot_date, total_value, total_cost")
+      .eq("user_id", userId)
+      .order("snapshot_date", { ascending: true })
+      .limit(365),
+    supabase
+      .from("benchmark_series")
+      .select("point_date, contributed, portfolio, kse100, inflation, cpi")
+      .eq("user_id", userId)
+      .order("point_date", { ascending: true }),
+  ]);
+
+  const datedSnapshots = (snapshotsRes.data ?? []).map((snapshot) => ({
+    date: snapshot.snapshot_date,
+    value: Number(snapshot.total_value),
+    cost: Number(snapshot.total_cost),
+  }));
+  const benchmarkSeries: BenchmarkPointRow[] = (benchmarkRes.data ?? []).map((point) => ({
+    date: point.point_date,
+    contributed: Number(point.contributed),
+    portfolio: Number(point.portfolio),
+    kse100: Number(point.kse100),
+    inflation: Number(point.inflation),
+    cpi: point.cpi !== null ? Number(point.cpi) : null,
+  }));
+
+  return (
+    <>
+      {benchmarkSeries.length >= 2 && <BenchmarkGrowthChart data={benchmarkSeries} />}
+      <DashboardPerformance data={datedSnapshots} />
+    </>
+  );
+}
+
+/** Recent dividend / result / corporate-action news for held tickers. */
+async function DashboardEvents({ userId, tickers }: { userId: string; tickers: string[] }) {
+  const supabase = await createClient();
+  const { data: eventsData } = await supabase
+    .from("news_articles")
+    .select("id, ticker, title, url, category, published_at")
+    .eq("user_id", userId)
+    .eq("ignored", false)
+    .in("ticker", tickers)
+    .in("category", ["dividend", "result", "corporate_announcement"])
+    .order("published_at", { ascending: false })
+    .limit(5);
+
+  return <ImportantPsxEvents events={(eventsData ?? []) as PsxEventRow[]} />;
+}
+
+function ChartsSkeleton() {
+  return (
+    <>
+      <div className="rounded-lg border border-border bg-card p-4">
+        <Skeleton className="mb-4 h-4 w-40" />
+        <Skeleton className="h-80 w-full rounded-md" />
+      </div>
+      <div className="rounded-lg border border-border bg-card p-4">
+        <Skeleton className="mb-4 h-4 w-36" />
+        <Skeleton className="h-52 w-full rounded-md" />
+      </div>
+    </>
+  );
+}
+
+function EventsSkeleton() {
+  return (
+    <section className="border-t border-border pt-4">
+      <Skeleton className="h-4 w-44" />
+      <div className="mt-3 space-y-3">
+        {Array.from({ length: 4 }).map((_, i) => (
+          <Skeleton key={i} className="h-10 w-full rounded-md" />
+        ))}
+      </div>
+    </section>
   );
 }
 
