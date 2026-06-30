@@ -23,7 +23,7 @@ export class KLineChartsAdapter implements ChartEngineAdapter {
 
   setChartType(type: "candlestick" | "ohlc" | "line" | "area"): void {
     if (!this.chart) return;
-    const styleMap: Record<string, string> = {
+    const styleMap: Record<string, import("klinecharts").CandleType> = {
       candlestick: "candle_solid",
       ohlc: "ohlc",
       line: "real_time",
