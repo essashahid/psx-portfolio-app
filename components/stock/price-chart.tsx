@@ -32,7 +32,9 @@ import {
 
 // Slightly larger and darker than the shared AXIS_TICK: this chart is the main
 // visual on the Overview, so its axes get a small legibility bump.
-const AXIS_TICK = { fontSize: 11.5, fill: "#5b5b54" } as const;
+const AXIS_TICK = { fontSize: 11.5, fill: "#475467" } as const;
+// Overlay reference-line/label colour — darker than INK.neutral for readability.
+const OVERLAY_LABEL = "#475467";
 
 /** Toggle-chip styling so overlay controls read as interactive, not plain text. */
 function chipClass(active: boolean): string {
@@ -84,8 +86,10 @@ export function StockPriceChart({
 }) {
   const animate = useChartMotion();
   const [range, setRange] = useState("1Y");
-  const [showMA, setShowMA] = useState(true);
-  const [showStructure, setShowStructure] = useState(true);
+  // Off by default: the first read is price + volume + average cost only.
+  // Overlays are opt-in so the chart stays calm until the user asks for more.
+  const [showMA, setShowMA] = useState(false);
+  const [showStructure, setShowStructure] = useState(false);
   const [mode, setMode] = useState<"price" | "relative">("price");
 
   const hasBenchmark = !!benchmark && benchmark.length > 0;
@@ -248,36 +252,42 @@ export function StockPriceChart({
             </span>
           )}
         </div>
-        <div className="flex items-center gap-1.5">
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5">
           {hasBenchmark && (
-            <button
-              onClick={() => setMode((m) => (m === "price" ? "relative" : "price"))}
-              aria-pressed={relative}
-              title="Compare this stock against the KSE-100, both rebased to 100 at the start of the range."
-              className={chipClass(relative)}
-            >
-              {relative && <Check className="h-3 w-3" aria-hidden />} Compare KSE-100
-            </button>
-          )}
-          {!relative && signals && (
-            <button
-              onClick={() => setShowStructure((v) => !v)}
-              aria-pressed={showStructure}
-              title="Long-term accumulation band, 52-week range, support and momentum-divergence pivots"
-              className={chipClass(showStructure)}
-            >
-              {showStructure && <Check className="h-3 w-3" aria-hidden />} Structure
-            </button>
+            <div className="flex items-center gap-1.5">
+              <span className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">Compare</span>
+              <button
+                onClick={() => setMode((m) => (m === "price" ? "relative" : "price"))}
+                aria-pressed={relative}
+                title="Compare this stock against the KSE-100, both rebased to 100 at the start of the range."
+                className={chipClass(relative)}
+              >
+                {relative && <Check className="h-3 w-3" aria-hidden />} KSE-100
+              </button>
+            </div>
           )}
           {!relative && (
-            <button
-              onClick={() => setShowMA((v) => !v)}
-              aria-pressed={showMA}
-              title="50-day and 200-day moving averages."
-              className={chipClass(showMA)}
-            >
-              {showMA && <Check className="h-3 w-3" aria-hidden />} MA 50/200
-            </button>
+            <div className="flex items-center gap-1.5">
+              <span className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">Overlays</span>
+              {signals && (
+                <button
+                  onClick={() => setShowStructure((v) => !v)}
+                  aria-pressed={showStructure}
+                  title="Multi-year price range, 52-week high/low, support and momentum-divergence pivots. Context only, not a trading signal."
+                  className={chipClass(showStructure)}
+                >
+                  {showStructure && <Check className="h-3 w-3" aria-hidden />} Structure
+                </button>
+              )}
+              <button
+                onClick={() => setShowMA((v) => !v)}
+                aria-pressed={showMA}
+                title="50-day and 200-day moving averages."
+                className={chipClass(showMA)}
+              >
+                {showMA && <Check className="h-3 w-3" aria-hidden />} MA 50/200
+              </button>
+            </div>
           )}
         </div>
       </div>
@@ -355,7 +365,7 @@ export function StockPriceChart({
               stroke={INK.lineSoft}
               strokeOpacity={0.35}
               strokeDasharray="2 3"
-              label={{ value: "Accumulation zone", position: "insideTopLeft", fontSize: 9.5, fill: INK.line, opacity: 0.7 }}
+              label={{ value: "Multi-year price range", position: "insideTopLeft", fontSize: 10.5, fill: INK.line, opacity: 0.8 }}
             />
           )}
           <XAxis
@@ -441,7 +451,7 @@ export function StockPriceChart({
                 stroke={INK.neutral}
                 strokeDasharray="4 4"
                 strokeOpacity={0.7}
-                label={{ value: "52w high", position: "right", fontSize: 9.5, fill: INK.neutral }}
+                label={{ value: "52w high", position: "right", fontSize: 10.5, fill: OVERLAY_LABEL }}
               />
               <ReferenceLine
                 yAxisId="price"
@@ -450,7 +460,7 @@ export function StockPriceChart({
                 stroke={INK.neutral}
                 strokeDasharray="4 4"
                 strokeOpacity={0.7}
-                label={{ value: "52w low", position: "right", fontSize: 9.5, fill: INK.neutral }}
+                label={{ value: "52w low", position: "right", fontSize: 10.5, fill: OVERLAY_LABEL }}
               />
             </>
           )}
@@ -462,7 +472,7 @@ export function StockPriceChart({
               stroke={lineColor}
               strokeDasharray="2 3"
               strokeOpacity={0.5}
-              label={{ value: "Current", position: "right", fontSize: 9.5, fill: lineColor }}
+              label={{ value: "Current", position: "right", fontSize: 10.5, fill: lineColor }}
             />
           )}
           {averageCostLine !== null && averageCostLine !== undefined && averageCostLine > 0 && (
@@ -473,7 +483,7 @@ export function StockPriceChart({
               stroke={INK.amber}
               strokeDasharray="6 4"
               strokeOpacity={0.9}
-              label={{ value: "Avg cost", position: "left", fontSize: 9.5, fill: INK.amber }}
+              label={{ value: "Avg cost", position: "left", fontSize: 10.5, fill: INK.amber }}
             />
           )}
           {hasStructure && acc?.majorSupport != null && (
@@ -484,7 +494,7 @@ export function StockPriceChart({
               stroke={INK.up}
               strokeDasharray="5 4"
               strokeOpacity={0.55}
-              label={{ value: "Support", position: "left", fontSize: 9.5, fill: INK.up }}
+              label={{ value: "Support", position: "left", fontSize: 10.5, fill: INK.up }}
             />
           )}
           {hasStructure && divergencePivots.map((p, i) => (

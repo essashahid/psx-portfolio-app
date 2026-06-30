@@ -19,10 +19,18 @@ import {
 
 export const dynamic = "force-dynamic";
 
-function HeaderMetric({ label, value, sub, tone }: { label: string; value: string; sub?: string; tone?: "positive" | "negative" }) {
+function HeaderMetric({ label, value, sub, tone, hint }: { label: string; value: string; sub?: string; tone?: "positive" | "negative"; hint?: string }) {
   return (
     <div className="min-w-[7rem]">
-      <p className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">{label}</p>
+      <p
+        className={cn(
+          "text-[10px] font-medium uppercase tracking-wide text-muted-foreground",
+          hint && "cursor-help underline decoration-dotted decoration-muted-foreground/40 underline-offset-2"
+        )}
+        title={hint}
+      >
+        {label}
+      </p>
       <p className={cn("mt-0.5 text-sm font-semibold tabular-nums text-foreground", tone === "positive" && "text-emerald-600", tone === "negative" && "text-red-600")}>{value}</p>
       {sub && <p className="text-[10px] text-muted-foreground">{sub}</p>}
     </div>
@@ -151,7 +159,7 @@ export default async function StockCockpitPage({ params }: { params: Promise<{ t
               <HeaderMetric label="Market cap" value={compactMoney(metadata.marketCap)} />
               <HeaderMetric label="P/E" value={pe !== null ? `${pe.toFixed(1)}x` : "—"} sub={pe !== null && epsPeriod ? `Based on ${epsPeriod} EPS` : pe === null ? "needs financials" : undefined} />
               <HeaderMetric label="EPS" value={eps !== null ? `PKR ${formatNumber(eps)}` : "—"} sub={eps !== null ? epsPeriod ?? undefined : "needs financials"} />
-              <HeaderMetric label="Dividend yield" value={divYield !== null ? `${divYield.toFixed(2)}%` : "Incomplete"} sub={divYield !== null ? "Trailing 12m" : "DPS unverified"} tone={undefined} />
+              <HeaderMetric label="Dividend yield" value={divYield !== null ? `${divYield.toFixed(2)}%` : "Incomplete"} sub={divYield !== null ? "Announced DPS · TTM" : "DPS unverified"} hint={divYield !== null ? "Trailing 12-month announced cash dividend per share divided by the current price. Based on the company's public payout announcements — not your personal dividend receipts, which are reconciled separately in the Dividend status card." : undefined} />
               <HeaderMetric label="Volume" value={quote.volume !== null ? compactNumber(quote.volume) : "—"} />
               <HeaderMetric label="52-week range" value={range52} />
             </div>

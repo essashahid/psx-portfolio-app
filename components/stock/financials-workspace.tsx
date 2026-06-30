@@ -178,13 +178,19 @@ function periodEndDate(row: FinancialWorkspaceRow): string | null {
 
 function statementPeriodMeta(row: FinancialWorkspaceRow): { primary: string; secondary: string; status: "verified" | "unverified" } {
   if (row.statement_type !== "balance_sheet") {
-    return { primary: labelPeriod(row), secondary: row.reported_date ? `Filed ${formatDate(row.reported_date)}` : "Filing date unavailable", status: "verified" };
+    return { primary: labelPeriod(row), secondary: row.reported_date ? `Filed ${formatDate(row.reported_date)}` : "Filing date not captured", status: "verified" };
   }
   const periodEnd = periodEndDate(row);
   if (!periodEnd) {
     return { primary: labelPeriod(row), secondary: "Period date unverified", status: "unverified" };
   }
   return { primary: formatDate(periodEnd), secondary: labelPeriod(row), status: "verified" };
+}
+
+function completenessLabel(status: ReturnType<typeof rowCompleteness>): string {
+  if (status === "Complete") return "Data complete";
+  if (status === "Partial") return "Partial data";
+  return "Data unavailable";
 }
 
 function formatDate(value: string): string {
@@ -856,7 +862,7 @@ export function FinancialsWorkspace({
                           );
                         })()}
                         <span className="block text-[10px] font-normal normal-case text-muted-foreground">
-                          {rowCompleteness(period, FULL_ROWS[statement])}
+                          {completenessLabel(rowCompleteness(period, FULL_ROWS[statement]))}
                         </span>
                       </TH>
                     ))}
