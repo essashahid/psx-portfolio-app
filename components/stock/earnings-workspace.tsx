@@ -21,7 +21,7 @@ import { Table, TBody, TD, TH, THead, TR } from "@/components/ui/table";
 import { ActionButton } from "@/components/action-button";
 import { AXIS_TICK, CURSOR, fmtCompact } from "@/components/chart-kit";
 import { cn } from "@/lib/utils";
-import { AlertTriangle, Download, ExternalLink, MoreHorizontal, RefreshCw, FileText, Info, TrendingUp, Presentation, Clock, CheckCircle2 } from "lucide-react";
+import { AlertTriangle, ExternalLink, RefreshCw, FileText, Info, TrendingUp, Presentation, Clock, CheckCircle2 } from "lucide-react";
 import type { FinancialWorkspaceRow } from "@/components/stock/financials-workspace";
 import type { Filing } from "@/lib/company/types";
 
@@ -40,6 +40,14 @@ type SummaryCardItem = {
   val: number | null;
   priorVal: number | null;
   isMargin?: boolean;
+};
+type EarningsEvent = {
+  id: string;
+  period: string;
+  date: string | null;
+  sourceUrl: string | null;
+  primary: Filing | null;
+  related: Filing[];
 };
 type ChartClickEvent = {
   activePayload?: Array<{
@@ -104,7 +112,7 @@ function resultValueStatus(row: FinancialWorkspaceRow | null): Status {
 
 function resultMetadataStatus(row: FinancialWorkspaceRow | null): Status {
   if (!row) return "Unavailable";
-  const fields = [row.reported_date, row.source_url, row.fiscal_year, row.fiscal_period ?? row.period_type];
+  const fields = [row.reported_date, row.fiscal_year, row.fiscal_period ?? row.period_type];
   const present = fields.filter(Boolean).length;
   if (present === fields.length) return "Complete";
   if (present > 0) return "Partial";
@@ -117,12 +125,24 @@ function statusVariant(status: Status): "green" | "amber" | "red" {
   return "red";
 }
 
-function comparisonLabel(comparison: "YoY" | "QoQ"): string {
-  return comparison === "YoY" ? "Prior-year comparison" : "Previous-quarter comparison";
-}
-
 function comparisonShortLabel(comparison: "YoY" | "QoQ"): string {
   return comparison === "YoY" ? "YoY" : "QoQ";
+}
+
+function statusText(kind: "values" | "metadata" | "source", status: Status): string {
+  if (kind === "values") {
+    if (status === "Complete") return "Core values complete";
+    if (status === "Partial") return "Core values partial";
+    return "Core values unavailable";
+  }
+  if (kind === "metadata") {
+    if (status === "Complete") return "Announcement details complete";
+    if (status === "Partial") return "Announcement details incomplete";
+    return "Announcement details unavailable";
+  }
+  if (status === "Complete") return "Official source verified";
+  if (status === "Partial") return "Source partially verified";
+  return "Official source unavailable";
 }
 
 function changeSentence(label: string, change: ReturnType<typeof changeInfo> | null, comparison: "YoY" | "QoQ"): string | null {
@@ -299,6 +319,14 @@ export function EarningsWorkspace({
   const valueStatus = resultValueStatus(activePeriod);
   const metadataStatus = resultMetadataStatus(activePeriod);
   const sourceStatus: Status = activePeriod?.source_url ? "Complete" : "Unavailable";
+  const tableNotice = useMemo(() => {
+      const missingDates = activeRows.filter((r) => !r.reported_date).length;
+      const missingSources = activeRows.filter((r) => !r.source_url).length;
+      const notes: string[] = [];
+      if (missingDates) notes.push(`${missingDates} period${missingDates === 1 ? "" : "s"} missing announcement date metadata`);
+      if (missingSources) notes.push(`${missingSources} period${missingSources === 1 ? "" : "s"} missing official filing links`);
+      return notes.length ? notes.join("; ") + "." : null;
+  }, [activeRows]);
 
   // Metrics
   const metrics = useMemo(() => {
@@ -353,7 +381,7 @@ export function EarningsWorkspace({
              lines.push(`Net margin ${nmChg.raw > 0 ? "improved" : "weakened"} to ${metrics.nm.val.toFixed(1)}%.`);
           }
       }
-      return lines;
+      return lines.slice(0, 3);
   }, [metrics, activePeriod, priorPeriod, comparison]);
 
   const conclusion = useMemo(() => {
@@ -380,36 +408,38 @@ export function EarningsWorkspace({
   // Watchpoints
   const watchpoints = useMemo(() => {
       const wp: string[] = [];
-      if (activePeriod && !activePeriod.reported_date) wp.push(`Result announcement date requires confirmation from source.`);
-      if (activePeriod && Object.keys(activePeriod.data || {}).length < 5) wp.push(`This period contains partial data (likely extracted from a limited standalone quarterly summary).`);
-      if (metrics.finance.val === null && activeRows.some(r => raw(r, "finance_cost") !== null)) wp.push(`Finance cost detail is unavailable for this specific period.`);
+      const revChg = changeInfo(metrics.revenue.val, metrics.revenue.priorVal, false);
+      const patChg = changeInfo(metrics.pat.val, metrics.pat.priorVal, false);
+      const epsChg = changeInfo(metrics.eps.val, metrics.eps.priorVal, false);
+      const gmChg = changeInfo(metrics.gm.val, metrics.gm.priorVal, true);
+      const nmChg = changeInfo(metrics.nm.val, metrics.nm.priorVal, true);
+      if (revChg && patChg && revChg.raw > 0 && patChg.raw < 0) wp.push("Revenue grew but profit after tax declined, indicating earnings pressure despite top-line growth.");
+      if (gmChg && gmChg.raw <= -2) wp.push(`Gross margin contracted by ${Math.abs(gmChg.raw).toFixed(1)} pp, which may signal cost pressure.`);
+      if (nmChg && nmChg.raw <= -2) wp.push(`Net margin weakened by ${Math.abs(nmChg.raw).toFixed(1)} pp, reducing earnings quality for this result.`);
+      if (epsChg && epsChg.raw < 0) wp.push(`EPS declined ${Math.abs(epsChg.raw).toFixed(1)}% ${comparisonShortLabel(comparison)}, which is material for per-share earnings.`);
       return wp;
-  }, [activePeriod, activeRows, metrics.finance.val]);
+  }, [metrics, comparison]);
 
   // Events Timeline
-  const events = useMemo(() => {
-      // Group filings by result events. A result event maps to an activeRow roughly.
-      // We'll just show filings that are "result" category or close in date.
-      // This is a simplified timeline grouping
-      const timelineMap = new Map<string, { period: string, date: string, primary: Filing, related: Filing[] }>();
-      
-      for (const r of activeRows) {
-          if (!r.reported_date) continue;
-          const label = labelPeriod(r);
-          // Find filings within 3 days of reported date
-          const rDate = parseDate(r.reported_date);
-          const related = filings.filter(f => {
-              if (!f.date) return false;
-              const fDate = parseDate(f.date);
-              return Math.abs(fDate - rDate) <= 3 * 86400000;
-          });
-          if (related.length > 0) {
-              const primary = related.find(f => f.category === "result") || related[0];
-              const rest = related.filter(f => f !== primary);
-              timelineMap.set(label, { period: label, date: r.reported_date, primary, related: rest });
-          }
-      }
-      return Array.from(timelineMap.values()).sort((a,b) => parseDate(b.date) - parseDate(a.date));
+  const events = useMemo<EarningsEvent[]>(() => {
+      return activeRows.slice(0, 8).map((r) => {
+          const eventDate = r.reported_date;
+          const eventTime = parseDate(eventDate);
+          const nearby = eventDate
+              ? filings.filter((f) => f.date && Math.abs(parseDate(f.date) - eventTime) <= 3 * 86400000)
+              : [];
+          const sourceMatched = r.source_url ? nearby.find((f) => f.url === r.source_url) ?? null : null;
+          const resultMatched = nearby.find((f) => f.category === "result") ?? null;
+          const primary = sourceMatched ?? resultMatched ?? nearby[0] ?? null;
+          return {
+              id: rank(r).toString(),
+              period: labelPeriod(r),
+              date: eventDate,
+              sourceUrl: r.source_url,
+              primary,
+              related: nearby.filter((f) => f !== primary),
+          };
+      });
   }, [activeRows, filings]);
 
   // Chart Data
@@ -430,9 +460,12 @@ export function EarningsWorkspace({
               tax: raw(r, "tax") ? raw(r, "tax")! * 1000 : null,
               revenue_chg: changeInfo(raw(r, "revenue"), raw(prior, "revenue"), false)?.text,
               pat_chg: changeInfo(raw(r, "profit_after_tax"), raw(prior, "profit_after_tax"), false)?.text,
+              eps_chg: changeInfo(raw(r, "eps"), raw(prior, "eps"), false)?.text,
           };
       });
   }, [activeRows, comparison, rows]);
+
+  const latestChartPoint = chartData.at(-1) ?? null;
 
   const selectChartPeriod = (e: unknown) => {
       const periodId = (e as ChartClickEvent | null)?.activePayload?.[0]?.payload?.id;
@@ -464,9 +497,12 @@ export function EarningsWorkspace({
                           </span>
                       </CardDescription>
                       <div className="mt-3 flex flex-wrap items-center gap-2">
-                          <Badge variant={statusVariant(valueStatus)}>Financial values {valueStatus}</Badge>
-                          <Badge variant={statusVariant(metadataStatus)}>Announcement metadata {metadataStatus}</Badge>
-                          <Badge variant={statusVariant(sourceStatus)}>Source classification {sourceStatus}</Badge>
+                          <Badge variant={statusVariant(valueStatus)}>{statusText("values", valueStatus)}</Badge>
+                          <Badge variant={statusVariant(metadataStatus)}>{statusText("metadata", metadataStatus)}</Badge>
+                          <Badge variant={statusVariant(sourceStatus)}>{statusText("source", sourceStatus)}</Badge>
+                          {metadataStatus !== "Complete" ? (
+                              <span className="text-[11px] text-muted-foreground">Announcement dates and period metadata are tracked here, not as earnings risks.</span>
+                          ) : null}
                       </div>
                   </div>
                   <div className="flex flex-col gap-2 xl:items-end">
@@ -505,12 +541,6 @@ export function EarningsWorkspace({
                                   <ExternalLink className="h-3.5 w-3.5" /> View official result
                               </Button>
                           ) : null}
-                          <Button variant="outline" size="sm" disabled>
-                              <Download className="h-3.5 w-3.5" /> Export
-                          </Button>
-                          <Button variant="ghost" size="sm" disabled aria-label="More actions">
-                              <MoreHorizontal className="h-4 w-4" />
-                          </Button>
                       </div>
                   </div>
               </div>
@@ -550,13 +580,13 @@ export function EarningsWorkspace({
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
              <div>
                  <CardTitle className="text-sm flex items-center gap-2"><TrendingUp className="w-4 h-4 text-slate-500" /> Earnings dashboard</CardTitle>
-                 <CardDescription className="mt-1 text-xs">Focused on result events and comparable-period signals; full statements remain in Financials.</CardDescription>
+                 <CardDescription className="mt-1 text-xs">Charts show absolute values. The comparison control sets the YoY/QoQ basis shown in badges and tooltips.</CardDescription>
              </div>
              <Segment
                  value={trendView}
                  onChange={setTrendView}
                  options={[
-                     { value: "profit", label: "Revenue / PAT" },
+                     { value: "profit", label: "Revenue & profit" },
                      { value: "eps", label: "EPS" },
                      { value: "margins", label: "Margins" },
                      { value: "drivers", label: "Drivers" },
@@ -577,7 +607,16 @@ export function EarningsWorkspace({
                                 <p className="text-xs font-semibold text-slate-900">{chart.label}</p>
                                 <p className="text-[10px] text-muted-foreground">{chart.question}</p>
                             </div>
-                            <Badge variant="blue">{comparisonShortLabel(comparison)}</Badge>
+                            <div className="text-right">
+                                <p className="text-xs font-semibold tabular-nums text-slate-900">
+                                    {latestChartPoint && typeof latestChartPoint[chart.key as "revenue" | "pat"] === "number"
+                                        ? formatRawCompact(Number(latestChartPoint[chart.key as "revenue" | "pat"]) / 1000)
+                                        : "—"}
+                                </p>
+                                <Badge variant="blue">
+                                    {(chart.key === "revenue" ? latestChartPoint?.revenue_chg : latestChartPoint?.pat_chg) ?? `${comparisonShortLabel(comparison)} n/a`}
+                                </Badge>
+                            </div>
                         </div>
                         <div className="h-[240px]">
                             <ResponsiveContainer width="100%" height="100%">
@@ -689,23 +728,36 @@ export function EarningsWorkspace({
                   <Card className="border-slate-200 bg-white shadow-sm">
                       <CardHeader className="p-4 pb-2">
                           <CardTitle className="text-sm flex items-center gap-2"><Clock className="w-4 h-4 text-slate-500"/> Earnings-event timeline</CardTitle>
+                          <CardDescription className="mt-1 text-xs">Each result is grouped with its primary filing and nearby disclosures.</CardDescription>
                       </CardHeader>
                       <CardContent className="p-4 pt-2">
                           <div className="relative border-l border-slate-200 ml-2 space-y-4 pb-2">
-                              {events.slice(0, 5).map((ev, i) => (
-                                  <div key={i} className="relative pl-5">
+                              {events.slice(0, 5).map((ev) => (
+                                  <div
+                                      key={ev.id}
+                                      className={cn("relative cursor-pointer rounded-md py-1 pl-5 pr-2 hover:bg-slate-50", activePeriod && ev.id === rank(activePeriod).toString() && "bg-blue-50/70")}
+                                      onClick={() => setSelectedPeriodId(ev.id)}
+                                  >
                                       <span className="absolute left-[-5px] top-1 w-2.5 h-2.5 rounded-full bg-slate-300 border-2 border-white" />
                                       <p className="text-[11px] font-semibold text-slate-900">{ev.period} result</p>
-                                      <p className="text-[10px] text-muted-foreground mb-1.5">{formatDate(ev.date)}</p>
-                                      <a href={ev.primary.url} target="_blank" rel="noopener noreferrer" className="block text-xs font-medium text-blue-700 hover:underline mb-1">
-                                          {ev.primary.title}
-                                      </a>
+                                      <p className="text-[10px] text-muted-foreground mb-1.5">{ev.date ? formatDate(ev.date) : "Announcement date not captured"}</p>
+                                      {ev.primary ? (
+                                          <a href={ev.primary.url} target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()} className="block text-xs font-medium text-blue-700 hover:underline mb-1">
+                                              {ev.primary.title}
+                                          </a>
+                                      ) : ev.sourceUrl ? (
+                                          <a href={ev.sourceUrl} target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()} className="block text-xs font-medium text-blue-700 hover:underline mb-1">
+                                              Official result filing
+                                          </a>
+                                      ) : (
+                                          <p className="text-xs text-amber-700">Primary filing link unavailable</p>
+                                      )}
                                       {ev.related.length > 0 && (
                                           <details className="text-[10px]">
                                               <summary className="cursor-pointer text-slate-500 hover:text-slate-900 font-medium">+{ev.related.length} related disclosure{ev.related.length > 1 ? 's' : ''}</summary>
                                               <div className="mt-1.5 space-y-1.5 pl-2 border-l border-slate-100">
                                                   {ev.related.map((rel, j) => (
-                                                      <a key={j} href={rel.url} target="_blank" rel="noopener noreferrer" className="block text-slate-600 hover:underline">
+                                                      <a key={j} href={rel.url} target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()} className="block text-slate-600 hover:underline">
                                                           {rel.title}
                                                       </a>
                                                   ))}
@@ -725,7 +777,10 @@ export function EarningsWorkspace({
                    <div className="flex items-center justify-between">
                        <div>
                            <CardTitle className="text-sm">Earnings history</CardTitle>
-                           <CardDescription className="mt-1 text-xs">Event log focused on comparisons and official filing support.</CardDescription>
+                           <CardDescription className="mt-1 text-xs">
+                              Numeric history uses the same sourced Income Statement periods as Financials.
+                              {tableNotice ? ` ${tableNotice}` : ""}
+                           </CardDescription>
                        </div>
                        <label className="flex items-center gap-2">
                             <Select value={valueMode} onChange={(e) => setValueMode(e.target.value as ValueMode)} className="h-7 text-[11px] w-[130px]">
@@ -740,10 +795,12 @@ export function EarningsWorkspace({
                       <THead>
                           <TR className="bg-slate-50/50 border-b border-border">
                               <TH className="text-xs py-2 whitespace-nowrap sticky left-0 bg-slate-50/95 backdrop-blur z-10 font-semibold text-slate-900 shadow-[1px_0_0_0_#e2e8f0]">Period</TH>
-                              <TH className="text-xs py-2 whitespace-nowrap">Result signal</TH>
-                              <TH className="text-xs py-2 whitespace-nowrap">{comparisonShortLabel(comparison)} comparison</TH>
-                              <TH className="text-xs py-2 whitespace-nowrap">Filing support</TH>
-                              <TH className="text-xs py-2 whitespace-nowrap">Data status</TH>
+                              <TH className="text-right text-xs py-2 whitespace-nowrap">Revenue</TH>
+                              <TH className="text-right text-xs py-2 whitespace-nowrap">PAT</TH>
+                              <TH className="text-right text-xs py-2 whitespace-nowrap">EPS</TH>
+                              <TH className="text-right text-xs py-2 whitespace-nowrap">Revenue {comparisonShortLabel(comparison)}</TH>
+                              <TH className="text-right text-xs py-2 whitespace-nowrap">PAT {comparisonShortLabel(comparison)}</TH>
+                              <TH className="text-xs py-2 whitespace-nowrap pl-4">Filing</TH>
                           </TR>
                       </THead>
                       <TBody>
@@ -752,14 +809,6 @@ export function EarningsWorkspace({
                               const prior = findPriorEquivalent(rows, r, comparison);
                               const revChg = changeInfo(raw(r, "revenue"), raw(prior, "revenue"), false);
                               const patChg = changeInfo(raw(r, "profit_after_tax"), raw(prior, "profit_after_tax"), false);
-                              const epsChg = changeInfo(raw(r, "eps"), raw(prior, "eps"), false);
-                              const rowValueStatus = resultValueStatus(r);
-                              const rowMetadataStatus = resultMetadataStatus(r);
-                              const signalParts = [
-                                  revChg ? `Revenue ${revChg.text}` : null,
-                                  patChg ? `PAT ${patChg.text}` : null,
-                                  epsChg ? `EPS ${epsChg.text}` : null,
-                              ].filter(Boolean);
                               return (
                                   <TR key={rank(r)} 
                                       className={cn(
@@ -771,38 +820,34 @@ export function EarningsWorkspace({
                                       <TD className={cn("text-xs font-medium py-2.5 whitespace-nowrap sticky left-0 bg-white z-10 shadow-[1px_0_0_0_#e2e8f0]", isSelected && "bg-blue-50/50 text-blue-800")}>
                                           {labelPeriod(r)}
                                       </TD>
-                                      <TD className="text-xs py-2.5">
-                                          <div className="max-w-[300px] leading-relaxed text-slate-700">
-                                              {signalParts.length ? signalParts.join(" · ") : "Comparable result signal unavailable"}
-                                          </div>
+                                      <TD className="text-right text-xs py-2.5 tabular-nums">{formatValue(raw(r, "revenue"), "revenue", valueMode)}</TD>
+                                      <TD className="text-right text-xs py-2.5 tabular-nums">{formatValue(raw(r, "profit_after_tax"), "profit_after_tax", valueMode)}</TD>
+                                      <TD className="text-right text-xs py-2.5 tabular-nums">{raw(r, "eps") !== null ? `PKR ${raw(r, "eps")?.toFixed(2)}` : "—"}</TD>
+                                      <TD className="text-right text-xs py-2.5 whitespace-nowrap">
+                                          {revChg ? (
+                                              <span className={cn(revChg.tone === "positive" ? "text-emerald-700" : revChg.tone === "negative" ? "text-red-700" : "text-slate-600")}>{revChg.text}</span>
+                                          ) : "—"}
                                       </TD>
-                                      <TD className="text-xs py-2.5 text-muted-foreground whitespace-nowrap">
-                                          {prior ? `${comparisonLabel(comparison)} vs ${labelPeriod(prior)}` : `${comparisonLabel(comparison)} unavailable`}
+                                      <TD className="text-right text-xs py-2.5 whitespace-nowrap">
+                                          {patChg ? (
+                                              <span className={cn(patChg.tone === "positive" ? "text-emerald-700" : patChg.tone === "negative" ? "text-red-700" : "text-slate-600")}>{patChg.text}</span>
+                                          ) : "—"}
                                       </TD>
-                                      <TD className="text-xs py-2.5 whitespace-nowrap">
-                                          <div className="flex flex-col gap-1">
-                                              <span className="text-muted-foreground">{r.reported_date ? `Announced ${formatDate(r.reported_date)}` : "Announcement date unverified"}</span>
-                                              {r.source_url ? (
-                                                  <a href={r.source_url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 font-medium text-blue-700 hover:underline" onClick={(e) => e.stopPropagation()}>
-                                                      <FileText className="h-3 w-3" /> Official filing
-                                                  </a>
-                                              ) : (
-                                                  <span className="text-amber-700">Source mapping unverified</span>
-                                              )}
-                                          </div>
-                                      </TD>
-                                      <TD className="text-xs py-2.5 whitespace-nowrap">
-                                          <div className="flex flex-wrap gap-1.5">
-                                              <Badge variant={statusVariant(rowValueStatus)}>Values {rowValueStatus}</Badge>
-                                              <Badge variant={statusVariant(rowMetadataStatus)}>Metadata {rowMetadataStatus}</Badge>
-                                          </div>
+                                      <TD className="text-xs py-2.5 whitespace-nowrap pl-4">
+                                          {r.source_url ? (
+                                              <a href={r.source_url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 font-medium text-blue-700 hover:underline" onClick={(e) => e.stopPropagation()}>
+                                                  <FileText className="h-3 w-3" /> Filing
+                                              </a>
+                                          ) : (
+                                              <span className="text-muted-foreground">—</span>
+                                          )}
                                       </TD>
                                   </TR>
                               );
                           })}
                           {activeRows.length === 0 && (
                               <TR>
-                                  <TD colSpan={5} className="text-center py-6 text-sm text-muted-foreground">
+                                  <TD colSpan={7} className="text-center py-6 text-sm text-muted-foreground">
                                       No {mode} periods found.
                                   </TD>
                               </TR>
