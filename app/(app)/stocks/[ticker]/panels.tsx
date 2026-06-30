@@ -21,6 +21,7 @@ import { Markdown } from "@/components/markdown";
 import { RatioSnapshotChart } from "@/components/charts-lazy";
 import { StockPriceChart } from "@/components/stock/price-chart-lazy";
 import { FinancialsWorkspace, type FinancialWorkspaceRow } from "@/components/stock/financials-workspace";
+import { EarningsWorkspace } from "@/components/stock/earnings-workspace";
 import { formatMoney, formatNumber, formatSignedPct, formatFinancialPeriod, cn } from "@/lib/utils";
 import {
   AlertTriangle, Banknote, BriefcaseBusiness, Calculator, FileText, Info, Newspaper, Sparkles, TrendingUp,
@@ -658,118 +659,38 @@ export async function FinancialsPanel({ ticker, readOnly = false }: { ticker: st
 export async function EarningsPanel({ ticker, readOnly = false }: { ticker: string; readOnly?: boolean }) {
   const supabase = await createClient();
   const [filings, { data: finData }] = await Promise.all([
-    getCompanyFilings(ticker, 25),
+    getCompanyFilings(ticker, 120),
     supabase
       .from("company_financials")
       .select("period_type, fiscal_year, fiscal_period, statement_type, data, reported_date, source_url")
       .eq("ticker", ticker)
       .eq("statement_type", "income_statement")
       .order("reported_date", { ascending: false })
-      .limit(8),
+      .limit(120),
   ]);
-  const resultFilings = filings.filter((f) => f.category === "result");
-  const incomes = (finData ?? []) as FinancialRow[];
-  const latest = incomes[0];
-  const prior = incomes[1];
+  
+  const incomes = (finData ?? []) as FinancialWorkspaceRow[];
 
-  const g = (k: string): number | null => {
-    const a = latest?.data?.[k];
-    const b = prior?.data?.[k];
-    if (typeof a !== "number" || typeof b !== "number" || b === 0) return null;
-    return ((a - b) / Math.abs(b)) * 100;
-  };
-  const v = (row: FinancialRow | undefined, k: string): number | null => {
-    const x = row?.data?.[k];
-    return typeof x === "number" ? x : null;
-  };
-  const margin = (row: FinancialRow | undefined): number | null => {
-    const pat = v(row, "profit_after_tax");
-    const rev = v(row, "revenue");
-    return pat !== null && rev ? (pat / rev) * 100 : null;
-  };
-
-  return (
-    <div className="space-y-4">
-      {latest ? (
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2"><TrendingUp className="h-4 w-4" /> Latest result — {latest.fiscal_year} {latest.fiscal_period}</CardTitle>
-            <CardDescription>
-              Reported {latest.reported_date ?? "—"} ·{" "}
-              <a href={latest.source_url ?? "#"} target="_blank" rel="noopener noreferrer" className="underline hover:text-foreground">PSX source</a>
-              {prior ? ` · compared with ${prior.fiscal_year} ${prior.fiscal_period}` : " · no prior period loaded yet for growth"}
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-6">
-              <Metric label="Revenue" value={num(v(latest, "revenue"))} sub={g("revenue") !== null ? `${formatSignedPct(g("revenue"))} vs prior` : undefined} tone={g("revenue") !== null ? (g("revenue")! >= 0 ? "positive" : "negative") : undefined} />
-              <Metric label="Profit after tax" value={num(v(latest, "profit_after_tax"))} sub={g("profit_after_tax") !== null ? `${formatSignedPct(g("profit_after_tax"))} vs prior` : undefined} tone={g("profit_after_tax") !== null ? (g("profit_after_tax")! >= 0 ? "positive" : "negative") : undefined} />
-              <Metric label="EPS (Rs)" value={num(v(latest, "eps"))} sub={g("eps") !== null ? `${formatSignedPct(g("eps"))} vs prior` : undefined} tone={g("eps") !== null ? (g("eps")! >= 0 ? "positive" : "negative") : undefined} />
-              <Metric label="Profit before tax" value={num(v(latest, "profit_before_tax"))} />
-              <Metric label="Net margin" value={margin(latest) !== null ? `${margin(latest)!.toFixed(1)}%` : "—"} sub={prior && margin(prior) !== null ? `prior ${margin(prior)!.toFixed(1)}%` : undefined} />
-              <Metric label="Finance cost" value={num(v(latest, "finance_cost"))} />
-            </div>
-            <p className="mt-2 text-[10px] text-muted-foreground">Figures {String(latest.data?._units ?? "as reported")}; EPS in rupees. Missing values were not published on the PSX page.</p>
-          </CardContent>
-        </Card>
-      ) : (
+  if (incomes.length === 0) {
+    return (
+      <div className="space-y-3">
         <EmptyState
           icon={TrendingUp}
           title="No earnings loaded yet"
           description={`Load ${ticker}'s revenue, profit, and EPS from the official PSX company page. Numbers are echoed from PSX, never invented.`}
           action={<FetchFinancialsButton ticker={ticker} readOnly={readOnly} />}
         />
-      )}
+      </div>
+    );
+  }
 
-      {incomes.length > 1 && (
-        <Card>
-          <CardHeader><CardTitle>Extracted periods</CardTitle></CardHeader>
-          <CardContent className="overflow-x-auto">
-            <Table>
-              <THead>
-                <TR><TH>Period</TH><TH className="text-right">Revenue</TH><TH className="text-right">PAT</TH><TH className="text-right">EPS</TH><TH className="text-right">Net margin</TH><TH>Reported</TH></TR>
-              </THead>
-              <TBody>
-                {incomes.map((r, i) => (
-                  <TR key={i}>
-                    <TD className="text-xs font-medium">{r.fiscal_year} {r.fiscal_period}</TD>
-                    <TD className="text-right text-xs tabular-nums">{num(v(r, "revenue"))}</TD>
-                    <TD className="text-right text-xs tabular-nums">{num(v(r, "profit_after_tax"))}</TD>
-                    <TD className="text-right text-xs tabular-nums">{num(v(r, "eps"))}</TD>
-                    <TD className="text-right text-xs tabular-nums">{margin(r) !== null ? `${margin(r)!.toFixed(1)}%` : "—"}</TD>
-                    <TD className="text-[11px] text-muted-foreground">{r.reported_date ?? "—"}</TD>
-                  </TR>
-                ))}
-              </TBody>
-            </Table>
-          </CardContent>
-        </Card>
-      )}
-
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2"><TrendingUp className="h-4 w-4" /> Result & earnings filings</CardTitle>
-          <CardDescription>Official quarterly and annual result announcements from the PSX portal.</CardDescription>
-        </CardHeader>
-        <CardContent>
-          {resultFilings.length === 0 ? (
-            <p className="py-4 text-center text-xs text-muted-foreground">No result filings retrieved for {ticker}.</p>
-          ) : (
-            <ul className="space-y-2">
-              {resultFilings.map((f, i) => (
-                <li key={i} className="flex items-start justify-between gap-3 border-b border-border pb-2 last:border-0">
-                  <div>
-                    <a href={f.url} target="_blank" rel="noopener noreferrer" className="text-sm font-medium hover:underline">{f.title}</a>
-                    <p className="text-[11px] text-muted-foreground">{f.date ?? ""} · {f.source}</p>
-                  </div>
-                  <Badge variant="blue">result</Badge>
-                </li>
-              ))}
-            </ul>
-          )}
-        </CardContent>
-      </Card>
-    </div>
+  return (
+    <EarningsWorkspace
+      ticker={ticker}
+      rows={incomes}
+      filings={filings}
+      readOnly={readOnly}
+    />
   );
 }
 
