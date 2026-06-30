@@ -15,6 +15,7 @@ import {
   type ChatProvider,
 } from "@/lib/ai/models";
 import { looksLikeToolLeak } from "@/lib/chat/sanitize";
+import { buildSuggestions, type PromptContext } from "@/lib/chat/prompt-suggestions";
 import { cn } from "@/lib/utils";
 import {
   Brain,
@@ -31,6 +32,7 @@ import {
   PanelRight,
   Pencil,
   Plus,
+  RefreshCw,
   Send,
   SlidersHorizontal,
   Sparkles,
@@ -143,14 +145,14 @@ const CHAT_MARKDOWN_COMPONENTS: Components = {
 export function Chat({
   providers,
   initialThreads = [],
-  suggestions = [],
+  promptContext = null,
   sourceStatus = [],
   dataUpdated = null,
   readOnly = false,
 }: {
   providers: ProviderStatus;
   initialThreads?: ChatThread[];
-  suggestions?: string[];
+  promptContext?: PromptContext | null;
   sourceStatus?: string[];
   dataUpdated?: string | null;
   readOnly?: boolean;
@@ -174,12 +176,27 @@ export function Chat({
   const [showLatest, setShowLatest] = useState(false);
   const [searchThreads, setSearchThreads] = useState("");
   const [researchMode, setResearchMode] = useState<ResearchMode>("Portfolio analysis");
+  // Empty-state sample prompts: a pool tailored to the selected model + the
+  // user's portfolio, with an offset the "Try another" control rotates through.
+  const [suggestionOffset, setSuggestionOffset] = useState(0);
 
   useEffect(() => {
     const selected = CHAT_MODELS.find((m) => m.id === model);
     if (selected && providerReady(providers, selected.provider)) return;
     setModel(firstAvailableModel(providers));
   }, [model, providers]);
+
+  // A different model can do different things well, so re-roll the pool and
+  // reset to the top whenever the model changes.
+  const suggestionPool = useMemo(() => buildSuggestions(model, promptContext), [model, promptContext]);
+  useEffect(() => { setSuggestionOffset(0); }, [model]);
+  const shownSuggestions = useMemo(() => {
+    const pool = suggestionPool;
+    if (pool.length <= 4) return pool;
+    return Array.from({ length: 4 }, (_, i) => pool[(suggestionOffset + i) % pool.length]);
+  }, [suggestionPool, suggestionOffset]);
+  const canShuffleSuggestions = suggestionPool.length > 4;
+  const selectedModelLabel = CHAT_MODELS.find((m) => m.id === model)?.label ?? "AI";
 
   const hasMessages = messages.length > 0;
   const activeThread = threads.find((thread) => thread.id === currentThreadId) ?? null;
@@ -680,20 +697,37 @@ export function Chat({
                 </p>
               </div>
 
-              {/* 2 × 2 suggestion grid */}
-              {!readOnly && suggestions.length > 0 && (
-                <div className="mb-5 grid gap-2 sm:grid-cols-2">
-                  {suggestions.slice(0, 4).map((s) => (
-                    <button
-                      key={s}
-                      onClick={() => send(s)}
-                      disabled={busy}
-                      className="flex items-center gap-2.5 rounded-xl border border-border/70 bg-card px-3.5 py-3 text-left text-[13px] text-foreground/90 transition-colors hover:border-border hover:bg-muted/40 disabled:opacity-50"
-                    >
-                      <Sparkles className="h-3.5 w-3.5 shrink-0 text-muted-foreground/70" />
-                      <span className="min-w-0">{s}</span>
-                    </button>
-                  ))}
+              {/* Model-aware, portfolio-personalized sample prompts */}
+              {!readOnly && shownSuggestions.length > 0 && (
+                <div className="mb-5">
+                  <div className="mb-2 flex items-center justify-between px-0.5">
+                    <span className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
+                      Suggested for {selectedModelLabel}
+                    </span>
+                    {canShuffleSuggestions && (
+                      <button
+                        type="button"
+                        onClick={() => setSuggestionOffset((o) => o + 4)}
+                        disabled={busy}
+                        className="flex items-center gap-1 rounded-md px-1.5 py-1 text-[11px] text-muted-foreground transition-colors hover:bg-muted hover:text-foreground disabled:opacity-50"
+                      >
+                        <RefreshCw className="h-3 w-3" /> Try another
+                      </button>
+                    )}
+                  </div>
+                  <div key={`${model}-${suggestionOffset}`} className="rise grid gap-2 sm:grid-cols-2">
+                    {shownSuggestions.map((s) => (
+                      <button
+                        key={s}
+                        onClick={() => send(s)}
+                        disabled={busy}
+                        className="flex items-center gap-2.5 rounded-xl border border-border/70 bg-card px-3.5 py-3 text-left text-[13px] text-foreground/90 transition-colors hover:border-border hover:bg-muted/40 disabled:opacity-50"
+                      >
+                        <Sparkles className="h-3.5 w-3.5 shrink-0 text-muted-foreground/70" />
+                        <span className="min-w-0">{s}</span>
+                      </button>
+                    ))}
+                  </div>
                 </div>
               )}
 
