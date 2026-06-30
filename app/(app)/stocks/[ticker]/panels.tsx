@@ -109,6 +109,18 @@ function shortDescription(description: string | null): string | null {
   return `${(lastSpace > 80 ? slice.slice(0, lastSpace) : slice).trim()}…`;
 }
 
+/** Neutral one-line description of a filing, derived from its category alone
+ *  (no fabricated specifics, no positive/negative impact assumed). */
+function filingSummary(category: string): string {
+  switch (category) {
+    case "result": return "Periodic financial results or accounts filed with the PSX.";
+    case "dividend": return "Payout-related announcement (dividend, bonus, or entitlement).";
+    case "board_meeting": return "Notice of a board of directors meeting.";
+    case "material": return "Material or price-sensitive information disclosed to the exchange.";
+    default: return "Official corporate announcement filed with the PSX.";
+  }
+}
+
 function ratioByName(rows: RatioRow[], name: string): RatioRow | null {
   return rows.find((r) => r.ratio_name === name) ?? null;
 }
@@ -162,7 +174,7 @@ function OverviewMetric({
       >
         {value}
       </p>
-      {sub ? <p className="mt-0.5 truncate text-[10px] text-muted-foreground">{sub}</p> : null}
+      {sub ? <p className="mt-0.5 truncate text-[10px] text-slate-500">{sub}</p> : null}
     </div>
   );
 }
@@ -217,12 +229,14 @@ export async function OverviewPanel({
   ]);
   const holding = portfolio.holdings.find((h) => h.ticker === ticker);
   const latestDiv = dividends[0];
-  const currentPrice = technicals.latestPrice ?? holding?.latest_price ?? null;
-  const marketValue =
-    holding && currentPrice !== null ? holding.quantity * currentPrice : holding?.market_value ?? null;
+  // Position value, return, current price and weight all come from the single
+  // getPortfolio snapshot — the same source the Holdings and Dashboard tabs use —
+  // so the numbers reconcile across every tab and the weight matches the value.
+  const currentPrice = holding?.latest_price ?? null;
+  const marketValue = holding?.market_value ?? null;
   const totalCost = holding?.total_cost ?? null;
-  const positionPl = marketValue !== null && totalCost !== null ? marketValue - totalCost : holding?.unrealized_pl ?? null;
-  const positionReturn = positionPl !== null && totalCost && totalCost > 0 ? (positionPl / totalCost) * 100 : holding?.unrealized_pl_pct ?? null;
+  const positionPl = holding?.unrealized_pl ?? null;
+  const positionReturn = holding?.unrealized_pl_pct ?? null;
   const positionTone = positionPl === null ? undefined : positionPl >= 0 ? "positive" : "negative";
   const hasReceipt = Boolean(holding && holding.dividend_income > 0);
   const dividendComplete = Boolean(latestDiv?.perShare !== null && latestDiv?.perShare !== undefined && (latestDiv.exDate || latestDiv.payDate || latestDiv.announcementDate));
@@ -239,7 +253,11 @@ export async function OverviewPanel({
   // Precise company fields: surface Products from extracted business lines, and
   // only show Industry when it actually differs from Sector (avoids the vague
   // "Business: Cement" duplicate of the sector).
-  const products = metadata.businessLines.length ? metadata.businessLines.slice(0, 3).join(", ") : null;
+  // Keep Products clean and short: the two leading business lines joined with
+  // "and" (e.g. "Cement and clinker"), falling back to one if the pair runs long.
+  const productLines = metadata.businessLines.map((l) => l.trim()).filter(Boolean).slice(0, 2);
+  const productsPair = productLines.length === 2 ? `${productLines[0]} and ${productLines[1]}` : productLines[0] ?? null;
+  const products = productsPair && productsPair.length > 38 ? productLines[0] : productsPair;
   const industryLabel =
     metadata.industry && metadata.industry.trim().toLowerCase() !== (metadata.sector ?? "").trim().toLowerCase()
       ? metadata.industry
@@ -269,6 +287,7 @@ export async function OverviewPanel({
   const debtEquity = ratioByName(ratios, "Debt-to-equity");
   const interestCoverage = ratioByName(ratios, "Interest coverage");
   const cashQuality = ratioByName(ratios, "OCF / PAT");
+  const marketDivYield = ratioByName(ratios, "Dividend yield (TTM)");
   const ratioYear = latestRatioYear(ratios);
   const currentYear = new Date().getFullYear();
   const financialTone = ratioYear === null ? "red" : ratioYear < currentYear - 1 ? "amber" : "green";
@@ -425,11 +444,7 @@ export async function OverviewPanel({
                   Select ratios only. Full tables and technical indicators remain in their dedicated tabs.
                 </CardDescription>
               </div>
-              {financialStatus === "Fresh"
-                ? ratioYear !== null
-                  ? <span className="shrink-0 text-[10px] font-medium uppercase tracking-wide text-muted-foreground">FY{ratioYear}</span>
-                  : null
-                : <StatusBadge label={financialStatus} tone={financialTone} />}
+              {financialStatus !== "Fresh" ? <StatusBadge label={financialStatus} tone={financialTone} /> : null}
             </div>
           </CardHeader>
           <CardContent className="space-y-3 p-5 pt-3">
@@ -487,6 +502,7 @@ export async function OverviewPanel({
                 <a href={latestDevelopment.url} target="_blank" rel="noopener noreferrer" className="block text-sm font-semibold leading-snug text-slate-950 hover:underline">
                   {latestDevelopment.title}
                 </a>
+                <p className="text-xs leading-relaxed text-slate-600">{filingSummary(latestDevelopment.category)}</p>
                 <p className="text-[11px] text-muted-foreground">
                   {latestDevelopment.date ?? "Date unavailable"} · {latestDevelopment.source}
                 </p>
@@ -510,7 +526,7 @@ export async function OverviewPanel({
             <div className="flex items-start justify-between gap-3">
               <div>
                 <CardTitle className="flex items-center gap-2 text-base"><Banknote className="h-4 w-4" /> Dividend status</CardTitle>
-                <CardDescription>User receipts and detected dividend records are reconciled here.</CardDescription>
+                <CardDescription>Market payout yield versus your personal dividend receipts.</CardDescription>
               </div>
               {dividendIncomplete ? <StatusBadge label="Incomplete" tone="amber" /> : dividendComplete ? <StatusBadge label="Verified" tone="green" /> : <StatusBadge label="Unverified" tone="secondary" />}
             </div>
@@ -535,11 +551,20 @@ export async function OverviewPanel({
               </>
             ) : dividendIncomplete ? (
               <>
+                {marketDivYield?.ratio_value !== null && marketDivYield?.ratio_value !== undefined ? (
+                  <div>
+                    <p className="text-xs text-slate-600">Market dividend yield</p>
+                    <p className="mt-1 text-xl font-semibold tabular-nums text-slate-950">{marketDivYield.ratio_value.toFixed(2)}%</p>
+                    <p className="mt-1 text-[11px] text-slate-600">
+                      Trailing 12-month announced cash dividend per share ÷ current price, from company payout announcements. Your personal receipts below are reconciled separately and are still incomplete.
+                    </p>
+                  </div>
+                ) : null}
                 {holding && holding.dividend_income > 0 ? (
-                  <OverviewMetric label="Recorded receipts" value={wholeMoney(holding.dividend_income)} />
+                  <OverviewMetric label="Your recorded receipts" value={wholeMoney(holding.dividend_income)} />
                 ) : null}
                 <div className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2.5 text-sm text-amber-900">
-                  <p className="font-semibold">Missing or unverified</p>
+                  <p className="font-semibold">Personal receipts: missing or unverified</p>
                   <ul className="mt-1.5 space-y-1 text-xs leading-relaxed">
                     <li>Dividend per share</li>
                     <li>Ex-date mapping</li>

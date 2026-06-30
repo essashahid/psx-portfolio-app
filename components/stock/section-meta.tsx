@@ -24,9 +24,12 @@ export function SectionMeta({
   ticker?: string;
   refreshSection?: string;
 }) {
+  // When an update date is shown, a green "Fresh" badge is redundant noise — only
+  // surface the badge for states that need attention (stale, partial, etc.).
+  const showBadge = meta.freshness !== "fresh" || !meta.lastUpdated;
   return (
-    <div className="flex flex-wrap items-center gap-2 text-[11px] text-muted-foreground">
-      <Badge variant={freshnessVariant(meta.freshness)}>{freshnessLabel(meta.freshness)}</Badge>
+    <div className="flex flex-wrap items-center gap-2 text-[11px] text-slate-500">
+      {showBadge && <Badge variant={freshnessVariant(meta.freshness)}>{freshnessLabel(meta.freshness)}</Badge>}
       {meta.source && (
         <span>
           Source:{" "}
