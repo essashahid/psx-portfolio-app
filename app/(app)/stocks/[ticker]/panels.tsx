@@ -229,7 +229,7 @@ export async function FinancialsPanel({ ticker, readOnly = false }: { ticker: st
       .select("ticker, period_type, fiscal_year, fiscal_period, statement_type, data, reported_date, source_url, confidence, updated_at")
       .eq("ticker", ticker)
       .order("reported_date", { ascending: false })
-      .limit(40),
+      .limit(120),
     supabase
       .from("data_fetch_logs")
       .select("status, detail, created_at, source")
@@ -259,9 +259,66 @@ export async function FinancialsPanel({ ticker, readOnly = false }: { ticker: st
     );
   }
 
-  const byType = (type: string) => rows.filter((r) => r.statement_type === type).slice(0, 4);
-  const newest = rows[0];
+  // Rank a period by how far through its fiscal year it runs, so the most
+  // recent reporting period sorts first regardless of label (FY, 9M, H1, Q*).
+  const PERIOD_END: Record<string, number> = { Q1: 1, Q2: 2, H1: 2, Q3: 3, "9M": 3, Q4: 4, FY: 4 };
+  const periodRank = (p: FinancialRow) =>
+    (p.fiscal_year ?? 0) * 10 + (PERIOD_END[(p.fiscal_period ?? "").toUpperCase()] ?? 0);
+
+  // Annual periods compared year-over-year; interim periods kept separate so we
+  // never put a full year next to a single quarter in the same row.
+  const annualOf = (type: string) =>
+    rows
+      .filter((r) => r.statement_type === type && r.period_type === "annual")
+      .sort((a, b) => (b.fiscal_year ?? 0) - (a.fiscal_year ?? 0))
+      .slice(0, 5);
+  const interimOf = (type: string) =>
+    rows
+      .filter((r) => r.statement_type === type && r.period_type !== "annual")
+      .sort((a, b) => periodRank(b) - periodRank(a))
+      .slice(0, 5);
+
+  const newest = [...rows].sort((a, b) =>
+    String(b.updated_at ?? "").localeCompare(String(a.updated_at ?? "")),
+  )[0];
   const units = String(newest?.data?._units ?? "as reported");
+  const hasUnreviewed = rows.some((r) => r.confidence !== null && r.confidence < 0.7);
+
+  const periodTable = (periods: FinancialRow[], label: string) => {
+    if (periods.length === 0) return null;
+    const keys = [...new Set(periods.flatMap((p) => Object.keys(p.data ?? {})))].filter((k) => !k.startsWith("_"));
+    return (
+      <div className="space-y-1.5">
+        <p className="text-[11px] font-medium text-muted-foreground">{label}</p>
+        <div className="overflow-x-auto">
+          <Table>
+            <THead>
+              <TR>
+                <TH>Line item</TH>
+                {periods.map((p, i) => (
+                  <TH key={i} className="text-right">
+                    {p.fiscal_year ?? ""} {p.fiscal_period ?? ""}
+                    {p.confidence !== null && p.confidence < 0.7 && <span className="text-amber-500"> *</span>}
+                  </TH>
+                ))}
+              </TR>
+            </THead>
+            <TBody>
+              {keys.map((k) => (
+                <TR key={k}>
+                  <TD className="text-xs">{LINE_LABELS[k] ?? k.replace(/_/g, " ")}</TD>
+                  {periods.map((p, i) => {
+                    const v = p.data?.[k];
+                    return <TD key={i} className="text-right text-xs tabular-nums">{typeof v === "number" ? num(v) : "—"}</TD>;
+                  })}
+                </TR>
+              ))}
+            </TBody>
+          </Table>
+        </div>
+      </div>
+    );
+  };
 
   return (
     <div className="space-y-4">
@@ -272,48 +329,36 @@ export async function FinancialsPanel({ ticker, readOnly = false }: { ticker: st
         <FetchFinancialsButton ticker={ticker} readOnly={readOnly} />
       </div>
       {["income_statement", "balance_sheet", "cash_flow"].map((type) => {
-        const periods = byType(type);
-        if (periods.length === 0) return null;
-        const keys = [...new Set(periods.flatMap((p) => Object.keys(p.data ?? {})))].filter((k) => !k.startsWith("_"));
+        const annual = annualOf(type);
+        const interim = interimOf(type);
+        if (annual.length === 0 && interim.length === 0) return null;
+        const sourceUrl = (annual[0] ?? interim[0])?.source_url ?? null;
         return (
           <Card key={type}>
             <CardHeader>
               <CardTitle className="capitalize">{type.replace(/_/g, " ")}</CardTitle>
               <CardDescription>
-                {periods.map((p, i) => (
-                  <span key={i}>
-                    {i > 0 && " · "}
-                    <a href={p.source_url ?? "#"} target="_blank" rel="noopener noreferrer" className="underline hover:text-foreground">
-                      {p.fiscal_year ?? "?"} {p.fiscal_period ?? ""}
+                Annual history and recent interim periods.
+                {sourceUrl && (
+                  <>
+                    {" "}
+                    <a href={sourceUrl} target="_blank" rel="noopener noreferrer" className="underline hover:text-foreground">
+                      View source on PSX
                     </a>
-                    {p.confidence !== null && p.confidence < 0.7 && " (needs review)"}
-                  </span>
-                ))}
+                  </>
+                )}
               </CardDescription>
             </CardHeader>
-            <CardContent className="overflow-x-auto">
-              <Table>
-                <THead>
-                  <TR><TH>Line item</TH>{periods.map((p, i) => <TH key={i} className="text-right">{p.fiscal_year ?? ""} {p.fiscal_period ?? ""}</TH>)}</TR>
-                </THead>
-                <TBody>
-                  {keys.map((k) => (
-                    <TR key={k}>
-                      <TD className="text-xs">{LINE_LABELS[k] ?? k.replace(/_/g, " ")}</TD>
-                      {periods.map((p, i) => {
-                        const v = p.data?.[k];
-                        return <TD key={i} className="text-right text-xs tabular-nums">{typeof v === "number" ? num(v) : "—"}</TD>;
-                      })}
-                    </TR>
-                  ))}
-                </TBody>
-              </Table>
+            <CardContent className="space-y-4">
+              {periodTable(annual, "Annual")}
+              {periodTable(interim, "Interim / quarterly")}
             </CardContent>
           </Card>
         );
       })}
       <p className="text-[11px] text-muted-foreground">
         Last loaded {newest?.updated_at ? String(newest.updated_at).slice(0, 10) : "—"} · Source: official PSX company page (figures echoed from PSX)
+        {hasUnreviewed && <> · <span className="text-amber-500">*</span> needs review</>}
       </p>
     </div>
   );
