@@ -205,6 +205,22 @@ thead {
   .rise { animation: none; }
 }
 
+/* Command palette — backdrop fade + panel spring-in. */
+@keyframes palette-overlay-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@keyframes palette-panel-in {
+  from { opacity: 0; transform: translateY(-10px) scale(0.985); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+.palette-overlay { animation: palette-overlay-in 0.14s ease-out both; }
+.palette-panel { animation: palette-panel-in 0.2s cubic-bezier(0.22, 1, 0.36, 1) both; }
+@media (prefers-reduced-motion: reduce) {
+  .palette-overlay,
+  .palette-panel { animation: none; }
+}
+
 /* Quick per-route fade so navigations settle in instead of popping. */
 @keyframes page-enter {
   from { opacity: 0; transform: translateY(4px); }
