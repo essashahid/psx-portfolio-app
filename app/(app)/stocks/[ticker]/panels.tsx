@@ -20,6 +20,7 @@ import { CompanyAiActions } from "@/components/stock/company-ai-actions";
 import { Markdown } from "@/components/markdown";
 import { RatioSnapshotChart } from "@/components/charts-lazy";
 import { StockPriceChart } from "@/components/stock/price-chart-lazy";
+import { FinancialsWorkspace, type FinancialWorkspaceRow } from "@/components/stock/financials-workspace";
 import { formatMoney, formatNumber, formatSignedPct, cn } from "@/lib/utils";
 import {
   AlertTriangle, Banknote, BriefcaseBusiness, Calculator, FileText, Info, Newspaper, Sparkles, TrendingUp,
@@ -507,24 +508,13 @@ export async function OverviewPanel({
 
 interface FinancialRow { ticker: string; period_type: string; fiscal_year: number | null; fiscal_period: string | null; statement_type: string; data: Record<string, number | null | string>; reported_date: string | null; source_url: string | null; confidence: number | null; updated_at: string | null; }
 
-const LINE_LABELS: Record<string, string> = {
-  revenue: "Revenue / sales", cost_of_sales: "Cost of sales", gross_profit: "Gross profit",
-  operating_expenses: "Operating expenses", operating_profit: "Operating profit", finance_cost: "Finance cost",
-  profit_before_tax: "Profit before tax", tax: "Tax", profit_after_tax: "Profit after tax", eps: "EPS (Rs)",
-  total_assets: "Total assets", current_assets: "Current assets", cash_and_equivalents: "Cash & equivalents",
-  inventory: "Inventory", receivables: "Receivables", total_liabilities: "Total liabilities",
-  current_liabilities: "Current liabilities", borrowings: "Borrowings", equity: "Equity", retained_earnings: "Retained earnings",
-  operating_cash_flow: "Operating cash flow", investing_cash_flow: "Investing cash flow",
-  financing_cash_flow: "Financing cash flow", capex: "Capex", cash_balance: "Cash balance",
-};
-
 function FetchFinancialsButton({ ticker, readOnly = false }: { ticker: string; readOnly?: boolean }) {
   if (readOnly) return null;
   return (
     <ActionButton
       endpoint={`/api/stocks/${ticker}/refresh`}
       body={{ section: "financials" }}
-      label={<><FileText className="h-3.5 w-3.5" /> Load from PSX company page</>}
+      label={<><FileText className="h-3.5 w-3.5" /> Refresh financials</>}
       variant="outline"
       size="sm"
     />
@@ -569,109 +559,7 @@ export async function FinancialsPanel({ ticker, readOnly = false }: { ticker: st
     );
   }
 
-  // Rank a period by how far through its fiscal year it runs, so the most
-  // recent reporting period sorts first regardless of label (FY, 9M, H1, Q*).
-  const PERIOD_END: Record<string, number> = { Q1: 1, Q2: 2, H1: 2, Q3: 3, "9M": 3, Q4: 4, FY: 4 };
-  const periodRank = (p: FinancialRow) =>
-    (p.fiscal_year ?? 0) * 10 + (PERIOD_END[(p.fiscal_period ?? "").toUpperCase()] ?? 0);
-
-  // Annual periods compared year-over-year; interim periods kept separate so we
-  // never put a full year next to a single quarter in the same row.
-  const annualOf = (type: string) =>
-    rows
-      .filter((r) => r.statement_type === type && r.period_type === "annual")
-      .sort((a, b) => (b.fiscal_year ?? 0) - (a.fiscal_year ?? 0))
-      .slice(0, 5);
-  const interimOf = (type: string) =>
-    rows
-      .filter((r) => r.statement_type === type && r.period_type !== "annual")
-      .sort((a, b) => periodRank(b) - periodRank(a))
-      .slice(0, 5);
-
-  const newest = [...rows].sort((a, b) =>
-    String(b.updated_at ?? "").localeCompare(String(a.updated_at ?? "")),
-  )[0];
-  const units = String(newest?.data?._units ?? "as reported");
-  const hasUnreviewed = rows.some((r) => r.confidence !== null && r.confidence < 0.7);
-
-  const periodTable = (periods: FinancialRow[], label: string) => {
-    if (periods.length === 0) return null;
-    const keys = [...new Set(periods.flatMap((p) => Object.keys(p.data ?? {})))].filter((k) => !k.startsWith("_"));
-    return (
-      <div className="space-y-1.5">
-        <p className="text-[11px] font-medium text-muted-foreground">{label}</p>
-        <div className="overflow-x-auto">
-          <Table>
-            <THead>
-              <TR>
-                <TH>Line item</TH>
-                {periods.map((p, i) => (
-                  <TH key={i} className="text-right">
-                    {p.fiscal_year ?? ""} {p.fiscal_period ?? ""}
-                    {p.confidence !== null && p.confidence < 0.7 && <span className="text-amber-500"> *</span>}
-                  </TH>
-                ))}
-              </TR>
-            </THead>
-            <TBody>
-              {keys.map((k) => (
-                <TR key={k}>
-                  <TD className="text-xs">{LINE_LABELS[k] ?? k.replace(/_/g, " ")}</TD>
-                  {periods.map((p, i) => {
-                    const v = p.data?.[k];
-                    return <TD key={i} className="text-right text-xs tabular-nums">{typeof v === "number" ? num(v) : "—"}</TD>;
-                  })}
-                </TR>
-              ))}
-            </TBody>
-          </Table>
-        </div>
-      </div>
-    );
-  };
-
-  return (
-    <div className="space-y-4">
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <p className="text-[11px] text-muted-foreground">
-          Figures {units}; EPS in rupees. Sourced from the official PSX company page — open the source to verify.
-        </p>
-        <FetchFinancialsButton ticker={ticker} readOnly={readOnly} />
-      </div>
-      {["income_statement", "balance_sheet", "cash_flow"].map((type) => {
-        const annual = annualOf(type);
-        const interim = interimOf(type);
-        if (annual.length === 0 && interim.length === 0) return null;
-        const sourceUrl = (annual[0] ?? interim[0])?.source_url ?? null;
-        return (
-          <Card key={type}>
-            <CardHeader>
-              <CardTitle className="capitalize">{type.replace(/_/g, " ")}</CardTitle>
-              <CardDescription>
-                Annual history and recent interim periods.
-                {sourceUrl && (
-                  <>
-                    {" "}
-                    <a href={sourceUrl} target="_blank" rel="noopener noreferrer" className="underline hover:text-foreground">
-                      View source on PSX
-                    </a>
-                  </>
-                )}
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {periodTable(annual, "Annual")}
-              {periodTable(interim, "Interim / quarterly")}
-            </CardContent>
-          </Card>
-        );
-      })}
-      <p className="text-[11px] text-muted-foreground">
-        Last loaded {newest?.updated_at ? String(newest.updated_at).slice(0, 10) : "—"} · Source: official PSX company page (figures echoed from PSX)
-        {hasUnreviewed && <> · <span className="text-amber-500">*</span> needs review</>}
-      </p>
-    </div>
-  );
+  return <FinancialsWorkspace ticker={ticker} rows={rows as FinancialWorkspaceRow[]} readOnly={readOnly} />;
 }
 
 // ---------------------------------------------------------------------------
