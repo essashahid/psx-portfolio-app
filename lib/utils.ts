@@ -31,6 +31,31 @@ export function formatSignedPct(value: number | null | undefined, digits = 1): s
   return `${value > 0 ? "+" : ""}${value.toFixed(digits)}%`;
 }
 
+/**
+ * Normalize a ratio-engine `source_period` ("2025 FY", "2026 9M",
+ * "2025 FY / 2026 9M", "2025 FY vs 2024 FY", "Last 12 months") into a
+ * consistent human label ("FY2025", "9M FY2026", ...). Used by the company
+ * header and the Overview so the same metric reads the same way everywhere.
+ */
+export function formatFinancialPeriod(period: string | null | undefined): string | null {
+  if (!period) return null;
+  const token = (raw: string): string => {
+    const t = raw.trim();
+    if (!t) return t;
+    const m = t.match(/^(\d{4})\s+(.+)$/);
+    if (!m) return t;
+    const [, year, rest] = m;
+    const kind = rest.trim();
+    if (/^(fy|annual|full year)$/i.test(kind)) return `FY${year}`;
+    // Interim/quarterly markers (9M, Q3, H1, ...) read better leading the year.
+    return `${kind.toUpperCase()} FY${year}`;
+  };
+  return period
+    .split(/\s+(\/|vs)\s+/)
+    .map((part) => (part === "/" || part === "vs" ? part : token(part)))
+    .join(" ");
+}
+
 export function plColor(value: number | null | undefined): string {
   if (value === null || value === undefined || value === 0) return "text-muted-foreground";
   return value > 0 ? "text-emerald-600" : "text-red-600";

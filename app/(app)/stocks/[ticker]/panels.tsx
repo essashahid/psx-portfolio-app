@@ -21,7 +21,7 @@ import { Markdown } from "@/components/markdown";
 import { RatioSnapshotChart } from "@/components/charts-lazy";
 import { StockPriceChart } from "@/components/stock/price-chart-lazy";
 import { FinancialsWorkspace, type FinancialWorkspaceRow } from "@/components/stock/financials-workspace";
-import { formatMoney, formatNumber, formatSignedPct, cn } from "@/lib/utils";
+import { formatMoney, formatNumber, formatSignedPct, formatFinancialPeriod, cn } from "@/lib/utils";
 import {
   AlertTriangle, Banknote, BriefcaseBusiness, Calculator, FileText, Info, Newspaper, Sparkles, TrendingUp,
 } from "lucide-react";
@@ -61,6 +61,10 @@ function Unavailable({ note }: { note: string }) {
 
 const num = (v: number | null | undefined) => (v === null || v === undefined ? "—" : formatNumber(v));
 
+/** Whole-rupee money for receipts/dividends where sub-rupee precision is noise. */
+const wholeMoney = (v: number | null | undefined) =>
+  v === null || v === undefined || Number.isNaN(v) ? "—" : `PKR ${formatNumber(v, 0)}`;
+
 function compactNumber(value: number | null | undefined, digits = 1): string {
   if (value === null || value === undefined || Number.isNaN(value)) return "—";
   return new Intl.NumberFormat("en-PK", {
@@ -95,9 +99,14 @@ function freshnessBadge(freshness: string | null | undefined) {
 function shortDescription(description: string | null): string | null {
   if (!description) return null;
   const cleaned = description.replace(/\s+/g, " ").trim();
-  if (cleaned.length <= 155) return cleaned;
-  const firstSentence = cleaned.match(/^.{40,155}?[.!?](\s|$)/)?.[0]?.trim();
-  return firstSentence ?? `${cleaned.slice(0, 152).trim()}...`;
+  if (cleaned.length <= 180) return cleaned;
+  // Prefer a clean sentence boundary; otherwise truncate on a word boundary and
+  // add a real ellipsis — never cut mid-word like "...and cl...".
+  const firstSentence = cleaned.match(/^.{40,180}?[.!?](\s|$)/)?.[0]?.trim();
+  if (firstSentence) return firstSentence;
+  const slice = cleaned.slice(0, 170);
+  const lastSpace = slice.lastIndexOf(" ");
+  return `${(lastSpace > 80 ? slice.slice(0, lastSpace) : slice).trim()}…`;
 }
 
 function ratioByName(rows: RatioRow[], name: string): RatioRow | null {
@@ -124,15 +133,25 @@ function OverviewMetric({
   value,
   sub,
   tone,
+  hint,
 }: {
   label: string;
   value: string;
   sub?: string;
   tone?: "positive" | "negative" | "warning";
+  hint?: string;
 }) {
   return (
     <div className="min-w-0">
-      <p className="text-[11px] text-muted-foreground">{label}</p>
+      <p
+        className={cn(
+          "text-[11px] text-muted-foreground",
+          hint && "cursor-help underline decoration-dotted decoration-muted-foreground/40 underline-offset-2"
+        )}
+        title={hint}
+      >
+        {label}
+      </p>
       <p
         className={cn(
           "mt-0.5 truncate text-sm font-semibold tabular-nums text-slate-950",
@@ -153,14 +172,15 @@ function SignalGroup({
   items,
 }: {
   title: string;
-  items: { label: string; value: string; sub?: string; tone?: "positive" | "negative" | "warning" }[];
+  items: { label: string; value: string; sub?: string; tone?: "positive" | "negative" | "warning"; hint?: string }[];
 }) {
   const visible = items.filter((item) => item.value !== "—");
   if (visible.length === 0) return null;
+  // Flat group: a subtle top divider instead of a bordered card-within-a-card.
   return (
-    <div className="rounded-xl border border-slate-200 bg-slate-50/60 p-3">
-      <p className="text-xs font-semibold text-slate-900">{title}</p>
-      <div className="mt-3 grid gap-3 sm:grid-cols-3 lg:grid-cols-1 xl:grid-cols-3">
+    <div className="border-t border-slate-100 pt-3 first:border-t-0 first:pt-0">
+      <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">{title}</p>
+      <div className="mt-2 grid gap-3 sm:grid-cols-3 lg:grid-cols-1 xl:grid-cols-3">
         {visible.map((item) => (
           <OverviewMetric key={item.label} {...item} />
         ))}
@@ -216,6 +236,21 @@ export async function OverviewPanel({
   const marketsSub = metadata.description && /export/i.test(metadata.description)
     ? "from company profile"
     : "needs source";
+  // Precise company fields: surface Products from extracted business lines, and
+  // only show Industry when it actually differs from Sector (avoids the vague
+  // "Business: Cement" duplicate of the sector).
+  const products = metadata.businessLines.length ? metadata.businessLines.slice(0, 3).join(", ") : null;
+  const industryLabel =
+    metadata.industry && metadata.industry.trim().toLowerCase() !== (metadata.sector ?? "").trim().toLowerCase()
+      ? metadata.industry
+      : null;
+  const companyFields: { label: string; value: string; sub?: string; tone?: "warning" }[] = [
+    { label: "Sector", value: metadata.sector ?? "—" },
+  ];
+  if (products) companyFields.push({ label: "Products", value: products });
+  else if (industryLabel) companyFields.push({ label: "Industry", value: industryLabel });
+  companyFields.push({ label: "Markets", value: marketsLabel, sub: marketsSub, tone: marketsLabel === "Unverified" ? "warning" : undefined });
+  companyFields.push({ label: "Exchange", value: metadata.exchange ?? "PSX" });
   const signals = computeSignals(technicals.history);
   const benchmark = (eod.get(KSE_SYMBOL) ?? []).map((p) => ({ date: p.date, close: p.close }));
   const latestDevelopment =
@@ -251,7 +286,7 @@ export async function OverviewPanel({
               </CardDescription>
             </div>
             <div className="flex flex-wrap justify-end gap-1.5">
-              {freshnessBadge(technicals.meta.freshness)}
+              {technicals.meta.freshness !== "fresh" ? freshnessBadge(technicals.meta.freshness) : null}
               {technicals.asOfDate ? <Badge variant="secondary">Price {technicals.asOfDate}</Badge> : null}
             </div>
           </CardHeader>
@@ -305,11 +340,11 @@ export async function OverviewPanel({
                 </div>
 
                 <div className="grid grid-cols-2 gap-x-4 gap-y-3">
-                  <OverviewMetric label="Average cost" value={holding.avg_cost !== null ? `PKR ${formatNumber(holding.avg_cost)}` : "—"} />
+                  <OverviewMetric label="Average cost" value={holding.avg_cost !== null ? `PKR ${formatNumber(holding.avg_cost)}` : "—"} hint="Weighted average price you paid per share." />
                   <OverviewMetric label="Current price" value={currentPrice !== null ? `PKR ${formatNumber(currentPrice)}` : "—"} />
-                  <OverviewMetric label="Portfolio weight" value={holding.weight !== null ? `${holding.weight.toFixed(1)}%` : "—"} />
+                  <OverviewMetric label="Portfolio weight" value={holding.weight !== null ? `${holding.weight.toFixed(1)}%` : "—"} hint={`${ticker} market value divided by total portfolio market value at the snapshot date.`} />
                   <OverviewMetric label="Quantity" value={formatNumber(holding.quantity, 0)} />
-                  <OverviewMetric label="Dividends received" value={formatMoney(holding.dividend_income)} />
+                  <OverviewMetric label="Dividends received" value={wholeMoney(holding.dividend_income)} hint={`Total cash dividends recorded against your ${ticker} holding.`} />
                 </div>
 
                 <Link
@@ -339,7 +374,7 @@ export async function OverviewPanel({
                   Source {metadata.meta.source ?? "unavailable"}{metadata.meta.lastUpdated ? ` · updated ${metadata.meta.lastUpdated.slice(0, 10)}` : ""}
                 </CardDescription>
               </div>
-              {freshnessBadge(metadata.meta.freshness)}
+              {metadata.meta.freshness !== "fresh" ? freshnessBadge(metadata.meta.freshness) : null}
             </div>
           </CardHeader>
           <CardContent className="space-y-4 p-5 pt-3">
@@ -361,10 +396,9 @@ export async function OverviewPanel({
             )}
 
             <div className="grid grid-cols-2 gap-3">
-              <OverviewMetric label="Sector" value={metadata.sector ?? "—"} />
-              <OverviewMetric label="Business" value={metadata.industry ?? metadata.businessLines[0] ?? "—"} />
-              <OverviewMetric label="Markets" value={marketsLabel} sub={marketsSub} tone={marketsLabel === "Unverified" ? "warning" : undefined} />
-              <OverviewMetric label="Exchange" value={metadata.exchange ?? "PSX"} />
+              {companyFields.map((field) => (
+                <OverviewMetric key={field.label} {...field} />
+              ))}
             </div>
 
             {metadata.description ? (
@@ -391,32 +425,36 @@ export async function OverviewPanel({
                   Select ratios only. Full tables and technical indicators remain in their dedicated tabs.
                 </CardDescription>
               </div>
-              <StatusBadge label={financialStatus} tone={financialTone} />
+              {financialStatus === "Fresh"
+                ? ratioYear !== null
+                  ? <span className="shrink-0 text-[10px] font-medium uppercase tracking-wide text-muted-foreground">FY{ratioYear}</span>
+                  : null
+                : <StatusBadge label={financialStatus} tone={financialTone} />}
             </div>
           </CardHeader>
           <CardContent className="space-y-3 p-5 pt-3">
             <SignalGroup
               title="Valuation"
               items={[
-                { label: "P/E", value: ratioText(pe, "multiple"), sub: pe?.source_period ?? undefined },
-                { label: "P/B", value: ratioText(pb, "multiple"), sub: pb?.source_period ?? undefined },
-                { label: "Earnings yield", value: ratioText(earningsYield, "percent"), sub: earningsYield?.source_period ?? undefined },
+                { label: "P/E", value: ratioText(pe, "multiple"), sub: formatFinancialPeriod(pe?.source_period) ?? undefined, hint: METRIC_HINTS["P/E"] },
+                { label: "P/B", value: ratioText(pb, "multiple"), sub: formatFinancialPeriod(pb?.source_period) ?? undefined, hint: METRIC_HINTS["P/B"] },
+                { label: "Earnings yield", value: ratioText(earningsYield, "percent"), sub: formatFinancialPeriod(earningsYield?.source_period) ?? undefined, hint: METRIC_HINTS["Earnings yield"] },
               ]}
             />
             <SignalGroup
               title="Profitability"
               items={[
-                { label: "EPS", value: epsValue !== null ? formatNumber(epsValue) : "—", sub: pe?.source_period ?? undefined },
-                { label: "ROE", value: ratioText(roe, "percent"), sub: roe?.source_period ?? undefined },
-                { label: "Net margin", value: ratioText(netMargin, "percent"), sub: netMargin?.source_period ?? undefined },
+                { label: "EPS", value: epsValue !== null ? `PKR ${formatNumber(epsValue)}` : "—", sub: formatFinancialPeriod(pe?.source_period) ?? undefined, hint: "Earnings per share for the reporting period." },
+                { label: "ROE", value: ratioText(roe, "percent"), sub: formatFinancialPeriod(roe?.source_period) ?? undefined, hint: METRIC_HINTS["ROE"] },
+                { label: "Net margin", value: ratioText(netMargin, "percent"), sub: formatFinancialPeriod(netMargin?.source_period) ?? undefined, hint: METRIC_HINTS["Net margin"] },
               ]}
             />
             <SignalGroup
               title="Financial strength"
               items={[
-                { label: "Debt/equity", value: ratioText(debtEquity), sub: debtEquity?.source_period ?? undefined },
-                { label: "Interest cover", value: ratioText(interestCoverage, "multiple"), sub: interestCoverage?.source_period ?? undefined },
-                { label: "Cash-flow quality", value: ratioText(cashQuality), sub: cashQuality?.source_period ?? undefined },
+                { label: "Debt/equity", value: ratioText(debtEquity), sub: formatFinancialPeriod(debtEquity?.source_period) ?? undefined, hint: METRIC_HINTS["Debt-to-equity"] },
+                { label: "Interest coverage", value: ratioText(interestCoverage, "multiple"), sub: formatFinancialPeriod(interestCoverage?.source_period) ?? undefined, hint: METRIC_HINTS["Interest coverage"] },
+                { label: "OCF / profit", value: ratioText(cashQuality, "multiple"), sub: formatFinancialPeriod(cashQuality?.source_period) ?? undefined, hint: METRIC_HINTS["OCF / PAT"] },
               ]}
             />
             {ratioYear !== null && ratioYear < currentYear - 1 ? (
@@ -443,15 +481,23 @@ export async function OverviewPanel({
               {latestDevelopment ? <Badge variant={latestDevelopment.category === "material" ? "amber" : "blue"}>{latestDevelopment.category.replace(/_/g, " ")}</Badge> : null}
             </div>
           </CardHeader>
-          <CardContent className="p-5 pt-3">
+          <CardContent className="p-4 pt-2">
             {latestDevelopment ? (
-              <div>
-                <a href={latestDevelopment.url} target="_blank" rel="noopener noreferrer" className="text-sm font-semibold leading-snug text-slate-950 hover:underline">
+              <div className="space-y-2.5">
+                <a href={latestDevelopment.url} target="_blank" rel="noopener noreferrer" className="block text-sm font-semibold leading-snug text-slate-950 hover:underline">
                   {latestDevelopment.title}
                 </a>
-                <p className="mt-1 text-[11px] text-muted-foreground">
+                <p className="text-[11px] text-muted-foreground">
                   {latestDevelopment.date ?? "Date unavailable"} · {latestDevelopment.source}
                 </p>
+                <a
+                  href={latestDevelopment.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex h-8 items-center gap-1 rounded-md border border-slate-200 px-2.5 text-xs font-medium hover:bg-slate-50"
+                >
+                  <FileText className="h-3.5 w-3.5" /> View filing
+                </a>
               </div>
             ) : (
               <Unavailable note="No recent PSX filings retrieved for this company." />
@@ -469,7 +515,7 @@ export async function OverviewPanel({
               {dividendIncomplete ? <StatusBadge label="Incomplete" tone="amber" /> : dividendComplete ? <StatusBadge label="Verified" tone="green" /> : <StatusBadge label="Unverified" tone="secondary" />}
             </div>
           </CardHeader>
-          <CardContent className="space-y-3 p-5 pt-3">
+          <CardContent className="space-y-3 p-4 pt-2">
             {dividendComplete && latestDiv ? (
               <>
                 <div>
@@ -482,16 +528,28 @@ export async function OverviewPanel({
                     {latestDiv.payDate ? ` · Payment ${latestDiv.payDate}` : ""}
                   </p>
                 </div>
-                {holding ? <OverviewMetric label="Amount received" value={formatMoney(holding.dividend_income)} /> : null}
+                {holding ? <OverviewMetric label="Amount received" value={wholeMoney(holding.dividend_income)} /> : null}
+                <a href="#dividends" className="inline-flex h-8 items-center rounded-md border border-slate-200 px-2.5 text-xs font-medium hover:bg-slate-50">
+                  View dividend history
+                </a>
               </>
             ) : dividendIncomplete ? (
-              <div className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900">
-                <p className="font-semibold">Dividend data incomplete</p>
-                <p className="mt-1 text-xs leading-relaxed">
-                  A payment record exists, but the dividend amount or timing has not been fully verified.
-                </p>
-                {holding ? <p className="mt-2 text-xs tabular-nums">Recorded receipts: {formatMoney(holding.dividend_income)}</p> : null}
-              </div>
+              <>
+                {holding && holding.dividend_income > 0 ? (
+                  <OverviewMetric label="Recorded receipts" value={wholeMoney(holding.dividend_income)} />
+                ) : null}
+                <div className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2.5 text-sm text-amber-900">
+                  <p className="font-semibold">Missing or unverified</p>
+                  <ul className="mt-1.5 space-y-1 text-xs leading-relaxed">
+                    <li>Dividend per share</li>
+                    <li>Ex-date mapping</li>
+                    <li>Entitlement reconciliation</li>
+                  </ul>
+                </div>
+                <a href="#dividends" className="inline-flex h-8 items-center rounded-md border border-slate-200 px-2.5 text-xs font-medium hover:bg-slate-50">
+                  View dividend history
+                </a>
+              </>
             ) : (
               <Unavailable note="No verified dividend records or user receipts are available yet." />
             )}

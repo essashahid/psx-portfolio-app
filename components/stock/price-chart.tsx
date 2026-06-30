@@ -18,6 +18,7 @@ import {
   ReferenceDot,
   ResponsiveContainer,
 } from "recharts";
+import { Check } from "lucide-react";
 import { cn, formatNumber, formatSignedPct } from "@/lib/utils";
 import {
   INK,
@@ -27,8 +28,21 @@ import {
   GlassTooltip,
   CURSOR,
   FadeDefs,
-  AXIS_TICK,
 } from "@/components/chart-kit";
+
+// Slightly larger and darker than the shared AXIS_TICK: this chart is the main
+// visual on the Overview, so its axes get a small legibility bump.
+const AXIS_TICK = { fontSize: 11.5, fill: "#5b5b54" } as const;
+
+/** Toggle-chip styling so overlay controls read as interactive, not plain text. */
+function chipClass(active: boolean): string {
+  return cn(
+    "inline-flex items-center gap-1 rounded-md border px-2 py-1 text-[11px] font-medium transition-colors duration-200",
+    active
+      ? "border-emerald-600/30 bg-emerald-50 text-emerald-700"
+      : "border-slate-200 bg-white text-muted-foreground hover:bg-slate-50 hover:text-foreground"
+  );
+}
 import type { Candle } from "@/lib/company/types";
 import type { TechnicalSignals } from "@/lib/market/technicals";
 
@@ -208,12 +222,18 @@ export function StockPriceChart({
           </div>
           {!relative && rangeChange !== null && (
             <span
-              className={cn(
-                "text-xs font-semibold tabular-nums transition-colors",
-                trendUp ? "text-emerald-600" : "text-red-600"
-              )}
+              className="flex items-baseline gap-1"
+              title={`${range} return based on closing prices over the selected range. Price return only — excludes dividends.`}
             >
-              {formatSignedPct(rangeChange)}
+              <span
+                className={cn(
+                  "text-xs font-semibold tabular-nums transition-colors",
+                  trendUp ? "text-emerald-600" : "text-red-600"
+                )}
+              >
+                {formatSignedPct(rangeChange)}
+              </span>
+              <span className="text-[10px] font-normal text-muted-foreground">{range} price return</span>
             </span>
           )}
           {relative && relPerf !== null && (
@@ -232,36 +252,31 @@ export function StockPriceChart({
           {hasBenchmark && (
             <button
               onClick={() => setMode((m) => (m === "price" ? "relative" : "price"))}
+              aria-pressed={relative}
               title="Compare this stock against the KSE-100, both rebased to 100 at the start of the range."
-              className={cn(
-                "rounded-md px-2 py-1 text-[11px] font-medium transition-colors duration-200",
-                relative ? "bg-accent text-foreground" : "text-muted-foreground hover:bg-accent"
-              )}
+              className={chipClass(relative)}
             >
-              vs KSE-100
+              {relative && <Check className="h-3 w-3" aria-hidden />} Compare KSE-100
             </button>
           )}
           {!relative && signals && (
             <button
               onClick={() => setShowStructure((v) => !v)}
+              aria-pressed={showStructure}
               title="Long-term accumulation band, 52-week range, support and momentum-divergence pivots"
-              className={cn(
-                "rounded-md px-2 py-1 text-[11px] font-medium transition-colors duration-200",
-                showStructure ? "bg-accent text-foreground" : "text-muted-foreground hover:bg-accent"
-              )}
+              className={chipClass(showStructure)}
             >
-              {showStructure ? "Hide" : "Show"} structure
+              {showStructure && <Check className="h-3 w-3" aria-hidden />} Structure
             </button>
           )}
           {!relative && (
             <button
               onClick={() => setShowMA((v) => !v)}
-              className={cn(
-                "rounded-md px-2 py-1 text-[11px] font-medium transition-colors duration-200",
-                showMA ? "bg-accent text-foreground" : "text-muted-foreground hover:bg-accent"
-              )}
+              aria-pressed={showMA}
+              title="50-day and 200-day moving averages."
+              className={chipClass(showMA)}
             >
-              {showMA ? "Hide" : "Show"} MA 50/200
+              {showMA && <Check className="h-3 w-3" aria-hidden />} MA 50/200
             </button>
           )}
         </div>

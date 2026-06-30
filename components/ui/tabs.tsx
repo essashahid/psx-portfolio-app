@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { cn } from "@/lib/utils";
 
 export interface TabDef {
@@ -26,6 +26,17 @@ export function Tabs({ tabs, initial }: { tabs: TabDef[]; initial?: string }) {
     setActive(id);
     history.replaceState(null, "", `#${id}`);
   }
+
+  // Respond to in-page `#tab` links (e.g. "View dividend history" on Overview)
+  // and browser back/forward, so deep links switch tabs without a reload.
+  useEffect(() => {
+    function onHash() {
+      const hash = decodeURIComponent(window.location.hash.replace("#", ""));
+      if (hash && tabs.some((t) => t.id === hash)) setActive(hash);
+    }
+    window.addEventListener("hashchange", onHash);
+    return () => window.removeEventListener("hashchange", onHash);
+  }, [tabs]);
 
   return (
     <div>
