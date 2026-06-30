@@ -1418,8 +1418,6 @@ function KeyRatios({
   ratios,
   financialRows,
   formatMode,
-  pinned,
-  togglePin,
   setSelectedRatio,
   onExploreAll,
 }: {
@@ -2287,9 +2285,7 @@ export function RatiosWorkspace({
   }
 
   function selectFactor(factor: FactorResult) {
-    setActiveFactor(factor.key);
     setActiveCategory(factor.category);
-    setActiveAnalysis(factor.category);
   }
 
   const hasFinancials = ratios.some((r) => r.source !== null) || financialRows.length > 0;
