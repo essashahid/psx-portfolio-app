@@ -67,8 +67,8 @@ export async function gatherCards(db: SupabaseClient, userId: string, resolved: 
       getPositionCard(db, userId, ticker),
       intent === "valuation" || intent === "overview" || intent === "compare" || intent === "position" ? getRatioCard(db, ticker) : Promise.resolve(null),
       intent === "technical" || intent === "overview" || intent === "position" ? getTechnicalCard(db, ticker) : Promise.resolve(null),
-      intent === "dividend" || intent === "overview" ? getDividendCard(db, ticker) : Promise.resolve(null),
-      intent === "news" || intent === "overview" ? getNewsCard(db, userId, ticker, 4) : Promise.resolve(null),
+      intent === "dividend" || intent === "overview" || intent === "position" ? getDividendCard(db, ticker) : Promise.resolve(null),
+      intent === "news" || intent === "overview" || intent === "position" ? getNewsCard(db, userId, ticker, 4) : Promise.resolve(null),
     ]);
     if (quote) cards.push({ kind: "quote", data: quote });
     if (position) cards.push({ kind: "position", data: position });
@@ -306,6 +306,54 @@ export function briefFromThesisJournal(notes: DecisionNotes, ticker: string): st
     out.push(`### ${ticker} — your recent journal\n${rows}`);
   }
   return out.join("\n\n");
+}
+
+/**
+ * Cross-holding patterns computed deterministically so the model reasons about
+ * the book as a whole, not one name in isolation: single-name and sector
+ * concentration, shared-sector clusters (positions that move on the same
+ * drivers), and diversification via the effective number of positions (1/HHI).
+ * This is what lets an answer say "you already hold three fertilizer names that
+ * all track gas pricing" instead of generic commentary.
+ */
+export function briefFromPortfolioPatterns(h: HoldingsSummary): string {
+  if (h.count < 2) return "";
+  const byWeight = [...h.holdings]
+    .filter((x) => x.weightPct != null)
+    .sort((a, b) => (b.weightPct ?? 0) - (a.weightPct ?? 0));
+  const lines: string[] = [];
+
+  const top = byWeight[0];
+  if (top?.weightPct != null) {
+    lines.push(`- Largest position: ${top.ticker} at ${top.weightPct.toFixed(1)}% of the book${top.weightPct >= 20 ? " — single-name concentration above 20%" : ""}.`);
+  }
+  if (byWeight.length >= 3) {
+    const top3 = byWeight.slice(0, 3);
+    const sum = top3.reduce((s, x) => s + (x.weightPct ?? 0), 0);
+    lines.push(`- Top 3 (${top3.map((x) => x.ticker).join(", ")}) are ${sum.toFixed(0)}% of the book.`);
+  }
+
+  const topSec = h.sectors[0];
+  if (topSec) {
+    lines.push(`- Heaviest sector: ${topSec.sector} at ${topSec.weightPct.toFixed(1)}% across ${topSec.count} name${topSec.count === 1 ? "" : "s"}${topSec.weightPct >= 35 ? " — sector concentration above 35%" : ""}.`);
+  }
+
+  const clusters = h.sectors.filter((s) => s.count > 1);
+  if (clusters.length) {
+    for (const s of clusters) {
+      const names = byWeight.filter((x) => (x.sector ?? "Unclassified") === s.sector).map((x) => x.ticker);
+      lines.push(`- Shared ${s.sector} exposure: ${names.join(", ")} (${s.weightPct.toFixed(0)}% combined) — these move on the same sector drivers.`);
+    }
+  } else {
+    lines.push(`- No two holdings share a sector; exposure is spread across ${h.sectors.length} sectors.`);
+  }
+
+  const hhi = byWeight.reduce((s, x) => s + Math.pow((x.weightPct ?? 0) / 100, 2), 0);
+  if (hhi > 0) {
+    lines.push(`- Effective number of positions: ${(1 / hhi).toFixed(1)} (of ${h.count} held); a lower number than the count signals concentration.`);
+  }
+
+  return `## Portfolio patterns (pre-computed; reason across holdings, do not recompute)\n${lines.join("\n")}`;
 }
 
 /**
