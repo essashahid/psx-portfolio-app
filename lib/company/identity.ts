@@ -1,5 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { fetchPsxSymbols, type PsxSymbolInfo } from "@/lib/market-data/psx-dps";
+import { getStockMasterMap } from "@/lib/stock-master";
 
 export interface CompanyIdentity {
   companyName: string | null;
@@ -38,10 +39,11 @@ export async function resolveCompanyIdentity(
   let sector: string | null = null;
   let source: string | null = null;
 
-  const [{ data: universe }, { data: master }] = await Promise.all([
+  const [{ data: universe }, masterMap] = await Promise.all([
     supabase.from("stock_universe").select("company_name, sector").eq("ticker", t).maybeSingle(),
-    supabase.from("stock_master").select("company_name, sector").eq("ticker", t).maybeSingle(),
+    getStockMasterMap(),
   ]);
+  const master = masterMap.get(t) ?? null;
 
   if (universe) {
     companyName = cleanText(universe.company_name) ?? companyName;

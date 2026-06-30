@@ -3,6 +3,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { requireUser, errorResponse } from "@/lib/api-helpers";
 import { fetchPsxSymbols } from "@/lib/market-data/psx-dps";
 import { rejectDemoWrite } from "@/lib/demo-mode";
+import { invalidateStockMaster } from "@/lib/stock-master";
 
 export const maxDuration = 120;
 
@@ -70,6 +71,7 @@ async function syncUniverse() {
       const chunk = rows.slice(i, i + 400).map((r) => ({ ticker: r.ticker, company_name: r.company_name, sector: r.sector }));
       await db.from("stock_master").upsert(chunk, { onConflict: "ticker" });
     }
+    invalidateStockMaster();
 
     return NextResponse.json({ ok: true, listings: directory.size, upserted, message: `Stock universe synced: ${upserted} PSX listings.` });
   } catch (err) {

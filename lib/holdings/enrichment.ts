@@ -2,6 +2,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { aiAvailable, chatJson } from "@/lib/ai/openai";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { fetchPsxSymbols } from "@/lib/market-data/psx-dps";
+import { invalidateStockMaster } from "@/lib/stock-master";
 
 type HoldingMetadataRow = {
   ticker: string;
@@ -205,6 +206,7 @@ async function upsertStockMaster(rows: { ticker: string; company_name: string; s
   if (!process.env.SUPABASE_SERVICE_ROLE_KEY || rows.length === 0) return;
   const admin = createAdminClient();
   await admin.from("stock_master").upsert(rows, { onConflict: "ticker" });
+  invalidateStockMaster();
 }
 
 function needsMetadata(h: HoldingMetadataRow): boolean {

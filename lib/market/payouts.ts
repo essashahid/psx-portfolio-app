@@ -1,5 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { getStockMasterMap } from "@/lib/stock-master";
 
 /**
  * Market-wide dividend / payout history from the official PSX payouts feed
@@ -123,7 +124,7 @@ export async function populatePayouts(ticker: string, client?: SupabaseClient): 
   const out: PayoutResult = { ticker: t, saved: 0, cashPayouts: 0, errors: [] };
 
   // Face value: prefer a known value from stock_master, else PSX default (10).
-  const { data: master } = await db.from("stock_master").select("face_value").eq("ticker", t).maybeSingle();
+  const master = (await getStockMasterMap()).get(t);
   const faceValue = master?.face_value && Number(master.face_value) > 0 ? Number(master.face_value) : DEFAULT_FACE_VALUE;
 
   const payouts = await fetchPayouts(t, faceValue);
