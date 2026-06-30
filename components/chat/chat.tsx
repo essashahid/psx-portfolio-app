@@ -79,8 +79,7 @@ const MODEL_ICONS: Record<ChatModelId, typeof Zap> = {
   "claude-haiku": Zap,
   "claude-sonnet": Gauge,
   "claude-opus": Brain,
-  "deepseek-chat": Zap,
-  "deepseek-reasoner": Brain,
+  "deepseek-flash": Zap,
 };
 
 type ProviderStatus = Record<ChatProvider, { configured: boolean; allowed: boolean }>;

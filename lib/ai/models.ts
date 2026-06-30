@@ -13,8 +13,7 @@ export type ChatModelId =
   | "claude-haiku"
   | "claude-sonnet"
   | "claude-opus"
-  | "deepseek-chat"
-  | "deepseek-reasoner";
+  | "deepseek-flash";
 
 export interface ChatModelDef {
   id: ChatModelId;
@@ -38,7 +37,7 @@ export interface ChatModelDef {
   // DeepSeek-only
   /** Send the (OpenAI-format) tool definitions for this model. */
   supportsTools?: boolean;
-  /** deepseek-reasoner rejects sampling params — gate temperature on this. */
+  /** DeepSeek thinking mode rejects/ignores sampling params — gate temperature on this. */
   supportsTemperature?: boolean;
 }
 
@@ -76,32 +75,22 @@ export const CHAT_MODELS: ChatModelDef[] = [
     maxTokens: 16000,
   },
   {
-    id: "deepseek-chat",
+    id: "deepseek-flash",
     provider: "deepseek",
     group: "DeepSeek",
-    label: "Chat (V3)",
-    hint: "Fast general-purpose model",
-    apiModel: "deepseek-chat",
+    label: "Flash (V4)",
+    hint: "Fast and tool-capable — fetches your portfolio data",
+    // DeepSeek V4. Runs in NON-thinking mode (thinking is a request parameter
+    // now, defaulting to ON, so deepseek-chat.ts disables it). Non-thinking +
+    // tools is the reliable, supported path today; thinking + multi-turn tools
+    // is still buggy in the V4 preview. This replaces both the deprecated
+    // deepseek-chat (V3) and deepseek-reasoner (R1) — R1 was tool-less, which is
+    // why it could not retrieve portfolio data; V4 Flash can call the tools.
+    apiModel: "deepseek-v4-flash",
     thinking: false,
-    maxTokens: 6000,
+    maxTokens: 8000,
     supportsTools: true,
     supportsTemperature: true,
-  },
-  {
-    id: "deepseek-reasoner",
-    provider: "deepseek",
-    group: "DeepSeek",
-    label: "Reasoner (R1)",
-    hint: "Deep reasoning over your portfolio and the latest news",
-    apiModel: "deepseek-reasoner",
-    thinking: true,
-    maxTokens: 10000,
-    // R1 has no function calling on DeepSeek's API. If handed tools it writes
-    // the call out as text, which trips the leak detector and replaces the
-    // answer with a fallback. Keep this false so the route pre-fetches web
-    // context for it instead (see the `toolless` branch in app/api/chat/route.ts).
-    supportsTools: false,
-    supportsTemperature: false,
   },
 ];
 
