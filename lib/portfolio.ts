@@ -8,6 +8,8 @@ import type {
   TxnType,
 } from "@/lib/types";
 
+type PriceRow = { ticker: string; price: number; price_date: string; source: string };
+
 /**
  * Loads everything needed to value the portfolio and enriches each holding with
  * latest price, market value, P/L, weight, targets and thesis status.
@@ -26,21 +28,12 @@ export async function getPortfolio(
   const holdings = (holdingsRes.data ?? []) as Holding[];
   const tickers = [...new Set(holdings.map((h) => h.ticker))];
 
-  const [priceLookups, targetsRes, thesesRes, divRes, realizedRes, cashRes] =
+  const [pricesRes, targetsRes, thesesRes, divRes, realizedRes, cashRes] =
     await Promise.all([
-      Promise.all(
-        tickers.map((ticker) =>
-          supabase
-            .from("prices")
-            .select("ticker, price, price_date, source")
-            .eq("user_id", userId)
-            .eq("ticker", ticker)
-            .order("price_date", { ascending: false })
-            .order("created_at", { ascending: false })
-            .limit(1)
-            .maybeSingle()
-        )
-      ),
+      // Single round-trip for the latest price per ticker (see migration 0026).
+      tickers.length
+        ? supabase.rpc("latest_prices", { p_user_id: userId, p_tickers: tickers })
+        : Promise.resolve({ data: [] as PriceRow[] }),
       supabase.from("targets").select("*").eq("user_id", userId),
       supabase.from("theses").select("*").eq("user_id", userId),
       supabase.from("dividends").select("ticker, amount, net_amount, status").eq("user_id", userId),
@@ -48,12 +41,10 @@ export async function getPortfolio(
       supabase.from("cash_movements").select("type, amount").eq("user_id", userId),
     ]);
 
-  // latest price per ticker (rows are ordered newest first)
+  // latest_prices returns exactly one row per ticker (newest first via DISTINCT ON)
   const latestPrice = new Map<string, { price: number; price_date: string; source: string }>();
-  for (const p of priceLookups.flatMap((res) => (res.data ? [res.data] : []))) {
-    if (!latestPrice.has(p.ticker)) {
-      latestPrice.set(p.ticker, { price: Number(p.price), price_date: p.price_date, source: p.source });
-    }
+  for (const p of (pricesRes.data ?? []) as PriceRow[]) {
+    latestPrice.set(p.ticker, { price: Number(p.price), price_date: p.price_date, source: p.source });
   }
 
   const targetByTicker = new Map<string, Target>();

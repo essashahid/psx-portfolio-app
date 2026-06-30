@@ -28,9 +28,21 @@ export default async function proxy(request: NextRequest) {
     }
   );
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  // Verify the JWT locally instead of calling the Auth server on every request.
+  // getClaims() also refreshes the session cookie when needed (via setAll above),
+  // so the network round-trip of getUser() is only paid as a fallback for
+  // symmetric-key projects where local verification is unavailable.
+  let user: { id: string } | null = null;
+  const { data: claimsData } = await supabase.auth.getClaims();
+  const sub = claimsData?.claims?.sub;
+  if (sub) {
+    user = { id: sub as string };
+  } else {
+    const {
+      data: { user: fetchedUser },
+    } = await supabase.auth.getUser();
+    user = fetchedUser ? { id: fetchedUser.id } : null;
+  }
 
   const path = request.nextUrl.pathname;
   const isPublic =
