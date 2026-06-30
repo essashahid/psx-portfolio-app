@@ -229,14 +229,15 @@ export async function OverviewPanel({
   ]);
   const holding = portfolio.holdings.find((h) => h.ticker === ticker);
   const latestDiv = dividends[0];
-  // Position value, return, current price and weight all come from the single
-  // getPortfolio snapshot — the same source the Holdings and Dashboard tabs use —
-  // so the numbers reconcile across every tab and the weight matches the value.
-  const currentPrice = holding?.latest_price ?? null;
-  const marketValue = holding?.market_value ?? null;
+  // Use the market quote (technicals.latestPrice) as the single canonical price
+  // so the position panel shows exactly the same value as the page header and
+  // chart endpoint. The portfolio weight denominator still comes from getPortfolio
+  // (other holdings use their own prices table entries), which is labelled clearly.
+  const currentPrice = technicals.latestPrice ?? null;
   const totalCost = holding?.total_cost ?? null;
-  const positionPl = holding?.unrealized_pl ?? null;
-  const positionReturn = holding?.unrealized_pl_pct ?? null;
+  const marketValue = holding && currentPrice !== null ? holding.quantity * currentPrice : null;
+  const positionPl = marketValue !== null && totalCost !== null ? marketValue - totalCost : null;
+  const positionReturn = positionPl !== null && totalCost && totalCost > 0 ? (positionPl / totalCost) * 100 : null;
   const positionTone = positionPl === null ? undefined : positionPl >= 0 ? "positive" : "negative";
   const hasReceipt = Boolean(holding && holding.dividend_income > 0);
   const dividendComplete = Boolean(latestDiv?.perShare !== null && latestDiv?.perShare !== undefined && (latestDiv.exDate || latestDiv.payDate || latestDiv.announcementDate));
@@ -262,10 +263,15 @@ export async function OverviewPanel({
     metadata.industry && metadata.industry.trim().toLowerCase() !== (metadata.sector ?? "").trim().toLowerCase()
       ? metadata.industry
       : null;
+  // "Products" only makes sense when we have 2+ distinct business lines that
+  // represent actual product categories. A single entry such as "Cement
+  // manufacturing" is industry-level and should use the "Industry" label so it
+  // doesn't read as a vague repeat of the sector.
+  const showAsProducts = productLines.length >= 2;
   const companyFields: { label: string; value: string; sub?: string; tone?: "warning" }[] = [
     { label: "Sector", value: metadata.sector ?? "—" },
   ];
-  if (products) companyFields.push({ label: "Products", value: products });
+  if (products) companyFields.push({ label: showAsProducts ? "Products" : "Industry", value: products });
   else if (industryLabel) companyFields.push({ label: "Industry", value: industryLabel });
   companyFields.push({ label: "Markets", value: marketsLabel, sub: marketsSub, tone: marketsLabel === "Unverified" ? "warning" : undefined });
   companyFields.push({ label: "Exchange", value: metadata.exchange ?? "PSX" });
@@ -301,12 +307,12 @@ export async function OverviewPanel({
             <div>
               <CardTitle className="text-base">Price performance</CardTitle>
               <CardDescription>
-                Historical close, volume, 52-week structure, average cost, and benchmark comparison.
+                Historical price and volume with average cost. Optional benchmark and technical overlays available.
               </CardDescription>
             </div>
             <div className="flex flex-wrap justify-end gap-1.5">
               {technicals.meta.freshness !== "fresh" ? freshnessBadge(technicals.meta.freshness) : null}
-              {technicals.asOfDate ? <Badge variant="secondary">Price {technicals.asOfDate}</Badge> : null}
+              {technicals.asOfDate ? <Badge variant="secondary">Latest close {technicals.asOfDate}</Badge> : null}
             </div>
           </CardHeader>
           <CardContent className="p-5 pt-3">
@@ -334,7 +340,11 @@ export async function OverviewPanel({
               <CardTitle className="text-base">Your position</CardTitle>
               {holding ? <StatusBadge label="Owned" tone="green" /> : <StatusBadge label="Not held" />}
             </div>
-            {holding?.price_date ? <CardDescription>Portfolio snapshot {holding.price_date}</CardDescription> : null}
+            {technicals.asOfDate
+              ? <CardDescription>Market close {technicals.asOfDate}</CardDescription>
+              : holding?.price_date
+              ? <CardDescription>Price as of {holding.price_date}</CardDescription>
+              : null}
           </CardHeader>
           <CardContent className="space-y-4 p-5 pt-3">
             {holding ? (
@@ -485,7 +495,7 @@ export async function OverviewPanel({
         </Card>
       </div>
 
-      <div className="grid gap-4 lg:grid-cols-2">
+      <div className="grid gap-4 lg:grid-cols-2 lg:items-start">
         <Card className="border-slate-200 bg-white shadow-sm">
           <CardHeader className="p-5 pb-2">
             <div className="flex items-start justify-between gap-3">
@@ -563,13 +573,9 @@ export async function OverviewPanel({
                 {holding && holding.dividend_income > 0 ? (
                   <OverviewMetric label="Your recorded receipts" value={wholeMoney(holding.dividend_income)} />
                 ) : null}
-                <div className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2.5 text-sm text-amber-900">
-                  <p className="font-semibold">Personal receipts: missing or unverified</p>
-                  <ul className="mt-1.5 space-y-1 text-xs leading-relaxed">
-                    <li>Dividend per share</li>
-                    <li>Ex-date mapping</li>
-                    <li>Entitlement reconciliation</li>
-                  </ul>
+                <div className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-amber-900">
+                  <p className="text-xs font-semibold">Personal receipts: missing or unverified</p>
+                  <p className="mt-0.5 text-[11px] leading-relaxed text-amber-800">Dividend per share · Ex-date mapping · Entitlement reconciliation</p>
                 </div>
                 <a href="#dividends" className="inline-flex h-8 items-center rounded-md border border-slate-200 px-2.5 text-xs font-medium hover:bg-slate-50">
                   View dividend history

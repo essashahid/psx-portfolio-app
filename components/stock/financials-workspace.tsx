@@ -22,7 +22,7 @@ import { Table, TBody, TD, TH, THead, TR } from "@/components/ui/table";
 import { ActionButton } from "@/components/action-button";
 import { AXIS_TICK, ChartEmpty, CURSOR, FadeDefs, INK, fmtCompact } from "@/components/chart-kit";
 import { cn } from "@/lib/utils";
-import { AlertTriangle, Download, ExternalLink, RefreshCw } from "lucide-react";
+import { AlertTriangle, Download, ExternalLink, MoreHorizontal, RefreshCw } from "lucide-react";
 
 type StatementType = "income_statement" | "balance_sheet" | "cash_flow";
 type PeriodMode = "annual" | "quarterly" | "cumulative";
@@ -176,13 +176,13 @@ function periodEndDate(row: FinancialWorkspaceRow): string | null {
   return typeof found === "string" ? found : null;
 }
 
-function statementPeriodMeta(row: FinancialWorkspaceRow): { primary: string; secondary: string; status: "verified" | "unverified" } {
+function statementPeriodMeta(row: FinancialWorkspaceRow): { primary: string; secondary: string | null; status: "verified" | "unverified" } {
   if (row.statement_type !== "balance_sheet") {
-    return { primary: labelPeriod(row), secondary: row.reported_date ? `Filed ${formatDate(row.reported_date)}` : "Filing date not captured", status: "verified" };
+    return { primary: labelPeriod(row), secondary: row.reported_date ? `Filed ${formatDate(row.reported_date)}` : null, status: row.reported_date ? "verified" : "unverified" };
   }
   const periodEnd = periodEndDate(row);
   if (!periodEnd) {
-    return { primary: labelPeriod(row), secondary: "Period date unverified", status: "unverified" };
+    return { primary: labelPeriod(row), secondary: null, status: "unverified" };
   }
   return { primary: formatDate(periodEnd), secondary: labelPeriod(row), status: "verified" };
 }
@@ -191,6 +191,26 @@ function completenessLabel(status: ReturnType<typeof rowCompleteness>): string {
   if (status === "Complete") return "Data complete";
   if (status === "Partial") return "Partial data";
   return "Data unavailable";
+}
+
+function metadataCompleteness(row: FinancialWorkspaceRow | null | undefined): "Complete" | "Partial" | "Unavailable" {
+  if (!row) return "Unavailable";
+  const hasSource = Boolean(row.source_url);
+  const hasFiling = Boolean(row.reported_date);
+  const hasPeriodEnd = row.statement_type !== "balance_sheet" || Boolean(periodEndDate(row));
+  if (hasSource && hasFiling && hasPeriodEnd) return "Complete";
+  if (hasSource || hasFiling || hasPeriodEnd) return "Partial";
+  return "Unavailable";
+}
+
+function statementMetadataNote(periods: FinancialWorkspaceRow[], statement: StatementType): string | null {
+  if (!periods.length) return null;
+  const missingFiling = periods.some((period) => !period.reported_date);
+  const missingPeriodEnd = statement === "balance_sheet" && periods.some((period) => !periodEndDate(period));
+  const notes: string[] = [];
+  if (missingPeriodEnd) notes.push("Balance Sheet period-end dates are not captured in the current extraction, so fiscal labels are shown without inferred dates.");
+  if (missingFiling) notes.push("Filing dates are not captured for every period; source links remain available where provided.");
+  return notes.length ? notes.join(" ") : null;
 }
 
 function formatDate(value: string): string {
@@ -265,7 +285,7 @@ function displayLabel(key: string, row?: FinancialWorkspaceRow | null): string {
 }
 
 function headerUnitLabel(mode: ValueMode): string {
-  if (mode === "compact") return "PKR compact";
+  if (mode === "compact") return "PKR billions";
   if (mode === "exact") return "Exact PKR";
   if (mode === "thousands") return "PKR thousands";
   if (mode === "millions") return "PKR millions";
@@ -368,7 +388,7 @@ function printPdf(title: string, rows: Record<string, unknown>[]) {
 function statusVariant(status: string): "green" | "amber" | "red" | "blue" | "secondary" {
   if (status === "Complete") return "green";
   if (status === "Partial" || status === "Not comparable" || status === "Unverified") return "amber";
-  if (status === "Missing") return "red";
+  if (status === "Missing" || status === "Unavailable") return "red";
   return "secondary";
 }
 
@@ -395,27 +415,39 @@ function sectionCompleteness(rows: FinancialWorkspaceRow[], mode: PeriodMode) {
   const latestBalance = balanceRows[0] ?? null;
   const latestCash = cashRows[0] ?? null;
   return [
-    { label: "Summary metrics", status: latestIncome ? rowCompleteness(latestIncome, ["revenue", "gross_profit", "profit_after_tax", "eps", "net_margin"]) : "Unavailable", impact: latestIncome ? "Headline Income Statement metrics are usable for the selected view." : "Headline metrics are unavailable for this view." },
+    { label: "Summary metrics", status: latestIncome ? rowCompleteness(latestIncome, ["revenue", "gross_profit", "profit_after_tax", "eps", "net_margin"]) : "Unavailable", impact: latestIncome ? "Headline Income Statement values are usable for the selected view." : "Headline metrics are unavailable for this view." },
     { label: "Performance trends", status: incomeRows.length >= 3 ? "Complete" : "Partial", impact: incomeRows.length >= 3 ? `Complete for ${incomeRows.slice(-1)[0] ? labelPeriod(incomeRows.slice(-1)[0]) : ""}-${labelPeriod(incomeRows[0])}.` : "Needs at least three comparable periods for a robust chart." },
-    { label: "Income Statement", status: latestIncome ? rowCompleteness(latestIncome, FULL_ROWS.income_statement) : "Unavailable", impact: latestIncome ? `${labelPeriod(latestIncome)} ${rowCompleteness(latestIncome, FULL_ROWS.income_statement).toLowerCase()}.` : "No selected-mode Income Statement loaded." },
-    { label: "Balance Sheet", status: latestBalance ? rowCompleteness(latestBalance, FULL_ROWS.balance_sheet) : "Unavailable", impact: latestBalance ? `${labelPeriod(latestBalance)} available; period-end date ${periodEndDate(latestBalance) ? "verified" : "unverified"}.` : "No selected-mode Balance Sheet loaded." },
-    { label: "Cash Flow", status: latestCash ? rowCompleteness(latestCash, FULL_ROWS.cash_flow) : "Unavailable", impact: latestCash ? `${labelPeriod(latestCash)} available; cash movement definition remains under review.` : "Cash Flow history is unavailable for this view." },
+    { label: "Income Statement values", status: latestIncome ? rowCompleteness(latestIncome, FULL_ROWS.income_statement) : "Unavailable", impact: latestIncome ? `${labelPeriod(latestIncome)} statement values are ${rowCompleteness(latestIncome, FULL_ROWS.income_statement).toLowerCase()}.` : "No selected-mode Income Statement loaded." },
+    { label: "Income Statement metadata", status: metadataCompleteness(latestIncome), impact: latestIncome ? `Filing/source metadata is ${metadataCompleteness(latestIncome).toLowerCase()}.` : "No selected-mode Income Statement metadata loaded." },
+    { label: "Balance Sheet values", status: latestBalance ? rowCompleteness(latestBalance, FULL_ROWS.balance_sheet) : "Unavailable", impact: latestBalance ? `${labelPeriod(latestBalance)} statement values are ${rowCompleteness(latestBalance, FULL_ROWS.balance_sheet).toLowerCase()}.` : "No selected-mode Balance Sheet loaded." },
+    { label: "Balance Sheet metadata", status: metadataCompleteness(latestBalance), impact: latestBalance ? `Period-end/source metadata is ${metadataCompleteness(latestBalance).toLowerCase()}.` : "No selected-mode Balance Sheet metadata loaded." },
+    { label: "Cash Flow values", status: latestCash ? rowCompleteness(latestCash, FULL_ROWS.cash_flow) : "Unavailable", impact: latestCash ? `${labelPeriod(latestCash)} values available; cash movement definition remains under review.` : "Cash Flow history is unavailable for this view." },
   ] as const;
 }
 
-function DataStatusDetails({ rows, mode, status }: { rows: FinancialWorkspaceRow[]; mode: PeriodMode; status: "Complete" | "Partial" | "Missing" }) {
+function DataStatusDetails({
+  rows,
+  mode,
+  selectedStatus,
+  overallStatus,
+}: {
+  rows: FinancialWorkspaceRow[];
+  mode: PeriodMode;
+  selectedStatus: "Complete" | "Partial" | "Unavailable";
+  overallStatus: "Complete" | "Partial" | "Missing";
+}) {
   const sections = sectionCompleteness(rows, mode);
   const affected = sections.filter((s) => s.status !== "Complete");
   return (
     <details className="relative">
       <summary className="list-none">
-        <Badge variant={statusVariant(status)} className="cursor-pointer">{status === "Partial" ? "Partial data" : status}</Badge>
+        <Badge variant={statusVariant(selectedStatus)} className="cursor-pointer">Selected view: {selectedStatus}</Badge>
       </summary>
       <div className="absolute left-0 z-20 mt-2 w-[min(340px,calc(100vw-3rem))] rounded-xl border border-slate-200 bg-white p-3 text-xs shadow-lg">
         <p className="font-semibold text-slate-950">Data status</p>
         <p className="mt-1 leading-relaxed text-muted-foreground">
-          {status === "Partial" && affected.length
-            ? `${affected[0].label} needs attention. The selected chart is only marked complete when enough comparable periods exist.`
+          {overallStatus === "Partial" && affected.length
+            ? `The selected Income Statement can be complete while other datasets remain partial. ${affected[0].label} needs attention.`
             : "The selected view has no known blocking data-quality issues."}
         </p>
         <div className="mt-3 space-y-2">
@@ -534,6 +566,8 @@ export function FinancialsWorkspace({
   const units = String(activePeriod?.data?._units ?? latestFiling?.data?._units ?? "PKR thousands");
   const dataStatus = deriveDataStatus(rows);
   const comparable = comparablePrior(sortedRows, latestStatement);
+  const selectedValueStatus = latestIncome ? rowCompleteness(latestIncome, ["revenue", "gross_profit", "profit_after_tax", "eps", "net_margin"]) : "Unavailable";
+  const otherDataPartial = dataStatus === "Partial" && selectedValueStatus === "Complete";
   const summaryKeys = ["revenue", "gross_profit", "profit_after_tax", "eps", "net_margin"];
   const modeLabel = mode === "annual" ? "Annual" : mode === "quarterly" ? "Quarterly" : "Cumulative";
   const orderedStatementKeys = depth === "summary" ? SUMMARY_ROWS[statement] : FULL_ROWS[statement];
@@ -542,16 +576,20 @@ export function FinancialsWorkspace({
       .filter((key) => !key.startsWith("_") && !orderedStatementKeys.includes(key))
     : [];
   const statementKeys = [...orderedStatementKeys, ...extraStatementKeys];
-  const displayRows = statementDisplayRows(statement, statementKeys);
+  const valueKeys = depth === "summary"
+    ? statementKeys.filter((key) => visiblePeriods.some((period) => value(period, key) !== null))
+    : statementKeys;
+  const displayRows = statementDisplayRows(statement, valueKeys);
   const hasAnnualCashFlow = rows.some((r) => r.statement_type === "cash_flow" && periodMode(r) === "annual");
   const hasCashBalanceReview = rows.some((r) => r.statement_type === "cash_flow" && raw(r, "cash_balance") !== null);
   const hasSparseQuarter = rows.some((r) => r.statement_type === "income_statement" && periodMode(r) === "quarterly" && rowCompleteness(r, FULL_ROWS.income_statement) === "Partial");
   const missingComparable = latestStatement && !comparable;
-  const showChangeColumn = Boolean(comparable && visiblePeriods[0] && statementKeys.some((key) => changeText(key, value(visiblePeriods[0], key), value(comparable, key))));
+  const showChangeColumn = Boolean(comparable && visiblePeriods[0] && valueKeys.some((key) => changeText(key, value(visiblePeriods[0], key), value(comparable, key))));
+  const metadataNote = statementMetadataNote(visiblePeriods, statement);
   const exactRowsForCsv = visiblePeriods.map((p) => {
     const meta = statementPeriodMeta(p);
     const out: Record<string, unknown> = { period: meta.primary, period_detail: meta.secondary, source: p.source_url, units };
-    for (const key of statementKeys) out[displayLabel(key, p)] = value(p, key);
+    for (const key of valueKeys) out[displayLabel(key, p)] = value(p, key);
     return out;
   });
   const exportBaseName = `${ticker}-${statement.replace(/_/g, "-")}-${mode}`;
@@ -632,11 +670,12 @@ export function FinancialsWorkspace({
                 {updated !== "Unavailable" ? ` · Updated ${updated}` : ""}
               </CardDescription>
               <div className="mt-2 flex flex-wrap items-center gap-2">
-                <DataStatusDetails rows={rows} mode={mode} status={dataStatus} />
+                <DataStatusDetails rows={rows} mode={mode} selectedStatus={selectedValueStatus} overallStatus={dataStatus} />
                 <span className="text-[11px] text-muted-foreground">
                   Latest filing available: {latestFiling ? labelPeriod(latestFiling) : "Unavailable"}
                 </span>
-                <span className="text-[11px] text-muted-foreground">Source units: {units}</span>
+                {otherDataPartial ? <span className="text-[11px] text-amber-700">Other datasets remain partial.</span> : null}
+                <span className="text-[11px] text-muted-foreground">Displayed as {headerUnitLabel(valueMode)}; original source uses {units}.</span>
               </div>
             </div>
             <div className="flex flex-col gap-2 xl:items-end">
@@ -652,17 +691,54 @@ export function FinancialsWorkspace({
                   ]}
                 />
               </div>
-              <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center sm:justify-end">
               <label className="flex items-center gap-2">
                 <span className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">Display</span>
                 <Select value={valueMode} onChange={(e) => setValueMode(e.target.value as ValueMode)} className="w-full sm:w-[170px]">
-                <option value="compact">Compact values</option>
-                <option value="exact">Exact values</option>
-                <option value="thousands">PKR thousands</option>
-                <option value="millions">PKR millions</option>
-                <option value="billions">PKR billions</option>
-              </Select>
+                  <option value="compact">Compact values</option>
+                  <option value="exact">Exact values</option>
+                  <option value="thousands">PKR thousands</option>
+                  <option value="millions">PKR millions</option>
+                  <option value="billions">PKR billions</option>
+                </Select>
               </label>
+              <div className="flex flex-col gap-2 md:hidden">
+                <details className="relative">
+                  <summary className="inline-flex h-10 cursor-pointer list-none items-center justify-center gap-2 rounded-md border border-border bg-card px-3 text-xs font-medium hover:bg-accent">
+                    <MoreHorizontal className="h-3.5 w-3.5" /> Actions
+                  </summary>
+                  <div className="absolute right-0 z-20 mt-2 flex w-56 flex-col gap-2 rounded-xl border border-slate-200 bg-white p-3 shadow-lg">
+                    {!readOnly && (
+                      <ActionButton
+                        endpoint={`/api/stocks/${ticker}/refresh`}
+                        body={{ section: "financials" }}
+                        label={<><RefreshCw className="h-3.5 w-3.5" /> Refresh financials</>}
+                        variant="outline"
+                        size="sm"
+                      />
+                    )}
+                    {sourceUrl ? (
+                      <Button variant="outline" size="sm" onClick={() => window.open(sourceUrl, "_blank", "noopener,noreferrer")}>
+                        <ExternalLink className="h-3.5 w-3.5" /> View source
+                      </Button>
+                    ) : null}
+                    <Select
+                      aria-label="Export financials"
+                      defaultValue=""
+                      onChange={(e) => {
+                        const next = e.target.value as "csv" | "xlsx" | "pdf" | "";
+                        if (next) runExport(next);
+                        e.currentTarget.value = "";
+                      }}
+                    >
+                      <option value="">Export</option>
+                      <option value="csv">CSV</option>
+                      <option value="xlsx">XLSX</option>
+                      <option value="pdf">PDF</option>
+                    </Select>
+                  </div>
+                </details>
+              </div>
+              <div className="hidden flex-col gap-2 md:flex md:flex-row md:flex-wrap md:items-center md:justify-end">
               {!readOnly && (
                 <ActionButton
                   endpoint={`/api/stocks/${ticker}/refresh`}
@@ -769,10 +845,17 @@ export function FinancialsWorkspace({
               <CardTitle className="text-base">Key takeaways</CardTitle>
               <CardDescription>Calculated only from comparable periods in the selected mode.</CardDescription>
             </CardHeader>
-            <CardContent className="space-y-2 p-5 pt-3">
-              {insights.length ? insights.map((insight) => (
-                <p key={insight} className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm leading-relaxed text-slate-800">{insight}</p>
-              )) : <p className="text-sm text-muted-foreground">Comparable prior-period data unavailable.</p>}
+            <CardContent className="p-5 pt-3">
+              {insights.length ? (
+                <ul className="space-y-2 text-sm leading-relaxed text-slate-800">
+                  {insights.map((insight) => (
+                    <li key={insight} className="flex gap-2">
+                      <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-emerald-600" />
+                      <span>{insight}</span>
+                    </li>
+                  ))}
+                </ul>
+              ) : <p className="text-sm text-muted-foreground">Comparable prior-period data unavailable.</p>}
             </CardContent>
           </Card>
           {callouts.length > 0 && (
@@ -842,6 +925,11 @@ export function FinancialsWorkspace({
               Prior comparable {modeLabel.toLowerCase()} {STATEMENT_LABELS[statement]} is unavailable, so change calculations are hidden.
             </p>
           ) : null}
+          {metadataNote ? (
+            <p className="mt-2 rounded-lg bg-slate-50 px-3 py-2 text-xs text-slate-600">
+              Filing metadata: {metadataNote}
+            </p>
+          ) : null}
         </CardHeader>
         <CardContent className="p-0">
           {visiblePeriods.length ? (
@@ -857,7 +945,9 @@ export function FinancialsWorkspace({
                           return (
                             <>
                               <span className="block">{meta.primary}</span>
-                              <span className={cn("block text-[10px] font-normal normal-case", meta.status === "unverified" ? "text-amber-700" : "text-muted-foreground")}>{meta.secondary}</span>
+                              {meta.secondary ? (
+                                <span className={cn("block text-[10px] font-normal normal-case", meta.status === "unverified" ? "text-amber-700" : "text-muted-foreground")}>{meta.secondary}</span>
+                              ) : null}
                             </>
                           );
                         })()}
@@ -1013,11 +1103,19 @@ function TrendTooltip({
   );
 }
 
+function trendSeriesKeys(trend: TrendView): string[] {
+  if (trend === "profit") return ["revenue", "gross_profit", "profit_after_tax"];
+  if (trend === "margins") return ["gross_margin", "operating_margin", "net_margin"];
+  if (trend === "eps") return ["eps"];
+  if (trend === "cash") return ["operating_cash_flow", "capex", "free_cash_flow"];
+  return ["cash_and_equivalents", "borrowings", "equity", "total_liabilities"];
+}
+
 function FinancialTrendChart({ trend, rows, valueMode }: { trend: TrendView; rows: Record<string, string | number | null>[]; valueMode: ValueMode }) {
   if (rows.length < 3) return <ChartEmpty note="Insufficient comparable periods for a reliable chart." height={280} />;
   const percent = trend === "margins";
   const eps = trend === "eps";
-  const keys = Object.keys(rows[0]).filter((key) => !["period", "source", "status"].includes(key) && !key.endsWith("_change"));
+  const keys = trendSeriesKeys(trend).filter((key) => rows.some((row) => typeof row[key] === "number"));
   const format = (v: number) => percent ? `${v.toFixed(1)}%` : eps ? `PKR ${v.toFixed(2)}` : `PKR ${fmtCompact(v)}`;
   const tooltip = <TrendTooltip percent={percent} eps={eps} valueMode={valueMode} format={format} />;
   if (trend === "profit" || trend === "cash" || trend === "balance") {
@@ -1025,10 +1123,10 @@ function FinancialTrendChart({ trend, rows, valueMode }: { trend: TrendView; row
       <ResponsiveContainer width="100%" height={310}>
         <BarChart data={rows} margin={{ top: 8, right: 16, bottom: 8, left: 8 }}>
           <CartesianGrid strokeDasharray="3 3" stroke={INK.grid} vertical={false} />
-          <XAxis dataKey="period" tick={{ ...AXIS_TICK, fontSize: 11, fill: "#4b5563" }} axisLine={false} tickLine={false} />
-          <YAxis tick={{ ...AXIS_TICK, fontSize: 11, fill: "#4b5563" }} tickFormatter={(v) => format(Number(v))} axisLine={false} tickLine={false} width={72} />
+          <XAxis dataKey="period" tick={{ ...AXIS_TICK, fontSize: 11.5, fill: "#344054" }} axisLine={false} tickLine={false} />
+          <YAxis tick={{ ...AXIS_TICK, fontSize: 11.5, fill: "#344054" }} tickFormatter={(v) => format(Number(v))} axisLine={false} tickLine={false} width={72} />
           <Tooltip content={tooltip} cursor={{ fill: "rgba(0,0,0,0.035)" }} />
-          <Legend wrapperStyle={{ fontSize: 12, color: "#374151" }} iconType="circle" iconSize={8} />
+          <Legend wrapperStyle={{ fontSize: 12.5, color: "#1f2937" }} iconType="circle" iconSize={8} />
           {keys.map((key, i) => (
             <Bar key={key} dataKey={key} name={LABELS[key] ?? key} fill={SERIES_COLOR[key] ?? [INK.line, INK.up, INK.amber, INK.terracotta][i % 4]} radius={[4, 4, 0, 0]} maxBarSize={34} />
           ))}
@@ -1041,10 +1139,10 @@ function FinancialTrendChart({ trend, rows, valueMode }: { trend: TrendView; row
       <ComposedChart data={rows} margin={{ top: 8, right: 16, bottom: 8, left: 8 }}>
         <FadeDefs defs={[{ id: "financialTrend", color: INK.line, from: 0.18, to: 0.02 }]} />
         <CartesianGrid strokeDasharray="3 3" stroke={INK.grid} vertical={false} />
-        <XAxis dataKey="period" tick={{ ...AXIS_TICK, fontSize: 11, fill: "#4b5563" }} axisLine={false} tickLine={false} />
-        <YAxis tick={{ ...AXIS_TICK, fontSize: 11, fill: "#4b5563" }} tickFormatter={(v) => format(Number(v))} axisLine={false} tickLine={false} width={72} />
+        <XAxis dataKey="period" tick={{ ...AXIS_TICK, fontSize: 11.5, fill: "#344054" }} axisLine={false} tickLine={false} />
+        <YAxis tick={{ ...AXIS_TICK, fontSize: 11.5, fill: "#344054" }} tickFormatter={(v) => format(Number(v))} axisLine={false} tickLine={false} width={72} />
         <Tooltip content={tooltip} cursor={CURSOR} />
-        <Legend wrapperStyle={{ fontSize: 12, color: "#374151" }} iconType="circle" iconSize={8} />
+        <Legend wrapperStyle={{ fontSize: 12.5, color: "#1f2937" }} iconType="circle" iconSize={8} />
         {keys.map((key, i) => (
           i === 0 ? (
             <Area key={key} type="monotone" dataKey={key} name={LABELS[key] ?? key} stroke={SERIES_COLOR[key] ?? INK.line} fill="url(#financialTrend)" strokeWidth={2} dot={false} />
