@@ -88,6 +88,15 @@ function tableRows(tableHtml: string): string[][] {
   );
 }
 
+// Bank financial statements use "Mark-up / Return Earned" instead of "Sales"
+// and sometimes "Net Revenue" or "Total Income". We treat the first top-line
+// revenue row we encounter as the sales equivalent.
+const REVENUE_LABELS = ["sales", "mark-up", "markup", "interest earned", "net revenue", "total income"];
+
+function isRevenueRow(label: string): boolean {
+  return REVENUE_LABELS.some((kw) => label.includes(kw));
+}
+
 /** Build the per-column figures for a financials table (Sales + EPS rows). */
 function buildColumns(rows: string[][]): PsxPeriodFigures[] {
   const header = rows[0] ?? [];
@@ -103,6 +112,7 @@ function buildColumns(rows: string[][]): PsxPeriodFigures[] {
     netMarginPct: null,
     epsGrowthPct: null,
   }));
+  let salesAssigned = false;
   for (const row of rows.slice(1)) {
     const label = (row[0] ?? "").toLowerCase();
     const values = row.slice(1).map(parseNum);
@@ -110,7 +120,7 @@ function buildColumns(rows: string[][]): PsxPeriodFigures[] {
       values.forEach((v, i) => {
         if (cols[i]) (cols[i][key] as number | null) = v;
       });
-    if (label.includes("sales")) assign("sales");
+    if (!salesAssigned && isRevenueRow(label)) { assign("sales"); salesAssigned = true; }
     else if (label === "eps" || label.includes("earnings per share")) assign("eps");
   }
   return cols;
@@ -138,7 +148,7 @@ function mergeRatios(annual: PsxPeriodFigures[], rows: string[][]): void {
 function classify(rows: string[][]): "financials" | "ratios" | "other" {
   const labels = rows.map((r) => (r[0] ?? "").toLowerCase());
   if (labels.some((l) => l.includes("profit margin") || l.includes("eps growth"))) return "ratios";
-  if (labels.some((l) => l.includes("sales")) && labels.some((l) => l === "eps" || l.includes("earnings per share")))
+  if (labels.some((l) => isRevenueRow(l)) && labels.some((l) => l === "eps" || l.includes("earnings per share")))
     return "financials";
   return "other";
 }
