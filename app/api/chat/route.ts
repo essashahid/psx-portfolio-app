@@ -27,6 +27,15 @@ export const maxDuration = 180;
 // exhausted mid-investigation.
 const MAX_TOOL_TURNS = 6;
 
+// Soft wall-clock budget for tool exploration. The hosting platform hard-kills
+// the function at its plan limit (60s on Vercel Hobby, up to `maxDuration` on
+// Pro). When that happens mid-stream the client sees all the stages but never an
+// answer. Before we get close, we stop calling tools and force the model to
+// synthesize from whatever it has gathered, so a real answer streams within
+// budget. Defaults to maxDuration minus headroom for the final write; override
+// per-plan with CHAT_DEADLINE_MS (e.g. 45000 on Hobby).
+const SYNTHESIS_DEADLINE_MS = Number(process.env.CHAT_DEADLINE_MS) || (maxDuration - 25) * 1000;
+
 const SYSTEM_PROMPT = `You are the adaptive research intelligence inside PortfolioOS PK, a private Pakistan Stock Exchange (PSX) portfolio tracker. Your job is to understand each question, determine what evidence answers it, and construct the clearest possible response — dynamically, not from a fixed template.
 
 Investor profile:
@@ -266,6 +275,7 @@ export async function POST(request: Request) {
       const artifactSpecs: ArtifactSpec[] = [];
       let assistantContent = "";
       let assistantThinking = "";
+      const startedAt = Date.now();
       try {
         thread = await getOrCreateThread(supabase, user.id, body.threadId, message);
         send({ type: "thread", thread });
@@ -367,7 +377,14 @@ export async function POST(request: Request) {
           );
 
           for (let turn = 0; turn < MAX_TOOL_TURNS; turn++) {
-            const lastTurn = turn === MAX_TOOL_TURNS - 1;
+            // Force synthesis on the final allowed turn, or once we've spent the
+            // soft time budget — whichever comes first — so the answer streams
+            // before the platform can kill the function mid-investigation.
+            const deadlineReached = Date.now() - startedAt > SYNTHESIS_DEADLINE_MS;
+            const lastTurn = turn === MAX_TOOL_TURNS - 1 || deadlineReached;
+            if (deadlineReached && turn < MAX_TOOL_TURNS - 1) {
+              send({ type: "status", text: "Wrapping up with the evidence gathered so far" });
+            }
             const turnStart = assistantContent.length;
             const mstream = claude.messages.stream({
               ...params,
@@ -425,12 +442,36 @@ export async function POST(request: Request) {
               meta.artifactCount = artifactSpecs.length;
               meta.completionStatus = validateResponseCompletion(assistantContent, message, meta.stopReason);
 
+              // Continue when the answer is truncated, or when it came back
+              // empty — the latter happens on very large questions where
+              // adaptive thinking consumes the whole output budget before any
+              // visible text is written. `prevContent` lets us tell whether a
+              // continuation attempt actually produced new prose.
+              let prevContent = assistantContent;
+              const answerEmpty = !assistantContent.trim();
               if (
-                meta.stopReason === "length" &&
-                (meta.completionStatus === "definitely_incomplete" || meta.completionStatus === "possibly_incomplete")
+                answerEmpty ||
+                (meta.stopReason === "length" &&
+                  (meta.completionStatus === "definitely_incomplete" || meta.completionStatus === "possibly_incomplete"))
               ) {
-                // Auto-continuation: up to 2 attempts.
+                // Auto-continuation: up to 2 attempts. These turns are a pure
+                // "finish writing" pass, so thinking is disabled — otherwise a
+                // continuation can spend its budget thinking and again produce
+                // nothing. With thinking off, the carried-over assistant turn
+                // must not contain thinking blocks, so strip them (and keep the
+                // turn non-empty for the API).
                 const MAX_CONTINUATIONS = 2;
+                const { thinking: _omitThinking, ...paramsNoThinking } = params;
+                void _omitThinking;
+                const priorContent = final.content.filter(
+                  (b) => b.type !== "thinking" && b.type !== "redacted_thinking"
+                );
+                const carriedAssistant: Anthropic.MessageParam = {
+                  role: "assistant",
+                  content: priorContent.length
+                    ? priorContent
+                    : [{ type: "text", text: "Here is the analysis:" }],
+                };
                 for (let ci = 0; ci < MAX_CONTINUATIONS; ci++) {
                   meta.continuationTriggered = true;
                   meta.continuationCount++;
@@ -438,11 +479,11 @@ export async function POST(request: Request) {
                   const contPrompt = buildContinuationPrompt(message, assistantContent, modelDef.maxTokens);
                   const contMessages: Anthropic.MessageParam[] = [
                     ...messages,
-                    { role: "assistant", content: final.content },
+                    carriedAssistant,
                     { role: "user", content: contPrompt },
                   ];
                   const contStream = claude.messages.stream({
-                    ...params,
+                    ...paramsNoThinking,
                     system: [{ type: "text", text: systemPrompt, cache_control: { type: "ephemeral" } }],
                     tools: [] as Anthropic.ToolUnion[],
                     tool_choice: { type: "none" as const },
@@ -455,7 +496,10 @@ export async function POST(request: Request) {
                   meta.rawStopReason = contFinal.stop_reason ?? null;
                   meta.stopReason = normalizeStopReason(contFinal.stop_reason);
                   meta.completionStatus = validateResponseCompletion(assistantContent, message, meta.stopReason);
-                  if (meta.completionStatus === "complete" || meta.stopReason === "complete") break;
+                  // Stop if complete, or if this attempt added nothing (no point retrying).
+                  const madeProgress = assistantContent.length > prevContent.length;
+                  prevContent = assistantContent;
+                  if (meta.completionStatus === "complete" || meta.stopReason === "complete" || !madeProgress) break;
                 }
               }
 
@@ -481,15 +525,20 @@ export async function POST(request: Request) {
               assistantThinking += (assistantThinking ? "\n\n" : "") + narration;
             }
 
-            // Execute tools, append results, loop.
+            // Execute tools, append results, loop. The calls within a turn are
+            // independent reads, so run them concurrently — sequential awaits
+            // were the main driver of per-turn latency on multi-entity
+            // questions. Promise.all preserves order, so results still line up
+            // with their tool_use blocks.
             const toolUses = final.content.filter((b): b is Anthropic.ToolUseBlock => b.type === "tool_use");
             messages.push({ role: "assistant", content: final.content });
-            const results: Anthropic.ToolResultBlockParam[] = [];
-            for (const tu of toolUses) {
-              send({ type: "status", text: toolActivityLabel(tu.name) });
-              const out = await executeTool(supabase, user.id, tu.name, (tu.input ?? {}) as Record<string, unknown>);
-              results.push({ type: "tool_result", tool_use_id: tu.id, content: JSON.stringify(out) });
-            }
+            for (const tu of toolUses) send({ type: "status", text: toolActivityLabel(tu.name) });
+            const results: Anthropic.ToolResultBlockParam[] = await Promise.all(
+              toolUses.map(async (tu) => {
+                const out = await executeTool(supabase, user.id, tu.name, (tu.input ?? {}) as Record<string, unknown>);
+                return { type: "tool_result" as const, tool_use_id: tu.id, content: JSON.stringify(out) };
+              })
+            );
             messages.push({ role: "user", content: results });
           }
         } else {
@@ -534,6 +583,17 @@ export async function POST(request: Request) {
         if (looksLikeToolLeak(assistantContent)) {
           send({ type: "reset" });
           assistantContent = TOOL_LEAK_FALLBACK;
+          send({ type: "text", delta: assistantContent });
+        }
+
+        // Final backstop: if the model gathered evidence but never wrote a
+        // visible answer (e.g. thinking ate the whole output budget), the client
+        // would render an empty bubble after "Sources reviewed". Fall back to the
+        // deterministic summary of what we found so the user always sees a real
+        // response grounded in their data.
+        if (!assistantContent.trim()) {
+          send({ type: "reset" });
+          assistantContent = emptyAnswerFallback(brief);
           send({ type: "text", delta: assistantContent });
         }
 
@@ -694,6 +754,16 @@ function summaryFromContent(content: string): string | null {
     .trim();
   if (!cleaned) return null;
   return cleaned.length > 150 ? `${cleaned.slice(0, 147)}...` : cleaned;
+}
+
+/**
+ * Shown when the model finished but produced no visible prose (e.g. its output
+ * budget was spent entirely on reasoning). Surfaces the gathered data instead of
+ * a blank bubble, and tells the user how to get a full written answer.
+ */
+function emptyAnswerFallback(brief: string): string {
+  const ask = "This was a broad question and the model ran out of room to write the full analysis. Here is the data it gathered. For a complete written answer, ask about one or two holdings at a time, or a single sector.";
+  return brief ? `${ask}\n\n${brief}` : ask;
 }
 
 /** Deterministic answer when the LLM is disabled — uses the same digested numbers. */

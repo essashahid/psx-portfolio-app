@@ -336,6 +336,7 @@ export function Chat({
       const reader = res.body.getReader();
       const decoder = new TextDecoder();
       let buf = "";
+      let receivedDone = false;
       for (;;) {
         const { done, value } = await reader.read();
         if (done) break;
@@ -382,7 +383,23 @@ export function Chat({
             status: evt.text,
             activity: [...(m.activity ?? []).filter((item) => item !== evt.text), evt.text],
           }));
-          else if (evt.type === "done") update((m) => ({ ...m, status: undefined, complete: true }));
+          else if (evt.type === "done") {
+            receivedDone = true;
+            update((m) => ({ ...m, status: undefined, complete: true }));
+          }
+          else if (evt.type === "incomplete") {
+            // The server reports the answer may be cut short. Append a quiet note
+            // so the user knows there is more, rather than wondering if it froze.
+            const note = "\n\n_This answer may be cut short. Ask a narrower follow-up to get the rest._";
+            update((m) => {
+              const existingParts = m.parts ?? [{ type: "text" as const, content: m.content }];
+              const last = existingParts[existingParts.length - 1];
+              const parts: MessagePart[] = last?.type === "text"
+                ? [...existingParts.slice(0, -1), { type: "text" as const, content: last.content + note }]
+                : [...existingParts, { type: "text" as const, content: note }];
+              return { ...m, content: (m.content || "") + note, parts };
+            });
+          }
           else if (evt.type === "error") {
             const errText = `\n\nError: ${evt.message as string}`;
             update((m) => {
@@ -395,6 +412,23 @@ export function Chat({
             });
           }
         }
+      }
+      // The stream ended but no `done` event ever arrived — the connection was
+      // severed mid-answer (almost always a server-side function timeout on a
+      // very broad question). Without this the UI would sit frozen on the last
+      // status forever. Surface a clear, actionable message instead.
+      if (!receivedDone) {
+        const note =
+          "The analysis didn't finish in time. This question is likely too broad to complete in one pass — try narrowing it to one or two holdings, or a single sector.";
+        update((m) => {
+          const text = m.content?.trim() ? `\n\n_${note}_` : note;
+          const existingParts = m.parts ?? [{ type: "text" as const, content: m.content }];
+          const last = existingParts[existingParts.length - 1];
+          const parts: MessagePart[] = last?.type === "text"
+            ? [...existingParts.slice(0, -1), { type: "text" as const, content: last.content + text }]
+            : [...existingParts, { type: "text" as const, content: text }];
+          return { ...m, content: (m.content || "") + text, parts };
+        });
       }
     } catch (e) {
       update((m) => ({ ...m, content: m.content || `Error: ${e instanceof Error ? e.message : "Failed"}` }));
