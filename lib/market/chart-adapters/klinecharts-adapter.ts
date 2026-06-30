@@ -5,6 +5,7 @@ export class KLineChartsAdapter implements ChartEngineAdapter {
   private chart: Chart | null = null;
   private currentSymbol: string = "";
   private currentResolution: string = "1D";
+  private _bars: import("klinecharts").KLineData[] = [];
 
   initializeChart(container: HTMLElement, options?: any): void {
     this.chart = init(container, options);
@@ -26,8 +27,8 @@ export class KLineChartsAdapter implements ChartEngineAdapter {
     const styleMap: Record<string, import("klinecharts").CandleType> = {
       candlestick: "candle_solid",
       ohlc: "ohlc",
-      line: "real_time",
-      area: "real_time"
+      line: "area",
+      area: "area"
     };
     this.chart.setStyles({
       candle: {
@@ -47,29 +48,39 @@ export class KLineChartsAdapter implements ChartEngineAdapter {
 
   setOHLCVData(data: CanonicalOHLCV): void {
     if (!this.chart) return;
-    
-    // Map to KLineData format
-    const klineData: KLineData[] = data.bars.map(bar => ({
-      timestamp: bar.time, // Unix ms
-      open: bar.open,
-      high: bar.high,
-      low: bar.low,
-      close: bar.close,
-      volume: bar.volume
-    }));
-    
-    this.chart.applyNewData(klineData);
-  }
-
-  updateLatestBar(bar: CanonicalOHLCV["bars"][number]): void {
-    if (!this.chart) return;
-    this.chart.updateData({
+    this._bars = data.bars.map(bar => ({
       timestamp: bar.time,
       open: bar.open,
       high: bar.high,
       low: bar.low,
       close: bar.close,
       volume: bar.volume
+    }));
+    const bars = this._bars;
+    this.chart.setDataLoader({
+      getBars: ({ callback }) => { callback(bars, { forward: false, backward: false }); }
+    });
+  }
+
+  updateLatestBar(bar: CanonicalOHLCV["bars"][number]): void {
+    if (!this.chart) return;
+    const updated: KLineData = {
+      timestamp: bar.time,
+      open: bar.open,
+      high: bar.high,
+      low: bar.low,
+      close: bar.close,
+      volume: bar.volume
+    };
+    const last = this._bars[this._bars.length - 1];
+    if (last && last.timestamp === updated.timestamp) {
+      this._bars[this._bars.length - 1] = updated;
+    } else {
+      this._bars.push(updated);
+    }
+    const bars = this._bars;
+    this.chart.setDataLoader({
+      getBars: ({ callback }) => { callback(bars, { forward: false, backward: false }); }
     });
   }
 
@@ -85,7 +96,7 @@ export class KLineChartsAdapter implements ChartEngineAdapter {
       shortName: options?.shortName
     };
     
-    return this.chart.createIndicator(indicatorOptions, isMain, options?.paneOptions);
+    return this.chart.createIndicator(indicatorOptions, { pane: options?.paneOptions }) ?? "";
   }
 
   updateIndicator(id: string, options: any): void {
@@ -95,7 +106,7 @@ export class KLineChartsAdapter implements ChartEngineAdapter {
 
   removeIndicator(id: string): void {
     if (!this.chart) return;
-    this.chart.removeIndicator("", id); // The pane id is needed in KLineCharts. This is a simplification.
+    this.chart.removeIndicator({ id });
   }
 
   addDrawing(drawing: ChartDrawing): void {
@@ -122,7 +133,7 @@ export class KLineChartsAdapter implements ChartEngineAdapter {
 
   removeDrawing(id: string): void {
     if (!this.chart) return;
-    this.chart.removeOverlay(id);
+    this.chart.removeOverlay({ id });
   }
 
   lockDrawing(id: string, locked: boolean): void {
