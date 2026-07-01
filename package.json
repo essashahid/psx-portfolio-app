@@ -6,7 +6,9 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "eval:chat": "tsx scripts/eval-chat.ts",
+    "eval:chat:live": "tsx scripts/eval-chat-live.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.104.2",

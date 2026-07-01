@@ -55,15 +55,19 @@ async function resolveSector(supabase: SupabaseClient, message: string): Promise
 
 function detectIntent(msg: string): Intent {
   const m = msg.toLowerCase();
-  if (/\b(compare|versus|\bvs\b|against|better than)\b/.test(m)) return "compare";
+  // Explicit add/trim decision verbs win first. "Should I add X, weighing it
+  // against my concentration" is a decision, not a comparison, even though it
+  // contains "against" — so the decision check runs before compare, and "against"
+  // is not a compare trigger (it appears far more in decision/benchmark framing).
+  if (/\b(add|adding|increase|buy more|purchase more|additional purchase|average up|average down|accumulat\w*|position size|sizing|top up|add more|trim|trimming|reduce|reducing|lighten|pare)\b/.test(m)) {
+    return "position";
+  }
+  if (/\b(compare|versus|\bvs\b|better than|compared to)\b/.test(m)) return "compare";
   if (/\b(market|index|kse|breadth|overall|sentiment|sectors?|today'?s? (market|session))\b/.test(m) && !/\bmy\b/.test(m)) return "market";
   if (/\b(dividend|payout|yield|bonus)\b/.test(m)) return "dividend";
   if (/\b(p\/e|pe ratio|valuation|cheap|expensive|overvalued|undervalued|ratio|roe|roa|margin|fundamental)\b/.test(m)) return "valuation";
   if (/\b(chart|trend|technical|52[- ]?week|rsi|moving average|support|resistance|momentum)\b/.test(m)) return "technical";
   if (/\b(news|filing|announce|happened|update|event)\b/.test(m)) return "news";
-  if (/\b(add|adding|increase|buy more|purchase more|additional purchase|average up|average down|accumulat\w*|position size|sizing|top up|add more)\b/.test(m)) {
-    return "position";
-  }
   // Portfolio / position questions — including diversification, concentration,
   // allocation and "do I have enough stocks" style questions that need the
   // user's holdings loaded, not just market data.

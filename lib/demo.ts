@@ -8,27 +8,26 @@ import { refreshAlerts } from "@/lib/alerts";
  * portfolio: eight blue-chip positions across seven sectors, a six-month value
  * history, a portfolio-vs-KSE-100-vs-inflation growth series, received and
  * upcoming dividends, theses, journal entries, news and a library of curated
- * Research Copilot threads that show off every chart and table the assistant
- * can render.
+ * Research Copilot threads written in the real assistant's voice.
  *
  * Prices are anchored to the real PSX close (June 2026) so the inline price
  * charts, which pull live end-of-day data, agree with the position values and
- * metric strips shown next to them. Cost bases, dividends and commentary are
- * illustrative but internally consistent, so no screen contradicts another.
+ * metric strips shown next to them. Cost bases reflect multi-year entries in a
+ * strong market. Every derived figure (weights, P/L, yields, benchmark excess,
+ * macro reads) is internally consistent, so no screen contradicts another.
  */
 
 // ── Holdings ──────────────────────────────────────────────────────────────────
-// price ~ real PSX close; avg_cost is the illustrative entry. quantity x price
-// drives the live valuation, quantity x avg_cost drives the cost basis.
+// price ~ real PSX close; avg_cost is the illustrative multi-year entry.
 const DEMO_HOLDINGS = [
-  { ticker: "MEBL", company_name: "Meezan Bank Limited", sector: "Commercial Banks", quantity: 400, avg_cost: 400.0, price: 516.0 },
-  { ticker: "UBL", company_name: "United Bank Limited", sector: "Commercial Banks", quantity: 450, avg_cost: 360.0, price: 448.0 },
-  { ticker: "FFC", company_name: "Fauji Fertilizer Company Limited", sector: "Fertilizer", quantity: 250, avg_cost: 470.0, price: 573.0 },
-  { ticker: "OGDC", company_name: "Oil & Gas Development Company Limited", sector: "Oil & Gas Exploration", quantity: 500, avg_cost: 300.0, price: 335.0 },
-  { ticker: "SYS", company_name: "Systems Limited", sector: "Technology & Communication", quantity: 1000, avg_cost: 118.0, price: 147.0 },
-  { ticker: "LUCK", company_name: "Lucky Cement Limited", sector: "Cement", quantity: 250, avg_cost: 400.0, price: 470.0 },
-  { ticker: "HUBC", company_name: "The Hub Power Company Limited", sector: "Power Generation & Distribution", quantity: 500, avg_cost: 260.0, price: 233.0 },
-  { ticker: "ENGROH", company_name: "Engro Holdings Limited", sector: "Conglomerate", quantity: 450, avg_cost: 315.0, price: 288.0 },
+  { ticker: "MEBL", company_name: "Meezan Bank Limited", sector: "Commercial Banks", quantity: 400, avg_cost: 330.0, price: 516.0 },
+  { ticker: "UBL", company_name: "United Bank Limited", sector: "Commercial Banks", quantity: 450, avg_cost: 300.0, price: 448.0 },
+  { ticker: "FFC", company_name: "Fauji Fertilizer Company Limited", sector: "Fertilizer", quantity: 250, avg_cost: 420.0, price: 573.0 },
+  { ticker: "OGDC", company_name: "Oil & Gas Development Company Limited", sector: "Oil & Gas Exploration", quantity: 500, avg_cost: 275.0, price: 335.0 },
+  { ticker: "SYS", company_name: "Systems Limited", sector: "Technology & Communication", quantity: 1000, avg_cost: 95.0, price: 147.0 },
+  { ticker: "LUCK", company_name: "Lucky Cement Limited", sector: "Cement", quantity: 250, avg_cost: 350.0, price: 470.0 },
+  { ticker: "HUBC", company_name: "The Hub Power Company Limited", sector: "Power Generation & Distribution", quantity: 500, avg_cost: 265.0, price: 233.0 },
+  { ticker: "ENGROH", company_name: "Engro Holdings Limited", sector: "Conglomerate", quantity: 450, avg_cost: 320.0, price: 288.0 },
 ];
 
 const DEMO_CHAT_SUMMARY_PREFIX = "Demo library:";
@@ -85,12 +84,12 @@ export async function loadDemoData(supabase: SupabaseClient, userId: string) {
 
   // ── Targets (target_price above current, review_level below) ──────────────
   const targets = [
-    { ticker: "MEBL", target_price: 620, target_allocation: 16, review_level: 460 },
-    { ticker: "UBL", target_price: 540, target_allocation: 14, review_level: 400 },
-    { ticker: "FFC", target_price: 680, target_allocation: 12, review_level: 520 },
-    { ticker: "OGDC", target_price: 400, target_allocation: 13, review_level: 300 },
-    { ticker: "SYS", target_price: 185, target_allocation: 14, review_level: 130 },
-    { ticker: "LUCK", target_price: 560, target_allocation: 10, review_level: 420 },
+    { ticker: "MEBL", target_price: 620, target_allocation: 16, review_level: 440 },
+    { ticker: "UBL", target_price: 540, target_allocation: 14, review_level: 380 },
+    { ticker: "FFC", target_price: 680, target_allocation: 12, review_level: 500 },
+    { ticker: "OGDC", target_price: 400, target_allocation: 13, review_level: 290 },
+    { ticker: "SYS", target_price: 185, target_allocation: 14, review_level: 120 },
+    { ticker: "LUCK", target_price: 560, target_allocation: 10, review_level: 400 },
     { ticker: "HUBC", target_price: 270, target_allocation: 8, review_level: 210 },
     { ticker: "ENGROH", target_price: 340, target_allocation: 9, review_level: 260 },
   ];
@@ -408,9 +407,7 @@ This demo portfolio holds eight PSX blue chips worth roughly PKR ${(totalValue /
 ## Questions to consider
 1. What would confirm or refute the HUBC contracted-cash-flow case this quarter?
 2. Why do you still hold ENGROH? Write it down in one paragraph or trim it.
-3. The two banks together are the largest sleeve in the book. Is that deliberate?
-
-_This is portfolio research support, not financial advice._`,
+3. The two banks together are the largest sleeve in the book. Is that deliberate?`,
     model: "demo",
   });
 
@@ -556,12 +553,12 @@ async function seedBenchmarkSeries(
   totalValue: number
 ) {
   // 18 monthly points. Capital is contributed in a few lumps; the portfolio
-  // beats both the index and inflation modestly. Inflation grows each
-  // contribution from the month it was actually made (~0.6%/month, ~7.4%/year),
-  // so recent capital is not over-inflated and the path stays below the
-  // portfolio, matching the commentary.
+  // beats both the index and inflation. Inflation grows each contribution from
+  // the month it was actually made (~11.3% annualised, in line with the cited
+  // CPI), so recent capital is not over-inflated and the path stays below the
+  // portfolio.
   const months = 18;
-  const monthlyInflation = 0.006;
+  const monthlyInflation = 0.009;
   const startContributed = Math.round(totalCost * 0.62);
   const contribAt = (i: number) =>
     Math.round(startContributed + (totalCost - startContributed) * Math.min(1, (i / (months - 1)) * 1.15));
@@ -581,7 +578,7 @@ async function seedBenchmarkSeries(
     const portfolio = last
       ? totalValue
       : Math.round(contributed * (1 + (totalValue / totalCost - 1) * t * (1 + portWobble)));
-    const kse = Math.round(contributed * (1 + (totalValue / totalCost - 1) * 0.82 * t + Math.sin(i * 0.7) * 0.02));
+    const kse = Math.round(contributed * (1 + (totalValue / totalCost - 1) * 0.74 * t + Math.sin(i * 0.7) * 0.02));
     let inflation = 0;
     for (let j = 0; j <= i; j += 1) inflation += deltas[j] * Math.pow(1 + monthlyInflation, i - j);
     inflation = Math.round(inflation);
@@ -657,8 +654,10 @@ async function seedDemoChatThreads(
   const unrealized = totalValue - totalCost;
   const unrealizedPct = ((unrealized / totalCost) * 100).toFixed(1);
   const valueM = (totalValue / 1_000_000).toFixed(2);
+  const kfmt = (n: number) => `${n >= 0 ? "" : "-"}PKR ${Math.abs(Math.round(n / 1000))}k`;
   const wt = (t: string) => (marketValue(H(t)) / totalValue) * 100;
   const banksWt = ((marketValue(H("MEBL")) + marketValue(H("UBL"))) / totalValue) * 100;
+  const posCost = (t: string) => H(t).quantity * H(t).avg_cost;
 
   // Net received per holding over the trailing 12 months (gross x 0.85).
   const divNet: Record<string, number> = {
@@ -669,6 +668,26 @@ async function seedDemoChatThreads(
     ENGROH: Math.round(20 * H("ENGROH").quantity * 0.85),
     LUCK: Math.round(16 * H("LUCK").quantity * 0.85),
   };
+  const netIncome = Object.values(divNet).reduce((s, v) => s + v, 0);
+  const yocNet = (netIncome / totalCost) * 100;
+  const yoc = (t: string) => (divNet[t] / posCost(t)) * 100;
+  const incomeShare = (t: string) => (divNet[t] / netIncome) * 100;
+
+  // Benchmark comparison, computed the same way as seedBenchmarkSeries so prose
+  // and the growth chart agree: KSE lands at 0.74 of the portfolio's excess.
+  const portRet = (totalValue / totalCost - 1) * 100;
+  const kseRet = portRet * 0.74;
+  const excessPts = portRet - kseRet;
+
+  // UBL addition scenario (PKR 150k of new money at the current price).
+  const addPkr = 150_000;
+  const addShares = Math.round(addPkr / H("UBL").price);
+  const addCost = addShares * H("UBL").price;
+  const ublSharesAfter = H("UBL").quantity + addShares;
+  const ublAvgAfter = (posCost("UBL") + addCost) / ublSharesAfter;
+  const totalAfter = totalValue + addCost;
+  const ublWtAfter = ((ublSharesAfter * H("UBL").price) / totalAfter) * 100;
+  const banksAfter = ((ublSharesAfter * H("UBL").price + marketValue(H("MEBL"))) / totalAfter) * 100;
 
   const threads: {
     title: string;
@@ -677,140 +696,198 @@ async function seedDemoChatThreads(
     assistant: string;
     cards: Record<string, unknown>[];
   }[] = [
+    // 1 ─ Comprehensive portfolio assessment ────────────────────────────────
     {
       title: "Portfolio health check",
-      summary: `${DEMO_CHAT_SUMMARY_PREFIX} concentration, P/L drivers and what needs attention`,
-      user: "Give me a full health check on my portfolio and tell me what needs attention.",
-      assistant: `## Short answer
-The portfolio is in good shape and well diversified, up about ${unrealizedPct}% on cost at roughly PKR ${valueM}M. It is not "set and forget," though. Two things need attention: **HUBC**, where the thesis is already marked weakening and the review date has passed, and **ENGROH**, which has no written thesis on file.
+      summary: `${DEMO_CHAT_SUMMARY_PREFIX} concentration, benchmark, income and what needs attention`,
+      user: "Give me a full health check on my portfolio and tell me what actually needs attention.",
+      assistant: `The book is in good shape: PKR ${valueM}M across eight names, up ${unrealizedPct}% on cost, and roughly ${excessPts.toFixed(0)} points ahead of the KSE-100 over the same capital, so it is earning its place rather than just riding the index. Two items need attention, and neither is about performance: **HUBC** (${wt("HUBC").toFixed(0)}% of the book, thesis marked weakening, review overdue) and **ENGROH** (${wt("ENGROH").toFixed(0)}%, no written thesis).
 
-## What is working
-The gains are broad rather than reliant on one name. MEBL, UBL, SYS and FFC are all contributing, so the result does not depend on a single bet. That is the shape you want.
+## Concentration is the one real risk
+MEBL at ${wt("MEBL").toFixed(0)}% and UBL at ${wt("UBL").toFixed(0)}% put ${banksWt.toFixed(0)}% of the book in two banks that share one driver: the policy rate. With the SBP at 11% and cutting, that is a slow margin headwind for both at once, cushioned by bond-book revaluation. It is a deliberate bet, but it is one bet, not two, so size it as a pair.
 
-## What I would review first
-- **HUBC** is one of only two losers and the thesis is weakening. The IPP renegotiation risk named in the thesis is back in the news, so the contracted-cash-flow case needs confirming before any decision.
-- **ENGROH** has no thesis. Decide whether it is deliberate conglomerate exposure or just drift, then either write the reason down or trim it.
-- **Banking weight**: MEBL and UBL together are the single largest sleeve at about ${banksWt.toFixed(0)}%. Both are working, but hold that exposure on purpose rather than by accident.
+## The gains are broad, which is what you want
+SYS is your best position at +${retPct(H("SYS")).toFixed(0)}%, MEBL +${retPct(H("MEBL")).toFixed(0)}% and UBL +${retPct(H("UBL")).toFixed(0)}%. No single name carries the result, so a stumble in one does not sink the portfolio.
 
-## Next actions
-1. Read HUBC's latest filings and dividend posture before adding or trimming.
-2. Write a one-paragraph thesis for ENGROH or move it out of the conviction bucket.
-3. Keep the rest on a normal review cadence unless a position drifts well above its target weight.`,
+## Income is solid but concentrated
+Trailing dividends are PKR ${(netIncome / 1000).toFixed(1)}k net, a ${yocNet.toFixed(1)}% yield on cost. UBL alone is ${incomeShare("UBL").toFixed(0)}% of that, so a UBL payout cut would be felt across both the price and the income line.
+
+## What I would do
+Nothing forced. Resolve HUBC on the next results or PPA update, write a one-line thesis for ENGROH or trim it, and treat the banking pair as your first source of funds if it drifts higher.`,
       cards: [
         {
           kind: "metric-strip",
-          title: "Portfolio snapshot",
+          title: "Portfolio at a glance",
           metrics: [
             { label: "Market value", value: `PKR ${valueM}M`, tone: "neutral" },
-            { label: "Unrealized P/L", value: `+PKR ${(unrealized / 1000).toFixed(0)}k`, delta: `+${unrealizedPct}%`, tone: "positive" },
-            { label: "Holdings", value: "8", detail: "7 sectors" },
-            { label: "Needs review", value: "2", tone: "negative", detail: "HUBC, ENGROH" },
+            { label: "Unrealized P/L", value: `+${kfmt(unrealized)}`, delta: `+${unrealizedPct}% on cost`, tone: "positive" },
+            { label: "vs KSE-100", value: `+${excessPts.toFixed(0)} pts`, detail: "excess over the index", tone: "positive" },
+            { label: "Income yield on cost", value: `${yocNet.toFixed(1)}%`, detail: `PKR ${(netIncome / 1000).toFixed(0)}k net trailing`, tone: "neutral" },
           ],
         },
         {
           kind: "portfolio-attribution",
-          title: "What is driving the unrealized P/L",
-          description: "Contribution to unrealized gain or loss by holding",
+          title: "Unrealized P/L by holding",
+          description: "Where the gain actually comes from",
           items: DEMO_HOLDINGS.map((h) => ({ label: h.ticker, value: pl(h), tone: pl(h) >= 0 ? "positive" : "negative" }))
             .sort((a, b) => b.value - a.value),
         },
         {
           kind: "comparison-table",
-          title: "Concentration check",
-          description: "Position weight against your target allocation",
+          title: "Concentration versus target",
           columns: [
             { key: "ticker", label: "Holding" },
-            { key: "weight", label: "Current weight" },
+            { key: "weight", label: "Weight" },
             { key: "target", label: "Target" },
             { key: "read", label: "Read" },
           ],
           rows: [
-            { ticker: "MEBL", weight: `${wt("MEBL").toFixed(0)}%`, target: "16%", read: "In line" },
-            { ticker: "UBL", weight: `${wt("UBL").toFixed(0)}%`, target: "14%", read: "Above target" },
+            { ticker: "MEBL", weight: `${wt("MEBL").toFixed(0)}%`, target: "16%", read: "In line, quality bank" },
+            { ticker: "UBL", weight: `${wt("UBL").toFixed(0)}%`, target: "14%", read: "Above target, income bank" },
             { ticker: "OGDC", weight: `${wt("OGDC").toFixed(0)}%`, target: "13%", read: "In line" },
-            { ticker: "SYS", weight: `${wt("SYS").toFixed(0)}%`, target: "14%", read: "In line" },
-            { ticker: "HUBC", weight: `${wt("HUBC").toFixed(0)}%`, target: "8%", read: "Weakening thesis" },
+            { ticker: "HUBC", weight: `${wt("HUBC").toFixed(0)}%`, target: "8%", read: "Weakening thesis, review" },
+            { ticker: "ENGROH", weight: `${wt("ENGROH").toFixed(0)}%`, target: "9%", read: "No thesis on file" },
           ],
         },
       ],
     },
+
+    // 2 ─ Flagship decision: add to UBL ──────────────────────────────────────
     {
-      title: "MEBL position review",
-      summary: `${DEMO_CHAT_SUMMARY_PREFIX} bank thesis, price vs cost and peer comparison`,
-      user: "Review MEBL for me as a long-term holder. Add, hold, or wait? Show it against the other banks.",
-      assistant: `## Provisional view
-**Hold, and add only on weakness.** MEBL has the cleanest thesis in the book: Islamic-banking leadership, a low-cost deposit base and the highest ROE among the listed banks. The position is well in profit. The only real question is whether adding here would push the banking sleeve above where you want it, since you also hold UBL.
+      title: "Adding PKR 150k to UBL",
+      summary: `${DEMO_CHAT_SUMMARY_PREFIX} addition scenario, banking concentration and the tranche read`,
+      user: "I'm thinking of putting about PKR 150,000 more into UBL. Is that a good use of the money?",
+      assistant: `On UBL alone, defensible: it is your income workhorse at a ${yoc("UBL").toFixed(0)}% net yield on cost and up ${retPct(H("UBL")).toFixed(0)}%. As an addition to this book, I would hold off. The problem is not UBL, it is what a second helping does to your concentration.
 
-## Company case
-The recorded thesis is built on a structurally cheaper deposit base and best-in-class profitability, and the latest results support it with a record quarterly profit on deposit growth. The chart below shows the price against your average cost.
+## What the money buys
+PKR ${(addCost / 1000).toFixed(0)}k adds about ${addShares} shares at PKR ${H("UBL").price.toFixed(0)}. That lifts UBL from ${wt("UBL").toFixed(0)}% to ${ublWtAfter.toFixed(0)}% of the book, and the banking sleeve from ${banksWt.toFixed(0)}% to ${banksAfter.toFixed(0)}%. You would be putting more than four rupees in ten into two names that both live on the policy rate, right as the SBP eases from 11%.
 
-## Versus the other banks
-MEBL is the quality-and-growth name; UBL is the income name. Held together they cover both ends of the banking trade, but they will move together when rates move, so size the pair as one decision.
+## The tranche read matters here
+Your UBL average is PKR ${H("UBL").avg_cost.toFixed(0)} against a PKR ${H("UBL").price.toFixed(0)} price, so the early accumulation carries the ${retPct(H("UBL")).toFixed(0)}% gain. New money goes in at the top: it lifts the blended cost to about PKR ${Math.round(ublAvgAfter)}, so the margin of safety on this tranche is far thinner than the headline gain suggests.
 
-## Decision conditions
-- Add only if deposit growth stays above the sector average and the valuation does not already price in perfection.
-- Hold while spreads normalise as long as asset quality holds.
-- Revisit if ROE falls below the recorded sell-condition threshold for two consecutive years.`,
+## Adding is defensible if
+- You specifically want more of the ${yoc("UBL").toFixed(0)}% yield on cost and expect the payout to stay covered as rates fall.
+- You accept a ${banksAfter.toFixed(0)}% banking weight as a deliberate rate call.
+
+## Waiting is defensible if
+- You would rather not push one rate driver past 40% of the book.
+- The same PKR ${(addCost / 1000).toFixed(0)}k into OGDC (${wt("OGDC").toFixed(0)}%, ${yoc("OGDC").toFixed(0)}% yield on cost, USD-linked) diversifies the income away from rates for a similar payout.`,
       cards: [
         {
-          kind: "price-chart",
-          title: "MEBL price vs your cost basis",
-          ticker: "MEBL",
-          period: "1Y",
-          overlay: ["cost-basis"],
-          description: "Live PSX price history with your average cost overlaid.",
-        },
-        {
           kind: "comparison-table",
-          title: "Listed banks at a glance",
-          description: "Illustrative figures for context, not live quotes.",
+          title: `Addition scenario: PKR ${(addCost / 1000).toFixed(0)}k into UBL`,
+          description: "Pre-computed effect on the position and the banking sleeve",
           columns: [
-            { key: "bank", label: "Bank" },
-            { key: "role", label: "Role in book" },
-            { key: "roe", label: "ROE" },
-            { key: "yield", label: "Div. yield" },
-            { key: "note", label: "Note" },
+            { key: "metric", label: "Metric" },
+            { key: "before", label: "Now" },
+            { key: "after", label: `After +PKR ${(addCost / 1000).toFixed(0)}k` },
           ],
           rows: [
-            { bank: "MEBL", role: "Quality / growth", roe: "~26%", yield: "~5%", note: "Held. Low-cost deposit base" },
-            { bank: "UBL", role: "Income", roe: "~20%", yield: "~10%", note: "Held. High payout" },
-            { bank: "HBL", role: "Scale", roe: "~16%", yield: "~9%", note: "Not held" },
-            { bank: "MCB", role: "Quality / income", roe: "~19%", yield: "~9%", note: "Not held" },
+            { metric: "UBL shares", before: `${H("UBL").quantity}`, after: `${ublSharesAfter}` },
+            { metric: "UBL avg cost", before: `PKR ${H("UBL").avg_cost.toFixed(0)}`, after: `PKR ${Math.round(ublAvgAfter)}` },
+            { metric: "UBL weight", before: `${wt("UBL").toFixed(0)}%`, after: `${ublWtAfter.toFixed(0)}%` },
+            { metric: "Banking sleeve", before: `${banksWt.toFixed(0)}%`, after: `${banksAfter.toFixed(0)}%` },
+            { metric: "Portfolio value", before: `PKR ${valueM}M`, after: `PKR ${(totalAfter / 1_000_000).toFixed(2)}M` },
           ],
         },
         {
           kind: "metric-strip",
-          title: "Your MEBL position",
+          title: "Your UBL position today",
           metrics: [
-            { label: "Shares", value: `${H("MEBL").quantity}` },
-            { label: "Avg cost", value: `PKR ${H("MEBL").avg_cost.toFixed(2)}` },
-            { label: "Last price", value: `PKR ${H("MEBL").price.toFixed(2)}` },
-            { label: "Unrealized", value: `+PKR ${(pl(H("MEBL")) / 1000).toFixed(1)}k`, delta: `+${retPct(H("MEBL")).toFixed(1)}%`, tone: "positive" },
+            { label: "Shares", value: `${H("UBL").quantity}` },
+            { label: "Avg cost", value: `PKR ${H("UBL").avg_cost.toFixed(0)}` },
+            { label: "Last price", value: `PKR ${H("UBL").price.toFixed(0)}` },
+            { label: "Yield on cost", value: `${yoc("UBL").toFixed(0)}%`, detail: "net, trailing", tone: "positive" },
           ],
         },
       ],
     },
+
+    // 3 ─ Moderate: two-bank comparison ──────────────────────────────────────
     {
-      title: "Dividend income review",
-      summary: `${DEMO_CHAT_SUMMARY_PREFIX} received income, receivables and forward estimate`,
-      user: "Summarise my dividend income over the last year and what is coming next.",
-      assistant: `## Short answer
-The income base is healthy and broad. Over the last year you received cash dividends from **UBL, OGDC, FFC, MEBL, ENGROH and LUCK**. UBL is the single largest payer, with OGDC and FFC close behind, so the income leans on the banks, energy and fertilizer rather than any one name. There are confirmed receivables from FFC and UBL right now, plus forward estimates for OGDC, MEBL and LUCK.
+      title: "MEBL vs UBL: hold both?",
+      summary: `${DEMO_CHAT_SUMMARY_PREFIX} do two banks earn their place, or consolidate`,
+      user: "I hold both MEBL and UBL. Is it worth owning two banks or should I consolidate into one?",
+      assistant: `Keep both. They earn their place for different reasons, and consolidating would either give up quality or give up income. The real caveat is that together they are ${banksWt.toFixed(0)}% of the book on a single driver, so the discipline is capping the pair, not choosing between them.
 
-## What was received
-The bar below shows net dividends by holding over the trailing twelve months. UBL does the heavy lifting through its high quarterly payout, which fits the thesis: UBL is held partly for income.
+## Different jobs
+MEBL is the quality-and-growth engine: up ${retPct(H("MEBL")).toFixed(0)}%, ROE around 26%, a low-cost deposit base, and a ${yoc("MEBL").toFixed(0)}% yield on cost. UBL is the income leg: up ${retPct(H("UBL")).toFixed(0)}% with a much richer ${yoc("UBL").toFixed(0)}% yield on cost. Both have beaten the KSE-100 over your holding period, so neither is dead weight you are keeping out of habit.
 
-## What is coming
-FFC and UBL have already announced their next payouts, so those are confirmed receivables. OGDC, MEBL and LUCK are model estimates based on payout history and expected earnings, so treat them as a range rather than a promise.
+## The shared risk
+They move together when the policy rate moves. The SBP easing from a 22% peak to 11% gradually compresses net interest margins at both, partly offset by gains on their bond books. Owning both is a considered rate bet, so the thing to watch is the combined ${banksWt.toFixed(0)}% weight, not either name alone.
 
-## What to watch
-- **UBL**: whether the payout stays covered by earnings as rates fall.
-- **FFC**: gas pricing, urea price caps and the payout ratio.
-- **HUBC**: do not count it as income until the dividend actually resumes.`,
+## Bottom line
+No consolidation. If the sleeve drifts above the low-30s on price, trim the one that has run furthest from your average rather than selling a whole position.`,
+      cards: [
+        {
+          kind: "comparison-table",
+          title: "MEBL versus UBL",
+          columns: [
+            { key: "metric", label: "Metric" },
+            { key: "mebl", label: "MEBL" },
+            { key: "ubl", label: "UBL" },
+          ],
+          rows: [
+            { metric: "Role", mebl: "Quality / growth", ubl: "Income" },
+            { metric: "Weight", mebl: `${wt("MEBL").toFixed(0)}%`, ubl: `${wt("UBL").toFixed(0)}%` },
+            { metric: "Unrealized return", mebl: `+${retPct(H("MEBL")).toFixed(0)}%`, ubl: `+${retPct(H("UBL")).toFixed(0)}%` },
+            { metric: "Yield on cost (net)", mebl: `${yoc("MEBL").toFixed(0)}%`, ubl: `${yoc("UBL").toFixed(0)}%` },
+            { metric: "ROE (illustrative)", mebl: "~26%", ubl: "~20%" },
+          ],
+        },
+        {
+          kind: "price-chart",
+          title: "MEBL price vs your cost basis",
+          ticker: "MEBL",
+          period: "3Y",
+          overlay: ["cost-basis"],
+          description: "Live PSX history with your average cost overlaid.",
+        },
+      ],
+    },
+
+    // 4 ─ Light / concise: benchmark ─────────────────────────────────────────
+    {
+      title: "Am I beating the market?",
+      summary: `${DEMO_CHAT_SUMMARY_PREFIX} portfolio return versus the KSE-100 and inflation`,
+      user: "Am I actually beating the market, or just riding it?",
+      assistant: `Beating it, and by a real margin rather than noise. You are up ${portRet.toFixed(0)}% on invested capital against roughly ${kseRet.toFixed(0)}% for the KSE-100 over the same contributions, so about ${excessPts.toFixed(0)} points of excess return that is yours, not the index's.
+
+Inflation is the honest hurdle. With CPI running near 11.7% year-on-year, a nominal gain has to clear that to build real wealth, and this book does, but not by a wide margin. The number to keep watching is the excess over the index, because that is the part that reflects your selection rather than the market tide.`,
+      cards: [
+        {
+          kind: "metric-strip",
+          title: "Return scorecard",
+          metrics: [
+            { label: "Your portfolio", value: `+${portRet.toFixed(0)}%`, detail: "on invested capital", tone: "positive" },
+            { label: "KSE-100 equivalent", value: `+${kseRet.toFixed(0)}%`, detail: "same contributions", tone: "neutral" },
+            { label: "Excess return", value: `+${excessPts.toFixed(0)} pts`, detail: "your selection", tone: "positive" },
+            { label: "Inflation (CPI)", value: "~11.7%", detail: "year-on-year hurdle", tone: "neutral" },
+          ],
+        },
+      ],
+    },
+
+    // 5 ─ Moderate: dividend income intelligence ─────────────────────────────
+    {
+      title: "Is my dividend income safe?",
+      summary: `${DEMO_CHAT_SUMMARY_PREFIX} income durability, payer concentration and what is at risk`,
+      user: "How reliable is my dividend income, and where is the risk in it?",
+      assistant: `The income is real and well covered, but it is concentrated, so the risk is single-payer rather than sector-wide. Trailing dividends are PKR ${(netIncome / 1000).toFixed(1)}k net, a ${yocNet.toFixed(1)}% yield on cost, and UBL alone accounts for ${incomeShare("UBL").toFixed(0)}% of it. Lose the UBL payout and you lose roughly a third of the income and a piece of the price at once.
+
+## Where it comes from
+UBL leads at PKR ${(divNet.UBL / 1000).toFixed(1)}k net, then OGDC at PKR ${(divNet.OGDC / 1000).toFixed(1)}k and FFC at PKR ${(divNet.FFC / 1000).toFixed(1)}k. The top three are ${(incomeShare("UBL") + incomeShare("OGDC") + incomeShare("FFC")).toFixed(0)}% of the payout, so the base is a bank, an E&P and a fertilizer name rather than one sector.
+
+## What is actually at risk
+- **UBL** is the concentration. The offset is a payout that still looks covered by earnings, so watch the cover ratio, not the headline yield.
+- **HUBC** contributes nothing right now. Its dividend is paused, so do not model it as income until it resumes.
+- **OGDC** income depends on circular-debt cash actually flowing, which is the same lever as its price thesis.
+
+Net read: durable, but I would not add more income risk in UBL specifically. If you want to broaden the base, FFC and OGDC are the lower-concentration ways to do it.`,
       cards: [
         {
           kind: "bar-chart",
-          title: "Net dividends received (trailing 12 months)",
+          title: "Net dividends by payer (trailing 12 months)",
           xKey: "ticker",
           yUnit: "PKR",
           bars: [{ key: "net", label: "Net received", color: "#059669" }],
@@ -825,171 +902,104 @@ FFC and UBL have already announced their next payouts, so those are confirmed re
         },
         {
           kind: "table",
-          title: "Dividend ledger and estimate",
-          description: "Received income plus confirmed and estimated receivables.",
+          title: "Income durability by holding",
           columns: [
             { key: "ticker", label: "Holding" },
-            { key: "status", label: "Status" },
-            { key: "dps", label: "Per share" },
-            { key: "net", label: "Net", align: "right", format: "currency" },
+            { key: "yoc", label: "Yield on cost" },
+            { key: "share", label: "Share of income" },
+            { key: "read", label: "Read" },
           ],
           rows: [
-            { ticker: "UBL", status: "Received x4", dps: "11.00 x4", net: divNet.UBL },
-            { ticker: "OGDC", status: "Received x2", dps: "13.00 + 14.00", net: divNet.OGDC },
-            { ticker: "FFC", status: "Received x2", dps: "22.00 + 23.00", net: divNet.FFC },
-            { ticker: "FFC", status: "Announced", dps: "22.00", net: Math.round(22 * H("FFC").quantity * 0.85) },
-            { ticker: "UBL", status: "Announced", dps: "11.00", net: Math.round(11 * H("UBL").quantity * 0.85) },
-            { ticker: "OGDC", status: "Estimated", dps: "13.00 to 15.00", net: Math.round(14 * H("OGDC").quantity * 0.85) },
-            { ticker: "MEBL", status: "Estimated", dps: "13.00 to 15.00", net: Math.round(14 * H("MEBL").quantity * 0.85) },
-          ],
-        },
-        {
-          kind: "timeline",
-          title: "Dividend calendar",
-          events: [
-            { date: isoDate(45), label: "OGDC dividend received", type: "dividend", value: `PKR ${(Math.round(14 * H("OGDC").quantity * 0.85) / 1000).toFixed(1)}k net` },
-            { date: isoDate(-10), label: "FFC interim ex-date", type: "dividend", detail: "Announced. Confirmed receivable." },
-            { date: isoDate(-16), label: "UBL quarterly ex-date", type: "dividend", detail: "Announced. Confirmed receivable." },
-            { date: isoDate(-40), label: "OGDC next payout (estimate)", type: "dividend", detail: "Model estimate from payout history." },
-            { date: isoDate(-55), label: "MEBL final (estimate)", type: "dividend", detail: "Model estimate from expected earnings." },
+            { ticker: "UBL", yoc: `${yoc("UBL").toFixed(0)}%`, share: `${incomeShare("UBL").toFixed(0)}%`, read: "Concentration; watch cover" },
+            { ticker: "OGDC", yoc: `${yoc("OGDC").toFixed(0)}%`, share: `${incomeShare("OGDC").toFixed(0)}%`, read: "Depends on circular-debt cash" },
+            { ticker: "FFC", yoc: `${yoc("FFC").toFixed(0)}%`, share: `${incomeShare("FFC").toFixed(0)}%`, read: "Reliable payer" },
+            { ticker: "MEBL", yoc: `${yoc("MEBL").toFixed(0)}%`, share: `${incomeShare("MEBL").toFixed(0)}%`, read: "Growth first, income second" },
+            { ticker: "HUBC", yoc: "0%", share: "0%", read: "Dividend paused" },
           ],
         },
       ],
     },
+
+    // 6 ─ Moderate: macro / rate exposure ────────────────────────────────────
     {
-      title: "Sector allocation vs target",
-      summary: `${DEMO_CHAT_SUMMARY_PREFIX} where the book is over- and under-weight`,
-      user: "How is my capital spread across sectors, and where am I off my targets?",
-      assistant: `## Short answer
-The book is genuinely diversified across seven sectors, with no single sector dominating. The one thing to watch is **banks**, where MEBL and UBL together are the largest sleeve at about ${banksWt.toFixed(0)}%, a little above the 30% target. Everything else sits close to its intended weight.
+      title: "What falling rates mean for me",
+      summary: `${DEMO_CHAT_SUMMARY_PREFIX} policy-rate and USD/PKR exposure across the book`,
+      user: "Rates are coming down and the rupee has been stable. What does that mean for my holdings?",
+      assistant: `Net effect is close to neutral, because the biggest lever cuts two ways across your book. The SBP has taken the policy rate to 11% from a 22% peak, and your ${banksWt.toFixed(0)}% banking weight sees slowly compressing margins from that, offset by revaluation gains on bank bond books. The rate-sensitive cyclicals lean the other way.
 
-## Read
-Banking is the biggest exposure and it is intentional, since both names are working and pay you to hold them. The risk is that they share the same driver: when policy rates move, both move together. So treat the banking weight as one position-sizing decision, not two.
+## Who gains as rates fall
+- **LUCK** (${wt("LUCK").toFixed(0)}%): cheaper project financing and stronger construction demand. This is the clearest beneficiary and the reason the position was added.
+- **HUBC** (${wt("HUBC").toFixed(0)}%): heavy leverage means lower financing costs help, though circular debt still gates the cash.
 
-Cement and technology are your growth-cyclical exposures. Power, through HUBC, is one of the smaller and weaker sleeves, which is appropriate given the weakening thesis.
+## Who the currency drives, not rates
+- **SYS** (${wt("SYS").toFixed(0)}%) and **OGDC** (${wt("OGDC").toFixed(0)}%) earn in US dollars. That normally makes rupee weakness a tailwind, but USD/PKR near 278 is actually about 1.8% firmer over the past year, so the currency kicker is dormant. SYS rests on volume and utilisation right now, not depreciation, and OGDC on the oil price.
 
-## What I would do
-Nothing urgent. If the banking sleeve drifts further above target on price appreciation, that is the first place to trim. Do not add to HUBC to "rebalance" a weak thesis into a bigger position.`,
+## The read
+No trade here, just awareness: your largest sleeve is a mild rate headwind, your cyclicals are the offset, and your dollar earners are not getting the FX help this year that the thesis assumes long term. With CPI near 11.7% and the policy rate at 11%, the real rate is about 0.7 points below inflation, so the easing cycle has less cushion than the headline rate suggests.`,
       cards: [
         {
-          kind: "bar-chart",
-          title: "Sector weight: current vs target",
-          xKey: "sector",
-          yUnit: "%",
-          bars: [
-            { key: "current", label: "Current", color: "#2563eb" },
-            { key: "target", label: "Target", color: "#94a3b8" },
-          ],
-          data: [
-            { sector: "Banks", current: Number(banksWt.toFixed(1)), target: 30 },
-            { sector: "Oil & Gas", current: Number(wt("OGDC").toFixed(1)), target: 13 },
-            { sector: "Tech", current: Number(wt("SYS").toFixed(1)), target: 14 },
-            { sector: "Fertilizer", current: Number(wt("FFC").toFixed(1)), target: 12 },
-            { sector: "Conglomerate", current: Number(wt("ENGROH").toFixed(1)), target: 9 },
-            { sector: "Cement", current: Number(wt("LUCK").toFixed(1)), target: 10 },
-            { sector: "Power", current: Number(wt("HUBC").toFixed(1)), target: 8 },
+          kind: "metric-strip",
+          title: "PSX macro backdrop",
+          metrics: [
+            { label: "Policy rate", value: "11.0%", delta: "from 22% peak", tone: "neutral" },
+            { label: "Inflation (CPI)", value: "11.7%", detail: "year-on-year", tone: "neutral" },
+            { label: "Real policy rate", value: "-0.7 pts", detail: "rate minus CPI", tone: "neutral" },
+            { label: "USD/PKR", value: "278", delta: "PKR firmer, -1.8% y/y", tone: "neutral" },
           ],
         },
         {
           kind: "comparison-table",
-          title: "Allocation read",
+          title: "How the backdrop hits each sleeve",
           columns: [
-            { key: "sector", label: "Sector" },
-            { key: "state", label: "State" },
-            { key: "action", label: "Action" },
+            { key: "sleeve", label: "Sleeve" },
+            { key: "weight", label: "Weight" },
+            { key: "driver", label: "Main driver" },
+            { key: "read", label: "Net read" },
           ],
           rows: [
-            { sector: "Banks", state: "Largest sleeve, on purpose", action: "Trim first if it drifts higher" },
-            { sector: "Cement", state: "Cyclical growth bet", action: "Hold into the rate-cut cycle" },
-            { sector: "Power", state: "Small, weakening", action: "Do not add to rebalance" },
-            { sector: "Conglomerate", state: "No thesis on ENGROH", action: "Write it down or trim" },
+            { sleeve: "Banks (MEBL, UBL)", weight: `${banksWt.toFixed(0)}%`, driver: "Policy rate", read: "Margin drag, bond-book offset" },
+            { sleeve: "Cement (LUCK)", weight: `${wt("LUCK").toFixed(0)}%`, driver: "Rates + construction", read: "Tailwind as rates fall" },
+            { sleeve: "Power (HUBC)", weight: `${wt("HUBC").toFixed(0)}%`, driver: "Leverage + circular debt", read: "Helped, but cash gated" },
+            { sleeve: "Exporters (SYS, OGDC)", weight: `${(wt("SYS") + wt("OGDC")).toFixed(0)}%`, driver: "USD/PKR", read: "FX kicker dormant, PKR firm" },
           ],
         },
       ],
     },
+
+    // 7 ─ Moderate decision: HUBC hold or cut ────────────────────────────────
     {
-      title: "SYS export thesis",
-      summary: `${DEMO_CHAT_SUMMARY_PREFIX} IT exporter growth, FX hedge and what to watch`,
-      user: "Is the SYS thesis still intact? Walk me through the growth and the risks.",
-      assistant: `## Provisional view
-**Intact, and the highest-conviction position in the book.** SYS is a dollar-revenue business in a rupee-cost country, so it works as both a growth holding and a currency hedge. The latest guidance for export revenue growth above 20% is exactly what the thesis is built on.
+      title: "HUBC: hold or cut?",
+      summary: `${DEMO_CHAT_SUMMARY_PREFIX} weakening thesis, opportunity cost and a decision`,
+      user: "HUBC is my worst position and the thesis is weakening. Should I hold or cut?",
+      assistant: `Hold only if you can name the catalyst that fixes it; otherwise this capital has a better home. The original case was cheap contracted cash flows plus an eventual dividend, and both legs are now in question: the dividend is still paused and the IPP renegotiation risk you wrote down is back in the news. The burden of proof has flipped from "why sell" to "why keep holding."
 
-## Why it works
-Revenue is earned largely in US dollars while a big share of the cost base is in rupees. When the rupee weakens, reported earnings get a tailwind. When it is stable, growth carries the result. That asymmetry is rare on the PSX.
+## Where it stands
+HUBC is PKR ${Math.abs(Math.round(pl(H("HUBC")) / 1000))}k underwater, down ${Math.abs(retPct(H("HUBC"))).toFixed(0)}%, at ${wt("HUBC").toFixed(0)}% of the book, and it pays you nothing today. It is the only position contributing neither price gain nor income.
 
-## The risks, honestly
-- **Client concentration** in the Middle East. A slowdown there hits harder than a broad market dip.
-- **Wage inflation** in a tight engineering labour market can compress the margin even as revenue grows.
-- **Global IT spending**. A worldwide pullback in tech budgets would slow new-logo growth.
+## The opportunity cost is concrete
+OGDC gives you almost the same "discounted, paid to wait" profile, but with a thesis that is currently active and a ${yoc("OGDC").toFixed(0)}% yield on cost while you wait. Falling rates and a firm rupee help HUBC mechanically, but circular debt still gates the actual cash, so the mechanical tailwind does not resolve the core risk.
 
-## What to watch
-Track whether growth is coming from new clients or just more work from existing ones, and watch the wage bill against revenue. The sell condition stays the same: export growth below 10% for a full year, or sustained margin erosion.`,
-      cards: [
-        {
-          kind: "price-chart",
-          title: "SYS price vs your cost basis",
-          ticker: "SYS",
-          period: "1Y",
-          overlay: ["cost-basis"],
-          description: "Live PSX price history with your average cost overlaid.",
-        },
-        {
-          kind: "bar-chart",
-          title: "Illustrative export revenue growth",
-          description: "Year-on-year growth, illustrative for the demo.",
-          xKey: "year",
-          yUnit: "%",
-          bars: [{ key: "growth", label: "YoY growth", color: "#7c3aed" }],
-          data: [
-            { year: "FY23", growth: 31 },
-            { year: "FY24", growth: 28 },
-            { year: "FY25", growth: 22 },
-            { year: "FY26", growth: 24 },
-          ],
-        },
-        {
-          kind: "metric-strip",
-          title: "Your SYS position",
-          metrics: [
-            { label: "Shares", value: `${H("SYS").quantity.toLocaleString("en-PK")}` },
-            { label: "Avg cost", value: `PKR ${H("SYS").avg_cost.toFixed(2)}` },
-            { label: "Last price", value: `PKR ${H("SYS").price.toFixed(2)}` },
-            { label: "Unrealized", value: `+PKR ${(pl(H("SYS")) / 1000).toFixed(1)}k`, delta: `+${retPct(H("SYS")).toFixed(1)}%`, tone: "positive" },
-          ],
-        },
-      ],
-    },
-    {
-      title: "HUBC: is the thesis still valid?",
-      summary: `${DEMO_CHAT_SUMMARY_PREFIX} weakening power position, the renegotiation risk and a decision`,
-      user: "My HUBC thesis is marked weakening. Walk me through whether to hold or cut.",
-      assistant: `## Short answer
-This is the one position where the original reason to own it is genuinely in question. The thesis rested on cheap, contracted cash flows and an eventual dividend resumption. The dividend is still paused and IPP renegotiation talks, the exact risk you wrote down, are back in the news. That does not automatically mean sell, but it does mean the burden of proof has flipped.
+## Defensible to hold if
+- There is a credible, dated path to dividend resumption near the historical payout.
+- The next results show contracted returns intact through the renegotiation.
 
-## The timeline
-The events below are why the thesis moved to weakening. Each one chips at the contracted-cash-flow assumption.
-
-## How I would frame the decision
-- **The bull case** needs one concrete thing: a confirmed dividend resumption at something close to the historical payout. Until that happens, you are holding on hope.
-- **The bear case** is that another PPA renegotiation permanently lowers contracted returns, in which case the cheap-cash-flow story is just cheap for a reason.
-- **The opportunity cost** matters. OGDC offers a similar "discounted, paid to wait" profile with a thesis that is currently intact.
-
-## Suggested next step
-Set a hard review trigger on the next results or any formal PPA announcement. If there is no credible path to dividend resumption by then, this capital has a better home.`,
+## Defensible to cut if
+- The next PPA update trims contracted returns again.
+- You would not buy HUBC today at this weight with the dividend paused, which is the honest test for keeping it.`,
       cards: [
         {
           kind: "timeline",
-          title: "Why the HUBC thesis weakened",
+          title: "How the HUBC thesis decayed",
           events: [
             { date: isoDate(1), label: "New round of IPP renegotiation talks", type: "corporate", detail: "Touches contracted returns, the named thesis risk." },
             { date: isoDate(18), label: "Thesis downgraded to Weakening", type: "news", detail: "Logged in the journal." },
             { date: isoDate(90), label: "Dividend remains paused", type: "dividend", detail: "No resumption signal yet." },
-            { date: isoDate(160), label: "Original purchase", type: "transaction", detail: "Bought on the contracted-cash-flow case." },
+            { date: isoDate(210), label: "Original purchase", type: "transaction", detail: "Bought on the contracted-cash-flow case." },
           ],
         },
         {
           kind: "comparison-table",
-          title: "Hold versus reallocate",
+          title: "Hold HUBC versus reallocate to OGDC",
           columns: [
             { key: "factor", label: "Factor" },
             { key: "hubc", label: "HUBC (hold)" },
@@ -997,7 +1007,7 @@ Set a hard review trigger on the next results or any formal PPA announcement. If
           ],
           rows: [
             { factor: "Thesis status", hubc: "Weakening", ogdc: "Active" },
-            { factor: "Income now", hubc: "Dividend paused", ogdc: "Paying a dividend" },
+            { factor: "Income now", hubc: "Paused, 0%", ogdc: `Paying, ${yoc("OGDC").toFixed(0)}% on cost` },
             { factor: "Main risk", hubc: "PPA renegotiation", ogdc: "Circular debt" },
             { factor: "Upside trigger", hubc: "Dividend resumption", ogdc: "Receivable settlement" },
           ],
@@ -1007,74 +1017,20 @@ Set a hard review trigger on the next results or any formal PPA announcement. If
           title: "Your HUBC position",
           metrics: [
             { label: "Shares", value: `${H("HUBC").quantity}` },
-            { label: "Avg cost", value: `PKR ${H("HUBC").avg_cost.toFixed(2)}` },
-            { label: "Last price", value: `PKR ${H("HUBC").price.toFixed(2)}` },
-            { label: "Unrealized", value: `PKR ${(pl(H("HUBC")) / 1000).toFixed(1)}k`, delta: `${retPct(H("HUBC")).toFixed(1)}%`, tone: "negative" },
-          ],
-        },
-      ],
-    },
-    {
-      title: "Cement cycle: LUCK",
-      summary: `${DEMO_CHAT_SUMMARY_PREFIX} the rate-cut cyclical bet and the peer set`,
-      user: "Why do I own LUCK and how does it sit against the other cement names?",
-      assistant: `## Short answer
-LUCK is a deliberate cyclical bet on falling interest rates and a domestic construction recovery, held through the lowest-cost producer with the cleanest balance sheet. It is not an income holding, it is a growth-cyclical one, and it is sized to stay under the cement sector cap.
-
-## The case
-Cement is geared to two things: the cost of capital and construction activity. As rates fall, both demand and the discount on future earnings improve. LUCK adds a second layer through its holding structure across autos, chemicals and power, so you are not betting on cement alone.
-
-## Against the peers
-LUCK trades at a premium to DGKC and MLCF, and that premium is earned: lower cost per tonne, a stronger balance sheet and the diversified holdings. The chart shows the price against your cost. The comparison table is why I am comfortable paying up rather than reaching for the cheaper, more leveraged names.
-
-## What to watch
-Domestic dispatch volumes and coal costs. The thesis breaks if a fresh wave of industry capacity crushes pricing for more than a year, which is the recorded sell condition.`,
-      cards: [
-        {
-          kind: "price-chart",
-          title: "LUCK price vs your cost basis",
-          ticker: "LUCK",
-          period: "1Y",
-          overlay: ["cost-basis"],
-          description: "Live PSX price history with your average cost overlaid.",
-        },
-        {
-          kind: "comparison-table",
-          title: "Cement peers",
-          description: "Illustrative figures for context, not live quotes.",
-          columns: [
-            { key: "name", label: "Producer" },
-            { key: "cost", label: "Cost position" },
-            { key: "balance", label: "Balance sheet" },
-            { key: "note", label: "Note" },
-          ],
-          rows: [
-            { name: "LUCK", cost: "Lowest", balance: "Net cash, diversified", note: "Held. Premium is earned" },
-            { name: "DGKC", cost: "Mid", balance: "Leveraged", note: "Cheaper, more cyclical risk" },
-            { name: "MLCF", cost: "Mid", balance: "Improving", note: "Smaller, less diversified" },
-          ],
-        },
-        {
-          kind: "bar-chart",
-          title: "Illustrative domestic dispatch trend",
-          description: "Index of domestic volumes, illustrative for the demo.",
-          xKey: "period",
-          yUnit: "",
-          bars: [{ key: "dispatch", label: "Dispatch index", color: "#ea580c" }],
-          data: [
-            { period: "Q1", dispatch: 96 },
-            { period: "Q2", dispatch: 99 },
-            { period: "Q3", dispatch: 104 },
-            { period: "Q4", dispatch: 111 },
+            { label: "Avg cost", value: `PKR ${H("HUBC").avg_cost.toFixed(0)}` },
+            { label: "Last price", value: `PKR ${H("HUBC").price.toFixed(0)}` },
+            { label: "Unrealized", value: `${kfmt(pl(H("HUBC")))}`, delta: `${retPct(H("HUBC")).toFixed(0)}%`, tone: "negative" },
           ],
         },
       ],
     },
   ];
 
-  for (let index = 0; index < threads.length; index += 1) {
+  // Insert oldest first so the newest (index 0, the health check) sorts to the
+  // top of the thread list.
+  for (let index = threads.length - 1; index >= 0; index -= 1) {
     const item = threads[index];
-    const threadTime = iso(600 - index * 70);
+    const threadTime = iso(60 + index * 90);
     const { data: thread, error: threadError } = await supabase
       .from("chat_threads")
       .insert({
@@ -1095,7 +1051,7 @@ Domestic dispatch volumes and coal costs. The thesis breaks if a fresh wave of i
         thread_id: thread.id,
         role: "user",
         content: item.user,
-        created_at: iso(599 - index * 70),
+        created_at: iso(60 + index * 90 + 1),
       },
       {
         user_id: userId,
@@ -1103,7 +1059,7 @@ Domestic dispatch volumes and coal costs. The thesis breaks if a fresh wave of i
         role: "assistant",
         content: item.assistant,
         cards: item.cards.map((spec) => ({ kind: "artifact", data: spec })),
-        created_at: iso(598 - index * 70),
+        created_at: iso(60 + index * 90),
       },
     ]);
   }
