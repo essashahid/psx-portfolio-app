@@ -49,7 +49,15 @@ export async function gatherCards(db: SupabaseClient, userId: string, resolved: 
     if (news) cards.push({ kind: "news", data: news });
   }
 
-  if (tickers.length === 0 && (intent === "position" || intent === "market")) {
+  // A no-ticker dividend or valuation question ("which of my holdings carry my
+  // income", "which of my holdings look cheapest") is inherently about the
+  // user's book, so load holdings for those too — this is what lets dividend
+  // income, cross-holding patterns, benchmark returns and the macro overlay all
+  // flow into the brief for whole-portfolio questions, not just "position" ones.
+  if (
+    tickers.length === 0 &&
+    (intent === "position" || intent === "market" || intent === "dividend" || intent === "valuation")
+  ) {
     const h = await getHoldingsSummary(db, userId);
     if (h) cards.push({ kind: "holdings", data: h });
     // For portfolio gap/concentration questions, include the full PSX sector

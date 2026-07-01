@@ -130,6 +130,48 @@ export function tbillYieldOn(date: string): number {
   return current;
 }
 
+export interface PolicyRateContext {
+  /** Annualised PKR policy/T-bill yield (%) in effect on the given date. */
+  currentPct: number;
+  /** Effective-from date of the current level. */
+  since: string;
+  /** Highest level seen at or before the given date. */
+  peakPct: number;
+  peakDate: string;
+  /** The prior distinct level, so callers can describe the last move. */
+  previousPct: number | null;
+  direction: "rising" | "falling" | "flat";
+}
+
+/**
+ * The SBP policy-rate path (T-bill proxy) as of a date: the current level, the
+ * cycle peak, and the direction of the last move. Lets the Copilot say "rates
+ * at 11%, down from a 22% peak" without recomputing anything.
+ */
+export function policyRateContext(date: string): PolicyRateContext {
+  const effective = TBILL_YIELD_STEPS.filter((s) => date >= s.from);
+  const steps = effective.length ? effective : [TBILL_YIELD_STEPS[0]];
+  const current = steps[steps.length - 1];
+  const previous = steps.length >= 2 ? steps[steps.length - 2] : null;
+  let peak = steps[0];
+  for (const s of steps) if (s.yieldPct > peak.yieldPct) peak = s;
+  const direction: PolicyRateContext["direction"] = previous
+    ? current.yieldPct > previous.yieldPct
+      ? "rising"
+      : current.yieldPct < previous.yieldPct
+        ? "falling"
+        : "flat"
+    : "flat";
+  return {
+    currentPct: current.yieldPct,
+    since: current.from,
+    peakPct: peak.yieldPct,
+    peakDate: peak.from,
+    previousPct: previous?.yieldPct ?? null,
+    direction,
+  };
+}
+
 /** Build a monthly T-bill yield series spanning the requested date range. */
 export function buildTbillSeries(startDate: string, endDate: string): MacroPoint[] {
   const out: MacroPoint[] = [];

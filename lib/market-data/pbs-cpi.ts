@@ -56,3 +56,43 @@ export function cpiForDate(isoDate: string, series: CpiSeries = "national"): num
 export function latestCpiMonth(): string {
   return SORTED_KEYS[SORTED_KEYS.length - 1];
 }
+
+/** Shift a "YYYY-MM" key by whole months (negative goes back). */
+function shiftMonth(month: string, delta: number): string {
+  const [y, m] = month.split("-").map(Number);
+  const d = new Date(Date.UTC(y, m - 1 + delta, 1));
+  return `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, "0")}`;
+}
+
+export interface CpiInflation {
+  /** Latest published CPI month, e.g. "2026-05". */
+  month: string;
+  latestValue: number;
+  yearAgoValue: number;
+  /** Year-on-year CPI change, in percent. */
+  yoyPct: number;
+}
+
+/**
+ * Year-on-year National CPI inflation from the latest published month (or the
+ * latest month at or before `asOf`). Returns null only if the 12-month-prior
+ * value is not in the table.
+ */
+export function cpiYoY(asOf?: string): CpiInflation | null {
+  const target = asOf ? asOf.slice(0, 7) : latestCpiMonth();
+  // Latest published month at or before the target.
+  let month = SORTED_KEYS[0];
+  for (const key of SORTED_KEYS) {
+    if (key <= target) month = key;
+    else break;
+  }
+  const latestValue = PBS_NATIONAL_CPI[month];
+  const yearAgoValue = PBS_NATIONAL_CPI[shiftMonth(month, -12)];
+  if (latestValue === undefined || yearAgoValue === undefined || yearAgoValue <= 0) return null;
+  return {
+    month,
+    latestValue,
+    yearAgoValue,
+    yoyPct: (latestValue / yearAgoValue - 1) * 100,
+  };
+}

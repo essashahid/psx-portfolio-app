@@ -16,3 +16,19 @@ export function looksLikeToolLeak(text: string): boolean {
 
 export const TOOL_LEAK_FALLBACK =
   "I couldn't complete that lookup cleanly with this model. The DeepSeek Reasoner can't run live web or data lookups, so for “why did it move” questions use DeepSeek Chat or a Claude model instead.";
+
+/**
+ * Enforce the house rule that answers never use em or en dashes. The owner
+ * dislikes them and models (DeepSeek Flash especially) ignore the prompt
+ * instruction, so we strip them deterministically as part of the pipeline: a
+ * dash between digits becomes a "to" range, any other dash becomes a comma. Only
+ * targets — (U+2014) and – (U+2013), so hyphens like "KSE-100" and "52-week" are
+ * untouched. Applied both to the live output stream and inside the eval, so the
+ * eval scores what actually ships.
+ */
+export function stripEmDashes(text: string): string {
+  return text
+    .replace(/(\d)\s*[—–]\s*(\d)/g, "$1 to $2")
+    .replace(/\s*[—–]\s*/g, ", ")
+    .replace(/,\s*,/g, ",");
+}
