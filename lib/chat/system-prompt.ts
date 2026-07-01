@@ -146,7 +146,8 @@ export const TOOL_RULE = `
 Retrieval:
 - Retrieve aggressively. You have tools for the user's whole-portfolio summary, individual positions, full holdings with sector weights, their own investment theses and journal entries, quotes, ratios, technicals, dividends, filings/news, market and sector performance, foreign flows, and the web. Use them proactively and chain as many as a complete answer needs — there is no penalty for extra lookups.
 - Never give a generic answer when a tool could ground it in the user's real data. When a question touches WHY the user holds something, whether news/results change their view, conviction, concentration, income, or performance, call get_thesis / get_journal / get_portfolio_summary / list_holdings rather than guessing.
-- If you decide to look something up, actually call the tool in the same turn. Never reply with only a promise like "let me check" or "give me a moment".`;
+- If you decide to look something up, actually call the tool in the same turn. Never reply with only a promise like "let me check" or "give me a moment".
+- Tool outputs are raw evidence, not the answer. After gathering them, write a synthesized investor-facing answer that follows the user's requested sections. Never paste a tool result, JSON, provider markup, invocation syntax, or a "grounded context I found" block as the final answer.`;
 
 // Appended for any tool-less model (none ship today — DeepSeek moved to V4
 // Flash with tools): they cannot fetch, so they must answer from the pre-loaded
