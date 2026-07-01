@@ -79,9 +79,8 @@ function shortDescription(description: string | null): string | null {
   if (!description) return null;
   const cleaned = description.replace(/\s+/g, " ").trim();
   if (cleaned.length <= 300) return cleaned;
-  // Prefer a clean sentence boundary; otherwise truncate on a word boundary and
-  // add a real ellipsis — never cut mid-word like "...and cl...".
-  const firstSentence = cleaned.match(/^.{40,300}?[.!?](\s|$)/)?.[0]?.trim();
+  // Prefer a clean sentence boundary (as close to the limit as possible); otherwise truncate on a word boundary
+  const firstSentence = cleaned.match(/^.{40,300}[.!?](?=\s|$)/)?.[0]?.trim();
   if (firstSentence && firstSentence.length < cleaned.length) {
     return `${firstSentence}…`;
   }
