@@ -78,12 +78,15 @@ function freshnessBadge(freshness: string | null | undefined) {
 function shortDescription(description: string | null): string | null {
   if (!description) return null;
   const cleaned = description.replace(/\s+/g, " ").trim();
-  if (cleaned.length <= 180) return cleaned;
+  if (cleaned.length <= 300) return cleaned;
   // Prefer a clean sentence boundary; otherwise truncate on a word boundary and
   // add a real ellipsis — never cut mid-word like "...and cl...".
-  const firstSentence = cleaned.match(/^.{40,180}?[.!?](\s|$)/)?.[0]?.trim();
+  const firstSentence = cleaned.match(/^.{40,300}?[.!?](\s|$)/)?.[0]?.trim();
+  if (firstSentence && firstSentence.length < cleaned.length) {
+    return `${firstSentence}…`;
+  }
   if (firstSentence) return firstSentence;
-  const slice = cleaned.slice(0, 170);
+  const slice = cleaned.slice(0, 290);
   const lastSpace = slice.lastIndexOf(" ");
   return `${(lastSpace > 80 ? slice.slice(0, lastSpace) : slice).trim()}…`;
 }
@@ -401,7 +404,7 @@ export async function OverviewPanel({
               ))}
             </div>
 
-            {officialDescription ? (
+            {officialDescription && officialDescription.replace(/\s+/g, " ").trim() !== companySummary ? (
               <details className="rounded-xl border border-slate-200 bg-slate-50/60 p-3 text-xs">
                 <summary className="cursor-pointer font-medium text-slate-900">Read full profile</summary>
                 <p className="mt-2 leading-relaxed text-muted-foreground">{officialDescription}</p>
