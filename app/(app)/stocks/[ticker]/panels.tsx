@@ -716,8 +716,7 @@ export async function RatiosPanel({ ticker, readOnly = false }: { ticker: string
       .from("stock_master")
       .select("ticker, company_name, sector")
       .eq("sector", metadata.sector)
-      .neq("ticker", ticker.toUpperCase())
-      .limit(8);
+      .neq("ticker", ticker.toUpperCase());
     const peerRows = (peerMasters ?? []) as { ticker: string; company_name: string | null; sector: string | null }[];
     const peerTickers = peerRows.map((row) => row.ticker).filter(Boolean);
     if (peerTickers.length) {
