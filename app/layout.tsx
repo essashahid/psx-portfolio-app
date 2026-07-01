@@ -30,11 +30,14 @@ export const viewport: Viewport = {
   themeColor: "#f2f2f0",
 };
 
+import { PwaUpdater } from "@/components/pwa-updater";
+
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en">
       <body className={`${manrope.variable} ${geistMono.variable} font-sans antialiased`}>
         {children}
+        <PwaUpdater />
       </body>
     </html>
   );
