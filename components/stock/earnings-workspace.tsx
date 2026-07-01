@@ -466,6 +466,16 @@ export function EarningsWorkspace({
   }, [activeRows, comparison, rows]);
 
   const latestChartPoint = chartData.at(-1) ?? null;
+  const driverTrendAvailable = chartData.some((row) =>
+    ["op", "finance", "tax"].some((key) => typeof row[key as "op" | "finance" | "tax"] === "number")
+  );
+  const trendOptions = [
+    { value: "profit", label: "Revenue & profit" },
+    { value: "eps", label: "EPS" },
+    { value: "margins", label: "Margins" },
+    ...(driverTrendAvailable ? [{ value: "drivers", label: "Drivers" } as const] : []),
+  ] satisfies { value: TrendView; label: string }[];
+  const activeTrendView = trendOptions.some((option) => option.value === trendView) ? trendView : "profit";
 
   const selectChartPeriod = (e: unknown) => {
       const periodId = (e as ChartClickEvent | null)?.activePayload?.[0]?.payload?.id;
@@ -583,19 +593,14 @@ export function EarningsWorkspace({
                  <CardDescription className="mt-1 text-xs">Charts show absolute values. The comparison control sets the YoY/QoQ basis shown in badges and tooltips.</CardDescription>
              </div>
              <Segment
-                 value={trendView}
+                 value={activeTrendView}
                  onChange={setTrendView}
-                 options={[
-                     { value: "profit", label: "Revenue & profit" },
-                     { value: "eps", label: "EPS" },
-                     { value: "margins", label: "Margins" },
-                     { value: "drivers", label: "Drivers" },
-                 ]}
+                 options={trendOptions}
              />
           </div>
         </CardHeader>
         <CardContent className="p-0">
-          {trendView === "profit" ? (
+          {activeTrendView === "profit" ? (
             <div className="grid gap-3 p-4 lg:grid-cols-2">
                 {[
                     { key: "revenue", label: "Revenue trend", fill: "#2563eb", question: "Is the business growing?" },
@@ -645,7 +650,7 @@ export function EarningsWorkspace({
                   <ComposedChart data={chartData} onClick={selectChartPeriod}>
                       <CartesianGrid vertical={false} strokeDasharray="4 4" stroke="#e2e8f0" />
                       <XAxis dataKey="period" {...AXIS_TICK} tickMargin={10} axisLine={false} tickLine={false} />
-                      <YAxis yAxisId="left" {...AXIS_TICK} tickFormatter={trendView === "eps" ? (v) => v.toFixed(1) : trendView === "margins" ? (v) => v.toFixed(0) + "%" : fmtCompact} width={65} axisLine={false} tickLine={false} />
+                      <YAxis yAxisId="left" {...AXIS_TICK} tickFormatter={activeTrendView === "eps" ? (v) => v.toFixed(1) : activeTrendView === "margins" ? (v) => v.toFixed(0) + "%" : fmtCompact} width={65} axisLine={false} tickLine={false} />
                       <RechartsTooltip 
                           cursor={CURSOR}
                           contentStyle={{ borderRadius: "8px", border: "1px solid #e2e8f0", boxShadow: "0 4px 6px -1px rgb(0 0 0 / 0.1)", fontSize: "12px" }}
@@ -660,16 +665,16 @@ export function EarningsWorkspace({
                       />
                       <Legend iconType="circle" wrapperStyle={{ fontSize: "12px", paddingTop: "10px" }} />
                       
-                      {trendView === "eps" && (
+                      {activeTrendView === "eps" && (
                           <Bar yAxisId="left" dataKey="eps" name="EPS" fill="#4f46e5" radius={[4,4,0,0]} barSize={24} />
                       )}
-                      {trendView === "margins" && (
+                      {activeTrendView === "margins" && (
                           <>
                               <Line yAxisId="left" type="monotone" dataKey="gm" name="Gross margin" stroke="#16a34a" strokeWidth={2} dot={{ r: 3 }} />
                               <Line yAxisId="left" type="monotone" dataKey="nm" name="Net margin" stroke="#b45309" strokeWidth={3} dot={{ r: 4, strokeWidth: 2 }} />
                           </>
                       )}
-                      {trendView === "drivers" && (
+                      {activeTrendView === "drivers" && (
                            <>
                               <Bar yAxisId="left" dataKey="op" name="Operating Profit" fill="#2563eb" radius={[4,4,0,0]} barSize={24} />
                               <Line yAxisId="left" type="monotone" dataKey="finance" name="Finance cost" stroke="#f43f5e" strokeWidth={2} dot={{ r: 3 }} />

@@ -7,9 +7,8 @@ import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import { DISCLAIMER } from "@/lib/utils";
-import { CandlestickChart, Loader2, Eye, EyeOff, ShieldCheck, LineChart, Sparkles, Mail } from "lucide-react";
+import { CandlestickChart, Loader2, Eye, EyeOff, ShieldCheck, LineChart, Sparkles } from "lucide-react";
 
 const VALUE_POINTS = [
   { icon: LineChart, text: "Read a complete PSX portfolio dashboard with seeded holdings, dividends and market data" },
@@ -24,10 +23,8 @@ export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [loginLoading, setLoginLoading] = useState(false);
   const [demoLoading, setDemoLoading] = useState(false);
-  const [waitlistLoading, setWaitlistLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [info, setInfo] = useState<string | null>(null);
-  const [waitlist, setWaitlist] = useState({ full_name: "", email: "", phone: "", note: "" });
 
   async function signIn(e: React.FormEvent) {
     e.preventDefault();
@@ -61,28 +58,6 @@ export default function LoginPage() {
       setError(err instanceof Error ? err.message : "Demo is unavailable");
     } finally {
       setDemoLoading(false);
-    }
-  }
-
-  async function joinWaitlist(e: React.FormEvent) {
-    e.preventDefault();
-    setWaitlistLoading(true);
-    setError(null);
-    setInfo(null);
-    try {
-      const res = await fetch("/api/waitlist", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...waitlist, source: "login" }),
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error ?? "Could not join waitlist");
-      setInfo(data.message ?? "You are on the waitlist.");
-      setWaitlist({ full_name: "", email: "", phone: "", note: "" });
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Could not join waitlist");
-    } finally {
-      setWaitlistLoading(false);
     }
   }
 
@@ -127,10 +102,10 @@ export default function LoginPage() {
         </h1>
 
         <p className="rise rise-4 mt-5 max-w-2xl text-balance text-sm text-muted-foreground sm:text-base">
-          Explore the allowed launch tabs with seeded PSX portfolio data. New accounts are approved manually from the waitlist.
+          Explore the allowed launch tabs with seeded PSX portfolio data. New accounts are approved manually for now.
         </p>
 
-        <div className="rise rise-5 mt-8 grid w-full gap-4 text-left lg:grid-cols-[0.95fr_1.05fr]">
+        <div className="rise rise-5 mt-8 w-full max-w-md text-left">
           <section className="rounded-2xl border border-border bg-card/90 p-5 shadow-[0_18px_70px_-45px_rgba(0,0,0,0.28)] backdrop-blur-sm sm:p-6">
             <h2 className="text-base font-semibold tracking-tight">Approved account sign-in</h2>
             <p className="mt-1 text-xs text-muted-foreground">Public signup is closed for now. If your account has been created, sign in here.</p>
@@ -178,35 +153,6 @@ export default function LoginPage() {
                 Demo data can be read, searched and explored, but not edited.
               </p>
             </div>
-          </section>
-
-          <section className="rounded-2xl border border-border bg-card/90 p-5 shadow-[0_18px_70px_-45px_rgba(0,0,0,0.28)] backdrop-blur-sm sm:p-6">
-            <h2 className="flex items-center gap-2 text-base font-semibold tracking-tight"><Mail className="h-4 w-4 text-emerald-600" /> Join the waitlist</h2>
-            <p className="mt-1 text-xs text-muted-foreground">Share your details and I will reach out personally before creating your account.</p>
-            <form onSubmit={joinWaitlist} className="mt-4 space-y-3">
-              <div className="grid gap-3 sm:grid-cols-2">
-                <div className="space-y-1.5 sm:col-span-2">
-                  <Label htmlFor="wait-name">Name</Label>
-                  <Input id="wait-name" required value={waitlist.full_name} onChange={(e) => setWaitlist({ ...waitlist, full_name: e.target.value })} placeholder="Your name" />
-                </div>
-                <div className="space-y-1.5">
-                  <Label htmlFor="wait-email">Email</Label>
-                  <Input id="wait-email" type="email" value={waitlist.email} onChange={(e) => setWaitlist({ ...waitlist, email: e.target.value })} placeholder="you@example.com" />
-                </div>
-                <div className="space-y-1.5">
-                  <Label htmlFor="wait-phone">Phone</Label>
-                  <Input id="wait-phone" value={waitlist.phone} onChange={(e) => setWaitlist({ ...waitlist, phone: e.target.value })} placeholder="+92..." />
-                </div>
-              </div>
-              <div className="space-y-1.5">
-                <Label htmlFor="wait-note">What are you hoping to track?</Label>
-                <Textarea id="wait-note" rows={3} value={waitlist.note} onChange={(e) => setWaitlist({ ...waitlist, note: e.target.value })} placeholder="Optional: portfolio size, broker, features you care about" />
-              </div>
-              <Button type="submit" className="w-full" disabled={waitlistLoading}>
-                {waitlistLoading && <Loader2 className="h-4 w-4 animate-spin" />}
-                Join waitlist
-              </Button>
-            </form>
           </section>
         </div>
 

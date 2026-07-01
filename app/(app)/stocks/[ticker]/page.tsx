@@ -14,7 +14,7 @@ import { normalizeEnabledFeatures } from "@/lib/features";
 import { ArrowLeft, Search } from "lucide-react";
 import {
   OverviewPanel, FinancialsPanel, EarningsPanel, RatiosPanel,
-  TechnicalsPanel, DividendsPanel, NewsFilingsPanel, AiAnalysisPanel,
+  DividendsPanel, NewsFilingsPanel, AiAnalysisPanel,
 } from "./panels";
 
 export const dynamic = "force-dynamic";
@@ -96,13 +96,15 @@ export default async function StockCockpitPage({ params }: { params: Promise<{ t
       ? `${formatNumber(header.technicals.fiftyTwoWeekLow)}-${formatNumber(header.technicals.fiftyTwoWeekHigh)}`
       : "—";
   const lastUpdated = quote.asOf ?? metadata.meta.lastUpdated?.slice(0, 10) ?? null;
+  const hasUsableRatios = ratios.some((row) => row.ratio_value !== null && Number.isFinite(row.ratio_value));
 
   const tabs = [
     { id: "overview", label: "Overview", content: <Suspense fallback={<CardSkeleton lines={8} />}><OverviewPanel ticker={ticker} companyEnrichmentEnabled={companyEnrichmentEnabled} readOnly={isDemo} /></Suspense> },
     { id: "financials", label: "Financials", content: <Suspense fallback={<TableSkeleton />}><FinancialsPanel ticker={ticker} readOnly={isDemo} /></Suspense> },
     { id: "earnings", label: "Earnings", content: <Suspense fallback={<CardSkeleton lines={6} />}><EarningsPanel ticker={ticker} readOnly={isDemo} /></Suspense> },
-    { id: "ratios", label: "Ratios", content: <Suspense fallback={<TableSkeleton />}><RatiosPanel ticker={ticker} readOnly={isDemo} /></Suspense> },
-    { id: "technicals", label: "Technicals", content: <Suspense fallback={<CardSkeleton lines={8} />}><TechnicalsPanel ticker={ticker} readOnly={isDemo} /></Suspense> },
+    ...(hasUsableRatios
+      ? [{ id: "ratios", label: "Ratios", content: <Suspense fallback={<TableSkeleton />}><RatiosPanel ticker={ticker} readOnly={isDemo} /></Suspense> }]
+      : []),
     { id: "dividends", label: "Dividends", content: <Suspense fallback={<TableSkeleton />}><DividendsPanel ticker={ticker} /></Suspense> },
     { id: "news", label: "News & Filings", content: <Suspense fallback={<CardSkeleton lines={8} />}><NewsFilingsPanel ticker={ticker} /></Suspense> },
     ...(companyReportsEnabled

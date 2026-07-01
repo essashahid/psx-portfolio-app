@@ -500,6 +500,12 @@ function statementDisplayRows(statement: StatementType, keys: string[]): Stateme
   return out;
 }
 
+function statementHasValues(rows: FinancialWorkspaceRow[], statement: StatementType, mode: PeriodMode): boolean {
+  return rows
+    .filter((r) => r.statement_type === statement && periodMode(r) === mode)
+    .some((row) => FULL_ROWS[statement].some((key) => value(row, key) !== null));
+}
+
 function isTotalLike(key: string): boolean {
   return ["gross_profit", "operating_profit", "profit_after_tax", "current_assets", "current_liabilities", "total_assets", "total_liabilities", "equity", "free_cash_flow"].includes(key);
 }
@@ -536,6 +542,42 @@ function Segment<T extends string>({
   );
 }
 
+function trendConfig(trend: TrendView): { type: StatementType; keys: string[] } {
+  if (trend === "cash") return { type: "cash_flow", keys: ["operating_cash_flow", "capex", "free_cash_flow"] };
+  if (trend === "balance") return { type: "balance_sheet", keys: ["cash_and_equivalents", "borrowings", "equity", "total_liabilities"] };
+  if (trend === "margins") return { type: "income_statement", keys: ["gross_margin", "operating_margin", "net_margin"] };
+  if (trend === "eps") return { type: "income_statement", keys: ["eps"] };
+  return { type: "income_statement", keys: ["revenue", "gross_profit", "profit_after_tax"] };
+}
+
+function buildTrendRows(
+  sortedRows: FinancialWorkspaceRow[],
+  mode: PeriodMode,
+  trend: TrendView
+): Record<string, string | number | null>[] {
+  const { type, keys } = trendConfig(trend);
+  return sortedRows
+    .filter((r) => r.statement_type === type && periodMode(r) === mode)
+    .slice(0, 8)
+    .reverse()
+    .map((r) => {
+      const prior = comparablePrior(sortedRows, r);
+      const out: Record<string, string | number | null> = {
+        period: labelPeriod(r),
+        source: r.source_url ?? "Official PSX financials",
+        status: rowCompleteness(r, FULL_ROWS[type]),
+      };
+      for (const key of keys) {
+        const v = value(r, key);
+        out[key] = v === null ? null : key === "eps" || key.includes("margin") || key.includes("ratio") ? v : v * 1000;
+        const c = changeText(key, v, value(prior, key));
+        out[`${key}_change`] = c?.text ?? null;
+      }
+      return out;
+    })
+    .filter((r) => keys.some((key) => typeof r[key] === "number"));
+}
+
 export function FinancialsWorkspace({
   ticker,
   rows,
@@ -553,13 +595,37 @@ export function FinancialsWorkspace({
   const [limit, setLimit] = useState<PeriodLimit>("latest4");
 
   const sortedRows = useMemo(() => [...rows].sort((a, b) => rank(b) - rank(a)), [rows]);
+  const statementOptions = useMemo(() => {
+    const options: { value: StatementType; label: string }[] = [
+      { value: "income_statement", label: "Income Statement" },
+      { value: "balance_sheet", label: "Balance Sheet" },
+      { value: "cash_flow", label: "Cash Flow" },
+    ];
+    return options.filter((option) => statementHasValues(sortedRows, option.value, mode));
+  }, [mode, sortedRows]);
+  const activeStatement = statementOptions.some((option) => option.value === statement)
+    ? statement
+    : statementOptions[0]?.value ?? "income_statement";
+  const trendOptions = useMemo(() => {
+    const options: { value: TrendView; label: string }[] = [
+      { value: "profit", label: "Revenue & profit" },
+      { value: "margins", label: "Margins" },
+      { value: "eps", label: "EPS" },
+      { value: "cash", label: "Cash flow" },
+      { value: "balance", label: "Balance sheet" },
+    ];
+    return options.filter((option) => buildTrendRows(sortedRows, mode, option.value).length >= 3);
+  }, [mode, sortedRows]);
+  const activeTrend = trendOptions.some((option) => option.value === trend)
+    ? trend
+    : trendOptions[0]?.value ?? null;
   const latestFiling = sortedRows[0] ?? null;
   const activeRows = sortedRows.filter((r) => periodMode(r) === mode);
   const latestIncome = sortedRows.find((r) => r.statement_type === "income_statement" && periodMode(r) === mode) ?? null;
   const latestCash = sortedRows.find((r) => r.statement_type === "cash_flow" && periodMode(r) === mode) ?? null;
   const activePeriod = latestIncome ?? activeRows[0] ?? null;
-  const latestStatement = sortedRows.find((r) => r.statement_type === statement && periodMode(r) === mode) ?? null;
-  const statementRows = sortedRows.filter((r) => r.statement_type === statement && periodMode(r) === mode);
+  const latestStatement = sortedRows.find((r) => r.statement_type === activeStatement && periodMode(r) === mode) ?? null;
+  const statementRows = sortedRows.filter((r) => r.statement_type === activeStatement && periodMode(r) === mode);
   const visiblePeriods = (limit === "latest4" ? statementRows.slice(0, 4) : statementRows).filter(Boolean);
   const sourceUrl = latestStatement?.source_url ?? activePeriod?.source_url ?? latestFiling?.source_url ?? null;
   const updated = sortedRows.find((r) => r.updated_at)?.updated_at?.slice(0, 10) ?? "Unavailable";
@@ -570,7 +636,7 @@ export function FinancialsWorkspace({
   const otherDataPartial = dataStatus === "Partial" && selectedValueStatus === "Complete";
   const summaryKeys = ["revenue", "gross_profit", "profit_after_tax", "eps", "net_margin"];
   const modeLabel = mode === "annual" ? "Annual" : mode === "quarterly" ? "Quarterly" : "Cumulative";
-  const orderedStatementKeys = depth === "summary" ? SUMMARY_ROWS[statement] : FULL_ROWS[statement];
+  const orderedStatementKeys = depth === "summary" ? SUMMARY_ROWS[activeStatement] : FULL_ROWS[activeStatement];
   const extraStatementKeys = depth === "full"
     ? [...new Set(visiblePeriods.flatMap((period) => Object.keys(period.data ?? {})))]
       .filter((key) => !key.startsWith("_") && !orderedStatementKeys.includes(key))
@@ -579,20 +645,20 @@ export function FinancialsWorkspace({
   const valueKeys = depth === "summary"
     ? statementKeys.filter((key) => visiblePeriods.some((period) => value(period, key) !== null))
     : statementKeys;
-  const displayRows = statementDisplayRows(statement, valueKeys);
+  const displayRows = statementDisplayRows(activeStatement, valueKeys);
   const hasAnnualCashFlow = rows.some((r) => r.statement_type === "cash_flow" && periodMode(r) === "annual");
   const hasCashBalanceReview = rows.some((r) => r.statement_type === "cash_flow" && raw(r, "cash_balance") !== null);
   const hasSparseQuarter = rows.some((r) => r.statement_type === "income_statement" && periodMode(r) === "quarterly" && rowCompleteness(r, FULL_ROWS.income_statement) === "Partial");
   const missingComparable = latestStatement && !comparable;
   const showChangeColumn = Boolean(comparable && visiblePeriods[0] && valueKeys.some((key) => changeText(key, value(visiblePeriods[0], key), value(comparable, key))));
-  const metadataNote = statementMetadataNote(visiblePeriods, statement);
+  const metadataNote = statementMetadataNote(visiblePeriods, activeStatement);
   const exactRowsForCsv = visiblePeriods.map((p) => {
     const meta = statementPeriodMeta(p);
     const out: Record<string, unknown> = { period: meta.primary, period_detail: meta.secondary, source: p.source_url, units };
     for (const key of valueKeys) out[displayLabel(key, p)] = value(p, key);
     return out;
   });
-  const exportBaseName = `${ticker}-${statement.replace(/_/g, "-")}-${mode}`;
+  const exportBaseName = `${ticker}-${activeStatement.replace(/_/g, "-")}-${mode}`;
   const runExport = (kind: "csv" | "xlsx" | "pdf") => {
     const rowsWithMeta = exactRowsForCsv.map((row) => ({
       ticker,
@@ -604,7 +670,7 @@ export function FinancialsWorkspace({
     }));
     if (kind === "csv") downloadCsv(`${exportBaseName}.csv`, rowsWithMeta);
     else if (kind === "xlsx") void downloadXlsx(`${exportBaseName}.xlsx`, rowsWithMeta);
-    else printPdf(`${ticker} ${STATEMENT_LABELS[statement]} ${modeLabel}`, rowsWithMeta);
+    else printPdf(`${ticker} ${STATEMENT_LABELS[activeStatement]} ${modeLabel}`, rowsWithMeta);
   };
 
   const summaryCards = summaryKeys.map((key) => {
@@ -617,34 +683,8 @@ export function FinancialsWorkspace({
   }).filter((item) => item.row && item.value !== null).slice(0, 6);
 
   const trendData = useMemo(() => {
-    const type: StatementType = trend === "cash" ? "cash_flow" : trend === "balance" ? "balance_sheet" : "income_statement";
-    const keys =
-      trend === "profit" ? ["revenue", "gross_profit", "profit_after_tax"] :
-      trend === "margins" ? ["gross_margin", "operating_margin", "net_margin"] :
-      trend === "eps" ? ["eps"] :
-      trend === "cash" ? ["operating_cash_flow", "capex", "free_cash_flow"] :
-      ["cash_and_equivalents", "borrowings", "equity", "total_liabilities"];
-    return sortedRows
-      .filter((r) => r.statement_type === type && periodMode(r) === mode)
-      .slice(0, 8)
-      .reverse()
-      .map((r) => {
-        const prior = comparablePrior(sortedRows, r);
-        const out: Record<string, string | number | null> = {
-          period: labelPeriod(r),
-          source: r.source_url ?? "Official PSX financials",
-          status: rowCompleteness(r, FULL_ROWS[type]),
-        };
-        for (const key of keys) {
-          const v = value(r, key);
-          out[key] = v === null ? null : key === "eps" || key.includes("margin") || key.includes("ratio") ? v : v * 1000;
-          const c = changeText(key, v, value(prior, key));
-          out[`${key}_change`] = c?.text ?? null;
-        }
-        return out;
-      })
-      .filter((r) => keys.some((key) => typeof r[key] === "number"));
-  }, [mode, sortedRows, trend]);
+    return activeTrend ? buildTrendRows(sortedRows, mode, activeTrend) : [];
+  }, [activeTrend, mode, sortedRows]);
 
   const insights = buildInsights(sortedRows, mode, valueMode);
   const callouts = buildCallouts(sortedRows, mode);
@@ -653,7 +693,7 @@ export function FinancialsWorkspace({
     missingComparable: Boolean(missingComparable),
     hasCashBalanceReview,
     hasAnnualCashFlow,
-    activeStatement: statement,
+    activeStatement,
   });
 
   return (
@@ -810,33 +850,22 @@ export function FinancialsWorkspace({
         )}
       </div>
 
-      <Card className="border-slate-200 bg-white shadow-sm">
-        <CardHeader className="p-5 pb-3">
-          <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-            <div>
-              <CardTitle className="text-base">Performance trends</CardTitle>
-              <CardDescription>Charts only use the selected period mode; mixed-duration periods are excluded.</CardDescription>
+      {activeTrend && trendOptions.length > 0 ? (
+        <Card className="border-slate-200 bg-white shadow-sm">
+          <CardHeader className="p-5 pb-3">
+            <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+              <div>
+                <CardTitle className="text-base">Performance trends</CardTitle>
+                <CardDescription>Charts only use the selected period mode; mixed-duration periods are excluded.</CardDescription>
+              </div>
+              <Segment value={activeTrend} onChange={setTrend} options={trendOptions} />
             </div>
-            <Segment
-              value={trend}
-              onChange={setTrend}
-              options={[
-                { value: "profit", label: "Revenue & profit" },
-                { value: "margins", label: "Margins" },
-                { value: "eps", label: "EPS" },
-                { value: "cash", label: "Cash flow" },
-                { value: "balance", label: "Balance sheet" },
-              ]}
-            />
-          </div>
-        </CardHeader>
-        <CardContent className="p-5 pt-2">
-          <FinancialTrendChart trend={trend} rows={trendData} valueMode={valueMode} />
-          {trendData.length < 3 ? (
-            <p className="mt-3 text-xs text-amber-700">At least three reliable comparable periods are needed for a stronger trend read.</p>
-          ) : null}
-        </CardContent>
-      </Card>
+          </CardHeader>
+          <CardContent className="p-5 pt-2">
+            <FinancialTrendChart trend={activeTrend} rows={trendData} valueMode={valueMode} />
+          </CardContent>
+        </Card>
+      ) : null}
 
       {insights.length > 0 && (
         <div className={cn("grid gap-4", callouts.length > 0 && "lg:grid-cols-2")}>
@@ -886,15 +915,7 @@ export function FinancialsWorkspace({
             <div className="flex flex-wrap gap-4">
               <div className="space-y-1">
                 <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">Statement</p>
-                <Segment
-                  value={statement}
-                  onChange={setStatement}
-                  options={[
-                    { value: "income_statement", label: "Income Statement" },
-                    { value: "balance_sheet", label: "Balance Sheet" },
-                    { value: "cash_flow", label: "Cash Flow" },
-                  ]}
-                />
+                <Segment value={activeStatement} onChange={setStatement} options={statementOptions} />
               </div>
               <div className="space-y-1">
                 <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">Detail</p>
@@ -922,7 +943,7 @@ export function FinancialsWorkspace({
           </div>
           {!showChangeColumn && visiblePeriods.length > 0 ? (
             <p className="mt-3 rounded-lg bg-amber-50 px-3 py-2 text-xs text-amber-800">
-              Prior comparable {modeLabel.toLowerCase()} {STATEMENT_LABELS[statement]} is unavailable, so change calculations are hidden.
+              Prior comparable {modeLabel.toLowerCase()} {STATEMENT_LABELS[activeStatement]} is unavailable, so change calculations are hidden.
             </p>
           ) : null}
           {metadataNote ? (
@@ -952,7 +973,7 @@ export function FinancialsWorkspace({
                           );
                         })()}
                         <span className="block text-[10px] font-normal normal-case text-muted-foreground">
-                          {completenessLabel(rowCompleteness(period, FULL_ROWS[statement]))}
+                          {completenessLabel(rowCompleteness(period, FULL_ROWS[activeStatement]))}
                         </span>
                       </TH>
                     ))}
@@ -1000,7 +1021,7 @@ export function FinancialsWorkspace({
             </div>
           ) : (
             <div className="p-5">
-              <ChartEmpty note={`${STATEMENT_LABELS[statement]} data is not available for ${modeLabel.toLowerCase()} periods.`} />
+              <ChartEmpty note={`${STATEMENT_LABELS[activeStatement]} data is not available for ${modeLabel.toLowerCase()} periods.`} />
             </div>
           )}
         </CardContent>
