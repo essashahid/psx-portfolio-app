@@ -134,7 +134,7 @@ const ACCOUNTING_HINTS: Record<string, string> = {
   net_margin: "Profit after tax divided by revenue. Shown as percentage points when compared.",
   eps: "Earnings per share in PKR. Not scaled with statement units.",
   capex: "Shown as capital expenditure outflow for free-cash-flow analysis; source sign conventions can vary.",
-  cash_balance: "Definition needs source verification before this can be treated as ending cash balance.",
+  cash_balance: "Definition is under review before this can be treated as ending cash balance.",
   working_capital: "Calculated: current assets minus current liabilities.",
   current_ratio: "Calculated: current assets divided by current liabilities.",
   debt_to_equity: "Calculated: borrowings divided by equity.",
@@ -387,7 +387,7 @@ function printPdf(title: string, rows: Record<string, unknown>[]) {
 
 function statusVariant(status: string): "green" | "amber" | "red" | "blue" | "secondary" {
   if (status === "Complete") return "green";
-  if (status === "Partial" || status === "Not comparable" || status === "Unverified") return "amber";
+  if (status === "Partial" || status === "Not comparable" || status === "Review") return "amber";
   if (status === "Missing" || status === "Unavailable") return "red";
   return "secondary";
 }
@@ -1001,7 +1001,7 @@ export function FinancialsWorkspace({
                         <TD className={cn("sticky left-0 z-[1] bg-white text-xs text-slate-900", isTotalLike(key) ? "font-semibold" : "font-medium")}>
                           <span title={ACCOUNTING_HINTS[key]} className={cn(ACCOUNTING_HINTS[key] && "cursor-help decoration-dotted underline-offset-2 hover:underline")}>{displayLabel(key, visiblePeriods[0])}</span>
                           {derived ? <Badge variant="secondary" className="ml-2">Calculated</Badge> : null}
-                          {key === "cash_balance" ? <Badge variant="amber" className="ml-2">Unverified</Badge> : null}
+                          {key === "cash_balance" ? <Badge variant="amber" className="ml-2">Review</Badge> : null}
                         </TD>
                         {visiblePeriods.map((period, i) => (
                           <TD key={i} className={cn("text-right text-xs tabular-nums", i === 0 && "bg-emerald-50/50 font-semibold text-slate-950", value(period, key) === null && "text-muted-foreground")}>

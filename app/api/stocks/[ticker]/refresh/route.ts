@@ -2,11 +2,10 @@ import { NextResponse } from "next/server";
 import { requireUser, errorResponse } from "@/lib/api-helpers";
 import { refreshTechnicals } from "@/lib/company/technicals";
 import { getCompanyMetadata, saveCompanyDescription } from "@/lib/company/metadata";
-import { aiAvailable, chatJson } from "@/lib/ai/openai";
+import { buildExchangeSourcedProfile } from "@/lib/company/profile";
 import { refreshQuote, refreshHistory, testProviderCoverage } from "@/lib/engine/market-data";
 import { populateAllFundamentals } from "@/lib/engine/fundamentals";
 import { refreshRatios } from "@/lib/engine/ratios";
-import { accountHasFeature } from "@/lib/features";
 import { rejectDemoWrite } from "@/lib/demo-mode";
 
 export const maxDuration = 120;
@@ -19,7 +18,7 @@ export const maxDuration = 120;
  *   section = "financials"  → extract statements from latest result filings
  *   section = "ratios"      → recompute ratios from stored financials + quote
  *   section = "coverage"    → probe every provider for this ticker
- *   section = "description" → generate the AI company profile (cached)
+ *   section = "description" → generate the exchange-sourced company profile (cached)
  */
 export async function POST(
   request: Request,
@@ -96,23 +95,22 @@ export async function POST(
     }
 
     if (section === "description") {
-      if (!(await accountHasFeature(supabase, user.id, "company_enrichment"))) {
-        return NextResponse.json({ error: "Company profile generation is disabled for this account." }, { status: 403 });
-      }
-      if (!aiAvailable()) {
-        return NextResponse.json({ error: "AI provider is not configured. Add TASKS_API_KEY or DEEPSEEK_API_KEY in .env.local." }, { status: 503 });
-      }
       const meta = await getCompanyMetadata(supabase, ticker);
-      const { data } = await chatJson<{ description: string; industry: string; business_lines: string[] }>(
-        `You write concise, factual company profiles for Pakistan Stock Exchange (PSX) listed companies, using only well-established public knowledge. If you are unsure what the company does, say so plainly rather than inventing details. Do not include any price targets, ratings, or buy/sell language.`,
-        `Write a profile for PSX ticker ${ticker}${meta.companyName ? ` (${meta.companyName})` : ""}${meta.sector ? `, sector: ${meta.sector}` : ""}.
-Return JSON: {"description": "2-4 sentence plain-English business description", "industry": "specific industry", "business_lines": ["key business line", "..."]}. If unknown, return {"description": "Limited public information is available for this PSX listing.", "industry": "", "business_lines": []}.`,
-        700
-      );
+      const data = buildExchangeSourcedProfile({
+        ticker,
+        companyName: meta.companyName,
+        sector: meta.sector,
+        industry: meta.industry,
+        exchange: meta.exchange,
+        faceValue: meta.faceValue,
+      });
       await saveCompanyDescription(ticker, {
         description: data.description,
         industry: data.industry || undefined,
         business_lines: data.business_lines?.length ? data.business_lines : undefined,
+        source: meta.meta.source ?? "exchange-profile",
+        source_url: meta.meta.sourceUrl,
+        confidence: 0.9,
       });
       return NextResponse.json({ message: `Company profile generated for ${ticker}.` });
     }

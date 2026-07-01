@@ -503,7 +503,7 @@ export function EarningsWorkspace({
                           </span>
                           <span className="block">
                               <span className="font-medium text-slate-700">Source:</span>{" "}
-                              {activePeriod?.source_url ? "Official PSX filing" : "Source mapping unverified"}
+                              {activePeriod?.source_url ? "Official PSX filing" : "Official source link not captured"}
                           </span>
                       </CardDescription>
                       <div className="mt-3 flex flex-wrap items-center gap-2">

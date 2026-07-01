@@ -53,8 +53,8 @@ function toMetadata(ticker: string, row: MetadataRow | null, freshness: Freshnes
  * Company profile, served cache-first. On a cache miss/stale row it backfills
  * cheap fields (name, sector, face value) from stock_universe, stock_master,
  * and the official PSX symbol directory, then caches the result. The expensive
- * AI description is generated separately, on demand, via refreshCompanyDescription
- * so the page shell never waits on it.
+ * The longer profile is generated separately from exchange reference data so
+ * the page shell never waits on it and never needs an LLM for identity copy.
  */
 export async function getCompanyMetadata(
   supabase: SupabaseClient,
@@ -154,15 +154,17 @@ async function cacheMetadata(row: Partial<MetadataRow>): Promise<void> {
   }
 }
 
-/** Persist an AI-generated description + business lines (called from the refresh route). */
+/** Persist a generated description + business lines (called from refresh/scripts). */
 export async function saveCompanyDescription(
   ticker: string,
-  patch: { description?: string; business_lines?: string[]; industry?: string }
+  patch: { description?: string; business_lines?: string[]; industry?: string; source?: string; source_url?: string | null; confidence?: number }
 ): Promise<void> {
   await cacheMetadata({
     ticker: ticker.toUpperCase(),
     ...patch,
-    source: "ai",
+    source: patch.source ?? "exchange-profile",
+    source_url: patch.source_url,
+    confidence: patch.confidence ?? 0.9,
     last_updated: new Date().toISOString(),
   });
 }

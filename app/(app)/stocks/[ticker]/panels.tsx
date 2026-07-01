@@ -94,7 +94,7 @@ function freshnessBadge(freshness: string | null | undefined) {
   if (freshness === "fresh") return <StatusBadge label="Fresh" tone="green" />;
   if (freshness === "partial") return <StatusBadge label="Partial" tone="amber" />;
   if (freshness === "stale") return <StatusBadge label="Stale" tone="amber" />;
-  if (freshness === "needs_review") return <StatusBadge label="Unverified" tone="amber" />;
+  if (freshness === "needs_review") return <StatusBadge label="Review" tone="amber" />;
   return <StatusBadge label="Missing" tone="red" />;
 }
 
@@ -245,14 +245,6 @@ export async function OverviewPanel({
   const dividendComplete = Boolean(latestDiv?.perShare !== null && latestDiv?.perShare !== undefined && (latestDiv.exDate || latestDiv.payDate || latestDiv.announcementDate));
   const dividendIncomplete = Boolean((latestDiv && !dividendComplete) || (!latestDiv && hasReceipt));
   const companySummary = shortDescription(metadata.description);
-  const marketsLabel = metadata.description
-    ? /export/i.test(metadata.description)
-      ? "Domestic and export"
-      : "Unverified"
-    : "Unverified";
-  const marketsSub = metadata.description && /export/i.test(metadata.description)
-    ? "from company profile"
-    : "needs source";
   // Precise company fields: surface Products from extracted business lines, and
   // only show Industry when it actually differs from Sector (avoids the vague
   // "Business: Cement" duplicate of the sector).
@@ -275,7 +267,6 @@ export async function OverviewPanel({
   ];
   if (products) companyFields.push({ label: showAsProducts ? "Products" : "Industry", value: products });
   else if (industryLabel) companyFields.push({ label: "Industry", value: industryLabel });
-  companyFields.push({ label: "Markets", value: marketsLabel, sub: marketsSub, tone: marketsLabel === "Unverified" ? "warning" : undefined });
   companyFields.push({ label: "Exchange", value: metadata.exchange ?? "PSX" });
   const signals = computeSignals(technicals.history);
   const benchmark = (eod.get(KSE_SYMBOL) ?? []).map((p) => ({ date: p.date, close: p.close }));
@@ -402,7 +393,7 @@ export async function OverviewPanel({
               <div>
                 <CardTitle className="flex items-center gap-2 text-base"><BriefcaseBusiness className="h-4 w-4" /> Company at a glance</CardTitle>
                 <CardDescription>
-                  Source {metadata.meta.source ?? "unavailable"}{metadata.meta.lastUpdated ? ` · updated ${metadata.meta.lastUpdated.slice(0, 10)}` : ""}
+                  Profile, sector and listing reference data{metadata.meta.lastUpdated ? ` · updated ${metadata.meta.lastUpdated.slice(0, 10)}` : ""}
                 </CardDescription>
               </div>
               {metadata.meta.freshness !== "fresh" ? freshnessBadge(metadata.meta.freshness) : null}
@@ -413,7 +404,7 @@ export async function OverviewPanel({
               <p className="text-sm leading-relaxed text-slate-800">{companySummary}</p>
             ) : companyEnrichmentEnabled ? (
               <div className="space-y-2">
-                <Unavailable note="No company profile on file yet. Generate one from public knowledge, cited as AI." />
+                <Unavailable note="No company profile on file yet. Generate one from exchange reference data." />
                 <ActionButton
                   endpoint={`/api/stocks/${ticker}/refresh`}
                   body={{ section: "description" }}
@@ -540,7 +531,7 @@ export async function OverviewPanel({
                 <CardTitle className="flex items-center gap-2 text-base"><Banknote className="h-4 w-4" /> Dividend status</CardTitle>
                 <CardDescription>Market payout yield versus your personal dividend receipts.</CardDescription>
               </div>
-              {dividendIncomplete ? <StatusBadge label="Incomplete" tone="amber" /> : dividendComplete ? <StatusBadge label="Verified" tone="green" /> : <StatusBadge label="Unverified" tone="secondary" />}
+              {dividendIncomplete ? <StatusBadge label="Incomplete" tone="amber" /> : dividendComplete ? <StatusBadge label="Verified" tone="green" /> : <StatusBadge label="No records" tone="secondary" />}
             </div>
           </CardHeader>
           <CardContent className="space-y-3 p-4 pt-2">
