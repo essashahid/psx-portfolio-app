@@ -33,6 +33,9 @@
     "remark-gfm": "^4.0.1",
     "serwist": "^9.5.11",
     "tailwind-merge": "^3.6.0",
+    "vega": "^6.2.0",
+    "vega-embed": "^7.1.0",
+    "vega-lite": "^6.4.3",
     "xlsx": "^0.18.5",
     "zod": "^4.4.3"
   },
