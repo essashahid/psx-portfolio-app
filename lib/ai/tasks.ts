@@ -6,7 +6,7 @@
  * no code change). The interactive Research Copilot stays on Claude.
  *
  *   TASKS_BASE_URL  default https://api.deepseek.com/v1
- *   TASKS_MODEL     default deepseek-v4-flash
+ *   TASKS_MODEL     default deepseek-v4-pro
  *   TASKS_API_KEY   required to enable
  *   TASKS_DISABLED  independent kill switch (see also AI_DISABLED in lib/ai/openai.ts)
  *
@@ -15,7 +15,7 @@
 
 const DEFAULT_BASE_URL = "https://api.deepseek.com/v1";
 // DeepSeek V4 (deepseek-chat/deepseek-reasoner are deprecated 2026-07-24).
-const DEFAULT_MODEL = "deepseek-v4-flash";
+const DEFAULT_MODEL = "deepseek-v4-pro";
 const REQUEST_TIMEOUT_MS = 120_000;
 
 function tasksDisabled(): boolean {
