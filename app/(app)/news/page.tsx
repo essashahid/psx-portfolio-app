@@ -30,11 +30,23 @@ const TABS: { id: TabId; label: string }[] = [
 ];
 
 const WINDOWS: { id: string; label: string; hours: number | null }[] = [
-  { id: "today", label: "Today", hours: 24 },
+  { id: "today", label: "Today", hours: null }, // "Today" = the Pakistan calendar day, computed separately.
   { id: "week", label: "Week", hours: 24 * 7 },
   { id: "month", label: "Month", hours: 24 * 30 },
   { id: "all", label: "All", hours: null },
 ];
+
+/** Start of the current day in Pakistan (PKT, UTC+5) as an epoch timestamp. */
+function pktStartOfToday(): number {
+  // eslint-disable-next-line react-hooks/purity -- wall-clock is the intended input
+  const ymd = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Asia/Karachi",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(new Date());
+  return new Date(`${ymd}T00:00:00+05:00`).getTime();
+}
 
 export default async function NewsPage({ searchParams }: { searchParams: Promise<Search> }) {
   const sp = await searchParams;
@@ -74,7 +86,13 @@ export default async function NewsPage({ searchParams }: { searchParams: Promise
   // One fetch, partitioned in memory — far simpler than six query branches.
   const visible = all.filter((a) => !a.ignored);
   // eslint-disable-next-line react-hooks/purity -- server component; wall-clock time is the filter input
-  const cutoff = windowHours ? Date.now() - windowHours * 3600000 : null;
+  const cutoff =
+    windowId === "today"
+      ? pktStartOfToday()
+      : windowHours
+        ? // eslint-disable-next-line react-hooks/purity -- wall-clock is the filter input
+          Date.now() - windowHours * 3600000
+        : null;
   const inWindow = (a: NewsArticle) => {
     if (!cutoff) return true;
     const t = new Date(a.published_at ?? a.created_at).getTime();
@@ -165,7 +183,7 @@ export default async function NewsPage({ searchParams }: { searchParams: Promise
                   {counts[t.id]}
                 </span>
               )}
-              {active && <span className="absolute inset-x-2 -bottom-px h-0.5 rounded-full bg-emerald-600" />}
+              {active && <span className="absolute inset-x-2 -bottom-px h-0.5 rounded-full bg-foreground" />}
             </Link>
           );
         })}
@@ -215,23 +233,25 @@ export default async function NewsPage({ searchParams }: { searchParams: Promise
           }
         />
       ) : (
-        <div className="space-y-6">
+        <div className="space-y-8">
           {lead && (
-            <div>
+            <div className="border-b border-border pb-6">
               <p className="eyebrow mb-2">Top story</p>
               <NewsCard article={lead} lead />
             </div>
           )}
           {groups.map((group) => (
-            <section key={group.date} className="space-y-3">
+            <section key={group.date} className="space-y-4">
               <div className="flex items-center gap-3">
-                <h2 className="text-sm font-semibold text-foreground">{formatHeading(group.date)}</h2>
-                <span className="text-[11px] text-muted-foreground">{group.articles.length}</span>
+                <h2 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{formatHeading(group.date)}</h2>
+                <span className="text-[11px] tabular-nums text-muted-foreground/60">{group.articles.length}</span>
                 <div className="h-px flex-1 bg-border" />
               </div>
-              <div className="grid gap-3">
+              <div className="divide-y divide-border/70">
                 {group.articles.map((a) => (
-                  <NewsCard key={a.id} article={a} />
+                  <div key={a.id} className="py-4 first:pt-0">
+                    <NewsCard article={a} />
+                  </div>
                 ))}
               </div>
             </section>
