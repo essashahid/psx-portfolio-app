@@ -78,7 +78,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
           <p className="mx-auto max-w-7xl text-[11px] text-muted-foreground">{DISCLAIMER}</p>
         </footer>
       </div>
-      <FeedbackWidget isDemo={isDemo} />
+      {user.email === "demo@example.com" && <FeedbackWidget isDemo={isDemo} />}
       <MobileBottomNav email={user.email ?? ""} openAlerts={count ?? 0} visibleHrefs={visibleHrefs} isAdmin={isAdmin} />
     </div>
   );
