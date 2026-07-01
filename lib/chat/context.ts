@@ -49,14 +49,18 @@ export async function gatherCards(db: SupabaseClient, userId: string, resolved: 
     if (news) cards.push({ kind: "news", data: news });
   }
 
-  // A no-ticker dividend or valuation question ("which of my holdings carry my
-  // income", "which of my holdings look cheapest") is inherently about the
-  // user's book, so load holdings for those too — this is what lets dividend
-  // income, cross-holding patterns, benchmark returns and the macro overlay all
-  // flow into the brief for whole-portfolio questions, not just "position" ones.
+  // A no-ticker dividend, valuation, or compare question ("which of my holdings
+  // carry my income", "which look cheapest", "plot yield versus P/E for every
+  // holding I have") is inherently about the user's book, so load holdings for
+  // those too. Without this, a no-ticker "compare"/"versus" question (no named
+  // tickers to compare) got zero holdings data and the model would fabricate a
+  // full ratio table into a chart rather than say the data was not loaded. This
+  // is what lets dividend income, cross-holding patterns, benchmark returns and
+  // the macro overlay all flow into the brief for whole-portfolio questions, not
+  // just "position" ones.
   if (
     tickers.length === 0 &&
-    (intent === "position" || intent === "market" || intent === "dividend" || intent === "valuation")
+    (intent === "position" || intent === "market" || intent === "dividend" || intent === "valuation" || intent === "compare")
   ) {
     const h = await getHoldingsSummary(db, userId);
     if (h) cards.push({ kind: "holdings", data: h });
