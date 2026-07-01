@@ -9,12 +9,6 @@ import { cn } from "@/lib/utils";
 
 type BriefModel = "deepseek" | "claude-sonnet" | "claude-opus";
 
-const MODELS: { id: BriefModel; label: string; hint: string; claude: boolean }[] = [
-  { id: "deepseek", label: "DeepSeek", hint: "fast · ~$0.002", claude: false },
-  { id: "claude-sonnet", label: "Claude Sonnet", hint: "sharper · ~$0.02", claude: true },
-  { id: "claude-opus", label: "Claude Opus", hint: "deepest · ~$0.06", claude: true },
-];
-
 const MD: Components = {
   h2: ({ children }) => (
     <h2 className="mb-2 mt-5 text-sm font-semibold uppercase tracking-wide text-muted-foreground first:mt-0">{children}</h2>
@@ -58,7 +52,6 @@ interface SavedBrief {
 
 export function NewsBriefWidget({
   hasNews,
-  claudeAvailable = false,
   initialBrief = null,
 }: {
   hasNews: boolean;
@@ -67,13 +60,10 @@ export function NewsBriefWidget({
 }) {
   const [state, setState] = useState<"idle" | "loading" | "done" | "error">(initialBrief ? "done" : "idle");
   const [content, setContent] = useState(initialBrief?.content ?? "");
-  const [model, setModel] = useState<string>(initialBrief?.model ?? "");
   const [savedAt, setSavedAt] = useState<string | null>(initialBrief?.createdAt ?? null);
-  const [choice, setChoice] = useState<BriefModel>("deepseek");
   const [collapsed, setCollapsed] = useState(false);
 
-  async function run(selected: BriefModel = choice) {
-    setChoice(selected);
+  async function run(selected: BriefModel = "deepseek") {
     setState("loading");
     setContent("");
     setCollapsed(false);
@@ -86,7 +76,6 @@ export function NewsBriefWidget({
       const data = await res.json();
       if (!res.ok) throw new Error(data.error ?? "Request failed");
       setContent(data.content);
-      setModel(data.model);
       setSavedAt(data.created_at ?? new Date().toISOString());
       setState("done");
     } catch (err) {
@@ -95,22 +84,17 @@ export function NewsBriefWidget({
     }
   }
 
-  const picker = (
-    <ModelPicker value={choice} claudeAvailable={claudeAvailable} onPick={(m) => setChoice(m)} />
-  );
-
   if (state === "idle") {
     return (
       <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-dashed border-border bg-muted/30 px-4 py-3">
         <div className="flex items-center gap-2.5">
-          <Sparkles className="h-4 w-4 shrink-0 text-emerald-600" />
+          <Sparkles className="h-4 w-4 shrink-0 text-foreground/70" />
           <div>
-            <p className="text-sm font-semibold">Analyst brief</p>
-            <p className="text-xs text-muted-foreground">AI read of your last 48h — top signal, portfolio impact, what to watch.</p>
+            <p className="text-sm font-semibold">Daily investor brief</p>
+            <p className="text-xs text-muted-foreground">Important developments suggested from your holdings, watchlist, and the wider market.</p>
           </div>
         </div>
         <div className="flex items-center gap-1.5">
-          {picker}
           <Button onClick={() => run()} disabled={!hasNews} size="sm" className="gap-1.5" title={!hasNews ? "Refresh news first" : undefined}>
             Generate
           </Button>
@@ -123,11 +107,8 @@ export function NewsBriefWidget({
     <div className="rise w-full rounded-lg border border-border bg-card shadow-[var(--shadow-card)]">
       <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border px-4 py-3">
         <div className="flex items-center gap-2">
-          <Sparkles className={cn("h-4 w-4 text-emerald-600", state === "loading" && "animate-pulse")} />
-          <span className="text-sm font-semibold">Analyst brief</span>
-          {model && state === "done" && (
-            <span className="rounded bg-muted px-1.5 py-0.5 text-[10px] text-muted-foreground">{model}</span>
-          )}
+          <Sparkles className={cn("h-4 w-4 text-foreground/70", state === "loading" && "animate-pulse")} />
+          <span className="text-sm font-semibold">Daily investor brief</span>
           {savedAt && state === "done" && (
             <span className="text-[10px] text-muted-foreground" title={new Date(savedAt).toLocaleString("en-PK")}>
               saved {formatAgo(savedAt)}
@@ -135,7 +116,9 @@ export function NewsBriefWidget({
           )}
         </div>
         <div className="flex items-center gap-1.5">
-          {state !== "loading" && <ModelPicker value={choice} claudeAvailable={claudeAvailable} onPick={(m) => run(m)} />}
+          {state !== "loading" && state === "done" && (
+            <Button onClick={() => run()} size="sm" variant="outline">Regenerate</Button>
+          )}
           {state === "done" && (
             <button
               onClick={() => setCollapsed((c) => !c)}
@@ -158,7 +141,7 @@ export function NewsBriefWidget({
       {state === "loading" && (
         <div className="flex items-center gap-2.5 px-4 py-5 text-sm text-muted-foreground">
           <Loader2 className="h-4 w-4 animate-spin" />
-          {choice === "claude-opus" ? "Opus is thinking deeply — this takes a moment…" : "Reading your news feed…"}
+          Reading stored events and portfolio relevance...
         </div>
       )}
 
@@ -169,7 +152,7 @@ export function NewsBriefWidget({
       )}
 
       {collapsed && state === "done" && (
-        <p className="px-4 py-2 text-xs text-muted-foreground">Brief collapsed — click ↓ to expand.</p>
+        <p className="px-4 py-2 text-xs text-muted-foreground">Brief collapsed.</p>
       )}
     </div>
   );
@@ -183,30 +166,4 @@ function formatAgo(iso: string): string {
   const hrs = Math.round(mins / 60);
   if (hrs < 24) return `${hrs}h ago`;
   return new Date(iso).toLocaleDateString("en-PK", { day: "numeric", month: "short" });
-}
-
-/** Compact model selector. In the header it re-runs on pick; idle it just sets the choice. */
-function ModelPicker({
-  value,
-  claudeAvailable,
-  onPick,
-}: {
-  value: BriefModel;
-  claudeAvailable: boolean;
-  onPick: (m: BriefModel) => void;
-}) {
-  return (
-    <select
-      value={value}
-      onChange={(e) => onPick(e.target.value as BriefModel)}
-      className="h-8 rounded-md border border-border bg-card px-2 text-xs font-medium text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-      title="Model used to write the brief"
-    >
-      {MODELS.map((m) => (
-        <option key={m.id} value={m.id} disabled={m.claude && !claudeAvailable}>
-          {m.label}{m.claude && !claudeAvailable ? " (needs key)" : ` · ${m.hint}`}
-        </option>
-      ))}
-    </select>
-  );
 }

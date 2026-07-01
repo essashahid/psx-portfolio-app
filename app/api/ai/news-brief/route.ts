@@ -74,26 +74,28 @@ export async function POST(request: Request) {
 
     const prompt = `My PSX portfolio: ${holdingsList}
 
-News from the last 48 hours:
+Stored events from the last 48 hours:
 ${articleLines}
 
 ---
-Write a sharp analyst brief using markdown ## headers for these sections:
+Write a compact daily investor brief using markdown ## headers for exactly these sections:
 
-## Top Signal
-The single most important development right now and exactly why it matters — with the numbers.
+## Top developments
+The 2-4 most important factual developments. Use cautious language and cite the source name in prose.
 
-## Portfolio Impact
-Go holding by holding where the news actually touches one of my positions: which holding, what changed, and how it shifts the picture. Be specific about the mechanism (does this news really affect this company's revenue/costs/demand, or only indirectly?). If a story doesn't genuinely touch a holding, don't force it.
+## Portfolio relevance
+Only mention holdings or sectors where the relationship is defensible. Distinguish direct company news from indirect sector or macro relevance.
 
-## Market Read
-Is the macro backdrop for PSX bullish, bearish, or mixed right now? The key drivers, with figures.
+## What to watch
+2-4 concrete follow-ups such as official notifications, effective dates, company guidance, margins, rate commentary, or sector data.
 
-## Watch This Week
-2-4 specific developments to monitor — only things evidenced by the news above.
+## Upcoming events
+Mention any upcoming or expected events evidenced by the feed. If none are evidenced, say none are confirmed in this feed.
 
-## Interesting Finds
-1-2 genuinely notable or surprising items worth knowing even if they don't directly hit my portfolio.`;
+## Uncertainties
+List details that remain incomplete, single-source, or not company-specific.
+
+Do not recommend buying or selling. Do not invent events, figures, or exposure.`;
 
     let content: string;
     let usedModel: string;
