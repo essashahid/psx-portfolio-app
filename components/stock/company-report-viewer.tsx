@@ -39,26 +39,28 @@ function FinTable({
   return (
     <div className="mt-3">
       <h4 className="text-xs font-semibold">{title} <span className="text-muted-foreground">({unit})</span></h4>
-      <table className="mt-1 w-full text-xs">
-        <thead>
-          <tr className="border-b border-border text-left text-muted-foreground">
-            <th className="py-1 pr-2">Period</th>
-            <th className="py-1 pr-2">Revenue</th>
-            <th className="py-1 pr-2">PAT</th>
-            <th className="py-1">EPS</th>
-          </tr>
-        </thead>
-        <tbody>
-          {rows.map((r) => (
-            <tr key={r.period} className="border-b border-border/50">
-              <td className="py-1 pr-2 font-medium">{r.period}</td>
-              <td className="py-1 pr-2 tabular-nums">{fmt(r.revenue)}</td>
-              <td className="py-1 pr-2 tabular-nums">{fmt(r.profitAfterTax)}</td>
-              <td className="py-1 tabular-nums">{fmt(r.eps)}</td>
+      <div className="overflow-x-auto">
+        <table className="mt-1 w-full text-xs">
+          <thead>
+            <tr className="border-b border-border text-left text-muted-foreground">
+              <th className="py-1 pr-2">Period</th>
+              <th className="py-1 pr-2">Revenue</th>
+              <th className="py-1 pr-2">PAT</th>
+              <th className="py-1">EPS</th>
             </tr>
-          ))}
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            {rows.map((r) => (
+              <tr key={r.period} className="border-b border-border/50">
+                <td className="py-1 pr-2 font-medium">{r.period}</td>
+                <td className="py-1 pr-2 tabular-nums">{fmt(r.revenue)}</td>
+                <td className="py-1 pr-2 tabular-nums">{fmt(r.profitAfterTax)}</td>
+                <td className="py-1 tabular-nums">{fmt(r.eps)}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
     </div>
   );
 }
@@ -243,24 +245,26 @@ export function CompanyReportViewer({
           refresh={<SectionRefreshButton reportId={reportId} sectionId="valuation" onUpdated={setPayload} />}
         >
           <InsightBlock title="" items={payload.narrative.valuation} />
-          <table className="mt-2 w-full text-xs">
-            <thead>
-              <tr className="text-left text-muted-foreground">
-                <th className="py-1">Metric</th>
-                <th className="py-1">Company</th>
-                <th className="py-1">Peer median</th>
-              </tr>
-            </thead>
-            <tbody>
-              {payload.charts.valuation.map((v) => (
-                <tr key={v.name} className="border-t border-border/50">
-                  <td className="py-1">{v.name}</td>
-                  <td className="py-1 tabular-nums">{v.value ?? "n/a"}</td>
-                  <td className="py-1 tabular-nums">{v.peerMedian ?? "n/a"}</td>
+          <div className="overflow-x-auto">
+            <table className="mt-2 w-full text-xs">
+              <thead>
+                <tr className="text-left text-muted-foreground">
+                  <th className="py-1">Metric</th>
+                  <th className="py-1">Company</th>
+                  <th className="py-1">Peer median</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {payload.charts.valuation.map((v) => (
+                  <tr key={v.name} className="border-t border-border/50">
+                    <td className="py-1">{v.name}</td>
+                    <td className="py-1 tabular-nums">{v.value ?? "n/a"}</td>
+                    <td className="py-1 tabular-nums">{v.peerMedian ?? "n/a"}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </CollapsibleSection>
 
         <CollapsibleSection
@@ -272,24 +276,26 @@ export function CompanyReportViewer({
         >
           <InsightBlock title="" items={payload.narrative.dividends} />
           {payload.charts.dividends.length > 0 && (
-            <table className="mt-2 w-full text-xs">
-              <thead>
-                <tr className="text-left text-muted-foreground border-b border-border">
-                  <th className="py-1">Date</th>
-                  <th className="py-1">Kind</th>
-                  <th className="py-1">DPS</th>
-                </tr>
-              </thead>
-              <tbody>
-                {payload.charts.dividends.slice(0, 10).map((d, i) => (
-                  <tr key={i} className="border-b border-border/50">
-                    <td className="py-1">{d.date ?? "n/a"}</td>
-                    <td className="py-1">{d.kind}</td>
-                    <td className="py-1 tabular-nums">{d.dps != null ? formatNumber(d.dps) : "n/a"}</td>
+            <div className="overflow-x-auto">
+              <table className="mt-2 w-full text-xs">
+                <thead>
+                  <tr className="text-left text-muted-foreground border-b border-border">
+                    <th className="py-1">Date</th>
+                    <th className="py-1">Kind</th>
+                    <th className="py-1">DPS</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  {payload.charts.dividends.slice(0, 10).map((d, i) => (
+                    <tr key={i} className="border-b border-border/50">
+                      <td className="py-1">{d.date ?? "n/a"}</td>
+                      <td className="py-1">{d.kind}</td>
+                      <td className="py-1 tabular-nums">{d.dps != null ? formatNumber(d.dps) : "n/a"}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           )}
         </CollapsibleSection>
 
@@ -311,29 +317,31 @@ export function CompanyReportViewer({
             </ul>
             {/* Peer metrics table */}
             {peers.some((p) => (p.ratios ?? []).some((r) => r.ratio_value !== null)) && (
-              <table className="mt-3 w-full text-xs">
-                <thead>
-                  <tr className="border-b border-border text-left text-muted-foreground">
-                    <th className="py-1">Metric</th>
-                    {peers.map((p) => <th key={p.ticker} className="py-1">{p.ticker}</th>)}
-                  </tr>
-                </thead>
-                <tbody>
-                  {["P/E", "P/B", "ROE", "Net margin", "Revenue growth", "Debt-to-equity"].map((m) => (
-                    <tr key={m} className="border-b border-border/50">
-                      <td className="py-1 font-medium">{m}</td>
-                      {peers.map((p) => {
-                        const r = (p.ratios ?? []).find((x) => x.ratio_name === m);
-                        return (
-                          <td key={p.ticker} className="py-1 tabular-nums">
-                            {r?.ratio_value != null ? r.ratio_value.toFixed(2) : "n/a"}
-                          </td>
-                        );
-                      })}
+              <div className="overflow-x-auto">
+                <table className="mt-3 w-full text-xs">
+                  <thead>
+                    <tr className="border-b border-border text-left text-muted-foreground">
+                      <th className="py-1">Metric</th>
+                      {peers.map((p) => <th key={p.ticker} className="py-1">{p.ticker}</th>)}
                     </tr>
-                  ))}
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody>
+                    {["P/E", "P/B", "ROE", "Net margin", "Revenue growth", "Debt-to-equity"].map((m) => (
+                      <tr key={m} className="border-b border-border/50">
+                        <td className="py-1 font-medium">{m}</td>
+                        {peers.map((p) => {
+                          const r = (p.ratios ?? []).find((x) => x.ratio_name === m);
+                          return (
+                            <td key={p.ticker} className="py-1 tabular-nums">
+                              {r?.ratio_value != null ? r.ratio_value.toFixed(2) : "n/a"}
+                            </td>
+                          );
+                        })}
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             )}
           </CollapsibleSection>
         )}
