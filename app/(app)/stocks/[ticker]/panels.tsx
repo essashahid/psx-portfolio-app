@@ -22,7 +22,7 @@ import { StockPriceChart } from "@/components/stock/price-chart-lazy";
 import { TechnicalWorkstation } from "@/components/technicals/workstation";
 import { FinancialsWorkspace, type FinancialWorkspaceRow } from "@/components/stock/financials-workspace";
 import { EarningsWorkspace } from "@/components/stock/earnings-workspace";
-import { RatiosWorkspace, type RatiosFinancialRow, type RatiosPeerRow, type RatiosQuoteRow } from "@/components/stock/ratios-workspace";
+import { RatiosWorkspace, type RatiosPeerRow, type RatiosQuoteRow } from "@/components/stock/ratios-workspace";
 import { formatMoney, formatNumber, formatSignedPct, formatFinancialPeriod, cn } from "@/lib/utils";
 import {
   AlertTriangle, Banknote, BriefcaseBusiness, FileText, Info, Newspaper, Sparkles, TrendingUp,
@@ -32,36 +32,13 @@ import {
 // Small shared bits
 // ---------------------------------------------------------------------------
 
-function Metric({ label, value, sub, tone, hint }: { label: string; value: string; sub?: string; tone?: "positive" | "negative"; hint?: string }) {
-  const resolvedHint = hint ?? METRIC_HINTS[label];
-  return (
-    <div className="rounded-lg border border-border bg-card/60 p-3">
-      <p
-        className={cn(
-          "text-[10px] font-medium uppercase tracking-wide text-muted-foreground",
-          resolvedHint && "cursor-help decoration-muted-foreground/40 underline decoration-dotted underline-offset-2"
-        )}
-        title={resolvedHint}
-      >
-        {label}
-      </p>
-      <p className={cn("mt-0.5 text-sm font-semibold tabular-nums", tone === "positive" && "text-emerald-600", tone === "negative" && "text-red-600")}>
-        {value}
-      </p>
-      {sub && <p className="text-[10px] text-muted-foreground">{sub}</p>}
-    </div>
-  );
-}
-
-function Unavailable({ note }: { note: string }) {
+function InlineNotice({ note }: { note: string }) {
   return (
     <div className="flex items-center gap-2 rounded-lg border border-dashed border-border bg-muted/30 px-3 py-2 text-[11px] text-muted-foreground">
       <Info className="h-3.5 w-3.5 shrink-0" /> {note}
     </div>
   );
 }
-
-const num = (v: number | null | undefined) => (v === null || v === undefined ? "—" : formatNumber(v));
 
 /** Whole-rupee money for receipts/dividends where sub-rupee precision is noise. */
 const wholeMoney = (v: number | null | undefined) =>
@@ -95,7 +72,7 @@ function freshnessBadge(freshness: string | null | undefined) {
   if (freshness === "partial") return <StatusBadge label="Partial" tone="amber" />;
   if (freshness === "stale") return <StatusBadge label="Stale" tone="amber" />;
   if (freshness === "needs_review") return <StatusBadge label="Review" tone="amber" />;
-  return <StatusBadge label="Missing" tone="red" />;
+  return <StatusBadge label="Pending" tone="amber" />;
 }
 
 function shortDescription(description: string | null): string | null {
@@ -244,7 +221,8 @@ export async function OverviewPanel({
   const hasReceipt = Boolean(holding && holding.dividend_income > 0);
   const dividendComplete = Boolean(latestDiv?.perShare !== null && latestDiv?.perShare !== undefined && (latestDiv.exDate || latestDiv.payDate || latestDiv.announcementDate));
   const dividendIncomplete = Boolean((latestDiv && !dividendComplete) || (!latestDiv && hasReceipt));
-  const companySummary = shortDescription(metadata.description);
+  const officialDescription = metadata.meta.source === "psx-company-page" ? metadata.description : null;
+  const companySummary = shortDescription(officialDescription);
   // Precise company fields: surface Products from extracted business lines, and
   // only show Industry when it actually differs from Sector (avoids the vague
   // "Business: Cement" duplicate of the sector).
@@ -289,8 +267,8 @@ export async function OverviewPanel({
   const marketDivYield = ratioByName(ratios, "Dividend yield (TTM)");
   const ratioYear = latestRatioYear(ratios);
   const currentYear = new Date().getFullYear();
-  const financialTone = ratioYear === null ? "red" : ratioYear < currentYear - 1 ? "amber" : "green";
-  const financialStatus = ratioYear === null ? "Missing" : ratioYear < currentYear - 1 ? "Stale" : "Fresh";
+  const financialTone = ratioYear === null ? "amber" : ratioYear < currentYear - 1 ? "amber" : "green";
+  const financialStatus = ratioYear === null ? "Pending" : ratioYear < currentYear - 1 ? "Stale" : "Fresh";
 
   return (
     <div className="space-y-4">
@@ -319,7 +297,7 @@ export async function OverviewPanel({
                 showCurrentPriceLine
               />
             ) : (
-              <Unavailable note="No price history available from the PSX portal." />
+              <InlineNotice note="No price history loaded from the PSX portal." />
             )}
             <div className="mt-3">
               <SectionMeta meta={technicals.meta} ticker={ticker} refreshSection={readOnly ? undefined : "technicals"} />
@@ -404,17 +382,17 @@ export async function OverviewPanel({
               <p className="text-sm leading-relaxed text-slate-800">{companySummary}</p>
             ) : companyEnrichmentEnabled ? (
               <div className="space-y-2">
-                <Unavailable note="No company profile on file yet. Generate one from exchange reference data." />
+                <InlineNotice note="No official PSX company profile on file yet." />
                 <ActionButton
                   endpoint={`/api/stocks/${ticker}/refresh`}
                   body={{ section: "description" }}
-                  label={<><Sparkles className="h-3.5 w-3.5" /> Generate company profile</>}
+                  label={<><Sparkles className="h-3.5 w-3.5" /> Fetch official profile</>}
                   variant="outline"
                   size="sm"
                 />
               </div>
             ) : (
-              <Unavailable note="No company profile on file yet." />
+              <InlineNotice note="No company profile on file yet." />
             )}
 
             <div className="grid grid-cols-2 gap-3">
@@ -423,10 +401,10 @@ export async function OverviewPanel({
               ))}
             </div>
 
-            {metadata.description ? (
+            {officialDescription ? (
               <details className="rounded-xl border border-slate-200 bg-slate-50/60 p-3 text-xs">
                 <summary className="cursor-pointer font-medium text-slate-900">Read full profile</summary>
-                <p className="mt-2 leading-relaxed text-muted-foreground">{metadata.description}</p>
+                <p className="mt-2 leading-relaxed text-muted-foreground">{officialDescription}</p>
               </details>
             ) : null}
 
@@ -482,7 +460,7 @@ export async function OverviewPanel({
               </div>
             ) : null}
             {ratios.every((r) => r.ratio_value === null) ? (
-              <Unavailable note="Key financial signals are unavailable until sourced financials are loaded." />
+              <InlineNotice note="Key financial signals will appear after sourced financials are loaded." />
             ) : null}
           </CardContent>
         </Card>
@@ -507,7 +485,7 @@ export async function OverviewPanel({
                 </a>
                 <p className="text-xs leading-relaxed text-slate-600">{filingSummary(latestDevelopment.category)}</p>
                 <p className="text-[11px] text-muted-foreground">
-                  {latestDevelopment.date ?? "Date unavailable"} · {latestDevelopment.source}
+                  {latestDevelopment.date ?? "Date not captured"} · {latestDevelopment.source}
                 </p>
                 <a
                   href={latestDevelopment.url}
@@ -519,7 +497,7 @@ export async function OverviewPanel({
                 </a>
               </div>
             ) : (
-              <Unavailable note="No recent PSX filings retrieved for this company." />
+              <InlineNotice note="No recent PSX filings retrieved for this company." />
             )}
           </CardContent>
         </Card>
@@ -575,7 +553,7 @@ export async function OverviewPanel({
                 </a>
               </>
             ) : (
-              <Unavailable note="No verified dividend records or user receipts are available yet." />
+              <InlineNotice note="No verified dividend records or user receipts are loaded yet." />
             )}
           </CardContent>
         </Card>
@@ -718,7 +696,7 @@ export async function RatiosPanel({ ticker, readOnly = false }: { ticker: string
   // Always compute live from stored inputs — the engine is pure reads, so the
   // tab reflects the newest extracted financials and quote without waiting on
   // a persisted snapshot.
-  const [ratios, metadata, quoteRes, financialsRes] = await Promise.all([
+  const [ratios, metadata, quoteRes] = await Promise.all([
     computeRatios(supabase, ticker),
     getCompanyMetadata(supabase, ticker),
     supabase
@@ -726,15 +704,8 @@ export async function RatiosPanel({ ticker, readOnly = false }: { ticker: string
       .select("price, as_of, last_fetched_at")
       .eq("ticker", ticker.toUpperCase())
       .maybeSingle(),
-    supabase
-      .from("company_financials")
-      .select("ticker, period_type, fiscal_year, fiscal_period, statement_type, reported_date, source_type, source_url, confidence, updated_at, data")
-      .eq("ticker", ticker.toUpperCase())
-      .order("reported_date", { ascending: false })
-      .limit(120),
   ]);
 
-  const financialRows = (financialsRes.data ?? []) as RatiosFinancialRow[];
   const quote = (quoteRes.data ?? null) as RatiosQuoteRow | null;
   let peers: RatiosPeerRow[] = [];
 
@@ -777,7 +748,6 @@ export async function RatiosPanel({ ticker, readOnly = false }: { ticker: string
     <RatiosWorkspace
       ticker={ticker.toUpperCase()}
       ratios={usableRatios}
-      financialRows={financialRows}
       metadata={metadata}
       quote={quote}
       peers={peers}
@@ -790,7 +760,7 @@ export async function RatiosPanel({ ticker, readOnly = false }: { ticker: string
 // 5. Technicals
 // ---------------------------------------------------------------------------
 
-export async function TechnicalsPanel({ ticker, readOnly = false }: { ticker: string; readOnly?: boolean }) {
+export async function TechnicalsPanel({ ticker }: { ticker: string }) {
   const supabase = await createClient();
   const technicals = await getTechnicals(supabase, ticker);
   const signals = computeSignals(technicals.history);

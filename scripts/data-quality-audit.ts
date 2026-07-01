@@ -34,6 +34,7 @@ async function main() {
     masterRows,
     metadataRows,
     profileRows,
+    officialProfileRows,
     quoteRows,
     techRows,
     financialRows,
@@ -50,6 +51,7 @@ async function main() {
     pageAll<Row>(() => db.from("stock_master").select("ticker")),
     pageAll<Row>(() => db.from("company_metadata").select("ticker")),
     pageAll<Row>(() => db.from("company_metadata").select("ticker").not("description", "is", null)),
+    pageAll<Row>(() => db.from("company_metadata").select("ticker").eq("source", "psx-company-page").not("description", "is", null)),
     pageAll<Row & { as_of: string | null; last_fetched_at: string | null }>(() => db.from("market_quotes").select("ticker, as_of, last_fetched_at")),
     pageAll<Row & { as_of_date: string | null; updated_at: string | null }>(() => db.from("company_technicals").select("ticker, as_of_date, updated_at").not("as_of_date", "is", null)),
     pageAll<Row>(() => db.from("company_financials").select("ticker")),
@@ -70,6 +72,7 @@ async function main() {
     master: setOf(masterRows),
     metadata: setOf(metadataRows),
     profiles: setOf(profileRows),
+    officialProfiles: setOf(officialProfileRows),
     quotes: setOf(quoteRows),
     technicals: setOf(techRows),
     financials: setOf(financialRows),
@@ -98,6 +101,7 @@ async function main() {
   console.log(`- stock_master identity: ${covered(sets.master)}/${universe.length} (${pct(covered(sets.master))})`);
   console.log(`- company_metadata rows: ${covered(sets.metadata)}/${universe.length} (${pct(covered(sets.metadata))})`);
   console.log(`- generated profiles: ${covered(sets.profiles)}/${universe.length} (${pct(covered(sets.profiles))})`);
+  console.log(`- official PSX profiles: ${covered(sets.officialProfiles)}/${universe.length} (${pct(covered(sets.officialProfiles))})`);
   console.log(`- market quotes: ${covered(sets.quotes)}/${universe.length} (${pct(covered(sets.quotes))})`);
   console.log(`- technical history: ${covered(sets.technicals)}/${universe.length} (${pct(covered(sets.technicals))})`);
   console.log(`- any financial rows: ${covered(sets.financials)}/${universe.length} (${pct(covered(sets.financials))})`);
@@ -109,6 +113,7 @@ async function main() {
   console.log("");
   console.log("Missing samples");
   console.log(`- profiles: ${missingFrom(universe, sets.profiles).join(", ") || "none"}`);
+  console.log(`- official PSX profiles: ${missingFrom(universe, sets.officialProfiles).join(", ") || "none"}`);
   console.log(`- quotes: ${missingFrom(universe, sets.quotes).join(", ") || "none"}`);
   console.log(`- technicals: ${missingFrom(universe, sets.technicals).join(", ") || "none"}`);
   console.log(`- income statements: ${missingFrom(universe, sets.income).join(", ") || "none"}`);
