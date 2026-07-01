@@ -159,10 +159,10 @@ export async function getDailyHoldingPerformance(
     const item = itemByTicker.get(ticker);
     const quote = quoteByTicker.get(ticker);
     const quantity = num(h.quantity) ?? 0;
-    const price = num(item?.price) ?? num(quote?.price);
-    const prevClose = num(item?.previous_close) ?? num(quote?.prev_close);
-    const directChange = num(item?.change) ?? num(quote?.day_change);
-    const directPct = num(item?.change_percent) ?? num(quote?.day_change_pct);
+    const price = num(quote?.price) ?? num(item?.price);
+    const prevClose = num(quote?.prev_close) ?? num(item?.previous_close);
+    const directChange = num(quote?.day_change) ?? num(item?.change);
+    const directPct = num(quote?.day_change_pct) ?? num(item?.change_percent);
     const dayChange = directChange ?? changeFrom(price, prevClose, directPct);
     const dayChangePct = directPct ?? pctFrom(price, prevClose, dayChange);
     const sector = item?.sector ?? h.sector ?? null;
@@ -186,7 +186,7 @@ export async function getDailyHoldingPerformance(
       weight: null,
       sectorAveragePct,
       vsSectorPct: dayChangePct !== null && sectorAveragePct !== null ? dayChangePct - sectorAveragePct : null,
-      volume: num(item?.volume) ?? num(quote?.volume),
+      volume: num(quote?.volume) ?? num(item?.volume),
       valueTraded: num(item?.value_traded),
     };
   });
