@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { createClient } from "@/lib/supabase/client";
 import type { NewsArticle } from "@/lib/types";
 import { Bookmark, EyeOff } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -26,7 +25,13 @@ const CATEGORY_LABEL: Record<string, string> = {
   company: "Company",
 };
 
-export function NewsCard({ article, lead = false }: { article: NewsArticle; lead?: boolean }) {
+type ActionableNewsArticle = NewsArticle & {
+  storage?: "global" | "legacy";
+  global_article_id?: string | null;
+  legacy_article_id?: string | null;
+};
+
+export function NewsCard({ article, lead = false }: { article: ActionableNewsArticle; lead?: boolean }) {
   const [saved, setSaved] = useState(article.saved);
   const [ignored, setIgnored] = useState(article.ignored);
 
@@ -40,11 +45,25 @@ export function NewsCard({ article, lead = false }: { article: NewsArticle; lead
   const meta = [article.source ?? "Unknown", category, time].filter(Boolean) as string[];
 
   async function toggle(field: "saved" | "ignored") {
-    const supabase = createClient();
     const next = field === "saved" ? !saved : !ignored;
     if (field === "saved") setSaved(next);
     else setIgnored(next);
-    await supabase.from("news_articles").update({ [field]: next }).eq("id", article.id);
+    try {
+      const res = await fetch("/api/news/article-action", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          id: article.storage === "global" ? article.global_article_id ?? article.id : article.legacy_article_id ?? article.id,
+          storage: article.storage ?? "legacy",
+          field,
+          value: next,
+        }),
+      });
+      if (!res.ok) throw new Error("Article action failed");
+    } catch {
+      if (field === "saved") setSaved(!next);
+      else setIgnored(!next);
+    }
   }
 
   return (

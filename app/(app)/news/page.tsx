@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Newspaper, RefreshCw } from "lucide-react";
 import type { NewsArticle } from "@/lib/types";
 import { cn } from "@/lib/utils";
+import { getUserNewsFeed } from "@/lib/news/global-store";
 
 export const dynamic = "force-dynamic";
 
@@ -38,7 +39,6 @@ const WINDOWS: { id: string; label: string; hours: number | null }[] = [
 
 /** Start of the current day in Pakistan (PKT, UTC+5) as an epoch timestamp. */
 function pktStartOfToday(): number {
-  // eslint-disable-next-line react-hooks/purity -- wall-clock is the intended input
   const ymd = new Intl.DateTimeFormat("en-CA", {
     timeZone: "Asia/Karachi",
     year: "numeric",
@@ -60,13 +60,7 @@ export default async function NewsPage({ searchParams }: { searchParams: Promise
 
   const [holdingsRes, articlesRes, briefRes] = await Promise.all([
     supabase.from("holdings").select("ticker").eq("user_id", user.id).gt("quantity", 0).order("ticker"),
-    supabase
-      .from("news_articles")
-      .select("*")
-      .eq("user_id", user.id)
-      .or("ignored.eq.false,saved.eq.true")
-      .order("created_at", { ascending: false })
-      .limit(180),
+    getUserNewsFeed(supabase, user.id, 220),
     supabase
       .from("ai_briefings")
       .select("id, content, model, created_at")
@@ -78,14 +72,13 @@ export default async function NewsPage({ searchParams }: { searchParams: Promise
   ]);
 
   const tickers = [...new Set((holdingsRes.data ?? []).map((h) => h.ticker))];
-  const all = (articlesRes.data ?? []) as NewsArticle[];
+  const all = articlesRes as NewsArticle[];
   const latestBrief = briefRes.data
     ? { content: briefRes.data.content as string, model: (briefRes.data.model as string) ?? "", createdAt: briefRes.data.created_at as string }
     : null;
 
   // One fetch, partitioned in memory — far simpler than six query branches.
   const visible = all.filter((a) => !a.ignored);
-  // eslint-disable-next-line react-hooks/purity -- server component; wall-clock time is the filter input
   const cutoff =
     windowId === "today"
       ? pktStartOfToday()
@@ -216,16 +209,16 @@ export default async function NewsPage({ searchParams }: { searchParams: Promise
       {feed.length === 0 ? (
         <EmptyState
           icon={Newspaper}
-          title={tickers.length === 0 ? "Import holdings to personalize" : "No news here yet"}
+          title={tab === "companies" && tickers.length === 0 ? "Import holdings to personalize" : "No news here yet"}
           description={
-            tickers.length === 0
+            tab === "companies" && tickers.length === 0
               ? "Import your holdings, then refresh to start tracking market and company news."
               : tab === "saved"
                 ? "Bookmark stories with the save icon to keep them here."
                 : "Try a wider time window, or refresh to pull the latest news."
           }
           action={
-            tickers.length === 0 ? (
+            tab === "companies" && tickers.length === 0 ? (
               <Link href="/import"><Button>Go to Import Center</Button></Link>
             ) : tab !== "saved" && windowId !== "all" ? (
               <Link href={buildHref({ window: "all" })}><Button variant="outline">Show all time</Button></Link>

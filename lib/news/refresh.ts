@@ -6,6 +6,13 @@ import { matchesHoldingText } from "@/lib/news/matching";
 import { psxAnnouncementsConfigured, psxAnnouncementSearchHoldings } from "@/lib/news/psx-announcements";
 import { fetchMarketNews, marketNewsConfigured } from "@/lib/news/feeds";
 import type { DiscoveredNewsArticle, NewsSourceQuality } from "@/lib/news/types";
+import {
+  newsWriteClient,
+  saveArticleRelevance,
+  saveGlobalArticle,
+  syncNewsSources,
+  type ArticleAnalysis,
+} from "@/lib/news/global-store";
 
 const MAX_HOLDINGS = 12;
 
@@ -19,7 +26,7 @@ export interface NewsRefreshResult {
 /**
  * Core news refresh logic — shared by the API route (user-triggered) and the
  * daily cron (automated). Pass an optional `ticker` to scope the holding lane
- * to one position (market lane is skipped in that case).
+ * to one position; the market lane still runs because it is global.
  */
 export async function refreshNewsForUser(
   supabase: SupabaseClient,
@@ -29,6 +36,8 @@ export async function refreshNewsForUser(
   const tavilyEnabled = tavilyConfigured() && process.env.NEWS_ENABLE_TAVILY !== "false";
   const psxEnabled = psxAnnouncementsConfigured();
   const gdeltEnabled = gdeltConfigured();
+  const globalDb = newsWriteClient();
+  if (globalDb) await syncNewsSources(globalDb);
 
   let holdingsQuery = supabase
     .from("holdings")
@@ -116,7 +125,7 @@ export async function refreshNewsForUser(
   const portfolioContext = holdings
     .map((h) => `${h.ticker} = ${h.company_name} (${h.sector ?? "sector unknown"})`)
     .join("\n");
-  const analysisByUrl = new Map<string, ReturnType<typeof Object.assign>>();
+  const analysisByUrl = new Map<string, ArticleAnalysis>();
 
   if (aiAvailable()) {
     const aiCandidates = found.filter((a) => a.provider !== "psx-announcements");
@@ -140,9 +149,27 @@ export async function refreshNewsForUser(
 
   for (const a of found) {
     const m = analysisByUrl.get(a.url);
-    const relevanceScore = m ? clamp(m.relevance_score) : a.relevance_score ?? null;
+    const relevanceScore = m?.relevance_score !== undefined ? clamp(m.relevance_score) : a.relevance_score ?? null;
     const quality = a.source_quality ?? sourceQuality(a.source);
     const lowConfidence = a.low_confidence ?? (relevanceScore === null || (relevanceScore !== null && relevanceScore <= 3) || quality === "low");
+    const globalId = globalDb
+      ? await saveGlobalArticle(globalDb, a, {
+          ai_summary: m?.summary ?? a.ai_summary ?? null,
+          sentiment: m?.sentiment ?? a.sentiment ?? null,
+          relevance_score: relevanceScore,
+          category: m?.category ?? a.category ?? "general",
+          source_quality: quality,
+          low_confidence: lowConfidence,
+        })
+      : null;
+    if (globalId) {
+      await saveArticleRelevance(supabase, userId, globalId, a, m ?? null, {
+        relevanceScore,
+        lowConfidence,
+        sourceQuality: quality,
+      });
+    }
+
     const { error } = await supabase.from("news_articles").upsert(
       {
         user_id: userId, scope: "portfolio",
@@ -168,7 +195,23 @@ export async function refreshNewsForUser(
   for (const a of marketFound) {
     // Market articles are stored raw — no AI enrichment here. The Analyst Brief
     // button synthesises them on-demand so the cron runs for free.
-    const relevanceScore = a.relevance_score ?? 5;
+    const relevanceScore = a.relevance_score ?? 6;
+    const globalId = globalDb
+      ? await saveGlobalArticle(globalDb, a, {
+          relevance_score: relevanceScore,
+          category: a.category ?? "market",
+          source_quality: a.source_quality ?? "medium",
+          low_confidence: false,
+        })
+      : null;
+    if (globalId) {
+      await saveArticleRelevance(supabase, userId, globalId, a, null, {
+        relevanceScore,
+        lowConfidence: false,
+        sourceQuality: a.source_quality ?? "medium",
+      });
+    }
+
     const { error } = await supabase.from("news_articles").upsert(
       {
         user_id: userId, scope: "market",

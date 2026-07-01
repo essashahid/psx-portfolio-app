@@ -5,6 +5,7 @@ import { taskText } from "@/lib/ai/tasks";
 import { getClaude, claudeConfigured, buildClaudeParams } from "@/lib/ai/claude";
 import { getModelDef } from "@/lib/ai/models";
 import { rejectDemoWrite } from "@/lib/demo-mode";
+import { getUserNewsFeed } from "@/lib/news/global-store";
 
 export const maxDuration = 120;
 
@@ -31,16 +32,7 @@ export async function POST(request: Request) {
     // Last 48h — both portfolio and market lane, highest signal first.
     const since = new Date(Date.now() - 48 * 3_600_000).toISOString();
     const [newsRes, holdingsRes] = await Promise.all([
-      supabase
-        .from("news_articles")
-        .select("title, url, source, published_at, ai_summary, sentiment, relevance_score, category, scope, impact_tickers, is_interesting, ticker, company_name")
-        .eq("user_id", user.id)
-        .eq("ignored", false)
-        .eq("low_confidence", false)
-        .gte("created_at", since)
-        .order("is_interesting", { ascending: false })
-        .order("relevance_score", { ascending: false })
-        .limit(40),
+      getUserNewsFeed(supabase, user.id, 120),
       supabase
         .from("holdings")
         .select("ticker, company_name, sector, quantity, avg_cost")
@@ -48,7 +40,16 @@ export async function POST(request: Request) {
         .gt("quantity", 0),
     ]);
 
-    const articles = newsRes.data ?? [];
+    const sinceMs = new Date(since).getTime();
+    const articles = newsRes
+      .filter((a) => !a.ignored && !a.low_confidence && articleTime(a) >= sinceMs)
+      .sort(
+        (a, b) =>
+          Number(b.is_interesting) - Number(a.is_interesting) ||
+          (b.relevance_score ?? 0) - (a.relevance_score ?? 0) ||
+          articleTime(b) - articleTime(a)
+      )
+      .slice(0, 40);
     const holdings = holdingsRes.data ?? [];
 
     if (articles.length === 0) {
@@ -132,4 +133,9 @@ Is the macro backdrop for PSX bullish, bearish, or mixed right now? The key driv
   } catch (err) {
     return errorResponse(err);
   }
+}
+
+function articleTime(article: { published_at: string | null; created_at: string }): number {
+  const t = new Date(article.published_at ?? article.created_at).getTime();
+  return Number.isNaN(t) ? 0 : t;
 }

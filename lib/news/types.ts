@@ -44,6 +44,7 @@ export interface DiscoveredNewsArticle {
   source: string;
   published_at: string | null;
   provider: NewsProvider;
+  source_key?: string;
   scope: NewsScope;
   category?: NewsCategory;
   sentiment?: "positive" | "neutral" | "negative";
