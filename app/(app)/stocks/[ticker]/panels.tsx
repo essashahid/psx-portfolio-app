@@ -780,10 +780,12 @@ export async function RatiosPanel({ ticker, readOnly = false }: { ticker: string
     }
   }
 
+  const usableRatios = ratios.filter((row) => row.ratio_value !== null && Number.isFinite(row.ratio_value));
+
   return (
     <RatiosWorkspace
       ticker={ticker.toUpperCase()}
-      ratios={ratios}
+      ratios={usableRatios}
       financialRows={financialRows}
       metadata={metadata}
       quote={quote}

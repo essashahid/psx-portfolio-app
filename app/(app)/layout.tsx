@@ -4,6 +4,7 @@ import { MobileBottomNav, MobileTopBar, Sidebar } from "@/components/sidebar";
 import { AutoRefreshPrices } from "@/components/auto-refresh-prices";
 import { NavProgress } from "@/components/nav-progress";
 import { ImpersonationBanner } from "@/components/impersonation-banner";
+import { FeedbackWidget } from "@/components/feedback-widget";
 import { DISCLAIMER } from "@/lib/utils";
 import { resolveVisibleHrefs } from "@/lib/nav";
 import type { ExperienceLevel } from "@/lib/types";
@@ -77,6 +78,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
           <p className="mx-auto max-w-7xl text-[11px] text-muted-foreground">{DISCLAIMER}</p>
         </footer>
       </div>
+      <FeedbackWidget isDemo={isDemo} />
       <MobileBottomNav email={user.email ?? ""} openAlerts={count ?? 0} visibleHrefs={visibleHrefs} isAdmin={isAdmin} />
     </div>
   );
