@@ -13,7 +13,7 @@ export type ChatModelId =
   | "claude-haiku"
   | "claude-sonnet"
   | "claude-opus"
-  | "deepseek-flash";
+  | "deepseek-pro";
 
 export interface ChatModelDef {
   id: ChatModelId;
@@ -75,18 +75,17 @@ export const CHAT_MODELS: ChatModelDef[] = [
     maxTokens: 16000,
   },
   {
-    id: "deepseek-flash",
+    id: "deepseek-pro",
     provider: "deepseek",
     group: "DeepSeek",
-    label: "Flash (V4)",
-    hint: "Fast and tool-capable — fetches your portfolio data",
+    label: "Pro (V4)",
+    hint: "Higher-quality DeepSeek — tool-capable portfolio research",
     // DeepSeek V4. Runs in NON-thinking mode (thinking is a request parameter
-    // now, defaulting to ON, so deepseek-chat.ts disables it). Non-thinking +
-    // tools is the reliable, supported path today; thinking + multi-turn tools
-    // is still buggy in the V4 preview. This replaces both the deprecated
-    // deepseek-chat (V3) and deepseek-reasoner (R1) — R1 was tool-less, which is
-    // why it could not retrieve portfolio data; V4 Flash can call the tools.
-    apiModel: "deepseek-v4-flash",
+    // now, defaulting to ON, so deepseek-chat.ts disables it). Non-thinking plus
+    // tools is the reliable path for this app's multi-turn research loop. This
+    // replaces both the deprecated deepseek-chat (V3) and deepseek-reasoner (R1);
+    // R1 was tool-less, which is why it could not retrieve portfolio data.
+    apiModel: "deepseek-v4-pro",
     thinking: false,
     maxTokens: 8000,
     supportsTools: true,
@@ -98,6 +97,9 @@ export const DEFAULT_MODEL_ID: ChatModelId = "claude-sonnet";
 
 /** Resolve an id (from a request body) to its def, falling back to the default. */
 export function getModelDef(id: string | null | undefined): ChatModelDef {
+  // Backward compatibility for clients that still have the old selector value
+  // in localStorage from when the DeepSeek option was V4 Flash.
+  if (id === "deepseek-flash") return getModelDef("deepseek-pro");
   return CHAT_MODELS.find((m) => m.id === id) ?? getModelDef(DEFAULT_MODEL_ID);
 }
 
