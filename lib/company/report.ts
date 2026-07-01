@@ -13,6 +13,7 @@ import { getPortfolio } from "@/lib/portfolio";
 import { googleNewsUrl } from "@/lib/news/feeds";
 import { fetchRssFeed } from "@/lib/news/rss";
 import { matchesHoldingText } from "@/lib/news/matching";
+import { getUserNewsFeed } from "@/lib/news/global-store";
 
 import {
   latestFinancialLabel,
@@ -257,7 +258,7 @@ export async function generateCompanyReport(
     !options.include.news
   );
 
-  const [quoteRes, financialsRes, payoutsRes, storedNewsRes, portfolio, userDividends, technicalsFallback, ratios] =
+  const [quoteRes, financialsRes, payoutsRes, storedNewsRows, portfolio, userDividends, technicalsFallback, ratios] =
     await Promise.all([
       supabase
         .from("market_quotes")
@@ -276,14 +277,13 @@ export async function generateCompanyReport(
         .eq("ticker", symbol)
         .order("announcement_date", { ascending: false, nullsFirst: false })
         .limit(24),
-      supabase
-        .from("news_articles")
-        .select("title, url, source, published_at, ai_summary, snippet, relevance_score, category")
-        .eq("user_id", userId)
-        .eq("ticker", symbol)
-        .eq("ignored", false)
-        .order("published_at", { ascending: false, nullsFirst: false })
-        .limit(20),
+      getUserNewsFeed(supabase, userId, 160).then((rows) =>
+        rows
+          .filter((n) => !n.ignored && !n.low_confidence)
+          .filter((n) => n.ticker === symbol || (n.impact_tickers ?? []).includes(symbol))
+          .sort((a, b) => timestamp(b.published_at ?? b.created_at) - timestamp(a.published_at ?? a.created_at))
+          .slice(0, 20)
+      ),
       options.include.portfolio ? getPortfolio(supabase, userId) : Promise.resolve(null),
       options.include.dividends ? getCompanyDividends(supabase, userId, symbol) : Promise.resolve([]),
       liveTechnicals ? Promise.resolve(liveTechnicals) : getTechnicals(supabase, symbol),
@@ -293,7 +293,7 @@ export async function generateCompanyReport(
   const quote = mergeQuote(symbol, (quoteRes.data as QuoteRow | null) ?? null, freshQuote);
   const financials = (financialsRes.data ?? []) as FinancialRow[];
   const payouts = (payoutsRes.data ?? []) as PayoutRow[];
-  const storedNews = (storedNewsRes.data ?? []) as NewsRow[];
+  const storedNews = storedNewsRows as NewsRow[];
   const technicals = technicalsFallback;
   const pricePerformance = options.include.pricePerformance ? buildPricePerformance(technicals.history, options.periodYears) : null;
   const holding = portfolio?.holdings.find((h) => h.ticker === symbol) ?? null;

@@ -5,6 +5,7 @@ import { getDividends, summarizeDividends } from "@/lib/dividends";
 import { getTaxSettings } from "@/lib/dividends/tax";
 import { normalizeEvent } from "@/lib/dividends/engine";
 import type { BriefingType } from "@/lib/types";
+import { getUserNewsFeed } from "@/lib/news/global-store";
 
 /** Assembles a factual, compact context block the model can rely on. */
 export async function buildPortfolioContext(
@@ -17,16 +18,19 @@ export async function buildPortfolioContext(
   const dividendSummary = summarizeDividends(dividends);
   const since = new Date(Date.now() - (opts.newsDays ?? 7) * 86400000).toISOString();
 
-  const [newsRes, alertsRes, journalRes, snapshotsRes] = await Promise.all([
-    supabase
-      .from("news_articles")
-      .select("ticker, title, url, source, published_at, ai_summary, sentiment, relevance_score, category, saved, source_quality, link_reason, low_confidence")
-      .eq("user_id", userId)
-      .eq("ignored", false)
-      .or("low_confidence.eq.false,saved.eq.true")
-      .gte("created_at", since)
-      .order("relevance_score", { ascending: false })
-      .limit(25),
+  const [newsRows, alertsRes, journalRes, snapshotsRes] = await Promise.all([
+    getUserNewsFeed(supabase, userId, 160).then((rows) =>
+      rows
+        .filter((n) => !n.ignored && (!n.low_confidence || n.saved))
+        .filter((n) => articleTime(n) >= new Date(since).getTime())
+        .sort(
+          (a, b) =>
+            Number(b.is_interesting) - Number(a.is_interesting) ||
+            (b.relevance_score ?? 0) - (a.relevance_score ?? 0) ||
+            articleTime(b) - articleTime(a)
+        )
+        .slice(0, 25)
+    ),
     supabase
       .from("alerts")
       .select("ticker, alert_type, severity, title, message")
@@ -145,11 +149,11 @@ export async function buildPortfolioContext(
       );
     }
   }
-  if ((newsRes.data ?? []).length) {
+  if (newsRows.length) {
     lines.push(`\n## Recent news (last ${opts.newsDays ?? 7} days)`);
-    for (const n of newsRes.data ?? []) {
+    for (const n of newsRows) {
       lines.push(
-        `- [${n.ticker ?? "general"}] ${n.title} (${n.sentiment ?? "?"}, relevance ${n.relevance_score ?? "?"}/10, ${n.category ?? "general"}, source ${n.source_quality ?? "unknown"}${n.saved ? ", saved" : ""}) ${n.url} :: linked because ${(n.link_reason ?? "not stated").slice(0, 120)} :: ${(n.ai_summary ?? "").slice(0, 200)}`
+        `- [${n.ticker ?? "general"}] ${n.title} (${n.sentiment ?? "?"}, relevance ${n.relevance_score ?? "?"}/10, ${n.category ?? "general"}, source ${n.source_quality ?? "unknown"}${n.saved ? ", saved" : ""}) ${n.url} :: linked because ${(n.link_reason ?? "not stated").slice(0, 120)} :: ${(n.ai_summary ?? n.snippet ?? "").slice(0, 200)}`
       );
     }
   } else {
@@ -175,6 +179,11 @@ export async function buildPortfolioContext(
   }
   lines.push(`\nToday's date: ${new Date().toISOString().slice(0, 10)}`);
   return lines.join("\n");
+}
+
+function articleTime(article: { published_at: string | null; created_at: string }): number {
+  const t = new Date(article.published_at ?? article.created_at).getTime();
+  return Number.isNaN(t) ? 0 : t;
 }
 
 const BRIEFING_INSTRUCTIONS: Record<string, { title: string; prompt: string }> = {
