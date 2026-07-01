@@ -13,6 +13,14 @@ export const metadata: Metadata = {
   title: "PortfolioOS PK",
   description:
     "Private PSX portfolio command center — personal portfolio tracking and research support only, not financial advice.",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "default",
+    title: "PortfolioOS PK",
+  },
+  formatDetection: {
+    telephone: false,
+  },
 };
 
 export const viewport: Viewport = {
