@@ -8,7 +8,7 @@ import { buildBrief } from "@/lib/chat/build-context";
 import { CHAT_TOOLS, CLAUDE_TOOLS, executeTool } from "@/lib/chat/tools";
 import { claudeConfigured, getClaude, buildClaudeParams } from "@/lib/ai/claude";
 import { deepseekChatConfigured, runDeepSeekChat } from "@/lib/ai/deepseek-chat";
-import { getModelDef } from "@/lib/ai/models";
+import { getModelDef, type ChatModelDef } from "@/lib/ai/models";
 import { looksLikeToolLeak, stripEmDashes } from "@/lib/chat/sanitize";
 import { wantsWebContext, gatherWebContext } from "@/lib/chat/web-context";
 import { ArtifactExtractor, type ArtifactSpec } from "@/lib/chat/artifacts";
@@ -394,12 +394,55 @@ export async function POST(request: Request) {
         }
 
         // Backstop: if the model leaked a tool call as text instead of
-        // invoking it, replace the garbage answer with the grounded context we
-        // already gathered. Do not surface provider/tool plumbing to the user.
+        // invoking it, reset the garbage stream and force a clean no-tools
+        // synthesis over the context we already gathered. This keeps DeepSeek's
+        // occasional tool-format failure from surfacing as a raw context dump.
         if (looksLikeToolLeak(assistantContent)) {
           send({ type: "reset" });
-          assistantContent = toolLeakRecoveryFallback(brief);
-          send({ type: "text", delta: assistantContent });
+          assistantContent = "";
+          writingStarted = false;
+          if (modelDef.provider === "deepseek" && deepseekChatConfigured()) {
+            send({ type: "status", text: "Writing the final answer" });
+            const recoveryExtractor = new ArtifactExtractor(
+              (raw) => {
+                const delta = stripEmDashes(raw);
+                markWriting();
+                assistantContent += delta;
+                send({ type: "text", delta });
+              },
+              (spec) => {
+                artifactSpecs.push(spec);
+                send({ type: "artifact", spec });
+              }
+            );
+            await runDeepSeekChat({
+              def: modelDef,
+              system: buildRecoverySystemPrompt(modelDef, message),
+              history: trimmedHistory,
+              userContent: buildRecoveryUserContext(brief, message),
+              tools: [],
+              executeTool: async () => ({}),
+              onThinking: (delta) => {
+                assistantThinking += delta;
+              },
+              onText: (delta) => {
+                recoveryExtractor.push(delta);
+              },
+              onStatus: () => {},
+              onReset: () => {
+                assistantContent = "";
+                writingStarted = false;
+                recoveryExtractor.reset();
+                send({ type: "reset" });
+              },
+            });
+            recoveryExtractor.flush();
+          }
+          if (!assistantContent.trim() || looksLikeToolLeak(assistantContent)) {
+            send({ type: "reset" });
+            assistantContent = toolLeakRecoveryFallback(brief, message);
+            send({ type: "text", delta: assistantContent });
+          }
         }
 
         // Final backstop: if the model gathered evidence but never wrote a
@@ -558,10 +601,27 @@ function emptyAnswerFallback(brief: string): string {
   return brief ? `${ask}\n\n${brief}` : ask;
 }
 
-function toolLeakRecoveryFallback(brief: string): string {
+function buildRecoverySystemPrompt(modelDef: ChatModelDef, message: string): string {
+  return `${buildSystemPrompt(modelDef, message, { canUseTools: false })}
+
+Recovery instruction:
+- The previous provider turn failed by emitting tool-call syntax or raw retrieved context.
+- Do not mention the failure, tools, retrieval, or provider behavior.
+- Answer the user's actual question from <context>.
+- Synthesize, rank, and interpret. Do not dump raw context.
+- Follow any requested format exactly.`;
+}
+
+function buildRecoveryUserContext(brief: string, message: string): string {
   return brief
-    ? `Here is the grounded context I found:\n\n${brief}`
-    : "I found no matching stored portfolio or market context for that question. Try naming a ticker, sector, or event.";
+    ? `<context>\n${brief}\n</context>\n\nQuestion: ${message}\n\nWrite the final investor-facing answer only.`
+    : `Question: ${message}\n\nWrite the final investor-facing answer only.`;
+}
+
+function toolLeakRecoveryFallback(brief: string, message: string): string {
+  return brief
+    ? `I could not complete the model's written synthesis cleanly, but these are the facts available for your question:\n\n${brief}\n\nAsk the same question again with Claude or DeepSeek and I will retry the written brief.`
+    : `I could not complete the model's written synthesis cleanly for: "${message}". Try naming a ticker, sector, or event.`;
 }
 
 /** Deterministic answer when the LLM is disabled — uses the same digested numbers. */
