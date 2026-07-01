@@ -9,7 +9,7 @@ import { CHAT_TOOLS, CLAUDE_TOOLS, executeTool } from "@/lib/chat/tools";
 import { claudeConfigured, getClaude, buildClaudeParams } from "@/lib/ai/claude";
 import { deepseekChatConfigured, runDeepSeekChat } from "@/lib/ai/deepseek-chat";
 import { getModelDef } from "@/lib/ai/models";
-import { looksLikeToolLeak, TOOL_LEAK_FALLBACK, stripEmDashes } from "@/lib/chat/sanitize";
+import { looksLikeToolLeak, stripEmDashes } from "@/lib/chat/sanitize";
 import { wantsWebContext, gatherWebContext } from "@/lib/chat/web-context";
 import { ArtifactExtractor, type ArtifactSpec } from "@/lib/chat/artifacts";
 import {
@@ -394,10 +394,11 @@ export async function POST(request: Request) {
         }
 
         // Backstop: if the model leaked a tool call as text instead of
-        // invoking it, replace the garbage answer.
+        // invoking it, replace the garbage answer with the grounded context we
+        // already gathered. Do not surface provider/tool plumbing to the user.
         if (looksLikeToolLeak(assistantContent)) {
           send({ type: "reset" });
-          assistantContent = TOOL_LEAK_FALLBACK;
+          assistantContent = toolLeakRecoveryFallback(brief);
           send({ type: "text", delta: assistantContent });
         }
 
@@ -555,6 +556,12 @@ function summaryFromContent(content: string): string | null {
 function emptyAnswerFallback(brief: string): string {
   const ask = "This was a broad question and the model ran out of room to write the full analysis. Here is the data it gathered. For a complete written answer, ask about one or two holdings at a time, or a single sector.";
   return brief ? `${ask}\n\n${brief}` : ask;
+}
+
+function toolLeakRecoveryFallback(brief: string): string {
+  return brief
+    ? `Here is the grounded context I found:\n\n${brief}`
+    : "I found no matching stored portfolio or market context for that question. Try naming a ticker, sector, or event.";
 }
 
 /** Deterministic answer when the LLM is disabled — uses the same digested numbers. */
