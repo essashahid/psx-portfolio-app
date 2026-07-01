@@ -35,7 +35,7 @@ export default async function DividendsPage() {
           <p className="eyebrow">Income</p>
           <h1 className="mt-1 text-2xl font-semibold tracking-tight">Dividend Income</h1>
           <p className="mt-1 max-w-2xl text-sm text-muted-foreground">Track received income, upcoming announcements, tax deductions and manually recorded dividends.</p>
-          <p className="mt-3 text-xs text-muted-foreground">Tax profile: {taxSettings.taxpayer_status === "filer" ? "ATL filer" : taxSettings.taxpayer_status} · Estimated rate {taxRate} · {taxSettings.configured ? `Tax year ${taxSettings.tax_year}` : "Profile needs confirmation"}</p>
+          {!isDemo && <p className="mt-3 text-xs text-muted-foreground">Tax profile: {taxSettings.taxpayer_status === "filer" ? "ATL filer" : taxSettings.taxpayer_status} · Estimated rate {taxRate} · {taxSettings.configured ? `Tax year ${taxSettings.tax_year}` : "Profile needs confirmation"}</p>}
         </div>
         <div className="flex flex-wrap items-start gap-2">
           {!isDemo && <DividendManager dividends={dividends} holdings={summary.holdings} triggerOnly />}
@@ -51,7 +51,7 @@ export default async function DividendsPage() {
         </div>
       </header>
 
-      {!taxSettings.configured && <p className="rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-900">Tax profile is not saved. Amounts use the current default assumptions.</p>}
+      {!taxSettings.configured && !isDemo && <p className="rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-900">Tax profile is not saved. Amounts use the current default assumptions.</p>}
 
       <DividendIncomeWorkspace dividends={dividends} events={events} holdings={summary.holdings} asOf={asOf} readOnly={isDemo} />
     </div>
