@@ -7,9 +7,14 @@ export type NewsCategory =
   | "corporate_announcement"
   | "policy"
   | "economy"
+  | "regulatory"
   | "commodity"
+  | "funds"
+  | "forex"
+  | "crypto"
   | "market"
-  | "international";
+  | "international"
+  | "geopolitics";
 
 export type NewsScope = "portfolio" | "market";
 

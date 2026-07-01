@@ -38,8 +38,8 @@ export async function refreshNewsForUser(
     .order("ticker")
     .limit(MAX_HOLDINGS);
   if (opts.ticker) holdingsQuery = holdingsQuery.eq("ticker", opts.ticker);
-  const { data: holdings } = await holdingsQuery;
-  if (!holdings || holdings.length === 0) return { inserted: 0, market: 0, holding: 0, errors: [] };
+  const { data: holdingsData } = await holdingsQuery;
+  const holdings = holdingsData ?? [];
 
   const { data: existing } = await supabase.from("news_articles").select("url").eq("user_id", userId);
   const known = new Set((existing ?? []).map((e) => e.url));
@@ -97,8 +97,11 @@ export async function refreshNewsForUser(
     errors.push(...e);
   }
 
-  if (marketNewsConfigured() && !opts.ticker) {
-    const { articles, errors: e } = await fetchMarketNews(holdings, { maxArticles: 45 });
+  // Market lane runs on every refresh — including ticker-scoped refreshes and
+  // empty portfolios. Coverage is holding-independent, so it no longer depends
+  // on the 12-holding cap or on whose portfolio triggered the run.
+  if (marketNewsConfigured()) {
+    const { articles, errors: e } = await fetchMarketNews(holdings, { maxArticles: 120 });
     for (const a of articles) {
       if (known.has(a.url)) continue;
       known.add(a.url);
