@@ -107,9 +107,7 @@ export default async function StockCockpitPage({ params }: { params: Promise<{ t
       : []),
     { id: "dividends", label: "Dividends", content: <Suspense fallback={<TableSkeleton />}><DividendsPanel ticker={ticker} /></Suspense> },
     { id: "news", label: "News & Filings", content: <Suspense fallback={<CardSkeleton lines={8} />}><NewsFilingsPanel ticker={ticker} /></Suspense> },
-    ...(companyReportsEnabled
-      ? [{ id: "ai", label: "AI Analysis", content: <Suspense fallback={<CardSkeleton lines={6} />}><AiAnalysisPanel ticker={ticker} /></Suspense> }]
-      : []),
+
   ];
 
   return (
