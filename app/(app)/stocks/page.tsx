@@ -43,7 +43,7 @@ export default async function StockResearchPage() {
         actions={actions}
       />
 
-      <StockSearch autoFocus companyReportsEnabled={companyReportsEnabled} />
+
 
       {!d.snapshotDate ? (
         <EmptyState
