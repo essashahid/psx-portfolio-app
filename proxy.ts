@@ -46,7 +46,7 @@ export default async function proxy(request: NextRequest) {
 
   const path = request.nextUrl.pathname;
   const isPublic =
-    path === "/login" || path.startsWith("/auth") || path === "/favicon.ico";
+    path === "/login" || path.startsWith("/auth") || path === "/favicon.ico" || path === "/manifest.webmanifest" || path.startsWith("/sw.js") || path.startsWith("/workbox-");
 
   if (!user && !isPublic && !path.startsWith("/api")) {
     const url = request.nextUrl.clone();
@@ -89,5 +89,5 @@ export default async function proxy(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)"],
+  matcher: ["/((?!_next/static|_next/image|favicon.ico|manifest.webmanifest|sw.js|workbox-.*|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)"],
 };
