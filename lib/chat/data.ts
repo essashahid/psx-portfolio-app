@@ -1,6 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Candle, TechnicalSignals } from "@/lib/market/technicals";
 import { getPortfolio } from "@/lib/portfolio";
+import { getUserNewsFeed } from "@/lib/news/global-store";
 
 /**
  * Compact, FREE data getters for the chat assistant — everything reads from
@@ -710,34 +711,34 @@ export async function getNewsCard(
   ticker: string | null,
   limit = 6
 ): Promise<NewsCard | null> {
-  // Reads the user's News Center feed (news_articles) — macro/market stories,
-  // holding-specific news AND official PSX filings (the psx-announcements
-  // provider writes here too). Per-user and indexed, so it's fast and bounded.
-  let query = db
-    .from("news_articles")
-    .select("title, url, source, published_at, created_at, ai_summary, snippet, sentiment, category, ticker, impact_tickers, relevance_score")
-    .eq("user_id", userId)
-    .eq("ignored", false)
-    .eq("low_confidence", false);
-  if (ticker) {
-    const t = ticker.toUpperCase();
-    // Direct holding news OR a market story flagged as touching this ticker.
-    query = query.or(`ticker.eq.${t},impact_tickers.cs.{${t}}`);
-  }
-  const { data } = await query.order("published_at", { ascending: false, nullsFirst: false }).limit(limit);
-  if (!data || data.length === 0) return null;
+  // Reads the same global + per-user News Center feed the News page uses:
+  // market/macro/policy stories, holding-specific news, and PSX filings. The
+  // helper falls back to the legacy user table when the global migration is not
+  // present, so Copilot stays usable across deploy order.
+  const t = ticker?.toUpperCase() ?? null;
+  const data = (await getUserNewsFeed(db, userId, Math.max(80, limit * 8)))
+    .filter((e) => !e.ignored && !e.low_confidence)
+    .filter((e) => !t || e.ticker === t || (e.impact_tickers ?? []).includes(t))
+    .sort((a, b) => articleTime(b) - articleTime(a))
+    .slice(0, limit);
+  if (data.length === 0) return null;
   return {
-    ticker: ticker ? ticker.toUpperCase() : null,
+    ticker: t,
     items: data.map((e) => ({
-      title: e.title as string,
-      type: (e.category as string) ?? "news",
-      date: String((e.published_at as string) ?? (e.created_at as string) ?? "").slice(0, 10),
-      url: (e.url as string) ?? null,
-      summary: (e.ai_summary as string) ?? (typeof e.snippet === "string" ? e.snippet.slice(0, 240) : null),
-      sentiment: (e.sentiment as string) ?? null,
-      source: (e.source as string) ?? null,
+      title: e.title,
+      type: e.category ?? "news",
+      date: String(e.published_at ?? e.created_at ?? "").slice(0, 10),
+      url: e.url ?? null,
+      summary: e.ai_summary ?? (typeof e.snippet === "string" ? e.snippet.slice(0, 240) : null),
+      sentiment: e.sentiment ?? null,
+      source: e.source ?? null,
     })),
   };
+}
+
+function articleTime(article: { published_at: string | null; created_at: string }): number {
+  const t = new Date(article.published_at ?? article.created_at).getTime();
+  return Number.isNaN(t) ? 0 : t;
 }
 
 export async function getMarketCard(db: SupabaseClient): Promise<MarketCard | null> {

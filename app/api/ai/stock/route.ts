@@ -3,6 +3,7 @@ import { requireUser, errorResponse, logAgentRun } from "@/lib/api-helpers";
 import { chatMarkdown, aiAvailable } from "@/lib/ai/openai";
 import { getPortfolio } from "@/lib/portfolio";
 import { rejectDemoWrite } from "@/lib/demo-mode";
+import { getUserNewsFeed } from "@/lib/news/global-store";
 
 export const maxDuration = 120;
 
@@ -71,18 +72,17 @@ export async function POST(request: Request) {
     const holding = summary.holdings.find((h) => h.ticker === ticker);
     if (!holding) return NextResponse.json({ error: `No holding found for ${ticker}` }, { status: 404 });
 
-    const [{ data: thesis }, { data: target }, { data: news }, { data: journal }] =
+    const [{ data: thesis }, { data: target }, news, { data: journal }] =
       await Promise.all([
         supabase.from("theses").select("*").eq("user_id", user.id).eq("ticker", ticker).maybeSingle(),
         supabase.from("targets").select("*").eq("user_id", user.id).eq("ticker", ticker).maybeSingle(),
-        supabase
-          .from("news_articles")
-          .select("title, url, source, published_at, ai_summary, sentiment, relevance_score, category, snippet")
-          .eq("user_id", user.id)
-          .eq("ticker", ticker)
-          .eq("ignored", false)
-          .order("created_at", { ascending: false })
-          .limit(12),
+        getUserNewsFeed(supabase, user.id, 120).then((rows) =>
+          rows
+            .filter((n) => !n.ignored && !n.low_confidence)
+            .filter((n) => n.ticker === ticker || (n.impact_tickers ?? []).includes(ticker))
+            .sort((a, b) => articleTime(b) - articleTime(a))
+            .slice(0, 12)
+        ),
         supabase
           .from("journal_entries")
           .select("entry_date, entry_type, title, body")
@@ -114,8 +114,8 @@ export async function POST(request: Request) {
         : "NO THESIS RECORDED — this is itself a gap worth flagging.",
       ``,
       `## Stored news (newest first)`,
-      (news ?? []).length
-        ? (news ?? [])
+      news.length
+        ? news
             .map(
               (n) =>
                 `- ${n.title} [${n.sentiment ?? "?"}, relevance ${n.relevance_score ?? "?"}/10, ${n.category ?? "general"}] ${n.url}\n  ${n.ai_summary ?? n.snippet?.slice(0, 200) ?? ""}`
@@ -171,4 +171,9 @@ export async function POST(request: Request) {
   } catch (err) {
     return errorResponse(err);
   }
+}
+
+function articleTime(article: { published_at: string | null; created_at: string }): number {
+  const t = new Date(article.published_at ?? article.created_at).getTime();
+  return Number.isNaN(t) ? 0 : t;
 }
