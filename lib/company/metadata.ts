@@ -157,7 +157,7 @@ async function cacheMetadata(row: Partial<MetadataRow>): Promise<void> {
 /** Persist a generated description + business lines (called from refresh/scripts). */
 export async function saveCompanyDescription(
   ticker: string,
-  patch: { description?: string; business_lines?: string[]; industry?: string; source?: string; source_url?: string | null; confidence?: number }
+  patch: { description?: string; business_lines?: string[]; industry?: string; website?: string | null; source?: string; source_url?: string | null; confidence?: number }
 ): Promise<void> {
   await cacheMetadata({
     ticker: ticker.toUpperCase(),

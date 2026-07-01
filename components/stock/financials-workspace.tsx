@@ -22,7 +22,7 @@ import { Table, TBody, TD, TH, THead, TR } from "@/components/ui/table";
 import { ActionButton } from "@/components/action-button";
 import { AXIS_TICK, ChartEmpty, CURSOR, FadeDefs, INK, fmtCompact } from "@/components/chart-kit";
 import { cn } from "@/lib/utils";
-import { AlertTriangle, Download, ExternalLink, MoreHorizontal, RefreshCw } from "lucide-react";
+import { Download, ExternalLink, MoreHorizontal, RefreshCw } from "lucide-react";
 
 type StatementType = "income_statement" | "balance_sheet" | "cash_flow";
 type PeriodMode = "annual" | "quarterly" | "cumulative";
@@ -126,7 +126,7 @@ const LABELS: Record<string, string> = {
   free_cash_flow: "Free cash flow",
   investing_cash_flow: "Investing cash flow",
   financing_cash_flow: "Financing cash flow",
-  cash_balance: "Cash movement - definition under review",
+  cash_balance: "Cash movement",
 };
 const ACCOUNTING_HINTS: Record<string, string> = {
   gross_margin: "Gross profit divided by revenue. Shown as percentage points when compared.",
@@ -134,7 +134,6 @@ const ACCOUNTING_HINTS: Record<string, string> = {
   net_margin: "Profit after tax divided by revenue. Shown as percentage points when compared.",
   eps: "Earnings per share in PKR. Not scaled with statement units.",
   capex: "Shown as capital expenditure outflow for free-cash-flow analysis; source sign conventions can vary.",
-  cash_balance: "Definition is under review before this can be treated as ending cash balance.",
   working_capital: "Calculated: current assets minus current liabilities.",
   current_ratio: "Calculated: current assets divided by current liabilities.",
   debt_to_equity: "Calculated: borrowings divided by equity.",
@@ -190,17 +189,17 @@ function statementPeriodMeta(row: FinancialWorkspaceRow): { primary: string; sec
 function completenessLabel(status: ReturnType<typeof rowCompleteness>): string {
   if (status === "Complete") return "Data complete";
   if (status === "Partial") return "Partial data";
-  return "Data unavailable";
+  return "Data pending";
 }
 
-function metadataCompleteness(row: FinancialWorkspaceRow | null | undefined): "Complete" | "Partial" | "Unavailable" {
-  if (!row) return "Unavailable";
+function metadataCompleteness(row: FinancialWorkspaceRow | null | undefined): "Complete" | "Partial" | "Pending" {
+  if (!row) return "Pending";
   const hasSource = Boolean(row.source_url);
   const hasFiling = Boolean(row.reported_date);
   const hasPeriodEnd = row.statement_type !== "balance_sheet" || Boolean(periodEndDate(row));
   if (hasSource && hasFiling && hasPeriodEnd) return "Complete";
   if (hasSource || hasFiling || hasPeriodEnd) return "Partial";
-  return "Unavailable";
+  return "Pending";
 }
 
 function statementMetadataNote(periods: FinancialWorkspaceRow[], statement: StatementType): string | null {
@@ -387,8 +386,8 @@ function printPdf(title: string, rows: Record<string, unknown>[]) {
 
 function statusVariant(status: string): "green" | "amber" | "red" | "blue" | "secondary" {
   if (status === "Complete") return "green";
-  if (status === "Partial" || status === "Not comparable" || status === "Review") return "amber";
-  if (status === "Missing" || status === "Unavailable") return "red";
+  if (status === "Partial" || status === "Pending" || status === "Not comparable" || status === "Review") return "amber";
+  if (status === "Missing") return "red";
   return "secondary";
 }
 
@@ -396,13 +395,12 @@ function deriveDataStatus(rows: FinancialWorkspaceRow[]): "Complete" | "Partial"
   if (!rows.length) return "Missing";
   const hasLowConfidence = rows.some((r) => r.confidence !== null && r.confidence < 0.7);
   const hasSparseQuarter = rows.some((r) => periodMode(r) === "quarterly" && Object.keys(r.data ?? {}).filter((k) => !k.startsWith("_")).length <= 3);
-  const hasCashReview = rows.some((r) => r.statement_type === "cash_flow" && raw(r, "cash_balance") !== null);
-  return hasLowConfidence || hasSparseQuarter || hasCashReview ? "Partial" : "Complete";
+  return hasLowConfidence || hasSparseQuarter ? "Partial" : "Complete";
 }
 
-function rowCompleteness(row: FinancialWorkspaceRow, keys: string[]): "Complete" | "Partial" | "Unavailable" {
+function rowCompleteness(row: FinancialWorkspaceRow, keys: string[]): "Complete" | "Partial" | "Pending" {
   const present = keys.filter((key) => value(row, key) !== null).length;
-  if (present === 0) return "Unavailable";
+  if (present === 0) return "Pending";
   if (present < Math.min(4, keys.length)) return "Partial";
   return "Complete";
 }
@@ -415,13 +413,13 @@ function sectionCompleteness(rows: FinancialWorkspaceRow[], mode: PeriodMode) {
   const latestBalance = balanceRows[0] ?? null;
   const latestCash = cashRows[0] ?? null;
   return [
-    { label: "Summary metrics", status: latestIncome ? rowCompleteness(latestIncome, ["revenue", "gross_profit", "profit_after_tax", "eps", "net_margin"]) : "Unavailable", impact: latestIncome ? "Headline Income Statement values are usable for the selected view." : "Headline metrics are unavailable for this view." },
+    { label: "Summary metrics", status: latestIncome ? rowCompleteness(latestIncome, ["revenue", "gross_profit", "profit_after_tax", "eps", "net_margin"]) : "Pending", impact: latestIncome ? "Headline Income Statement values are usable for the selected view." : "Headline metrics are not loaded for this view." },
     { label: "Performance trends", status: incomeRows.length >= 3 ? "Complete" : "Partial", impact: incomeRows.length >= 3 ? `Complete for ${incomeRows.slice(-1)[0] ? labelPeriod(incomeRows.slice(-1)[0]) : ""}-${labelPeriod(incomeRows[0])}.` : "Needs at least three comparable periods for a robust chart." },
-    { label: "Income Statement values", status: latestIncome ? rowCompleteness(latestIncome, FULL_ROWS.income_statement) : "Unavailable", impact: latestIncome ? `${labelPeriod(latestIncome)} statement values are ${rowCompleteness(latestIncome, FULL_ROWS.income_statement).toLowerCase()}.` : "No selected-mode Income Statement loaded." },
+    { label: "Income Statement values", status: latestIncome ? rowCompleteness(latestIncome, FULL_ROWS.income_statement) : "Pending", impact: latestIncome ? `${labelPeriod(latestIncome)} statement values are ${rowCompleteness(latestIncome, FULL_ROWS.income_statement).toLowerCase()}.` : "No selected-mode Income Statement loaded." },
     { label: "Income Statement metadata", status: metadataCompleteness(latestIncome), impact: latestIncome ? `Filing/source metadata is ${metadataCompleteness(latestIncome).toLowerCase()}.` : "No selected-mode Income Statement metadata loaded." },
-    { label: "Balance Sheet values", status: latestBalance ? rowCompleteness(latestBalance, FULL_ROWS.balance_sheet) : "Unavailable", impact: latestBalance ? `${labelPeriod(latestBalance)} statement values are ${rowCompleteness(latestBalance, FULL_ROWS.balance_sheet).toLowerCase()}.` : "No selected-mode Balance Sheet loaded." },
+    { label: "Balance Sheet values", status: latestBalance ? rowCompleteness(latestBalance, FULL_ROWS.balance_sheet) : "Pending", impact: latestBalance ? `${labelPeriod(latestBalance)} statement values are ${rowCompleteness(latestBalance, FULL_ROWS.balance_sheet).toLowerCase()}.` : "No selected-mode Balance Sheet loaded." },
     { label: "Balance Sheet metadata", status: metadataCompleteness(latestBalance), impact: latestBalance ? `Period-end/source metadata is ${metadataCompleteness(latestBalance).toLowerCase()}.` : "No selected-mode Balance Sheet metadata loaded." },
-    { label: "Cash Flow values", status: latestCash ? rowCompleteness(latestCash, FULL_ROWS.cash_flow) : "Unavailable", impact: latestCash ? `${labelPeriod(latestCash)} values available; cash movement definition remains under review.` : "Cash Flow history is unavailable for this view." },
+    { label: "Cash Flow values", status: latestCash ? rowCompleteness(latestCash, FULL_ROWS.cash_flow) : "Pending", impact: latestCash ? `${labelPeriod(latestCash)} values available.` : "Cash Flow history is not loaded for this view." },
   ] as const;
 }
 
@@ -433,7 +431,7 @@ function DataStatusDetails({
 }: {
   rows: FinancialWorkspaceRow[];
   mode: PeriodMode;
-  selectedStatus: "Complete" | "Partial" | "Unavailable";
+  selectedStatus: "Complete" | "Partial" | "Pending";
   overallStatus: "Complete" | "Partial" | "Missing";
 }) {
   const sections = sectionCompleteness(rows, mode);
@@ -628,11 +626,11 @@ export function FinancialsWorkspace({
   const statementRows = sortedRows.filter((r) => r.statement_type === activeStatement && periodMode(r) === mode);
   const visiblePeriods = (limit === "latest4" ? statementRows.slice(0, 4) : statementRows).filter(Boolean);
   const sourceUrl = latestStatement?.source_url ?? activePeriod?.source_url ?? latestFiling?.source_url ?? null;
-  const updated = sortedRows.find((r) => r.updated_at)?.updated_at?.slice(0, 10) ?? "Unavailable";
+  const updated = sortedRows.find((r) => r.updated_at)?.updated_at?.slice(0, 10) ?? null;
   const units = String(activePeriod?.data?._units ?? latestFiling?.data?._units ?? "PKR thousands");
   const dataStatus = deriveDataStatus(rows);
   const comparable = comparablePrior(sortedRows, latestStatement);
-  const selectedValueStatus = latestIncome ? rowCompleteness(latestIncome, ["revenue", "gross_profit", "profit_after_tax", "eps", "net_margin"]) : "Unavailable";
+  const selectedValueStatus = latestIncome ? rowCompleteness(latestIncome, ["revenue", "gross_profit", "profit_after_tax", "eps", "net_margin"]) : "Pending";
   const otherDataPartial = dataStatus === "Partial" && selectedValueStatus === "Complete";
   const summaryKeys = ["revenue", "gross_profit", "profit_after_tax", "eps", "net_margin"];
   const modeLabel = mode === "annual" ? "Annual" : mode === "quarterly" ? "Quarterly" : "Cumulative";
@@ -646,10 +644,6 @@ export function FinancialsWorkspace({
     ? statementKeys.filter((key) => visiblePeriods.some((period) => value(period, key) !== null))
     : statementKeys;
   const displayRows = statementDisplayRows(activeStatement, valueKeys);
-  const hasAnnualCashFlow = rows.some((r) => r.statement_type === "cash_flow" && periodMode(r) === "annual");
-  const hasCashBalanceReview = rows.some((r) => r.statement_type === "cash_flow" && raw(r, "cash_balance") !== null);
-  const hasSparseQuarter = rows.some((r) => r.statement_type === "income_statement" && periodMode(r) === "quarterly" && rowCompleteness(r, FULL_ROWS.income_statement) === "Partial");
-  const missingComparable = latestStatement && !comparable;
   const showChangeColumn = Boolean(comparable && visiblePeriods[0] && valueKeys.some((key) => changeText(key, value(visiblePeriods[0], key), value(comparable, key))));
   const metadataNote = statementMetadataNote(visiblePeriods, activeStatement);
   const exactRowsForCsv = visiblePeriods.map((p) => {
@@ -688,14 +682,6 @@ export function FinancialsWorkspace({
 
   const insights = buildInsights(sortedRows, mode, valueMode);
   const callouts = buildCallouts(sortedRows, mode);
-  const qualityNotes = buildQualityNotes({
-    hasSparseQuarter,
-    missingComparable: Boolean(missingComparable),
-    hasCashBalanceReview,
-    hasAnnualCashFlow,
-    activeStatement,
-  });
-
   return (
     <div className="space-y-4">
       <Card className="border-slate-200 bg-white shadow-sm">
@@ -707,13 +693,15 @@ export function FinancialsWorkspace({
                 <span className="font-medium text-slate-700">Selected view</span>{" "}
                 {activePeriod ? `${labelPeriod(activePeriod)} · ${modeLabel} · ${headerUnitLabel(valueMode)}` : `No ${modeLabel.toLowerCase()} period`}
                 {sourceUrl ? " · Official PSX source" : ""}
-                {updated !== "Unavailable" ? ` · Updated ${updated}` : ""}
+                {updated ? ` · Updated ${updated}` : ""}
               </CardDescription>
               <div className="mt-2 flex flex-wrap items-center gap-2">
                 <DataStatusDetails rows={rows} mode={mode} selectedStatus={selectedValueStatus} overallStatus={dataStatus} />
-                <span className="text-[11px] text-muted-foreground">
-                  Latest filing available: {latestFiling ? labelPeriod(latestFiling) : "Unavailable"}
-                </span>
+                {latestFiling ? (
+                  <span className="text-[11px] text-muted-foreground">
+                    Latest filing available: {labelPeriod(latestFiling)}
+                  </span>
+                ) : null}
                 {otherDataPartial ? <span className="text-[11px] text-amber-700">Other datasets remain partial.</span> : null}
                 <span className="text-[11px] text-muted-foreground">Displayed as {headerUnitLabel(valueMode)}; original source uses {units}.</span>
               </div>
@@ -837,7 +825,7 @@ export function FinancialsWorkspace({
                   className={cn("text-xs font-medium", item.change?.tone === "positive" && "text-emerald-700", item.change?.tone === "negative" && "text-red-700", !item.change && "text-amber-700")}
                   title={item.change && item.prior ? `${labelPeriod(item.row!)} ${LABELS[item.key]}: ${formatValue(item.value, item.key, valueMode)}\n${labelPeriod(item.prior)} ${LABELS[item.key]}: ${formatValue(value(item.prior, item.key), item.key, valueMode)}\nChange: ${item.change.text}` : undefined}
                 >
-                  {item.change ? `${item.change.text} ${comparisonLabel(item.row!)}` : "Comparable period unavailable"}
+                  {item.change ? `${item.change.text} ${comparisonLabel(item.row!)}` : "No comparable period"}
                 </p>
                 <p className="text-[11px] text-muted-foreground">{labelPeriod(item.row!)}</p>
               </div>
@@ -884,14 +872,14 @@ export function FinancialsWorkspace({
                     </li>
                   ))}
                 </ul>
-              ) : <p className="text-sm text-muted-foreground">Comparable prior-period data unavailable.</p>}
+              ) : <p className="text-sm text-muted-foreground">No comparable prior-period data loaded.</p>}
             </CardContent>
           </Card>
           {callouts.length > 0 && (
             <Card className="border-slate-200 bg-white shadow-sm">
               <CardHeader className="p-5 pb-2">
                 <CardTitle className="text-base">Items to review</CardTitle>
-                <CardDescription>Shown only when a large movement is ambiguous or needs source context.</CardDescription>
+                <CardDescription>Shown only when a large movement is worth reviewing alongside the source filing.</CardDescription>
               </CardHeader>
               <CardContent className="space-y-2 p-5 pt-3">
                 {callouts.map((callout) => (
@@ -943,7 +931,7 @@ export function FinancialsWorkspace({
           </div>
           {!showChangeColumn && visiblePeriods.length > 0 ? (
             <p className="mt-3 rounded-lg bg-amber-50 px-3 py-2 text-xs text-amber-800">
-              Prior comparable {modeLabel.toLowerCase()} {STATEMENT_LABELS[activeStatement]} is unavailable, so change calculations are hidden.
+              No prior comparable {modeLabel.toLowerCase()} {STATEMENT_LABELS[activeStatement]} is loaded, so change calculations are hidden.
             </p>
           ) : null}
           {metadataNote ? (
@@ -1001,7 +989,6 @@ export function FinancialsWorkspace({
                         <TD className={cn("sticky left-0 z-[1] bg-white text-xs text-slate-900", isTotalLike(key) ? "font-semibold" : "font-medium")}>
                           <span title={ACCOUNTING_HINTS[key]} className={cn(ACCOUNTING_HINTS[key] && "cursor-help decoration-dotted underline-offset-2 hover:underline")}>{displayLabel(key, visiblePeriods[0])}</span>
                           {derived ? <Badge variant="secondary" className="ml-2">Calculated</Badge> : null}
-                          {key === "cash_balance" ? <Badge variant="amber" className="ml-2">Review</Badge> : null}
                         </TD>
                         {visiblePeriods.map((period, i) => (
                           <TD key={i} className={cn("text-right text-xs tabular-nums", i === 0 && "bg-emerald-50/50 font-semibold text-slate-950", value(period, key) === null && "text-muted-foreground")}>
@@ -1027,32 +1014,6 @@ export function FinancialsWorkspace({
         </CardContent>
       </Card>
 
-      {qualityNotes.length > 0 && (
-        <Card className="border-amber-200 bg-amber-50/70 shadow-sm">
-          <CardContent className="p-4">
-            <details>
-              <summary className="flex cursor-pointer list-none items-center justify-between gap-3">
-                <span className="flex items-center gap-2 text-sm font-semibold text-amber-950">
-                  <AlertTriangle className="h-4 w-4" /> Data-quality notes
-                  <Badge variant="amber">{qualityNotes.length} issues</Badge>
-                </span>
-                <span className="text-xs text-amber-800">View all notes</span>
-              </summary>
-              <p className="mt-2 text-sm text-amber-900">
-                Most important issue: {qualityNotes[0]?.text}
-              </p>
-              <div className="mt-3 space-y-2">
-                {qualityNotes.map((note) => (
-                  <div key={note.text} className="grid gap-1 rounded-lg bg-white/60 px-3 py-2 text-sm text-amber-950 sm:grid-cols-[7rem_1fr]">
-                    <span className="text-[10px] font-semibold uppercase tracking-wide text-amber-700">{note.severity}</span>
-                    <span>{note.text}</span>
-                  </div>
-                ))}
-              </div>
-            </details>
-          </CardContent>
-        </Card>
-      )}
     </div>
   );
 }
@@ -1119,7 +1080,7 @@ function TrendTooltip({
           );
         })}
       </div>
-      <p className="mt-2 text-[10px] text-muted-foreground">{row?.source ?? "Official PSX financials"} · {row?.status ?? "Status unavailable"}</p>
+      <p className="mt-2 text-[10px] text-muted-foreground">{row?.source ?? "Official PSX financials"} · {row?.status ?? "Status pending"}</p>
     </div>
   );
 }
@@ -1244,27 +1205,4 @@ function buildCallouts(rows: FinancialWorkspaceRow[], mode: PeriodMode): { text:
     });
   }
   return out.slice(0, 3);
-}
-
-function buildQualityNotes({
-  hasSparseQuarter,
-  missingComparable,
-  hasCashBalanceReview,
-  hasAnnualCashFlow,
-  activeStatement,
-}: {
-  hasSparseQuarter: boolean;
-  missingComparable: boolean;
-  hasCashBalanceReview: boolean;
-  hasAnnualCashFlow: boolean;
-  activeStatement: StatementType;
-}) {
-  const notes: { severity: "Critical" | "Material" | "Informational"; text: string }[] = [];
-  if (hasCashBalanceReview) notes.push({ severity: "Critical", text: "The source field currently labelled Cash movement has not been fully mapped. It should not be interpreted as the ending cash balance." });
-  if (missingComparable) notes.push({ severity: "Material", text: `A comparable prior ${STATEMENT_LABELS[activeStatement]} is not available, so change calculations are hidden.` });
-  if (hasSparseQuarter) notes.push({ severity: "Material", text: "Quarterly detail is partial. Revenue and EPS may be present while full Income Statement detail is only available for cumulative H1 or 9M periods." });
-  notes.push({ severity: "Material", text: "The source does not clearly identify whether these figures are standalone or consolidated." });
-  if (!hasAnnualCashFlow) notes.push({ severity: "Informational", text: "Annual Cash Flow history is not available from the current source." });
-  notes.push({ severity: "Informational", text: "Compact values are rounded for readability; exact source precision remains available through the display selector and export." });
-  return notes;
 }

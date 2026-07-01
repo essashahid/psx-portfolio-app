@@ -1,8 +1,8 @@
 import { NextResponse } from "next/server";
 import { requireUser, errorResponse } from "@/lib/api-helpers";
 import { refreshTechnicals } from "@/lib/company/technicals";
-import { getCompanyMetadata, saveCompanyDescription } from "@/lib/company/metadata";
-import { buildExchangeSourcedProfile } from "@/lib/company/profile";
+import { saveCompanyDescription } from "@/lib/company/metadata";
+import { fetchPsxCompanyProfile } from "@/lib/company/psx-profile";
 import { refreshQuote, refreshHistory, testProviderCoverage } from "@/lib/engine/market-data";
 import { populateAllFundamentals } from "@/lib/engine/fundamentals";
 import { refreshRatios } from "@/lib/engine/ratios";
@@ -18,7 +18,7 @@ export const maxDuration = 120;
  *   section = "financials"  → extract statements from latest result filings
  *   section = "ratios"      → recompute ratios from stored financials + quote
  *   section = "coverage"    → probe every provider for this ticker
- *   section = "description" → generate the exchange-sourced company profile (cached)
+ *   section = "description" → fetch the official PSX company profile (cached)
  */
 export async function POST(
   request: Request,
@@ -95,24 +95,19 @@ export async function POST(
     }
 
     if (section === "description") {
-      const meta = await getCompanyMetadata(supabase, ticker);
-      const data = buildExchangeSourcedProfile({
-        ticker,
-        companyName: meta.companyName,
-        sector: meta.sector,
-        industry: meta.industry,
-        exchange: meta.exchange,
-        faceValue: meta.faceValue,
-      });
+      const data = await fetchPsxCompanyProfile(ticker);
+      if (!data) {
+        return NextResponse.json({ message: `No official PSX company profile found for ${ticker}.` }, { status: 404 });
+      }
       await saveCompanyDescription(ticker, {
-        description: data.description,
-        industry: data.industry || undefined,
-        business_lines: data.business_lines?.length ? data.business_lines : undefined,
-        source: meta.meta.source ?? "exchange-profile",
-        source_url: meta.meta.sourceUrl,
-        confidence: 0.9,
+        description: data.businessDescription,
+        business_lines: [],
+        website: data.website,
+        source: "psx-company-page",
+        source_url: data.sourceUrl,
+        confidence: 1,
       });
-      return NextResponse.json({ message: `Company profile generated for ${ticker}.` });
+      return NextResponse.json({ message: `Official PSX company profile saved for ${ticker}.` });
     }
 
     return NextResponse.json({ error: `Unknown section "${section}".` }, { status: 400 });

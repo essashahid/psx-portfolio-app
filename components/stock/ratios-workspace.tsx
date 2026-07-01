@@ -6,9 +6,6 @@ import {
   BarChart,
   CartesianGrid,
   Cell,
-  ComposedChart,
-  Legend,
-  Line,
   ResponsiveContainer,
   Tooltip as RechartsTooltip,
   XAxis,
@@ -19,7 +16,6 @@ import { AXIS_TICK, ChartEmpty, CURSOR, GlassTooltip, INK, SERIES_COLORS, fmtCom
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Dialog } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
 import { Table, TBody, TD, TH, THead, TR } from "@/components/ui/table";
@@ -27,22 +23,14 @@ import type { CompanyMetadata } from "@/lib/company/types";
 import type { RatioRow } from "@/lib/engine/ratios";
 import { cn, formatFinancialPeriod, formatNumber } from "@/lib/utils";
 import {
-  AlertTriangle,
-  ArrowDownUp,
   BarChart3,
-  Bell,
   
   Download,
   ExternalLink,
-  Eye,
-  Filter,
-  Info,
-  LineChart,
   
   Pin,
   Search,
   Settings2,
-  Sparkles,
   Star,
   TrendingUp,
 } from "lucide-react";
@@ -61,12 +49,9 @@ type RatioCategory =
   | "other";
 
 type ExplorerCategory = RatioCategory | "all" | "key" | "pinned";
-type ActiveTab = "snapshot" | "trends" | "peers" | "explorer";
+type ActiveTab = "snapshot" | "explorer";
 type FormatMode = "compact" | "exact";
-type SortMode = "default" | "name" | "category" | "value" | "availability";
-type StatusTone = "green" | "amber" | "red" | "blue" | "secondary";
 type FormatKind = "multiple" | "percent" | "money" | "statementMoney" | "perShare" | "shares" | "days" | "number";
-type TrendPoint = { period: string; rank: number; [key: string]: string | number | null };
 
 export interface RatiosFinancialRow {
   ticker: string;
@@ -110,39 +95,6 @@ interface RatioDefinition {
   limitation: string;
 }
 
-interface FactorInput {
-  ratio: string;
-  weight: number;
-  direction: "higher" | "lower" | "lowerPositive";
-  low: number;
-  high: number;
-}
-
-interface FactorResult {
-  key: string;
-  label: string;
-  category: RatioCategory;
-  score: number | null;
-  status: "preliminary" | "unavailable";
-  confidence: number;
-  summary: string;
-  inputs: (FactorInput & { value: number | null; score: number | null })[];
-}
-
-const CATEGORY_LABELS: Record<RatioCategory, string> = {
-  valuation: "Valuation",
-  profitability: "Profitability",
-  growth: "Growth",
-  financial_strength: "Financial strength",
-  liquidity: "Liquidity",
-  efficiency: "Efficiency",
-  cash_flow: "Cash flow",
-  dividends: "Dividends",
-  per_share: "Per-share metrics",
-  market: "Market data",
-  other: "Other",
-};
-
 const EXPLORER_CATEGORIES: { value: ExplorerCategory; label: string }[] = [
   { value: "all", label: "All" },
   { value: "key", label: "Key ratios" },
@@ -156,17 +108,6 @@ const EXPLORER_CATEGORIES: { value: ExplorerCategory; label: string }[] = [
   { value: "dividends", label: "Dividends" },
   { value: "per_share", label: "Per-share" },
   { value: "pinned", label: "Pinned" },
-];
-
-const ANALYSIS_TABS: { value: ExplorerCategory; label: string }[] = [
-  { value: "all", label: "Overview" },
-  { value: "valuation", label: "Valuation" },
-  { value: "profitability", label: "Profitability" },
-  { value: "financial_strength", label: "Financial strength" },
-  { value: "growth", label: "Growth" },
-  { value: "efficiency", label: "Efficiency" },
-  { value: "cash_flow", label: "Cash flow" },
-  { value: "dividends", label: "Dividends" },
 ];
 
 const RATIO_DEFINITIONS: Record<string, RatioDefinition> = {
@@ -363,7 +304,7 @@ const RATIO_DEFINITIONS: Record<string, RatioDefinition> = {
     important: true,
     definition: "Profit after tax divided by equity.",
     why: "Shows reported profit relative to shareholder equity.",
-    limitation: "Current engine uses period-end equity where average balance data is unavailable.",
+    limitation: "Current engine uses period-end equity when average balance data is not stored.",
   },
   ROA: {
     displayName: "ROA",
@@ -371,7 +312,7 @@ const RATIO_DEFINITIONS: Record<string, RatioDefinition> = {
     kind: "percent",
     definition: "Profit after tax divided by total assets.",
     why: "Shows profit generated from the asset base.",
-    limitation: "Current engine uses period-end assets where average balance data is unavailable.",
+    limitation: "Current engine uses period-end assets when average balance data is not stored.",
   },
   ROIC: {
     displayName: "ROIC",
@@ -388,7 +329,7 @@ const RATIO_DEFINITIONS: Record<string, RatioDefinition> = {
     kind: "multiple",
     definition: "Revenue divided by total assets.",
     why: "Shows how efficiently assets produce sales.",
-    limitation: "Current engine uses period-end assets where average balance data is unavailable.",
+    limitation: "Current engine uses period-end assets when average balance data is not stored.",
   },
   "Equity multiplier": {
     displayName: "Equity multiplier",
@@ -625,88 +566,6 @@ const KEY_RATIO_GROUPS = [
   { label: "Growth and cash quality", ratios: ["EPS growth", "OCF / PAT"] },
 ];
 
-const FACTORS: {
-  key: string;
-  label: string;
-  category: RatioCategory;
-  inputs: FactorInput[];
-}[] = [
-  {
-    key: "value",
-    label: "Value",
-    category: "valuation",
-    inputs: [
-      { ratio: "Earnings yield", weight: 22, direction: "higher", low: 0, high: 18 },
-      { ratio: "FCF yield", weight: 22, direction: "higher", low: 0, high: 15 },
-      { ratio: "P/E", weight: 20, direction: "lowerPositive", low: 6, high: 30 },
-      { ratio: "P/B", weight: 14, direction: "lowerPositive", low: 0.6, high: 3 },
-      { ratio: "P/S", weight: 10, direction: "lowerPositive", low: 0.5, high: 5 },
-      { ratio: "EV/EBIT", weight: 12, direction: "lowerPositive", low: 4, high: 25 },
-    ],
-  },
-  {
-    key: "quality",
-    label: "Quality",
-    category: "profitability",
-    inputs: [
-      { ratio: "Gross margin", weight: 14, direction: "higher", low: 0, high: 40 },
-      { ratio: "Net margin", weight: 16, direction: "higher", low: 0, high: 25 },
-      { ratio: "ROE", weight: 18, direction: "higher", low: 0, high: 30 },
-      { ratio: "ROIC", weight: 18, direction: "higher", low: 0, high: 25 },
-      { ratio: "OCF / PAT", weight: 18, direction: "higher", low: 0, high: 1.5 },
-      { ratio: "Accrual ratio", weight: 16, direction: "lower", low: -0.1, high: 0.2 },
-    ],
-  },
-  {
-    key: "growth",
-    label: "Growth",
-    category: "growth",
-    inputs: [
-      { ratio: "Revenue growth", weight: 18, direction: "higher", low: -10, high: 25 },
-      { ratio: "Profit growth", weight: 18, direction: "higher", low: -10, high: 30 },
-      { ratio: "EPS growth", weight: 18, direction: "higher", low: -10, high: 30 },
-      { ratio: "Revenue CAGR", weight: 16, direction: "higher", low: 0, high: 20 },
-      { ratio: "EPS CAGR", weight: 16, direction: "higher", low: 0, high: 20 },
-      { ratio: "Gross margin change", weight: 14, direction: "higher", low: -5, high: 5 },
-    ],
-  },
-  {
-    key: "strength",
-    label: "Financial strength",
-    category: "financial_strength",
-    inputs: [
-      { ratio: "Debt-to-equity", weight: 18, direction: "lower", low: 0, high: 2 },
-      { ratio: "Net debt-to-equity", weight: 18, direction: "lower", low: -0.5, high: 1.5 },
-      { ratio: "Liabilities / assets", weight: 14, direction: "lower", low: 0.2, high: 0.8 },
-      { ratio: "Interest coverage", weight: 20, direction: "higher", low: 0, high: 8 },
-      { ratio: "Current ratio", weight: 16, direction: "higher", low: 0.6, high: 2 },
-      { ratio: "Quick ratio", weight: 14, direction: "higher", low: 0.5, high: 1.5 },
-    ],
-  },
-  {
-    key: "cash",
-    label: "Cash flow",
-    category: "cash_flow",
-    inputs: [
-      { ratio: "FCF margin", weight: 22, direction: "higher", low: -5, high: 20 },
-      { ratio: "FCF yield", weight: 18, direction: "higher", low: 0, high: 15 },
-      { ratio: "OCF / PAT", weight: 22, direction: "higher", low: 0, high: 1.5 },
-      { ratio: "Cash conversion", weight: 20, direction: "higher", low: 0, high: 1.5 },
-      { ratio: "Accrual ratio", weight: 18, direction: "lower", low: -0.1, high: 0.2 },
-    ],
-  },
-];
-
-const PRESET_VIEWS = [
-  { label: "Value investor", ratios: ["P/E", "P/B", "EV/EBIT", "FCF yield", "Earnings yield"] },
-  { label: "Dividend quality", ratios: ["Dividend yield (TTM)", "Payout ratio", "Dividend cover", "OCF / PAT", "FCF margin"] },
-  { label: "Financial strength", ratios: ["Net debt", "Debt-to-equity", "Net debt-to-equity", "Interest coverage", "Current ratio", "Quick ratio"] },
-  { label: "Growth", ratios: ["Revenue growth", "Profit growth", "EPS growth", "Revenue CAGR", "EPS CAGR"] },
-  { label: "Cash-flow quality", ratios: ["FCF (OCF − Capex)", "FCF margin", "OCF / PAT", "Cash conversion", "Accrual ratio"] },
-];
-
-const PEER_METRICS = ["P/E", "P/B", "EV/EBIT", "FCF yield", "ROE", "ROIC", "Gross margin", "Net margin", "Debt-to-equity", "Interest coverage"];
-
 function finiteNumber(value: unknown): number | null {
   if (typeof value === "number" && Number.isFinite(value)) return value;
   if (typeof value === "string" && value.trim()) {
@@ -739,10 +598,6 @@ function ratioDisplayName(rowOrName: RatioRow | string): string {
 
 function isImportant(row: RatioRow): boolean {
   return Boolean(defFor(row.ratio_name).important);
-}
-
-function isMixedPeriod(period: string | null | undefined): boolean {
-  return Boolean(period && (period.includes("/") || /\bvs\b/i.test(period)));
 }
 
 function formattedPeriod(period: string | null | undefined): string {
@@ -787,373 +642,6 @@ function formatChartValue(value: number, metric: string): string {
   return formatRatioValue({ ratio_name: metric, ratio_value: value }, "compact");
 }
 
-function rowRank(row: RatiosFinancialRow): number {
-  const p = (row.fiscal_period ?? "").toUpperCase();
-  const order: Record<string, number> = { Q1: 1, H1: 2, Q2: 2, "9M": 3, Q3: 3, FY: 4, Q4: 4 };
-  return (row.fiscal_year ?? 0) * 10 + (order[p] ?? (row.period_type === "annual" ? 4 : 0));
-}
-
-function rowPeriod(row: RatiosFinancialRow): string {
-  const fy = row.fiscal_year ? `FY${row.fiscal_year}` : "FY?";
-  const p = (row.fiscal_period ?? "").toUpperCase();
-  if (row.period_type === "annual" || p === "FY") return fy;
-  return `${p || "Period"} ${fy}`;
-}
-
-function periodKey(row: RatiosFinancialRow): string {
-  return `${row.period_type}|${row.fiscal_year ?? "?"}|${(row.fiscal_period ?? "").toUpperCase() || row.period_type}`;
-}
-
-function rowGroupKey(row: RatiosFinancialRow): string {
-  const p = (row.fiscal_period ?? "").toUpperCase();
-  if (row.period_type === "annual" || p === "FY") return "annual|FY";
-  return `${row.period_type}|${p || "period"}`;
-}
-
-function raw(row: RatiosFinancialRow | null | undefined, key: string): number | null {
-  if (!row) return null;
-  return finiteNumber(row.data?.[key]);
-}
-
-function safeDiv(num: number | null, den: number | null): number | null {
-  return num !== null && den !== null && den !== 0 ? num / den : null;
-}
-
-function pct(num: number | null, den: number | null): number | null {
-  const v = safeDiv(num, den);
-  return v === null ? null : v * 100;
-}
-
-function statementRows(rows: RatiosFinancialRow[], statement: string): RatiosFinancialRow[] {
-  return rows.filter((r) => r.statement_type === statement).sort((a, b) => rowRank(a) - rowRank(b));
-}
-
-function comparableRows(rows: RatiosFinancialRow[], statement: string): RatiosFinancialRow[] {
-  const typed = statementRows(rows, statement);
-  if (!typed.length) return [];
-  const groups = new Map<string, RatiosFinancialRow[]>();
-  for (const row of typed) {
-    const key = rowGroupKey(row);
-    groups.set(key, [...(groups.get(key) ?? []), row]);
-  }
-  const annual = groups.get("annual|FY");
-  const selected =
-    annual && annual.length >= 2
-      ? annual
-      : [...groups.values()].sort((a, b) => b.length - a.length || rowRank(b[b.length - 1]) - rowRank(a[a.length - 1]))[0] ?? [];
-  return selected.sort((a, b) => rowRank(a) - rowRank(b)).slice(-8);
-}
-
-function latestByPeriod(rows: RatiosFinancialRow[], statement: string): Map<string, RatiosFinancialRow> {
-  const out = new Map<string, RatiosFinancialRow>();
-  for (const row of statementRows(rows, statement)) out.set(periodKey(row), row);
-  return out;
-}
-
-function joinedComparableRows(rows: RatiosFinancialRow[]): { period: string; rank: number; income?: RatiosFinancialRow; balance?: RatiosFinancialRow; cash?: RatiosFinancialRow }[] {
-  const income = latestByPeriod(rows, "income_statement");
-  const balance = latestByPeriod(rows, "balance_sheet");
-  const cash = latestByPeriod(rows, "cash_flow");
-  const keys = new Set([...income.keys(), ...balance.keys(), ...cash.keys()]);
-  return [...keys]
-    .map((key) => {
-      const source = income.get(key) ?? balance.get(key) ?? cash.get(key);
-      return {
-        period: source ? rowPeriod(source) : key,
-        rank: source ? rowRank(source) : 0,
-        income: income.get(key),
-        balance: balance.get(key),
-        cash: cash.get(key),
-      };
-    })
-    .sort((a, b) => a.rank - b.rank)
-    .slice(-8);
-}
-
-function trendValuesFor(ratioName: string, financialRows: RatiosFinancialRow[]): { period: string; rank: number; value: number }[] {
-  const incomeRows = comparableRows(financialRows, "income_statement");
-  const balanceRows = comparableRows(financialRows, "balance_sheet");
-  const cashRows = comparableRows(financialRows, "cash_flow");
-  const joined = joinedComparableRows(financialRows);
-
-  const simpleIncome = (fn: (row: RatiosFinancialRow) => number | null) =>
-    incomeRows.map((row) => ({ period: rowPeriod(row), rank: rowRank(row), value: fn(row) })).filter((p): p is { period: string; rank: number; value: number } => p.value !== null);
-  const simpleBalance = (fn: (row: RatiosFinancialRow) => number | null) =>
-    balanceRows.map((row) => ({ period: rowPeriod(row), rank: rowRank(row), value: fn(row) })).filter((p): p is { period: string; rank: number; value: number } => p.value !== null);
-  const simpleCash = (fn: (row: RatiosFinancialRow) => number | null) =>
-    cashRows.map((row) => ({ period: rowPeriod(row), rank: rowRank(row), value: fn(row) })).filter((p): p is { period: string; rank: number; value: number } => p.value !== null);
-  const growth = (key: string) => {
-    const points = incomeRows
-      .map((row) => ({ period: rowPeriod(row), rank: rowRank(row), raw: raw(row, key) }))
-      .filter((p): p is { period: string; rank: number; raw: number } => p.raw !== null);
-    return points
-      .map((point, index) => {
-        const prior = points[index - 1]?.raw ?? null;
-        return { period: point.period, rank: point.rank, value: prior ? ((point.raw - prior) / Math.abs(prior)) * 100 : null };
-      })
-      .filter((p): p is { period: string; rank: number; value: number } => p.value !== null);
-  };
-
-  switch (ratioName) {
-    case "Gross margin":
-      return simpleIncome((r) => pct(raw(r, "gross_profit"), raw(r, "revenue")));
-    case "Operating margin":
-      return simpleIncome((r) => pct(raw(r, "operating_profit"), raw(r, "revenue")));
-    case "Net margin":
-      return simpleIncome((r) => pct(raw(r, "profit_after_tax"), raw(r, "revenue")));
-    case "Cost of sales ratio":
-      return simpleIncome((r) => pct(raw(r, "cost_of_sales"), raw(r, "revenue")));
-    case "Operating expense ratio":
-      return simpleIncome((r) => pct(raw(r, "operating_expenses"), raw(r, "revenue")));
-    case "Revenue growth":
-      return growth("revenue");
-    case "Profit growth":
-      return growth("profit_after_tax");
-    case "EPS growth":
-      return growth("eps");
-    case "Debt-to-equity":
-      return simpleBalance((r) => safeDiv(raw(r, "borrowings"), raw(r, "equity")));
-    case "Net debt":
-      return simpleBalance((r) => {
-        const borrowings = raw(r, "borrowings");
-        const cash = raw(r, "cash_and_equivalents");
-        return borrowings !== null && cash !== null ? borrowings - cash : null;
-      });
-    case "Net debt-to-equity":
-      return simpleBalance((r) => {
-        const borrowings = raw(r, "borrowings");
-        const cash = raw(r, "cash_and_equivalents");
-        const equity = raw(r, "equity");
-        return borrowings !== null && cash !== null ? safeDiv(borrowings - cash, equity) : null;
-      });
-    case "Debt / assets":
-      return simpleBalance((r) => safeDiv(raw(r, "borrowings"), raw(r, "total_assets")));
-    case "Liabilities / assets":
-      return simpleBalance((r) => safeDiv(raw(r, "total_liabilities"), raw(r, "total_assets")));
-    case "Current ratio":
-      return simpleBalance((r) => safeDiv(raw(r, "current_assets"), raw(r, "current_liabilities")));
-    case "Quick ratio":
-      return simpleBalance((r) => {
-        const currentAssets = raw(r, "current_assets");
-        const inventory = raw(r, "inventory");
-        const currentLiabilities = raw(r, "current_liabilities");
-        return currentAssets !== null && inventory !== null ? safeDiv(currentAssets - inventory, currentLiabilities) : null;
-      });
-    case "Cash ratio":
-      return simpleBalance((r) => safeDiv(raw(r, "cash_and_equivalents"), raw(r, "current_liabilities")));
-    case "Receivables / revenue":
-      return joined
-        .map((p) => ({ period: p.period, rank: p.rank, value: safeDiv(raw(p.balance, "receivables"), raw(p.income, "revenue")) }))
-        .filter((p): p is { period: string; rank: number; value: number } => p.value !== null);
-    case "Days sales outstanding":
-      return joined
-        .map((p) => {
-          const value = safeDiv(raw(p.balance, "receivables"), raw(p.income, "revenue"));
-          return { period: p.period, rank: p.rank, value: value === null ? null : value * 365 };
-        })
-        .filter((p): p is { period: string; rank: number; value: number } => p.value !== null);
-    case "ROE":
-      return joined
-        .map((p) => ({ period: p.period, rank: p.rank, value: pct(raw(p.income, "profit_after_tax"), raw(p.balance, "equity")) }))
-        .filter((p): p is { period: string; rank: number; value: number } => p.value !== null);
-    case "ROA":
-      return joined
-        .map((p) => ({ period: p.period, rank: p.rank, value: pct(raw(p.income, "profit_after_tax"), raw(p.balance, "total_assets")) }))
-        .filter((p): p is { period: string; rank: number; value: number } => p.value !== null);
-    case "Asset turnover":
-      return joined
-        .map((p) => ({ period: p.period, rank: p.rank, value: safeDiv(raw(p.income, "revenue"), raw(p.balance, "total_assets")) }))
-        .filter((p): p is { period: string; rank: number; value: number } => p.value !== null);
-    case "Equity multiplier":
-      return simpleBalance((r) => safeDiv(raw(r, "total_assets"), raw(r, "equity")));
-    case "FCF (OCF − Capex)":
-      return simpleCash((r) => {
-        const ocf = raw(r, "operating_cash_flow");
-        const capex = raw(r, "capex");
-        return ocf !== null && capex !== null ? ocf - Math.abs(capex) : null;
-      });
-    case "FCF margin":
-      return joined
-        .map((p) => {
-          const ocf = raw(p.cash, "operating_cash_flow");
-          const capex = raw(p.cash, "capex");
-          const fcf = ocf !== null && capex !== null ? ocf - Math.abs(capex) : null;
-          return { period: p.period, rank: p.rank, value: pct(fcf, raw(p.income, "revenue")) };
-        })
-        .filter((p): p is { period: string; rank: number; value: number } => p.value !== null);
-    case "OCF / PAT":
-      return joined
-        .map((p) => ({ period: p.period, rank: p.rank, value: safeDiv(raw(p.cash, "operating_cash_flow"), raw(p.income, "profit_after_tax")) }))
-        .filter((p): p is { period: string; rank: number; value: number } => p.value !== null);
-    case "Cash conversion":
-      return joined
-        .map((p) => ({ period: p.period, rank: p.rank, value: safeDiv(raw(p.cash, "operating_cash_flow"), raw(p.income, "operating_profit")) }))
-        .filter((p): p is { period: string; rank: number; value: number } => p.value !== null);
-    case "Accrual ratio":
-      return joined
-        .map((p) => {
-          const pat = raw(p.income, "profit_after_tax");
-          const ocf = raw(p.cash, "operating_cash_flow");
-          return { period: p.period, rank: p.rank, value: pat !== null && ocf !== null ? safeDiv(pat - ocf, raw(p.balance, "total_assets")) : null };
-        })
-        .filter((p): p is { period: string; rank: number; value: number } => p.value !== null);
-    default:
-      return [];
-  }
-}
-
-function median(values: number[]): number | null {
-  if (!values.length) return null;
-  const sorted = [...values].sort((a, b) => a - b);
-  const mid = Math.floor(sorted.length / 2);
-  return sorted.length % 2 ? sorted[mid] : (sorted[mid - 1] + sorted[mid]) / 2;
-}
-
-function percentileRank(values: number[], current: number): number | null {
-  if (values.length < 4) return null;
-  const belowOrEqual = values.filter((v) => v <= current).length;
-  return Math.round((belowOrEqual / values.length) * 100);
-}
-
-function historicalContext(row: RatioRow, financialRows: RatiosFinancialRow[]): { label: string; detail: string; values: { period: string; value: number }[] } {
-  const history = trendValuesFor(row.ratio_name, financialRows);
-  if (history.length < 2) return { label: "No verified history", detail: "Historical series unavailable", values: [] };
-  const values = history.map((p) => p.value);
-  const med = median(values);
-  const current = history[history.length - 1]?.value ?? row.ratio_value;
-  if (history.length >= 4 && med !== null && current !== null) {
-    const pctile = percentileRank(values, current);
-    const direction = current >= med ? "above" : "below";
-    return {
-      label: `${direction} historical median`,
-      detail: pctile !== null ? `${pctile}th percentile across ${history.length} comparable periods` : `${history.length} comparable periods`,
-      values: history.map((p) => ({ period: p.period, value: p.value })),
-    };
-  }
-  return {
-    label: "Partial trend",
-    detail: `${history.length} comparable periods; percentile hidden`,
-    values: history.map((p) => ({ period: p.period, value: p.value })),
-  };
-}
-
-function priorChange(row: RatioRow, financialRows: RatiosFinancialRow[]): { label: string; tone: "positive" | "negative" | "neutral" } | null {
-  const history = trendValuesFor(row.ratio_name, financialRows);
-  if (history.length < 2) return null;
-  const latest = history[history.length - 1]?.value;
-  const prior = history[history.length - 2]?.value;
-  if (latest === undefined || prior === undefined) return null;
-  const delta = latest - prior;
-  const def = defFor(row.ratio_name);
-  const suffix = def.kind === "percent" ? " pp" : "";
-  return {
-    label: `${delta >= 0 ? "+" : ""}${delta.toFixed(def.kind === "percent" ? 1 : 2)}${suffix}`,
-    tone: delta > 0 ? "positive" : delta < 0 ? "negative" : "neutral",
-  };
-}
-
-function clamp(value: number): number {
-  return Math.max(0, Math.min(100, value));
-}
-
-function scoreInput(value: number | null, input: FactorInput): number | null {
-  if (value === null || !Number.isFinite(value)) return null;
-  if (input.direction === "lowerPositive" && value <= 0) return null;
-  if (input.direction === "higher") return clamp(((value - input.low) / (input.high - input.low)) * 100);
-  return clamp(((input.high - value) / (input.high - input.low)) * 100);
-}
-
-function buildFactors(ratios: RatioRow[]): FactorResult[] {
-  const byName = new Map(ratios.map((r) => [r.ratio_name, r.ratio_value]));
-  return FACTORS.map((factor) => {
-    const inputs = factor.inputs.map((input) => {
-      const value = finiteNumber(byName.get(input.ratio));
-      return { ...input, value, score: scoreInput(value, input) };
-    });
-    const available = inputs.filter((input) => input.score !== null);
-    const required = Math.max(2, Math.ceil(inputs.length * 0.4));
-    const confidence = Math.round((available.length / inputs.length) * 100);
-    if (available.length < required) {
-      return {
-        key: factor.key,
-        label: factor.label,
-        category: factor.category,
-        score: null,
-        status: "unavailable" as const,
-        confidence,
-        summary: "Insufficient comparison data",
-        inputs,
-      };
-    }
-    const weighted = available.reduce((sum, input) => sum + (input.score ?? 0) * input.weight, 0);
-    const weights = available.reduce((sum, input) => sum + input.weight, 0);
-    return {
-      key: factor.key,
-      label: factor.label,
-      category: factor.category,
-      score: Math.round(weighted / weights),
-      status: "preliminary" as const,
-      confidence,
-      summary: `Based on ${available.length} of ${inputs.length} documented inputs`,
-      inputs,
-    };
-  });
-}
-
-function statusVariant(status: "Complete" | "Partial" | "Unavailable" | "Present" | "Documented"): StatusTone {
-  if (status === "Complete" || status === "Documented") return "green";
-  if (status === "Partial" || status === "Present") return "amber";
-  if (status === "Unavailable") return "red";
-  return "secondary";
-}
-
-function dataStatusItems(ratios: RatioRow[], financialRows: RatiosFinancialRow[], peers: RatiosPeerRow[]) {
-  const available = ratios.filter((r) => r.ratio_value !== null).length;
-  const sourcedFinancials = financialRows.filter((r) => r.source_url || r.source_type).length;
-  const statements = new Set(financialRows.map((r) => r.statement_type));
-  const maxHistory = Math.max(
-    comparableRows(financialRows, "income_statement").length,
-    comparableRows(financialRows, "balance_sheet").length,
-    comparableRows(financialRows, "cash_flow").length
-  );
-  const peerCount = peers.filter((p) => p.ratios.some((r) => r.ratio_value !== null)).length;
-  const formulaComplete = ratios.every((r) => r.formula && r.inputs);
-  const mixedCount = ratios.filter((r) => isMixedPeriod(r.source_period)).length;
-
-  return [
-    {
-      label: "Reported values",
-      status: statements.has("income_statement") && statements.has("balance_sheet") && statements.has("cash_flow") ? "Complete" : sourcedFinancials ? "Partial" : "Unavailable",
-      detail: sourcedFinancials ? `${sourcedFinancials} sourced statement rows` : "No sourced financial rows",
-    },
-    {
-      label: "Derived ratios",
-      status: available === ratios.length ? "Complete" : available > 0 ? "Partial" : "Unavailable",
-      detail: `${available} of ${ratios.length} computable`,
-    },
-    {
-      label: "Historical context",
-      status: maxHistory >= 4 ? "Complete" : maxHistory >= 2 ? "Partial" : "Unavailable",
-      detail: maxHistory >= 2 ? `${maxHistory} comparable periods in the strongest series` : "Not enough comparable periods",
-    },
-    {
-      label: "Peer comparison",
-      status: peerCount >= 3 ? "Complete" : peerCount > 0 ? "Partial" : "Unavailable",
-      detail: peerCount ? `${peerCount} same-sector peers with stored ratios` : "No stored peer ratio rows",
-    },
-    {
-      label: "Formula verification",
-      status: formulaComplete ? "Documented" : "Partial",
-      detail: formulaComplete ? "Every ratio has formula and inputs" : "Some formulas or inputs are missing",
-    },
-    {
-      label: "Mixed-period calculations",
-      status: mixedCount > 0 ? "Present" : "Complete",
-      detail: mixedCount ? `${mixedCount} ratios combine periods or comparisons` : "No mixed-period labels detected",
-    },
-  ] as const;
-}
-
 function latestPeriodForCategory(ratios: RatioRow[], names: string[]): string {
   const period = names.map((name) => ratios.find((r) => r.ratio_name === name)?.source_period).find(Boolean);
   return formattedPeriod(period);
@@ -1161,12 +649,6 @@ function latestPeriodForCategory(ratios: RatioRow[], names: string[]): string {
 
 function sourceUrl(ratios: RatioRow[], metadata: CompanyMetadata): string | null {
   return ratios.find((r) => r.source)?.source ?? metadata.meta.sourceUrl ?? null;
-}
-
-function sourceLabel(metadata: CompanyMetadata): string {
-  if (metadata.meta.source === "ai") return "AI profile, financials from PSX rows";
-  if (metadata.meta.source) return metadata.meta.source;
-  return "Official PSX financials where sourced";
 }
 
 function readPinnedStorage(storageKey: string): Set<string> {
@@ -1180,52 +662,11 @@ function readPinnedStorage(storageKey: string): Set<string> {
   }
 }
 
-function factorTone(score: number | null): StatusTone {
-  if (score === null) return "amber";
-  if (score >= 67) return "green";
-  if (score < 34) return "red";
-  return "blue";
-}
-
-function Segment<T extends string>({ value, options, onChange }: { value: T; options: { value: T; label: string }[]; onChange: (value: T) => void }) {
-  return (
-    <div className="scroll-touch flex max-w-full gap-1 overflow-x-auto rounded-lg border border-slate-200 bg-slate-50 p-0.5">
-      {options.map((option) => (
-        <button
-          key={option.value}
-          type="button"
-          onClick={() => onChange(option.value)}
-          className={cn(
-            "h-8 shrink-0 rounded-md px-2.5 text-xs font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
-            value === option.value ? "bg-white text-slate-950 shadow-sm" : "text-muted-foreground hover:text-slate-950"
-          )}
-        >
-          {option.label}
-        </button>
-      ))}
-    </div>
-  );
-}
-
-function StatusPill({ label, status, detail }: { label: string; status: string; detail: string }) {
-  return (
-    <div className="rounded-md border border-slate-200 bg-white px-3 py-2" title={detail}>
-      <p className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">{label}</p>
-      <div className="mt-1 flex items-center justify-between gap-2">
-        <Badge variant={statusVariant(status as "Complete" | "Partial" | "Unavailable" | "Present" | "Documented")}>{status}</Badge>
-        <Info className="h-3.5 w-3.5 text-muted-foreground" aria-hidden />
-      </div>
-    </div>
-  );
-}
-
 function RatioHeader({
   ticker,
   ratios,
   metadata,
   quote,
-  financialRows,
-  peers,
   readOnly,
   activeTab,
   setActiveTab,
@@ -1237,8 +678,6 @@ function RatioHeader({
   ratios: RatioRow[];
   metadata: CompanyMetadata;
   quote: RatiosQuoteRow | null;
-  financialRows: RatiosFinancialRow[];
-  peers: RatiosPeerRow[];
   readOnly: boolean;
   activeTab: ActiveTab;
   setActiveTab: (value: ActiveTab) => void;
@@ -1246,16 +685,17 @@ function RatioHeader({
   setFormatMode: (value: FormatMode) => void;
   onExport: () => void;
 }) {
-  const [detailsOpen, setDetailsOpen] = useState(false);
-  const statusItems = dataStatusItems(ratios, financialRows, peers);
   const earningsPeriod = latestPeriodForCategory(ratios, ["P/E", "Gross margin", "Net margin", "Revenue growth"]);
   const balancePeriod = latestPeriodForCategory(ratios, ["Current ratio", "Debt-to-equity", "Net debt"]);
   const cashPeriod = latestPeriodForCategory(ratios, ["FCF (OCF - Capex)", "OCF / PAT", "FCF margin"]);
-  const priceDate = quote?.as_of ? `Price as of ${quote.as_of}` : "Price date unavailable";
   const officialSource = sourceUrl(ratios, metadata);
-
-  const valuesComplete = statusItems[0].status === "Complete" && statusItems[1].status === "Complete" && statusItems[4].status === "Documented";
-  const contextPartial = statusItems[2].status !== "Complete" || statusItems[3].status !== "Complete";
+  const contextBits = [
+    `${ratios.length} stored ratio${ratios.length === 1 ? "" : "s"}`,
+    earningsPeriod !== "-" ? `Earnings ${earningsPeriod}` : null,
+    balancePeriod !== "-" ? `Balance sheet ${balancePeriod}` : null,
+    cashPeriod !== "-" ? `Cash flow ${cashPeriod}` : null,
+    quote?.as_of ? `Price as of ${quote.as_of}` : null,
+  ].filter(Boolean);
 
   return (
     <section className="rounded-lg border border-slate-200 bg-white shadow-sm">
@@ -1268,25 +708,12 @@ function RatioHeader({
             {metadata.sector ? <Badge variant="secondary">{metadata.sector}</Badge> : null}
           </div>
           <div className="mt-3 space-y-1 text-sm text-slate-700">
-            <p>{earningsPeriod} earnings &middot; {balancePeriod} balance sheet &middot; {cashPeriod} cash flow &middot; {priceDate}</p>
-            <div className="flex flex-wrap items-center gap-2">
-              <p>
-                {valuesComplete ? "Reported and derived values complete" : "Reported and derived values partial"} &middot;{" "}
-                {contextPartial ? "Historical and peer context partial" : "Historical and peer context complete"}
-              </p>
-              <Button variant="ghost" className="h-auto p-0 text-blue-600 hover:bg-transparent hover:underline h-5" onClick={() => setDetailsOpen(true)}>Data details</Button>
-            </div>
+            <p>{contextBits.join(" · ")}</p>
           </div>
         </div>
         <div className="flex flex-wrap gap-2 lg:justify-end">
           <Button type="button" size="sm" variant={activeTab === "snapshot" ? "default" : "outline"} onClick={() => setActiveTab("snapshot")}>
             <BarChart3 className="h-3.5 w-3.5" /> Snapshot
-          </Button>
-          <Button type="button" size="sm" variant={activeTab === "trends" ? "default" : "outline"} onClick={() => setActiveTab("trends")}>
-            <LineChart className="h-3.5 w-3.5" /> Trends
-          </Button>
-          <Button type="button" size="sm" variant={activeTab === "peers" ? "default" : "outline"} onClick={() => setActiveTab("peers")}>
-            <ArrowDownUp className="h-3.5 w-3.5" /> Peers
           </Button>
           <Button type="button" size="sm" variant={activeTab === "explorer" ? "default" : "outline"} onClick={() => setActiveTab("explorer")}>
             <Search className="h-3.5 w-3.5" /> Explorer
@@ -1308,126 +735,49 @@ function RatioHeader({
           )}
         </div>
       </div>
-      <Dialog open={detailsOpen} onClose={() => setDetailsOpen(false)} title="Data completeness details">
-        <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
-          {statusItems.map((item) => {
-            let label = item.label as string;
-            if (label === "Formula verification") label = "Formulas verified";
-            if (label === "Mixed-period calculations") label = "Some ratios combine different periods";
-            if (label === "Peer comparison") label = "Peer data available";
-            return <StatusPill key={item.label} label={label} status={item.status} detail={item.detail} />;
-          })}
+      {officialSource ? (
+        <div className="border-t border-slate-100 px-4 py-2 text-xs text-muted-foreground">
+          <a href={officialSource} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-blue-700 underline underline-offset-2">
+            Source <ExternalLink className="h-3 w-3" />
+          </a>
+          {metadata.meta.lastUpdated ? <span> · Updated {metadata.meta.lastUpdated.slice(0, 10)}</span> : null}
         </div>
-        <div className="mt-4 text-xs text-muted-foreground">
-          {sourceLabel(metadata)}
-          {metadata.meta.lastUpdated ? ` - Updated ${metadata.meta.lastUpdated.slice(0, 10)}` : ""}
-          {officialSource ? (
-            <>
-              {" - "}
-              <a href={officialSource} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-blue-700 underline underline-offset-2">
-                Source <ExternalLink className="h-3 w-3" />
-              </a>
-            </>
-          ) : null}
-        </div>
-      </Dialog>
-    </section>
-  );
-}
-
-function FactorDashboard({
-  factors,
-  onSelectFactor,
-}: {
-  factors: FactorResult[];
-  onSelectFactor: (factor: FactorResult) => void;
-}) {
-  return (
-    <section className="space-y-3">
-      <div className="flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
-        <div>
-          <p className="eyebrow">Factor snapshot</p>
-          <h3 className="text-lg font-semibold text-slate-950">Financial profile</h3>
-        </div>
-        <Badge variant="amber">Preliminary profile until history and peer benchmarks complete</Badge>
-      </div>
-      <div className="flex flex-wrap items-center gap-3 md:flex-nowrap">
-        {factors.map((factor) => {
-          let interp = "Stable";
-          if (factor.score !== null) {
-            if (factor.score >= 80) interp = "Strong";
-            else if (factor.score >= 60) interp = "Improving";
-            else if (factor.score >= 40) interp = "Moderate";
-            else interp = "Weak";
-          } else {
-            interp = "Unavailable";
-          }
-          return (
-            <button
-              key={factor.key}
-              type="button"
-              onClick={() => onSelectFactor(factor)}
-              className="flex-1 rounded-lg border border-slate-200 bg-white p-3 text-left shadow-sm transition-colors hover:border-slate-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-            >
-              <div className="flex justify-between items-center gap-2">
-                <span className="text-xs font-medium text-slate-600">{factor.label}</span>
-                <span className="text-lg font-semibold tabular-nums text-slate-950">{factor.score !== null ? factor.score : "-"}</span>
-              </div>
-              <div className="mt-1.5 h-1 w-full overflow-hidden rounded-full bg-slate-100">
-                <div className={cn("h-full rounded-full", factorTone(factor.score) === "green" && "bg-emerald-600", factorTone(factor.score) === "red" && "bg-red-600", factorTone(factor.score) === "blue" && "bg-blue-600", factorTone(factor.score) === "amber" && "bg-amber-500")} style={{ width: `${factor.score !== null ? factor.score : 0}%` }} />
-              </div>
-              <p className="mt-1.5 text-[11px] font-medium text-slate-700">{interp}</p>
-            </button>
-          );
-        })}
-      </div>
+      ) : null}
     </section>
   );
 }
 
 function KeyRatioCard({
   row,
-  financialRows,
   formatMode,
-  onOpen,
 }: {
-  row: RatioRow | null;
-  financialRows: RatiosFinancialRow[];
+  row: RatioRow;
   formatMode: FormatMode;
-  onOpen: () => void;
 }) {
-  if (!row) {
-    return (
-      <div className="rounded-md border border-dashed border-slate-200 bg-slate-50 p-3">
-        <p className="text-xs font-medium text-muted-foreground">Unavailable</p>
-      </div>
-    );
-  }
-  const context = historicalContext(row, financialRows);
   return (
-    <button type="button" onClick={onOpen} className="group flex w-full flex-col items-start rounded-md border border-slate-200 bg-white p-3 text-left transition-colors hover:border-slate-300 relative">
+    <div className="flex w-full flex-col items-start rounded-md border border-slate-200 bg-white p-3 text-left">
       <p className="truncate text-xs font-semibold text-slate-950">{ratioDisplayName(row)}</p>
       <p className="mt-1 text-xl font-semibold tabular-nums text-slate-950">{formatRatioValue(row, formatMode)}</p>
       <p className="mt-1 text-[11px] text-muted-foreground">{formattedPeriod(row.source_period)}</p>
-      <p className="mt-2 text-[11px] leading-relaxed text-slate-600">{context.label}</p>
-    </button>
+    </div>
   );
 }
 
 function KeyRatios({
   ratios,
-  financialRows,
   formatMode,
-  setSelectedRatio,
   onExploreAll,
 }: {
   ratios: RatioRow[];
-  financialRows: RatiosFinancialRow[];
   formatMode: FormatMode;
-  setSelectedRatio: (row: RatioRow) => void;
   onExploreAll: () => void;
 }) {
   const byName = new Map(ratios.map((r) => [r.ratio_name, r]));
+  const groups = KEY_RATIO_GROUPS.map((group) => ({
+    label: group.label,
+    rows: group.ratios.map((name) => byName.get(name)).filter((row): row is RatioRow => Boolean(row)),
+  })).filter((group) => group.rows.length > 0);
+  if (!groups.length) return null;
   return (
     <section className="space-y-3">
       <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
@@ -1438,89 +788,22 @@ function KeyRatios({
         <Button variant="ghost" className="h-auto p-0 text-blue-600 hover:bg-transparent hover:underline text-xs" onClick={onExploreAll}>View all key ratios</Button>
       </div>
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-        {KEY_RATIO_GROUPS.map((group) => (
+        {groups.map((group) => (
           <div key={group.label} className="rounded-xl bg-slate-50 p-2 border border-slate-100">
             <h4 className="px-1 py-1 text-[11px] font-semibold uppercase tracking-wide text-slate-500">{group.label}</h4>
             <div className="mt-2 space-y-2">
-              {group.ratios.map((name) => {
-                const row = byName.get(name) ?? null;
-                return (
-                  <KeyRatioCard
-                    key={name}
-                    row={row}
-                    financialRows={financialRows}
-                    formatMode={formatMode}
-                    onOpen={() => row && setSelectedRatio(row)}
-                  />
-                );
-              })}
+              {group.rows.map((row) => (
+                <KeyRatioCard
+                  key={row.ratio_name}
+                  row={row}
+                  formatMode={formatMode}
+                />
+              ))}
             </div>
           </div>
         ))}
       </div>
     </section>
-  );
-}
-
-function toTrendData(rows: { period: string; rank: number; value: number }[], key: string): TrendPoint[] {
-  return rows.map((row) => ({ period: row.period, rank: row.rank, [key]: row.value }));
-}
-
-function mergeTrendSeries(series: { key: string; rows: { period: string; rank: number; value: number }[] }[]): TrendPoint[] {
-  const map = new Map<string, TrendPoint>();
-  for (const item of series) {
-    for (const point of item.rows) {
-      const existing = map.get(point.period) ?? { period: point.period, rank: point.rank };
-      existing[item.key] = point.value;
-      map.set(point.period, existing);
-    }
-  }
-  return [...map.values()].sort((a, b) => Number(a.rank) - Number(b.rank));
-}
-
-function TrendChart({
-  title,
-  description,
-  data,
-  series,
-  percent = false,
-  height = 260,
-}: {
-  title: string;
-  description: string;
-  data: TrendPoint[];
-  series: { key: string; label: string; color?: string }[];
-  percent?: boolean;
-  height?: number;
-}) {
-  const usable = data.filter((row) => series.some((s) => typeof row[s.key] === "number"));
-  return (
-    <Card className="border-slate-200 bg-white shadow-sm">
-      <CardHeader className="p-4 pb-2">
-        <CardTitle className="text-base">{title}</CardTitle>
-        <CardDescription>{description}</CardDescription>
-      </CardHeader>
-      <CardContent className="p-4 pt-2">
-        {usable.length >= 2 ? (
-          <div role="img" aria-label={`${title}: ${usable.length} comparable periods`}>
-            <ResponsiveContainer width="100%" height={height}>
-              <ComposedChart data={usable} margin={{ top: 8, right: 8, bottom: 0, left: -14 }}>
-                <CartesianGrid stroke={INK.grid} vertical={false} />
-                <XAxis dataKey="period" tick={AXIS_TICK} tickLine={false} axisLine={false} />
-                <YAxis tick={AXIS_TICK} tickLine={false} axisLine={false} tickFormatter={(v) => (percent ? `${v}%` : fmtCompact(Number(v)))} width={48} />
-                <RechartsTooltip cursor={CURSOR} content={<GlassTooltip format={(v, key) => (percent || key?.toLowerCase().includes("margin") || key?.toLowerCase().includes("growth") ? `${v.toFixed(1)}%` : fmtCompact(v))} />} />
-                <Legend wrapperStyle={{ fontSize: 11 }} />
-                {series.map((item, index) => (
-                  <Line key={item.key} type="monotone" dataKey={item.key} name={item.label} stroke={item.color ?? SERIES_COLORS[index % SERIES_COLORS.length]} strokeWidth={2} dot={false} connectNulls />
-                ))}
-              </ComposedChart>
-            </ResponsiveContainer>
-          </div>
-        ) : (
-          <ChartEmpty note="Not enough comparable periods to chart this ratio without mixing definitions." height={height} />
-        )}
-      </CardContent>
-    </Card>
   );
 }
 
@@ -1559,7 +842,7 @@ function BarValueChart({
             </BarChart>
           </ResponsiveContainer>
         ) : (
-          <ChartEmpty note="Peer comparison unavailable from stored, comparable ratio rows." height={height} />
+          <ChartEmpty note="Comparable stored rows are required for this chart." height={height} />
         )}
       </CardContent>
     </Card>
@@ -1580,300 +863,30 @@ function peerMetricData(metric: string, ratios: RatioRow[], peers: RatiosPeerRow
   return rows;
 }
 
-function VisualAnalysis({
-  active,
-  setActive,
-  ratios,
-  financialRows,
-  peers,
-}: {
-  active: ExplorerCategory;
-  setActive: (value: ExplorerCategory) => void;
-  ratios: RatioRow[];
-  financialRows: RatiosFinancialRow[];
-  peers: RatiosPeerRow[];
-}) {
-  const [peerMetric, setPeerMetric] = useState("P/E");
-  const marginData = mergeTrendSeries([
-    { key: "gross", rows: trendValuesFor("Gross margin", financialRows) },
-    { key: "operating", rows: trendValuesFor("Operating margin", financialRows) },
-    { key: "net", rows: trendValuesFor("Net margin", financialRows) },
-  ]);
-  const returnData = mergeTrendSeries([
-    { key: "roe", rows: trendValuesFor("ROE", financialRows) },
-    { key: "roa", rows: trendValuesFor("ROA", financialRows) },
-    { key: "roic", rows: trendValuesFor("ROIC", financialRows) },
-  ]);
-  const strengthData = mergeTrendSeries([
-    { key: "debtEquity", rows: trendValuesFor("Debt-to-equity", financialRows) },
-    { key: "current", rows: trendValuesFor("Current ratio", financialRows) },
-    { key: "coverage", rows: trendValuesFor("Interest coverage", financialRows) },
-  ]);
-  const growthData = mergeTrendSeries([
-    { key: "revenue", rows: trendValuesFor("Revenue growth", financialRows) },
-    { key: "profit", rows: trendValuesFor("Profit growth", financialRows) },
-    { key: "eps", rows: trendValuesFor("EPS growth", financialRows) },
-  ]);
-  const efficiencyData = mergeTrendSeries([
-    { key: "assetTurnover", rows: trendValuesFor("Asset turnover", financialRows) },
-    { key: "receivablesRevenue", rows: trendValuesFor("Receivables / revenue", financialRows) },
-    { key: "dso", rows: trendValuesFor("Days sales outstanding", financialRows) },
-  ]);
-  const cashData = mergeTrendSeries([
-    { key: "ocfPat", rows: trendValuesFor("OCF / PAT", financialRows) },
-    { key: "fcfMargin", rows: trendValuesFor("FCF margin", financialRows) },
-    { key: "accrual", rows: trendValuesFor("Accrual ratio", financialRows) },
-  ]);
-  const fcfData = toTrendData(trendValuesFor("FCF (OCF - Capex)", financialRows), "fcf");
-  const peerData = peerMetricData(peerMetric, ratios, peers);
-  const currentPeerPeriod = peerData.find((row) => row.current)?.period ?? null;
-  const incompatiblePeers = peerData.filter((row) => !row.current && row.period && currentPeerPeriod && row.period !== currentPeerPeriod).length;
-  const netDebt = ratios.find((r) => r.ratio_name === "Net debt");
-  const dupontRows = ["Net margin", "Asset turnover", "Equity multiplier"].map((name) => ratios.find((r) => r.ratio_name === name)).filter((row): row is RatioRow => Boolean(row && row.ratio_value !== null));
-
-  return (
-    <section className="space-y-3">
-      <div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
-        <div>
-          <p className="eyebrow">Visual analysis</p>
-          <h3 className="text-lg font-semibold text-slate-950">Charts by investor question</h3>
-        </div>
-        <Segment value={active} options={ANALYSIS_TABS} onChange={setActive} />
-      </div>
-
-      {(active === "all" || active === "valuation") && (
-        <div className="grid gap-3 xl:grid-cols-2">
-          <Card className="border-slate-200 bg-white shadow-sm">
-            <CardHeader className="p-4 pb-2">
-              <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
-                <div>
-                  <CardTitle className="text-base">Valuation peer view</CardTitle>
-                  <CardDescription>Stored same-sector ratios using each company&apos;s central ratio-engine definitions.</CardDescription>
-                </div>
-                <Select value={peerMetric} onChange={(e) => setPeerMetric(e.target.value)} className="w-full sm:w-44">
-                  {PEER_METRICS.map((metric) => (
-                    <option key={metric} value={metric}>{ratioDisplayName(metric)}</option>
-                  ))}
-                </Select>
-              </div>
-            </CardHeader>
-            <CardContent className="p-4 pt-2">
-              {incompatiblePeers ? (
-                <div className="mb-2 flex items-start gap-2 rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800">
-                  <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
-                  {incompatiblePeers} peer rows use a different source period; treat the comparison as partial.
-                </div>
-              ) : null}
-              <div className="h-[280px]">
-                {peerData.length >= 2 ? (
-                  <ResponsiveContainer width="100%" height="100%">
-                    <BarChart data={peerData} layout="vertical" margin={{ top: 6, right: 24, bottom: 0, left: 8 }}>
-                      <CartesianGrid stroke={INK.grid} horizontal={false} />
-                      <XAxis type="number" tick={AXIS_TICK} tickLine={false} axisLine={false} tickFormatter={(v) => formatChartValue(Number(v), peerMetric)} />
-                      <YAxis type="category" dataKey="name" tick={AXIS_TICK} tickLine={false} axisLine={false} width={70} />
-                      <RechartsTooltip cursor={CURSOR} content={<GlassTooltip format={(v) => formatChartValue(v, peerMetric)} />} />
-                      <Bar dataKey="value" name={ratioDisplayName(peerMetric)} radius={[0, 4, 4, 0]}>
-                        {peerData.map((row, index) => (
-                          <Cell key={row.name} fill={row.current ? INK.line : SERIES_COLORS[(index + 1) % SERIES_COLORS.length]} />
-                        ))}
-                      </Bar>
-                    </BarChart>
-                  </ResponsiveContainer>
-                ) : (
-                  <ChartEmpty note="Peer comparison is unavailable until same-sector peers have stored ratio rows." height={280} />
-                )}
-              </div>
-            </CardContent>
-          </Card>
-          <Card className="border-slate-200 bg-white shadow-sm">
-            <CardHeader className="p-4 pb-2">
-              <CardTitle className="text-base">Valuation history readiness</CardTitle>
-              <CardDescription>Historical P/E, P/B, EV/EBIT, and Price/FCF need multiple comparable market-price observations.</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-3 p-4 pt-2">
-              {["P/E", "P/B", "EV/EBIT", "Price / FCF", "Earnings yield", "FCF yield"].map((metric) => (
-                <div key={metric} className="flex items-center justify-between gap-3 rounded-md border border-slate-200 px-3 py-2">
-                  <div>
-                    <p className="text-sm font-medium text-slate-950">{ratioDisplayName(metric)}</p>
-                    <p className="text-[11px] text-muted-foreground">Current value: {formatRatioValue(ratios.find((r) => r.ratio_name === metric) ?? { ratio_name: metric, ratio_value: null })}</p>
-                  </div>
-                  <Badge variant="amber">History pending</Badge>
-                </div>
-              ))}
-            </CardContent>
-          </Card>
-        </div>
-      )}
-
-      {(active === "all" || active === "profitability") && (
-        <div className="grid gap-3 xl:grid-cols-2">
-          <TrendChart title="Margins" description="Gross, operating, and net margins over comparable periods." data={marginData} percent series={[
-            { key: "gross", label: "Gross margin", color: INK.line },
-            { key: "operating", label: "Operating margin", color: INK.amber },
-            { key: "net", label: "Net margin", color: INK.up },
-          ]} />
-          <TrendChart title="Returns" description="ROE and ROA use period-end balances where average balances are unavailable." data={returnData} percent series={[
-            { key: "roe", label: "ROE", color: INK.line },
-            { key: "roa", label: "ROA", color: INK.up },
-            { key: "roic", label: "ROIC", color: INK.amber },
-          ]} />
-          <Card className="border-slate-200 bg-white shadow-sm xl:col-span-2">
-            <CardHeader className="p-4 pb-2">
-              <CardTitle className="text-base">DuPont-style ROE check</CardTitle>
-              <CardDescription>ROE approximately equals net margin x asset turnover x equity multiplier when periods are compatible.</CardDescription>
-            </CardHeader>
-            <CardContent className="p-4 pt-2">
-              {dupontRows.length === 3 ? (
-                <div className="grid gap-3 sm:grid-cols-3">
-                  {dupontRows.map((row) => (
-                    <div key={row.ratio_name} className="rounded-md border border-slate-200 bg-slate-50 px-3 py-2">
-                      <p className="text-xs text-muted-foreground">{ratioDisplayName(row)}</p>
-                      <p className="mt-1 text-lg font-semibold tabular-nums">{formatRatioValue(row)}</p>
-                      <p className="mt-1 text-[11px] text-muted-foreground">{formattedPeriod(row.source_period)}</p>
-                    </div>
-                  ))}
-                  <div className="sm:col-span-3 rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800">
-                    Based on period-end balance-sheet values, not average balances. Treat as an approximation until average balance data is available.
-                  </div>
-                </div>
-              ) : (
-                <ChartEmpty note="DuPont view needs net margin, asset turnover, and equity multiplier with compatible periods." height={160} />
-              )}
-            </CardContent>
-          </Card>
-        </div>
-      )}
-
-      {(active === "all" || active === "financial_strength") && (
-        <div className="grid gap-3 xl:grid-cols-2">
-          <TrendChart title="Leverage and liquidity" description="Debt/equity, current ratio, and coverage where comparable period data exists." data={strengthData} series={[
-            { key: "debtEquity", label: "Debt/equity", color: INK.down },
-            { key: "current", label: "Current ratio", color: INK.line },
-            { key: "coverage", label: "Interest coverage", color: INK.up },
-          ]} />
-          <BarValueChart
-            title={netDebt?.ratio_value !== null && netDebt?.ratio_value !== undefined && netDebt.ratio_value < 0 ? "Net cash position" : "Net debt position"}
-            description="Borrowings minus cash and equivalents. Negative net debt is displayed to users as net cash."
-            data={trendValuesFor("Net debt", financialRows).map((p) => ({ name: p.period, value: p.value }))}
-            metric="Net debt"
-          />
-        </div>
-      )}
-
-      {(active === "all" || active === "growth") && (
-        <div className="grid gap-3 xl:grid-cols-2">
-          <TrendChart title="Annual growth" description="Revenue, profit, and EPS growth use comparable periods only." data={growthData} percent series={[
-            { key: "revenue", label: "Revenue growth", color: INK.line },
-            { key: "profit", label: "Profit growth", color: INK.up },
-            { key: "eps", label: "EPS growth", color: INK.amber },
-          ]} />
-          <TrendChart title="Margin change context" description="Margin expansion is separated from absolute growth." data={marginData} percent series={[
-            { key: "gross", label: "Gross margin", color: INK.line },
-            { key: "net", label: "Net margin", color: INK.up },
-          ]} />
-        </div>
-      )}
-
-      {(active === "all" || active === "efficiency") && (
-        <div className="grid gap-3 xl:grid-cols-2">
-          <TrendChart title="Asset and working-capital efficiency" description="Asset turnover, receivables intensity, and days sales outstanding." data={efficiencyData} series={[
-            { key: "assetTurnover", label: "Asset turnover", color: INK.line },
-            { key: "receivablesRevenue", label: "Receivables/revenue", color: INK.amber },
-            { key: "dso", label: "DSO", color: INK.down },
-          ]} />
-          <TrendChart title="Cost structure" description="Cost of sales and operating expense ratios where extracted." data={mergeTrendSeries([
-            { key: "cost", rows: trendValuesFor("Cost of sales ratio", financialRows) },
-            { key: "opex", rows: trendValuesFor("Operating expense ratio", financialRows) },
-          ])} percent series={[
-            { key: "cost", label: "Cost of sales", color: INK.down },
-            { key: "opex", label: "Operating expenses", color: INK.amber },
-          ]} />
-        </div>
-      )}
-
-      {(active === "all" || active === "cash_flow") && (
-        <div className="grid gap-3 xl:grid-cols-2">
-          <BarValueChart title="Free cash flow" description="Operating cash flow minus capex, using stored cash-flow periods." data={fcfData.map((p) => ({ name: p.period, value: Number(p.fcf) }))} metric="FCF (OCF − Capex)" />
-          <TrendChart title="Earnings quality" description="OCF/PAT, FCF margin, and accrual ratio where compatible periods exist." data={cashData} series={[
-            { key: "ocfPat", label: "OCF/PAT", color: INK.line },
-            { key: "fcfMargin", label: "FCF margin", color: INK.up },
-            { key: "accrual", label: "Accrual ratio", color: INK.down },
-          ]} />
-        </div>
-      )}
-
-      {active === "dividends" && (
-        <div className="grid gap-3 xl:grid-cols-2">
-          <BarValueChart title="Dividend peer view" description="Trailing dividend yield, where stored peer data exists." data={peerMetricData("Dividend yield (TTM)", ratios, peers)} metric="Dividend yield (TTM)" />
-          <Card className="border-slate-200 bg-white shadow-sm">
-            <CardHeader className="p-4 pb-2">
-              <CardTitle className="text-base">Dividend ratio detail</CardTitle>
-              <CardDescription>Market payout metrics are separate from user-received dividend records.</CardDescription>
-            </CardHeader>
-            <CardContent className="grid gap-2 p-4 pt-2 sm:grid-cols-3">
-              {["Dividend yield (TTM)", "Payout ratio", "Dividend cover"].map((metric) => {
-                const row = ratios.find((r) => r.ratio_name === metric);
-                return (
-                  <div key={metric} className="rounded-md border border-slate-200 bg-slate-50 px-3 py-2">
-                    <p className="text-xs text-muted-foreground">{ratioDisplayName(metric)}</p>
-                    <p className="mt-1 text-lg font-semibold tabular-nums">{row ? formatRatioValue(row) : "-"}</p>
-                    <p className="mt-1 text-[11px] text-muted-foreground">{formattedPeriod(row?.source_period)}</p>
-                  </div>
-                );
-              })}
-            </CardContent>
-          </Card>
-        </div>
-      )}
-    </section>
-  );
-}
-
 function RatioExplorer({
   ticker,
   ratios,
-  financialRows,
-  peers,
   formatMode,
   activeCategory,
   setActiveCategory,
   pinned,
   togglePin,
-  setSelectedRatio,
   exportRows,
 }: {
   ticker: string;
   ratios: RatioRow[];
-  financialRows: RatiosFinancialRow[];
-  peers: RatiosPeerRow[];
   formatMode: FormatMode;
   activeCategory: ExplorerCategory;
   setActiveCategory: (value: ExplorerCategory) => void;
   pinned: Set<string>;
   togglePin: (name: string) => void;
-  setSelectedRatio: (row: RatioRow) => void;
   exportRows: (rows: RatioRow[]) => void;
 }) {
   const [query, setQuery] = useState("");
   const [importantOnly, setImportantOnly] = useState(false);
-  const [derivedOnly, setDerivedOnly] = useState(false);
-  const [mixedOnly, setMixedOnly] = useState(false);
-  const [incompleteOnly, setIncompleteOnly] = useState(false);
-  const [historyOnly, setHistoryOnly] = useState(false);
-  const [peerOnly, setPeerOnly] = useState(false);
-  const [sortMode, setSortMode] = useState<SortMode>("default");
-  const [visibleColumns, setVisibleColumns] = useState({ change: true, context: true, period: true, status: true });
-  const [preset, setPreset] = useState<string>("All ratios");
-
-  const peerMetricSet = useMemo(() => {
-    const set = new Set<string>();
-    for (const peer of peers) for (const ratio of peer.ratios) if (ratio.ratio_value !== null) set.add(ratio.ratio_name);
-    return set;
-  }, [peers]);
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
-    const presetRatios = PRESET_VIEWS.find((view) => view.label === preset)?.ratios ?? null;
     let out = ratios.filter((row) => {
       const def = defFor(row.ratio_name);
       const matchesQuery = !q || row.ratio_name.toLowerCase().includes(q) || def.displayName.toLowerCase().includes(q) || def.category.includes(q);
@@ -1882,43 +895,29 @@ function RatioExplorer({
         (activeCategory === "key" && isImportant(row)) ||
         (activeCategory === "pinned" && pinned.has(row.ratio_name)) ||
         def.category === activeCategory;
-      const matchesPreset = !presetRatios || presetRatios.includes(row.ratio_name);
       const matchesImportant = !importantOnly || isImportant(row);
-      const matchesDerived = !derivedOnly || row.ratio_value !== null;
-      const matchesMixed = !mixedOnly || isMixedPeriod(row.source_period);
-      const matchesIncomplete = !incompleteOnly || row.ratio_value === null;
-      const matchesHistory = !historyOnly || trendValuesFor(row.ratio_name, financialRows).length >= 2;
-      const matchesPeer = !peerOnly || peerMetricSet.has(row.ratio_name);
-      return matchesQuery && matchesCategory && matchesPreset && matchesImportant && matchesDerived && matchesMixed && matchesIncomplete && matchesHistory && matchesPeer;
+      return matchesQuery && matchesCategory && matchesImportant;
     });
     out = out.sort((a, b) => {
       const pinDiff = Number(pinned.has(b.ratio_name)) - Number(pinned.has(a.ratio_name));
       if (pinDiff) return pinDiff;
       const importantDiff = Number(isImportant(b)) - Number(isImportant(a));
-      if (sortMode === "default" && importantDiff) return importantDiff;
-      if (sortMode === "name") return ratioDisplayName(a).localeCompare(ratioDisplayName(b));
-      if (sortMode === "category") return CATEGORY_LABELS[defFor(a.ratio_name).category].localeCompare(CATEGORY_LABELS[defFor(b.ratio_name).category]);
-      if (sortMode === "value") return (b.ratio_value ?? Number.NEGATIVE_INFINITY) - (a.ratio_value ?? Number.NEGATIVE_INFINITY);
-      if (sortMode === "availability") return Number(b.ratio_value !== null) - Number(a.ratio_value !== null);
-      return 0;
+      return importantDiff || ratioDisplayName(a).localeCompare(ratioDisplayName(b));
     });
     return out;
-  }, [activeCategory, derivedOnly, financialRows, historyOnly, importantOnly, incompleteOnly, mixedOnly, peerMetricSet, peerOnly, pinned, preset, query, ratios, sortMode]);
-
-  const pinnedRows = ratios.filter((row) => pinned.has(row.ratio_name));
+  }, [activeCategory, importantOnly, pinned, query, ratios]);
 
   function saveCurrentView() {
     try {
       window.localStorage.setItem(
         `portfolioos:ratio-view:${ticker}`,
-        JSON.stringify({ activeCategory, query, importantOnly, mixedOnly, historyOnly, peerOnly, preset, sortMode })
+        JSON.stringify({ activeCategory, query, importantOnly })
       );
     } catch {
       /* local persistence is optional */
     }
   }
 
-  const [advancedFiltersOpen, setAdvancedFiltersOpen] = useState(false);
   return (
     <section className="space-y-3">
       <div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
@@ -1949,34 +948,7 @@ function RatioExplorer({
           <button type="button" onClick={() => setImportantOnly(!importantOnly)} className={cn("inline-flex h-9 items-center gap-1.5 rounded-md border px-3 text-xs font-medium", importantOnly ? "border-blue-300 bg-blue-50 text-blue-800" : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50")}>
             Key ratios only
           </button>
-          <Button variant="outline" size="sm" onClick={() => setAdvancedFiltersOpen(!advancedFiltersOpen)} className="h-9">
-            <Filter className="mr-2 h-4 w-4" /> More filters
-          </Button>
         </div>
-
-        {advancedFiltersOpen && (
-          <div className="mt-3 pt-3 border-t border-slate-100 flex flex-wrap gap-2">
-            {[
-              { label: "Derived", active: derivedOnly, onClick: () => setDerivedOnly((v) => !v) },
-              { label: "Mixed period", active: mixedOnly, onClick: () => setMixedOnly((v) => !v) },
-              { label: "Incomplete", active: incompleteOnly, onClick: () => setIncompleteOnly((v) => !v) },
-              { label: "History available", active: historyOnly, onClick: () => setHistoryOnly((v) => !v) },
-              { label: "Peer data available", active: peerOnly, onClick: () => setPeerOnly((v) => !v) },
-            ].map((filter) => (
-              <button
-                key={filter.label}
-                type="button"
-                onClick={filter.onClick}
-                className={cn(
-                  "inline-flex h-8 items-center gap-1.5 rounded-md border px-2.5 text-xs font-medium",
-                  filter.active ? "border-blue-300 bg-blue-50 text-blue-800" : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50"
-                )}
-              >
-                {filter.label}
-              </button>
-            ))}
-          </div>
-        )}
       </div>
 
       <Card className="border-slate-200 bg-white shadow-sm">
@@ -1987,39 +959,34 @@ function RatioExplorer({
                 <TR>
                   <TH>Ratio</TH>
                   <TH className="text-right">Current value</TH>
-                  <TH>Change</TH>
-                  <TH>Context</TH>
                   <TH>Period</TH>
-                  <TH className="text-right">Actions</TH>
+                  <TH>Source</TH>
+                  <TH className="text-right">Pin</TH>
                 </TR>
               </THead>
               <TBody>
                 {filtered.map((row) => {
-                  const change = priorChange(row, financialRows);
-                  const context = historicalContext(row, financialRows);
-                  const mixed = isMixedPeriod(row.source_period);
-                  const derived = row.ratio_value !== null;
                   return (
                     <TR key={row.ratio_name}>
                       <TD className="min-w-[220px]">
                         <div className="flex items-center gap-2">
                           <div>
-                            <button type="button" onClick={() => setSelectedRatio(row)} className="text-left text-xs font-semibold text-slate-950 hover:underline">{ratioDisplayName(row)}</button>
-                            <div className="flex items-center gap-1 mt-0.5">
-                              {derived ? <span className="w-2 h-2 rounded-full bg-blue-500" title="Derived" /> : <span className="w-2 h-2 rounded-full bg-red-500" title="Incomplete" />}
-                              {mixed && <span className="w-2 h-2 rounded-full bg-amber-500" title="Mixed period" />}
-                            </div>
+                            <span className="text-left text-xs font-semibold text-slate-950">{ratioDisplayName(row)}</span>
                           </div>
                         </div>
                       </TD>
                       <TD className="text-right text-xs font-semibold tabular-nums">{formatRatioValue(row, formatMode)}</TD>
-                      <TD>{change ? <Badge variant={change.tone === "positive" ? "green" : change.tone === "negative" ? "red" : "secondary"}>{change.label}</Badge> : <span className="text-xs text-muted-foreground">-</span>}</TD>
-                      <TD className="max-w-[240px] whitespace-normal text-xs text-slate-600">{context.label}<span className="block text-[11px] text-muted-foreground">{context.detail}</span></TD>
                       <TD className="text-xs text-muted-foreground">{formattedPeriod(row.source_period)}</TD>
+                      <TD className="text-xs text-muted-foreground">
+                        {row.source ? (
+                          <a href={row.source} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-blue-700 underline underline-offset-2">
+                            Source <ExternalLink className="h-3 w-3" />
+                          </a>
+                        ) : (
+                          "Stored ratio"
+                        )}
+                      </TD>
                       <TD className="text-right">
-                        <Button type="button" size="sm" variant="ghost" onClick={() => setSelectedRatio(row)}>
-                          <Eye className="h-3.5 w-3.5" />
-                        </Button>
                         <button type="button" onClick={() => togglePin(row.ratio_name)} className="h-8 w-8 inline-flex items-center justify-center rounded-md text-muted-foreground hover:bg-slate-50 hover:text-slate-950 ml-1">
                           <Pin className={cn("h-4 w-4", pinned.has(row.ratio_name) && "fill-slate-900 text-slate-900")} />
                         </button>
@@ -2037,192 +1004,9 @@ function RatioExplorer({
   );
 }
 
-function RatioDetailDialog({
-  ticker,
-  row,
-  financialRows,
-  peers,
-  formatMode,
-  onClose,
-}: {
-  ticker: string;
-  row: RatioRow | null;
-  financialRows: RatiosFinancialRow[];
-  peers: RatiosPeerRow[];
-  formatMode: FormatMode;
-  onClose: () => void;
-}) {
-  const [runningAi, setRunningAi] = useState(false);
-  const [aiMessage, setAiMessage] = useState<string | null>(null);
-  if (!row) return null;
-  const selected = row;
-  const def = defFor(selected.ratio_name);
-  const history = trendValuesFor(selected.ratio_name, financialRows);
-  const peerRows = peerMetricData(selected.ratio_name, [selected], peers);
-  const mixed = isMixedPeriod(selected.source_period);
-  const inputs = Object.entries(selected.inputs ?? {});
-  const numeratorPeriod = selected.source_period?.split(/\s+\/\s+|\s+vs\s+/i)[0] ?? selected.source_period ?? null;
-  const denominatorPeriod = selected.source_period?.split(/\s+\/\s+|\s+vs\s+/i)[1] ?? null;
-
-  async function runAi() {
-    setRunningAi(true);
-    setAiMessage(null);
-    try {
-      const res = await fetch("/api/ai/company", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ticker, action: "explain_ratios" }),
-      });
-      const data = await res.json().catch(() => ({}));
-      if (!res.ok) throw new Error(data.error ?? "AI action failed");
-      setAiMessage("AI ratio analysis saved in AI Analysis.");
-    } catch (err) {
-      setAiMessage(err instanceof Error ? err.message : "AI action failed");
-    } finally {
-      setRunningAi(false);
-    }
-  }
-
-  function createLocalAlert() {
-    const defaultValue = selected.ratio_value !== null ? String(selected.ratio_value) : "";
-    const threshold = window.prompt(`Alert threshold for ${ratioDisplayName(selected)}. Use >, <, >=, or <= with a number.`, defaultValue);
-    if (!threshold?.trim()) return;
-    try {
-      const key = "portfolioos:ratio-alert-intents";
-      const existing = JSON.parse(window.localStorage.getItem(key) ?? "[]") as unknown[];
-      window.localStorage.setItem(
-        key,
-        JSON.stringify([
-          ...existing,
-          {
-            ticker,
-            ratio: selected.ratio_name,
-            threshold: threshold.trim(),
-            createdAt: new Date().toISOString(),
-          },
-        ])
-      );
-      setAiMessage(`Saved alert intent for ${ratioDisplayName(selected)}. It can only be evaluated when new financial or market data is published.`);
-    } catch {
-      setAiMessage("Could not save the alert intent in this browser.");
-    }
-  }
-
-  return (
-    <Dialog open={Boolean(row)} onClose={onClose} title={`${ratioDisplayName(row)} - ${formatRatioValue(row, formatMode)}`} className="sm:max-w-3xl lg:max-w-5xl">
-      <div className="space-y-4">
-        <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_280px]">
-          <div className="space-y-3">
-            <div className="rounded-lg border border-slate-200 bg-slate-50 p-3">
-              <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">What it means</p>
-              <p className="mt-2 text-sm leading-relaxed text-slate-800">{def.definition}</p>
-              <p className="mt-2 text-sm leading-relaxed text-slate-800">{def.why}</p>
-            </div>
-            <div className="rounded-lg border border-amber-200 bg-amber-50 p-3">
-              <p className="text-xs font-semibold text-amber-900">Interpret carefully</p>
-              <p className="mt-1 text-xs leading-relaxed text-amber-800">{def.limitation}</p>
-            </div>
-          </div>
-          <div className="rounded-lg border border-slate-200 bg-white p-3">
-            <p className="text-xs text-muted-foreground">Current value</p>
-            <p className="mt-1 text-2xl font-semibold tabular-nums text-slate-950">{formatRatioValue(row, formatMode)}</p>
-            <div className="mt-3 space-y-2 text-xs">
-              <div className="flex justify-between gap-2"><span className="text-muted-foreground">Period</span><span className="text-right">{formattedPeriod(row.source_period)}</span></div>
-              <div className="flex justify-between gap-2"><span className="text-muted-foreground">Status</span><Badge variant={row.ratio_value === null ? "red" : "blue"}>{row.ratio_value === null ? "Incomplete" : "Derived"}</Badge></div>
-              <div className="flex justify-between gap-2"><span className="text-muted-foreground">Alignment</span><Badge variant={mixed ? "amber" : "secondary"}>{mixed ? "Mixed period" : "Single label"}</Badge></div>
-              <div className="flex justify-between gap-2"><span className="text-muted-foreground">Category</span><span>{CATEGORY_LABELS[def.category]}</span></div>
-            </div>
-          </div>
-        </div>
-
-        <div className="grid gap-3 lg:grid-cols-2">
-          <Card className="border-slate-200 shadow-none">
-            <CardHeader className="p-4 pb-2">
-              <CardTitle className="text-base">Calculation inspector</CardTitle>
-              <CardDescription>Formula, inputs, periods, and missing-data treatment from the ratio engine.</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-3 p-4 pt-2">
-              <div className="rounded-md bg-slate-950 px-3 py-2 font-mono text-xs text-white">{row.formula}</div>
-              {row.missing ? (
-                <div className="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-700">{row.missing}</div>
-              ) : null}
-              <div className="grid gap-2 sm:grid-cols-2">
-                <div className="rounded-md border border-slate-200 px-3 py-2">
-                  <p className="text-[11px] text-muted-foreground">Numerator period</p>
-                  <p className="text-xs font-medium">{formattedPeriod(numeratorPeriod)}</p>
-                </div>
-                <div className="rounded-md border border-slate-200 px-3 py-2">
-                  <p className="text-[11px] text-muted-foreground">Denominator period</p>
-                  <p className="text-xs font-medium">{denominatorPeriod ? formattedPeriod(denominatorPeriod) : formattedPeriod(row.source_period)}</p>
-                </div>
-              </div>
-              <div className="overflow-x-auto">
-                <Table>
-                  <THead>
-                    <TR><TH>Input</TH><TH className="text-right">Exact value</TH><TH>Source</TH></TR>
-                  </THead>
-                  <TBody>
-                    {inputs.map(([key, value]) => (
-                      <TR key={key}>
-                        <TD className="text-xs font-medium">{key.replace(/_/g, " ")}</TD>
-                        <TD className="text-right text-xs tabular-nums">{typeof value === "number" ? value.toLocaleString("en-PK", { maximumFractionDigits: 4 }) : String(value ?? "-")}</TD>
-                        <TD className="text-[11px] text-muted-foreground">{/price/i.test(key) ? "Market quote" : /dps|dividend/i.test(key) ? "Payout record" : "Stored financial row"}</TD>
-                      </TR>
-                    ))}
-                  </TBody>
-                </Table>
-              </div>
-              <p className="text-[11px] leading-relaxed text-muted-foreground">
-                Rounding is display-only. Corporate actions are reflected only when they are present in the stored financial, price, payout, or derived-share inputs.
-              </p>
-            </CardContent>
-          </Card>
-
-          <div className="space-y-3">
-            <TrendChart
-              title="Historical trend"
-              description="Shown only when comparable stored periods exist."
-              data={toTrendData(history, "value")}
-              series={[{ key: "value", label: ratioDisplayName(row), color: INK.line }]}
-              percent={def.kind === "percent"}
-              height={220}
-            />
-            <BarValueChart
-              title="Peer comparison"
-              description="Stored same-sector peer rows; incompatible periods are treated as partial."
-              data={peerRows}
-              metric={row.ratio_name}
-              height={220}
-            />
-          </div>
-        </div>
-
-        <div className="rounded-lg border border-slate-200 bg-slate-50 p-3">
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <div>
-              <p className="text-sm font-semibold text-slate-950">Related actions</p>
-              <p className="text-xs text-muted-foreground">AI uses the same stored ratio table and financial rows as this page.</p>
-            </div>
-            <div className="flex flex-wrap gap-2">
-              <Button type="button" size="sm" variant="outline" onClick={runAi} disabled={runningAi}>
-                <Sparkles className="h-3.5 w-3.5" /> {runningAi ? "Running" : "Explain ratios"}
-              </Button>
-              <Button type="button" size="sm" variant="outline" onClick={createLocalAlert} title="Ratio alerts depend on newly published financial or market data.">
-                <Bell className="h-3.5 w-3.5" /> Alert
-              </Button>
-            </div>
-          </div>
-          {aiMessage ? <p className="mt-2 text-xs text-muted-foreground">{aiMessage}</p> : null}
-        </div>
-      </div>
-    </Dialog>
-  );
-}
-
 export function RatiosWorkspace({
   ticker,
   ratios,
-  financialRows,
   metadata,
   quote,
   peers,
@@ -2230,7 +1014,6 @@ export function RatiosWorkspace({
 }: {
   ticker: string;
   ratios: RatioRow[];
-  financialRows: RatiosFinancialRow[];
   metadata: CompanyMetadata;
   quote: RatiosQuoteRow | null;
   peers: RatiosPeerRow[];
@@ -2239,11 +1022,10 @@ export function RatiosWorkspace({
   const [activeTab, setActiveTab] = useState<ActiveTab>("snapshot");
   const [activeCategory, setActiveCategory] = useState<ExplorerCategory>("all");
   const [formatMode, setFormatMode] = useState<FormatMode>("compact");
-  const [selectedRatio, setSelectedRatio] = useState<RatioRow | null>(null);
   const storageKey = `portfolioos:pinned-ratios:${ticker}`;
   const [pinned, setPinned] = useState<Set<string>>(() => readPinnedStorage(storageKey));
-
-  const factors = useMemo(() => buildFactors(ratios), [ratios]);
+  const pePeerData = peerMetricData("P/E", ratios, peers);
+  const showPePeerChart = pePeerData.some((row) => row.current) && pePeerData.length >= 2;
 
   function persistPinned(next: Set<string>) {
     setPinned(next);
@@ -2262,14 +1044,11 @@ export function RatiosWorkspace({
   }
 
   function exportRows(rows: RatioRow[] = ratios) {
-    const header = ["Ratio", "Value", "Period", "Status", "Formula", "Missing", "Source"];
+    const header = ["Ratio", "Value", "Period", "Source"];
     const body = rows.map((row) => [
       ratioDisplayName(row),
       row.ratio_value ?? "",
       row.source_period ?? "",
-      row.ratio_value === null ? "Incomplete" : "Derived",
-      row.formula,
-      row.missing ?? "",
       row.source ?? "",
     ]);
     const csv = [header, ...body]
@@ -2284,44 +1063,13 @@ export function RatiosWorkspace({
     URL.revokeObjectURL(url);
   }
 
-  function selectFactor(factor: FactorResult) {
-    setActiveCategory(factor.category);
-  }
-
-  const hasFinancials = ratios.some((r) => r.source !== null) || financialRows.length > 0;
-
   return (
     <div className="space-y-5">
-      {!hasFinancials ? (
-        <Card className="border-amber-200 bg-amber-50 shadow-sm">
-          <CardContent className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between">
-            <div className="flex items-start gap-3">
-              <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-amber-700" />
-              <div>
-                <p className="text-sm font-semibold text-amber-950">Most ratios need financials loaded</p>
-                <p className="mt-1 text-xs text-amber-800">Only market-data ratios can be computed until official PSX financial rows are stored.</p>
-              </div>
-            </div>
-            {!readOnly ? (
-              <ActionButton
-                endpoint={`/api/stocks/${ticker}/refresh`}
-                body={{ section: "financials" }}
-                label={<><TrendingUp className="h-3.5 w-3.5" /> Load financials</>}
-                variant="outline"
-                size="sm"
-              />
-            ) : null}
-          </CardContent>
-        </Card>
-      ) : null}
-
       <RatioHeader
         ticker={ticker}
         ratios={ratios}
         metadata={metadata}
         quote={quote}
-        financialRows={financialRows}
-        peers={peers}
         readOnly={readOnly}
         activeTab={activeTab}
         setActiveTab={setActiveTab}
@@ -2332,74 +1080,24 @@ export function RatiosWorkspace({
 
       {activeTab === "snapshot" && (
         <div className="space-y-8 mt-2">
-          <FactorDashboard
-            factors={factors}
-            onSelectFactor={(f) => { selectFactor(f); setActiveTab("explorer"); }}
-          />
-
           <KeyRatios
             ratios={ratios}
-            financialRows={financialRows}
             formatMode={formatMode}
-            setSelectedRatio={setSelectedRatio}
             onExploreAll={() => { setActiveCategory("key"); setActiveTab("explorer"); }}
           />
 
-          <div className="grid gap-3 xl:grid-cols-2">
-            <Card className="border-slate-200 bg-white shadow-sm xl:col-span-2">
-              <CardHeader className="p-4 pb-2">
-                <CardTitle className="text-base">FCCL versus cement peers — P/E</CardTitle>
-                <CardDescription>Default snapshot comparison</CardDescription>
-              </CardHeader>
-              <CardContent className="p-4 pt-2">
-                <div className="h-[280px]">
-                  <BarValueChart
-                    title=""
-                    description=""
-                    data={peerMetricData("P/E", ratios, peers)}
-                    metric="P/E"
-                    height={280}
-                  />
-                </div>
-                <div className="mt-6 border-t border-slate-100 pt-4">
-                  <p className="text-sm font-semibold text-slate-900 mb-2">Snapshot findings</p>
-                  <ul className="list-inside list-disc text-sm text-slate-700 space-y-1">
-                    <li>FCCL&apos;s P/E is below several selected cement peers, but full period alignment should be confirmed.</li>
-                    <li>Net margin and ROIC improved in FY2025.</li>
-                    <li>The company holds net cash and maintains strong interest coverage.</li>
-                  </ul>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
+          {showPePeerChart ? (
+            <BarValueChart
+              title={`${ticker} peer P/E`}
+              description="Stored same-sector P/E rows from the ratio table."
+              data={pePeerData}
+              metric="P/E"
+            />
+          ) : null}
           
           <div className="flex justify-center pt-4">
-            <Button variant="outline" onClick={() => setActiveTab("explorer")}>Explore all 53 ratios</Button>
+            <Button variant="outline" onClick={() => setActiveTab("explorer")}>Explore all {ratios.length} ratios</Button>
           </div>
-        </div>
-      )}
-
-      {activeTab === "trends" && (
-        <div className="space-y-6 mt-2">
-          <VisualAnalysis
-            active="profitability"
-            setActive={() => {}}
-            ratios={ratios}
-            financialRows={financialRows}
-            peers={peers}
-          />
-        </div>
-      )}
-
-      {activeTab === "peers" && (
-        <div className="space-y-6 mt-2">
-          <VisualAnalysis
-            active="valuation"
-            setActive={() => {}}
-            ratios={ratios}
-            financialRows={financialRows}
-            peers={peers}
-          />
         </div>
       )}
 
@@ -2408,27 +1106,16 @@ export function RatiosWorkspace({
           <RatioExplorer
             ticker={ticker}
             ratios={ratios}
-            financialRows={financialRows}
-            peers={peers}
             formatMode={formatMode}
             activeCategory={activeCategory}
             setActiveCategory={setActiveCategory}
             pinned={pinned}
             togglePin={togglePin}
-            setSelectedRatio={setSelectedRatio}
             exportRows={exportRows}
           />
         </div>
       )}
 
-      <RatioDetailDialog
-        ticker={ticker}
-        row={selectedRatio}
-        financialRows={financialRows}
-        peers={peers}
-        formatMode={formatMode}
-        onClose={() => setSelectedRatio(null)}
-      />
     </div>
   );
 }

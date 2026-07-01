@@ -32,7 +32,7 @@ import type { Filing } from "@/lib/company/types";
 type PeriodMode = "annual" | "quarterly" | "cumulative";
 type ValueMode = "compact" | "exact";
 type TrendView = "profit" | "eps" | "margins" | "drivers";
-type Status = "Complete" | "Partial" | "Unavailable";
+type Status = "Complete" | "Partial" | "Pending";
 type SummaryCardItem = {
   key: string;
   label: string;
@@ -102,26 +102,26 @@ function value(row: FinancialWorkspaceRow | null | undefined, key: string): numb
 }
 
 function resultValueStatus(row: FinancialWorkspaceRow | null): Status {
-  if (!row) return "Unavailable";
+  if (!row) return "Pending";
   const essentials = ["revenue", "profit_after_tax", "eps"];
   const present = essentials.filter((key) => value(row, key) !== null).length;
   if (present === essentials.length) return "Complete";
   if (present > 0) return "Partial";
-  return "Unavailable";
+  return "Pending";
 }
 
 function resultMetadataStatus(row: FinancialWorkspaceRow | null): Status {
-  if (!row) return "Unavailable";
+  if (!row) return "Pending";
   const fields = [row.reported_date, row.fiscal_year, row.fiscal_period ?? row.period_type];
   const present = fields.filter(Boolean).length;
   if (present === fields.length) return "Complete";
   if (present > 0) return "Partial";
-  return "Unavailable";
+  return "Pending";
 }
 
 function statusVariant(status: Status): "green" | "amber" | "red" {
   if (status === "Complete") return "green";
-  if (status === "Partial") return "amber";
+  if (status === "Partial" || status === "Pending") return "amber";
   return "red";
 }
 
@@ -133,16 +133,16 @@ function statusText(kind: "values" | "metadata" | "source", status: Status): str
   if (kind === "values") {
     if (status === "Complete") return "Core values complete";
     if (status === "Partial") return "Core values partial";
-    return "Core values unavailable";
+    return "Core values pending";
   }
   if (kind === "metadata") {
     if (status === "Complete") return "Announcement details complete";
     if (status === "Partial") return "Announcement details incomplete";
-    return "Announcement details unavailable";
+    return "Announcement details pending";
   }
   if (status === "Complete") return "Official source verified";
   if (status === "Partial") return "Source partially verified";
-  return "Official source unavailable";
+  return "Official source pending";
 }
 
 function changeSentence(label: string, change: ReturnType<typeof changeInfo> | null, comparison: "YoY" | "QoQ"): string | null {
@@ -268,7 +268,7 @@ function SummaryCard({ label, metricKey, val, isMargin, priorVal, priorLabel, va
                     </div>
                 ) : priorLabel !== "—" ? (
                     <div className="mt-2 text-[10px] text-muted-foreground">
-                        {comparison === "YoY" ? "Prior-year" : "Previous-quarter"} comparison unavailable
+                        {comparison === "YoY" ? "Prior-year" : "Previous-quarter"} comparison not loaded
                     </div>
                 ) : (
                     <div className="mt-2 text-[10px] text-muted-foreground">
@@ -318,7 +318,7 @@ export function EarningsWorkspace({
   const latestFiling = useMemo(() => [...rows].sort((a,b) => rank(b) - rank(a))[0] ?? null, [rows]);
   const valueStatus = resultValueStatus(activePeriod);
   const metadataStatus = resultMetadataStatus(activePeriod);
-  const sourceStatus: Status = activePeriod?.source_url ? "Complete" : "Unavailable";
+  const sourceStatus: Status = activePeriod?.source_url ? "Complete" : "Pending";
   const tableNotice = useMemo(() => {
       const missingDates = activeRows.filter((r) => !r.reported_date).length;
       const missingSources = activeRows.filter((r) => !r.source_url).length;
@@ -496,11 +496,11 @@ export function EarningsWorkspace({
                               {activePeriod ? `${labelPeriod(activePeriod)} · ${mode === "annual" ? "Annual" : mode === "quarterly" ? "Quarterly" : "Cumulative"}` : "No result"}
                               {activePeriod?.data?._period_end ? ` · Period ended ${formatDate(String(activePeriod.data._period_end))}` : ""}
                           </span>
-                          <span className="block">
+                          {latestFiling ? <span className="block">
                               <span className="font-medium text-slate-700">Latest filing available:</span>{" "}
-                              {latestFiling ? labelPeriod(latestFiling) : "Unavailable"}
+                              {labelPeriod(latestFiling)}
                               {latestFiling?.reported_date ? ` · Announced ${formatDate(latestFiling.reported_date)}` : ""}
-                          </span>
+                          </span> : null}
                           <span className="block">
                               <span className="font-medium text-slate-700">Source:</span>{" "}
                               {activePeriod?.source_url ? "Official PSX filing" : "Official source link not captured"}
@@ -755,7 +755,7 @@ export function EarningsWorkspace({
                                               Official result filing
                                           </a>
                                       ) : (
-                                          <p className="text-xs text-amber-700">Primary filing link unavailable</p>
+                                          <p className="text-xs text-amber-700">Primary filing link not captured</p>
                                       )}
                                       {ev.related.length > 0 && (
                                           <details className="text-[10px]">

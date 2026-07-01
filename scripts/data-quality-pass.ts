@@ -6,7 +6,7 @@ import { refreshTechnicals } from "@/lib/company/technicals";
 import { refreshQuote } from "@/lib/engine/market-data";
 import { populateCheapFundamentals } from "@/lib/engine/fundamentals";
 import { refreshRatios } from "@/lib/engine/ratios";
-import { buildExchangeSourcedProfile } from "@/lib/company/profile";
+import { fetchPsxCompanyProfile } from "@/lib/company/psx-profile";
 
 type Args = {
   all: boolean;
@@ -134,43 +134,59 @@ async function missingUsableRatios(tickers: string[], limit: number): Promise<st
   return (limit >= missing.length ? missing : missing.slice(0, limit));
 }
 
-async function generateProfiles(tickers: string[]) {
+async function generateProfiles(tickers: string[], concurrency: number) {
   const db = createAdminClient();
   let written = 0;
-  for (let i = 0; i < tickers.length; i += 400) {
-    const chunk = tickers.slice(i, i + 400);
+  let skipped = 0;
+  const stalePatch = { description: null, business_lines: null, last_updated: new Date().toISOString() };
+  const staleNonOfficial = await db
+    .from("company_metadata")
+    .update(stalePatch)
+    .neq("source", "psx-company-page")
+    .not("description", "is", null);
+  if (staleNonOfficial.error) throw staleNonOfficial.error;
+  const staleNullSource = await db
+    .from("company_metadata")
+    .update(stalePatch)
+    .is("source", null)
+    .not("description", "is", null);
+  if (staleNullSource.error) throw staleNullSource.error;
+
+  for (let i = 0; i < tickers.length; i += 100) {
+    const chunk = tickers.slice(i, i + 100);
     const [{ data: universe }, { data: metadata }] = await Promise.all([
       db.from("stock_universe").select("ticker, company_name, sector, industry, exchange, face_value").in("ticker", chunk),
       db.from("company_metadata").select("ticker, face_value, website").in("ticker", chunk),
     ]);
+    const universeByTicker = new Map((universe ?? []).map((row) => [String(row.ticker).toUpperCase(), row]));
     const existing = new Map((metadata ?? []).map((row) => [String(row.ticker).toUpperCase(), row]));
-    const rows = (universe ?? []).map((row) => {
-      const t = String(row.ticker).toUpperCase();
+    const rows = (await runPool(chunk, Math.min(concurrency, 5), async (ticker) => {
+      const t = String(ticker).toUpperCase();
+      const row = universeByTicker.get(t);
+      if (!row) return null;
       const meta = existing.get(t);
-      const profile = buildExchangeSourcedProfile({
-        ticker: t,
-        companyName: row.company_name,
-        sector: row.sector,
-        industry: row.industry,
-        exchange: row.exchange,
-        faceValue: Number(row.face_value ?? meta?.face_value) || null,
-      });
+      const profile = await fetchPsxCompanyProfile(t);
+      if (!profile) {
+        skipped++;
+        return null;
+      }
       return {
         ticker: t,
         company_name: row.company_name,
         sector: row.sector,
-        industry: profile.industry ?? row.industry,
-        exchange: profile.exchange,
+        industry: row.industry,
+        exchange: row.exchange ?? "PSX",
         face_value: row.face_value ?? meta?.face_value ?? null,
-        website: meta?.website ?? null,
-        description: profile.description,
-        business_lines: profile.business_lines ?? null,
-        source: "psx-directory",
-        confidence: 0.9,
+        website: profile.website ?? meta?.website ?? null,
+        description: profile.businessDescription,
+        business_lines: null,
+        source: "psx-company-page",
+        source_url: profile.sourceUrl,
+        confidence: 1,
         last_fetched_at: new Date().toISOString(),
         last_updated: new Date().toISOString(),
       };
-    });
+    })).filter((row): row is NonNullable<typeof row> => Boolean(row));
     if (rows.length) {
       const { error } = await db.from("company_metadata").upsert(rows, { onConflict: "ticker" });
       if (error) throw error;
@@ -182,6 +198,7 @@ async function generateProfiles(tickers: string[]) {
       );
       written += rows.length;
     }
+    console.log(`Official PSX profiles: ${Math.min(i + chunk.length, tickers.length)}/${tickers.length} checked, saved=${written}, skipped=${skipped}`);
   }
   return written;
 }
@@ -203,8 +220,8 @@ async function main() {
   console.log(`Active universe: ${tickers.length}`);
 
   if (args.profiles) {
-    const written = await generateProfiles(tickers);
-    console.log(`Profiles generated: ${written}`);
+    const written = await generateProfiles(tickers, args.concurrency);
+    console.log(`Official PSX profiles saved: ${written}`);
   }
 
   if (args.snapshot) {
