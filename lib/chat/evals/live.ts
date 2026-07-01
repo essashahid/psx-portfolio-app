@@ -6,7 +6,7 @@ import { getModelDef, type ChatModelDef } from "@/lib/ai/models";
 import { runDeepSeekChat, deepseekChatConfigured } from "@/lib/ai/deepseek-chat";
 import { getClaude, buildClaudeParams, claudeConfigured } from "@/lib/ai/claude";
 import { stripEmDashes } from "@/lib/chat/sanitize";
-import { checkNumericFidelity, type FidelityResult } from "@/lib/chat/evals/numeric-fidelity";
+import { checkNumericFidelity, stripArtifacts, type FidelityResult } from "@/lib/chat/evals/numeric-fidelity";
 import { EVAL_CASES, renderQuestion, type EvalCase, type EvalTemplateVars } from "@/lib/chat/evals/cases";
 import { deriveTemplateVars } from "@/lib/chat/evals/harness";
 
@@ -42,6 +42,10 @@ export interface LiveCaseResult {
   hedging: string[];
   emDash: boolean;
   answerMustMissing: string[];
+  /** Artifact kinds the answer emitted (visual coverage, informational). */
+  artifactKinds: string[];
+  /** True when a substantive answer is an unstructured wall of prose. */
+  proseWall: boolean;
   fidelity: FidelityResult;
   passed: boolean;
   error?: string;
@@ -110,7 +114,7 @@ export async function runLiveCase(
   } catch (err) {
     return {
       id: c.id, question, intent: resolved.intent, answerChars: 0,
-      hedging: [], emDash: false, answerMustMissing: [], passed: false,
+      hedging: [], emDash: false, answerMustMissing: [], artifactKinds: [], proseWall: false, passed: false,
       fidelity: { checked: 0, matched: 0, groundedPct: null, unmatched: [] },
       error: err instanceof Error ? err.message : String(err),
     };
@@ -122,15 +126,47 @@ export async function runLiveCase(
   const answerMustMissing = (c.answerMust ?? [])
     .map((p) => renderQuestion(p, vars))
     .filter((p) => !new RegExp(p, "i").test(answer));
+  const artifactKinds = extractArtifactKinds(answer);
+  const proseWall = isProseWall(answer);
   const fidelity = checkNumericFidelity(answer, brief);
 
   const fidelityOk = fidelity.groundedPct === null || fidelity.groundedPct >= FIDELITY_FAIL_BELOW;
-  const passed = hedging.length === 0 && !emDash && answerMustMissing.length === 0 && fidelityOk;
+  const passed = hedging.length === 0 && !emDash && answerMustMissing.length === 0 && !proseWall && fidelityOk;
 
   return {
     id: c.id, question, intent: resolved.intent, answerChars: answer.length,
-    hedging, emDash, answerMustMissing, fidelity, passed,
+    hedging, emDash, answerMustMissing, artifactKinds, proseWall, fidelity, passed,
   };
+}
+
+/**
+ * Format guardrail (not a per-case artifact rule): a substantial answer that is
+ * pure paragraphs, with no visual, table, or list, is the "prose wall" the
+ * Copilot must avoid. The prompt is what drives good structure; this only catches
+ * regressions where the output slides back to a block of text.
+ */
+function isProseWall(answer: string): boolean {
+  const prose = stripArtifacts(answer);
+  const hasArtifact = /```artifact/.test(answer);
+  const hasTable = /\|.*\|/.test(prose) && /\|\s*:?-+:?\s*\|/.test(prose);
+  const hasBullets = /^\s*[-*]\s/m.test(prose);
+  // Substantive answers must carry some structure; a heading over paragraphs is
+  // still a wall, so headings alone do not count as rescuing structure.
+  return prose.trim().length > 650 && !hasArtifact && !hasTable && !hasBullets;
+}
+
+/** Pull the `kind` of every fenced ```artifact block the model emitted. */
+function extractArtifactKinds(answer: string): string[] {
+  const kinds: string[] = [];
+  for (const m of answer.matchAll(/```artifact\s*([\s\S]*?)```/gi)) {
+    try {
+      const spec = JSON.parse(m[1].trim()) as { kind?: string };
+      if (spec?.kind) kinds.push(spec.kind);
+    } catch {
+      kinds.push("unparseable");
+    }
+  }
+  return kinds;
 }
 
 export async function runLiveEvals(supabase: SupabaseClient, userId: string, modelId: string): Promise<LiveReport> {
@@ -160,6 +196,8 @@ export function formatLiveReport(report: LiveReport): string {
     if (c.hedging.length) lines.push(`        FAIL hedging: ${c.hedging.map((h) => `"${h}"`).join(", ")}`);
     if (c.emDash) lines.push(`        FAIL em dash present`);
     if (c.answerMustMissing.length) lines.push(`        FAIL answer missing: ${c.answerMustMissing.map((p) => `/${p}/`).join(", ")}`);
+    if (c.proseWall) lines.push(`        FAIL prose wall (substantive answer with no visual, table, or list)`);
+    lines.push(`        ${c.artifactKinds.length ? "ok  " : "--  "} visuals: [${c.artifactKinds.join(", ") || "none"}]`);
     const f = c.fidelity;
     const fMark = f.groundedPct === null ? "n/a" : f.groundedPct >= FIDELITY_FAIL_BELOW ? "ok" : "FAIL";
     lines.push(`        ${fMark} numeric fidelity: ${f.matched}/${f.checked} grounded${f.groundedPct !== null ? ` (${f.groundedPct.toFixed(0)}%)` : ""}`);

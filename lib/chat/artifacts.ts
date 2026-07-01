@@ -108,6 +108,101 @@ export interface PortfolioAttributionArtifact {
   fallback?: string;
 }
 
+// ── Snowflake (Simply Wall St-style quality radar) ──────────────────────────
+
+export interface SnowflakeAxis {
+  /** Short axis name, e.g. "Value", "Future", "Past", "Health", "Dividend". */
+  label: string;
+  /** Score on the 0..max scale (default max 5). */
+  score: number;
+  /** Optional one-line reason shown under the radar. */
+  note?: string;
+}
+
+export interface SnowflakeArtifact {
+  kind: "snowflake";
+  title: string;
+  description?: string;
+  axes: SnowflakeAxis[];
+  /** Scale maximum, default 5. */
+  max?: number;
+  fallback?: string;
+}
+
+// ── Allocation donut (composition + a concentration read in the hole) ───────
+
+export interface AllocationSegment {
+  label: string;
+  value: number;
+  color?: string;
+}
+
+export interface AllocationArtifact {
+  kind: "allocation";
+  title: string;
+  description?: string;
+  segments: AllocationSegment[];
+  /** Colour segments by the shared PSX sector palette (labels must be sectors). */
+  bySector?: boolean;
+  /** Big number in the donut hole, e.g. the effective number of positions. */
+  centerValue?: string;
+  centerLabel?: string;
+  fallback?: string;
+}
+
+// ── Benchmark-excess (relative performance vs an index) ─────────────────────
+
+export interface BenchmarkExcessItem {
+  label: string;
+  returnPct: number;
+  benchmarkPct: number;
+}
+
+export interface BenchmarkExcessArtifact {
+  kind: "benchmark-excess";
+  title: string;
+  description?: string;
+  /** Index name, default "KSE-100". */
+  benchmarkLabel?: string;
+  items: BenchmarkExcessItem[];
+  fallback?: string;
+}
+
+// ── Gauge (cheap/fair/rich valuation band, or any zoned scalar) ─────────────
+
+export interface GaugeZone {
+  /** Upper bound of this zone on the value scale. */
+  upTo: number;
+  label: string;
+  tone: "positive" | "neutral" | "negative";
+}
+
+export interface GaugeArtifact {
+  kind: "gauge";
+  title: string;
+  description?: string;
+  value: number;
+  min: number;
+  max: number;
+  unit?: string;
+  /** Ordered left to right; the last zone's upTo should be >= max. */
+  zones: GaugeZone[];
+  markerLabel?: string;
+  caption?: string;
+  fallback?: string;
+}
+
+// ── Vega-Lite (general grammar — any custom chart the model composes) ────────
+
+export interface VegaLiteArtifact {
+  kind: "vega-lite";
+  title: string;
+  description?: string;
+  /** A valid Vega-Lite spec with data embedded inline in spec.data.values. */
+  spec: Record<string, unknown>;
+  fallback?: string;
+}
+
 export interface ArtifactErrorSpec {
   kind: "error";
   title: string;
@@ -122,6 +217,11 @@ export type ArtifactSpec =
   | TableArtifact
   | TimelineArtifact
   | PortfolioAttributionArtifact
+  | SnowflakeArtifact
+  | AllocationArtifact
+  | BenchmarkExcessArtifact
+  | GaugeArtifact
+  | VegaLiteArtifact
   | ArtifactErrorSpec;
 
 // ── Streaming extractor ──────────────────────────────────────────────────────

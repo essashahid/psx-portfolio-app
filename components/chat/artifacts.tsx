@@ -1,15 +1,19 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import dynamic from "next/dynamic";
 import {
   ResponsiveContainer,
   LineChart, Line,
   BarChart, Bar,
+  PieChart, Pie,
+  RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar,
   XAxis, YAxis,
   CartesianGrid, Tooltip,
   ReferenceLine, Cell,
 } from "recharts";
 import { INK, GlassTooltip, FadeDefs, CURSOR, useChartMotion, SERIES_COLORS } from "@/components/chart-kit";
+import { sectorColor, withAlpha } from "@/lib/sectors";
 import { cn } from "@/lib/utils";
 import type {
   ArtifactSpec,
@@ -21,7 +25,22 @@ import type {
   TableArtifact,
   TimelineArtifact,
   PortfolioAttributionArtifact,
+  SnowflakeArtifact,
+  AllocationArtifact,
+  BenchmarkExcessArtifact,
+  GaugeArtifact,
+  VegaLiteArtifact,
 } from "@/lib/chat/artifacts";
+
+// The Vega runtime is ~1MB; load it only when an answer contains a vega-lite chart.
+const VegaLiteChart = dynamic(() => import("@/components/chat/vega-lite-chart"), {
+  ssr: false,
+  loading: () => (
+    <div className="flex h-52 items-center justify-center">
+      <p className="text-[12px] text-muted-foreground">Loading chart…</p>
+    </div>
+  ),
+});
 
 // ── Public entry point ────────────────────────────────────────────────────────
 
@@ -34,6 +53,11 @@ export function ArtifactRenderer({ spec }: { spec: ArtifactSpec }) {
     case "table":              return <DataTable spec={spec} />;
     case "timeline":           return <EventTimeline spec={spec} />;
     case "portfolio-attribution": return <PortfolioAttribution spec={spec} />;
+    case "snowflake":          return <Snowflake spec={spec} />;
+    case "allocation":         return <AllocationDonut spec={spec} />;
+    case "benchmark-excess":   return <BenchmarkExcess spec={spec} />;
+    case "gauge":              return <Gauge spec={spec} />;
+    case "vega-lite":          return <VegaLite spec={spec} />;
     case "error":              return <ArtifactError spec={spec} />;
     default:                   return <ArtifactFallback />;
   }
@@ -461,6 +485,257 @@ function PortfolioAttribution({ spec }: { spec: PortfolioAttributionArtifact }) 
           );
         })}
       </div>
+    </ArtifactShell>
+  );
+}
+
+// ── Snowflake (quality radar) ─────────────────────────────────────────────────
+
+const SNOWFLAKE_TONE = (score: number, max: number): string => {
+  const r = score / max;
+  if (r >= 0.66) return INK.up;
+  if (r >= 0.4) return INK.amber;
+  return INK.down;
+};
+
+function Snowflake({ spec }: { spec: SnowflakeArtifact }) {
+  const motion = useChartMotion();
+  const max = spec.max && spec.max > 0 ? spec.max : 5;
+  const axes = (spec.axes ?? []).filter((a) => a && typeof a.score === "number");
+  if (axes.length < 3) {
+    return (
+      <ArtifactShell title={spec.title} description={spec.description}>
+        <p className="px-4 py-4 text-[12px] text-muted-foreground">{spec.fallback ?? "A snowflake needs at least three axes."}</p>
+      </ArtifactShell>
+    );
+  }
+  const data = axes.map((a) => ({ axis: a.label, score: Math.max(0, Math.min(max, a.score)) }));
+
+  return (
+    <ArtifactShell title={spec.title} description={spec.description}>
+      <div className="grid gap-1 px-2 pb-4 pt-3 sm:grid-cols-[1.1fr_0.9fr] sm:items-center">
+        <ResponsiveContainer width="100%" height={230}>
+          <RadarChart data={data} outerRadius="72%" margin={{ top: 6, bottom: 6, left: 6, right: 6 }}>
+            <defs>
+              <FadeDefs defs={[{ id: "snowflake-fill", color: INK.line, from: 0.42, to: 0.12 }]} />
+            </defs>
+            <PolarGrid stroke={INK.grid} />
+            <PolarAngleAxis dataKey="axis" tick={{ fontSize: 11, fill: INK.neutral }} />
+            <PolarRadiusAxis domain={[0, max]} tick={false} axisLine={false} tickCount={max + 1} />
+            <Radar
+              dataKey="score"
+              stroke={INK.line}
+              strokeWidth={1.75}
+              fill="url(#snowflake-fill)"
+              fillOpacity={1}
+              isAnimationActive={motion}
+              animationDuration={750}
+            />
+          </RadarChart>
+        </ResponsiveContainer>
+        <div className="space-y-1.5 px-2 pb-1">
+          {axes.map((a, i) => {
+            const s = Math.max(0, Math.min(max, a.score));
+            return (
+              <div key={i}>
+                <div className="flex items-center justify-between gap-2">
+                  <span className="text-[11px] text-muted-foreground">{a.label}</span>
+                  <span className="text-[11px] font-semibold tabular-nums" style={{ color: SNOWFLAKE_TONE(s, max) }}>
+                    {s.toFixed(1)}<span className="text-muted-foreground">/{max}</span>
+                  </span>
+                </div>
+                <div className="mt-0.5 h-1.5 overflow-hidden rounded-full bg-muted">
+                  <div className="h-full rounded-full" style={{ width: `${(s / max) * 100}%`, backgroundColor: SNOWFLAKE_TONE(s, max) }} />
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    </ArtifactShell>
+  );
+}
+
+// ── Allocation donut ──────────────────────────────────────────────────────────
+
+function AllocationDonut({ spec }: { spec: AllocationArtifact }) {
+  const motion = useChartMotion();
+  const segments = (spec.segments ?? []).filter((s) => s && s.value > 0).sort((a, b) => b.value - a.value);
+  if (segments.length === 0) {
+    return (
+      <ArtifactShell title={spec.title} description={spec.description}>
+        <p className="px-4 py-4 text-[12px] text-muted-foreground">{spec.fallback ?? "No allocation data to display."}</p>
+      </ArtifactShell>
+    );
+  }
+  const total = segments.reduce((s, x) => s + x.value, 0);
+  const colorFor = (s: AllocationArtifact["segments"][number], i: number) =>
+    s.color ?? (spec.bySector ? sectorColor(s.label) : SERIES_COLORS[i % SERIES_COLORS.length]);
+  const data = segments.map((s, i) => ({ ...s, fill: colorFor(s, i) }));
+
+  return (
+    <ArtifactShell title={spec.title} description={spec.description}>
+      <div className="grid gap-2 px-4 pb-4 pt-3 sm:grid-cols-[0.85fr_1.15fr] sm:items-center">
+        <div className="relative mx-auto h-45 w-45">
+          <ResponsiveContainer width="100%" height="100%">
+            <PieChart>
+              <Pie
+                data={data}
+                dataKey="value"
+                nameKey="label"
+                innerRadius="64%"
+                outerRadius="94%"
+                paddingAngle={1.5}
+                stroke="none"
+                isAnimationActive={motion}
+                animationDuration={700}
+              >
+                {data.map((d, i) => <Cell key={i} fill={d.fill} />)}
+              </Pie>
+            </PieChart>
+          </ResponsiveContainer>
+          {(spec.centerValue || spec.centerLabel) && (
+            <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center text-center">
+              {spec.centerValue && <span className="text-[22px] font-semibold leading-none tabular-nums">{spec.centerValue}</span>}
+              {spec.centerLabel && <span className="mt-1 max-w-27.5 text-[10px] leading-tight text-muted-foreground">{spec.centerLabel}</span>}
+            </div>
+          )}
+        </div>
+        <div className="space-y-1">
+          {data.map((d, i) => (
+            <div key={i} className="flex items-center gap-2">
+              <span className="h-2.5 w-2.5 shrink-0 rounded-[3px]" style={{ backgroundColor: d.fill }} />
+              <span className="flex-1 truncate text-[12px] text-foreground/90">{d.label}</span>
+              <span className="text-[12px] font-semibold tabular-nums">{total > 0 ? ((d.value / total) * 100).toFixed(1) : "0"}%</span>
+            </div>
+          ))}
+        </div>
+      </div>
+    </ArtifactShell>
+  );
+}
+
+// ── Benchmark excess (relative performance) ───────────────────────────────────
+
+function BenchmarkExcess({ spec }: { spec: BenchmarkExcessArtifact }) {
+  const items = (spec.items ?? []).filter((it) => it && typeof it.returnPct === "number" && typeof it.benchmarkPct === "number");
+  if (items.length === 0) {
+    return (
+      <ArtifactShell title={spec.title} description={spec.description}>
+        <p className="px-4 py-4 text-[12px] text-muted-foreground">{spec.fallback ?? "No performance data to display."}</p>
+      </ArtifactShell>
+    );
+  }
+  const bench = spec.benchmarkLabel ?? "KSE-100";
+  const rows = items.map((it) => ({ ...it, excess: it.returnPct - it.benchmarkPct }));
+  const maxAbs = Math.max(...rows.map((r) => Math.abs(r.excess)), 1);
+  const pct = (v: number) => `${v >= 0 ? "+" : ""}${v.toFixed(1)}%`;
+
+  return (
+    <ArtifactShell title={spec.title} description={spec.description ?? `Return vs ${bench}, and the excess`}>
+      <div className="space-y-2.5 px-4 py-4">
+        {rows.map((r, i) => {
+          const beat = r.excess >= 0;
+          const half = (Math.abs(r.excess) / maxAbs) * 50; // percent width of the half-track
+          return (
+            <div key={i} className="flex items-center gap-3">
+              <span className="w-16 shrink-0 truncate text-[12px] font-medium text-foreground/90">{r.label}</span>
+              <div className="relative h-5 flex-1 rounded-sm bg-muted/40">
+                <div className="absolute inset-y-0 left-1/2 w-px bg-border" />
+                <div
+                  className={cn("absolute inset-y-0 rounded-sm", beat ? "bg-emerald-500/80" : "bg-red-500/80")}
+                  style={beat ? { left: "50%", width: `${half}%` } : { right: "50%", width: `${half}%` }}
+                />
+              </div>
+              <span className={cn("w-16 shrink-0 text-right text-[12px] font-semibold tabular-nums", beat ? "text-emerald-600" : "text-red-600")}>
+                {pct(r.excess)}
+              </span>
+              <span className="hidden w-28 shrink-0 text-right text-[10px] text-muted-foreground tabular-nums sm:block">
+                {pct(r.returnPct)} vs {pct(r.benchmarkPct)}
+              </span>
+            </div>
+          );
+        })}
+        <p className="pt-1 text-[10px] text-muted-foreground">Bars show each holding&apos;s return minus {bench} over the window. Right of centre beat the index.</p>
+      </div>
+    </ArtifactShell>
+  );
+}
+
+// ── Gauge (valuation band) ────────────────────────────────────────────────────
+
+const GAUGE_TONE: Record<GaugeArtifact["zones"][number]["tone"], string> = {
+  positive: INK.up,
+  neutral: INK.amber,
+  negative: INK.down,
+};
+
+function Gauge({ spec }: { spec: GaugeArtifact }) {
+  const zones = (spec.zones ?? []).filter((z) => z && typeof z.upTo === "number");
+  if (zones.length === 0 || spec.max <= spec.min) {
+    return (
+      <ArtifactShell title={spec.title} description={spec.description}>
+        <p className="px-4 py-4 text-[12px] text-muted-foreground">{spec.fallback ?? "No gauge data to display."}</p>
+      </ArtifactShell>
+    );
+  }
+  const span = spec.max - spec.min;
+  const clampedValue = Math.max(spec.min, Math.min(spec.max, spec.value));
+  const markerPct = ((clampedValue - spec.min) / span) * 100;
+  const unit = spec.unit ?? "";
+  // Build zone widths from consecutive upTo bounds (no mutation during render).
+  const segs = zones.map((z, i) => {
+    const from = i === 0 ? spec.min : Math.max(spec.min, Math.min(spec.max, zones[i - 1].upTo));
+    const to = Math.max(from, Math.min(spec.max, z.upTo));
+    return { ...z, widthPct: ((to - from) / span) * 100 };
+  });
+  const activeZone = zones.find((z) => clampedValue <= z.upTo) ?? zones[zones.length - 1];
+
+  return (
+    <ArtifactShell title={spec.title} description={spec.description}>
+      <div className="px-4 pb-5 pt-4">
+        <div className="mb-2 flex items-baseline justify-between">
+          <span className="text-[20px] font-semibold tabular-nums">{spec.value.toLocaleString("en-PK", { maximumFractionDigits: 2 })}{unit}</span>
+          {activeZone && (
+            <span className="rounded-full px-2 py-0.5 text-[11px] font-semibold" style={{ backgroundColor: withAlpha(GAUGE_TONE[activeZone.tone], 0.14), color: GAUGE_TONE[activeZone.tone] }}>
+              {activeZone.label}
+            </span>
+          )}
+        </div>
+        <div className="relative pt-3">
+          <div className="flex h-3 overflow-hidden rounded-full">
+            {segs.map((s, i) => (
+              <div key={i} style={{ width: `${s.widthPct}%`, backgroundColor: withAlpha(GAUGE_TONE[s.tone], 0.55) }} />
+            ))}
+          </div>
+          <div className="absolute top-0 -translate-x-1/2" style={{ left: `${markerPct}%` }}>
+            <div className="mx-auto h-0 w-0 border-x-4 border-t-[6px] border-x-transparent" style={{ borderTopColor: INK.line }} />
+          </div>
+        </div>
+        <div className="mt-1.5 flex justify-between text-[10px] text-muted-foreground tabular-nums">
+          <span>{spec.min}{unit}</span>
+          {spec.markerLabel && <span className="font-medium text-foreground/80">{spec.markerLabel}</span>}
+          <span>{spec.max}{unit}</span>
+        </div>
+        {spec.caption && <p className="mt-2 text-[11px] text-muted-foreground">{spec.caption}</p>}
+      </div>
+    </ArtifactShell>
+  );
+}
+
+// ── Vega-Lite (general grammar) ───────────────────────────────────────────────
+
+function VegaLite({ spec }: { spec: VegaLiteArtifact }) {
+  if (!spec.spec || typeof spec.spec !== "object") {
+    return (
+      <ArtifactShell title={spec.title} description={spec.description}>
+        <p className="px-4 py-4 text-[12px] text-muted-foreground">{spec.fallback ?? "No chart specification provided."}</p>
+      </ArtifactShell>
+    );
+  }
+  return (
+    <ArtifactShell title={spec.title} description={spec.description}>
+      <VegaLiteChart spec={spec.spec} fallback={spec.fallback} />
     </ArtifactShell>
   );
 }
