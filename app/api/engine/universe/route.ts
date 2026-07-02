@@ -1,9 +1,8 @@
 import { NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { requireUser, errorResponse } from "@/lib/api-helpers";
-import { fetchPsxSymbols } from "@/lib/market-data/psx-dps";
 import { rejectDemoWrite } from "@/lib/demo-mode";
-import { invalidateStockMaster } from "@/lib/stock-master";
+import { syncUniverseDirectory, reconcileListingStatus } from "@/lib/engine/universe";
 
 export const maxDuration = 120;
 
@@ -41,39 +40,18 @@ async function syncUniverse() {
     if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
       return NextResponse.json({ error: "SUPABASE_SERVICE_ROLE_KEY missing." }, { status: 503 });
     }
-    const directory = await fetchPsxSymbols();
-    if (directory.size === 0) {
-      return NextResponse.json({ error: "PSX symbol directory unavailable — try again shortly." }, { status: 502 });
-    }
-
     const db = createAdminClient();
-    const now = new Date().toISOString();
-    const rows = [...directory.entries()].map(([ticker, info]) => ({
-      ticker,
-      company_name: info.name,
-      psx_name: info.name,
-      sector: info.sector || null,
-      exchange: "PSX",
-      listing_status: "active",
-      last_updated: now,
-    }));
-
-    // Upsert in chunks to stay under payload limits.
-    let upserted = 0;
-    for (let i = 0; i < rows.length; i += 400) {
-      const chunk = rows.slice(i, i + 400);
-      const { error } = await db.from("stock_universe").upsert(chunk, { onConflict: "ticker" });
-      if (!error) upserted += chunk.length;
+    const result = await syncUniverseDirectory(db);
+    if ("error" in result) {
+      return NextResponse.json({ error: result.error }, { status: 502 });
     }
-
-    // Keep stock_master in sync for older code paths.
-    for (let i = 0; i < rows.length; i += 400) {
-      const chunk = rows.slice(i, i + 400).map((r) => ({ ticker: r.ticker, company_name: r.company_name, sector: r.sector }));
-      await db.from("stock_master").upsert(chunk, { onConflict: "ticker" });
-    }
-    invalidateStockMaster();
-
-    return NextResponse.json({ ok: true, listings: directory.size, upserted, message: `Stock universe synced: ${upserted} PSX listings.` });
+    const status = await reconcileListingStatus(db);
+    return NextResponse.json({
+      ok: true,
+      ...result,
+      ...status,
+      message: `Stock universe synced: ${result.upserted} PSX listings (${result.delisted} delisted, ${status.suspended} suspended).`,
+    });
   } catch (err) {
     return errorResponse(err);
   }

@@ -141,6 +141,25 @@ export async function fetchPsxEod(ticker: string): Promise<EodCandle[]> {
 export interface PsxSymbolInfo {
   name: string;
   sector: string;
+  isDebt: boolean;
+  isEtf: boolean;
+}
+
+/**
+ * Instrument class for a directory entry. The directory flags debt and ETFs
+ * explicitly; rights, preference shares, modarabas and closed-end funds are
+ * recognizable from the listing name / sector. Everything else is a company.
+ */
+export function classifyInstrument(ticker: string, info: PsxSymbolInfo): string {
+  if (info.isDebt) return "debt";
+  if (info.isEtf) return "etf";
+  const name = info.name;
+  if (/\(.*pref/i.test(name) || /\bpreference\b/i.test(name)) return "pref";
+  if (/\(right\)/i.test(name) || /\(r\d?\)/i.test(name) || /R\d$/.test(ticker)) return "right";
+  const sector = info.sector.toUpperCase();
+  if (sector === "MODARABAS") return "modaraba";
+  if (/^CLOSE.*MUTUAL FUND/.test(sector)) return "fund";
+  return "equity";
 }
 
 /** "COMMERCIAL BANKS" → "Commercial Banks" (keeps "&" intact). */
@@ -165,12 +184,14 @@ export async function fetchPsxSymbols(): Promise<Map<string, PsxSymbolInfo>> {
       cache: "no-store",
     });
     if (!res.ok) return map;
-    const rows = (await res.json()) as { symbol?: string; name?: string; sectorName?: string }[];
+    const rows = (await res.json()) as { symbol?: string; name?: string; sectorName?: string; isDebt?: boolean; isETF?: boolean }[];
     for (const r of rows) {
       if (!r.symbol || !r.name) continue;
       map.set(r.symbol.toUpperCase(), {
         name: r.name.trim(),
         sector: r.sectorName ? titleCase(r.sectorName) : "",
+        isDebt: r.isDebt === true,
+        isEtf: r.isETF === true,
       });
     }
   } catch {
