@@ -20,6 +20,16 @@ interface FinRow {
   data: Record<string, number | null | string>;
 }
 
+// A truly-annual row: trust the specific fiscal_period so a row mis-tagged
+// period_type "annual" but carrying an interim period (9M/H1/Qx) is excluded
+// from the annual series used for valuation and year-over-year growth.
+function isAnnual(row: FinRow): boolean {
+  const p = (row.fiscal_period ?? "").toUpperCase();
+  if (p === "FY") return true;
+  if (/^(Q[1-4]|H1|9M)$/.test(p)) return false;
+  return row.period_type === "annual";
+}
+
 export interface RatioRow {
   ticker: string;
   ratio_name: string;
@@ -102,14 +112,14 @@ export async function computeRatios(supabase: SupabaseClient, ticker: string): P
   //  • Filing extraction (source_type "psx-filing") — full statements (operating
   //    profit, finance cost, balance sheet, cash flow) for the deep ratios.
   const pageAnnual = rows
-    .filter((r) => r.statement_type === "income_statement" && r.period_type === "annual" && r.source_type === "psx-portal")
+    .filter((r) => r.statement_type === "income_statement" && isAnnual(r) && r.source_type === "psx-portal")
     .sort((a, b) => (b.fiscal_year ?? 0) - (a.fiscal_year ?? 0));
 
   // Valuation / margins / growth: prefer the clean page annual series; fall back
   // to any annual, then any income statement.
-  const annualRows = rows.filter((r) => r.period_type === "annual");
+  const annualRows = rows.filter(isAnnual);
   const income = pageAnnual[0] ?? latest(annualRows, "income_statement") ?? latest(rows, "income_statement");
-  const prevIncome = pageAnnual.length > 1 && income === pageAnnual[0] ? pageAnnual[1] : previous(income?.period_type === "annual" ? annualRows : rows, income);
+  const prevIncome = pageAnnual.length > 1 && income === pageAnnual[0] ? pageAnnual[1] : previous(income && isAnnual(income) ? annualRows : rows, income);
   const balance = latest(rows, "balance_sheet");
   const cash = latest(rows, "cash_flow");
 

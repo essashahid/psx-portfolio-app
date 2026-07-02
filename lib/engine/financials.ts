@@ -61,6 +61,24 @@ interface ExtractedStatement {
   confidence: number;
 }
 
+/**
+ * Canonical period_type derived from the specific fiscal_period label. Sources
+ * only tell us "annual vs quarterly", so a nine-month or half-year cumulative
+ * result gets bucketed under "annual" and then renders as a duplicate FY row.
+ * Deriving the type from fiscal_period keeps interim statements out of the
+ * annual series regardless of how the source grouped the column.
+ */
+export function canonicalPeriodType(
+  fiscalPeriod: string | null,
+  fallback: "annual" | "quarterly" | "cumulative"
+): "annual" | "quarterly" | "cumulative" {
+  const p = (fiscalPeriod ?? "").toUpperCase();
+  if (p === "FY") return "annual";
+  if (/^Q[1-4]$/.test(p)) return "quarterly";
+  if (p === "H1" || p === "9M") return "cumulative";
+  return fallback;
+}
+
 interface ExtractionResult {
   ticker: string;
   processed: number;
@@ -261,12 +279,13 @@ export async function extractFinancials(ticker: string, maxFilings = 2): Promise
       statements.forEach((s) => normalizeUnits(s, mult));
 
       for (const s of statements) {
+        const fiscalPeriod = s.fiscal_period ?? (s.period_type === "annual" ? "FY" : null);
         const { error } = await db.from("company_financials").upsert(
           {
             ticker: t,
-            period_type: s.period_type,
+            period_type: canonicalPeriodType(fiscalPeriod, s.period_type),
             fiscal_year: s.fiscal_year,
-            fiscal_period: s.fiscal_period ?? (s.period_type === "annual" ? "FY" : null),
+            fiscal_period: fiscalPeriod,
             statement_type: s.statement_type,
             reported_date: filing.date,
             source_type: "psx-filing",
@@ -359,12 +378,13 @@ export async function populateFinancials(ticker: string): Promise<ExtractionResu
   for (const { p, period_type } of periods) {
     if (p.sales == null && p.eps == null) continue; // nothing reported for this column
     out.processed++;
+    const fiscalPeriod = p.fiscalPeriod ?? (period_type === "annual" ? "FY" : null);
     const { error } = await db.from("company_financials").upsert(
       {
         ticker: t,
-        period_type,
+        period_type: canonicalPeriodType(fiscalPeriod, period_type),
         fiscal_year: p.fiscalYear,
-        fiscal_period: p.fiscalPeriod ?? (period_type === "annual" ? "FY" : null),
+        fiscal_period: fiscalPeriod,
         statement_type: "income_statement",
         reported_date: null,
         source_type: "psx-portal",

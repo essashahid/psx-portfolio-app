@@ -67,9 +67,19 @@ function rank(row: FinancialWorkspaceRow): number {
   return (row.fiscal_year ?? 0) * 10 + (PERIOD_ORDER[p] ?? 0);
 }
 
+// Trust the specific fiscal_period label over period_type: some ingested rows
+// carry an interim period (9M/H1/Qx) but are mis-tagged period_type "annual",
+// which otherwise renders a nine-month result as a duplicate FY bar.
+function isAnnualRow(row: FinancialWorkspaceRow): boolean {
+  const p = (row.fiscal_period ?? "").toUpperCase();
+  if (p === "FY") return true;
+  if (/^(Q[1-4]|H1|9M)$/.test(p)) return false;
+  return row.period_type === "annual";
+}
+
 function rowMode(row: FinancialWorkspaceRow): PeriodMode {
   const p = (row.fiscal_period ?? "").toUpperCase();
-  if (row.period_type === "annual" || p === "FY") return "annual";
+  if (isAnnualRow(row)) return "annual";
   if (/^Q[1-4]$/.test(p)) return "quarterly";
   return "cumulative";
 }
@@ -78,7 +88,7 @@ function labelPeriod(row: FinancialWorkspaceRow | null): string {
   if (!row) return "—";
   const fy = row.fiscal_year ? `FY${row.fiscal_year}` : "FY?";
   const p = (row.fiscal_period ?? "").toUpperCase();
-  return row.period_type === "annual" || p === "FY" ? fy : `${p} ${fy}`;
+  return isAnnualRow(row) ? fy : `${p} ${fy}`;
 }
 
 function raw(row: FinancialWorkspaceRow | null | undefined, key: string): number | null {
