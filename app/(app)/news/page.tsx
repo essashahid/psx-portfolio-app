@@ -1,15 +1,18 @@
 import Link from "next/link";
 import { createClient, getUser } from "@/lib/supabase/server";
 import { NewsBriefWidget } from "@/components/news-brief-widget";
-import { NewsEventCard } from "@/components/news-event-card";
+import { NewsEventCard, NewsEventRow, type TickerMoves } from "@/components/news-event-card";
 import { NewsRefreshButton } from "@/components/news-refresh-button";
+import { SectorChip, SectorDot } from "@/components/sector-chip";
 import { EmptyState } from "@/components/empty-state";
 import { Button } from "@/components/ui/button";
-import { CalendarDays, Newspaper, Search } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { CalendarDays, LayoutGrid, List, Newspaper, Search } from "lucide-react";
+import { cn, formatSignedPct } from "@/lib/utils";
 import { getUserNewsFeed, type FeedNewsArticle } from "@/lib/news/global-store";
 import { buildNewsEvents, eventMatchesSearch, type NewsEvent } from "@/lib/news/events";
 import { getPortfolio } from "@/lib/portfolio";
+import { getDailyHoldingPerformance } from "@/lib/portfolio/daily-performance";
+import { getCachedMarketGlobal } from "@/lib/market/read";
 
 export const dynamic = "force-dynamic";
 
@@ -18,6 +21,8 @@ type SearchParams = {
   window?: string;
   q?: string;
   filter?: string;
+  ticker?: string;
+  view?: string;
 };
 
 type TabId = "suggested" | "market" | "companies" | "policy" | "upcoming" | "saved";
@@ -94,9 +99,11 @@ export default async function NewsPage({ searchParams }: { searchParams: Promise
   const windowId = WINDOWS.find((w) => w.id === sp.window)?.id ?? "week";
   const activeFilter = FILTERS.find((f) => f.id === sp.filter)?.id ?? null;
   const query = sp.q?.trim() ?? "";
+  const activeTicker = sp.ticker?.trim().toUpperCase() || null;
+  const view: "cards" | "compact" = sp.view === "compact" ? "compact" : "cards";
   const todayKey = pktDateKey(new Date());
 
-  const [portfolio, articles, briefRes, watchlistRes, sourceRes, dividendEventsRes, marketEventsRes] = await Promise.all([
+  const [portfolio, articles, briefRes, watchlistRes, sourceRes, dividendEventsRes, marketEventsRes, dailyPerformance, marketGlobal] = await Promise.all([
     getPortfolio(supabase, user.id),
     getUserNewsFeed(supabase, user.id, 260),
     supabase
@@ -122,6 +129,8 @@ export default async function NewsPage({ searchParams }: { searchParams: Promise
       .gte("event_date", todayKey)
       .order("event_date", { ascending: true })
       .limit(30),
+    getDailyHoldingPerformance(supabase, user.id).catch(() => null),
+    getCachedMarketGlobal().catch(() => null),
   ]);
 
   const holdings = portfolio.holdings.map((h) => ({
@@ -142,7 +151,34 @@ export default async function NewsPage({ searchParams }: { searchParams: Promise
     .filter((event) => !event.ignored)
     .filter((event) => (tab === "saved" ? true : inWindow(event)))
     .filter((event) => eventMatchesSearch(event, query))
-    .filter((event) => filterEvent(event, activeFilter));
+    .filter((event) => filterEvent(event, activeFilter))
+    .filter((event) => !activeTicker || event.affectedHoldings.includes(activeTicker));
+
+  // Day moves per held ticker, shown on holding chips and the symbols rail.
+  const moves: TickerMoves = {};
+  for (const row of dailyPerformance?.rows ?? []) moves[row.ticker] = row.dayChangePct;
+
+  // Symbols rail: holdings by portfolio weight with their visible event counts.
+  const eventCountByTicker = new Map<string, number>();
+  for (const event of visibleEvents) {
+    for (const ticker of event.affectedHoldings) {
+      eventCountByTicker.set(ticker, (eventCountByTicker.get(ticker) ?? 0) + 1);
+    }
+  }
+  const symbolRail = [...portfolio.holdings]
+    .sort((a, b) => (b.weight ?? 0) - (a.weight ?? 0))
+    .map((h) => ({
+      ticker: h.ticker,
+      move: moves[h.ticker] ?? null,
+      count: eventCountByTicker.get(h.ticker) ?? 0,
+    }));
+
+  // Sector pulse: today's average return for sectors represented in the portfolio.
+  const portfolioSectors = new Set(holdings.map((h) => h.sector).filter((s): s is string => !!s));
+  const sectorPulse = (marketGlobal?.sectors ?? [])
+    .filter((s) => portfolioSectors.has(s.sector) && s.average_return !== null)
+    .sort((a, b) => (b.average_return ?? 0) - (a.average_return ?? 0))
+    .slice(0, 8);
 
   const suggested = visibleEvents.filter((event) => event.suggested && event.importance !== "Routine");
   const featured = tab === "suggested" ? suggested.find((event) => event.importance === "Critical" || event.importance === "High") ?? suggested[0] ?? null : null;
@@ -167,12 +203,22 @@ export default async function NewsPage({ searchParams }: { searchParams: Promise
   const sectors = [...new Set(holdings.map((h) => h.sector).filter((s): s is string => !!s))].slice(0, 8);
 
   const buildHref = (patch: Partial<SearchParams>) => {
-    const merged = { tab, window: windowId, q: query || undefined, filter: activeFilter ?? undefined, ...patch };
+    const merged = {
+      tab,
+      window: windowId,
+      q: query || undefined,
+      filter: activeFilter ?? undefined,
+      ticker: activeTicker ?? undefined,
+      view: view === "compact" ? view : undefined,
+      ...patch,
+    };
     const params = new URLSearchParams();
     if (merged.tab && merged.tab !== "suggested") params.set("tab", merged.tab);
     if (merged.window && merged.window !== "week") params.set("window", merged.window);
     if (merged.q) params.set("q", merged.q);
     if (merged.filter) params.set("filter", merged.filter);
+    if (merged.ticker) params.set("ticker", merged.ticker);
+    if (merged.view === "compact") params.set("view", merged.view);
     const qs = params.toString();
     return qs ? `/news?${qs}` : "/news";
   };
@@ -222,6 +268,36 @@ export default async function NewsPage({ searchParams }: { searchParams: Promise
         })}
       </nav>
 
+      {symbolRail.length > 0 && (
+        <div className="rise -mx-1 flex items-center gap-1.5 overflow-x-auto px-1 pb-0.5" role="navigation" aria-label="Filter news by holding">
+          <span className="shrink-0 pr-1 text-[11px] font-medium uppercase tracking-wide text-muted-foreground">Your symbols</span>
+          {symbolRail.map((item) => {
+            const active = activeTicker === item.ticker;
+            return (
+              <Link
+                key={item.ticker}
+                href={buildHref({ ticker: active ? undefined : item.ticker })}
+                className={cn(
+                  "inline-flex shrink-0 items-center gap-1.5 rounded-md border px-2.5 py-1 text-xs transition-colors",
+                  active
+                    ? "border-foreground/50 bg-muted font-medium text-foreground"
+                    : "border-border text-foreground/80 hover:border-foreground/30 hover:text-foreground"
+                )}
+                title={active ? `Clear ${item.ticker} filter` : `Show news for ${item.ticker}`}
+              >
+                <span className="font-medium">{item.ticker}</span>
+                {typeof item.move === "number" && (
+                  <span className={cn("tabular-nums", item.move > 0 ? "text-emerald-700" : item.move < 0 ? "text-red-700" : "text-muted-foreground")}>
+                    {formatSignedPct(item.move)}
+                  </span>
+                )}
+                {item.count > 0 && <span className="text-[11px] text-muted-foreground">{item.count}</span>}
+              </Link>
+            );
+          })}
+        </div>
+      )}
+
       <section className="space-y-3">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div className="inline-flex max-w-full overflow-x-auto rounded-lg border border-border bg-card p-0.5">
@@ -239,11 +315,14 @@ export default async function NewsPage({ searchParams }: { searchParams: Promise
             ))}
           </div>
 
-          <form action="/news" className="relative min-w-[240px] flex-1 sm:max-w-sm">
+          <div className="flex min-w-0 flex-1 items-center gap-2 sm:max-w-md">
+          <form action="/news" className="relative min-w-0 flex-1">
             <Search className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
             <input type="hidden" name="tab" value={tab === "suggested" ? "" : tab} />
             <input type="hidden" name="window" value={windowId === "week" ? "" : windowId} />
             {activeFilter && <input type="hidden" name="filter" value={activeFilter} />}
+            {activeTicker && <input type="hidden" name="ticker" value={activeTicker} />}
+            {view === "compact" && <input type="hidden" name="view" value="compact" />}
             <input
               name="q"
               defaultValue={query}
@@ -251,6 +330,32 @@ export default async function NewsPage({ searchParams }: { searchParams: Promise
               className="h-9 w-full rounded-lg border border-border bg-card pl-9 pr-3 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
             />
           </form>
+
+          <div className="inline-flex shrink-0 rounded-lg border border-border bg-card p-0.5" role="group" aria-label="Feed density">
+            <Link
+              href={buildHref({ view: undefined })}
+              className={cn(
+                "flex h-8 w-8 items-center justify-center rounded-md transition-colors",
+                view === "cards" ? "bg-foreground text-background" : "text-muted-foreground hover:text-foreground"
+              )}
+              title="Card view"
+              aria-label="Card view"
+            >
+              <LayoutGrid className="h-3.5 w-3.5" />
+            </Link>
+            <Link
+              href={buildHref({ view: "compact" })}
+              className={cn(
+                "flex h-8 w-8 items-center justify-center rounded-md transition-colors",
+                view === "compact" ? "bg-foreground text-background" : "text-muted-foreground hover:text-foreground"
+              )}
+              title="Compact view"
+              aria-label="Compact view"
+            >
+              <List className="h-3.5 w-3.5" />
+            </Link>
+          </div>
+          </div>
         </div>
 
         <div className="flex flex-wrap gap-1.5">
@@ -296,7 +401,9 @@ export default async function NewsPage({ searchParams }: { searchParams: Promise
                 </Link>
               </div>
               {featured ? (
-                <NewsEventCard event={featured} featured />
+                <div className="rise">
+                  <NewsEventCard event={featured} featured moves={moves} />
+                </div>
               ) : (
                 <EmptyState
                   icon={Newspaper}
@@ -306,8 +413,10 @@ export default async function NewsPage({ searchParams }: { searchParams: Promise
               )}
               {additionalSuggested.length > 0 && (
                 <div className="grid gap-3 md:grid-cols-2">
-                  {additionalSuggested.map((event) => (
-                    <NewsEventCard key={event.id} event={event} />
+                  {additionalSuggested.map((event, index) => (
+                    <div key={event.id} className={cn("rise", index < 5 && `rise-${index + 1}`)}>
+                      <NewsEventCard event={event} moves={moves} />
+                    </div>
                   ))}
                 </div>
               )}
@@ -320,21 +429,39 @@ export default async function NewsPage({ searchParams }: { searchParams: Promise
             <EmptyForTab tab={tab} windowId={windowId} buildHref={buildHref} />
           ) : (
             <section className="space-y-5">
-              <div>
-                <h2 className="text-lg font-semibold tracking-editorial">{tab === "suggested" ? "Event feed" : TABS.find((t) => t.id === tab)?.label}</h2>
-                <p className="text-xs text-muted-foreground">Clustered events. Related reports are grouped under one primary event.</p>
+              <div className="flex flex-wrap items-end justify-between gap-2">
+                <div>
+                  <h2 className="text-lg font-semibold tracking-editorial">{tab === "suggested" ? "Event feed" : TABS.find((t) => t.id === tab)?.label}</h2>
+                  <p className="text-xs text-muted-foreground">Clustered events. Related reports are grouped under one primary event.</p>
+                </div>
+                {activeTicker && (
+                  <Link
+                    href={buildHref({ ticker: undefined })}
+                    className="inline-flex items-center gap-1.5 rounded-md border border-border px-2.5 py-1 text-xs text-foreground/80 transition-colors hover:border-foreground/30"
+                  >
+                    Showing {activeTicker} only · clear
+                  </Link>
+                )}
               </div>
-              {groups.map((group) => (
-                <section key={group.date} className="space-y-3">
+              {groups.map((group, groupIndex) => (
+                <section key={group.date} className={cn("space-y-3 rise", groupIndex < 5 && `rise-${groupIndex + 1}`)}>
                   <div className="flex items-center gap-3">
                     <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{formatHeading(group.date)}</h3>
                     <div className="h-px flex-1 bg-border" />
                   </div>
-                  <div className="space-y-3">
-                    {group.events.map((event) => (
-                      <NewsEventCard key={event.id} event={event} />
-                    ))}
-                  </div>
+                  {view === "compact" ? (
+                    <div className="divide-y divide-border/60 rounded-lg border border-border bg-card px-2 py-1">
+                      {group.events.map((event) => (
+                        <NewsEventRow key={event.id} event={event} moves={moves} />
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="space-y-3">
+                      {group.events.map((event) => (
+                        <NewsEventCard key={event.id} event={event} moves={moves} />
+                      ))}
+                    </div>
+                  )}
                 </section>
               ))}
             </section>
@@ -343,6 +470,36 @@ export default async function NewsPage({ searchParams }: { searchParams: Promise
 
         <aside className="space-y-4 lg:sticky lg:top-16 lg:self-start">
           <UpcomingPanel upcoming={upcoming.slice(0, 6)} />
+
+          {sectorPulse.length > 0 && (
+            <section className="rounded-lg border border-border bg-card p-4">
+              <h2 className="text-sm font-semibold">Sector pulse</h2>
+              <p className="mt-0.5 text-xs text-muted-foreground">Today&apos;s average move in your portfolio sectors.</p>
+              <div className="mt-3 space-y-1">
+                {sectorPulse.map((row) => (
+                  <Link
+                    key={row.sector}
+                    href={buildHref({ q: row.sector })}
+                    className="flex items-center justify-between gap-3 rounded-md px-2 py-1.5 text-sm transition-colors hover:bg-muted/50"
+                    title={`Search news for ${row.sector}`}
+                  >
+                    <span className="flex min-w-0 items-center gap-2">
+                      <SectorDot sector={row.sector} />
+                      <span className="truncate text-foreground/85">{row.sector}</span>
+                    </span>
+                    <span
+                      className={cn(
+                        "shrink-0 text-xs font-medium tabular-nums",
+                        (row.average_return ?? 0) > 0 ? "text-emerald-700" : (row.average_return ?? 0) < 0 ? "text-red-700" : "text-muted-foreground"
+                      )}
+                    >
+                      {formatSignedPct(row.average_return)}
+                    </span>
+                  </Link>
+                ))}
+              </div>
+            </section>
+          )}
 
           <section className="rounded-lg border border-border bg-card p-4">
             <h2 className="text-sm font-semibold">Portfolio coverage</h2>
@@ -354,7 +511,9 @@ export default async function NewsPage({ searchParams }: { searchParams: Promise
             {sectors.length > 0 && (
               <div className="mt-3 flex flex-wrap gap-1.5">
                 {sectors.map((sector) => (
-                  <span key={sector} className="rounded-md bg-muted px-2 py-1 text-[11px] text-muted-foreground">{sector}</span>
+                  <Link key={sector} href={buildHref({ q: sector })} title={`Search news for ${sector}`}>
+                    <SectorChip sector={sector} size="xs" className="transition-opacity hover:opacity-80" />
+                  </Link>
                 ))}
               </div>
             )}
