@@ -1,7 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { buildBenchmarkSeries, type Contribution, type ShareEvent, type ClosePoint } from "@/lib/engine/benchmark-growth";
 import { buildLedgerRows, type LedgerTxnInput, type LedgerCashInput } from "@/lib/engine/ledger-view";
-import { getCachedEod, KSE_SYMBOL } from "@/lib/market-data/eod-cache";
+import { ensureEodCached, getCachedEod, KSE_SYMBOL } from "@/lib/market-data/eod-cache";
 
 /**
  * Rebuilds the dashboard benchmark series (`benchmark_series`) from the live DB
@@ -113,4 +113,23 @@ export async function rebuildBenchmarkSeries(
     if (error) throw error;
   }
   return { points: series.length };
+}
+
+/**
+ * Warm the EOD cache for the user's traded tickers, then rebuild the benchmark
+ * series. The one entry point every price-moving flow (ledger edits, the daily
+ * job, manual price refresh) should call so the growth chart tracks the header.
+ */
+export async function refreshBenchmarkForUser(
+  supabase: SupabaseClient,
+  userId: string
+): Promise<{ points: number } | null> {
+  const { data: tickerRows } = await supabase
+    .from("transactions")
+    .select("ticker")
+    .eq("user_id", userId);
+  const tickers = [...new Set((tickerRows ?? []).map((r) => r.ticker as string).filter(Boolean))];
+  if (tickers.length === 0) return null;
+  await ensureEodCached(tickers);
+  return rebuildBenchmarkSeries(supabase, userId);
 }

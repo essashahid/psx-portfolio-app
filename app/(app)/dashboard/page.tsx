@@ -122,7 +122,7 @@ export default async function DashboardPage() {
       {isDemo && <p className="rounded-md border border-blue-200 bg-blue-50 px-3 py-2 text-xs text-blue-900">Read-only demo: the portfolio data below is seeded for exploration.</p>}
 
       <Suspense fallback={<ChartsSkeleton />}>
-        <DashboardCharts userId={user.id} />
+        <DashboardCharts userId={user.id} liveValue={summary.totalValue + summary.cashBalance} />
       </Suspense>
 
       <section>
@@ -161,9 +161,9 @@ export default async function DashboardPage() {
  * Snapshot-history and benchmark charts. Fetched in its own boundary so the two
  * larger time-series queries never block the headline numbers from painting.
  */
-async function DashboardCharts({ userId }: { userId: string }) {
+async function DashboardCharts({ userId, liveValue }: { userId: string; liveValue: number }) {
   const supabase = await createClient();
-  const [snapshotsRes, benchmarkRes] = await Promise.all([
+  const [snapshotsRes, benchmarkRes, marketSnapRes] = await Promise.all([
     supabase
       .from("portfolio_snapshots")
       .select("snapshot_date, total_value, total_cost")
@@ -175,6 +175,13 @@ async function DashboardCharts({ userId }: { userId: string }) {
       .select("point_date, contributed, portfolio, kse100, inflation, cpi")
       .eq("user_id", userId)
       .order("point_date", { ascending: true }),
+    supabase
+      .from("market_snapshots")
+      .select("snapshot_date, index_value")
+      .eq("market", "PSX")
+      .order("snapshot_date", { ascending: false })
+      .limit(1)
+      .maybeSingle(),
   ]);
 
   const datedSnapshots = (snapshotsRes.data ?? []).map((snapshot) => ({
@@ -182,7 +189,7 @@ async function DashboardCharts({ userId }: { userId: string }) {
     value: Number(snapshot.total_value),
     cost: Number(snapshot.total_cost),
   }));
-  const benchmarkSeries: BenchmarkPointRow[] = (benchmarkRes.data ?? []).map((point) => ({
+  let benchmarkSeries: BenchmarkPointRow[] = (benchmarkRes.data ?? []).map((point) => ({
     date: point.point_date,
     contributed: Number(point.contributed),
     portfolio: Number(point.portfolio),
@@ -190,6 +197,33 @@ async function DashboardCharts({ userId }: { userId: string }) {
     inflation: Number(point.inflation),
     cpi: point.cpi !== null ? Number(point.cpi) : null,
   }));
+
+  // Splice in a "today" point valued like the header (live holdings + cash) so
+  // the growth chart never trails the headline between benchmark rebuilds. The
+  // KSE-100 equivalent is scaled to the live index level when the market
+  // snapshot is newer than the stored series; the other lines carry forward.
+  const today = new Date().toLocaleDateString("en-CA", { timeZone: "Asia/Karachi" });
+  const anchor = benchmarkSeries.filter((p) => p.date <= today).at(-1);
+  if (anchor && liveValue > 0) {
+    let kse100 = anchor.kse100;
+    const liveIndex = marketSnapRes.data?.index_value ? Number(marketSnapRes.data.index_value) : null;
+    if (liveIndex && marketSnapRes.data!.snapshot_date > anchor.date) {
+      const { data: kseRow } = await supabase
+        .from("eod_history")
+        .select("close")
+        .eq("ticker", "KSE100")
+        .lte("trade_date", anchor.date)
+        .order("trade_date", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      const baseClose = Number(kseRow?.close ?? 0);
+      if (baseClose > 0) kse100 = Math.round(anchor.kse100 * (liveIndex / baseClose) * 100) / 100;
+    }
+    benchmarkSeries = [
+      ...benchmarkSeries.filter((p) => p.date < today),
+      { date: today, contributed: anchor.contributed, portfolio: liveValue, kse100, inflation: anchor.inflation, cpi: anchor.cpi },
+    ];
+  }
 
   return (
     <>
