@@ -26,9 +26,11 @@ const PERIOD_SORT_ORDER: Record<string, number> = {
 
 function periodKind(fiscalPeriod: string | null, periodType: string): NormalizedFinancialPoint["periodKind"] {
   const p = (fiscalPeriod ?? periodType).toUpperCase().replace(/\s+/g, "");
-  if (periodType === "annual" || ANNUAL_PERIODS.has(p)) return "annual";
+  // Trust the specific fiscal_period first: some rows are mis-tagged
+  // period_type "annual" while actually being an interim (9M/H1/Qx) result.
   if (QUARTERLY_PERIODS.has(p) || /^Q[1-4]$/.test(p)) return "quarterly";
   if (CUMULATIVE_PERIODS.has(p) || p.includes("9M") || p.includes("H1")) return "cumulative";
+  if (ANNUAL_PERIODS.has(p) || periodType === "annual") return "annual";
   return "annual";
 }
 

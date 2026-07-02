@@ -146,9 +146,19 @@ const STATEMENT_LABELS: Record<StatementType, string> = {
   cash_flow: "Cash Flow",
 };
 
+// Trust the specific fiscal_period label over period_type: some ingested rows
+// carry an interim period (9M/H1/Qx) but are mis-tagged period_type "annual",
+// which otherwise renders a nine-month result as a duplicate FY period.
+function isAnnualRow(row: FinancialWorkspaceRow): boolean {
+  const p = (row.fiscal_period ?? "").toUpperCase();
+  if (p === "FY") return true;
+  if (/^(Q[1-4]|H1|9M)$/.test(p)) return false;
+  return row.period_type === "annual";
+}
+
 function periodMode(row: FinancialWorkspaceRow): PeriodMode {
   const p = (row.fiscal_period ?? "").toUpperCase();
-  if (row.period_type === "annual" || p === "FY") return "annual";
+  if (isAnnualRow(row)) return "annual";
   if (/^Q[1-4]$/.test(p)) return "quarterly";
   return "cumulative";
 }
@@ -161,7 +171,7 @@ function rank(row: FinancialWorkspaceRow): number {
 function labelPeriod(row: FinancialWorkspaceRow): string {
   const fy = row.fiscal_year ? `FY${row.fiscal_year}` : "FY?";
   const p = (row.fiscal_period ?? "").toUpperCase();
-  return row.period_type === "annual" || p === "FY" ? fy : `${p || "Period"} ${fy}`;
+  return isAnnualRow(row) ? fy : `${p || "Period"} ${fy}`;
 }
 
 function periodEndDate(row: FinancialWorkspaceRow): string | null {
