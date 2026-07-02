@@ -116,7 +116,7 @@ export function BenchmarkGrowthChart({ data }: { data: BenchmarkPointRow[] }) {
       <div className="flex flex-wrap items-start justify-between gap-3 pb-1">
         <div>
           <h2 className="text-base font-semibold">Growth of invested capital</h2>
-          <p className="mt-1 text-xs text-muted-foreground">Your portfolio against the KSE-100 (total return) and inflation, using your real contribution schedule.</p>
+          <p className="mt-1 text-xs text-muted-foreground">Your portfolio (holdings plus broker cash) against the KSE-100 (total return) and inflation, using your real contribution schedule.</p>
         </div>
         <div className="flex rounded-md bg-muted p-0.5" aria-label="Display mode">
           {MODES.map((item) => (

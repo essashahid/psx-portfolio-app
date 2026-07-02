@@ -5,8 +5,7 @@ import { reconcileAndDedupe } from "@/lib/dividends/dedup";
 import { getMarketDataProvider } from "@/lib/market-data/adapter";
 import { takeSnapshot } from "@/lib/portfolio";
 import { refreshNewsForUser } from "@/lib/news/refresh";
-import { ensureEodCached } from "@/lib/market-data/eod-cache";
-import { rebuildBenchmarkSeries } from "@/lib/engine/benchmark-rebuild";
+import { refreshBenchmarkForUser } from "@/lib/engine/benchmark-rebuild";
 
 /**
  * The daily proactive update. For one user it:
@@ -118,16 +117,7 @@ export async function runDailyUpdate(
   if (prices_updated > 0) {
     try {
       await takeSnapshot(supabase, userId);
-      
-      const { data: tickerRows } = await supabase
-        .from("transactions")
-        .select("ticker")
-        .eq("user_id", userId);
-      const tickers = [...new Set((tickerRows ?? []).map((r) => r.ticker as string).filter(Boolean))];
-      if (tickers.length > 0) {
-        await ensureEodCached(tickers);
-        await rebuildBenchmarkSeries(supabase, userId);
-      }
+      await refreshBenchmarkForUser(supabase, userId);
     } catch (e) {
       errors.push(`snapshot/benchmark: ${e instanceof Error ? e.message : String(e)}`);
     }

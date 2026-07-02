@@ -3,6 +3,7 @@ import Papa from "papaparse";
 import { requireUser, errorResponse } from "@/lib/api-helpers";
 import { refreshAlerts } from "@/lib/alerts";
 import { takeSnapshot } from "@/lib/portfolio";
+import { refreshBenchmarkForUser } from "@/lib/engine/benchmark-rebuild";
 import { getMarketDataProvider } from "@/lib/market-data/adapter";
 import { needsRefresh, PSX_PRICE_SOURCE } from "@/lib/market-data/psx-dps";
 import { parseNumberLoose, parseDateLoose } from "@/lib/utils";
@@ -65,6 +66,12 @@ export async function POST(request: Request) {
       if (result.updated > 0) {
         await takeSnapshot(supabase, user.id);
         await refreshAlerts(supabase, user.id);
+        // Keep the growth-of-capital chart in step with the freshly priced header.
+        try {
+          await refreshBenchmarkForUser(supabase, user.id);
+        } catch (e) {
+          console.error("benchmark rebuild after price refresh failed", e);
+        }
       }
       return NextResponse.json({
         provider: provider.name,

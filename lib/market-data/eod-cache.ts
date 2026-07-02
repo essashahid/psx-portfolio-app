@@ -20,7 +20,7 @@ export interface ClosePoint {
 }
 
 /** Refetch a symbol when we have nothing cached or the latest day is older than this. */
-const STALE_AFTER_DAYS = 2;
+const STALE_AFTER_DAYS = 1;
 
 function isStale(latest: string | null): boolean {
   if (!latest) return true;

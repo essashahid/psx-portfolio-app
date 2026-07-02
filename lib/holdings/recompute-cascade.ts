@@ -2,8 +2,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { recomputeHoldingsFromTransactions, takeSnapshot } from "@/lib/portfolio";
 import { enrichHoldingsMetadata } from "@/lib/holdings/enrichment";
 import { refreshAlerts } from "@/lib/alerts";
-import { ensureEodCached } from "@/lib/market-data/eod-cache";
-import { rebuildBenchmarkSeries } from "@/lib/engine/benchmark-rebuild";
+import { refreshBenchmarkForUser } from "@/lib/engine/benchmark-rebuild";
 import { accountHasFeature } from "@/lib/features";
 
 /**
@@ -44,13 +43,7 @@ export async function recomputeAll(
 
   // 4. Benchmark series — warm the EOD cache for current tickers, then rebuild.
   try {
-    const { data: tickerRows } = await supabase
-      .from("transactions")
-      .select("ticker")
-      .eq("user_id", userId);
-    const tickers = [...new Set((tickerRows ?? []).map((r) => r.ticker as string).filter(Boolean))];
-    await ensureEodCached(tickers);
-    await rebuildBenchmarkSeries(supabase, userId);
+    await refreshBenchmarkForUser(supabase, userId);
   } catch (err) {
     // Benchmark is important but should not fail the whole save; log for visibility.
     console.error("benchmark rebuild failed", err);
