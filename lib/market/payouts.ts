@@ -4,14 +4,19 @@ import { getStockMasterMap } from "@/lib/stock-master";
 
 /**
  * Market-wide dividend / payout history from the official PSX payouts feed
- * (POST /payouts?symbol=…). One request per company returns the full payout
- * history as rows like:
+ * (POST /payouts?symbol=…). One request per company returns payout rows like:
  *   ["AIRLINK", "Air Link…", "TECHNOLOGY…", "20%(i) (D)", "October 23, 2025 3:22 PM", "04/11/2025 - 06/11/2025"]
  * where "20%(i) (D)" = 20% interim cash dividend. Cash DPS = percentage/100 ×
  * face value (PSX equities are PKR 10 par unless stated). Persisted to
  * company_payouts so the ratios engine can compute trailing yield / payout /
  * cover for every company. Nothing is invented — non-cash payouts (bonus/right)
  * are stored with kind set and a null cash DPS.
+ *
+ * NOTE: as of mid-2026 the portal only serves roughly the trailing year of
+ * payouts (verified against /company/payouts too — same data). Rows are
+ * upserted and never deleted, so company_payouts accumulates real history with
+ * every scheduled run; older history captured while the feed was deeper is
+ * retained. Trailing-12M metrics (yield, payout ratio, cover) are unaffected.
  */
 
 const BASE_URL = "https://dps.psx.com.pk";
@@ -76,7 +81,7 @@ export async function fetchPayouts(ticker: string, faceValue = DEFAULT_FACE_VALU
     const res = await fetch(`${BASE_URL}/payouts`, {
       method: "POST",
       headers: { ...BROWSER_HEADERS, Referer: `${BASE_URL}/company/${ticker.toUpperCase()}` },
-      body: new URLSearchParams({ symbol: ticker.toUpperCase() }),
+      body: new URLSearchParams({ symbol: ticker.toUpperCase(), count: "200", offset: "0" }),
       signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
       cache: "no-store",
     });

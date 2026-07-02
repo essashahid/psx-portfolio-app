@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { refreshTechnicals } from "@/lib/company/technicals";
 import { populateCheapFundamentals, populateDeepFundamentals } from "@/lib/engine/fundamentals";
+import { activeUniverseTickers, COMPANY_TYPES } from "@/lib/engine/universe";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 300;
@@ -34,7 +35,7 @@ export async function GET(request: Request) {
 
   const db = createAdminClient();
   const task = url.searchParams.get("task") ?? "technicals";
-  const limit = Math.max(1, Math.min(300, Number(url.searchParams.get("limit") ?? 80)));
+  const limit = Math.max(1, Math.min(300, Number(url.searchParams.get("limit") ?? 200)));
   const finLimit = Math.max(0, Math.min(60, Number(url.searchParams.get("finlimit") ?? 12)));
   const deepLimit = Math.max(0, Math.min(40, Number(url.searchParams.get("deeplimit") ?? 8)));
   const concurrency = Math.max(1, Math.min(10, Number(url.searchParams.get("concurrency") ?? 6)));
@@ -42,6 +43,10 @@ export async function GET(request: Request) {
 
   const universe = await workingSet(db);
   report.workingSet = universe.length;
+
+  // Fundamentals/extraction only make sense for companies (equities and
+  // modarabas) — the traded snapshot also carries bonds, ETFs and rights.
+  const companies = await companyFilter(db, universe);
 
   if (task === "technicals" || task === "all") {
     const queue = await staleFirst(db, universe, "company_technicals", limit);
@@ -61,7 +66,7 @@ export async function GET(request: Request) {
   // Cheap fundamentals (PSX page + payouts + ratios, no LLM) — run broadly so
   // ~13 of 18 ratios cover the universe fast.
   if (task === "fundamentals" || task === "financials" || task === "all") {
-    const queue = await staleFirst(db, universe, "company_payouts", finLimit * 3);
+    const queue = await staleFirst(db, companies, "company_payouts", finLimit * 3);
     let loaded = 0;
     let withPayouts = 0;
     await runPool(queue, Math.min(concurrency, 5), async (ticker) => {
@@ -76,7 +81,7 @@ export async function GET(request: Request) {
   // prioritizing companies that still lack a balance sheet. Unlocks the
   // remaining margin / leverage / liquidity / coverage / FCF ratios.
   if (task === "extract" || task === "all") {
-    const queue = await missingStatementFirst(db, universe, deepLimit);
+    const queue = await missingStatementFirst(db, companies, deepLimit);
     let extracted = 0;
     await runPool(queue, Math.min(concurrency, 3), async (ticker) => {
       const r = await populateDeepFundamentals(ticker, 2, db);
@@ -109,10 +114,28 @@ async function workingSet(db: ReturnType<typeof createAdminClient>): Promise<str
   }
   // Fallback to the universe directory if no snapshot has been built yet.
   if (set.size === 0) {
-    const { data: uni } = await db.from("stock_universe").select("ticker").eq("listing_status", "active").limit(2000);
-    for (const u of uni ?? []) set.add((u.ticker as string).toUpperCase());
+    for (const t of await activeUniverseTickers(db, "quotable")) set.add(t);
   }
   return [...set];
+}
+
+/**
+ * Restrict a working set to companies (equity/modaraba) using the universe's
+ * instrument classes. Tickers unknown to the universe (or all of them, before
+ * migration 0030) are kept — being wrong costs one wasted fetch, being strict
+ * costs coverage.
+ */
+async function companyFilter(db: ReturnType<typeof createAdminClient>, tickers: string[]): Promise<string[]> {
+  const type = new Map<string, string>();
+  for (let i = 0; i < tickers.length; i += 500) {
+    const { data, error } = await db.from("stock_universe").select("ticker, instrument_type").in("ticker", tickers.slice(i, i + 500));
+    if (error) return tickers; // column missing pre-migration — no filtering
+    for (const r of data ?? []) type.set((r.ticker as string).toUpperCase(), (r.instrument_type as string) ?? "equity");
+  }
+  return tickers.filter((t) => {
+    const kind = type.get(t);
+    return kind === undefined || COMPANY_TYPES.includes(kind);
+  });
 }
 
 /**

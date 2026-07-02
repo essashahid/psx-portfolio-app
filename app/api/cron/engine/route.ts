@@ -1,10 +1,10 @@
 import { NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { fetchPsxSymbols } from "@/lib/market-data/psx-dps";
 import { refreshQuote } from "@/lib/engine/market-data";
 import { refreshTechnicals } from "@/lib/company/technicals";
 import { populateFinancials } from "@/lib/engine/financials";
 import { refreshRatios } from "@/lib/engine/ratios";
+import { syncUniverseDirectory, reconcileListingStatus, activeUniverseTickers } from "@/lib/engine/universe";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 300;
@@ -33,7 +33,8 @@ export async function GET(request: Request) {
   const db = createAdminClient();
   const report: Record<string, unknown> = {};
 
-  // 1. Universe sync (weekly cadence)
+  // 1. Universe sync (weekly cadence) + listing-status reconciliation (every
+  //    run — it's two cheap reads and keeps dead counters out of rotations).
   try {
     const { data: newest } = await db
       .from("stock_universe")
@@ -43,23 +44,12 @@ export async function GET(request: Request) {
       .maybeSingle();
     const ageDays = newest ? (Date.now() - new Date(newest.last_updated).getTime()) / 86400_000 : Infinity;
     if (ageDays > 6) {
-      const directory = await fetchPsxSymbols();
-      const now = new Date().toISOString();
-      const rows = [...directory.entries()].map(([ticker, info]) => ({
-        ticker,
-        company_name: info.name,
-        psx_name: info.name,
-        sector: info.sector || null,
-        listing_status: "active",
-        last_updated: now,
-      }));
-      for (let i = 0; i < rows.length; i += 400) {
-        await db.from("stock_universe").upsert(rows.slice(i, i + 400), { onConflict: "ticker" });
-      }
-      report.universe = { synced: rows.length };
+      const result = await syncUniverseDirectory(db);
+      report.universe = result;
     } else {
       report.universe = { skipped: `synced ${ageDays.toFixed(1)}d ago` };
     }
+    report.listingStatus = await reconcileListingStatus(db);
   } catch (e) {
     report.universe = { error: e instanceof Error ? e.message : String(e) };
   }
@@ -84,10 +74,9 @@ export async function GET(request: Request) {
   }
   report.activeSet = { tickers: active.length, quotes: quotesOk, technicals: techOk };
 
-  // 3. Rotating universe slice (oldest quotes first)
+  // 3. Rotating universe slice (oldest quotes first), quotable instruments only
   try {
-    const { data: universe } = await db.from("stock_universe").select("ticker").eq("listing_status", "active").limit(2000);
-    const all = (universe ?? []).map((r) => r.ticker as string).filter((t) => !active.includes(t));
+    const all = (await activeUniverseTickers(db, "quotable")).filter((t) => !active.includes(t));
     const { data: quotes } = await db.from("market_quotes").select("ticker, last_fetched_at");
     const fetchedAt = new Map((quotes ?? []).map((q) => [q.ticker as string, q.last_fetched_at as string]));
     const slice = all.sort((a, b) => (fetchedAt.get(a) ?? "").localeCompare(fetchedAt.get(b) ?? "")).slice(0, 40);
@@ -107,9 +96,7 @@ export async function GET(request: Request) {
   try {
     const { data: have } = await db.from("company_financials").select("ticker");
     const covered = new Set((have ?? []).map((r) => r.ticker as string));
-    const { data: universe } = await db.from("stock_universe").select("ticker").eq("listing_status", "active").limit(2000);
-    const topUp = (universe ?? [])
-      .map((r) => r.ticker as string)
+    const topUp = (await activeUniverseTickers(db, "companies"))
       .filter((t) => !covered.has(t) && !active.includes(t))
       .slice(0, 30);
     const queue = [...new Set([...active, ...topUp])];

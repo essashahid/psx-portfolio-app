@@ -4,6 +4,7 @@ import { refreshQuote } from "@/lib/engine/market-data";
 import { refreshTechnicals } from "@/lib/company/technicals";
 import { refreshRatios } from "@/lib/engine/ratios";
 import { extractFinancials } from "@/lib/engine/financials";
+import { activeUniverseTickers } from "@/lib/engine/universe";
 
 export const maxDuration = 300;
 
@@ -98,9 +99,8 @@ export async function GET(request: Request) {
 
 async function resolveTickers(db: ReturnType<typeof createAdminClient>, scope: string, limit: number): Promise<string[]> {
   if (scope === "universe") {
-    // Walk the universe oldest-quote-first so repeated runs rotate coverage.
-    const { data: universe } = await db.from("stock_universe").select("ticker").eq("listing_status", "active").limit(2000);
-    const all = (universe ?? []).map((r) => r.ticker as string);
+    // Walk the quotable universe oldest-quote-first so repeated runs rotate coverage.
+    const all = await activeUniverseTickers(db, "quotable");
     const { data: quotes } = await db.from("market_quotes").select("ticker, last_fetched_at");
     const fetchedAt = new Map((quotes ?? []).map((q) => [q.ticker as string, q.last_fetched_at as string]));
     return all.sort((a, b) => (fetchedAt.get(a) ?? "").localeCompare(fetchedAt.get(b) ?? "")).slice(0, limit);
