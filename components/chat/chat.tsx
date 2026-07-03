@@ -665,14 +665,15 @@ export function Chat({
           onClick={() => setThreadsOpen((o) => !o)}
           aria-expanded={threadsOpen}
           aria-controls="history-drawer"
-          title="Conversation history"
-          aria-label="Conversation history"
+          title={readOnly ? "Curated conversations" : "Conversation history"}
+          aria-label={readOnly ? "Curated conversations" : "Conversation history"}
           className={cn(
-            "hidden h-9 w-9 shrink-0 items-center justify-center rounded-lg transition-colors md:flex",
+            "hidden shrink-0 items-center gap-1.5 rounded-lg px-2.5 h-9 text-[12px] font-medium transition-colors md:flex",
             threadsOpen ? "bg-muted text-foreground" : "text-muted-foreground hover:bg-muted"
           )}
         >
           <PanelRight className="h-4 w-4" />
+          {readOnly ? "Curated chats" : "History"}
         </button>
       </header>
 

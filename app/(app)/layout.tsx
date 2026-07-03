@@ -66,12 +66,12 @@ export default async function AppLayout({ children }: { children: React.ReactNod
             adminEmail={realUser.email}
           />
         )}
+        {isDemo && (
+          <div className="shrink-0 border-b border-blue-200 bg-blue-50 px-3 py-2 text-center text-xs text-blue-900 sm:px-4">
+            Read-only demo: explore the launch tabs and curated Copilot research. Editing, refreshes and AI generation are disabled.
+          </div>
+        )}
         <main className="scroll-touch flex-1 overflow-y-auto overscroll-y-contain px-3 py-3 pb-[calc(5.75rem+env(safe-area-inset-bottom))] sm:px-4 sm:py-4 md:p-8">
-          {isDemo && (
-            <div className="mx-auto mb-3 w-full max-w-7xl rounded-md border border-blue-200 bg-blue-50 px-3 py-2 text-xs text-blue-900">
-              Read-only demo: explore the launch tabs and curated Copilot research. Editing, refreshes and AI generation are disabled.
-            </div>
-          )}
           <div className="mx-auto w-full max-w-7xl">{children}</div>
         </main>
         <footer className="hidden border-t border-border bg-card px-6 py-2 md:block">
