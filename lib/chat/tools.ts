@@ -327,9 +327,10 @@ export async function executeTool(
         unrealizedPL: p.unrealizedPl,
         unrealizedPLPct: p.unrealizedPlPct,
         realizedPL: p.realizedPl,
-        dividendIncome: p.dividendIncome,
-        expectedDividendIncome: p.expectedDividendIncome,
-        pendingDividendIncome: p.pendingDividendIncome,
+        // Basis-labelled keys: an unlabelled `dividendIncome` was repeatedly
+        // quoted by models as "TTM income" when it is lifetime received cash.
+        dividendsReceivedNetAllTime: p.dividendIncome,
+        dividendsAnnouncedPendingNet: p.expectedDividendIncome,
         cashBalance: p.cashBalance,
         holdingsCount: p.holdingsCount,
         pricedHoldings: p.pricedHoldings,

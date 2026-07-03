@@ -113,6 +113,11 @@ const COMMON_PROSE = new Set([
   "that", "this", "from", "your", "have", "what", "when", "which", "should", "would", "could",
   "their", "based", "across", "first", "national", "general", "power", "energy", "bank",
   "industries", "international", "any", "all", "the", "and", "for", "are", "was",
+  // Question words that collide with real PSX tickers: "next" is NEXT (Next
+  // Capital) and silently turned "my next expected dividend" into a
+  // single-ticker question, which suppressed the holdings/income context.
+  "next", "days", "until", "many", "much", "will", "want", "need", "plan", "over", "under",
+  "week", "weeks", "month", "months", "year", "years", "still", "even", "then", "than", "some", "only", "just", "also", "most", "does",
   // sector/industry words — useful as a sector hint, but not a company brand.
   "cement", "sugar", "steel", "textile", "fertilizer", "chemical", "chemicals", "refinery",
   "automobile", "pharma", "leasing", "insurance", "tobacco", "glass", "paper",

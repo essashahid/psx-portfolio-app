@@ -143,6 +143,13 @@ export async function buildBrief(
         briefFromThesisJournal(notes, resolved.tickers[0]),
       ].filter(Boolean).join("\n\n");
     }
+    // A dividend question about a named ticker ("if UBL cut its dividend, what
+    // happens to my income?") is still a whole-book income question, so load
+    // holdings for it too — without this the canonical two-basis income block
+    // never reached the model and it re-aggregated raw rows itself.
+    if (!holdingsData && resolved.intent === "dividend") {
+      holdingsData = await getHoldingsSummary(supabase, userId);
+    }
     if (holdingsData) patternsBrief = briefFromPortfolioPatterns(holdingsData);
 
     const portfolioAware = isDecision || !!holdingsData || !!resolved.sector;
