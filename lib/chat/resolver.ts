@@ -28,6 +28,23 @@ export interface ResolvedMessage {
   tickers: string[];
   intent: Intent;
   sector: string | null;
+  /**
+   * The user is asking to explain a price move ("why did PTC rise today?").
+   * Signals gatherCards to include same-session market, sector and foreign-flow
+   * data even when a ticker is named, so the answer can attribute the move to
+   * real evidence (sector breadth, flows, index) instead of stale web snippets.
+   */
+  movement: boolean;
+}
+
+const MOVE_WORDS =
+  /\b(rose|rise|risen|rising|fell|fall|fallen|falling|dropp?(ed|ing)?|surg\w*|rall(y|ied|ying)|jump\w*|crash\w*|spik\w*|gain\w*|slid(e|ing)?|slump\w*|soar\w*|tank\w*|perform\w*|mov(ed?|ing|ement)|happened|up|down)\b/;
+
+/** "Why did X rise today?" / "what moved the market" / "reason banks rose". */
+function detectMovement(msg: string): boolean {
+  const m = msg.toLowerCase();
+  if (/\b(what|which)\s+(moved|drove|is driving|is behind|was behind)\b/.test(m)) return true;
+  return /\b(why|reason|thoughts on why|explain)\b/.test(m) && MOVE_WORDS.test(m);
 }
 
 /**
@@ -202,5 +219,5 @@ export async function resolveMessage(supabase: SupabaseClient, message: string):
   // Sector match only when no specific ticker was named (avoids misreading e.g.
   // a bank ticker as the "banks" sector).
   const sector = tickers.length === 0 ? await resolveSector(supabase, message) : null;
-  return { tickers, intent: detectIntent(message), sector };
+  return { tickers, intent: detectIntent(message), sector, movement: detectMovement(message) };
 }

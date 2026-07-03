@@ -9,7 +9,7 @@ import { CHAT_TOOLS, CLAUDE_TOOLS, executeTool } from "@/lib/chat/tools";
 import { claudeConfigured, getClaude, buildClaudeParams } from "@/lib/ai/claude";
 import { deepseekChatConfigured, runDeepSeekChat } from "@/lib/ai/deepseek-chat";
 import { getModelDef, type ChatModelDef } from "@/lib/ai/models";
-import { looksLikeToolLeak, stripEmDashes } from "@/lib/chat/sanitize";
+import { looksLikeToolLeak, stripEmDashes, tidyTypography } from "@/lib/chat/sanitize";
 import { wantsWebContext, gatherWebContext } from "@/lib/chat/web-context";
 import { ArtifactExtractor, type ArtifactSpec } from "@/lib/chat/artifacts";
 import {
@@ -540,7 +540,7 @@ async function persistAssistantTurn(
   artifactSpecs: ArtifactSpec[] = []
 ) {
   const now = new Date().toISOString();
-  const cleanContent = content.trim();
+  const cleanContent = tidyTypography(content.trim());
   // Store artifact specs alongside data cards so they can be re-rendered when
   // the thread is reloaded. They use a distinct "artifact" kind so the existing
   // ChatCards renderer ignores them while the new ArtifactRenderer handles them.
