@@ -129,8 +129,15 @@ export const CHAT_TOOLS: Anthropic.Tool[] = [
   },
   {
     name: "get_dividends",
-    description: "Trailing-12-month cash dividend per share and recent payout history for a ticker.",
-    input_schema: { type: "object", properties: { ticker: { type: "string" } }, required: ["ticker"] },
+    description:
+      "Trailing-12-month cash dividend per share and recent payout history. Pass tickers (an array, up to 20) to fetch several holdings in ONE call, always batch instead of calling once per ticker; ticker (single) also works.",
+    input_schema: {
+      type: "object",
+      properties: {
+        ticker: { type: "string", description: "One symbol. Prefer tickers for more than one." },
+        tickers: { type: "array", items: { type: "string" }, description: "Several symbols fetched in one call, e.g. every payer in the portfolio." },
+      },
+    },
   },
   {
     name: "get_news",
@@ -292,8 +299,18 @@ export async function executeTool(
       if (candles.length === 0) return { error: `no price history available for ${ticker}` };
       return computeIndicator(ticker, candles, indicator, period, timeframe);
     }
-    case "get_dividends":
-      return ticker ? (await getDividendCard(db, ticker)) ?? { error: "no payouts on record" } : { error: "ticker required" };
+    case "get_dividends": {
+      // Batch mode: one call for many holdings, so an income question does not
+      // cost 16 sequential round-trips (observed in a V4 Pro test run).
+      const many = Array.isArray(input.tickers)
+        ? [...new Set(input.tickers.filter((t): t is string => typeof t === "string").map((t) => t.toUpperCase()))].slice(0, 20)
+        : [];
+      if (many.length > 0) {
+        const results = await Promise.all(many.map(async (t) => [t, (await getDividendCard(db, t)) ?? { error: "no payouts on record" }] as const));
+        return Object.fromEntries(results);
+      }
+      return ticker ? (await getDividendCard(db, ticker)) ?? { error: "no payouts on record" } : { error: "ticker or tickers required" };
+    }
     case "get_news":
       return (await getNewsCard(db, userId, ticker, 6)) ?? { items: [] };
     case "get_market_overview":

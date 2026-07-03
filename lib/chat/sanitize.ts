@@ -50,3 +50,47 @@ export function tidyTypography(text: string): string {
     )
     .join("\n");
 }
+
+/**
+ * Remove planning-narration openers that models (DeepSeek V4 Pro especially)
+ * emit at the start of their synthesis turn despite the prompt ban: "Now I
+ * have the full picture. Let me lay out the answer." Deterministic because
+ * prompting alone does not stop them; a V4 Pro test run leaked them in 5 of 16
+ * answers.
+ *
+ * Deliberately narrow: only sentences that are unambiguously process talk are
+ * removed. A legitimate finding like "No official filings were published
+ * today." is kept — a leading "No …" sentence is stripped only when it is
+ * followed by another planning opener (the "No news in the feed. Now I have
+ * everything." pattern).
+ */
+const PLANNING_OPENER = new RegExp(
+  "^(?:" +
+    [
+      "Now,? (?:I have|let me)[^.!:\\n]{0,90}[.!:]",
+      "Let me (?:lay|build|assemble|synthesi[sz]e|put together|compute|map|now|search|check|look|pull|gather|dig|verify|analy[sz]e)[^.!:\\n]{0,90}[.!:]",
+      "I (?:now )?have (?:everything|all the data|the full picture|a complete picture)[^.!:\\n]{0,90}[.!:]",
+      "(?:Perfect|Good|Great|Right|Okay|OK)[.,!] ?(?=\\S)",
+      "Here(?:'s| is) (?:the|my|your) (?:full |complete )?(?:picture|answer|analysis|assessment|breakdown)[.!:]",
+      "Based on (?:all )?the (?:data|evidence|information) (?:gathered|collected) so far[^.!:\\n]{0,60}[.!:]",
+    ].join("|") +
+    ")\\s*",
+  "i"
+);
+// "No X in the feed." style pre-verdicts are stripped only when chained into a
+// planning opener after them.
+const NO_PREFIX_BEFORE_PLANNING = /^No [^.\n]{0,90}\.\s+(?=(?:Now|Let me|I now have|I have everything|Here (?:is|'s) the))/i;
+
+export function stripNarrationOpeners(text: string): string {
+  let out = text.replace(/^\s+/, "");
+  out = out.replace(NO_PREFIX_BEFORE_PLANNING, "");
+  for (let i = 0; i < 3; i++) {
+    const next = out.replace(PLANNING_OPENER, "");
+    if (next === out) break;
+    out = next.replace(/^\s+/, "");
+  }
+  // A divider the model used to separate its planning from the answer is now a
+  // dangling first element — drop it.
+  out = out.replace(/^-{3,}\s*/, "");
+  return out;
+}

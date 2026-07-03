@@ -56,6 +56,43 @@ export function pktTodayIso(): string {
   }).format(new Date());
 }
 
+const PKT_WEEKDAY = new Intl.DateTimeFormat("en-GB", { timeZone: "Asia/Karachi", weekday: "long" });
+
+/** Next PSX weekday session strictly after the given ISO date (Mon–Fri). */
+function nextWeekday(fromIso: string): string {
+  let t = Date.parse(`${fromIso}T12:00:00Z`);
+  for (let i = 0; i < 7; i++) {
+    t += 86_400_000;
+    const day = new Date(t).toISOString().slice(0, 10);
+    const wd = PKT_WEEKDAY.format(new Date(`${day}T12:00:00Z`));
+    if (wd !== "Saturday" && wd !== "Sunday") return day;
+  }
+  return fromIso;
+}
+
+function withWeekday(iso: string): string {
+  return `${PKT_WEEKDAY.format(new Date(`${iso}T12:00:00Z`))} ${iso}`;
+}
+
+/**
+ * Deterministic PSX calendar line so day-of-week and settlement reasoning never
+ * comes from the model (a V4 Pro test run produced "Friday 4 July is a
+ * Saturday" in a liquidation plan). Weekend-aware; public holidays can shift
+ * the next session, and the line says so.
+ */
+export function tradingCalendarLine(latestSession: string | null): string {
+  const today = pktTodayIso();
+  const next = nextWeekday(today);
+  const settle = nextWeekday(nextWeekday(next));
+  const parts = [
+    `Today is ${withWeekday(today)} (Pakistan time).`,
+    latestSession ? `Last completed PSX session: ${withWeekday(latestSession)}.` : null,
+    `Next PSX session: ${withWeekday(next)} (weekends excluded; a public holiday can shift this).`,
+    `PSX trades settle T+2, so a sale executed ${withWeekday(next)} pays out around ${withWeekday(settle)}.`,
+  ].filter(Boolean);
+  return `PSX calendar (pre-computed; use these dates and weekdays as given): ${parts.join(" ")}`;
+}
+
 export interface BriefInputs {
   message: string;
   resolved: ResolvedMessage;
@@ -120,7 +157,7 @@ export async function buildBrief(
           focusTickers: resolved.tickers.slice(0, 4),
           holdings: holdingsData,
         }),
-        holdingsData ? getDividendIncome(supabase, holdingsData) : Promise.resolve(null),
+        holdingsData ? getDividendIncome(supabase, userId, holdingsData) : Promise.resolve(null),
       ]);
       macroBrief = briefFromMacro(macro, macroSectors);
       benchmarkBrief = benchmark ? briefFromBenchmark(benchmark) : "";
@@ -129,6 +166,7 @@ export async function buildBrief(
   }
 
   return [
+    tradingCalendarLine(latestSession),
     briefFromCards(cards, latestSession),
     ...positionHistoryBriefs,
     decisionContext,

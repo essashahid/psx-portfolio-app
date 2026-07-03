@@ -9,7 +9,7 @@ import { CHAT_TOOLS, CLAUDE_TOOLS, executeTool } from "@/lib/chat/tools";
 import { claudeConfigured, getClaude, buildClaudeParams } from "@/lib/ai/claude";
 import { deepseekChatConfigured, runDeepSeekChat } from "@/lib/ai/deepseek-chat";
 import { getModelDef, type ChatModelDef } from "@/lib/ai/models";
-import { looksLikeToolLeak, stripEmDashes, tidyTypography } from "@/lib/chat/sanitize";
+import { looksLikeToolLeak, stripEmDashes, stripNarrationOpeners, tidyTypography } from "@/lib/chat/sanitize";
 import { wantsWebContext, gatherWebContext } from "@/lib/chat/web-context";
 import { ArtifactExtractor, type ArtifactSpec } from "@/lib/chat/artifacts";
 import {
@@ -403,6 +403,15 @@ export async function POST(request: Request) {
           writingStarted = false;
           if (modelDef.provider === "deepseek" && deepseekChatConfigured()) {
             send({ type: "status", text: "Writing the final answer" });
+            // The tool-less retry cannot web_search, and leaks cluster on
+            // web-dependent questions ("what does X make?", "does the IPO
+            // change anything?"). Pre-fetch the web context the model was
+            // trying to get so the recovery keeps its evidence.
+            let recoveryBrief = brief;
+            if (wantsWebContext(message)) {
+              const web = await gatherWebContext(resolved, message).catch(() => "");
+              if (web) recoveryBrief = [brief, web].filter(Boolean).join("\n\n");
+            }
             const recoveryExtractor = new ArtifactExtractor(
               (raw) => {
                 const delta = stripEmDashes(raw);
@@ -419,7 +428,7 @@ export async function POST(request: Request) {
               def: modelDef,
               system: buildRecoverySystemPrompt(modelDef, message),
               history: trimmedHistory,
-              userContent: buildRecoveryUserContext(brief, message),
+              userContent: buildRecoveryUserContext(recoveryBrief, message),
               tools: [],
               executeTool: async () => ({}),
               onThinking: (delta) => {
@@ -540,7 +549,7 @@ async function persistAssistantTurn(
   artifactSpecs: ArtifactSpec[] = []
 ) {
   const now = new Date().toISOString();
-  const cleanContent = tidyTypography(content.trim());
+  const cleanContent = stripNarrationOpeners(tidyTypography(content.trim()));
   // Store artifact specs alongside data cards so they can be re-rendered when
   // the thread is reloaded. They use a distinct "artifact" kind so the existing
   // ChatCards renderer ignores them while the new ArtifactRenderer handles them.
