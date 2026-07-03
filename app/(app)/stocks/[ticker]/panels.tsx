@@ -90,6 +90,10 @@ function shortDescription(description: string | null): string | null {
   return `${(lastSpace > 80 ? slice.slice(0, lastSpace) : slice).trim()}…`;
 }
 
+function isOfficialPsxProfileSource(source: string | null | undefined): boolean {
+  return source === "psx-company-page" || source === "psx-portal";
+}
+
 /** Neutral one-line description of a filing, derived from its category alone
  *  (no fabricated specifics, no positive/negative impact assumed). */
 function filingSummary(category: string): string {
@@ -223,7 +227,7 @@ export async function OverviewPanel({
   const hasReceipt = Boolean(holding && holding.dividend_income > 0);
   const dividendComplete = Boolean(latestDiv?.perShare !== null && latestDiv?.perShare !== undefined && (latestDiv.exDate || latestDiv.payDate || latestDiv.announcementDate));
   const dividendIncomplete = Boolean((latestDiv && !dividendComplete) || (!latestDiv && hasReceipt));
-  const officialDescription = metadata.meta.source === "psx-company-page" ? metadata.description : null;
+  const officialDescription = isOfficialPsxProfileSource(metadata.meta.source) ? metadata.description : null;
   const companySummary = shortDescription(officialDescription);
   // Precise company fields: surface Products from extracted business lines, and
   // only show Industry when it actually differs from Sector (avoids the vague
