@@ -15,32 +15,58 @@ import { fetchPsxCompanyData, type PsxPeriodFigures } from "@/lib/company/psx-co
  */
 
 const REQUEST_TIMEOUT_MS = 60_000; // PSX result PDFs can be 8MB+ over a slow link
-const MAX_PDF_BYTES = 20_000_000;
+// Full annual reports (which carry the balance sheet + cash flow we most need)
+// routinely run 25-30MB; keep a ceiling so a runaway download can't exhaust the
+// serverless function's memory.
+const MAX_PDF_BYTES = 35_000_000;
 // Hard cap on text sent to the model. We don't send the whole 40-page report —
 // focusStatements() trims to the financial-statements region first, which cuts
 // input tokens ~5× (and cost with it) while keeping the actual statements.
 const MAX_TEXT_CHARS = 90_000;
 
+const STATEMENT_MARKER =
+  /(statement of financial position|balance sheet|statement of profit|profit (?:or|and) loss|income statement|statement of comprehensive income|statement of cash flow|cash flow statement)/gi;
+
 /**
  * Trim extracted PDF text to the financial-statements region so we send the
- * model ~15K tokens instead of ~50K. The narrative/glossy front matter of a PSX
- * report carries no statement numbers; we keep from just before the first
- * statement heading to a buffer past the last, capped at MAX_TEXT_CHARS. Falls
- * back to the head of the document when no statement headings are found.
+ * model ~15K tokens instead of the whole document.
+ *
+ * A brief quarterly notice is small enough to send whole. A full annual report,
+ * though, runs 400+ pages: statement keywords appear first in the table of
+ * contents and the directors' narrative (no numbers), and the actual statements
+ * sit ~200 pages deep. Anchoring on the FIRST keyword and capping the window
+ * therefore used to feed the model 90K chars of prose and it (correctly) found
+ * no statements. So we instead locate the DENSEST cluster of statement
+ * headings — where balance sheet, P&L, comprehensive income and cash flow
+ * appear within a few pages of each other — and open the window on the first
+ * balance-sheet heading in that cluster, capturing a full statement set.
  */
 function focusStatements(text: string): string {
-  const marker = /(statement of financial position|balance sheet|statement of profit|profit (?:or|and) loss|income statement|statement of comprehensive income|statement of cash flow|cash flow statement)/gi;
-  let first = -1;
-  let last = -1;
+  if (text.length <= MAX_TEXT_CHARS) return text;
+
+  const hits: number[] = [];
   let m: RegExpExecArray | null;
-  while ((m = marker.exec(text)) !== null) {
-    if (first === -1) first = m.index;
-    last = m.index;
+  STATEMENT_MARKER.lastIndex = 0;
+  while ((m = STATEMENT_MARKER.exec(text)) !== null) hits.push(m.index);
+  if (hits.length === 0) return text.slice(0, MAX_TEXT_CHARS);
+
+  // Densest cluster: the hit that begins the window containing the most headings.
+  let bestHit = hits[0];
+  let bestCount = 0;
+  for (const h of hits) {
+    let c = 0;
+    for (const x of hits) if (x >= h && x < h + MAX_TEXT_CHARS) c++;
+    if (c > bestCount) { bestCount = c; bestHit = h; }
   }
-  if (first === -1) return text.slice(0, MAX_TEXT_CHARS);
-  const start = Math.max(0, first - 2_000);
-  const end = Math.min(text.length, last + 22_000); // capture the last statement's rows + notes
-  return text.slice(start, end).slice(0, MAX_TEXT_CHARS);
+
+  // Open the window on the first primary balance-sheet heading in that cluster
+  // so it starts at the top of a statement set rather than mid-table.
+  const primary = /(statement of financial position|balance sheet)/gi;
+  primary.lastIndex = Math.max(0, bestHit - 4_000);
+  const pm = primary.exec(text);
+  const anchor = pm && pm.index < bestHit + MAX_TEXT_CHARS ? pm.index : bestHit;
+  const start = Math.max(0, anchor - 1_500);
+  return text.slice(start, start + MAX_TEXT_CHARS);
 }
 
 const BROWSER_HEADERS = {
@@ -113,7 +139,16 @@ async function fetchPdfText(url: string): Promise<PdfTextResult> {
     const result = await parser.getText();
     await parser.destroy();
     const text = (result.text ?? "").replace(/[ \t]+/g, " ").trim();
-    if (text.length <= 200) return { error: `parsed text too short (${text.length} chars) — likely a scanned/image PDF` };
+    // Many PSX quarterly filings are scanned image PDFs: pdf-parse returns the
+    // page skeleton ("-- 1 of 41 --") plus a cover blurb but no statement text,
+    // typically well under ~2.5K chars for a multi-MB file. Reject these
+    // explicitly so the caller logs "scanned/image PDF" and moves to the next
+    // candidate (usually the full annual report, which carries a text layer).
+    if (text.length < 2_500 && !STATEMENT_MARKER.test(text)) {
+      STATEMENT_MARKER.lastIndex = 0;
+      return { error: `no text layer (${text.length} chars) — scanned/image PDF, needs OCR` };
+    }
+    STATEMENT_MARKER.lastIndex = 0;
     return { text: focusStatements(text) };
   } catch (err) {
     return { error: `PDF parse failed: ${err instanceof Error ? err.message : String(err)}` };
@@ -229,15 +264,26 @@ export async function extractFinancials(ticker: string, maxFilings = 2): Promise
     if (/shariah|video|briefing|presentation|clarification|notice of|proxy|agm|egm|book closure|circular|postal ballot|auditor|pattern of shareholding/.test(x)) return false;
     return /transmission|quarterly report|half[\s-]?year|annual report|annual account|financial result|financial statement|accounts for|condensed interim|un-?audited|audited/.test(x);
   };
+  // Annual reports first: they carry the full balance sheet AND cash flow, and
+  // (unlike many scanned quarterly notices) reliably have a real text layer.
+  // Quarterly/half-year transmissions next (condensed interim BS + CF), then
+  // brief "Financial Results" notices — which are usually just the P&L — last.
   const rank = (title: string): number => {
     const x = title.toLowerCase();
-    if (/transmission|quarterly report|half[\s-]?year|condensed interim/.test(x)) return 0; // full reports
-    if (/annual report|annual account/.test(x)) return 1;
-    return 2; // brief "Financial Results" notices last
+    if (/annual report|annual account/.test(x)) return 0;
+    if (/transmission|quarterly report|half[\s-]?year|condensed interim/.test(x)) return 1;
+    return 2;
+  };
+  // Filing dates are human strings ("Apr 30, 2026"); Date.parse handles them and
+  // gives a chronological sort (localeCompare would order them alphabetically,
+  // e.g. putting "Sep 2025" ahead of "Oct 2025").
+  const dateMs = (d: string | null): number => {
+    const n = d ? Date.parse(d) : NaN;
+    return Number.isFinite(n) ? n : 0;
   };
   const resultPdfs = filings
     .filter((f) => f.url.toLowerCase().includes(".pdf") && isReport(f.title))
-    .sort((a, b) => rank(a.title) - rank(b.title) || (b.date ?? "").localeCompare(a.date ?? ""))
+    .sort((a, b) => rank(a.title) - rank(b.title) || dateMs(b.date) - dateMs(a.date))
     .slice(0, maxFilings * 3); // candidates; we stop after maxFilings successful extractions
 
   if (resultPdfs.length === 0) {
