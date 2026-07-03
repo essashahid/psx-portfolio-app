@@ -10,8 +10,15 @@ import { tavilySearch, tavilyConfigured } from "@/lib/tavily";
 
 /** Cheap intent gate so we only spend a Tavily call when the web is actually needed. */
 export function wantsWebContext(message: string): boolean {
-  return /\bwhy\b|reason|driver|catalyst|news|happen|announc|mov(e|ed|ing|ement)|surg|jump|rall|drop|fell|fall|crash|plung|spik|gain|ris(e|ing)|increas|decreas|up today|down today|what'?s? (driving|happening|going on)/i.test(
-    message
+  return (
+    /\bwhy\b|reason|driver|catalyst|news|happen|announc|mov(e|ed|ing|ement)|surg|jump|rall|drop|fell|fall|crash|plung|spik|gain|ris(e|ing)|increas|decreas|up today|down today|what'?s? (driving|happening|going on)/i.test(
+      message
+    ) ||
+    // Business-description questions ("what does IMAGE actually make and
+    // sell?") need the web too: the platform stores numbers, not product lines.
+    /\bwhat (?:does|do|is)\b.*\b(mak(e|es|ing)|sell(s|ing)?|produc(e|es|ing)|manufactur\w*|business)\b|business model|company (profile|description)/i.test(
+      message
+    )
   );
 }
 

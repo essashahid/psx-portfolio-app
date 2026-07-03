@@ -166,15 +166,14 @@ export function briefFromMacro(
   const { policyRate: r, inflation, usdPkr } = snapshot;
   const lines: string[] = [];
 
-  const dirWord =
-    r.direction === "falling" ? "an easing cycle" : r.direction === "rising" ? "a tightening cycle" : "a flat rate cycle";
-  const peakBit =
-    r.peakPct > r.currentPct
-      ? `, down from a ${r.peakPct.toFixed(1)}% peak (${dirWord})`
-      : r.peakPct < r.currentPct
-        ? ` (${dirWord})`
-        : "";
-  lines.push(`- Policy rate: ${r.currentPct.toFixed(1)}% (SBP path, effective ${r.since})${peakBit}.`);
+  // State the last move explicitly: "11.5%, last move +100bps" reads correctly
+  // even when the level is below the cycle peak but the latest move was a hike.
+  const lastMove =
+    r.previousPct != null && r.previousPct !== r.currentPct
+      ? `last move ${r.currentPct > r.previousPct ? "a hike of" : "a cut of"} ${Math.round(Math.abs(r.currentPct - r.previousPct) * 100)}bps effective ${r.since}`
+      : `unchanged since ${r.since}`;
+  const peakBit = r.peakPct > r.currentPct ? `; cycle peak ${r.peakPct.toFixed(1)}%` : "";
+  lines.push(`- Policy rate: ${r.currentPct.toFixed(1)}% (SBP; ${lastMove}${peakBit}).`);
 
   if (inflation) {
     lines.push(`- Inflation: ${fmtPct(inflation.yoyPct, false)} year-on-year (National CPI, ${inflation.month}).`);

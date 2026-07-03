@@ -116,6 +116,8 @@ const TBILL_YIELD_STEPS: { from: string; yieldPct: number }[] = [
   { from: "2024-12-16", yieldPct: 13.0 },
   { from: "2025-01-27", yieldPct: 12.0 },
   { from: "2025-05-05", yieldPct: 11.0 },
+  { from: "2025-12-16", yieldPct: 10.5 }, // 50bps cut, MPC 15 Dec 2025
+  { from: "2026-04-27", yieldPct: 11.5 }, // surprise 100bps hike; held at 11.5% on 15 Jun 2026
 ];
 
 export const TBILL_SOURCE = "sbp-policy-steps";
