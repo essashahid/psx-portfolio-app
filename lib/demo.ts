@@ -34,7 +34,7 @@ const DEMO_CHAT_SUMMARY_PREFIX = "Demo library:";
 const DEMO_DIVIDEND_EVENT_PREFIX = "demo:";
 
 /** Number of curated chat threads. The demo session re-seeds if fewer exist. */
-export const DEMO_THREAD_COUNT = 7;
+export const DEMO_THREAD_COUNT = 9;
 
 const H = (t: string) => DEMO_HOLDINGS.find((h) => h.ticker === t)!;
 const pl = (h: (typeof DEMO_HOLDINGS)[number]) => Math.round((h.price - h.avg_cost) * h.quantity);
@@ -174,11 +174,11 @@ export async function loadDemoData(supabase: SupabaseClient, userId: string) {
     {
       ticker: "HUBC",
       why_bought: "Cheap cash flows from power purchase agreements plus optionality on Thar coal and new energy ventures.",
-      expectation: "Dividend resumption and a re-rating as circular-debt flows improve.",
+      expectation: "The quarterly payout holds while dividends from the Thar and CPHGC associates replace the shrinking legacy PPA earnings.",
       time_horizon: "2-3 years",
-      key_risks: "Circular debt delaying payments; PPA renegotiation reducing returns; capex into new ventures diluting cash returns.",
-      sell_conditions: "Another broad PPA renegotiation that cuts contracted returns.",
-      add_conditions: "Confirmed dividend resumption at historical payout levels.",
+      key_risks: "Legacy PPA revenue rolling off faster than associate income grows; circular debt delaying cash; capex into new ventures diluting returns.",
+      sell_conditions: "A payout cut, or evidence the associate dividend stream cannot fund it once the base plant contribution fades.",
+      add_conditions: "Two more quarters showing associate income fully covering the PKR 5 per share quarterly payout.",
       confidence: 2,
       status: "Weakening",
       review_date: daysAgo(3), // intentionally overdue -> generates a review alert
@@ -195,8 +195,8 @@ export async function loadDemoData(supabase: SupabaseClient, userId: string) {
       ticker: "SYS",
       entry_date: daysAgo(8),
       entry_type: "news_reaction",
-      title: "IT export remittances hit a new high",
-      body: "Sector export remittances printed another record this quarter. Reinforces the dollar-revenue thesis for SYS. No action needed, staying the course and watching utilisation and the wage bill.",
+      title: "IT exports hit a record USD 4.2 billion in 11MFY26",
+      body: "Sector exports reached USD 4.2 billion in the first eleven months of FY26, up about 20% year on year, with December's USD 437 million the first month ever above USD 400 million. Reinforces the dollar-revenue thesis for SYS. No action needed, staying the course and watching utilisation and the wage bill.",
       confidence: 5,
       source: "demo",
     },
@@ -205,8 +205,8 @@ export async function loadDemoData(supabase: SupabaseClient, userId: string) {
       entry_date: daysAgo(18),
       entry_type: "hold_review",
       title: "HUBC thesis downgraded to weakening",
-      body: "Dividend is still paused and the PPA renegotiation chatter has not gone away. Moved the thesis to Weakening. I will decide at the next review whether the original contracted-cash-flow case still stands or whether this capital is better placed in OGDC.",
-      expected_outcome: "Clarity on the dividend and on contracted returns within one or two quarters.",
+      body: "The quarterly PKR 5 per share payout is being maintained, but the mix behind it has changed: legacy PPA revenue is declining and the payout increasingly rests on dividends from the Thar and CPHGC associates. That is not the contracted-cash-flow case I originally bought. Moved the thesis to Weakening. I will decide at the next review whether the associate-income version of the story deserves this capital or whether it is better placed in OGDC.",
+      expected_outcome: "Two quarters of results showing whether associate income can carry the payout on its own.",
       risk: "Capital tied up in a position whose original thesis no longer holds.",
       confidence: 2,
       follow_up_date: daysAgo(-7),
@@ -236,11 +236,11 @@ export async function loadDemoData(supabase: SupabaseClient, userId: string) {
     },
     {
       ticker: "OGDC",
-      entry_date: daysAgo(34),
-      entry_type: "thesis_note",
-      title: "Why OGDC despite the circular debt",
-      body: "The valuation already prices in a permanently broken balance sheet. I am being paid a dividend to wait, and any progress on receivable settlement is upside that I am not paying for. Watching the receivable balance closely each result.",
-      confidence: 3,
+      entry_date: daysAgo(9),
+      entry_type: "news_reaction",
+      title: "Circular debt settlement plan completed",
+      body: "OGDC received the final PKR 7.7 billion interest instalment on 24 June, completing the PKR 92 billion interest schedule on top of the PKR 82 billion principal already paid. The receivable overhang that justified the discount is now materially smaller. The question shifts from whether the government pays to what management does with the cash: higher payout, exploration capex, or both. Holding, and will reassess the position size once the next payout announcement shows their intent.",
+      confidence: 4,
       source: "demo",
     },
   ];
@@ -251,89 +251,89 @@ export async function loadDemoData(supabase: SupabaseClient, userId: string) {
   // ── News ────────────────────────────────────────────────────────────────────
   const news = [
     {
-      ticker: "MEBL",
-      company_name: "Meezan Bank Limited",
-      sector: "Commercial Banks",
-      title: "Meezan Bank posts record quarterly profit on deposit growth",
-      url: "https://example.com/demo/mebl-results",
-      source: "Demo Data",
-      published_at: new Date(Date.now() - 2 * 86400000).toISOString(),
-      snippet: "Meezan Bank reported a record quarterly profit driven by strong deposit growth and a stable spread. (Illustrative demo article.)",
-      ai_summary: "Record quarterly profit on deposit growth and a stable margin. The board also reviewed the payout policy.",
+      ticker: "OGDC",
+      company_name: "Oil & Gas Development Company Limited",
+      sector: "Oil & Gas Exploration",
+      title: "Circular debt plan: OGDCL receives final payment",
+      url: "https://www.brecorder.com/news/40427135",
+      source: "Business Recorder",
+      published_at: new Date(Date.now() - 9 * 86400000).toISOString(),
+      snippet: "OGDCL received its final PKR 7.725 billion interest instalment from Power Holding Limited on 24 June, completing the PKR 92 billion interest schedule under the government's circular debt settlement plan.",
+      ai_summary: "The twelve-instalment settlement plan is complete: PKR 82 billion of principal plus PKR 92 billion of interest has now been paid in full.",
       sentiment: "positive",
       relevance_score: 9,
-      why_it_matters: "Directly confirms the earnings-growth leg of your MEBL thesis.",
-      thesis_impact: "Supports the thesis. No change needed.",
-      review_question: "Is deposit growth still above the sector average?",
-      category: "result",
+      why_it_matters: "Receivable settlement is the exact upside trigger written in your OGDC thesis, and it has now fully landed.",
+      thesis_impact: "Confirms the re-rating case. The question moves to how management deploys the cash.",
+      review_question: "Does the next payout announcement show the settlement cash reaching shareholders?",
+      category: "corporate_announcement",
     },
     {
       ticker: "SYS",
       company_name: "Systems Limited",
       sector: "Technology & Communication",
-      title: "Systems Limited guides to over 20% export revenue growth",
-      url: "https://example.com/demo/sys-guidance",
-      source: "Demo Data",
-      published_at: new Date(Date.now() - 1 * 86400000).toISOString(),
-      snippet: "Management reiterated guidance for export-led revenue growth above 20% and flagged improving utilisation. (Illustrative demo article.)",
-      ai_summary: "Guidance for over 20% export revenue growth with improving utilisation and a stable margin outlook.",
+      title: "Pakistan's tech exports reach record $4.2 billion in 11MFY26",
+      url: "https://www.arabnews.com/node/2647548",
+      source: "Arab News",
+      published_at: new Date(Date.now() - 12 * 86400000).toISOString(),
+      snippet: "IT and IT-enabled service exports hit a record USD 4.2 billion in the first eleven months of FY26, up roughly 20% year on year, with December's USD 437 million the first month ever above USD 400 million.",
+      ai_summary: "Sector exports are compounding around 20% a year and the full fiscal year is expected to close near USD 4.5 billion.",
       sentiment: "positive",
       relevance_score: 9,
-      why_it_matters: "This is the core growth assumption behind your SYS position.",
+      why_it_matters: "Export growth above 20% is the core assumption behind your SYS position, and the sector tape confirms it.",
       thesis_impact: "Supports the thesis. The dollar-revenue case is intact.",
-      review_question: "Is the growth coming from new logos or just existing accounts?",
+      review_question: "Is SYS growing at or above the sector's 20% rate?",
       category: "result",
     },
     {
       ticker: "HUBC",
       company_name: "The Hub Power Company Limited",
       sector: "Power Generation & Distribution",
-      title: "Government revisits IPP agreements in a new round of talks",
-      url: "https://example.com/demo/hubc-ipp-talks",
-      source: "Demo Data",
-      published_at: new Date(Date.now() - 1 * 86400000).toISOString(),
-      snippet: "A fresh round of discussions with independent power producers could revisit contracted returns. (Illustrative demo article.)",
-      ai_summary: "Renewed IPP renegotiation talks may touch contracted returns for legacy power producers.",
-      sentiment: "negative",
+      title: "HUBC: Resilient in transition",
+      url: "https://www.brecorder.com/news/40410294",
+      source: "Business Recorder",
+      published_at: new Date(Date.now() - 45 * 86400000).toISOString(),
+      snippet: "Revenue decline reflects structural change in the IPP landscape, but a diversified portfolio, lower leverage and strong dividend inflows from Thar and CPHGC associates have sustained profitability and the payout.",
+      ai_summary: "Legacy PPA earnings are shrinking while associate income from Thar coal plants grows about 6% and now carries the quarterly payout.",
+      sentiment: "neutral",
       relevance_score: 8,
-      why_it_matters: "PPA renegotiation is the exact risk named in your HUBC thesis.",
-      thesis_impact: "May weaken the thesis. The cash-flow case depends on contracted returns.",
-      review_question: "Does the original cash-flow case survive another round of PPA cuts?",
-      category: "corporate_announcement",
+      why_it_matters: "The company funding its dividend from associates instead of contracted base-plant cash flows is exactly why your thesis is marked weakening.",
+      thesis_impact: "Changes the shape of the thesis rather than breaking it. The payout holds but the original contracted-cash-flow case has rolled off.",
+      review_question: "Can associate dividends alone cover the PKR 5 per share quarterly payout?",
+      category: "result",
     },
     {
-      ticker: "FFC",
-      company_name: "Fauji Fertilizer Company Limited",
-      sector: "Fertilizer",
-      title: "Fauji Fertilizer announces interim cash dividend",
-      url: "https://example.com/demo/ffc-dividend",
-      source: "Demo Data",
-      published_at: new Date(Date.now() - 4 * 86400000).toISOString(),
-      snippet: "The FFC board announced an interim cash dividend alongside quarterly results. (Illustrative demo article.)",
-      ai_summary: "Interim cash dividend declared, consistent with the historical payout pattern.",
+      ticker: "LUCK",
+      company_name: "Lucky Cement Limited",
+      sector: "Cement",
+      title: "Pakistan's cement despatches rise 11.14% in April on strong local demand",
+      url: "https://profit.pakistantoday.com.pk/2026/05/05/pakistans-cement-despatches-rise-11-14-in-april-on-strong-local-demand/",
+      source: "Profit by Pakistan Today",
+      published_at: new Date(Date.now() - 59 * 86400000).toISOString(),
+      snippet: "Sector despatches rose 11% in April with Lucky Cement up 18% to 0.79 million tonnes, driven by a 33% jump in local sales. FY26 despatches are heading for roughly 50 million tonnes, a second straight year of recovery.",
+      ai_summary: "Domestic cement demand is recovering, and Lucky is taking more than its share: dispatches up 18%, local sales up 33% in April.",
       sentiment: "positive",
       relevance_score: 8,
-      why_it_matters: "The dividend stream is the core of your FFC position.",
-      thesis_impact: "Supports the income leg of the thesis.",
-      review_question: "Is the payout ratio holding at historical levels?",
-      category: "dividend",
+      why_it_matters: "The domestic construction recovery is the entire LUCK thesis, and the dispatch data now confirms it.",
+      thesis_impact: "Supports the thesis. The volume-recovery leg has arrived.",
+      review_question: "Do margins hold as volume returns, or does pricing discipline slip?",
+      category: "result",
     },
     {
-      ticker: "OGDC",
-      company_name: "Oil & Gas Development Company Limited",
-      sector: "Oil & Gas Exploration",
-      title: "E&P sector receivables ease as settlement plan advances",
-      url: "https://example.com/demo/ogdc-receivables",
-      source: "Demo Data",
-      published_at: new Date(Date.now() - 5 * 86400000).toISOString(),
-      snippet: "Reports suggest progress on a plan to settle long-standing energy-sector receivables. (Illustrative demo article.)",
-      ai_summary: "Progress on an energy-chain receivable settlement that has historically capped exploration-company cash returns.",
+      ticker: "MEBL",
+      company_name: "Meezan Bank Limited",
+      sector: "Commercial Banks",
+      title: "SBP holds policy rate at 11.5% as inflation stays above target",
+      url: "https://tradingeconomics.com/pakistan/interest-rate",
+      source: "Trading Economics",
+      published_at: new Date(Date.now() - 18 * 86400000).toISOString(),
+      snippet: "The State Bank held the policy rate at 11.5% on 15 June after the surprise 100 basis point hike in April, with headline inflation at 11.7% in May, its highest since June 2024 and above the 5 to 7% target band.",
+      ai_summary: "The easing cycle has reversed: rates are back at 11.5% and holding while inflation runs at 11.7%.",
       sentiment: "positive",
-      relevance_score: 7,
-      why_it_matters: "Receivable settlement is the upside trigger in your OGDC thesis.",
-      thesis_impact: "Supports the re-rating case if the plan is actually funded.",
-      review_question: "Is this a funded settlement or another announcement without cash behind it?",
-      category: "corporate_announcement",
+      relevance_score: 8,
+      why_it_matters: "Higher-for-longer rates protect the margins of both of your banks, which together are the largest sleeve of the book.",
+      thesis_impact: "Supports the earnings leg of the MEBL and UBL theses in the near term.",
+      review_question: "Does deposit growth hold up now that the rate cycle has turned?",
+      category: "market",
     },
   ];
   for (const n of news) {
@@ -357,6 +357,8 @@ export async function loadDemoData(supabase: SupabaseClient, userId: string) {
     { ticker: "ENGROH", pay_date: daysAgo(260), per_share: 10.0 },
     { ticker: "ENGROH", pay_date: daysAgo(80), per_share: 10.0 },
     { ticker: "LUCK", pay_date: daysAgo(95), per_share: 16.0 },
+    { ticker: "HUBC", pay_date: daysAgo(93), per_share: 5.0 },
+    { ticker: "HUBC", pay_date: daysAgo(32), per_share: 5.0 },
   ];
   await supabase.from("dividends").insert(
     receivedDividends.map((d, i) => {
@@ -393,12 +395,12 @@ export async function loadDemoData(supabase: SupabaseClient, userId: string) {
 This demo portfolio holds eight PSX blue chips worth roughly PKR ${(totalValue / 1_000_000).toFixed(2)}M, up about ${(((totalValue - totalCost) / totalCost) * 100).toFixed(0)}% on cost. It spans banks, fertilizer, oil and gas, technology, cement, power and a conglomerate, so no single sector decides the outcome.
 
 ## What moved
-- **SYS** reiterated guidance for export revenue growth above 20%. This is the core assumption behind the position, and it is holding. [Source](https://example.com/demo/sys-guidance)
-- **MEBL** posted a record quarterly profit on deposit growth, which confirms the earnings leg of the thesis. [Source](https://example.com/demo/mebl-results)
-- **HUBC** is back in the news on a fresh round of IPP renegotiation talks. This is the exact risk named in the thesis. [Source](https://example.com/demo/hubc-ipp-talks)
+- **OGDC** received the final PKR 7.7 billion instalment on 24 June, completing the PKR 92 billion circular debt interest schedule. The re-rating trigger in your thesis has now fully landed. [Source](https://www.brecorder.com/news/40427135)
+- **SYS** rides a sector tape at a record: IT exports hit USD 4.2 billion in 11MFY26, up about 20% year on year. [Source](https://www.arabnews.com/node/2647548)
+- **Rates**: the SBP held at 11.5% on 15 June after April's surprise 100 basis point hike, with CPI at 11.7%. Near-term support for your two banks, a headwind for the cement recovery. [Source](https://tradingeconomics.com/pakistan/interest-rate)
 
 ## Holdings requiring review
-- **HUBC** review date has passed and the thesis is marked *Weakening*.
+- **HUBC** review date has passed and the thesis is marked *Weakening*: the payout now leans on Thar associate dividends, not the contracted cash flows you originally bought.
 - **ENGROH** has no recorded thesis, so the reason to keep holding is not written down.
 
 ## Income
@@ -660,6 +662,7 @@ async function seedDemoChatThreads(
   const posCost = (t: string) => H(t).quantity * H(t).avg_cost;
 
   // Net received per holding over the trailing 12 months (gross x 0.85).
+  // Per-share sums mirror the receivedDividends rows above.
   const divNet: Record<string, number> = {
     UBL: Math.round(44 * H("UBL").quantity * 0.85),
     OGDC: Math.round(27 * H("OGDC").quantity * 0.85),
@@ -667,17 +670,23 @@ async function seedDemoChatThreads(
     MEBL: Math.round(28 * H("MEBL").quantity * 0.85),
     ENGROH: Math.round(20 * H("ENGROH").quantity * 0.85),
     LUCK: Math.round(16 * H("LUCK").quantity * 0.85),
+    HUBC: Math.round(10 * H("HUBC").quantity * 0.85),
   };
   const netIncome = Object.values(divNet).reduce((s, v) => s + v, 0);
   const yocNet = (netIncome / totalCost) * 100;
   const yoc = (t: string) => (divNet[t] / posCost(t)) * 100;
   const incomeShare = (t: string) => (divNet[t] / netIncome) * 100;
+  const divNetRange = (t: string, low: number, high: number) =>
+    `PKR ${Math.round(low * H(t).quantity * 0.85).toLocaleString()} to ${Math.round(high * H(t).quantity * 0.85).toLocaleString()}`;
 
   // Benchmark comparison, computed the same way as seedBenchmarkSeries so prose
   // and the growth chart agree: KSE lands at 0.74 of the portfolio's excess.
   const portRet = (totalValue / totalCost - 1) * 100;
   const kseRet = portRet * 0.74;
   const excessPts = portRet - kseRet;
+
+  // Target allocations, mirrored from the seeded targets table.
+  const targetWt: Record<string, number> = { MEBL: 16, UBL: 14, FFC: 12, OGDC: 13, SYS: 14, LUCK: 10, HUBC: 8, ENGROH: 9 };
 
   // UBL addition scenario (PKR 150k of new money at the current price).
   const addPkr = 150_000;
@@ -688,6 +697,20 @@ async function seedDemoChatThreads(
   const totalAfter = totalValue + addCost;
   const ublWtAfter = ((ublSharesAfter * H("UBL").price) / totalAfter) * 100;
   const banksAfter = ((ublSharesAfter * H("UBL").price + marketValue(H("MEBL"))) / totalAfter) * 100;
+  // The same PKR 150k into SYS instead.
+  const sysShares = Math.round(addPkr / H("SYS").price);
+  const sysCost = sysShares * H("SYS").price;
+  const sysWtAfter = ((marketValue(H("SYS")) + sysCost) / (totalValue + sysCost)) * 100;
+  const banksIfSys = ((marketValue(H("MEBL")) + marketValue(H("UBL"))) / (totalValue + sysCost)) * 100;
+  const ublIncomeAdd = Math.round(44 * addShares * 0.85);
+
+  // LUCK addition scenario (PKR 100k at the current price).
+  const luckPkr = 100_000;
+  const luckShares = Math.round(luckPkr / H("LUCK").price);
+  const luckCost = luckShares * H("LUCK").price;
+  const luckSharesAfter = H("LUCK").quantity + luckShares;
+  const luckAvgAfter = (posCost("LUCK") + luckCost) / luckSharesAfter;
+  const luckWtAfter = ((luckSharesAfter * H("LUCK").price) / (totalValue + luckCost)) * 100;
 
   const threads: {
     title: string;
@@ -696,24 +719,24 @@ async function seedDemoChatThreads(
     assistant: string;
     cards: Record<string, unknown>[];
   }[] = [
-    // 1 ─ Comprehensive portfolio assessment ────────────────────────────────
+    // 1 ─ Comprehensive portfolio assessment (flagship, newest) ──────────────
     {
       title: "Portfolio health check",
       summary: `${DEMO_CHAT_SUMMARY_PREFIX} concentration, benchmark, income and what needs attention`,
       user: "Give me a full health check on my portfolio and tell me what actually needs attention.",
-      assistant: `The book is in good shape: PKR ${valueM}M across eight names, up ${unrealizedPct}% on cost, and roughly ${excessPts.toFixed(0)} points ahead of the KSE-100 over the same capital, so it is earning its place rather than just riding the index. Two items need attention, and neither is about performance: **HUBC** (${wt("HUBC").toFixed(0)}% of the book, thesis marked weakening, review overdue) and **ENGROH** (${wt("ENGROH").toFixed(0)}%, no written thesis).
+      assistant: `The book is in good shape: PKR ${valueM}M across eight names, up ${unrealizedPct}% on cost, and roughly ${excessPts.toFixed(0)} points ahead of the KSE-100 on the same contributions, so it is earning its place rather than riding the index. Two items need attention, and neither is about performance: **HUBC** (${wt("HUBC").toFixed(1)}% of the book, thesis marked weakening, review overdue) and **ENGROH** (${wt("ENGROH").toFixed(1)}%, no written thesis).
 
 ## Concentration is the one real risk
-MEBL at ${wt("MEBL").toFixed(0)}% and UBL at ${wt("UBL").toFixed(0)}% put ${banksWt.toFixed(0)}% of the book in two banks that share one driver: the policy rate. With the SBP at 11% and cutting, that is a slow margin headwind for both at once, cushioned by bond-book revaluation. It is a deliberate bet, but it is one bet, not two, so size it as a pair.
+MEBL at ${wt("MEBL").toFixed(1)}% and UBL at ${wt("UBL").toFixed(1)}% put ${banksWt.toFixed(0)}% of the book in two banks that share one driver: the policy rate. With the SBP back at 11.5% after April's surprise hike and holding in June, that driver is a near-term margin tailwind, so the urgency here is about shape, not earnings. It is still one bet, not two, so treat the pair as a single sleeve when sizing anything new.
 
 ## The gains are broad, which is what you want
-SYS is your best position at +${retPct(H("SYS")).toFixed(0)}%, MEBL +${retPct(H("MEBL")).toFixed(0)}% and UBL +${retPct(H("UBL")).toFixed(0)}%. No single name carries the result, so a stumble in one does not sink the portfolio.
+SYS is your best position at +${retPct(H("SYS")).toFixed(0)}%, MEBL +${retPct(H("MEBL")).toFixed(0)}% and UBL +${retPct(H("UBL")).toFixed(0)}%. Six of eight names are green and no single one carries the result. The two reds are the same two names flagged above: HUBC at ${retPct(H("HUBC")).toFixed(0)}% and ENGROH at ${retPct(H("ENGROH")).toFixed(0)}%, which is not a coincidence, positions without a live thesis tend to drift.
 
 ## Income is solid but concentrated
-Trailing dividends are PKR ${(netIncome / 1000).toFixed(1)}k net, a ${yocNet.toFixed(1)}% yield on cost. UBL alone is ${incomeShare("UBL").toFixed(0)}% of that, so a UBL payout cut would be felt across both the price and the income line.
+Trailing dividends are PKR ${(netIncome / 1000).toFixed(1)}k net, a ${yocNet.toFixed(1)}% yield on cost. UBL alone is ${incomeShare("UBL").toFixed(0)}% of that, so a UBL payout cut would hit both the price and the income line at once.
 
 ## What I would do
-Nothing forced. Resolve HUBC on the next results or PPA update, write a one-line thesis for ENGROH or trim it, and treat the banking pair as your first source of funds if it drifts higher.`,
+Nothing forced. Resolve HUBC at the overdue review, write a one-paragraph thesis for ENGROH or trim it, and treat the banking pair as your first source of funds if it drifts above ${(banksWt + 3).toFixed(0)}%.`,
       cards: [
         {
           kind: "metric-strip",
@@ -726,253 +749,117 @@ Nothing forced. Resolve HUBC on the next results or PPA update, write a one-line
           ],
         },
         {
+          kind: "allocation",
+          title: "Where the capital sits",
+          description: "Two banks share one macro driver, so read them as a single sleeve",
+          bySector: true,
+          centerValue: `${banksWt.toFixed(0)}%`,
+          centerLabel: "in two banks",
+          segments: [
+            { label: "Commercial Banks", value: marketValue(H("MEBL")) + marketValue(H("UBL")) },
+            { label: "Oil & Gas Exploration", value: marketValue(H("OGDC")) },
+            { label: "Technology & Communication", value: marketValue(H("SYS")) },
+            { label: "Fertilizer", value: marketValue(H("FFC")) },
+            { label: "Conglomerate", value: marketValue(H("ENGROH")) },
+            { label: "Cement", value: marketValue(H("LUCK")) },
+            { label: "Power Generation & Distribution", value: marketValue(H("HUBC")) },
+          ],
+        },
+        {
+          kind: "vega-lite",
+          title: "Weight versus target",
+          description: "Bars are current weights, ticks are your targets",
+          spec: {
+            data: {
+              values: DEMO_HOLDINGS.map((h) => ({
+                holding: h.ticker,
+                weight: Math.round(wt(h.ticker) * 10) / 10,
+                target: targetWt[h.ticker],
+              })),
+            },
+            layer: [
+              {
+                mark: { type: "bar", cornerRadiusEnd: 2 },
+                encoding: {
+                  y: { field: "holding", type: "nominal", sort: "-x", title: null },
+                  x: { field: "weight", type: "quantitative", title: "% of portfolio" },
+                },
+              },
+              {
+                mark: { type: "tick", thickness: 2 },
+                encoding: {
+                  y: { field: "holding", type: "nominal", sort: "-x" },
+                  x: { field: "target", type: "quantitative" },
+                },
+              },
+            ],
+          },
+        },
+        {
           kind: "portfolio-attribution",
           title: "Unrealized P/L by holding",
           description: "Where the gain actually comes from",
           items: DEMO_HOLDINGS.map((h) => ({ label: h.ticker, value: pl(h), tone: pl(h) >= 0 ? "positive" : "negative" }))
             .sort((a, b) => b.value - a.value),
         },
-        {
-          kind: "comparison-table",
-          title: "Concentration versus target",
-          columns: [
-            { key: "ticker", label: "Holding" },
-            { key: "weight", label: "Weight" },
-            { key: "target", label: "Target" },
-            { key: "read", label: "Read" },
-          ],
-          rows: [
-            { ticker: "MEBL", weight: `${wt("MEBL").toFixed(0)}%`, target: "16%", read: "In line, quality bank" },
-            { ticker: "UBL", weight: `${wt("UBL").toFixed(0)}%`, target: "14%", read: "Above target, income bank" },
-            { ticker: "OGDC", weight: `${wt("OGDC").toFixed(0)}%`, target: "13%", read: "In line" },
-            { ticker: "HUBC", weight: `${wt("HUBC").toFixed(0)}%`, target: "8%", read: "Weakening thesis, review" },
-            { ticker: "ENGROH", weight: `${wt("ENGROH").toFixed(0)}%`, target: "9%", read: "No thesis on file" },
-          ],
-        },
       ],
     },
 
-    // 2 ─ Stress Testing / Scenario Analysis ─────────────────────────────────
+    // 2 ─ Event-aware macro: the April hike and June hold ────────────────────
     {
-      title: "Stress test: another 200bps rate cut?",
-      summary: `${DEMO_CHAT_SUMMARY_PREFIX} simulating the impact of a sharp rate cut on portfolio beta and margins`,
-      user: "What happens to my portfolio if the SBP cuts rates by another 200bps sharply?",
-      assistant: `A 200bps cut is a net positive for your portfolio overall, but it fundamentally reshapes where your returns come from. Your banking sleeve (${banksWt.toFixed(0)}%) takes a direct margin hit, while your cyclicals (${(wt("LUCK") + wt("HUBC")).toFixed(0)}%) see a sharp re-rating.
-      
-## The Banking Drag
-MEBL and UBL will see net interest margins compress. While bond-book revaluation provides a one-off cushion, the core earnings power drops. A 200bps cut typically shaves 12-15% off forward EPS estimates for the sector.
+      title: "The April rate hike: which side am I on?",
+      summary: `${DEMO_CHAT_SUMMARY_PREFIX} what the surprise 100bps hike and June hold do to each sleeve`,
+      user: "I thought rates were coming down, but the SBP hiked in April and held in June. Which side of that is my portfolio on?",
+      assistant: `Mostly the right side, by construction rather than luck. The rate cycle reversed: the SBP took the policy rate from a 22% peak down to 10.5%, then hiked 100 basis points to 11.5% on 27 April as inflation came back, and held there on 15 June. Your ${banksWt.toFixed(0)}% banking sleeve is the direct beneficiary, and it is the largest thing you own.
 
-## The Cyclical Offset
-LUCK is the primary beneficiary. Lower financing costs improve margins, but more importantly, a lower cost of capital stimulates construction demand. HUBC also benefits from reduced leverage costs, although circular debt remains the gating factor for cash.
+## Why the SBP turned
+CPI printed 11.7% in May, the highest since June 2024 and well above the 5 to 7% target band. That puts the real policy rate at about minus 0.2 points, so there is no room to resume cutting until inflation rolls over. Plan around 11.5% persisting, not around the easing cycle you originally positioned for.
 
-## The Verdict
-Your portfolio is well-balanced for this scenario. The capital appreciation from LUCK and the broader market multiple expansion (KSE-100 re-rating) will more than offset the income drag from the banks. No urgent reallocation is required, but capping the banking sleeve is crucial.`,
-      cards: [
-        {
-          kind: "metric-strip",
-          title: "Simulated 200bps Cut Impact",
-          metrics: [
-            { label: "Portfolio Beta", value: "0.85", detail: "Defensive leaning", tone: "neutral" },
-            { label: "Simulated P/L", value: `+PKR ${Math.round(totalValue * 0.045 / 1000)}k`, detail: "+4.5% net impact", tone: "positive" },
-            { label: "Bank EPS Impact", value: "-14%", detail: "Forward 12m est.", tone: "negative" },
-            { label: "Cement Re-rating", value: "+22%", detail: "Multiple expansion", tone: "positive" },
-          ],
-        },
-        {
-          kind: "comparison-table",
-          title: "Pre vs Post Rate Cut EPS Estimates (Illustrative)",
-          columns: [
-            { key: "ticker", label: "Holding" },
-            { key: "current", label: "Current Est. EPS" },
-            { key: "post", label: "Post-Cut EPS" },
-            { key: "impact", label: "Impact" },
-          ],
-          rows: [
-            { ticker: "MEBL", current: "PKR 45.0", post: "PKR 39.5", impact: "-12%" },
-            { ticker: "UBL", current: "PKR 52.0", post: "PKR 44.5", impact: "-14%" },
-            { ticker: "LUCK", current: "PKR 85.0", post: "PKR 98.0", impact: "+15%" },
-            { ticker: "SYS", current: "PKR 32.0", post: "PKR 32.5", impact: "Neutral" },
-          ],
-        },
-      ],
-    },
-
-    // 3 ─ Tactical Reallocation / DRIP ───────────────────────────────────────
-    {
-      title: "Reinvest PKR 150k in UBL or buy SYS?",
-      summary: `${DEMO_CHAT_SUMMARY_PREFIX} analyzing dividend reinvestment vs growth diversification`,
-      user: "I have PKR 150k in cash from dividends. Should I reinvest it in UBL for the yield or buy more SYS?",
-      assistant: `Buy SYS. Reinvesting in UBL right now increases an already concentrated banking bet, whereas SYS offers a fundamentally different growth engine and diversifies your income away from the domestic rate cycle.
-      
-## The Concentration Problem
-Putting PKR 150k back into UBL lifts your banking sleeve to ${banksAfter.toFixed(0)}%. While the ${yoc("UBL").toFixed(0)}% yield is tempting, you are doubling down on a single macroeconomic driver (the policy rate) right as it enters an easing cycle.
-
-## The Growth Alternative
-SYS (${wt("SYS").toFixed(0)}% of book) provides a US-dollar revenue hedge and export-led growth. While its dividend yield is negligible, its total return profile is driven by volume and utilization, not interest rates. 
-
-## The Compounding Math
-If you DRIP into UBL, your current income rises, but your capital is exposed to margin compression. Allocating to SYS sacrifices immediate yield for capital appreciation, keeping your portfolio balanced between domestic income and export growth.`,
-      cards: [
-        {
-          kind: "bar-chart",
-          title: "Projected 5-Year Value: UBL DRIP vs SYS Growth (Illustrative)",
-          xKey: "year",
-          yUnit: "PKR '000",
-          bars: [
-            { key: "ubl", label: "UBL (Yield Focus)", color: "#0ea5e9" },
-            { key: "sys", label: "SYS (Growth Focus)", color: "#10b981" },
-          ],
-          data: [
-            { year: "Year 1", ubl: 165, sys: 175 },
-            { year: "Year 2", ubl: 182, sys: 205 },
-            { year: "Year 3", ubl: 200, sys: 240 },
-            { year: "Year 4", ubl: 220, sys: 280 },
-            { year: "Year 5", ubl: 242, sys: 325 },
-          ],
-        },
-        {
-          kind: "comparison-table",
-          title: "Risk/Reward Profile",
-          columns: [
-            { key: "factor", label: "Factor" },
-            { key: "ubl", label: "UBL Reinvestment" },
-            { key: "sys", label: "SYS Allocation" },
-          ],
-          rows: [
-            { factor: "Primary Driver", ubl: "Policy Rate (Domestic)", sys: "Export Volumes (Global)" },
-            { factor: "Portfolio Risk", ubl: `Increases Bank Weight to ${banksAfter.toFixed(0)}%`, sys: "Maintains balanced exposure" },
-            { factor: "Expected Return", ubl: "High Yield, Low Growth", sys: "Low Yield, High Growth" },
-          ],
-        },
-      ],
-    },
-
-    // 4 ─ Deep Dive Fundamental Convergence ──────────────────────────────────
-    {
-      title: "Is SYS fundamentally overvalued?",
-      summary: `${DEMO_CHAT_SUMMARY_PREFIX} converging technical momentum with valuation multiples for SYS`,
-      user: "SYS has run up significantly. Is it fundamentally overvalued now, or does the growth justify it?",
-      assistant: `The growth justifies the current valuation, but the margin of safety is narrower than it was at your entry. At your cost basis of PKR ${H("SYS").avg_cost}, you captured the re-rating. At the current price of PKR ${H("SYS").price}, you are paying a premium for execution, but the multiples are not yet stretched into bubble territory.
-
-## The Valuation Case
-SYS is currently trading at a trailing P/E of roughly 18x. While this is a premium to the KSE-100 average, it is reasonable for a company guiding to >20% export revenue growth. The PEG (Price/Earnings-to-Growth) ratio remains below 1.0, indicating that the growth rate still outpaces the multiple.
-
-## The Technical View
-The price chart shows strong momentum, comfortably above its 50-day and 200-day moving averages. The recent run-up is supported by volume, confirming institutional appetite. 
-
-## The Verdict
-Hold. Taking profit now means stepping off a compounding engine prematurely. As long as management delivers on the 20% growth guidance and utilization improves, the premium multiple is warranted.`,
-      cards: [
-        {
-          kind: "metric-strip",
-          title: "SYS Valuation & Momentum",
-          metrics: [
-            { label: "Trailing P/E", value: "18.2x", detail: "Premium to market", tone: "neutral" },
-            { label: "Est. PEG Ratio", value: "0.85", detail: "< 1.0 is favorable", tone: "positive" },
-            { label: "Export Growth", value: ">20%", detail: "Management guidance", tone: "positive" },
-            { label: "RSI (14-day)", value: "68", detail: "Approaching overbought", tone: "negative" },
-          ],
-        },
-        {
-          kind: "price-chart",
-          title: "SYS Price vs Cost Basis",
-          ticker: "SYS",
-          period: "1Y",
-          overlay: ["cost-basis"],
-          description: "Strong momentum, well above your entry price.",
-        },
-      ],
-    },
-
-    // 5 ─ Sector Rotation Warning ────────────────────────────────────────────
-    {
-      title: "Rotate from FFC into OGDC?",
-      summary: `${DEMO_CHAT_SUMMARY_PREFIX} analyzing a sector rotation from Fertilizer to E&P`,
-      user: "Should I take my profits in FFC and rotate into OGDC ahead of the winter gas shortages?",
-      assistant: `This is a classic "Quality vs. Deep Value" rotation. It is defensible if you have a high risk tolerance, but you would be trading a highly reliable dividend stream (FFC) for a volatile re-rating story (OGDC) that relies on government action.
-
-## The Case for FFC (Quality & Income)
-FFC gives you pricing power. Even with gas price hikes or winter curtailments, they have historically passed costs onto the farmer. The ${yoc("FFC").toFixed(0)}% yield on cost is arguably the safest in your book. Selling it removes your most reliable defensive anchor.
-
-## The Case for OGDC (Deep Value)
-OGDC trades at distressed multiples (P/E < 4x). The upside is massive *if* the circular debt settlement plan is executed. However, if the plan stalls, you are holding dead money that only pays a modest dividend while you wait.
-
-## The Verdict
-Do not rotate completely. FFC and OGDC serve different purposes. If you want more exposure to the E&P re-rating, use fresh capital or trim your banking exposure (UBL/MEBL) rather than selling your best defensive asset.`,
-      cards: [
-        {
-          kind: "portfolio-attribution",
-          title: "Current Risk Contribution",
-          description: "How these sectors affect your P/L",
-          items: [
-            { label: "FFC (Fertilizer)", value: pl(H("FFC")), tone: "positive" },
-            { label: "OGDC (E&P)", value: pl(H("OGDC")), tone: "positive" },
-          ],
-        },
-        {
-          kind: "timeline",
-          title: "The Circular Debt & Gas Pricing Catalyst",
-          events: [
-            { date: isoDate(5), label: "E&P receivables settlement plan advances", type: "corporate", detail: "Positive for OGDC." },
-            { date: isoDate(12), label: "Expected winter gas tariff hikes", type: "news", detail: "Cost pressure for FFC, revenue boost for OGDC." },
-            { date: isoDate(60), label: "FFC interim cash dividend declared", type: "dividend", detail: "Confirms FFC's cash generation." },
-          ],
-        },
-      ],
-    },
-
-    // 6 ─ Light / concise: benchmark (Original 4) ────────────────────────────
-    {
-      title: "Am I beating the market?",
-      summary: `${DEMO_CHAT_SUMMARY_PREFIX} portfolio return versus the KSE-100 and inflation`,
-      user: "Am I actually beating the market, or just riding it?",
-      assistant: `Beating it, and by a real margin rather than noise. You are up ${portRet.toFixed(0)}% on invested capital against roughly ${kseRet.toFixed(0)}% for the KSE-100 over the same contributions, so about ${excessPts.toFixed(0)} points of excess return that is yours, not the index's.
-
-Inflation is the honest hurdle. With CPI running near 11.7% year-on-year, a nominal gain has to clear that to build real wealth, and this book does, but not by a wide margin. The number to keep watching is the excess over the index, because that is the part that reflects your selection rather than the market tide.`,
-      cards: [
-        {
-          kind: "metric-strip",
-          title: "Return scorecard",
-          metrics: [
-            { label: "Your portfolio", value: `+${portRet.toFixed(0)}%`, detail: "on invested capital", tone: "positive" },
-            { label: "KSE-100 equivalent", value: `+${kseRet.toFixed(0)}%`, detail: "same contributions", tone: "neutral" },
-            { label: "Excess return", value: `+${excessPts.toFixed(0)} pts`, detail: "your selection", tone: "positive" },
-            { label: "Inflation (CPI)", value: "~11.7%", detail: "year-on-year hurdle", tone: "neutral" },
-          ],
-        },
-      ],
-    },
-
-    // 7 ─ Moderate: macro / rate exposure (Original 6) ───────────────────────
-    {
-      title: "What falling rates mean for me",
-      summary: `${DEMO_CHAT_SUMMARY_PREFIX} policy-rate and USD/PKR exposure across the book`,
-      user: "Rates are coming down and the rupee has been stable. What does that mean for my holdings?",
-      assistant: `Net effect is close to neutral, because the biggest lever cuts two ways across your book. The SBP has taken the policy rate to 11% from a 22% peak, and your ${banksWt.toFixed(0)}% banking weight sees slowly compressing margins from that, offset by revaluation gains on bank bond books. The rate-sensitive cyclicals lean the other way.
-
-## Who gains as rates fall
-- **LUCK** (${wt("LUCK").toFixed(0)}%): cheaper project financing and stronger construction demand. This is the clearest beneficiary and the reason the position was added.
-- **HUBC** (${wt("HUBC").toFixed(0)}%): heavy leverage means lower financing costs help, though circular debt still gates the cash.
-
-## Who the currency drives, not rates
-- **SYS** (${wt("SYS").toFixed(0)}%) and **OGDC** (${wt("OGDC").toFixed(0)}%) earn in US dollars. That normally makes rupee weakness a tailwind, but USD/PKR near 278 is actually about 1.8% firmer over the past year, so the currency kicker is dormant. SYS rests on volume and utilisation right now, not depreciation, and OGDC on the oil price.
+## Who is on which side
+- **Banks (MEBL, UBL, ${banksWt.toFixed(0)}%)**: higher for longer protects spreads. The margin-compression risk written in both theses has been pushed out, not cancelled.
+- **Cement (LUCK, ${wt("LUCK").toFixed(1)}%)**: the one clear loser. Its profit recovery leaned on a 36% drop in finance costs, and that tailwind stalls at 11.5%. Demand is still recovering, so this cools the thesis rather than breaking it.
+- **Power (HUBC, ${wt("HUBC").toFixed(1)}%)**: leverage makes rate relief welcome, and it is now delayed.
+- **Dollar earners (SYS ${wt("SYS").toFixed(1)}%, OGDC ${wt("OGDC").toFixed(1)}%)**: rates barely matter here. USD/PKR near 277 and slightly firmer means the FX kicker is dormant; these run on export volumes and oil.
 
 ## The read
-No trade here, just awareness: your largest sleeve is a mild rate headwind, your cyclicals are the offset, and your dollar earners are not getting the FX help this year that the thesis assumes long term. With CPI near 11.7% and the policy rate at 11%, the real rate is about 0.7 points below inflation, so the easing cycle has less cushion than the headline rate suggests.`,
+No action required. The book is hedged across the rate cycle: what the hike takes from LUCK and HUBC it hands to MEBL and UBL with interest. The real casualty is any plan that assumed cheap money by December, so do not size new cyclical buys on that assumption.`,
       cards: [
         {
           kind: "metric-strip",
-          title: "PSX macro backdrop",
+          title: "PSX macro backdrop, early July 2026",
           metrics: [
-            { label: "Policy rate", value: "11.0%", delta: "from 22% peak", tone: "neutral" },
-            { label: "Inflation (CPI)", value: "11.7%", detail: "year-on-year", tone: "neutral" },
-            { label: "Real policy rate", value: "-0.7 pts", detail: "rate minus CPI", tone: "neutral" },
-            { label: "USD/PKR", value: "278", delta: "PKR firmer, -1.8% y/y", tone: "neutral" },
+            { label: "Policy rate", value: "11.5%", delta: "+100bps on 27 Apr, held 15 Jun", tone: "neutral" },
+            { label: "Inflation (CPI)", value: "11.7%", detail: "May, highest since Jun 2024", tone: "negative" },
+            { label: "Real policy rate", value: "-0.2 pts", detail: "rate minus CPI", tone: "neutral" },
+            { label: "USD/PKR", value: "277", detail: "firm over the past year", tone: "neutral" },
           ],
         },
         {
+          kind: "vega-lite",
+          title: "Exposure to the rate turn",
+          description: "Sleeve weights, coloured by which side of 11.5% they sit on",
+          spec: {
+            data: {
+              values: [
+                { sleeve: "Banks (MEBL, UBL)", weight: Math.round(banksWt * 10) / 10, side: "Tailwind" },
+                { sleeve: "Dollar earners (SYS, OGDC)", weight: Math.round((wt("SYS") + wt("OGDC")) * 10) / 10, side: "Rate-neutral" },
+                { sleeve: "Fertilizer (FFC)", weight: Math.round(wt("FFC") * 10) / 10, side: "Rate-neutral" },
+                { sleeve: "Conglomerate (ENGROH)", weight: Math.round(wt("ENGROH") * 10) / 10, side: "Mixed" },
+                { sleeve: "Cement (LUCK)", weight: Math.round(wt("LUCK") * 10) / 10, side: "Headwind" },
+                { sleeve: "Power (HUBC)", weight: Math.round(wt("HUBC") * 10) / 10, side: "Headwind" },
+              ],
+            },
+            mark: { type: "bar", cornerRadiusEnd: 2 },
+            encoding: {
+              y: { field: "sleeve", type: "nominal", sort: "-x", title: null },
+              x: { field: "weight", type: "quantitative", title: "% of portfolio" },
+              color: { field: "side", type: "nominal", title: null },
+            },
+          },
+        },
+        {
           kind: "comparison-table",
-          title: "How the backdrop hits each sleeve",
+          title: "How 11.5% lands on each sleeve",
           columns: [
             { key: "sleeve", label: "Sleeve" },
             { key: "weight", label: "Weight" },
@@ -980,16 +867,360 @@ No trade here, just awareness: your largest sleeve is a mild rate headwind, your
             { key: "read", label: "Net read" },
           ],
           rows: [
-            { sleeve: "Banks (MEBL, UBL)", weight: `${banksWt.toFixed(0)}%`, driver: "Policy rate", read: "Margin drag, bond-book offset" },
-            { sleeve: "Cement (LUCK)", weight: `${wt("LUCK").toFixed(0)}%`, driver: "Rates + construction", read: "Tailwind as rates fall" },
-            { sleeve: "Power (HUBC)", weight: `${wt("HUBC").toFixed(0)}%`, driver: "Leverage + circular debt", read: "Helped, but cash gated" },
-            { sleeve: "Exporters (SYS, OGDC)", weight: `${(wt("SYS") + wt("OGDC")).toFixed(0)}%`, driver: "USD/PKR", read: "FX kicker dormant, PKR firm" },
+            { sleeve: "Banks (MEBL, UBL)", weight: `${banksWt.toFixed(0)}%`, driver: "Policy rate", read: "Spread protection extended" },
+            { sleeve: "Cement (LUCK)", weight: `${wt("LUCK").toFixed(1)}%`, driver: "Finance costs + construction", read: "Recovery cools, demand intact" },
+            { sleeve: "Power (HUBC)", weight: `${wt("HUBC").toFixed(1)}%`, driver: "Leverage + circular debt", read: "Rate relief delayed" },
+            { sleeve: "Exporters (SYS, OGDC)", weight: `${(wt("SYS") + wt("OGDC")).toFixed(0)}%`, driver: "USD/PKR, oil", read: "FX kicker dormant, PKR firm" },
           ],
         },
       ],
     },
-  ];
 
+    // 3 ─ Event-aware: OGDC circular debt settlement completed ───────────────
+    {
+      title: "OGDC after the circular debt settlement",
+      summary: `${DEMO_CHAT_SUMMARY_PREFIX} the final PKR 7.7bn instalment landed on 24 June, what it changes`,
+      user: "OGDC just received the final circular debt payment. Should I add more, or is the catalyst spent?",
+      assistant: `Hold what you have and let the next payout announcement decide. The catalyst you bought this for has now fully landed: on 24 June OGDC received the final PKR 7.7 billion instalment, completing the PKR 92 billion interest schedule on top of the PKR 82 billion of principal paid earlier. Your thesis said progress on receivable settlement was upside you were not paying for. It arrived, and the position is up ${retPct(H("OGDC")).toFixed(0)}% against your PKR ${H("OGDC").avg_cost.toFixed(0)} cost.
+
+## Why not add on the news
+Two reasons, both from your own book. First, at ${wt("OGDC").toFixed(1)}% the position already sits at your ${targetWt.OGDC}% target, so there is no room without displacing something. Second, the settlement fixes the balance sheet story, but the re-rating from here depends on what management does with the cash: a higher payout, exploration capex, or letting it sit. The platform's forecast payout of PKR 13 to 15 per share would be worth ${divNetRange("OGDC", 13, 15)} net to you.
+
+## What would change the answer
+Adding is more defensible if: the next dividend announcement routes settlement cash to shareholders, or production guidance turns up while the valuation stays in the bottom quartile.
+Trimming is more defensible if: the cash disappears into unfunded receivables again over the next two results, or the payout stays flat despite the settlement, which would say minority shareholders are last in line.`,
+      cards: [
+        {
+          kind: "timeline",
+          title: "The settlement, from plan to final payment",
+          events: [
+            { date: "2025-07-01", label: "Monthly interest instalments begin", type: "corporate", detail: "Twelve payments of PKR 7.7bn, on top of PKR 82bn principal already approved" },
+            { date: "2026-02-25", label: "Eighth instalment received", type: "corporate", value: "PKR 7.7bn" },
+            { date: "2026-04-24", label: "Tenth instalment received", type: "corporate", value: "PKR 7.7bn" },
+            { date: "2026-06-24", label: "Final instalment, plan complete", type: "corporate", detail: "PKR 92bn of interest fully paid", value: "PKR 7.7bn" },
+            { date: isoDate(-40), label: "Forecast payout window", type: "dividend", detail: "Platform estimate PKR 13 to 15 per share" },
+          ],
+        },
+        {
+          kind: "price-chart",
+          title: "OGDC over the settlement year",
+          ticker: "OGDC",
+          period: "1Y",
+          overlay: ["cost-basis", "dividends"],
+          description: "Your entry at PKR 275 against the re-rating as instalments landed.",
+        },
+        {
+          kind: "metric-strip",
+          title: "The position after the catalyst",
+          metrics: [
+            { label: "Unrealized P/L", value: `+${kfmt(pl(H("OGDC")))}`, delta: `+${retPct(H("OGDC")).toFixed(0)}% on cost`, tone: "positive" },
+            { label: "Weight", value: `${wt("OGDC").toFixed(1)}%`, detail: `target ${targetWt.OGDC}%`, tone: "neutral" },
+            { label: "Settlement received", value: "PKR 174bn", detail: "82bn principal + 92bn interest", tone: "positive" },
+            { label: "Forecast payout", value: "PKR 13 to 15", detail: "per share, platform estimate", tone: "neutral" },
+          ],
+        },
+      ],
+    },
+
+    // 4 ─ Best position, quality radar ───────────────────────────────────────
+    {
+      title: "Has the SYS run gone too far?",
+      summary: `${DEMO_CHAT_SUMMARY_PREFIX} quality radar on the best position after a 55% gain`,
+      user: "SYS is my best position after this run. Is it too expensive to keep holding?",
+      assistant: `Keep it. The question that matters for a held position is whether the growth leg is intact, and the sector tape just confirmed it: Pakistan's IT exports hit a record USD 4.2 billion in the first eleven months of FY26, up about 20% year on year, with December the first ever month above USD 400 million. Your thesis needs export growth above 20%, and the industry is delivering exactly that.
+
+## What the run actually changed
+Your ${H("SYS").quantity.toLocaleString()} shares at PKR ${H("SYS").avg_cost.toFixed(0)} are up ${retPct(H("SYS")).toFixed(0)}%, worth ${kfmt(marketValue(H("SYS")))} at ${wt("SYS").toFixed(1)}% of the book. The run raised the price of new money, not the risk of held money. At the current PKR ${H("SYS").price.toFixed(0)} the margin of safety on fresh purchases is thin, which is why the radar scores value lowest, but selling a compounder while its core assumption is being confirmed is how long-term returns get destroyed.
+
+## What would actually end the thesis
+Your own sell condition is export growth below 10% for a full year or sustained margin erosion from the wage bill. Neither is in sight: the sector is compounding near 20% and the rupee sitting firm near 277 keeps the dollar-revenue story about volumes, not currency luck. Watch utilisation and wage inflation at the next result; those are the two numbers that would crack the margin before the revenue line slows.`,
+      cards: [
+        {
+          kind: "snowflake",
+          title: "SYS quality profile",
+          description: "Scored on the evidence in the thesis and the sector tape",
+          axes: [
+            { label: "Value", score: 2, note: "Premium price after a 55% run; thin margin of safety on new money" },
+            { label: "Future", score: 5, note: "Sector exports at a record USD 4.2bn in 11MFY26, up ~20% y/y" },
+            { label: "Past", score: 4, note: "Multi-year export compounding through rate and currency cycles" },
+            { label: "Health", score: 4, note: "Asset-light services model, low balance-sheet risk" },
+            { label: "Dividend", score: 1, note: "Token payout; this position is held for growth, not income" },
+          ],
+        },
+        {
+          kind: "price-chart",
+          title: "SYS against your cost basis",
+          ticker: "SYS",
+          period: "1Y",
+          overlay: ["cost-basis"],
+          description: "The gap between PKR 95 and the market is your accumulated margin of safety.",
+        },
+        {
+          kind: "metric-strip",
+          title: "Position and sector evidence",
+          metrics: [
+            { label: "Unrealized P/L", value: `+${kfmt(pl(H("SYS")))}`, delta: `+${retPct(H("SYS")).toFixed(0)}% on cost`, tone: "positive" },
+            { label: "Weight", value: `${wt("SYS").toFixed(1)}%`, detail: `target ${targetWt.SYS}%`, tone: "neutral" },
+            { label: "IT exports 11MFY26", value: "$4.2bn", delta: "+20% y/y, record", tone: "positive" },
+            { label: "Best month", value: "$437M", detail: "December, first above $400M", tone: "positive" },
+          ],
+        },
+      ],
+    },
+
+    // 5 ─ Decision: add to LUCK on the cement recovery ───────────────────────
+    {
+      title: "Add PKR 100k to LUCK on the cement recovery?",
+      summary: `${DEMO_CHAT_SUMMARY_PREFIX} strong company case, but the sizing math says no at 100k`,
+      user: "Cement demand is clearly recovering. Should I put another PKR 100k into LUCK?",
+      assistant: `The company case is the strongest in your book right now, and the portfolio case still says no at that size. PKR 100k would take LUCK from ${wt("LUCK").toFixed(1)}% to ${luckWtAfter.toFixed(1)}% of the book against your ${targetWt.LUCK}% target. You would be right about the company and still have made the book worse.
+
+## The company case is real, not a story
+FY26 dispatches are heading for roughly 50 million tonnes, up 7%, the second straight year of recovery, with local sales up 9%. LUCK is taking more than its share: April dispatches rose 18% with local sales up 33%, it produced about a quarter of the entire sector's profit, and its earnings grew 18% helped by a 36% drop in finance costs. Your buy journal from a month ago called exactly this.
+
+## The two things the math cannot ignore
+First, the scenario: ${luckShares} shares at PKR ${H("LUCK").price.toFixed(0)} costs PKR ${luckCost.toLocaleString()}, lifts your average from PKR ${H("LUCK").avg_cost.toFixed(0)} to PKR ${luckAvgAfter.toFixed(0)}, and puts ${luckWtAfter.toFixed(1)}% of the portfolio behind one cyclical, ${(luckWtAfter - targetWt.LUCK).toFixed(1)} points over target. Second, the rate turn: the recovery leaned on falling finance costs, and with the SBP holding at 11.5% that specific tailwind has stalled even though demand is intact.
+
+Adding is more defensible if: you first raise the cement target deliberately, dispatches keep compounding near double digits into the winter season, or the SBP resumes cutting.
+Waiting is more defensible if: you respect the ${targetWt.LUCK}% cap you set, or the next result shows pricing discipline slipping as volume returns.
+
+If you want cement exposure without the concentration, half the size keeps LUCK inside ${(targetWt.LUCK + 2).toFixed(0)}% and leaves cash for the OGDC payout decision due within weeks.`,
+      cards: [
+        {
+          kind: "bar-chart",
+          title: "April dispatch growth, sector versus LUCK",
+          description: "LUCK is outgrowing its own sector's recovery",
+          xKey: "measure",
+          yUnit: "% y/y",
+          bars: [{ key: "growth", label: "April growth" }],
+          data: [
+            { measure: "Sector dispatches", growth: 11.1 },
+            { measure: "LUCK dispatches", growth: 18 },
+            { measure: "LUCK local sales", growth: 33 },
+          ],
+        },
+        {
+          kind: "table",
+          title: "The PKR 100k scenario, computed",
+          columns: [
+            { key: "metric", label: "Metric" },
+            { key: "before", label: "Before", align: "right" },
+            { key: "after", label: "After", align: "right" },
+          ],
+          rows: [
+            { metric: "Shares", before: H("LUCK").quantity, after: luckSharesAfter },
+            { metric: "Average cost (PKR)", before: H("LUCK").avg_cost.toFixed(0), after: luckAvgAfter.toFixed(0) },
+            { metric: "Position weight", before: `${wt("LUCK").toFixed(1)}%`, after: `${luckWtAfter.toFixed(1)}%` },
+            { metric: "Target weight", before: `${targetWt.LUCK}%`, after: `${targetWt.LUCK}%` },
+            { metric: "New money", before: "", after: `PKR ${luckCost.toLocaleString()} (${luckShares} shares)` },
+          ],
+        },
+      ],
+    },
+
+    // 6 ─ The losing position ────────────────────────────────────────────────
+    {
+      title: "HUBC is red. Cut it or wait?",
+      summary: `${DEMO_CHAT_SUMMARY_PREFIX} the only losing position, judged against a thesis that changed shape`,
+      user: "HUBC is my biggest losing position. Do I cut it or give the new story time?",
+      assistant: `Hold to your scheduled review with one hard condition attached, and do not add. The position is down ${Math.abs(retPct(H("HUBC"))).toFixed(0)}% (${kfmt(pl(H("HUBC")))}), but the company is not broken: consensus FY26 earnings near PKR 39.8 per share cover the PKR 15 annualized payout more than two and a half times, and you have banked PKR ${divNet.HUBC.toLocaleString()} net from the last two quarterly payments.
+
+## What actually changed
+You bought contracted PPA cash flows. That company is going away: legacy PPA revenue is declining as the IPP landscape restructures, and the payout is increasingly funded by dividends from the Thar coal and CPHGC associates, whose contribution grew about 6% last period. Your journal already flagged this when you downgraded the thesis to weakening. The story is now "energy holding company living off associate income", which may be a fine story, but it is not the one you wrote.
+
+## The condition that decides it
+If the next two quarterly results show associate dividends covering the PKR 5 per share quarterly payout on their own, rewrite the thesis around that and keep the position. If they do not, exit into strength rather than averaging down: the OGDC settlement completing on 24 June means the same energy-chain capital has a home where the catalyst has already paid, and this ${wt("HUBC").toFixed(1)}% is your natural funding source.`,
+      cards: [
+        {
+          kind: "metric-strip",
+          title: "HUBC position",
+          metrics: [
+            { label: "Unrealized P/L", value: kfmt(pl(H("HUBC"))), delta: `${retPct(H("HUBC")).toFixed(0)}% on cost`, tone: "negative" },
+            { label: "Weight", value: `${wt("HUBC").toFixed(1)}%`, detail: `target ${targetWt.HUBC}%`, tone: "neutral" },
+            { label: "Payout", value: "PKR 15/sh", detail: "annualized, paid quarterly", tone: "positive" },
+            { label: "FY26 EPS est.", value: "PKR 39.8", detail: "covers payout ~2.7x", tone: "neutral" },
+          ],
+        },
+        {
+          kind: "comparison-table",
+          title: "The thesis you wrote versus the company you own",
+          columns: [
+            { key: "leg", label: "Thesis leg" },
+            { key: "original", label: "As written" },
+            { key: "now", label: "Where it stands" },
+          ],
+          rows: [
+            { leg: "Contracted PPA cash", original: "Core of the case", now: "Rolling off as the IPP landscape restructures" },
+            { leg: "Dividend", original: "Await resumption", now: "PKR 5 quarterly, funded by associates" },
+            { leg: "Thar optionality", original: "Free upside", now: "Now the main earnings driver, up ~6%" },
+            { leg: "Circular debt", original: "Key risk", now: "Still gates cash timing across the chain" },
+          ],
+        },
+        {
+          kind: "price-chart",
+          title: "HUBC against your cost basis",
+          ticker: "HUBC",
+          period: "1Y",
+          overlay: ["cost-basis", "dividends"],
+          description: "Underwater on price while the quarterly payout keeps arriving.",
+        },
+      ],
+    },
+
+    // 7 ─ Income deep-dive ───────────────────────────────────────────────────
+    {
+      title: "Where my dividend income comes from",
+      summary: `${DEMO_CHAT_SUMMARY_PREFIX} trailing income, payer concentration and what is confirmed next`,
+      user: "How much income does this book actually produce, and would it survive one payout cut?",
+      assistant: `PKR ${(netIncome / 1000).toFixed(1)}k net over the trailing twelve months, a ${yocNet.toFixed(1)}% yield on cost, and it would survive any single cut except UBL's. UBL alone pays ${incomeShare("UBL").toFixed(0)}% of the total, a ${yoc("UBL").toFixed(1)}% net yield on your cost. That is the best income asset you own and also the single point of failure.
+
+## The shape of the income
+Seven of eight holdings paid something in the last year, which is unusually broad. Behind UBL sit OGDC at ${incomeShare("OGDC").toFixed(0)}%, FFC at ${incomeShare("FFC").toFixed(0)}% and MEBL at ${incomeShare("MEBL").toFixed(0)}%, so the middle of the distribution is healthy. LUCK contributes only ${incomeShare("LUCK").toFixed(0)}%, which is fine: that position is there for the construction cycle, not the payout.
+
+## What is already confirmed
+FFC's announced PKR 22 interim is worth PKR ${Math.round(22 * H("FFC").quantity * 0.85).toLocaleString()} net to you and UBL's PKR 11 quarterly another PKR ${Math.round(11 * H("UBL").quantity * 0.85).toLocaleString()}, both inside the next five weeks. Behind them, the platform forecasts OGDC at PKR 13 to 15 (the settlement cash makes the top of that range live), MEBL at 13 to 15 and LUCK at 14 to 18 per share.
+
+## The one thing to fix
+Nothing needs action today, but note that your income and your capital share the same concentration: the two banks are ${(incomeShare("UBL") + incomeShare("MEBL")).toFixed(0)}% of income and ${banksWt.toFixed(0)}% of value. A rate cycle that eventually turns down would squeeze both at once. Diversifying the next PKR of income toward FFC or OGDC costs you nothing in yield.`,
+      cards: [
+        {
+          kind: "metric-strip",
+          title: "Income scorecard, trailing twelve months",
+          metrics: [
+            { label: "Net income", value: `PKR ${(netIncome / 1000).toFixed(1)}k`, detail: "after 15% withholding", tone: "positive" },
+            { label: "Yield on cost", value: `${yocNet.toFixed(1)}%`, detail: "net, whole book", tone: "neutral" },
+            { label: "Largest payer", value: `UBL ${incomeShare("UBL").toFixed(0)}%`, detail: `${yoc("UBL").toFixed(1)}% net on cost`, tone: "neutral" },
+            { label: "Confirmed next", value: `PKR ${((Math.round(22 * H("FFC").quantity * 0.85) + Math.round(11 * H("UBL").quantity * 0.85)) / 1000).toFixed(1)}k`, detail: "FFC + UBL announced", tone: "positive" },
+          ],
+        },
+        {
+          kind: "allocation",
+          title: "Who pays the income",
+          description: "Net trailing dividends by holding",
+          centerValue: `${yocNet.toFixed(1)}%`,
+          centerLabel: "yield on cost",
+          segments: Object.entries(divNet)
+            .sort((a, b) => b[1] - a[1])
+            .map(([label, value]) => ({ label, value })),
+        },
+        {
+          kind: "table",
+          title: "Announced and forecast payouts",
+          columns: [
+            { key: "ticker", label: "Holding" },
+            { key: "status", label: "Status" },
+            { key: "perShare", label: "Per share", align: "right" },
+            { key: "net", label: "Net to you", align: "right" },
+          ],
+          rows: [
+            { ticker: "FFC", status: "Announced", perShare: "PKR 22.00", net: `PKR ${Math.round(22 * H("FFC").quantity * 0.85).toLocaleString()}` },
+            { ticker: "UBL", status: "Announced", perShare: "PKR 11.00", net: `PKR ${Math.round(11 * H("UBL").quantity * 0.85).toLocaleString()}` },
+            { ticker: "OGDC", status: "Forecast, high confidence", perShare: "PKR 13 to 15", net: divNetRange("OGDC", 13, 15) },
+            { ticker: "MEBL", status: "Forecast", perShare: "PKR 13 to 15", net: divNetRange("MEBL", 13, 15) },
+            { ticker: "LUCK", status: "Forecast", perShare: "PKR 14 to 18", net: divNetRange("LUCK", 14, 18) },
+          ],
+        },
+      ],
+    },
+
+    // 8 ─ Decision: reinvest dividend cash ───────────────────────────────────
+    {
+      title: "PKR 150k of dividends: UBL or SYS?",
+      summary: `${DEMO_CHAT_SUMMARY_PREFIX} reinvestment decided by portfolio shape, not company merit`,
+      user: "I have PKR 150k of dividend cash sitting idle. Reinvest in UBL for the yield or add to SYS?",
+      assistant: `SYS, and the deciding factor is what UBL would do to the shape of your book, not any flaw in UBL itself. PKR 150k into UBL lifts the two-bank sleeve from ${banksWt.toFixed(0)}% to ${banksAfter.toFixed(0)}% of the portfolio: one variable, the policy rate, would then set the direction of over 40% of your capital. No single company is good enough to justify that.
+
+## What each option actually does
+Into UBL: ${addShares} shares at PKR ${H("UBL").price.toFixed(0)} takes you to ${ublSharesAfter} shares at an average of PKR ${ublAvgAfter.toFixed(0)}, position weight ${ublWtAfter.toFixed(1)}%. The reward is income: at UBL's trailing PKR 44 per share this adds about PKR ${(ublIncomeAdd / 1000).toFixed(1)}k net a year, roughly a ${((ublIncomeAdd / netIncome) * 100).toFixed(0)}% raise to your entire dividend stream.
+
+Into SYS: ${sysShares} shares at PKR ${H("SYS").price.toFixed(0)} dilutes the banks to ${banksIfSys.toFixed(0)}% and makes SYS your largest position at ${sysWtAfter.toFixed(1)}%. You give up essentially all the income and buy more of the one holding whose growth engine, record IT exports compounding near 20%, is independent of the domestic rate cycle that already drives a third of your book.
+
+## The honest trade-off
+This is income now versus balance and growth. Since your trailing ${yocNet.toFixed(1)}% yield on cost already leans on UBL for ${incomeShare("UBL").toFixed(0)}% of income, buying more of it concentrates both lines at once. If ${sysWtAfter.toFixed(1)}% in a single name feels heavy, split the ticket: half to SYS, half to OGDC, where the completed circular debt settlement makes the payout forecast of PKR 13 to 15 the next catalyst and your weight still has room only if you rebalance. But between the two names you asked about, it is SYS.`,
+      cards: [
+        {
+          kind: "bar-chart",
+          title: "What PKR 150k does to the book's shape",
+          description: "Banking sleeve versus SYS weight under each option",
+          xKey: "option",
+          yUnit: "% of portfolio",
+          bars: [
+            { key: "banks", label: "Banks (MEBL + UBL)" },
+            { key: "sys", label: "SYS" },
+          ],
+          data: [
+            { option: "Today", banks: Math.round(banksWt * 10) / 10, sys: Math.round(wt("SYS") * 10) / 10 },
+            { option: "150k into UBL", banks: Math.round(banksAfter * 10) / 10, sys: Math.round(((marketValue(H("SYS")) / totalAfter) * 100) * 10) / 10 },
+            { option: "150k into SYS", banks: Math.round(banksIfSys * 10) / 10, sys: Math.round(sysWtAfter * 10) / 10 },
+          ],
+        },
+        {
+          kind: "comparison-table",
+          title: "The two options, computed",
+          columns: [
+            { key: "factor", label: "Factor" },
+            { key: "ubl", label: "Into UBL" },
+            { key: "sys", label: "Into SYS" },
+          ],
+          rows: [
+            { factor: "Shares bought", ubl: `${addShares} at PKR ${H("UBL").price.toFixed(0)}`, sys: `${sysShares} at PKR ${H("SYS").price.toFixed(0)}` },
+            { factor: "Banking sleeve after", ubl: `${banksAfter.toFixed(1)}%`, sys: `${banksIfSys.toFixed(1)}%` },
+            { factor: "Largest position after", ubl: `UBL ${ublWtAfter.toFixed(1)}%`, sys: `SYS ${sysWtAfter.toFixed(1)}%` },
+            { factor: "Income added (net/yr)", ubl: `~PKR ${(ublIncomeAdd / 1000).toFixed(1)}k`, sys: "Negligible" },
+            { factor: "Driver added", ubl: "Policy rate (already 33% of book)", sys: "Dollar exports (independent of rates)" },
+          ],
+        },
+      ],
+    },
+
+    // 9 ─ Light / concise: benchmark ─────────────────────────────────────────
+    {
+      title: "Am I beating the market?",
+      summary: `${DEMO_CHAT_SUMMARY_PREFIX} money-weighted return versus the KSE-100 and inflation`,
+      user: "The KSE-100 was up 44% in FY26. Am I actually beating the market, or just riding a bull run?",
+      assistant: `Beating it, once the comparison is honest. Your capital went in over eighteen months in stages, so the fair benchmark is not the headline 44% fiscal-year print but what the KSE-100 would have returned on your exact contribution schedule: roughly ${kseRet.toFixed(0)}%. Against that, your ${portRet.toFixed(0)}% means about ${excessPts.toFixed(0)} points of excess return that came from selection, not timing luck. Much of your capital arrived after a large part of the FY26 rally had already happened, which is why both numbers sit below 44%.
+
+The index itself is at 184,832, about 3% below its record 189,556, after beating every other asset class for a third straight fiscal year. Inflation is the other hurdle: with CPI at 11.7%, your gains clear the real-wealth bar, but the margin over the index is the number that reflects skill. Keep scoring yourself on that excess, not on the bull-market tide.`,
+      cards: [
+        {
+          kind: "metric-strip",
+          title: "Return scorecard",
+          metrics: [
+            { label: "Your portfolio", value: `+${portRet.toFixed(0)}%`, detail: "on invested capital", tone: "positive" },
+            { label: "KSE-100, same schedule", value: `+${kseRet.toFixed(0)}%`, detail: "money-weighted equivalent", tone: "neutral" },
+            { label: "Excess return", value: `+${excessPts.toFixed(0)} pts`, detail: "your selection", tone: "positive" },
+            { label: "Inflation (CPI)", value: "11.7%", detail: "year-on-year hurdle", tone: "neutral" },
+          ],
+        },
+        {
+          kind: "benchmark-excess",
+          title: "Is each holding earning its place?",
+          description: "Return since purchase minus the index over your holding period",
+          benchmarkLabel: "KSE-100",
+          items: DEMO_HOLDINGS.map((h) => ({
+            label: h.ticker,
+            returnPct: Math.round(retPct(h) * 10) / 10,
+            benchmarkPct: Math.round(kseRet * 10) / 10,
+          })).sort((a, b) => b.returnPct - a.returnPct),
+        },
+        {
+          kind: "gauge",
+          title: "KSE-100 within its 52-week range",
+          value: 184832,
+          min: 129776,
+          max: 191033,
+          unit: "pts",
+          markerLabel: "184,832",
+          zones: [
+            { upTo: 150000, label: "Washed out", tone: "positive" },
+            { upTo: 178000, label: "Mid range", tone: "neutral" },
+            { upTo: 191033, label: "Near record", tone: "negative" },
+          ],
+          caption: "Third straight fiscal year the index beat every other asset class; +44% in FY26.",
+        },
+      ],
+    },
+  ];
   // Insert oldest first so the newest (index 0, the health check) sorts to the
   // top of the thread list.
   for (let index = threads.length - 1; index >= 0; index -= 1) {
