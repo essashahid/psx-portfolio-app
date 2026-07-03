@@ -33,6 +33,18 @@ const DEMO_HOLDINGS = [
 const DEMO_CHAT_SUMMARY_PREFIX = "Demo library:";
 const DEMO_DIVIDEND_EVENT_PREFIX = "demo:";
 
+// News rows now carry their real outlet as `source` (Business Recorder, Arab
+// News, etc.) rather than a "Demo Data" placeholder, so cleanup can no longer
+// key off source alone, that would also catch real articles the news-refresh
+// cron fetches for this account. These URLs are the stable identifier instead.
+const DEMO_NEWS_URLS = [
+  "https://www.brecorder.com/news/40427135",
+  "https://www.arabnews.com/node/2647548",
+  "https://www.brecorder.com/news/40410294",
+  "https://profit.pakistantoday.com.pk/2026/05/05/pakistans-cement-despatches-rise-11-14-in-april-on-strong-local-demand/",
+  "https://tradingeconomics.com/pakistan/interest-rate",
+];
+
 /** Number of curated chat threads. The demo session re-seeds if fewer exist. */
 export const DEMO_THREAD_COUNT = 9;
 
@@ -599,7 +611,7 @@ async function clearDemoRows(supabase: SupabaseClient, userId: string) {
   await supabase.from("prices").delete().eq("user_id", userId).eq("source", "demo");
   await supabase.from("dividends").delete().eq("user_id", userId).eq("source", "demo");
   await supabase.from("journal_entries").delete().eq("user_id", userId).eq("source", "demo");
-  await supabase.from("news_articles").delete().eq("user_id", userId).eq("source", "Demo Data");
+  await supabase.from("news_articles").delete().eq("user_id", userId).in("url", DEMO_NEWS_URLS);
   await supabase.from("ai_briefings").delete().eq("user_id", userId).eq("model", "demo");
   await supabase
     .from("dividend_events")
