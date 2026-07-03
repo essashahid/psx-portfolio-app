@@ -49,6 +49,22 @@ export async function gatherCards(db: SupabaseClient, userId: string, resolved: 
     if (news) cards.push({ kind: "news", data: news });
   }
 
+  // A move-explanation question about a named ticker ("why did PTC rise
+  // today?") needs the same-session market backdrop to attribute the move:
+  // index direction and breadth, the full sector ranking, and foreign flows.
+  // Without these the model only sees the stock's own quote and falls back to
+  // stale web snippets or invented mechanisms.
+  if (resolved.movement && !cards.some((c) => c.kind === "market")) {
+    const [m, sectors, flows] = await Promise.all([
+      getMarketCard(db),
+      cards.some((c) => c.kind === "sector") ? Promise.resolve(null) : getSectorCard(db, null),
+      getForeignFlowSnapshot(db),
+    ]);
+    if (m) cards.push({ kind: "market", data: m });
+    if (sectors) cards.push({ kind: "sector", data: sectors });
+    if (flows) cards.push({ kind: "foreign_flow", data: flows });
+  }
+
   // A no-ticker dividend, valuation, or compare question ("which of my holdings
   // carry my income", "which look cheapest", "plot yield versus P/E for every
   // holding I have") is inherently about the user's book, so load holdings for

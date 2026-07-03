@@ -28,3 +28,25 @@ export function stripEmDashes(text: string): string {
     .replace(/\s*[—–]\s*/g, ", ")
     .replace(/,\s*,/g, ",");
 }
+
+/**
+ * Whole-message typography cleanup applied at persist and render time.
+ * stripEmDashes runs per streaming delta, so when a delta starts with a dash it
+ * cannot see the previous delta's trailing space; the result is " , " scattered
+ * through saved answers. Collapsing whitespace before punctuation here fixes
+ * both stored history and the final render. Operates line by line and skips
+ * table rows (lines with "|") so Markdown alignment is never touched.
+ */
+export function tidyTypography(text: string): string {
+  return text
+    .split("\n")
+    .map((line) =>
+      line.includes("|")
+        ? line
+        : line
+            .replace(/[ \t]+([,.;:!?])/g, "$1")
+            .replace(/,([^\s\d])/g, ", $1")
+            .replace(/([,.;:]) {2,}/g, "$1 ")
+    )
+    .join("\n");
+}

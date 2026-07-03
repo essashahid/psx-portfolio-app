@@ -14,7 +14,7 @@ import {
   type ChatModelId,
   type ChatProvider,
 } from "@/lib/ai/models";
-import { looksLikeToolLeak } from "@/lib/chat/sanitize";
+import { looksLikeToolLeak, tidyTypography } from "@/lib/chat/sanitize";
 import { buildSuggestions, type PromptContext } from "@/lib/chat/prompt-suggestions";
 import { cn } from "@/lib/utils";
 import {
@@ -935,11 +935,13 @@ function savedMessageToMessage(row: SavedMessage): Message {
 
 function formatAssistantContent(content: string): string {
   if (looksLikeToolLeak(content)) return "";
-  return content
-    .replace(/\r\n/g, "\n")
-    .replace(/([.!?])(?=[A-Z][a-z])/g, "$1 ")
-    .replace(/\n{3,}/g, "\n\n")
-    .trim();
+  return tidyTypography(
+    content
+      .replace(/\r\n/g, "\n")
+      .replace(/([.!?])(?=[A-Z][a-z])/g, "$1 ")
+      .replace(/\n{3,}/g, "\n\n")
+      .trim()
+  );
 }
 
 function formatThreadTime(value: string): string {
