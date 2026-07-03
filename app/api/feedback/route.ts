@@ -3,13 +3,17 @@ import { z } from "zod";
 import { errorResponse, requireUser } from "@/lib/api-helpers";
 
 const FeedbackSchema = z.object({
-  visitor_id: z.string().trim().min(8).max(120),
-  session_id: z.string().trim().max(120).optional().or(z.literal("")),
+  visitor_id: z.string().trim().min(8, "Feedback session could not be identified. Please refresh and try again.").max(120),
+  session_id: z.string().trim().max(120, "Feedback session is invalid. Please refresh and try again.").optional().or(z.literal("")),
   kind: z.enum(["bug", "confusing", "idea", "missing", "general"]).default("general"),
-  rating: z.number().int().min(1).max(5).optional().nullable(),
-  message: z.string().trim().min(5).max(2000),
-  contact: z.string().trim().max(160).optional().or(z.literal("")),
-  page_path: z.string().trim().min(1).max(300).default("/"),
+  rating: z.number().int("Rating must be a whole number.").min(1, "Rating must be between 1 and 5.").max(5, "Rating must be between 1 and 5.").optional().nullable(),
+  message: z
+    .string()
+    .trim()
+    .min(5, "Please add a little more detail before sending.")
+    .max(2000, "Feedback is too long. Please keep it under 2,000 characters."),
+  contact: z.string().trim().max(160, "Contact details are too long. Please keep them under 160 characters.").optional().or(z.literal("")),
+  page_path: z.string().trim().min(1).max(300, "Page path is too long. Please refresh and try again.").default("/"),
   metadata: z.record(z.string(), z.unknown()).optional(),
 });
 
