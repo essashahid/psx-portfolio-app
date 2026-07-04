@@ -19,14 +19,6 @@
     {
       "path": "/api/cron/backfill/fundamentals",
       "schedule": "50 9 * * 1-6"
-    },
-    {
-      "path": "/api/cron/backfill/extract",
-      "schedule": "10 5 * * *"
-    },
-    {
-      "path": "/api/cron/backfill/extract",
-      "schedule": "10 17 * * *"
     }
   ]
 }
