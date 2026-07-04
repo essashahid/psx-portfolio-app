@@ -9,6 +9,8 @@ import { Button } from "@/components/ui/button";
 import { CalendarDays, LayoutGrid, List, Newspaper, Search } from "lucide-react";
 import { cn, formatSignedPct } from "@/lib/utils";
 import { getUserNewsFeed, type FeedNewsArticle } from "@/lib/news/global-store";
+import { getPrefs, type UserPrefs } from "@/lib/prefs";
+import { MarkSeen } from "@/components/mark-seen";
 import { buildNewsEvents, eventMatchesSearch, type NewsEvent } from "@/lib/news/events";
 import { getPortfolio } from "@/lib/portfolio";
 import { getDailyHoldingPerformance } from "@/lib/portfolio/daily-performance";
@@ -103,7 +105,7 @@ export default async function NewsPage({ searchParams }: { searchParams: Promise
   const view: "cards" | "compact" = sp.view === "compact" ? "compact" : "cards";
   const todayKey = pktDateKey(new Date());
 
-  const [portfolio, articles, briefRes, watchlistRes, sourceRes, dividendEventsRes, marketEventsRes, dailyPerformance, marketGlobal] = await Promise.all([
+  const [portfolio, articles, briefRes, watchlistRes, sourceRes, dividendEventsRes, marketEventsRes, dailyPerformance, marketGlobal, prefs] = await Promise.all([
     getPortfolio(supabase, user.id),
     getUserNewsFeed(supabase, user.id, 260),
     supabase
@@ -131,6 +133,7 @@ export default async function NewsPage({ searchParams }: { searchParams: Promise
       .limit(30),
     getDailyHoldingPerformance(supabase, user.id).catch(() => null),
     getCachedMarketGlobal().catch(() => null),
+    getPrefs(supabase, user.id).catch(() => ({}) as UserPrefs),
   ]);
 
   const holdings = portfolio.holdings.map((h) => ({
@@ -141,6 +144,12 @@ export default async function NewsPage({ searchParams }: { searchParams: Promise
   }));
   const watchlist = [...new Set((watchlistRes.data ?? []).map((row) => String(row.ticker)))];
   const events = buildNewsEvents(articles as FeedNewsArticle[], { holdings, watchlist });
+  // Seen-state: how many events post-date the previous visit. Read before the
+  // client stamps a fresh timestamp, so the count reflects the last visit.
+  const lastSeenMs = prefs.news_last_seen_at ? new Date(prefs.news_last_seen_at).getTime() : null;
+  const newSinceLastVisit = lastSeenMs
+    ? events.filter((event) => !event.ignored && event.timestamp > lastSeenMs).length
+    : 0;
   const latestBrief = briefRes.data
     ? { content: briefRes.data.content as string, model: (briefRes.data.model as string) ?? "", createdAt: briefRes.data.created_at as string }
     : null;
@@ -232,10 +241,16 @@ export default async function NewsPage({ searchParams }: { searchParams: Promise
           <p className="mt-1 text-sm text-muted-foreground">
             Important developments suggested for you based on your holdings, watchlist, sectors, and the wider market.
           </p>
-          <p className="mt-2 text-xs text-muted-foreground">{sourceHealth}</p>
+          <p className="mt-2 text-xs text-muted-foreground">
+            {sourceHealth}
+            {newSinceLastVisit > 0 && (
+              <span className="ml-1 text-foreground">· {newSinceLastVisit} new since your last visit</span>
+            )}
+          </p>
         </div>
         <NewsRefreshButton />
       </header>
+      <MarkSeen surface="news" />
 
       {newToday > 0 && (
         <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-border bg-card px-4 py-3 text-sm">

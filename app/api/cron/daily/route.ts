@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { runDailyUpdate } from "@/lib/dividends/daily";
+import { syncNewsClusters } from "@/lib/news/global-store";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 300;
@@ -46,10 +47,15 @@ export async function GET(request: Request) {
     }
   }
 
+  // Recompute the shared news clusters once, after all users have refreshed the
+  // global article store, so article counts are correct without per-user churn.
+  const clusters = await syncNewsClusters(admin);
+
   return NextResponse.json({
     ok: true,
     run_date: new Date().toISOString().slice(0, 10),
     users_processed: results.length,
+    clusters_synced: clusters,
     results,
   });
 }
