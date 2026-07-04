@@ -730,11 +730,22 @@ async function seedDemoChatThreads(
     user: string;
     assistant: string;
     cards: Record<string, unknown>[];
+    /** Curated research-activity trail, in the live console's vocabulary. */
+    activity: { id: string; label: string; detail?: string; done: true }[];
   }[] = [
     // 1 ─ Comprehensive portfolio assessment (flagship, newest) ──────────────
     {
       title: "Portfolio health check",
       summary: `${DEMO_CHAT_SUMMARY_PREFIX} concentration, benchmark, income and what needs attention`,
+      activity: [
+        { id: "ctx", label: "Scanning your portfolio and PSX context", detail: "quotes, holdings, sectors and foreign flows", done: true },
+        { id: "t1", label: "Portfolio — allocation and performance", detail: "8 holdings, PKR 1.23M", done: true },
+        { id: "t2", label: "Portfolio — all holdings and sector weights", detail: "8 holdings across 7 sectors", done: true },
+        { id: "t3", label: "MEBL, UBL, FFC +4 more — dividend history", detail: "7 of 8 payers with history", done: true },
+        { id: "t4", label: "Portfolio — performance history", detail: "vs KSE-100, +7 pts excess", done: true },
+        { id: "analyze", label: "Analyzing the evidence", done: true },
+        { id: "write", label: "Writing the answer", done: true },
+      ],
       user: "Give me a full health check on my portfolio and tell me what actually needs attention.",
       assistant: `The book is in good shape: PKR ${valueM}M across eight names, up ${unrealizedPct}% on cost, and roughly ${excessPts.toFixed(0)} points ahead of the KSE-100 on the same contributions, so it is earning its place rather than riding the index. Two items need attention, and neither is about performance: **HUBC** (${wt("HUBC").toFixed(1)}% of the book, thesis marked weakening, review overdue) and **ENGROH** (${wt("ENGROH").toFixed(1)}%, no written thesis).
 
@@ -821,6 +832,14 @@ Nothing forced. Resolve HUBC at the overdue review, write a one-paragraph thesis
     {
       title: "The April rate hike: which side am I on?",
       summary: `${DEMO_CHAT_SUMMARY_PREFIX} what the surprise 100bps hike and June hold do to each sleeve`,
+      activity: [
+        { id: "ctx", label: "Scanning your portfolio and PSX context", detail: "macro backdrop and sector weights", done: true },
+        { id: "t1", label: "PSX macro backdrop", detail: "policy rate 11.5%, CPI 11.7%, USD/PKR 277", done: true },
+        { id: "t2", label: "Portfolio — all holdings and sector weights", detail: "8 holdings across 7 sectors", done: true },
+        { id: "t3", label: "PSX — sector performance", detail: "sleeves ranked by rate sensitivity", done: true },
+        { id: "analyze", label: "Analyzing the evidence", done: true },
+        { id: "write", label: "Writing the answer", done: true },
+      ],
       user: "I thought rates were coming down, but the SBP hiked in April and held in June. Which side of that is my portfolio on?",
       assistant: `Mostly the right side, by construction rather than luck. The rate cycle reversed: the SBP took the policy rate from a 22% peak down to 10.5%, then hiked 100 basis points to 11.5% on 27 April as inflation came back, and held there on 15 June. Your ${banksWt.toFixed(0)}% banking sleeve is the direct beneficiary, and it is the largest thing you own.
 
@@ -892,6 +911,15 @@ No action required. The book is hedged across the rate cycle: what the hike take
     {
       title: "OGDC after the circular debt settlement",
       summary: `${DEMO_CHAT_SUMMARY_PREFIX} the final PKR 7.7bn instalment landed on 24 June, what it changes`,
+      activity: [
+        { id: "ctx", label: "Scanning your portfolio and OGDC context", done: true },
+        { id: "t1", label: "OGDC — latest quote", detail: "PKR 335.00", done: true },
+        { id: "t2", label: "OGDC — your position", detail: "500 shares, PKR 167,500", done: true },
+        { id: "t3", label: "OGDC — filings and news", detail: "1 item", done: true },
+        { id: "t4", label: "OGDC — dividend history", detail: "2 payouts on record, 1 forecast", done: true },
+        { id: "analyze", label: "Analyzing the evidence", done: true },
+        { id: "write", label: "Writing the answer", done: true },
+      ],
       user: "OGDC just received the final circular debt payment. Should I add more, or is the catalyst spent?",
       assistant: `Hold what you have and let the next payout announcement decide. The catalyst you bought this for has now fully landed: on 24 June OGDC received the final PKR 7.7 billion instalment, completing the PKR 92 billion interest schedule on top of the PKR 82 billion of principal paid earlier. Your thesis said progress on receivable settlement was upside you were not paying for. It arrived, and the position is up ${retPct(H("OGDC")).toFixed(0)}% against your PKR ${H("OGDC").avg_cost.toFixed(0)} cost.
 
@@ -938,6 +966,15 @@ Trimming is more defensible if: the cash disappears into unfunded receivables ag
     {
       title: "Has the SYS run gone too far?",
       summary: `${DEMO_CHAT_SUMMARY_PREFIX} quality radar on the best position after a 55% gain`,
+      activity: [
+        { id: "ctx", label: "Scanning your portfolio and SYS context", done: true },
+        { id: "t1", label: "SYS — latest quote", detail: "PKR 147.00", done: true },
+        { id: "t2", label: "SYS — your position", detail: "1,000 shares, PKR 147,000", done: true },
+        { id: "t3", label: "SYS — valuation and fundamentals", done: true },
+        { id: "t4", label: "Web — \u201cPakistan IT export receipts FY26\u201d", detail: "record $4.2bn in 11 months", done: true },
+        { id: "analyze", label: "Analyzing the evidence", done: true },
+        { id: "write", label: "Writing the answer", done: true },
+      ],
       user: "SYS is my best position after this run. Is it too expensive to keep holding?",
       assistant: `Keep it. The question that matters for a held position is whether the growth leg is intact, and the sector tape just confirmed it: Pakistan's IT exports hit a record USD 4.2 billion in the first eleven months of FY26, up about 20% year on year, with December the first ever month above USD 400 million. Your thesis needs export growth above 20%, and the industry is delivering exactly that.
 
@@ -984,6 +1021,15 @@ Your own sell condition is export growth below 10% for a full year or sustained 
     {
       title: "Add PKR 100k to LUCK on the cement recovery?",
       summary: `${DEMO_CHAT_SUMMARY_PREFIX} strong company case, but the sizing math says no at 100k`,
+      activity: [
+        { id: "ctx", label: "Scanning your portfolio and LUCK context", done: true },
+        { id: "t1", label: "LUCK — your position", detail: "250 shares, PKR 117,500", done: true },
+        { id: "t2", label: "LUCK — valuation and fundamentals", done: true },
+        { id: "t3", label: "Web — \u201cPakistan cement dispatches FY26\u201d", detail: "April dispatches +18% y/y", done: true },
+        { id: "t4", label: "Portfolio — allocation and performance", detail: "PKR 100k add-scenario computed", done: true },
+        { id: "analyze", label: "Analyzing the evidence", done: true },
+        { id: "write", label: "Writing the answer", done: true },
+      ],
       user: "Cement demand is clearly recovering. Should I put another PKR 100k into LUCK?",
       assistant: `The company case is the strongest in your book right now, and the portfolio case still says no at that size. PKR 100k would take LUCK from ${wt("LUCK").toFixed(1)}% to ${luckWtAfter.toFixed(1)}% of the book against your ${targetWt.LUCK}% target. You would be right about the company and still have made the book worse.
 
@@ -1034,6 +1080,15 @@ If you want cement exposure without the concentration, half the size keeps LUCK 
     {
       title: "HUBC is red. Cut it or wait?",
       summary: `${DEMO_CHAT_SUMMARY_PREFIX} the only losing position, judged against a thesis that changed shape`,
+      activity: [
+        { id: "ctx", label: "Scanning your portfolio and HUBC context", done: true },
+        { id: "t1", label: "HUBC — your position", detail: "500 shares, PKR 116,500", done: true },
+        { id: "t2", label: "Your thesis — HUBC", detail: "on file, marked Weakening", done: true },
+        { id: "t3", label: "HUBC — dividend history", detail: "2 payouts on record", done: true },
+        { id: "t4", label: "HUBC — filings and news", detail: "1 item", done: true },
+        { id: "analyze", label: "Analyzing the evidence", done: true },
+        { id: "write", label: "Writing the answer", done: true },
+      ],
       user: "HUBC is my biggest losing position. Do I cut it or give the new story time?",
       assistant: `Hold to your scheduled review with one hard condition attached, and do not add. The position is down ${Math.abs(retPct(H("HUBC"))).toFixed(0)}% (${kfmt(pl(H("HUBC")))}), but the company is not broken: consensus FY26 earnings near PKR 39.8 per share cover the PKR 15 annualized payout more than two and a half times, and you have banked PKR ${divNet.HUBC.toLocaleString()} net from the last two quarterly payments.
 
@@ -1083,6 +1138,14 @@ If the next two quarterly results show associate dividends covering the PKR 5 pe
     {
       title: "Where my dividend income comes from",
       summary: `${DEMO_CHAT_SUMMARY_PREFIX} trailing income, payer concentration and what is confirmed next`,
+      activity: [
+        { id: "ctx", label: "Scanning your portfolio and PSX context", detail: "holdings and dividend ledger", done: true },
+        { id: "t1", label: "Portfolio — all holdings and sector weights", detail: "8 holdings across 7 sectors", done: true },
+        { id: "t2", label: "MEBL, UBL, FFC +4 more — dividend history", detail: "7 of 8 payers with history", done: true },
+        { id: "t3", label: "Upcoming payouts — platform calendar", detail: "2 announced, 3 forecast", done: true },
+        { id: "analyze", label: "Analyzing the evidence", done: true },
+        { id: "write", label: "Writing the answer", done: true },
+      ],
       user: "How much income does this book actually produce, and would it survive one payout cut?",
       assistant: `PKR ${(netIncome / 1000).toFixed(1)}k net over the trailing twelve months, a ${yocNet.toFixed(1)}% yield on cost, and it would survive any single cut except UBL's. UBL alone pays ${incomeShare("UBL").toFixed(0)}% of the total, a ${yoc("UBL").toFixed(1)}% net yield on your cost. That is the best income asset you own and also the single point of failure.
 
@@ -1139,6 +1202,15 @@ Nothing needs action today, but note that your income and your capital share the
     {
       title: "PKR 150k of dividends: UBL or SYS?",
       summary: `${DEMO_CHAT_SUMMARY_PREFIX} reinvestment decided by portfolio shape, not company merit`,
+      activity: [
+        { id: "ctx", label: "Scanning your portfolio and UBL, SYS context", done: true },
+        { id: "t1", label: "UBL, SYS — latest quote", detail: "PKR 448.00, PKR 147.00", done: true },
+        { id: "t2", label: "UBL, SYS — your position", detail: "450 and 1,000 shares", done: true },
+        { id: "t3", label: "UBL — dividend history", detail: "4 payouts on record", done: true },
+        { id: "t4", label: "Portfolio — allocation and performance", detail: "PKR 150k scenarios computed", done: true },
+        { id: "analyze", label: "Analyzing the evidence", done: true },
+        { id: "write", label: "Writing the answer", done: true },
+      ],
       user: "I have PKR 150k of dividend cash sitting idle. Reinvest in UBL for the yield or add to SYS?",
       assistant: `SYS, and the deciding factor is what UBL would do to the shape of your book, not any flaw in UBL itself. PKR 150k into UBL lifts the two-bank sleeve from ${banksWt.toFixed(0)}% to ${banksAfter.toFixed(0)}% of the portfolio: one variable, the policy rate, would then set the direction of over 40% of your capital. No single company is good enough to justify that.
 
@@ -1189,6 +1261,14 @@ This is income now versus balance and growth. Since your trailing ${yocNet.toFix
     {
       title: "Am I beating the market?",
       summary: `${DEMO_CHAT_SUMMARY_PREFIX} money-weighted return versus the KSE-100 and inflation`,
+      activity: [
+        { id: "ctx", label: "Scanning your portfolio and PSX context", done: true },
+        { id: "t1", label: "Portfolio — performance history", detail: "18 monthly points vs KSE-100", done: true },
+        { id: "t2", label: "Portfolio — allocation and performance", detail: "8 holdings, PKR 1.23M", done: true },
+        { id: "t3", label: "PSX — index, breadth and leaders", detail: "KSE-100 184,832, 3% below record", done: true },
+        { id: "analyze", label: "Analyzing the evidence", done: true },
+        { id: "write", label: "Writing the answer", done: true },
+      ],
       user: "The KSE-100 was up 44% in FY26. Am I actually beating the market, or just riding a bull run?",
       assistant: `Beating it, once the comparison is honest. Your capital went in over eighteen months in stages, so the fair benchmark is not the headline 44% fiscal-year print but what the KSE-100 would have returned on your exact contribution schedule: roughly ${kseRet.toFixed(0)}%. Against that, your ${portRet.toFixed(0)}% means about ${excessPts.toFixed(0)} points of excess return that came from selection, not timing luck. Much of your capital arrived after a large part of the FY26 rally had already happened, which is why both numbers sit below 44%.
 
@@ -1265,7 +1345,7 @@ The index itself is at 184,832, about 3% below its record 189,556, after beating
         thread_id: thread.id,
         role: "assistant",
         content: item.assistant,
-        cards: item.cards.map((spec) => ({ kind: "artifact", data: spec })),
+        cards: [...item.cards.map((spec) => ({ kind: "artifact", data: spec })), { kind: "activity", data: item.activity }],
         created_at: iso(60 + index * 90),
       },
     ]);
