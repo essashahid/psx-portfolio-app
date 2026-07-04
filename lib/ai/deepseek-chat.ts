@@ -28,7 +28,7 @@ function chatDisabled(): boolean {
   return v === "true" || v === "1" || v === "yes";
 }
 
-function deepseekKey(): string | undefined {
+export function deepseekKey(): string | undefined {
   return process.env.TASKS_API_KEY || process.env.DEEP_SEEK_API_KEY || process.env.DEEPSEEK_API_KEY || undefined;
 }
 

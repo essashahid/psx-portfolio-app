@@ -13,13 +13,17 @@ export default async function ChatPage() {
   const user = await getUser();
   if (!user) return null;
   const supabase = await createClient();
-  const [{ data: threads }, freshness, portfolio, profileRes, txCountRes] = await Promise.all([
+  const [{ data: threads }, freshness, portfolio, profileRes, txCountRes, suggestionsRes] = await Promise.all([
     supabase.from("chat_threads").select("id, title, summary, created_at, updated_at, last_message_at").eq("user_id", user.id).order("last_message_at", { ascending: false }).limit(50),
     getDataFreshness(supabase, user.id),
     getPortfolio(supabase, user.id),
     supabase.from("profiles").select("allowed_llm_providers, demo_mode").eq("id", user.id).maybeSingle(),
     supabase.from("transactions").select("id", { count: "exact", head: true }).eq("user_id", user.id),
+    supabase.from("chat_suggestions").select("suggestions").eq("user_id", user.id).maybeSingle(),
   ]);
+  const cachedSuggestions = Array.isArray(suggestionsRes.data?.suggestions)
+    ? (suggestionsRes.data.suggestions as unknown[]).filter((s): s is string => typeof s === "string")
+    : [];
   const isDemo = Boolean(profileRes.data?.demo_mode);
   const allowedProviders = normalizeAllowedChatProviders(profileRes.data?.allowed_llm_providers);
   const freshnessItems = freshness.filter((item) => item.date && item.key !== "brief");
@@ -59,6 +63,7 @@ export default async function ChatPage() {
         sourceStatus={sources}
         dataUpdated={dataUpdated}
         readOnly={isDemo}
+        initialSuggestions={cachedSuggestions}
       />
     </div>
   );
