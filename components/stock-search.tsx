@@ -62,26 +62,9 @@ export function StockSearch({
     setHighlight(0);
   }, []);
 
-  // Global shortcut: ⌘K / Ctrl-K anywhere, or "/" when not typing in a field.
-  useEffect(() => {
-    function onKey(e: KeyboardEvent) {
-      const mod = e.metaKey || e.ctrlKey;
-      if (mod && e.key.toLowerCase() === "k") {
-        e.preventDefault();
-        setRecent(loadRecent());
-        setOpen((o) => !o);
-        return;
-      }
-      const el = e.target as HTMLElement | null;
-      const typing = el && (el.tagName === "INPUT" || el.tagName === "TEXTAREA" || el.isContentEditable);
-      if (e.key === "/" && !typing && !open) {
-        e.preventDefault();
-        openPalette();
-      }
-    }
-    document.addEventListener("keydown", onKey);
-    return () => document.removeEventListener("keydown", onKey);
-  }, [open, openPalette]);
+  // The global ⌘K / "/" shortcut is owned by the app-wide CommandPalette
+  // (mounted in the layout). This on-page field opens on click only, so the two
+  // palettes never fight over the same keystroke.
 
   // Lock body scroll and focus the input while the palette is open.
   useEffect(() => {

@@ -5,6 +5,7 @@ import { getDailyHoldingPerformance } from "@/lib/portfolio/daily-performance";
 import { HoldingsTable } from "@/components/holdings-table";
 import { AddTransactionDialog } from "@/components/add-transaction-dialog";
 import { EmptyState } from "@/components/empty-state";
+import { AsOf } from "@/components/as-of";
 import { ActionButton } from "@/components/action-button";
 import { formatMoney, formatNumber, formatSignedPct } from "@/lib/utils";
 import { normalizeEnabledFeatures } from "@/lib/features";
@@ -39,7 +40,11 @@ export default async function HoldingsPage() {
         <div>
           <p className="eyebrow">Portfolio</p>
           <h1 className="mt-1 text-2xl font-semibold tracking-tight">Holdings</h1>
-          <p className="mt-1 text-xs text-muted-foreground">{formatNumber(summary.holdingsCount, 0)} positions · {latestPriceDate ? `Prices updated ${latestPriceDate}` : "No prices available"} · {summary.pricedHoldings} of {summary.holdingsCount} priced{unpriced ? ` · ${unpriced} valued at cost` : ""}</p>
+          <p className="mt-1 flex flex-wrap items-center gap-x-1.5 text-xs text-muted-foreground">
+            <span>{formatNumber(summary.holdingsCount, 0)} positions ·</span>
+            <AsOf date={latestPriceDate} label="Prices" />
+            <span>· {summary.pricedHoldings} of {summary.holdingsCount} priced{unpriced ? ` · ${unpriced} valued at cost` : ""}</span>
+          </p>
         </div>
         <div className="flex flex-wrap items-start gap-2">
           {!isDemo && <AddTransactionDialog variant="default" />}

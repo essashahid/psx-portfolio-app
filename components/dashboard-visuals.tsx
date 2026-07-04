@@ -44,7 +44,7 @@ export function DashboardPerformance({ data }: { data: Snapshot[] }) {
   );
 }
 
-export function PortfolioContribution({ rows, gainers, losers }: { rows: { ticker: string; companyName: string | null; contribution: number | null; priceMove: number | null; weight: number | null }[]; gainers: number; losers: number }) {
+export function PortfolioContribution({ rows, gainers, losers, causes = {} }: { rows: { ticker: string; companyName: string | null; contribution: number | null; priceMove: number | null; weight: number | null }[]; gainers: number; losers: number; causes?: Record<string, { url: string; title: string }> }) {
   const ranked = rows.filter((row) => row.contribution !== null).sort((a, b) => Math.abs(b.contribution ?? 0) - Math.abs(a.contribution ?? 0)).slice(0, 8);
   const largest = ranked[0];
   const max = Math.max(...ranked.map((row) => Math.abs(row.contribution ?? 0)), 1);
@@ -59,7 +59,10 @@ export function PortfolioContribution({ rows, gainers, losers }: { rows: { ticke
             <span className="font-semibold" title={row.companyName ?? row.ticker}>{row.ticker}</span>
             <div className="relative h-5"><span className="absolute inset-y-0 left-1/2 w-px bg-border" />{positive ? <span className="absolute left-1/2 top-1 h-3 rounded-r bg-emerald-600/75" style={{ width }} /> : <span className="absolute right-1/2 top-1 h-3 rounded-l bg-red-600/70" style={{ width }} />}</div>
             <span className={cn("text-right font-medium tabular-nums", positive ? "text-emerald-700" : "text-red-700")}>{formatMoney(row.contribution)}</span>
-            <span className="col-start-2 col-span-2 -mt-2 text-[10px] text-muted-foreground">{formatSignedPct(row.priceMove)} price move · {row.weight?.toFixed(1) ?? "—"}% weight</span>
+            <span className="col-start-2 col-span-2 -mt-2 text-[10px] text-muted-foreground">
+              {formatSignedPct(row.priceMove)} price move · {row.weight?.toFixed(1) ?? "—"}% weight
+              {causes[row.ticker] && <> · <a href={causes[row.ticker].url} target="_blank" rel="noopener noreferrer" className="text-foreground underline decoration-dotted underline-offset-2" title={causes[row.ticker].title}>why?</a></>}
+            </span>
           </div>;
         })}</div>}
       </div>
