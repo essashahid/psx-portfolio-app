@@ -53,6 +53,22 @@ const MODE_CAPTION: Record<Mode, string> = {
   real: "Each path expressed in today's rupees, so inflation is taken out and only real purchasing power remains.",
 };
 
+const RANGES = [
+  { key: "1y", label: "1Y", months: 12 },
+  { key: "3y", label: "3Y", months: 36 },
+  { key: "5y", label: "5Y", months: 60 },
+  { key: "all", label: "All", months: null },
+] as const;
+type Range = (typeof RANGES)[number]["key"];
+
+function rangeCutoff(range: Range, latestDate: string): string | null {
+  const found = RANGES.find((r) => r.key === range);
+  if (!found?.months) return null;
+  const d = new Date(`${latestDate}T12:00:00`);
+  d.setMonth(d.getMonth() - found.months);
+  return d.toISOString().slice(0, 10);
+}
+
 function monthLabel(iso: string) {
   return new Intl.DateTimeFormat("en-PK", { month: "short", year: "2-digit" }).format(
     new Date(`${iso}T12:00:00`)
@@ -62,12 +78,21 @@ function monthLabel(iso: string) {
 export function BenchmarkGrowthChart({ data }: { data: BenchmarkPointRow[] }) {
   const animate = useChartMotion();
   const [mode, setMode] = useState<Mode>("value");
+  const [range, setRange] = useState<Range>("all");
+
+  const ranged = useMemo(() => {
+    if (data.length === 0) return data;
+    const cutoff = rangeCutoff(range, data[data.length - 1].date);
+    if (!cutoff) return data;
+    const sliced = data.filter((row) => row.date >= cutoff);
+    return sliced.length >= 2 ? sliced : data;
+  }, [data, range]);
 
   const series = useMemo(() => {
-    if (data.length === 0) return [];
-    const first = data[0];
-    const latestCpi = data[data.length - 1].cpi ?? null;
-    return data.map((row) => {
+    if (ranged.length === 0) return [];
+    const first = ranged[0];
+    const latestCpi = ranged[ranged.length - 1].cpi ?? null;
+    return ranged.map((row) => {
       const out: Record<string, number | string> = { date: row.date };
       for (const line of LINES) {
         const raw = row[line.key] as number;
@@ -82,7 +107,7 @@ export function BenchmarkGrowthChart({ data }: { data: BenchmarkPointRow[] }) {
       }
       return out;
     });
-  }, [data, mode]);
+  }, [ranged, mode]);
 
   const latest = data[data.length - 1];
   const headline = useMemo(() => {
@@ -118,19 +143,35 @@ export function BenchmarkGrowthChart({ data }: { data: BenchmarkPointRow[] }) {
           <h2 className="text-base font-semibold">Growth of invested capital</h2>
           <p className="mt-1 text-xs text-muted-foreground">Your portfolio (holdings plus broker cash) against the KSE-100 (total return) and inflation, using your real contribution schedule.</p>
         </div>
-        <div className="flex rounded-md bg-muted p-0.5" aria-label="Display mode">
-          {MODES.map((item) => (
-            <button
-              key={item.key}
-              onClick={() => setMode(item.key)}
-              className={cn(
-                "rounded px-2.5 py-1 text-[11px] font-medium transition-colors",
-                mode === item.key ? "bg-card text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
-              )}
-            >
-              {item.label}
-            </button>
-          ))}
+        <div className="flex flex-wrap gap-2">
+          <div className="flex rounded-md bg-muted p-0.5" aria-label="Time range">
+            {RANGES.map((item) => (
+              <button
+                key={item.key}
+                onClick={() => setRange(item.key)}
+                className={cn(
+                  "rounded px-2.5 py-1 text-[11px] font-medium transition-colors",
+                  range === item.key ? "bg-card text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
+                )}
+              >
+                {item.label}
+              </button>
+            ))}
+          </div>
+          <div className="flex rounded-md bg-muted p-0.5" aria-label="Display mode">
+            {MODES.map((item) => (
+              <button
+                key={item.key}
+                onClick={() => setMode(item.key)}
+                className={cn(
+                  "rounded px-2.5 py-1 text-[11px] font-medium transition-colors",
+                  mode === item.key ? "bg-card text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
+                )}
+              >
+                {item.label}
+              </button>
+            ))}
+          </div>
         </div>
       </div>
 
