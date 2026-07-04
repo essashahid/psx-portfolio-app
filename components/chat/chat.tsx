@@ -1,10 +1,10 @@
 "use client";
 
 import { useRef, useState, useEffect, useCallback, useMemo } from "react";
-import ReactMarkdown, { type Components } from "react-markdown";
-import remarkGfm from "remark-gfm";
 import { ChatCards } from "@/components/chat/cards";
 import { ArtifactRenderer } from "@/components/chat/artifacts";
+import { AssistantProse } from "@/components/chat/prose";
+import { splitContentWithMarkers, stripArtifactMarkers } from "@/lib/chat/md-table";
 import type { Card } from "@/lib/chat/context";
 import type { ArtifactSpec } from "@/lib/chat/artifacts";
 import {
@@ -97,49 +97,9 @@ function firstAvailableModel(providers: ProviderStatus): ChatModelId {
 type ResearchMode = "Quick answer" | "Deep research" | "Portfolio analysis" | "Company comparison" | "Filing analysis";
 const RESEARCH_MODES: ResearchMode[] = ["Quick answer", "Deep research", "Portfolio analysis", "Company comparison", "Filing analysis"];
 
-const CHAT_MARKDOWN_COMPONENTS: Components = {
-  h1: ({ children }) => <h2 className="mb-3 mt-6 text-xl font-semibold tracking-editorial first:mt-0">{children}</h2>,
-  h2: ({ children }) => <h2 className="mb-3 mt-6 text-lg font-semibold tracking-editorial first:mt-0">{children}</h2>,
-  h3: ({ children }) => <h3 className="mb-2.5 mt-5 text-base font-semibold tracking-editorial first:mt-0">{children}</h3>,
-  h4: ({ children }) => <h4 className="mb-2 mt-4 text-sm font-semibold text-foreground">{children}</h4>,
-  p: ({ children }) => <p className="my-3 leading-7 text-foreground/85">{children}</p>,
-  ul: ({ children }) => <ul className="my-3 space-y-2 pl-0">{children}</ul>,
-  ol: ({ children }) => <ol className="my-3 list-decimal space-y-3 pl-5 marker:text-muted-foreground">{children}</ol>,
-  li: ({ children }) => <li className="leading-7 text-foreground/85 [&>p]:my-0">{children}</li>,
-  strong: ({ children }) => <strong className="font-semibold text-foreground">{children}</strong>,
-  em: ({ children }) => <em className="text-foreground/75">{children}</em>,
-  hr: () => <div className="my-6 h-px bg-border" />,
-  blockquote: ({ children }) => (
-    <blockquote className="my-4 rounded-md border-l-2 border-emerald-500 bg-emerald-50/50 px-3 py-2 text-sm text-foreground/80">
-      {children}
-    </blockquote>
-  ),
-  a: ({ children, href }) => (
-    <a href={href} target="_blank" rel="noopener noreferrer" className="font-medium text-blue-700 underline-offset-4 hover:underline">
-      {children}
-    </a>
-  ),
-  code: ({ children, className, ...props }) => (
-    <code className={cn("rounded bg-muted px-1.5 py-0.5 text-[0.9em] text-foreground", className)} {...props}>
-      {children}
-    </code>
-  ),
-  table: ({ children }) => (
-    <div className="my-4 overflow-x-auto rounded-lg border border-border">
-      <table className="w-full border-collapse text-sm">{children}</table>
-    </div>
-  ),
-  thead: ({ children }) => <thead className="bg-muted/60">{children}</thead>,
-  tbody: ({ children }) => <tbody className="divide-y divide-border">{children}</tbody>,
-  tr: ({ children }) => <tr className="transition-colors hover:bg-muted/30">{children}</tr>,
-  th: ({ children }) => (
-    <th className="border-b border-border px-3 py-2 text-left text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-      {children}
-    </th>
-  ),
-  td: ({ children }) => <td className="px-3 py-2 align-top text-foreground/90 tabular-nums">{children}</td>,
-  del: ({ children }) => <del className="text-muted-foreground">{children}</del>,
-};
+// Markdown components moved to components/chat/prose.tsx (AssistantProse),
+// which adds semantic number color, the lead-paragraph treatment, and
+// markdown-table upgrading on top of the same house style.
 
 export function Chat({
   providers,
@@ -803,25 +763,28 @@ export function Chat({
                             <Loader2 className="h-3 w-3 animate-spin" /> Preparing research...
                           </p>
                         )}
-                        {/* Parts-based rendering: prose and inline artifacts interleaved */}
+                        {/* Parts-based rendering: prose and inline artifacts interleaved.
+                            Table upgrading waits until the message stops streaming so a
+                            half-received table doesn't flicker between forms. */}
                         {m.parts
                           ? m.parts.map((part, pi) =>
                               part.type === "artifact" ? (
                                 <ArtifactRenderer key={pi} spec={part.spec} />
                               ) : part.content ? (
-                                <div key={pi} className="text-[15px] leading-7">
-                                  <ReactMarkdown remarkPlugins={[remarkGfm]} components={CHAT_MARKDOWN_COMPONENTS}>
-                                    {formatAssistantContent(part.content)}
-                                  </ReactMarkdown>
-                                </div>
+                                <AssistantProse
+                                  key={pi}
+                                  content={formatAssistantContent(part.content)}
+                                  lead={pi === 0}
+                                  upgradeTables={!(busy && i === messages.length - 1)}
+                                />
                               ) : null
                             )
                           : m.content && (
-                              <div className="text-[15px] leading-7">
-                                <ReactMarkdown remarkPlugins={[remarkGfm]} components={CHAT_MARKDOWN_COMPONENTS}>
-                                  {formatAssistantContent(m.content)}
-                                </ReactMarkdown>
-                              </div>
+                              <AssistantProse
+                                content={formatAssistantContent(m.content)}
+                                lead
+                                upgradeTables={!(busy && i === messages.length - 1)}
+                              />
                             )
                         }
                       </div>
@@ -959,12 +922,12 @@ function savedMessageToMessage(row: SavedMessage): Message {
   // Separate data cards from persisted artifact specs.
   const dataCards = allCards.filter((c) => c.kind !== "artifact") as Card[];
   const artifactCards = allCards.filter((c) => c.kind === "artifact").map((c) => c.data as ArtifactSpec);
-  // Re-build a simple parts array: full prose first, then one artifact part each.
-  const parts: MessagePart[] = [{ type: "text", content: row.content }];
-  for (const spec of artifactCards) parts.push({ type: "artifact", spec });
+  // Restore the streamed interleaving from [[artifact:N]] position markers;
+  // messages saved before markers existed fall back to prose-then-artifacts.
+  const parts = splitContentWithMarkers(row.content, artifactCards) as MessagePart[];
   return {
     role: row.role,
-    content: row.content,
+    content: stripArtifactMarkers(row.content),
     parts,
     thinking: row.thinking ?? undefined,
     cards: dataCards.length ? dataCards : undefined,
@@ -975,7 +938,7 @@ function formatAssistantContent(content: string): string {
   if (looksLikeToolLeak(content)) return "";
   return stripNarrationOpeners(
     tidyTypography(
-      content
+      stripArtifactMarkers(content)
         .replace(/\r\n/g, "\n")
         .replace(/([.!?])(?=[A-Z][a-z])/g, "$1 ")
         .replace(/\n{3,}/g, "\n\n")
