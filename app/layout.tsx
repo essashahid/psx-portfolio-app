@@ -30,6 +30,7 @@ export const viewport: Viewport = {
   themeColor: "#f2f2f0",
 };
 
+import { Analytics } from "@vercel/analytics/next";
 import { PwaUpdater } from "@/components/pwa-updater";
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
@@ -38,6 +39,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body className={`${manrope.variable} ${geistMono.variable} font-sans antialiased`}>
         {children}
         <PwaUpdater />
+        {/* Vercel Web Analytics: cookieless visitor + page-view tracking.
+            No-ops in local dev; requires Web Analytics enabled on the Vercel
+            project. */}
+        <Analytics />
       </body>
     </html>
   );

@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { track } from "@vercel/analytics/server";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { loadDemoData, DEMO_THREAD_COUNT } from "@/lib/demo";
@@ -77,6 +78,10 @@ export async function POST() {
         })
         .eq("id", userId);
     }
+
+    // The launch metric that matters: someone actually opened the demo.
+    // Server-side so it can't be blocked; never let analytics break login.
+    await track("demo_started").catch(() => {});
 
     return NextResponse.json({ ok: true, redirectTo: "/dashboard" });
   } catch (err) {
