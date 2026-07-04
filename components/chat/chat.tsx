@@ -148,6 +148,7 @@ export function Chat({
   sourceStatus = [],
   dataUpdated = null,
   readOnly = false,
+  initialSuggestions = [],
 }: {
   providers: ProviderStatus;
   initialThreads?: ChatThread[];
@@ -155,6 +156,8 @@ export function Chat({
   sourceStatus?: string[];
   dataUpdated?: string | null;
   readOnly?: boolean;
+  /** Cached personalized suggestions (chat_suggestions); template pool is the fallback. */
+  initialSuggestions?: string[];
 }) {
   const aiEnabled = providerReady(providers, "claude") || providerReady(providers, "deepseek");
   const [messages, setMessages] = useState<Message[]>([]);
@@ -185,9 +188,34 @@ export function Chat({
     setModel(firstAvailableModel(providers));
   }, [model, providers]);
 
-  // A different model can do different things well, so re-roll the pool and
-  // reset to the top whenever the model changes.
-  const suggestionPool = useMemo(() => buildSuggestions(model, promptContext), [model, promptContext]);
+  // Personalized pool: generated in the background from the user's book and
+  // question history, cached server-side, refreshed silently after the empty
+  // state has painted. The deterministic template pool remains the fallback.
+  const [personalized, setPersonalized] = useState<string[]>(initialSuggestions);
+  useEffect(() => {
+    if (readOnly) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetch("/api/chat/suggestions", { cache: "no-store" });
+        if (!res.ok) return;
+        const data = (await res.json()) as { suggestions?: string[] };
+        if (!cancelled && Array.isArray(data.suggestions) && data.suggestions.length >= 4) {
+          setPersonalized(data.suggestions);
+        }
+      } catch {
+        // The template pool is already on screen; stale suggestions are fine.
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [readOnly]);
+
+  // A different model can do different things well, so re-roll the fallback
+  // pool and reset rotation whenever the model changes.
+  const suggestionPool = useMemo(
+    () => (personalized.length >= 4 ? personalized : buildSuggestions(model, promptContext)),
+    [personalized, model, promptContext]
+  );
   useEffect(() => { setSuggestionOffset(0); }, [model]);
   const shownSuggestions = useMemo(() => {
     const pool = suggestionPool;
@@ -452,6 +480,15 @@ export function Chat({
       setBusy(false);
       update((m) => ({ ...m, status: undefined, complete: true }));
       void refreshThreads();
+      // The question history just changed, so warm the personalized pool in
+      // the background; the server skips regeneration when nothing changed.
+      void fetch("/api/chat/suggestions", { cache: "no-store" })
+        .then(async (res) => {
+          if (!res.ok) return;
+          const data = (await res.json()) as { suggestions?: string[] };
+          if (Array.isArray(data.suggestions) && data.suggestions.length >= 4) setPersonalized(data.suggestions);
+        })
+        .catch(() => {});
     }
   }
 
@@ -702,7 +739,7 @@ export function Chat({
                 <div className="mb-5">
                   <div className="mb-2 flex items-center justify-between px-0.5">
                     <span className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
-                      Suggested for {selectedModelLabel}
+                      {personalized.length >= 4 ? "Suggested for your portfolio" : `Suggested for ${selectedModelLabel}`}
                     </span>
                     {canShuffleSuggestions && (
                       <button
