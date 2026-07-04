@@ -116,6 +116,7 @@ export function Chat({
   dataUpdated = null,
   readOnly = false,
   initialSuggestions = [],
+  initialMessage = null,
 }: {
   providers: ProviderStatus;
   initialThreads?: ChatThread[];
@@ -125,6 +126,8 @@ export function Chat({
   readOnly?: boolean;
   /** Cached personalized suggestions (chat_suggestions); template pool is the fallback. */
   initialSuggestions?: string[];
+  /** Pre-seeded question (from an "Ask Copilot about this" entry point). Sent once on mount. */
+  initialMessage?: string | null;
 }) {
   const aiEnabled = providerReady(providers, "claude") || providerReady(providers, "deepseek");
   const [messages, setMessages] = useState<Message[]>([]);
@@ -312,6 +315,17 @@ export function Chat({
     setThreads((prev) => prev.filter((thread) => thread.id !== id));
     if (currentThreadId === id) startNewChat();
   }
+
+  // Auto-send a pre-seeded question exactly once (from an "Ask Copilot about
+  // this" link). Guarded by a ref so a remount or re-render never re-fires it.
+  const initialSentRef = useRef(false);
+  useEffect(() => {
+    if (initialSentRef.current) return;
+    if (readOnly || !initialMessage?.trim() || !aiEnabled) return;
+    initialSentRef.current = true;
+    void send(initialMessage.trim());
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [initialMessage, readOnly, aiEnabled]);
 
   async function send(text: string) {
     if (readOnly) return;
