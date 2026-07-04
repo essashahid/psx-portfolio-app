@@ -93,7 +93,23 @@ export async function POST(request: Request) {
   const encoder = new TextEncoder();
   const stream = new ReadableStream<Uint8Array>({
     async start(controller) {
-      const send = (e: Evt) => controller.enqueue(encoder.encode(JSON.stringify(e) + "\n"));
+      // Mirror of the activity events streamed to the client, upserted by id,
+      // so the finished trail can be persisted with the message and re-rendered
+      // when the thread is reloaded (Perplexity-style: the work stays visible).
+      const activityTrail: { id: string; label: string; detail?: string; done?: boolean }[] = [];
+      const send = (e: Evt) => {
+        if (e.type === "activity") {
+          const existing = activityTrail.find((s) => s.id === e.id);
+          if (existing) {
+            existing.label = e.label;
+            if (e.detail !== undefined) existing.detail = e.detail;
+            if (e.done) existing.done = true;
+          } else {
+            activityTrail.push({ id: e.id, label: e.label, detail: e.detail, done: e.done });
+          }
+        }
+        controller.enqueue(encoder.encode(JSON.stringify(e) + "\n"));
+      };
       let thread: ChatThread | null = null;
       let cards: Card[] = [];
       const artifactSpecs: ArtifactSpec[] = [];
@@ -139,7 +155,7 @@ export async function POST(request: Request) {
         if (!providerReady) {
           assistantContent = fallbackAnswer(message, brief, cards.length);
           send({ type: "text", delta: assistantContent });
-          await persistAssistantTurn(supabase, user.id, thread.id, assistantContent, assistantThinking, cards);
+          await persistAssistantTurn(supabase, user.id, thread.id, assistantContent, assistantThinking, cards, [], activityTrail);
           send({ type: "done" });
           controller.close();
           return;
@@ -522,7 +538,7 @@ export async function POST(request: Request) {
           type: "activity", id: "write", label: "Writing the answer", done: true,
           detail: `${artifactSpecs.length ? `${artifactSpecs.length} visual${artifactSpecs.length === 1 ? "" : "s"} · ` : ""}${elapsedS}s`,
         });
-        await persistAssistantTurn(supabase, user.id, thread.id, assistantContent, assistantThinking, cards, artifactSpecs);
+        await persistAssistantTurn(supabase, user.id, thread.id, assistantContent, assistantThinking, cards, artifactSpecs, activityTrail);
         send({ type: "done" });
         controller.close();
       } catch (err: unknown) {
@@ -580,16 +596,22 @@ async function persistAssistantTurn(
   content: string,
   thinking: string,
   cards: Card[],
-  artifactSpecs: ArtifactSpec[] = []
+  artifactSpecs: ArtifactSpec[] = [],
+  activityTrail: { id: string; label: string; detail?: string; done?: boolean }[] = []
 ) {
   const now = new Date().toISOString();
   const cleanContent = stripNarrationOpeners(tidyTypography(content.trim()));
   // Store artifact specs alongside data cards so they can be re-rendered when
   // the thread is reloaded. They use a distinct "artifact" kind so the existing
   // ChatCards renderer ignores them while the new ArtifactRenderer handles them.
+  // The activity trail rides the same column under its own kind, every step
+  // marked done, so reloaded threads keep the research console.
   const allCards: unknown[] = [
     ...cards,
     ...artifactSpecs.map((s) => ({ kind: "artifact", data: s })),
+    ...(activityTrail.length
+      ? [{ kind: "activity", data: activityTrail.map((s) => ({ ...s, done: true })) }]
+      : []),
   ];
   if (cleanContent) {
     const { error } = await supabase.from("chat_messages").insert({

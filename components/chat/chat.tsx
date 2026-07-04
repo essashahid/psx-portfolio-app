@@ -960,9 +960,13 @@ function groupThreads(threads: ChatThread[]): { today: ChatThread[]; week: ChatT
 
 function savedMessageToMessage(row: SavedMessage): Message {
   const allCards = Array.isArray(row.cards) ? (row.cards as { kind: string; data: unknown }[]) : [];
-  // Separate data cards from persisted artifact specs.
-  const dataCards = allCards.filter((c) => c.kind !== "artifact") as Card[];
+  // Separate data cards from persisted artifact specs and the activity trail.
+  const dataCards = allCards.filter((c) => c.kind !== "artifact" && c.kind !== "activity") as Card[];
   const artifactCards = allCards.filter((c) => c.kind === "artifact").map((c) => c.data as ArtifactSpec);
+  const activityData = allCards.find((c) => c.kind === "activity")?.data;
+  const activity = Array.isArray(activityData)
+    ? (activityData as ActivityStep[]).filter((s) => s && typeof s.id === "string" && typeof s.label === "string")
+    : undefined;
   // Restore the streamed interleaving from [[artifact:N]] position markers;
   // messages saved before markers existed fall back to prose-then-artifacts.
   const parts = splitContentWithMarkers(row.content, artifactCards) as MessagePart[];
@@ -972,6 +976,8 @@ function savedMessageToMessage(row: SavedMessage): Message {
     parts,
     thinking: row.thinking ?? undefined,
     cards: dataCards.length ? dataCards : undefined,
+    activity: activity && activity.length ? activity : undefined,
+    complete: true,
   };
 }
 
