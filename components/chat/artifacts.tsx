@@ -309,7 +309,7 @@ function ComparisonTable({ spec }: { spec: ComparisonTableArtifact }) {
             {spec.rows.map((row, i) => (
               <tr key={i} className="transition-colors hover:bg-muted/30">
                 {spec.columns.map((col) => (
-                  <td key={col.key} className="px-4 py-2.5 align-top tabular-nums text-foreground/90">
+                  <td key={col.key} className={cn("px-4 py-2.5 align-top tabular-nums text-foreground/90", cellTone(row[col.key] as string | number | null))}>
                     {row[col.key] != null ? String(row[col.key]) : "—"}
                   </td>
                 ))}
@@ -355,12 +355,28 @@ function fmtCell(value: string | number | null, format?: TableArtifact["columns"
   if (value == null) return "—";
   const n = Number(value);
   switch (format) {
-    case "currency": return `PKR ${n.toLocaleString("en-PK", { maximumFractionDigits: 2 })}`;
-    case "percent":  return `${n >= 0 ? "+" : ""}${n.toFixed(2)}%`;
+    case "currency": return typeof value === "number" || NUMERICISH.test(String(value)) ? `PKR ${n.toLocaleString("en-PK", { maximumFractionDigits: 2 })}` : String(value);
+    case "percent":  return typeof value === "number" ? `${n >= 0 ? "+" : ""}${n.toFixed(Math.abs(n) >= 100 ? 0 : 2)}%` : String(value);
     case "number":   return n.toLocaleString("en-PK", { maximumFractionDigits: 2 });
     case "date":     return new Date(String(value) + "T00:00:00Z").toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric", timeZone: "UTC" });
     default:         return String(value);
   }
+}
+
+const NUMERICISH = /^[+-]?\d[\d,]*(?:\.\d+)?$/;
+
+/** Semantic tone for a cell: signed percents both ways, negatives always red. */
+function cellTone(value: string | number | null, format?: TableArtifact["columns"][number]["format"]): string | null {
+  if (value == null) return null;
+  if (typeof value === "number") {
+    if (value < 0) return "text-red-600";
+    if (format === "percent" && value > 0) return "text-emerald-600";
+    return null;
+  }
+  const s = String(value).trim();
+  if (/^[-−]\s?(?:PKR\s?)?\d/.test(s)) return "text-red-600";
+  if (/^\+\s?(?:PKR\s?)?\d/.test(s)) return "text-emerald-600";
+  return null;
 }
 
 function DataTable({ spec }: { spec: TableArtifact }) {
@@ -388,7 +404,14 @@ function DataTable({ spec }: { spec: TableArtifact }) {
             {spec.rows.map((row, i) => (
               <tr key={i} className="transition-colors hover:bg-muted/30">
                 {spec.columns.map((col) => (
-                  <td key={col.key} className={cn("px-4 py-2 align-top tabular-nums text-foreground/90", col.align === "right" ? "text-right" : "text-left")}>
+                  <td
+                    key={col.key}
+                    className={cn(
+                      "px-4 py-2 align-top tabular-nums text-foreground/90",
+                      col.align === "right" ? "text-right" : "text-left",
+                      cellTone(row[col.key] as string | number | null, col.format)
+                    )}
+                  >
                     {fmtCell(row[col.key] as string | number | null, col.format)}
                   </td>
                 ))}

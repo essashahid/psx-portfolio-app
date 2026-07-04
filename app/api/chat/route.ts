@@ -10,6 +10,7 @@ import { claudeConfigured, getClaude, buildClaudeParams } from "@/lib/ai/claude"
 import { deepseekChatConfigured, runDeepSeekChat } from "@/lib/ai/deepseek-chat";
 import { getModelDef, type ChatModelDef } from "@/lib/ai/models";
 import { looksLikeToolLeak, stripEmDashes, stripNarrationOpeners, tidyTypography } from "@/lib/chat/sanitize";
+import { artifactMarker } from "@/lib/chat/md-table";
 import { wantsWebContext, gatherWebContext } from "@/lib/chat/web-context";
 import { ArtifactExtractor, type ArtifactSpec } from "@/lib/chat/artifacts";
 import {
@@ -176,7 +177,10 @@ export async function POST(request: Request) {
           ];
 
           // Artifact extractor strips ```artifact blocks from the text stream
-          // and routes them as separate artifact events.
+          // and routes them as separate artifact events. A position marker is
+          // written into the persisted content (never streamed) so a reloaded
+          // thread renders each artifact where it streamed, not appended at
+          // the end under orphaned headings.
           const extractor = new ArtifactExtractor(
             (raw) => {
               const delta = stripEmDashes(raw);
@@ -186,6 +190,7 @@ export async function POST(request: Request) {
             },
             (spec) => {
               artifactSpecs.push(spec);
+              assistantContent += artifactMarker(artifactSpecs.length - 1);
               send({ type: "artifact", spec });
             }
           );
@@ -366,6 +371,7 @@ export async function POST(request: Request) {
             },
             (spec) => {
               artifactSpecs.push(spec);
+              assistantContent += artifactMarker(artifactSpecs.length - 1);
               send({ type: "artifact", spec });
             }
           );
@@ -421,6 +427,7 @@ export async function POST(request: Request) {
               },
               (spec) => {
                 artifactSpecs.push(spec);
+                assistantContent += artifactMarker(artifactSpecs.length - 1);
                 send({ type: "artifact", spec });
               }
             );
