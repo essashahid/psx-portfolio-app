@@ -46,6 +46,13 @@ type MessagePart =
   | { type: "text"; content: string }
   | { type: "artifact"; spec: ArtifactSpec };
 
+interface ActivityStep {
+  id: string;
+  label: string;
+  detail?: string;
+  done?: boolean;
+}
+
 interface Message {
   role: "user" | "assistant";
   content: string; // full prose (persisted, search-friendly)
@@ -53,7 +60,7 @@ interface Message {
   thinking?: string;
   cards?: Card[];
   status?: string;
-  activity?: string[];
+  activity?: ActivityStep[];
   complete?: boolean;
 }
 
@@ -320,7 +327,7 @@ export function Chat({
     setMessages((prev) => [
       ...prev,
       { role: "user", content: q },
-      { role: "assistant", content: "", activity: ["Understanding your question"] },
+      { role: "assistant", content: "", activity: [{ id: "read", label: "Reading your question" }] },
     ]);
 
     const update = (fn: (m: Message) => Message) =>
@@ -382,14 +389,24 @@ export function Chat({
             });
           } else if (evt.type === "reset") {
             update((m) => ({ ...m, content: "", parts: [{ type: "text" as const, content: "" }] }));
-          } else if (evt.type === "status") update((m) => ({
-            ...m,
-            status: evt.text,
-            activity: [...(m.activity ?? []).filter((item) => item !== evt.text), evt.text],
-          }));
+          } else if (evt.type === "activity") {
+            update((m) => ({ ...m, status: evt.done ? m.status : evt.label, activity: upsertActivity(m.activity, evt) }));
+          } else if (evt.type === "status") {
+            // Legacy plain-string status (kept for deploy skew): treat as a step.
+            update((m) => ({
+              ...m,
+              status: evt.text,
+              activity: upsertActivity(m.activity, { id: `s:${evt.text}`, label: evt.text }),
+            }));
+          }
           else if (evt.type === "done") {
             receivedDone = true;
-            update((m) => ({ ...m, status: undefined, complete: true }));
+            update((m) => ({
+              ...m,
+              status: undefined,
+              complete: true,
+              activity: m.activity?.map((s) => (s.done ? s : { ...s, done: true })),
+            }));
           }
           else if (evt.type === "incomplete") {
             // The server reports the answer may be cut short. Append a quiet note
@@ -438,7 +455,12 @@ export function Chat({
       update((m) => ({ ...m, content: m.content || `Error: ${e instanceof Error ? e.message : "Failed"}` }));
     } finally {
       setBusy(false);
-      update((m) => ({ ...m, status: undefined, complete: true }));
+      update((m) => ({
+        ...m,
+        status: undefined,
+        complete: true,
+        activity: m.activity?.map((s) => (s.done ? s : { ...s, done: true })),
+      }));
       void refreshThreads();
       // The question history just changed, so warm the personalized pool in
       // the background; the server skips regeneration when nothing changed.
@@ -902,6 +924,25 @@ export function Chat({
   );
 }
 
+/**
+ * Upsert a research-activity step by id. The first real server step also
+ * closes the client-side "Reading your question" seed, and a patch to an
+ * existing id updates it in place so a step flips from running to done with
+ * its outcome instead of appending a duplicate line.
+ */
+function upsertActivity(
+  steps: ActivityStep[] | undefined,
+  evt: { id: string; label: string; detail?: string; done?: boolean }
+): ActivityStep[] {
+  const base = (steps ?? []).map((s) => (s.id === "read" && evt.id !== "read" && !s.done ? { ...s, done: true } : s));
+  const idx = base.findIndex((s) => s.id === evt.id);
+  const step: ActivityStep = { id: evt.id, label: evt.label, detail: evt.detail, done: evt.done };
+  if (idx === -1) return [...base, step];
+  const copy = [...base];
+  copy[idx] = { ...copy[idx], ...step, detail: evt.detail ?? copy[idx].detail };
+  return copy;
+}
+
 function groupThreads(threads: ChatThread[]): { today: ChatThread[]; week: ChatThread[]; older: ChatThread[] } {
   const now = Date.now();
   const DAY = 86_400_000;
@@ -1046,14 +1087,30 @@ function ResearchActivity({
   active,
   complete,
 }: {
-  steps: string[];
+  steps: ActivityStep[];
   active: boolean;
   complete: boolean;
 }) {
   const [open, setOpen] = useState(false);
+  const startedAtRef = useRef<number | null>(null);
+  const [elapsed, setElapsed] = useState(0);
 
-  const latest = steps[steps.length - 1];
+  // Wall-clock while research runs, so the header reads like a live console.
+  useEffect(() => {
+    if (!active) return;
+    if (startedAtRef.current == null) startedAtRef.current = Date.now();
+    const t = setInterval(() => setElapsed(Math.round((Date.now() - (startedAtRef.current ?? Date.now())) / 1000)), 1000);
+    return () => clearInterval(t);
+  }, [active]);
+
+  const running = steps.filter((s) => !s.done);
+  const lookupCount = steps.filter((s) => s.done && !["read", "context", "analyze", "write", "webctx", "wrapup"].includes(s.id)).length;
+  const latest = running.length ? running[running.length - 1] : steps[steps.length - 1];
   const expanded = active || open;
+
+  const headerSub = active
+    ? `${latest?.label ?? "Working"}${elapsed >= 2 ? ` · ${elapsed}s` : ""}`
+    : `${lookupCount > 0 ? `${lookupCount} lookup${lookupCount === 1 ? "" : "s"} · ` : ""}${steps.find((s) => s.id === "write")?.detail ?? "answer synthesized"}`;
 
   return (
     <div className="overflow-hidden rounded-2xl border border-emerald-950/10 bg-[linear-gradient(135deg,rgba(236,253,245,0.85),rgba(255,255,255,0.9))] shadow-[0_14px_40px_-30px_rgba(5,150,105,0.55)]">
@@ -1070,11 +1127,13 @@ function ResearchActivity({
         <span className="min-w-0 flex-1">
           <span className="flex items-center gap-2 text-xs font-semibold tracking-[-0.01em] text-foreground">
             {active ? "Research in progress" : "Research complete"}
-            <span className="rounded-full border border-emerald-200 bg-emerald-50 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-[0.12em] text-emerald-700">
-              Live
-            </span>
+            {active && (
+              <span className="rounded-full border border-emerald-200 bg-emerald-50 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-[0.12em] text-emerald-700">
+                Live
+              </span>
+            )}
           </span>
-          <span className="mt-0.5 block truncate text-[11px] text-muted-foreground">{latest}</span>
+          <span className="mt-0.5 block truncate text-[11px] text-muted-foreground">{headerSub}</span>
         </span>
         <ChevronDown className={cn("h-4 w-4 text-muted-foreground transition-transform", expanded && "rotate-180")} />
       </button>
@@ -1082,18 +1141,21 @@ function ResearchActivity({
         <div className="border-t border-emerald-950/10 bg-white/55 px-4 py-3">
           <div className="relative space-y-0">
             {steps.map((step, index) => {
-              const isCurrent = active && index === steps.length - 1;
-              const Icon = activityIcon(step);
+              const isRunning = active && !step.done;
+              const Icon = activityIcon(step.label);
               return (
-                <div key={`${step}-${index}`} className="relative flex min-h-9 items-start gap-3 pb-2 last:min-h-0 last:pb-0">
+                <div key={step.id} className="relative flex min-h-9 items-start gap-3 pb-2 last:min-h-0 last:pb-0">
                   {index < steps.length - 1 && <span className="absolute left-2.75 top-6 h-[calc(100%-0.25rem)] w-px bg-emerald-200" />}
                   <span className={cn(
                     "relative z-10 flex h-6 w-6 shrink-0 items-center justify-center rounded-full border bg-white",
-                    isCurrent ? "border-emerald-400 text-emerald-700 shadow-[0_0_0_3px_rgba(16,185,129,0.10)]" : "border-emerald-200 text-emerald-600"
+                    isRunning ? "border-emerald-400 text-emerald-700 shadow-[0_0_0_3px_rgba(16,185,129,0.10)]" : "border-emerald-200 text-emerald-600"
                   )}>
-                    {isCurrent ? <Loader2 className="h-3 w-3 animate-spin" /> : <Icon className="h-3 w-3" />}
+                    {isRunning ? <Loader2 className="h-3 w-3 animate-spin" /> : <Icon className="h-3 w-3" />}
                   </span>
-                  <span className={cn("pt-1 text-[11px] leading-4", isCurrent ? "font-medium text-foreground" : "text-muted-foreground")}>{step}</span>
+                  <span className={cn("min-w-0 pt-1 text-[11px] leading-4", isRunning ? "font-medium text-foreground" : "text-muted-foreground")}>
+                    {step.label}
+                    {step.detail && <span className="text-muted-foreground/80"> — {step.detail}</span>}
+                  </span>
                 </div>
               );
             })}
@@ -1109,11 +1171,11 @@ function ResearchActivity({
   );
 }
 
-function activityIcon(step: string) {
-  const value = step.toLowerCase();
-  if (value.includes("web") || value.includes("coverage") || value.includes("news")) return Globe2;
-  if (value.includes("portfolio") || value.includes("holding") || value.includes("market data")) return Database;
-  if (value.includes("filing") || value.includes("document") || value.includes("source")) return FileSearch;
-  if (value.includes("answer") || value.includes("synth")) return Sparkles;
+function activityIcon(label: string) {
+  const value = label.toLowerCase();
+  if (value.startsWith("web") || value.includes("coverage") || value.includes("news") || value.includes("filings")) return Globe2;
+  if (value.includes("portfolio") || value.includes("holding") || value.includes("quote") || value.includes("psx")) return Database;
+  if (value.includes("thesis") || value.includes("journal") || value.includes("transaction")) return FileSearch;
+  if (value.includes("answer") || value.includes("synth") || value.includes("writing")) return Sparkles;
   return Check;
 }

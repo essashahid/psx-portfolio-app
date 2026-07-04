@@ -73,6 +73,9 @@ export interface DeepSeekChatOptions {
   onThinking: (delta: string) => void;
   onText: (delta: string) => void;
   onStatus: (text: string) => void;
+  /** Structured tool lifecycle for the research-activity panel; preferred over onStatus. */
+  onToolStart?: (id: string, name: string, input: Record<string, unknown>) => void;
+  onToolEnd?: (id: string, name: string, input: Record<string, unknown>, result: unknown) => void;
   /** Clear the answer bubble — called when a turn's text was planning chatter. */
   onReset: () => void;
 }
@@ -198,14 +201,16 @@ export async function runDeepSeekChat(opts: DeepSeekChatOptions): Promise<void> 
       tool_calls: calls,
     });
     for (const call of calls) {
-      opts.onStatus(`Looking up ${call.function.name.replace(/_/g, " ")}…`);
       let input: Record<string, unknown> = {};
       try {
         input = call.function.arguments ? (JSON.parse(call.function.arguments) as Record<string, unknown>) : {};
       } catch {
         input = {};
       }
+      if (opts.onToolStart) opts.onToolStart(call.id, call.function.name, input);
+      else opts.onStatus(`Looking up ${call.function.name.replace(/_/g, " ")}…`);
       const out = await opts.executeTool(call.function.name, input);
+      opts.onToolEnd?.(call.id, call.function.name, input, out);
       messages.push({ role: "tool", tool_call_id: call.id, content: JSON.stringify(out) });
     }
   }
