@@ -10,6 +10,12 @@ import { AnimatedMoney } from "@/components/animated-money";
 import { ActionButton } from "@/components/action-button";
 import { AddTransactionDialog } from "@/components/add-transaction-dialog";
 import { ImportantPsxEvents, type PsxEventRow } from "@/components/important-psx-events";
+import { getClustersForTickers } from "@/lib/news/global-store";
+import { getPrefs, type UserPrefs } from "@/lib/prefs";
+import { AsOf } from "@/components/as-of";
+import { MarkSeen } from "@/components/mark-seen";
+import { DismissCheckButton } from "@/components/dashboard-checks";
+import type { SupabaseClient } from "@supabase/supabase-js";
 import { DashboardAllocation, DashboardPerformance, PortfolioContribution } from "@/components/dashboard-visuals";
 import { BenchmarkGrowthChart, type BenchmarkPointRow } from "@/components/benchmark-growth-chart";
 import { Briefcase, CircleAlert, RefreshCw } from "lucide-react";
@@ -23,14 +29,57 @@ const CHECK_THRESHOLDS = {
   dailyMove: 5,
 } as const;
 
-function formatUpdated(date: string | null, time: string | null) {
-  if (!date) return "No market update available";
-  const displayDate = new Intl.DateTimeFormat("en-PK", {
-    day: "2-digit",
-    month: "short",
-    year: "numeric",
-  }).format(new Date(`${date}T12:00:00`));
-  return `${displayDate}${time ? `, ${time.slice(0, 5)}` : ""}`;
+/** Dismissed check ids whose dismissal has not aged out (14 days). */
+function dismissedCheckIds(map: Record<string, string> | undefined): Set<string> {
+  const out = new Set<string>();
+  if (!map) return out;
+  const cutoff = Date.now() - 14 * 86_400_000;
+  for (const [id, at] of Object.entries(map)) {
+    if (new Date(at).getTime() >= cutoff) out.add(id);
+  }
+  return out;
+}
+
+/** One quiet line summarising what changed since the previous dashboard visit. */
+async function buildSinceLastVisit(
+  supabase: SupabaseClient,
+  userId: string,
+  lastSeen: string | null,
+  liveValue: number
+): Promise<string | null> {
+  if (!lastSeen) return null;
+  const seenMs = new Date(lastSeen).getTime();
+  if (Number.isNaN(seenMs) || Date.now() - seenMs < 20 * 3_600_000) return null; // less than ~a day: stay quiet
+
+  const seenDate = new Date(lastSeen).toISOString().slice(0, 10);
+  const [snapRes, divRes] = await Promise.all([
+    supabase
+      .from("portfolio_snapshots")
+      .select("total_value, snapshot_date")
+      .eq("user_id", userId)
+      .lte("snapshot_date", seenDate)
+      .order("snapshot_date", { ascending: false })
+      .limit(1)
+      .maybeSingle(),
+    supabase
+      .from("dividends")
+      .select("net_amount, amount")
+      .eq("user_id", userId)
+      .eq("status", "received")
+      .gte("payment_date", seenDate),
+  ]);
+
+  const parts: string[] = [];
+  const priorValue = snapRes.data?.total_value ? Number(snapRes.data.total_value) : null;
+  if (priorValue && priorValue > 0) {
+    const delta = liveValue - priorValue;
+    parts.push(`portfolio value ${delta >= 0 ? "up" : "down"} ${formatNumber(Math.abs(delta), 0)} PKR`);
+  }
+  const dividendsSince = (divRes.data ?? []).reduce((s, d) => s + Number(d.net_amount ?? d.amount ?? 0), 0);
+  if (dividendsSince > 0) parts.push(`${formatNumber(dividendsSince, 0)} PKR in dividends received`);
+
+  if (parts.length === 0) return null;
+  return `Since your last visit: ${parts.join(", ")}.`;
 }
 
 export default async function DashboardPage() {
@@ -41,10 +90,11 @@ export default async function DashboardPage() {
   // Critical path: only the data the hero, summary and allocations need to
   // paint. The charts and PSX events fetch their own slices and stream in
   // behind Suspense, so the page shell and headline numbers render immediately.
-  const [summary, dailyPerformance, profileRes] = await Promise.all([
+  const [summary, dailyPerformance, profileRes, prefs] = await Promise.all([
     getPortfolio(supabase, user.id),
     getDailyHoldingPerformance(supabase, user.id),
     supabase.from("profiles").select("demo_mode, full_name").eq("id", user.id).maybeSingle(),
+    getPrefs(supabase, user.id).catch(() => ({}) as UserPrefs),
   ]);
 
   if (summary.holdingsCount === 0) {
@@ -81,24 +131,62 @@ export default async function DashboardPage() {
       holdings: 1,
     }))
     .sort((a, b) => b.value - a.value);
-  const checks = [
+  // Each check carries a stable id keyed on the fact it reports, so a dismissal
+  // sticks until the same fact reappears. Only checks not currently dismissed
+  // surface, so a check the user has acknowledged stops nagging.
+  const allChecks = [
     ...(summary.largestHolding && (summary.largestHolding.weight ?? 0) >= CHECK_THRESHOLDS.holdingWeight
-      ? [{ title: "Large holding", detail: `${summary.largestHolding.ticker} represents ${summary.largestHolding.weight!.toFixed(1)}% of portfolio value.`, href: `/stocks/${summary.largestHolding.ticker}` }]
+      ? [{ id: `holding:${summary.largestHolding.ticker}`, title: "Large holding", detail: `${summary.largestHolding.ticker} represents ${summary.largestHolding.weight!.toFixed(1)}% of portfolio value.`, href: `/stocks/${summary.largestHolding.ticker}` }]
       : []),
     ...(summary.largestSector && summary.largestSector.weight >= CHECK_THRESHOLDS.sectorWeight
-      ? [{ title: "Sector concentration", detail: `${summary.largestSector.sector} represents ${summary.largestSector.weight.toFixed(1)}% of portfolio value.`, href: "/holdings" }]
+      ? [{ id: `sector:${summary.largestSector.sector}`, title: "Sector concentration", detail: `${summary.largestSector.sector} represents ${summary.largestSector.weight.toFixed(1)}% of portfolio value.`, href: "/holdings" }]
       : []),
     ...summary.holdings
       .filter((holding) => (holding.unrealized_pl_pct ?? 0) <= CHECK_THRESHOLDS.belowCost)
       .slice(0, 2)
-      .map((holding) => ({ title: "Below cost", detail: `${holding.ticker} is ${formatSignedPct(holding.unrealized_pl_pct)} below its average cost.`, href: `/stocks/${holding.ticker}` })),
+      .map((holding) => ({ id: `belowcost:${holding.ticker}`, title: "Below cost", detail: `${holding.ticker} is ${formatSignedPct(holding.unrealized_pl_pct)} below its average cost.`, href: `/stocks/${holding.ticker}` })),
     ...dailyPerformance.rows
       .filter((row) => Math.abs(row.dayChangePct ?? 0) >= CHECK_THRESHOLDS.dailyMove)
       .slice(0, 2)
-      .map((row) => ({ title: "Large daily move", detail: `${row.ticker} moved ${formatSignedPct(row.dayChangePct)} today.`, href: `/stocks/${row.ticker}` })),
-  ].slice(0, 4);
+      .map((row) => ({ id: `move:${row.ticker}:${dailyPerformance.asOf ?? "today"}`, title: "Large daily move", detail: `${row.ticker} moved ${formatSignedPct(row.dayChangePct)} today.`, href: `/stocks/${row.ticker}` })),
+  ];
+  const dismissed = dismissedCheckIds(prefs.dismissed_checks);
+  const checks = allChecks.filter((c) => !dismissed.has(c.id)).slice(0, 4);
 
   const latestMarketDate = dailyPerformance.asOf ?? null;
+
+  // Nearest upcoming dividend for a held ticker (from the reconciled events).
+  const { data: nextDivRow } = await supabase
+    .from("dividend_events")
+    .select("ticker, company_name, ex_date, payment_date, estimated_payment_start, net_expected")
+    .eq("user_id", user.id)
+    .in("status", ["announced", "expected"])
+    .gte("ex_date", latestMarketDate ?? new Date().toISOString().slice(0, 10))
+    .order("ex_date", { ascending: true })
+    .limit(1)
+    .maybeSingle();
+  const nextDividend = nextDivRow
+    ? `Next dividend: ${nextDivRow.ticker} ex-date ${nextDivRow.ex_date}${nextDivRow.net_expected ? `, about ${formatNumber(nextDivRow.net_expected, 0)} PKR net` : ""}`
+    : null;
+
+  // "Since your last visit": value change and dividends landed since the prior
+  // dashboard visit. Only when the gap is more than a day, so a same-day revisit
+  // stays quiet.
+  const sinceLastVisit = await buildSinceLastVisit(supabase, user.id, prefs.dashboard_last_seen_at ?? null, summary.totalValue + summary.cashBalance);
+
+  // Link a mover to a likely cause: a recent news cluster for a holding that
+  // moved beyond the daily-move threshold.
+  const moverTickers = dailyPerformance.rows
+    .filter((row) => Math.abs(row.dayChangePct ?? 0) >= CHECK_THRESHOLDS.dailyMove)
+    .map((row) => row.ticker);
+  const moverClusters = moverTickers.length ? await getClustersForTickers(supabase, moverTickers, { limit: 12 }) : [];
+  const causes: Record<string, { url: string; title: string }> = {};
+  for (const cluster of moverClusters) {
+    if (cluster.ticker && cluster.url && !causes[cluster.ticker]) {
+      causes[cluster.ticker] = { url: cluster.url, title: cluster.title };
+    }
+  }
+
   return (
     <div className="space-y-6 pb-4">
       <header className="border-b border-border pb-6">
@@ -111,7 +199,9 @@ export default async function DashboardPage() {
               <MetricInline label="Today" value={<AnimatedMoney value={dayPnl} signed delay={100} duration={900} />} sub={formatSignedPct(dailyPerformance.weightedDayChangePct)} tone={dayTone} />
               <MetricInline label="Overall return" value={<AnimatedMoney value={summary.unrealizedPl} signed delay={180} duration={1050} />} sub={formatSignedPct(summary.unrealizedPlPct)} tone={summary.unrealizedPl > 0 ? "positive" : summary.unrealizedPl < 0 ? "negative" : "flat"} />
             </div>
-            <p className="mt-4 text-xs text-muted-foreground">Last updated: {formatUpdated(latestMarketDate, dailyPerformance.snapshotTime)}</p>
+            <div className="mt-4"><AsOf date={latestMarketDate} time={dailyPerformance.snapshotTime} label="Last updated" /></div>
+            {sinceLastVisit && <p className="mt-3 text-xs text-muted-foreground">{sinceLastVisit}</p>}
+            {nextDividend && <p className="mt-1 text-xs text-muted-foreground">{nextDividend}</p>}
           </div>
           <div className="flex flex-wrap gap-2">
             {!isDemo && <ActionButton endpoint="/api/prices" body={{ refresh: true }} label={<><RefreshCw className="h-3.5 w-3.5" /> Refresh prices</>} size="sm" />}
@@ -136,7 +226,7 @@ export default async function DashboardPage() {
       </section>
 
       <div className="grid gap-6 xl:grid-cols-2">
-        <PortfolioContribution rows={dailyPerformance.rows.map((row) => ({ ticker: row.ticker, companyName: row.companyName, contribution: row.dayPnl, priceMove: row.dayChangePct, weight: row.weight }))} gainers={dailyPerformance.gainers} losers={dailyPerformance.losers} />
+        <PortfolioContribution rows={dailyPerformance.rows.map((row) => ({ ticker: row.ticker, companyName: row.companyName, contribution: row.dayPnl, priceMove: row.dayChangePct, weight: row.weight }))} gainers={dailyPerformance.gainers} losers={dailyPerformance.losers} causes={causes} />
         <DashboardAllocation sectors={sectorAllocations} holdings={holdingAllocations} />
       </div>
 
@@ -145,7 +235,15 @@ export default async function DashboardPage() {
           <section className="border-t border-border pt-4">
             <div className="flex items-center gap-2"><CircleAlert className="h-4 w-4 text-muted-foreground" /><h2 className="text-base font-semibold">Portfolio checks</h2></div>
             <div className="mt-3 divide-y divide-border">
-              {checks.map((check) => <Link key={`${check.title}-${check.detail}`} href={check.href} className="block py-3 first:pt-1 last:pb-0 hover:bg-muted/30"><p className="text-sm font-medium">{check.title}</p><p className="mt-0.5 text-xs text-muted-foreground">{check.detail}</p></Link>)}
+              {checks.map((check) => (
+                <div key={check.id} className="flex items-start justify-between gap-2 py-3 first:pt-1 last:pb-0 hover:bg-muted/30">
+                  <Link href={check.href} className="min-w-0 flex-1">
+                    <p className="text-sm font-medium">{check.title}</p>
+                    <p className="mt-0.5 text-xs text-muted-foreground">{check.detail}</p>
+                  </Link>
+                  {!isDemo && <DismissCheckButton checkId={check.id} />}
+                </div>
+              ))}
             </div>
           </section>
         )}
@@ -153,6 +251,7 @@ export default async function DashboardPage() {
           <DashboardEvents userId={user.id} tickers={tickers} />
         </Suspense>
       </div>
+      <MarkSeen surface="dashboard" />
     </div>
   );
 }
@@ -236,13 +335,33 @@ async function DashboardCharts({ userId, liveValue }: { userId: string; liveValu
 /** Recent dividend / result / corporate-action news for held tickers. */
 async function DashboardEvents({ userId, tickers }: { userId: string; tickers: string[] }) {
   const supabase = await createClient();
+  const categories = ["dividend", "result", "corporate_announcement"];
+
+  // Prefer the shared, de-duplicated cluster store; fall back to the legacy
+  // per-user table until the cluster backfill has run.
+  const clusters = await getClustersForTickers(supabase, tickers, { categories, limit: 5 });
+  if (clusters.length > 0) {
+    const events: PsxEventRow[] = clusters
+      .filter((c) => c.url)
+      .map((c) => ({
+        id: c.id,
+        ticker: c.ticker,
+        title: c.title,
+        url: c.url as string,
+        category: c.category,
+        published_at: c.last_published_at,
+        articleCount: c.article_count,
+      }));
+    return <ImportantPsxEvents events={events} />;
+  }
+
   const { data: eventsData } = await supabase
     .from("news_articles")
     .select("id, ticker, title, url, category, published_at")
     .eq("user_id", userId)
     .eq("ignored", false)
     .in("ticker", tickers)
-    .in("category", ["dividend", "result", "corporate_announcement"])
+    .in("category", categories)
     .order("published_at", { ascending: false })
     .limit(5);
 

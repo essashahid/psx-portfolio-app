@@ -137,7 +137,7 @@ export async function saveGlobalArticle(
         ai_summary: patch.ai_summary ?? article.ai_summary ?? null,
         sentiment: patch.sentiment ?? article.sentiment ?? null,
         relevance_score: patch.relevance_score ?? article.relevance_score ?? null,
-        impact_tickers: article.impact_tickers ?? null,
+        impact_tickers: article.impact_tickers ?? (article.ticker ? [article.ticker] : null),
         is_interesting: article.is_interesting ?? materiality >= 8,
         low_confidence: patch.low_confidence ?? article.low_confidence ?? false,
         event_key: eventKey(article),
@@ -298,7 +298,11 @@ function articleTime(a: NewsArticle): number {
 }
 
 function eventKey(article: DiscoveredNewsArticle): string {
-  const text = `${article.category ?? "general"}:${article.title}`
+  // Portfolio-scope stories are keyed per company so one holding's dividend and
+  // another's result never collapse into the same cluster; market stories cluster
+  // purely by topic.
+  const prefix = article.scope === "portfolio" && article.ticker ? `${article.ticker.toLowerCase()}:` : "";
+  const text = `${prefix}${article.category ?? "general"}:${article.title}`
     .toLowerCase()
     .replace(/\b(pakistan|psx|kse|stock|market|latest|update)\b/g, " ")
     .replace(/[^a-z0-9]+/g, " ")
@@ -306,6 +310,60 @@ function eventKey(article: DiscoveredNewsArticle): string {
     .slice(0, 90)
     .replace(/\s+/g, "-");
   return text || "general";
+}
+
+// ---------------------------------------------------------------------------
+// Persisted event clusters (news_event_clusters). One row per de-duplicated
+// story so the dashboard, stock page and Copilot read a shared, compressed view
+// instead of re-clustering per request.
+// ---------------------------------------------------------------------------
+
+export type NewsCluster = {
+  id: string;
+  event_key: string;
+  category: string | null;
+  ticker: string | null;
+  title: string;
+  url: string | null;
+  materiality_score: number;
+  article_count: number;
+  impact_tickers: string[] | null;
+  scope: string;
+  first_published_at: string | null;
+  last_published_at: string | null;
+};
+
+/** Recompute the shared cluster table. Call once per refresh cycle, not per user. */
+export async function syncNewsClusters(db: Db, sinceDays = 45): Promise<number> {
+  const since = new Date(Date.now() - sinceDays * 24 * 60 * 60 * 1000).toISOString();
+  const { data, error } = await db.rpc("sync_news_clusters", { p_since: since });
+  if (error) return 0;
+  return typeof data === "number" ? data : 0;
+}
+
+/** Clusters that touch any of the given tickers, most recent first. */
+export async function getClustersForTickers(
+  db: Db,
+  tickers: string[],
+  opts: { categories?: string[]; limit?: number } = {}
+): Promise<NewsCluster[]> {
+  if (tickers.length === 0) return [];
+  const upper = tickers.map((t) => t.toUpperCase());
+  let query = db
+    .from("news_event_clusters")
+    .select("*")
+    .overlaps("impact_tickers", upper)
+    .order("last_published_at", { ascending: false, nullsFirst: false })
+    .limit(opts.limit ?? 20);
+  if (opts.categories?.length) query = query.in("category", opts.categories);
+  const { data, error } = await query;
+  if (error) return [];
+  return (data ?? []) as NewsCluster[];
+}
+
+/** Clusters for a single ticker (its research-page timeline). */
+export async function getClustersForTicker(db: Db, ticker: string, limit = 12): Promise<NewsCluster[]> {
+  return getClustersForTickers(db, [ticker], { limit });
 }
 
 function materialityScore(article: DiscoveredNewsArticle, relevance: number | null): number {

@@ -8,6 +8,8 @@ export interface PsxEventRow {
   url: string;
   category: string | null;
   published_at: string | null;
+  /** Number of articles clustered under this event; only shown when above 1. */
+  articleCount?: number;
 }
 
 const CATEGORY_LABEL: Record<string, { label: string; variant: "green" | "blue" | "amber" | "secondary" }> = {
@@ -47,6 +49,9 @@ export function ImportantPsxEvents({ events }: { events: PsxEventRow[] }) {
                   <span className="font-medium">{e.ticker ?? "—"}</span> · {cleanTitle}
                   {e.published_at && (
                     <span className="ml-1 text-muted-foreground">({e.published_at.slice(0, 10)})</span>
+                  )}
+                  {e.articleCount && e.articleCount > 1 && (
+                    <span className="ml-1 text-muted-foreground">· {e.articleCount} reports</span>
                   )}
                 </a>
               </div>
