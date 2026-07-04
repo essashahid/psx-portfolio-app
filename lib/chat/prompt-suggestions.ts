@@ -40,9 +40,11 @@ function tierFor(model: ChatModelId): Tier {
   switch (model) {
     case "claude-opus":
     case "claude-sonnet":
-      return "deep";
+    // V4 Pro chained 30+ tool calls cleanly through the July 2026 test run, so
+    // it earns the deep portfolio-wide prompts; "medium" remains for a future
+    // mid-weight model.
     case "deepseek-pro":
-      return "medium";
+      return "deep";
     case "claude-haiku":
     default:
       return "focused";
@@ -79,18 +81,27 @@ export function buildSuggestions(model: ChatModelId, ctx?: PromptContext | null)
 
   if (hasHoldings) {
     if (tier === "deep") {
-      // Whole-portfolio scans only Sonnet/Opus can chain tools for.
+      // Whole-portfolio scans for models that can chain many tools
+      // (Sonnet/Opus/V4 Pro). Lead with the questions the platform now answers
+      // exceptionally well: benchmark excess, the payout calendar, two-basis
+      // income, the rate cycle, earnings quality, and honest stress tests.
+      add(`What's the single most important thing in my portfolio I haven't asked about?`);
+      add(`Which of my holdings beat the KSE-100 over my holding period, and which just rode the market?`);
+      add(`When are my next expected dividends, and how much should I actually receive from each?`);
+      add(`How much dividend income did I actually receive over the last 12 months, and who paid it?`);
+      add(t1 ? `If ${t1} cut its dividend in half tomorrow, what would happen to my income and my capital?` : null);
+      add(`How exposed is my book to the SBP rate cycle after the latest policy move?`);
+      add(t2 ? `Compare the earnings quality of ${t1} and ${t2}, not just the earnings.` : null);
+      add(t1 ? `Steelman the case against ${t1} using only my own data.` : null);
+      add(`If I had to raise ${amount} from this portfolio with the least damage, what would you sell and why?`);
       add(`Rank my holdings from strongest to weakest for adding ${amount} today, and explain each.`);
       add(`Across my whole portfolio, where would ${amount} of new capital most improve diversification and risk?`);
-      add(`Rank my holdings by valuation, cheapest to richest on available earnings.`);
       add(`Which of my holdings look most attractively valued right now, and why?`);
       add(`Which of my holdings no longer earn their place, and should I trim any?`);
-      add(`Which of my holdings carry my dividend income, and is any payout at risk?`);
       add(sector1 ? `Am I over-concentrated in ${sector1}? Compare it to the rest of my book.` : `Show my sector weights and where I'm over- or under-exposed.`);
       // Cross-holding pattern questions — the platform's edge.
       add(`Which of my holdings share a sector or risk driver, and where am I doubling up?`);
       add(`What single event or risk would hit the most of my holdings at once?`);
-      add(`What's my biggest hidden concentration across the whole book?`);
       if (hasThesis) add(`Which of my holdings have drifted from the thesis I wrote for them?`);
       if (hasLedger) {
         add(`Find any discrepancies between my holdings, transaction ledger, and broker records.`);
@@ -104,7 +115,9 @@ export function buildSuggestions(model: ChatModelId, ctx?: PromptContext | null)
       }
     } else if (tier === "medium") {
       add(`Which of my holdings look most attractively valued today?`);
-      add(`Which of my holdings carry my dividend income?`);
+      add(`When is my next expected dividend, and from which holding?`);
+      add(`How much dividend income did I actually receive over the last 12 months?`);
+      add(`Which of my holdings beat the KSE-100 over my holding period?`);
       add(`Which of my holdings overlap in sector or risk?`);
       if (hasThesis) add(`Which of my holdings still match the thesis I wrote, and which have drifted?`);
       add(t2 ? `Compare ${t1} and ${t2} for a long-term hold, and which deserves ${amount} more.` : null);
@@ -115,6 +128,7 @@ export function buildSuggestions(model: ChatModelId, ctx?: PromptContext | null)
       }
     } else {
       // Focused: single-stock, answerable from the pre-built brief.
+      add(`When is my next expected dividend, and from which holding?`);
       for (const t of tickers.slice(0, 6)) {
         add(`Should I add ${amount} to ${t} for the long term? Weigh the company case against my concentration and cost basis.`);
         add(`Is ${t} attractively valued right now for a long-term investor?`);
@@ -143,7 +157,8 @@ export function buildSuggestions(model: ChatModelId, ctx?: PromptContext | null)
     }
   }
 
-  // Always-available breadth (market, flows, filings).
+  // Always-available breadth (market, movement, flows, filings).
+  if (hasHoldings) add(`Why did my portfolio move today, and what contributed most?`);
   add(`What moved the PSX market today and which sectors led?`);
   add(`Which PSX sectors are leading and lagging right now?`);
   add(`What are foreign investors net buying and selling on the PSX lately?`);

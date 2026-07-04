@@ -83,12 +83,14 @@ function withWeekday(iso: string): string {
 export function tradingCalendarLine(latestSession: string | null): string {
   const today = pktTodayIso();
   const next = nextWeekday(today);
-  const settle = nextWeekday(nextWeekday(next));
+  // PSX moved equity settlement from T+2 to T+1 on 9 February 2026 (SECP/NCCPL
+  // transition), so cash from a sale lands the next trading day.
+  const settle = nextWeekday(next);
   const parts = [
     `Today is ${withWeekday(today)} (Pakistan time).`,
     latestSession ? `Last completed PSX session: ${withWeekday(latestSession)}.` : null,
     `Next PSX session: ${withWeekday(next)} (weekends excluded; a public holiday can shift this).`,
-    `PSX trades settle T+2, so a sale executed ${withWeekday(next)} pays out around ${withWeekday(settle)}.`,
+    `PSX equity trades settle T+1 (in effect since 9 February 2026, previously T+2), so a sale executed ${withWeekday(next)} pays out around ${withWeekday(settle)}.`,
   ].filter(Boolean);
   return `PSX calendar (pre-computed; use these dates and weekdays as given): ${parts.join(" ")}`;
 }
