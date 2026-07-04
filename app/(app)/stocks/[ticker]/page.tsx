@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs } from "@/components/ui/tabs";
 import { WatchlistButton } from "@/components/stock/watchlist-button";
 import { GenerateReportDialog } from "@/components/stock/generate-report-dialog";
+import { AskCopilotLink } from "@/components/ask-copilot-link";
 import { CardSkeleton, TableSkeleton } from "@/components/page-skeleton";
 import { formatNumber, formatSignedPct, formatFinancialPeriod, cn } from "@/lib/utils";
 import { normalizeEnabledFeatures } from "@/lib/features";
@@ -150,6 +151,7 @@ export default async function StockCockpitPage({ params }: { params: Promise<{ t
               <div className="flex flex-wrap items-center gap-2">
                 {companyReportsEnabled && <GenerateReportDialog ticker={ticker} companyName={metadata.companyName} />}
                 {!isDemo && <WatchlistButton ticker={ticker} initialWatched={!!watch} size="default" />}
+                <AskCopilotLink question={`What should I know about ${ticker} right now?`} />
               </div>
             </div>
           </div>

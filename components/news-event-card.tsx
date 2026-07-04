@@ -381,6 +381,16 @@ function EventDetailDrawer({
             <a href={event.url} target="_blank" rel="noopener noreferrer" className="rounded-md border border-border px-3 py-2 text-sm hover:bg-muted">
               Open source
             </a>
+            <Link
+              href={`/chat?q=${encodeURIComponent(
+                event.affectedHoldings.length
+                  ? `How does this affect ${event.affectedHoldings.join(", ")}? ${event.title}`
+                  : `What does this mean for my portfolio? ${event.title}`
+              )}`}
+              className="rounded-md border border-border px-3 py-2 text-sm hover:bg-muted"
+            >
+              Ask Copilot
+            </Link>
           </div>
         </div>
       </div>

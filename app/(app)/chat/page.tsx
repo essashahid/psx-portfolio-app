@@ -9,7 +9,9 @@ import { normalizeAllowedChatProviders } from "@/lib/features";
 
 export const dynamic = "force-dynamic";
 
-export default async function ChatPage() {
+export default async function ChatPage({ searchParams }: { searchParams: Promise<{ q?: string }> }) {
+  const { q } = await searchParams;
+  const initialMessage = q?.trim() ? q.trim().slice(0, 400) : null;
   const user = await getUser();
   if (!user) return null;
   const supabase = await createClient();
@@ -64,6 +66,7 @@ export default async function ChatPage() {
         dataUpdated={dataUpdated}
         readOnly={isDemo}
         initialSuggestions={cachedSuggestions}
+        initialMessage={initialMessage}
       />
     </div>
   );

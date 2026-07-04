@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, type ReactNode } from "react";
 import {
   Bar,
   BarChart,
@@ -849,6 +849,51 @@ function BarValueChart({
   );
 }
 
+/**
+ * Median of a metric across same-sector peers (and this company), so a raw ratio
+ * becomes a judgment: "cheap" or "rich" relative to the sector. Neutral by
+ * design — we show the delta, not a buy/sell colour.
+ */
+export type SectorMedian = { median: number; sampleSize: number };
+
+function renderSectorMedian(row: RatioRow, median: SectorMedian | undefined, formatMode: FormatMode): ReactNode {
+  if (!median) return <span className="text-muted-foreground">—</span>;
+  const value = finiteNumber(row.ratio_value);
+  const medianText = formatRatioValue({ ratio_name: row.ratio_name, ratio_value: median.median }, formatMode);
+  if (value === null || median.median === 0) {
+    return <span className="text-muted-foreground" title={`Median of ${median.sampleSize} sector peers`}>{medianText}</span>;
+  }
+  const deltaPct = ((value - median.median) / Math.abs(median.median)) * 100;
+  const label = Math.abs(deltaPct) < 1 ? "in line" : `${Math.abs(deltaPct).toFixed(0)}% ${deltaPct > 0 ? "above" : "below"}`;
+  return (
+    <span title={`Median of ${median.sampleSize} sector peers`}>
+      <span className="font-medium text-foreground">{medianText}</span>
+      <span className="ml-1 text-muted-foreground">({label})</span>
+    </span>
+  );
+}
+
+function buildSectorMedians(ratios: RatioRow[], peers: RatiosPeerRow[]): Map<string, SectorMedian> {
+  const out = new Map<string, SectorMedian>();
+  const names = new Set<string>();
+  for (const peer of peers) for (const r of peer.ratios) if (r.ratio_value !== null) names.add(r.ratio_name);
+  for (const name of names) {
+    const values: number[] = [];
+    const self = finiteNumber(ratios.find((r) => r.ratio_name === name)?.ratio_value);
+    if (self !== null) values.push(self);
+    for (const peer of peers) {
+      const v = finiteNumber(peer.ratios.find((r) => r.ratio_name === name)?.ratio_value);
+      if (v !== null) values.push(v);
+    }
+    if (values.length < 3) continue; // too few peers to be meaningful
+    values.sort((a, b) => a - b);
+    const mid = Math.floor(values.length / 2);
+    const median = values.length % 2 ? values[mid] : (values[mid - 1] + values[mid]) / 2;
+    out.set(name, { median, sampleSize: values.length });
+  }
+  return out;
+}
+
 function peerMetricData(metric: string, ratios: RatioRow[], peers: RatiosPeerRow[]) {
   const current = ratios.find((r) => r.ratio_name === metric);
   const rows: { name: string; value: number; period?: string; current?: boolean }[] = [];
@@ -872,6 +917,7 @@ function RatioExplorer({
   pinned,
   togglePin,
   exportRows,
+  sectorMedians,
 }: {
   ticker: string;
   ratios: RatioRow[];
@@ -881,6 +927,7 @@ function RatioExplorer({
   pinned: Set<string>;
   togglePin: (name: string) => void;
   exportRows: (rows: RatioRow[]) => void;
+  sectorMedians: Map<string, SectorMedian>;
 }) {
   const [query, setQuery] = useState("");
   const [importantOnly, setImportantOnly] = useState(false);
@@ -959,6 +1006,7 @@ function RatioExplorer({
                 <TR>
                   <TH>Ratio</TH>
                   <TH className="text-right">Current value</TH>
+                  <TH className="text-right">Sector median</TH>
                   <TH>Period</TH>
                   <TH>Source</TH>
                   <TH className="text-right">Pin</TH>
@@ -976,6 +1024,7 @@ function RatioExplorer({
                         </div>
                       </TD>
                       <TD className="text-right text-xs font-semibold tabular-nums">{formatRatioValue(row, formatMode)}</TD>
+                      <TD className="text-right text-xs tabular-nums">{renderSectorMedian(row, sectorMedians.get(row.ratio_name), formatMode)}</TD>
                       <TD className="text-xs text-muted-foreground">{formattedPeriod(row.source_period)}</TD>
                       <TD className="text-xs text-muted-foreground">
                         {row.source ? (
@@ -1026,6 +1075,7 @@ export function RatiosWorkspace({
   const [pinned, setPinned] = useState<Set<string>>(() => readPinnedStorage(storageKey));
   const pePeerData = peerMetricData("P/E", ratios, peers);
   const showPePeerChart = pePeerData.some((row) => row.current) && pePeerData.length >= 2;
+  const sectorMedians = useMemo(() => buildSectorMedians(ratios, peers), [ratios, peers]);
 
   function persistPinned(next: Set<string>) {
     setPinned(next);
@@ -1112,6 +1162,7 @@ export function RatiosWorkspace({
             pinned={pinned}
             togglePin={togglePin}
             exportRows={exportRows}
+            sectorMedians={sectorMedians}
           />
         </div>
       )}

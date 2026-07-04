@@ -206,6 +206,7 @@ function HoldingActionMenu({
       </summary>
       <div className="absolute right-0 z-20 mt-1 flex w-48 flex-col gap-1 rounded-md border border-border bg-card p-1.5 text-xs shadow-[var(--shadow-card)]">
         <Link href={`/stocks/${holding.ticker}`} className="rounded px-2 py-1.5 hover:bg-muted">View company research</Link>
+        <Link href={`/chat?q=${encodeURIComponent(`What should I know about my ${holding.ticker} position right now?`)}`} className="rounded px-2 py-1.5 hover:bg-muted">Ask Copilot</Link>
         {companyReportsEnabled && (
           <GenerateReportDialog
             ticker={holding.ticker}

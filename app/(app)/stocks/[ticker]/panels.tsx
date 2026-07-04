@@ -2,6 +2,7 @@ import Link from "next/link";
 import { createClient, getUser } from "@/lib/supabase/server";
 import { getCompanyMetadata } from "@/lib/company/metadata";
 import { getTechnicals } from "@/lib/company/technicals";
+import type { Candle } from "@/lib/company/types";
 import { getCachedEod, KSE_SYMBOL } from "@/lib/market-data/eod-cache";
 import { computeSignals, findSwings, detectSupportResistanceZones, toCanonicalOHLCV } from "@/lib/market/technicals";
 import { METRIC_HINTS } from "@/lib/market/glossary";
@@ -160,6 +161,83 @@ function OverviewMetric({
         {value}
       </p>
       {sub ? <p className="mt-0.5 truncate text-[10px] text-slate-500">{sub}</p> : null}
+    </div>
+  );
+}
+
+function RangeBar({ position }: { position: number }) {
+  return (
+    <div className="relative mt-1 h-1.5 rounded-full bg-slate-100">
+      <span className="absolute top-1/2 h-3 w-3 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-white bg-slate-900 shadow-sm" style={{ left: `${position}%` }} />
+    </div>
+  );
+}
+
+/**
+ * Where today's price sits within its ranges, for a long-term buyer timing
+ * accumulation. Deliberately descriptive, not a signal: no buy/sell verdict,
+ * just position within the 52-week and full-history ranges, plus how the price
+ * compares with the user's own average cost when held.
+ */
+function AccumulationContext({
+  price,
+  low52,
+  high52,
+  history,
+  avgCost,
+}: {
+  price: number | null;
+  low52: number | null;
+  high52: number | null;
+  history: Candle[];
+  avgCost: number | null;
+}) {
+  if (price === null) return null;
+  const closes = history.map((c) => c.close).filter((v) => Number.isFinite(v) && v > 0);
+  const histLow = closes.length ? Math.min(...closes) : null;
+  const histHigh = closes.length ? Math.max(...closes) : null;
+  const years = history.length
+    ? Math.max(1, Math.round((new Date(history[history.length - 1].date).getTime() - new Date(history[0].date).getTime()) / (365 * 86400_000)))
+    : null;
+
+  const pct = (lo: number | null, hi: number | null): number | null =>
+    lo !== null && hi !== null && hi > lo ? Math.min(100, Math.max(0, ((price - lo) / (hi - lo)) * 100)) : null;
+  const pos52 = pct(low52, high52);
+  const posHist = pct(histLow, histHigh);
+  const vsCost = avgCost !== null && avgCost > 0 ? ((price - avgCost) / avgCost) * 100 : null;
+
+  return (
+    <div className="rounded-xl border border-slate-200 bg-slate-50/60 p-3">
+      <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">Accumulation context</p>
+      <div className="mt-2 space-y-3">
+        {pos52 !== null && (
+          <div>
+            <div className="flex items-center justify-between text-[11px] text-slate-600">
+              <span>52-week range</span>
+              <span className="tabular-nums">{pos52.toFixed(0)}% of range</span>
+            </div>
+            <RangeBar position={pos52} />
+            <div className="mt-0.5 flex justify-between text-[10px] text-slate-400 tabular-nums">
+              <span>{low52 !== null ? formatNumber(low52) : "—"}</span>
+              <span>{high52 !== null ? formatNumber(high52) : "—"}</span>
+            </div>
+          </div>
+        )}
+        {posHist !== null && years && years >= 2 && (
+          <div>
+            <div className="flex items-center justify-between text-[11px] text-slate-600">
+              <span>{years}-year range</span>
+              <span className="tabular-nums">{posHist.toFixed(0)}% of range</span>
+            </div>
+            <RangeBar position={posHist} />
+          </div>
+        )}
+        {vsCost !== null && (
+          <p className="text-[11px] text-slate-600">
+            Current price is <span className={cn("font-semibold tabular-nums", vsCost >= 0 ? "text-emerald-700" : "text-red-700")}>{formatSignedPct(vsCost)}</span> versus your average cost.
+          </p>
+        )}
+      </div>
     </div>
   );
 }
@@ -353,6 +431,14 @@ export async function OverviewPanel({
                   <OverviewMetric label="Dividends received" value={wholeMoney(holding.dividend_income)} hint={`Total cash dividends recorded against your ${ticker} holding.`} />
                 </div>
 
+                <AccumulationContext
+                  price={currentPrice}
+                  low52={technicals.fiftyTwoWeekLow}
+                  high52={technicals.fiftyTwoWeekHigh}
+                  history={technicals.history}
+                  avgCost={holding.avg_cost ?? null}
+                />
+
                 <Link
                   href={`/holdings?ticker=${encodeURIComponent(ticker)}`}
                   className="inline-flex h-9 items-center justify-center rounded-md border border-slate-200 px-3 text-xs font-medium hover:bg-slate-50"
@@ -363,6 +449,13 @@ export async function OverviewPanel({
             ) : (
               <div className="space-y-3 py-2">
                 <p className="text-sm text-muted-foreground">This stock is not currently in your portfolio.</p>
+                <AccumulationContext
+                  price={currentPrice}
+                  low52={technicals.fiftyTwoWeekLow}
+                  high52={technicals.fiftyTwoWeekHigh}
+                  history={technicals.history}
+                  avgCost={null}
+                />
                 {!readOnly && <WatchlistButton ticker={ticker} initialWatched={false} />}
               </div>
             )}
