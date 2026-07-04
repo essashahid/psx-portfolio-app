@@ -200,6 +200,15 @@ export default async function PerformancePage() {
         )}
       </header>
 
+      <VerdictBlock
+        xirrPct={returns.xirrPct}
+        startDate={returns.startDate}
+        endDate={returns.endDate}
+        netGain={netGain}
+        totalDeposited={returns.totalDeposited}
+        benchmark={analytics.benchmark}
+      />
+
       <section className="border-y border-border py-4">
         <div className="grid gap-x-8 gap-y-4 sm:grid-cols-2 lg:grid-cols-4">
           <Metric label="Current net worth" value={formatMoney(currentWorth)} sub={currentWorthSource} />
@@ -417,19 +426,25 @@ export default async function PerformancePage() {
         ]}
       />
 
-      <section id="reconciliation" className="border-t border-border pt-5">
-        <div className="flex flex-wrap items-start justify-between gap-3">
-          <div>
-            <h2 className="text-lg font-semibold">Reconciliation workspace</h2>
-            <p className="mt-1 max-w-3xl text-xs text-muted-foreground">
-              Exact source counts, confirmed adjustments and ticker-level quantity checks. Differences are shown, not forced.
-            </p>
+      <details id="reconciliation" className="group border-t border-border pt-5">
+        <summary className="flex cursor-pointer flex-wrap items-center justify-between gap-3 list-none">
+          <div className="flex items-center gap-2">
+            <ChevronDown className="h-4 w-4 text-muted-foreground transition-transform group-open:rotate-180" />
+            <div>
+              <h2 className="text-lg font-semibold">Data quality and reconciliation</h2>
+              <p className="mt-0.5 text-xs text-muted-foreground">
+                {platformDifferences.length === 0
+                  ? "Ledger reconciled: every holding's quantity matches the imported statement."
+                  : `${platformDifferences.length} holding${platformDifferences.length === 1 ? "" : "s"} with an unexplained quantity difference.`}
+                {Math.abs(bridgeDifference) < 0.01 ? " Wealth bridge balances." : ` Wealth-bridge difference ${formatMoney(bridgeDifference)}.`}
+              </p>
+            </div>
           </div>
           <div className="text-xs text-muted-foreground">
             Expected total quantity {formatNumber(expectedTotalQuantity, 0)}
             {platformTotalQuantity !== null ? ` · platform ${formatNumber(platformTotalQuantity, 0)}` : ""}
           </div>
-        </div>
+        </summary>
         <div className="mt-4 grid gap-x-8 gap-y-2 text-sm md:grid-cols-2 xl:grid-cols-3">
           <Count label="External broker deposits imported" value={checkpoints.externalBrokerDepositsImported} expected={62} />
           <Count label="Broker buy lines imported" value={checkpoints.brokerBuyLinesImported} expected={110} />
@@ -485,8 +500,62 @@ export default async function PerformancePage() {
             </tbody>
           </table>
         </div>
-      </section>
+      </details>
     </div>
+  );
+}
+
+/**
+ * Plain-language verdict, first thing on the page. A long-term investor's core
+ * question is "am I beating the market after inflation?" — answered here in
+ * sentences before any chart, using the same numbers the tables below expand on.
+ */
+function VerdictBlock({
+  xirrPct,
+  startDate,
+  endDate,
+  netGain,
+  totalDeposited,
+  benchmark,
+}: {
+  xirrPct: number | null;
+  startDate: string | null;
+  endDate: string | null;
+  netGain: number;
+  totalDeposited: number;
+  benchmark: NonNullable<Awaited<ReturnType<typeof getPerformanceAnalytics>>>["benchmark"];
+}) {
+  const returnPct = totalDeposited > 0 ? (netGain / totalDeposited) * 100 : null;
+  const period = startDate && endDate ? `${startDate} to ${endDate}` : null;
+
+  const sentences: React.ReactNode[] = [];
+  if (xirrPct !== null) {
+    sentences.push(
+      <>Your money-weighted return (XIRR) is <strong className={cn("tabular-nums", xirrPct >= 0 ? "text-emerald-700" : "text-red-700")}>{xirrPct}%</strong> a year{period ? ` over ${period}` : ""}, turning {formatMoney(totalDeposited)} of invested capital into a net gain of <strong className={cn("tabular-nums", netGain >= 0 ? "text-emerald-700" : "text-red-700")}>{formatMoney(netGain)}</strong>{returnPct !== null ? ` (${formatSignedPct(returnPct)})` : ""}.</>
+    );
+  } else {
+    sentences.push(<>Your net investment gain is <strong className={cn("tabular-nums", netGain >= 0 ? "text-emerald-700" : "text-red-700")}>{formatMoney(netGain)}</strong>{returnPct !== null ? ` (${formatSignedPct(returnPct)})` : ""} on {formatMoney(totalDeposited)} of invested capital. A money-weighted return needs a complete cash-flow history to compute.</>);
+  }
+
+  if (benchmark) {
+    const beatKse = benchmark.excessVsKse100 >= 0;
+    sentences.push(
+      <>Against the KSE-100, the same contributions tracked to the index would be worth {formatMoney(benchmark.kse100Equivalent)}, so you are <strong className={cn("tabular-nums", beatKse ? "text-emerald-700" : "text-red-700")}>{beatKse ? "ahead of" : "behind"} the market by {formatMoney(Math.abs(benchmark.excessVsKse100))}</strong>.</>
+    );
+    const keptAhead = benchmark.excessVsInflation >= 0;
+    sentences.push(
+      <>After inflation, your capital {keptAhead ? "kept its purchasing power and then some" : "lost ground to rising prices"}: real value {keptAhead ? "grew by" : "fell short by"} <strong className={cn("tabular-nums", keptAhead ? "text-emerald-700" : "text-red-700")}>{formatMoney(Math.abs(benchmark.excessVsInflation))}</strong> versus what the same money kept at CPI would be worth.</>
+    );
+  }
+
+  return (
+    <section className="rounded-xl border border-border bg-card p-5">
+      <p className="eyebrow">The verdict</p>
+      <div className="mt-2 space-y-2 text-sm leading-relaxed text-foreground">
+        {sentences.map((s, i) => <p key={i}>{s}</p>)}
+      </div>
+      {!benchmark && <p className="mt-2 text-xs text-muted-foreground">Benchmark and inflation comparison populate once the portfolio series has been built. Use Rebuild to fetch KSE-100 and PSX price history.</p>}
+    </section>
   );
 }
 
@@ -689,9 +758,9 @@ function PositionTable({ rows }: { rows: NonNullable<Awaited<ReturnType<typeof g
   return (
     <section className="border-t border-border pt-5">
       <h2 className="text-lg font-semibold">Position build-up analysis</h2>
-      <p className="mt-1 text-xs text-muted-foreground">Current holdings are aggregated under weighted-average accounting; purchase lots are not shown as separate holdings.</p>
+      <p className="mt-1 text-xs text-muted-foreground">Current holdings are aggregated under weighted-average accounting; purchase lots are not shown as separate holdings. Per-holding XIRR is the money-weighted annual return of each position&apos;s own buys, sells and current value; it excludes dividends.</p>
       <div className="mt-4 overflow-x-auto">
-        <table className="w-full min-w-[1180px] text-xs">
+        <table className="w-full min-w-[1280px] text-xs">
           <thead>
             <tr className="border-b border-border text-left text-[10px] uppercase tracking-wide text-muted-foreground">
               <th className="py-2 pr-4">Ticker</th>
@@ -709,6 +778,7 @@ function PositionTable({ rows }: { rows: NonNullable<Awaited<ReturnType<typeof g
               <th className="px-2 py-2 text-right">Invested</th>
               <th className="px-2 py-2 text-right">Current value</th>
               <th className="px-2 py-2 text-right">Unrealised</th>
+              <th className="px-2 py-2 text-right">XIRR</th>
             </tr>
           </thead>
           <tbody>
@@ -729,6 +799,7 @@ function PositionTable({ rows }: { rows: NonNullable<Awaited<ReturnType<typeof g
                 <td className="px-2 py-2 text-right tabular-nums">{formatMoney(row.amountInvested)}</td>
                 <td className="px-2 py-2 text-right tabular-nums">{formatMoney(row.currentValue)}</td>
                 <td className={cn("px-2 py-2 text-right tabular-nums", (row.unrealizedPl ?? 0) >= 0 ? "text-emerald-700" : "text-red-700")}>{formatMoney(row.unrealizedPl)}</td>
+                <td className={cn("px-2 py-2 text-right tabular-nums", row.xirrPct === null ? "text-muted-foreground" : row.xirrPct >= 0 ? "text-emerald-700" : "text-red-700")}>{row.xirrPct !== null ? `${row.xirrPct}%` : "—"}</td>
               </tr>
             ))}
           </tbody>

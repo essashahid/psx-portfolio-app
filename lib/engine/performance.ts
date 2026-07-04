@@ -173,6 +173,26 @@ function buildDbPositionBuild(
     }
     const averageHoldingAgeDays = ageQty > 0 ? Math.round(ageWeighted / ageQty) : null;
 
+    // Per-holding money-weighted return: buys are cash out, sells cash in, and
+    // the current market value is a terminal inflow. Capital only (dividends are
+    // reported separately), and only when there is a dated buy and a valuation.
+    let xirrPct: number | null = null;
+    const flows = rows
+      .filter((t) => t.trade_date && t.price > 0 && t.quantity > 0)
+      .map((t) => ({
+        date: t.trade_date as string,
+        amount: (t.type === "SELL" ? 1 : -1) * t.quantity * t.price,
+      }));
+    if (flows.length >= 1 && h.marketValue !== null && h.quantity > 0) {
+      flows.push({ date: today, amount: h.marketValue });
+      const hasOut = flows.some((f) => f.amount < 0);
+      const hasIn = flows.some((f) => f.amount > 0);
+      if (hasOut && hasIn) {
+        const rate = xirr(flows);
+        xirrPct = rate !== null ? round2(rate) : null;
+      }
+    }
+
     return {
       ticker: h.ticker,
       firstAcquisitionDate: buyDates[0] ?? null,
@@ -190,6 +210,7 @@ function buildDbPositionBuild(
       amountInvested: h.totalInvested,
       currentValue: h.marketValue,
       unrealizedPl: h.unrealizedPl,
+      xirrPct,
     } satisfies PositionBuildRow;
   });
 }

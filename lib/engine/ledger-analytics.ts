@@ -448,6 +448,8 @@ export interface PositionBuildRow {
   amountInvested: number;
   currentValue: number | null;
   unrealizedPl: number | null;
+  /** Money-weighted return for this position from its own buy/sell cash flows plus terminal value. Capital only, excludes dividends. Null when history is too short. */
+  xirrPct: number | null;
 }
 
 export interface QuantityReconciliationRow {
@@ -1550,6 +1552,10 @@ export function analyzeLedger(stmt: AkdStatement, options: AnalyzeLedgerOptions 
       amountInvested: row.totalInvested,
       currentValue: row.marketValue,
       unrealizedPl: row.unrealizedPl,
+      // Per-holding XIRR is computed in the DB path (getDbAnalytics) from dated
+      // transactions; the committed-statement fallback does not carry per-lot
+      // prices, so it is left unset here.
+      xirrPct: null,
     };
   });
 
