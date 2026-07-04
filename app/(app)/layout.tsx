@@ -5,8 +5,9 @@ import { AutoRefreshPrices } from "@/components/auto-refresh-prices";
 import { NavProgress } from "@/components/nav-progress";
 import { ImpersonationBanner } from "@/components/impersonation-banner";
 import { FeedbackWidget } from "@/components/feedback-widget";
+import { CommandPalette } from "@/components/command-palette";
 import { DISCLAIMER } from "@/lib/utils";
-import { resolveVisibleHrefs } from "@/lib/nav";
+import { NAV, resolveVisibleHrefs } from "@/lib/nav";
 import type { ExperienceLevel } from "@/lib/types";
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
@@ -53,10 +54,17 @@ export default async function AppLayout({ children }: { children: React.ReactNod
     isAdmin
   );
 
+  const navTargets = NAV.filter((item) => visibleHrefs.includes(item.href)).map((item) => ({
+    href: item.href,
+    label: item.label,
+    hint: item.hint,
+  }));
+
   return (
     <div className="min-h-dvh bg-background md:flex md:h-dvh md:overflow-hidden">
       <NavProgress />
       <AutoRefreshPrices />
+      <CommandPalette nav={navTargets} />
       <Sidebar email={user.email ?? ""} openAlerts={count ?? 0} visibleHrefs={visibleHrefs} isAdmin={isAdmin} />
       <div className="flex min-w-0 flex-1 flex-col md:h-dvh">
         <MobileTopBar openAlerts={count ?? 0} />
