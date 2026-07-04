@@ -11,6 +11,7 @@ import { deepseekChatConfigured, runDeepSeekChat } from "@/lib/ai/deepseek-chat"
 import { getModelDef, type ChatModelDef } from "@/lib/ai/models";
 import { looksLikeToolLeak, stripEmDashes, stripNarrationOpeners, tidyTypography } from "@/lib/chat/sanitize";
 import { artifactMarker } from "@/lib/chat/md-table";
+import { toolStartLabel, toolDoneDetail, describeCards, contextStartLabel, type ActivityEvent } from "@/lib/chat/activity";
 import { wantsWebContext, gatherWebContext } from "@/lib/chat/web-context";
 import { ArtifactExtractor, type ArtifactSpec } from "@/lib/chat/artifacts";
 import {
@@ -45,6 +46,7 @@ type Evt =
   | { type: "cards"; cards: Card[] }
   | { type: "artifact"; spec: ArtifactSpec }
   | { type: "status"; text: string }
+  | ActivityEvent
   | { type: "thinking"; delta: string }
   | { type: "text"; delta: string }
   | { type: "reset" }
@@ -107,8 +109,9 @@ export async function POST(request: Request) {
           .insert({ user_id: user.id, thread_id: thread.id, role: "user", content: message });
 
         // 1. FREE layer — resolve, gather cards, render immediately.
-        send({ type: "status", text: "Checking your portfolio and PSX context" });
+        send({ type: "activity", id: "context", label: "Scanning your portfolio and PSX context" });
         const resolved = await resolveMessage(supabase, message);
+        send({ type: "activity", id: "context", label: contextStartLabel(resolved.tickers, resolved.sector) });
         const [gathered, latestSession] = await Promise.all([
           gatherCards(supabase, user.id, resolved),
           getLatestSessionDate(supabase),
@@ -116,8 +119,12 @@ export async function POST(request: Request) {
         cards = gathered;
         if (cards.length) {
           send({ type: "cards", cards });
-          send({ type: "status", text: `Prepared ${cards.length} relevant data ${cards.length === 1 ? "view" : "views"}` });
         }
+        send({
+          type: "activity", id: "context", done: true,
+          label: contextStartLabel(resolved.tickers, resolved.sector),
+          detail: cards.length ? describeCards(cards.map((c) => c.kind)) : undefined,
+        });
         // Assemble the pre-computed brief (tranches, thesis/journal, cross-holding
         // patterns, KSE-100 benchmark returns, dividend income, macro backdrop).
         // The cards were already sent above so the UI renders them before this
@@ -155,17 +162,19 @@ export async function POST(request: Request) {
         // every model supports tools, but kept for a future tool-less model.
         const toolless = modelDef.provider === "deepseek" && !modelDef.supportsTools;
         if (toolless && wantsWebContext(message)) {
-          send({ type: "status", text: "Searching recent market coverage" });
+          send({ type: "activity", id: "webctx", label: "Web — searching recent coverage" });
           const web = await gatherWebContext(resolved, message);
+          send({ type: "activity", id: "webctx", label: "Web — searching recent coverage", done: true, detail: web ? undefined : "no relevant results" });
           if (web) userContext = `${userContext}\n\n${web}`;
         }
 
-        send({ type: "status", text: "Analyzing the evidence" });
+        send({ type: "activity", id: "analyze", label: "Analyzing the evidence" });
         let writingStarted = false;
         const markWriting = () => {
           if (writingStarted) return;
           writingStarted = true;
-          send({ type: "status", text: "Writing the final answer" });
+          send({ type: "activity", id: "analyze", label: "Analyzing the evidence", done: true });
+          send({ type: "activity", id: "write", label: "Writing the answer" });
         };
 
         if (modelDef.provider === "claude") {
@@ -202,7 +211,7 @@ export async function POST(request: Request) {
             const deadlineReached = Date.now() - startedAt > SYNTHESIS_DEADLINE_MS;
             const lastTurn = turn === MAX_TOOL_TURNS - 1 || deadlineReached;
             if (deadlineReached && turn < MAX_TOOL_TURNS - 1) {
-              send({ type: "status", text: "Wrapping up with the evidence gathered so far" });
+              send({ type: "activity", id: "analyze", label: "Wrapping up with the evidence gathered so far" });
             }
             const turnStart = assistantContent.length;
             const mstream = claude.messages.stream({
@@ -222,15 +231,44 @@ export async function POST(request: Request) {
             mstream.on("text", (delta: string) => {
               extractor.push(delta);
             });
-            // Server-side web_search runs inside Anthropic's turn (no client
-            // tool_use), so surface a status when its query block starts.
+            // Server-side web_search runs inside Anthropic's turn. Accumulate the
+            // input JSON as it streams so the activity step can show the actual
+            // query, and mark the step done when the result block arrives.
+            let wsId: string | null = null;
+            let wsInput = "";
+            let wsInputObject: Record<string, unknown> = {};
+            let wsIndex = -1;
             mstream.on("streamEvent", (event) => {
               if (
                 event.type === "content_block_start" &&
                 event.content_block.type === "server_tool_use" &&
                 event.content_block.name === "web_search"
               ) {
-                send({ type: "status", text: toolActivityLabel("web_search") });
+                wsId = `ws-${event.index}`;
+                wsIndex = event.index;
+                wsInput = "";
+                wsInputObject = {};
+                send({ type: "activity", id: wsId, label: "Web — searching recent coverage" });
+              } else if (event.type === "content_block_delta" && event.index === wsIndex && event.delta.type === "input_json_delta") {
+                wsInput += event.delta.partial_json;
+              } else if (event.type === "content_block_stop" && event.index === wsIndex && wsId) {
+                try {
+                  wsInputObject = JSON.parse(wsInput || "{}") as Record<string, unknown>;
+                  send({ type: "activity", id: wsId, label: toolStartLabel("web_search", wsInputObject) });
+                } catch { /* keep the generic label */ }
+              } else if (event.type === "content_block_start" && event.content_block.type === "web_search_tool_result" && wsId) {
+                const n = Array.isArray((event.content_block as { content?: unknown[] }).content)
+                  ? (event.content_block as { content: unknown[] }).content.length
+                  : null;
+                send({
+                  type: "activity",
+                  id: wsId,
+                  label: toolStartLabel("web_search", wsInputObject),
+                  done: true,
+                  detail: n != null ? `${n} source${n === 1 ? "" : "s"}` : undefined,
+                });
+                wsId = null;
+                wsIndex = -1;
               }
             });
 
@@ -294,7 +332,7 @@ export async function POST(request: Request) {
                 for (let ci = 0; ci < MAX_CONTINUATIONS; ci++) {
                   meta.continuationTriggered = true;
                   meta.continuationCount++;
-                  send({ type: "status", text: "Completing the response" });
+                  send({ type: "activity", id: "write", label: "Completing the answer" });
                   const contPrompt = buildContinuationPrompt(message, assistantContent, modelDef.maxTokens);
                   const contMessages: Anthropic.MessageParam[] = [
                     ...messages,
@@ -351,10 +389,14 @@ export async function POST(request: Request) {
             // with their tool_use blocks.
             const toolUses = final.content.filter((b): b is Anthropic.ToolUseBlock => b.type === "tool_use");
             messages.push({ role: "assistant", content: final.content });
-            for (const tu of toolUses) send({ type: "status", text: toolActivityLabel(tu.name) });
+            for (const tu of toolUses) {
+              send({ type: "activity", id: tu.id, label: toolStartLabel(tu.name, (tu.input ?? {}) as Record<string, unknown>) });
+            }
             const results: Anthropic.ToolResultBlockParam[] = await Promise.all(
               toolUses.map(async (tu) => {
-                const out = await executeTool(supabase, user.id, tu.name, (tu.input ?? {}) as Record<string, unknown>);
+                const input = (tu.input ?? {}) as Record<string, unknown>;
+                const out = await executeTool(supabase, user.id, tu.name, input);
+                send({ type: "activity", id: tu.id, label: toolStartLabel(tu.name, input), done: true, detail: toolDoneDetail(tu.name, out) ?? undefined });
                 return { type: "tool_result" as const, tool_use_id: tu.id, content: JSON.stringify(out) };
               })
             );
@@ -388,7 +430,10 @@ export async function POST(request: Request) {
             onText: (delta) => {
               dsExtractor.push(delta);
             },
-            onStatus: (text) => send({ type: "status", text: toolActivityLabel(text.replace(/^Looking up\s+|…$/g, "").replace(/\s/g, "_")) }),
+            onToolStart: (id, name, input) => send({ type: "activity", id, label: toolStartLabel(name, input) }),
+            onToolEnd: (id, name, input, result) =>
+              send({ type: "activity", id, label: toolStartLabel(name, input), done: true, detail: toolDoneDetail(name, result) ?? undefined }),
+            onStatus: () => {},
             onReset: () => {
               assistantContent = "";
               writingStarted = false;
@@ -408,7 +453,7 @@ export async function POST(request: Request) {
           assistantContent = "";
           writingStarted = false;
           if (modelDef.provider === "deepseek" && deepseekChatConfigured()) {
-            send({ type: "status", text: "Writing the final answer" });
+            send({ type: "activity", id: "write", label: "Rewriting the answer cleanly" });
             // The tool-less retry cannot web_search, and leaks cluster on
             // web-dependent questions ("what does X make?", "does the IPO
             // change anything?"). Pre-fetch the web context the model was
@@ -472,6 +517,11 @@ export async function POST(request: Request) {
           send({ type: "text", delta: assistantContent });
         }
 
+        const elapsedS = Math.max(1, Math.round((Date.now() - startedAt) / 1000));
+        send({
+          type: "activity", id: "write", label: "Writing the answer", done: true,
+          detail: `${artifactSpecs.length ? `${artifactSpecs.length} visual${artifactSpecs.length === 1 ? "" : "s"} · ` : ""}${elapsedS}s`,
+        });
         await persistAssistantTurn(supabase, user.id, thread.id, assistantContent, assistantThinking, cards, artifactSpecs);
         send({ type: "done" });
         controller.close();
@@ -486,29 +536,6 @@ export async function POST(request: Request) {
   return new Response(stream, {
     headers: { "Content-Type": "application/x-ndjson; charset=utf-8", "Cache-Control": "no-store" },
   });
-}
-
-function toolActivityLabel(name: string): string {
-  const key = name.toLowerCase().replace(/^looking_up_/, "");
-  const labels: Record<string, string> = {
-    get_portfolio_summary: "Reviewing portfolio allocation and performance",
-    get_position: "Reviewing the selected holding",
-    get_position_history: "Reviewing transactions and allocation impact",
-    list_holdings: "Comparing portfolio holdings",
-    get_thesis: "Reading your investment thesis",
-    get_journal: "Reviewing your decision journal",
-    get_quote: "Fetching the latest market data",
-    get_ratios: "Checking valuation and fundamentals",
-    get_technicals: "Reviewing price structure and momentum",
-    compute_indicator: "Computing the requested indicator from price history",
-    get_dividends: "Checking dividend history and income",
-    get_news: "Reviewing PSX filings and announcements",
-    get_market: "Reading the current PSX market snapshot",
-    get_sectors: "Comparing sector performance",
-    get_foreign_flows: "Checking investor flow data",
-    web_search: "Searching recent market coverage",
-  };
-  return labels[key] ?? `Reviewing ${key.replace(/_/g, " ")}`;
 }
 
 async function getOrCreateThread(
