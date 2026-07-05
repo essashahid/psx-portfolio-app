@@ -63,6 +63,7 @@ async function main() {
       .from("company_financials")
       .select("ticker")
       .eq("statement_type", "balance_sheet")
+      .eq("review_status", "published")
       .in("ticker", companies.slice(i, i + 400));
     for (const r of data ?? []) hasBalance.add((r.ticker as string).toUpperCase());
   }

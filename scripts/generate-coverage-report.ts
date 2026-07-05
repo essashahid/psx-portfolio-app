@@ -18,6 +18,12 @@ interface FinRow {
   data: Record<string, unknown>;
 }
 
+interface HoldingRow { ticker: string; }
+interface RatioCoverageRow { ticker: string; ratio_name: string; ratio_value: number | null; computed_at: string; source_period: string | null; }
+interface QuoteCoverageRow { ticker: string; as_of: string | null; last_fetched_at: string | null; }
+interface TechnicalCoverageRow { ticker: string; last_fetched_at: string | null; updated_at: string | null; source: string | null; }
+interface PayoutCoverageRow { ticker: string; announcement_date: string | null; updated_at: string; }
+
 const num = (d: Record<string, unknown>, k: string): number | null => {
   const v = d[k];
   return typeof v === 'number' && Number.isFinite(v) ? v : null;
@@ -32,13 +38,14 @@ async function main() {
 
   const companies = await activeUniverseTickers(db, 'companies');
   const { data: holdingRows } = await db.from('holdings').select('ticker').gt('quantity', 0);
-  const holdings = new Set((holdingRows ?? []).map((r: any) => r.ticker.toUpperCase()));
+  const holdings = new Set(((holdingRows ?? []) as HoldingRow[]).map((r) => r.ticker.toUpperCase()));
 
   // Page all financials
   const rows: FinRow[] = [];
   for (let from = 0; ; from += 1000) {
     const { data } = await db.from('company_financials')
       .select('ticker, fiscal_year, fiscal_period, statement_type, reported_date, source_type, updated_at, data')
+      .eq('review_status', 'published')
       .range(from, from + 999);
     if (!data?.length) break;
     rows.push(...(data as FinRow[]));
@@ -46,29 +53,29 @@ async function main() {
   }
 
   // Page all ratios (for ratio-coverage count and last-computed timestamp)
-  const ratioRows: { ticker: string; ratio_name: string; ratio_value: number | null; computed_at: string; source_period: string | null }[] = [];
+  const ratioRows: RatioCoverageRow[] = [];
   for (let from = 0; ; from += 1000) {
     const { data } = await db.from('company_ratios').select('ticker, ratio_name, ratio_value, computed_at, source_period').range(from, from + 999);
     if (!data?.length) break;
-    ratioRows.push(...(data as any));
+    ratioRows.push(...(data as RatioCoverageRow[]));
     if (data.length < 1000) break;
   }
 
   // Quotes for last-price-refresh freshness
   const { data: quoteRows } = await db.from('market_quotes').select('ticker, as_of, last_fetched_at');
-  const quoteByTicker = new Map((quoteRows ?? []).map((q: any) => [q.ticker.toUpperCase(), q]));
+  const quoteByTicker = new Map(((quoteRows ?? []) as QuoteCoverageRow[]).map((q) => [q.ticker.toUpperCase(), q]));
 
   // Technicals — RSI/moving-average freshness (own pipeline, not part of the
   // financials/ratios chain, but still "data we have for a stock").
   const { data: techRows } = await db.from('company_technicals').select('ticker, last_fetched_at, updated_at, source');
-  const techByTicker = new Map((techRows ?? []).map((r: any) => [r.ticker.toUpperCase(), r]));
+  const techByTicker = new Map(((techRows ?? []) as TechnicalCoverageRow[]).map((r) => [r.ticker.toUpperCase(), r]));
 
   // Dividends/payouts — most recent announcement per ticker.
-  const payoutRows: { ticker: string; announcement_date: string | null; updated_at: string }[] = [];
+  const payoutRows: PayoutCoverageRow[] = [];
   for (let from = 0; ; from += 1000) {
     const { data } = await db.from('company_payouts').select('ticker, announcement_date, updated_at').range(from, from + 999);
     if (!data?.length) break;
-    payoutRows.push(...(data as any));
+    payoutRows.push(...(data as PayoutCoverageRow[]));
     if (data.length < 1000) break;
   }
   const payoutByTicker = new Map<string, { announcement_date: string | null; updated_at: string }>();
@@ -118,7 +125,7 @@ async function main() {
         latestFiscalYear: best.fiscal_year,
         latestPeriod: best.fiscal_period,
         source: best.source_type,
-        extractor: (best.data as any)?._extractor ?? null,
+        extractor: typeof best.data._extractor === 'string' ? best.data._extractor : null,
         lastUpdated: best.updated_at,
       };
     };
@@ -173,8 +180,8 @@ async function main() {
       ratiosLastComputed: lastComputed,
       priceLastFetched: quote?.last_fetched_at ?? null,
       priceAsOf: quote?.as_of ?? null,
-      technicalsLastUpdated: (tech as any)?.last_fetched_at ?? (tech as any)?.updated_at ?? null,
-      technicalsSource: (tech as any)?.source ?? null,
+      technicalsLastUpdated: tech?.last_fetched_at ?? tech?.updated_at ?? null,
+      technicalsSource: tech?.source ?? null,
       lastDividendDate: payout?.announcement_date ?? null,
       lastDividendRecorded: payout?.updated_at ?? null,
       identityIssues: issues,

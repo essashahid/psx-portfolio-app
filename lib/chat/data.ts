@@ -667,6 +667,7 @@ export async function getRatioCard(db: SupabaseClient, ticker: string): Promise<
       .select("fiscal_year, fiscal_period, period_type")
       .eq("ticker", t)
       .eq("statement_type", "income_statement")
+      .eq("review_status", "published")
       .order("fiscal_year", { ascending: false })
       .limit(12),
   ]);

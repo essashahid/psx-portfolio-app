@@ -70,7 +70,7 @@ export async function GET(request: Request) {
   if (task === "financials") {
     // Slow path: a few tickers per run, prioritizing those with no financials yet.
     const queueLimit = Math.min(Number(url.searchParams.get("limit") ?? 3), 10);
-    const { data: have } = await db.from("company_financials").select("ticker");
+    const { data: have } = await db.from("company_financials").select("ticker").eq("review_status", "published");
     const covered = new Set((have ?? []).map((r) => r.ticker as string));
     const queue = tickers.filter((t) => !covered.has(t)).slice(0, queueLimit);
     const fallbackQueue = queue.length ? queue : tickers.slice(0, queueLimit); // re-check covered ones for new filings
@@ -84,7 +84,7 @@ export async function GET(request: Request) {
   }
 
   if (task === "ratios") {
-    const { data: have } = await db.from("company_financials").select("ticker");
+    const { data: have } = await db.from("company_financials").select("ticker").eq("review_status", "published");
     const withFin = [...new Set((have ?? []).map((r) => r.ticker as string))].filter((t) => tickers.includes(t) || scope === "universe");
     let ok = 0;
     for (const t of withFin.slice(0, limit)) {

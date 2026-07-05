@@ -196,8 +196,9 @@ export async function refreshHistory(ticker: string): Promise<ProviderHistory | 
       const db = admin();
       if (db) {
         const recent = h.candles.slice(-1300);
+        const now = new Date().toISOString();
         await db.from("company_price_history").upsert(
-          recent.map((c) => ({ ticker: t, price_date: c.date, close: c.close, volume: c.volume, source: h.provider })),
+          recent.map((c) => ({ ticker: t, price_date: c.date, close: c.close, volume: c.volume, source: h.provider, updated_at: now })),
           { onConflict: "ticker,price_date" }
         );
       }

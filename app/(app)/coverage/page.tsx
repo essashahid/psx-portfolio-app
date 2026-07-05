@@ -48,7 +48,7 @@ export default async function CoveragePage() {
     supabase.from("market_quotes").select("ticker", { count: "exact", head: true }),
     supabase.from("data_provider_status").select("*").order("provider"),
     supabase.from("company_technicals").select("ticker").not("as_of_date", "is", null),
-    supabase.from("company_financials").select("ticker"),
+    supabase.from("company_financials").select("ticker").eq("review_status", "published"),
     supabase.from("company_ratios").select("ticker").not("ratio_value", "is", null),
     supabase.from("company_price_history").select("ticker").limit(10000),
     supabase

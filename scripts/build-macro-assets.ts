@@ -1,7 +1,7 @@
 // Backfills the shared macro_asset_history cache used by the capital-allocation
 // forecaster: Bitcoin, gold (XAU), USD/PKR and the PKR T-bill yield path. All
 // sources are free and need no API key (CoinGecko, stooq). PSX equity history
-// is handled separately by the eod_history cache.
+// is handled separately by the company_price_history cache.
 //
 // Dry run (fetch + report coverage, no DB write):
 //   npx tsx scripts/build-macro-assets.ts

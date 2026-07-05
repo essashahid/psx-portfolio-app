@@ -168,7 +168,12 @@ async function missingStatementFirst(db: ReturnType<typeof createAdminClient>, t
   const hasBalance = new Set<string>();
   for (let i = 0; i < tickers.length; i += 400) {
     const chunk = tickers.slice(i, i + 400);
-    const { data } = await db.from("company_financials").select("ticker").eq("statement_type", "balance_sheet").in("ticker", chunk);
+    const { data } = await db
+      .from("company_financials")
+      .select("ticker")
+      .eq("statement_type", "balance_sheet")
+      .eq("review_status", "published")
+      .in("ticker", chunk);
     for (const r of data ?? []) hasBalance.add((r.ticker as string).toUpperCase());
   }
   const missing = tickers.filter((t) => !hasBalance.has(t));

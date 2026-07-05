@@ -211,7 +211,8 @@ async function buildEarningsQuality(supabase: SupabaseClient, tickers: string[])
     .select("ticker, fiscal_year, data")
     .in("ticker", tickers)
     .eq("statement_type", "income_statement")
-    .eq("period_type", "annual");
+    .eq("period_type", "annual")
+    .eq("review_status", "published");
 
   const epsByTicker = new Map<string, { year: number; eps: number }[]>();
   for (const r of fin ?? []) {

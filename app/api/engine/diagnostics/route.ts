@@ -18,7 +18,7 @@ export async function GET() {
       supabase.from("market_quotes").select("ticker", { count: "exact", head: true }),
       supabase.from("company_price_history").select("ticker", { count: "exact", head: true }).limit(1),
       supabase.from("company_technicals").select("ticker", { count: "exact", head: true }),
-      supabase.from("company_financials").select("ticker", { count: "exact", head: true }),
+      supabase.from("company_financials").select("ticker", { count: "exact", head: true }).eq("review_status", "published"),
       supabase.from("company_ratios").select("ticker", { count: "exact", head: true }),
       supabase.from("data_fetch_logs").select("ticker, section, source, status, detail, created_at").order("created_at", { ascending: false }).limit(25),
     ]);
@@ -27,7 +27,7 @@ export async function GET() {
     // head counts above count rows, so fetch distinct tickers cheaply.
     const [histTickers, finTickers, ratioTickers, divTickers] = await Promise.all([
       supabase.from("company_technicals").select("ticker").not("as_of_date", "is", null),
-      supabase.from("company_financials").select("ticker"),
+      supabase.from("company_financials").select("ticker").eq("review_status", "published"),
       supabase.from("company_ratios").select("ticker").not("ratio_value", "is", null),
       supabase.from("dividends").select("ticker").not("ticker", "is", null),
     ]);

@@ -7,7 +7,7 @@ import type { HoldingsSummary } from "@/lib/chat/data";
  * Per-holding and whole-portfolio price returns against the KSE-100 over fixed
  * windows, so "is this earning its place" becomes a number: "MEBL +18% vs
  * KSE-100 +6% over 6 months". Everything is pre-computed from the shared
- * eod_history close cache (the same series the /performance benchmark uses) so
+ * company_price_history close cache (the same series the /performance benchmark uses) so
  * the model narrates the excess return, never recomputes it. Returns null when
  * the index history is not cached, so we never fabricate a comparison.
  */

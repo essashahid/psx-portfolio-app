@@ -23,7 +23,7 @@ import { StockPriceChart } from "@/components/stock/price-chart-lazy";
 import { TechnicalWorkstation } from "@/components/technicals/workstation";
 import { FinancialsWorkspace, type FinancialWorkspaceRow } from "@/components/stock/financials-workspace";
 import { EarningsWorkspace } from "@/components/stock/earnings-workspace";
-import { RatiosWorkspace, type RatiosPeerRow, type RatiosQuoteRow } from "@/components/stock/ratios-workspace";
+import { RatiosWorkspace, type RatioHistoryRow, type RatiosPeerRow, type RatiosQuoteRow } from "@/components/stock/ratios-workspace";
 import { formatMoney, formatNumber, formatSignedPct, formatFinancialPeriod, cn } from "@/lib/utils";
 import {
   AlertTriangle, Banknote, BriefcaseBusiness, FileText, Info, Newspaper, Sparkles, TrendingUp,
@@ -665,7 +665,21 @@ export async function OverviewPanel({
 // 2. Financials
 // ---------------------------------------------------------------------------
 
-interface FinancialRow { ticker: string; period_type: string; fiscal_year: number | null; fiscal_period: string | null; statement_type: string; data: Record<string, number | null | string>; reported_date: string | null; source_url: string | null; confidence: number | null; updated_at: string | null; }
+interface FinancialRow {
+  ticker: string;
+  period_type: string;
+  fiscal_year: number | null;
+  fiscal_period: string | null;
+  statement_type: string;
+  data: Record<string, number | null | string>;
+  reported_date: string | null;
+  source_type: string | null;
+  source_url: string | null;
+  reporting_basis: string | null;
+  review_status: string | null;
+  confidence: number | null;
+  updated_at: string | null;
+}
 
 function FetchFinancialsButton({ ticker, readOnly = false }: { ticker: string; readOnly?: boolean }) {
   if (readOnly) return null;
@@ -685,8 +699,9 @@ export async function FinancialsPanel({ ticker, readOnly = false }: { ticker: st
   const [{ data }, { data: lastLog }] = await Promise.all([
     supabase
       .from("company_financials")
-      .select("ticker, period_type, fiscal_year, fiscal_period, statement_type, data, reported_date, source_url, confidence, updated_at")
+      .select("ticker, period_type, fiscal_year, fiscal_period, statement_type, data, reported_date, source_type, source_url, reporting_basis, review_status, confidence, updated_at")
       .eq("ticker", ticker)
+      .eq("review_status", "published")
       .order("reported_date", { ascending: false })
       .limit(120),
     supabase
@@ -731,9 +746,10 @@ export async function EarningsPanel({ ticker, readOnly = false }: { ticker: stri
     getCompanyFilings(ticker, 120),
     supabase
       .from("company_financials")
-      .select("period_type, fiscal_year, fiscal_period, statement_type, data, reported_date, source_url")
+      .select("period_type, fiscal_year, fiscal_period, statement_type, data, reported_date, source_type, source_url, reporting_basis, review_status")
       .eq("ticker", ticker)
       .eq("statement_type", "income_statement")
+      .eq("review_status", "published")
       .order("reported_date", { ascending: false })
       .limit(120),
   ]);
@@ -795,7 +811,7 @@ export async function RatiosPanel({ ticker, readOnly = false }: { ticker: string
   // Always compute live from stored inputs — the engine is pure reads, so the
   // tab reflects the newest extracted financials and quote without waiting on
   // a persisted snapshot.
-  const [ratios, metadata, quoteRes] = await Promise.all([
+  const [ratios, metadata, quoteRes, historyRes] = await Promise.all([
     computeRatios(supabase, ticker),
     getCompanyMetadata(supabase, ticker),
     supabase
@@ -803,6 +819,13 @@ export async function RatiosPanel({ ticker, readOnly = false }: { ticker: string
       .select("price, as_of, last_fetched_at")
       .eq("ticker", ticker.toUpperCase())
       .maybeSingle(),
+    supabase
+      .from("company_ratio_history")
+      .select("ticker, ratio_name, as_of_date, ratio_value, source_period, computed_at")
+      .eq("ticker", ticker.toUpperCase())
+      .not("ratio_value", "is", null)
+      .order("as_of_date", { ascending: false })
+      .limit(500),
   ]);
 
   const quote = (quoteRes.data ?? null) as RatiosQuoteRow | null;
@@ -846,6 +869,7 @@ export async function RatiosPanel({ ticker, readOnly = false }: { ticker: string
     <RatiosWorkspace
       ticker={ticker.toUpperCase()}
       ratios={usableRatios}
+      history={(historyRes.data ?? []) as RatioHistoryRow[]}
       metadata={metadata}
       quote={quote}
       peers={peers}

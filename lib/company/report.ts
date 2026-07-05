@@ -93,6 +93,8 @@ interface FinancialRow {
   reported_date: string | null;
   source_type: string | null;
   source_url: string | null;
+  reporting_basis?: string | null;
+  review_status?: string | null;
   confidence: number | null;
   updated_at: string | null;
   data: Record<string, number | string | null>;
@@ -217,8 +219,9 @@ export async function generateCompanyReport(
   const metadata = await stage("resolve", "Resolved company identity", () => getCompanyMetadata(supabase, symbol));
   const financialPreview = await supabase
     .from("company_financials")
-    .select("period_type, fiscal_year, fiscal_period, statement_type, reported_date, source_type, source_url, confidence, updated_at, data")
+    .select("period_type, fiscal_year, fiscal_period, statement_type, reported_date, source_type, source_url, reporting_basis, review_status, confidence, updated_at, data")
     .eq("ticker", symbol)
+    .eq("review_status", "published")
     .order("reported_date", { ascending: false })
     .limit(40);
   const finRows = (financialPreview.data ?? []) as FinancialRow[];
@@ -267,8 +270,9 @@ export async function generateCompanyReport(
         .maybeSingle(),
       supabase
         .from("company_financials")
-        .select("period_type, fiscal_year, fiscal_period, statement_type, reported_date, source_type, source_url, confidence, updated_at, data")
+        .select("period_type, fiscal_year, fiscal_period, statement_type, reported_date, source_type, source_url, reporting_basis, review_status, confidence, updated_at, data")
         .eq("ticker", symbol)
+        .eq("review_status", "published")
         .order("reported_date", { ascending: false })
         .limit(options.depth === "full" ? 40 : 16),
       supabase
@@ -646,6 +650,7 @@ export async function getReportPreview(
     .from("company_financials")
     .select("period_type, fiscal_year, fiscal_period, statement_type, reported_date, data")
     .eq("ticker", symbol)
+    .eq("review_status", "published")
     .order("reported_date", { ascending: false })
     .limit(20);
   const finRows = (fin ?? []) as FinancialRow[];

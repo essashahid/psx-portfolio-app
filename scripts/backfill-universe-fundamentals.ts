@@ -41,7 +41,12 @@ async function main() {
   console.log("3/3 Cheap fundamentals (company page + payouts + ratios)…");
   const companies = await activeUniverseTickers(db, "companies");
   const [{ data: income }, { data: payouts }] = await Promise.all([
-    db.from("company_financials").select("ticker").eq("statement_type", "income_statement").limit(10000),
+    db
+      .from("company_financials")
+      .select("ticker")
+      .eq("statement_type", "income_statement")
+      .eq("review_status", "published")
+      .limit(10000),
     db.from("company_payouts").select("ticker").limit(20000),
   ]);
   const hasIncome = new Set((income ?? []).map((r) => (r.ticker as string).toUpperCase()));
