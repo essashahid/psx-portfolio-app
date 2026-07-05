@@ -115,7 +115,11 @@ async function main() {
   // Final coverage picture, paginated past the 1000-row default cap.
   const byTicker = new Map<string, Set<string>>();
   for (let off = 0; ; off += 1000) {
-    const { data } = await db.from("company_financials").select("ticker, statement_type").range(off, off + 999);
+    const { data } = await db
+      .from("company_financials")
+      .select("ticker, statement_type")
+      .eq("review_status", "published")
+      .range(off, off + 999);
     if (!data?.length) break;
     for (const r of data) {
       const s = byTicker.get(r.ticker as string) ?? new Set<string>();

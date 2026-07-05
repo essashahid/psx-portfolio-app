@@ -94,7 +94,7 @@ export async function GET(request: Request) {
   //    each, no LLM). Refresh the whole active set every run, then top up a
   //    rotating slice of the universe that has no financials yet.
   try {
-    const { data: have } = await db.from("company_financials").select("ticker");
+    const { data: have } = await db.from("company_financials").select("ticker").eq("review_status", "published");
     const covered = new Set((have ?? []).map((r) => r.ticker as string));
     const topUp = (await activeUniverseTickers(db, "companies"))
       .filter((t) => !covered.has(t) && !active.includes(t))
@@ -118,7 +118,7 @@ export async function GET(request: Request) {
 
   // 5. Ratios for everything that has financials (cheap, pure reads + upsert)
   try {
-    const { data: have } = await db.from("company_financials").select("ticker");
+    const { data: have } = await db.from("company_financials").select("ticker").eq("review_status", "published");
     const tickers = [...new Set((have ?? []).map((r) => r.ticker as string))];
     let ok = 0;
     for (const t of tickers.slice(0, 50)) {

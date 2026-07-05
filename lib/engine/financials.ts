@@ -1,3 +1,5 @@
+import { createHash } from "node:crypto";
+import type { SupabaseClient } from "@supabase/supabase-js";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { aiAvailable, chatJson } from "@/lib/ai/openai";
 import { visionConfigured, visionDisabled, visionPdf } from "@/lib/ai/vision";
@@ -138,6 +140,290 @@ interface ExtractionResult {
   saved: number;
   skipped: string[];
   errors: string[];
+}
+
+type ReportingBasis = "consolidated" | "unconsolidated" | "unlabelled" | "not_applicable";
+type FinancialPeriodType = "annual" | "quarterly" | "cumulative";
+
+interface FinancialStatementPayload {
+  ticker: string;
+  period_type: FinancialPeriodType;
+  fiscal_year: number | null;
+  fiscal_period: string | null;
+  statement_type: "income_statement" | "balance_sheet" | "cash_flow";
+  reported_date: string | null;
+  source_type: string;
+  source_url: string | null;
+  reporting_basis: ReportingBasis;
+  data: Record<string, number | null | string>;
+  confidence: number | null;
+  updated_at: string;
+  validation_flags?: string[];
+}
+
+interface ExistingFinancialRow {
+  id: string;
+  ticker: string;
+  period_type: string;
+  fiscal_year: number | null;
+  fiscal_period: string | null;
+  statement_type: string;
+  reported_date: string | null;
+  source_type: string;
+  source_url: string | null;
+  reporting_basis: ReportingBasis;
+  confidence: number | null;
+  data: Record<string, number | null | string>;
+}
+
+interface NumericDifference {
+  field: string;
+  existing: number;
+  incoming: number;
+  abs_delta: number;
+  pct_delta: number | null;
+}
+
+const FINANCIAL_IDENTITY_CONFLICT =
+  "ticker,period_type,fiscal_year,fiscal_period,statement_type,reporting_basis,source_type";
+const OBSERVATION_IDENTITY_CONFLICT =
+  "ticker,period_type,fiscal_year,fiscal_period,statement_type,reporting_basis,source_type,source_fingerprint";
+
+export function normalizeReportingBasis(value: unknown): ReportingBasis {
+  const v = String(value ?? "").trim().toLowerCase().replace(/[\s-]+/g, "_");
+  if (v === "consolidated" || v === "group") return "consolidated";
+  if (v === "unconsolidated" || v === "standalone" || v === "separate" || v === "separate_financial_statements") {
+    return "unconsolidated";
+  }
+  if (v === "not_applicable" || v === "n/a" || v === "na") return "not_applicable";
+  return "unlabelled";
+}
+
+function numericDataDifferences(
+  existing: Record<string, number | null | string>,
+  incoming: Record<string, number | null | string>
+): NumericDifference[] {
+  const keys = new Set([...Object.keys(existing ?? {}), ...Object.keys(incoming ?? {})]);
+  const diffs: NumericDifference[] = [];
+  for (const key of keys) {
+    if (key.startsWith("_")) continue;
+    const a = existing?.[key];
+    const b = incoming?.[key];
+    if (typeof a !== "number" || typeof b !== "number" || !Number.isFinite(a) || !Number.isFinite(b)) continue;
+    const abs = Math.abs(a - b);
+    const scale = Math.max(1, Math.abs(a), Math.abs(b));
+    const minAbs = key === "eps" ? 0.01 : 1;
+    const rel = abs / scale;
+    if (abs > minAbs && rel > 0.005) {
+      diffs.push({
+        field: key,
+        existing: a,
+        incoming: b,
+        abs_delta: abs,
+        pct_delta: scale > 0 ? rel * 100 : null,
+      });
+    }
+  }
+  return diffs;
+}
+
+function financialSourceFingerprint(row: FinancialStatementPayload): string {
+  if (row.source_url?.trim()) return row.source_url.trim();
+  const raw = JSON.stringify({
+    ticker: row.ticker,
+    period_type: row.period_type,
+    fiscal_year: row.fiscal_year,
+    fiscal_period: row.fiscal_period,
+    statement_type: row.statement_type,
+    reporting_basis: row.reporting_basis,
+    source_type: row.source_type,
+    data: row.data,
+  });
+  return `generated:${createHash("sha256").update(raw).digest("hex").slice(0, 32)}`;
+}
+
+function extractorFromData(data: Record<string, number | null | string>): string | null {
+  const extractor = data._extractor;
+  return typeof extractor === "string" && extractor.trim() ? extractor.trim() : null;
+}
+
+async function upsertFinancialObservation(
+  db: SupabaseClient,
+  row: FinancialStatementPayload
+): Promise<{ id: string | null; error?: string }> {
+  const { data, error } = await db
+    .from("financial_statement_observations")
+    .upsert(
+      {
+        ticker: row.ticker,
+        period_type: row.period_type,
+        fiscal_year: row.fiscal_year,
+        fiscal_period: row.fiscal_period,
+        statement_type: row.statement_type,
+        reporting_basis: row.reporting_basis,
+        source_type: row.source_type,
+        source_url: row.source_url,
+        source_fingerprint: financialSourceFingerprint(row),
+        reported_date: row.reported_date,
+        data: row.data,
+        confidence: row.confidence,
+        extractor: extractorFromData(row.data),
+        validation_flags: row.validation_flags ?? [],
+        observed_at: row.updated_at,
+      },
+      { onConflict: OBSERVATION_IDENTITY_CONFLICT }
+    )
+    .select("id")
+    .maybeSingle();
+  if (error) return { id: null, error: error.message };
+  return { id: (data?.id as string | undefined) ?? null };
+}
+
+interface FinancialRowsQuery extends PromiseLike<{ data: ExistingFinancialRow[] | null; error: { message: string } | null }> {
+  eq(column: string, value: unknown): FinancialRowsQuery;
+  is(column: string, value: null): FinancialRowsQuery;
+  limit(count: number): FinancialRowsQuery;
+}
+
+function withNullableIdentity(
+  query: FinancialRowsQuery,
+  row: FinancialStatementPayload
+): FinancialRowsQuery {
+  let q = query
+    .eq("ticker", row.ticker)
+    .eq("period_type", row.period_type)
+    .eq("statement_type", row.statement_type)
+    .eq("reporting_basis", row.reporting_basis);
+  q = row.fiscal_year === null ? q.is("fiscal_year", null) : q.eq("fiscal_year", row.fiscal_year);
+  q = row.fiscal_period === null ? q.is("fiscal_period", null) : q.eq("fiscal_period", row.fiscal_period);
+  return q;
+}
+
+async function readPublishedFinancialCandidates(
+  db: SupabaseClient,
+  row: FinancialStatementPayload
+): Promise<{ rows: ExistingFinancialRow[]; error?: string }> {
+  const financials = db.from("company_financials") as unknown as { select(columns: string): FinancialRowsQuery };
+  const query = withNullableIdentity(
+    financials
+      .select("id, ticker, period_type, fiscal_year, fiscal_period, statement_type, reported_date, source_type, source_url, reporting_basis, confidence, data")
+      .eq("review_status", "published")
+      .limit(20),
+    row
+  );
+  const { data, error } = await query;
+  if (error) return { rows: [], error: error.message };
+  return { rows: (data ?? []) as ExistingFinancialRow[] };
+}
+
+function conflictDedupeKey(
+  row: FinancialStatementPayload,
+  existing: ExistingFinancialRow,
+  conflictType: string,
+  differences: NumericDifference[]
+): string {
+  const raw = JSON.stringify({
+    ticker: row.ticker,
+    period_type: row.period_type,
+    fiscal_year: row.fiscal_year,
+    fiscal_period: row.fiscal_period,
+    statement_type: row.statement_type,
+    reporting_basis: row.reporting_basis,
+    new_source_type: row.source_type,
+    existing_source_type: existing.source_type,
+    new_source_url: row.source_url,
+    existing_source_url: existing.source_url,
+    conflictType,
+    fields: differences.map((d) => d.field).sort(),
+  });
+  return createHash("sha256").update(raw).digest("hex");
+}
+
+async function stageFinancialConflict(
+  db: SupabaseClient,
+  row: FinancialStatementPayload,
+  existing: ExistingFinancialRow,
+  conflictType: "same_source_revision" | "cross_source_mismatch",
+  differences: NumericDifference[]
+): Promise<string | null> {
+  const severity = conflictType === "same_source_revision" ? "high" : "medium";
+  const fields = differences.map((d) => d.field).join(", ");
+  const message =
+    conflictType === "same_source_revision"
+      ? `Incoming ${row.source_type} ${row.statement_type} changes published ${fields}; observation kept for review.`
+      : `Incoming ${row.source_type} ${row.statement_type} disagrees with published ${existing.source_type} values for ${fields}.`;
+  const { error } = await db
+    .from("financial_statement_conflicts")
+    .upsert(
+      {
+        dedupe_key: conflictDedupeKey(row, existing, conflictType, differences),
+        ticker: row.ticker,
+        period_type: row.period_type,
+        fiscal_year: row.fiscal_year,
+        fiscal_period: row.fiscal_period,
+        statement_type: row.statement_type,
+        reporting_basis: row.reporting_basis,
+        new_source_type: row.source_type,
+        existing_source_type: existing.source_type,
+        new_source_url: row.source_url,
+        existing_source_url: existing.source_url,
+        conflict_type: conflictType,
+        severity,
+        status: "open",
+        differences,
+        observed_row: row,
+        existing_row: existing,
+        message,
+      },
+      { onConflict: "dedupe_key" }
+    );
+  return error?.message ?? null;
+}
+
+async function persistFinancialStatement(
+  db: SupabaseClient,
+  row: FinancialStatementPayload
+): Promise<{ saved: boolean; conflict: boolean; error?: string }> {
+  const observation = await upsertFinancialObservation(db, row);
+  if (observation.error) return { saved: false, conflict: false, error: `observation: ${observation.error}` };
+
+  const { rows: existingRows, error: readError } = await readPublishedFinancialCandidates(db, row);
+  if (readError) return { saved: false, conflict: false, error: `conflict-read: ${readError}` };
+
+  let shouldHoldForReview = false;
+  let reviewStatus: "published" | "needs_review" = "published";
+  const validationFlags = new Set(row.validation_flags ?? []);
+
+  for (const existing of existingRows) {
+    const differences = numericDataDifferences(existing.data, row.data);
+    if (differences.length === 0) continue;
+    const sameSource = existing.source_type === row.source_type;
+    const conflictType = sameSource ? "same_source_revision" : "cross_source_mismatch";
+    const conflictError = await stageFinancialConflict(db, row, existing, conflictType, differences);
+    if (conflictError) return { saved: false, conflict: false, error: `conflict: ${conflictError}` };
+    if (sameSource) shouldHoldForReview = true;
+    else {
+      reviewStatus = "needs_review";
+      validationFlags.add("cross_source_mismatch");
+    }
+  }
+
+  if (shouldHoldForReview) {
+    return { saved: false, conflict: true };
+  }
+
+  const { error } = await db.from("company_financials").upsert(
+    {
+      ...row,
+      source_type: row.source_type || "unknown",
+      review_status: reviewStatus,
+      selected_observation_id: observation.id,
+      validation_flags: [...validationFlags],
+    },
+    { onConflict: FINANCIAL_IDENTITY_CONFLICT }
+  );
+  if (error) return { saved: false, conflict: false, error: error.message };
+  return { saved: reviewStatus === "published", conflict: reviewStatus !== "published" };
 }
 
 type PdfFetchResult = { buf: Buffer } | { error: string };
@@ -432,7 +718,12 @@ export async function extractFinancials(ticker: string, maxFilings = 2): Promise
   // was frozen at income-only for good. Full reports are only "done" once the
   // balance sheet and cash flow have both landed; brief results notices are
   // usually just the P&L, so any extraction completes them.
-  const { data: existing } = await db.from("company_financials").select("source_url, statement_type").eq("ticker", t);
+  const { data: existing } = await db
+    .from("company_financials")
+    .select("source_url, statement_type")
+    .eq("ticker", t)
+    .eq("source_type", "psx-filing")
+    .eq("review_status", "published");
   const typesByUrl = new Map<string, Set<string>>();
   for (const r of existing ?? []) {
     const url = r.source_url as string | null;
@@ -530,24 +821,24 @@ export async function extractFinancials(ticker: string, maxFilings = 2): Promise
 
       for (const s of statements) {
         const fiscalPeriod = s.fiscal_period ?? (s.period_type === "annual" ? "FY" : null);
-        const { error } = await db.from("company_financials").upsert(
-          {
-            ticker: t,
-            period_type: canonicalPeriodType(fiscalPeriod, s.period_type),
-            fiscal_year: s.fiscal_year,
-            fiscal_period: fiscalPeriod,
-            statement_type: s.statement_type,
-            reported_date: filing.date,
-            source_type: "psx-filing",
-            source_url: filing.url,
-            data: { ...s.data, _units: "PKR thousands", _basis: s.basis ?? "unlabelled", _extractor: s._extractor },
-            confidence: Math.max(0, Math.min(1, s.confidence ?? 0)),
-            updated_at: new Date().toISOString(),
-          },
-          { onConflict: "ticker,period_type,fiscal_year,fiscal_period,statement_type" }
-        );
-        if (error) out.errors.push(`db: ${error.message}`);
-        else out.saved++;
+        const reportingBasis = normalizeReportingBasis(s.basis);
+        const result = await persistFinancialStatement(db, {
+          ticker: t,
+          period_type: canonicalPeriodType(fiscalPeriod, s.period_type),
+          fiscal_year: s.fiscal_year,
+          fiscal_period: fiscalPeriod,
+          statement_type: s.statement_type,
+          reported_date: filing.date,
+          source_type: "psx-filing",
+          source_url: filing.url,
+          reporting_basis: reportingBasis,
+          data: { ...s.data, _units: "PKR thousands", _basis: reportingBasis, _extractor: s._extractor },
+          confidence: Math.max(0, Math.min(1, s.confidence ?? 0)),
+          updated_at: new Date().toISOString(),
+        });
+        if (result.error) out.errors.push(`db: ${result.error}`);
+        else if (result.saved) out.saved++;
+        else if (result.conflict) out.skipped.push(`staged for review: ${filing.title} ${s.fiscal_year ?? "?"} ${fiscalPeriod ?? "?"} ${s.statement_type}`);
       }
     } catch (err) {
       out.errors.push(`extraction failed for "${filing.title}": ${err instanceof Error ? err.message : String(err)}`);
@@ -577,12 +868,13 @@ export async function extractFinancials(ticker: string, maxFilings = 2): Promise
  * and profit-after-tax (revenue × reported margin — arithmetic from two
  * official figures, recorded with the margin so it stays auditable).
  */
-function statementData(p: PsxPeriodFigures): Record<string, number | null | string> {
+function statementData(p: PsxPeriodFigures, reportingBasis: ReportingBasis): Record<string, number | null | string> {
   const data: Record<string, number | null | string> = {
     revenue: p.sales,
     eps: p.eps,
     _units: "PKR thousands",
     _source: "psx-portal",
+    _basis: reportingBasis,
   };
   if (p.grossMarginPct != null && p.sales != null) {
     data.gross_profit = Math.round((p.sales * p.grossMarginPct) / 100);
@@ -629,24 +921,24 @@ export async function populateFinancials(ticker: string): Promise<ExtractionResu
     if (p.sales == null && p.eps == null) continue; // nothing reported for this column
     out.processed++;
     const fiscalPeriod = p.fiscalPeriod ?? (period_type === "annual" ? "FY" : null);
-    const { error } = await db.from("company_financials").upsert(
-      {
-        ticker: t,
-        period_type: canonicalPeriodType(fiscalPeriod, period_type),
-        fiscal_year: p.fiscalYear,
-        fiscal_period: fiscalPeriod,
-        statement_type: "income_statement",
-        reported_date: null,
-        source_type: "psx-portal",
-        source_url: data.sourceUrl,
-        data: statementData(p),
-        confidence: 1, // official PSX figures, read verbatim
-        updated_at: now,
-      },
-      { onConflict: "ticker,period_type,fiscal_year,fiscal_period,statement_type" }
-    );
-    if (error) out.errors.push(`db: ${error.message}`);
-    else out.saved++;
+    const reportingBasis = normalizeReportingBasis(null);
+    const result = await persistFinancialStatement(db, {
+      ticker: t,
+      period_type: canonicalPeriodType(fiscalPeriod, period_type),
+      fiscal_year: p.fiscalYear,
+      fiscal_period: fiscalPeriod,
+      statement_type: "income_statement",
+      reported_date: null,
+      source_type: "psx-portal",
+      source_url: data.sourceUrl,
+      reporting_basis: reportingBasis,
+      data: statementData(p, reportingBasis),
+      confidence: 1, // official PSX figures, read verbatim
+      updated_at: now,
+    });
+    if (result.error) out.errors.push(`db: ${result.error}`);
+    else if (result.saved) out.saved++;
+    else if (result.conflict) out.skipped.push(`staged for review: ${p.fiscalYear ?? "?"} ${fiscalPeriod ?? "?"} income_statement`);
   }
 
   // Cache the equity profile (shares / market cap) so the cockpit header and

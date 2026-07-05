@@ -6,6 +6,8 @@ import {
   BarChart,
   CartesianGrid,
   Cell,
+  Line,
+  LineChart,
   ResponsiveContainer,
   Tooltip as RechartsTooltip,
   XAxis,
@@ -49,7 +51,7 @@ type RatioCategory =
   | "other";
 
 type ExplorerCategory = RatioCategory | "all" | "key" | "pinned";
-type ActiveTab = "snapshot" | "explorer";
+type ActiveTab = "snapshot" | "trends" | "explorer";
 type FormatMode = "compact" | "exact";
 type FormatKind = "multiple" | "percent" | "money" | "statementMoney" | "perShare" | "shares" | "days" | "number";
 
@@ -83,6 +85,15 @@ export interface RatiosQuoteRow {
   price: number | null;
   as_of: string | null;
   last_fetched_at: string | null;
+}
+
+export interface RatioHistoryRow {
+  ticker: string;
+  ratio_name: string;
+  as_of_date: string;
+  ratio_value: number | null;
+  source_period: string | null;
+  computed_at: string | null;
 }
 
 interface RatioDefinition {
@@ -566,6 +577,18 @@ const KEY_RATIO_GROUPS = [
   { label: "Growth and cash quality", ratios: ["EPS growth", "OCF / PAT"] },
 ];
 
+const RATIO_TREND_DEFAULTS = [
+  "P/E",
+  "EPS (TTM)",
+  "ROE",
+  "ROIC",
+  "Net margin",
+  "Debt-to-equity",
+  "Current ratio",
+  "FCF yield",
+  "OCF / PAT",
+];
+
 function finiteNumber(value: unknown): number | null {
   if (typeof value === "number" && Number.isFinite(value)) return value;
   if (typeof value === "string" && value.trim()) {
@@ -714,6 +737,9 @@ function RatioHeader({
         <div className="flex flex-wrap gap-2 lg:justify-end">
           <Button type="button" size="sm" variant={activeTab === "snapshot" ? "default" : "outline"} onClick={() => setActiveTab("snapshot")}>
             <BarChart3 className="h-3.5 w-3.5" /> Snapshot
+          </Button>
+          <Button type="button" size="sm" variant={activeTab === "trends" ? "default" : "outline"} onClick={() => setActiveTab("trends")}>
+            <TrendingUp className="h-3.5 w-3.5" /> Trends
           </Button>
           <Button type="button" size="sm" variant={activeTab === "explorer" ? "default" : "outline"} onClick={() => setActiveTab("explorer")}>
             <Search className="h-3.5 w-3.5" /> Explorer
@@ -908,6 +934,92 @@ function peerMetricData(metric: string, ratios: RatioRow[], peers: RatiosPeerRow
   return rows;
 }
 
+function trendMetricOptions(ratios: RatioRow[], history: RatioHistoryRow[]): string[] {
+  const currentNames = new Set(ratios.map((r) => r.ratio_name));
+  const historicalNames = new Set(history.map((r) => r.ratio_name));
+  const preferred = RATIO_TREND_DEFAULTS.filter((name) => currentNames.has(name) || historicalNames.has(name));
+  const rest = [...historicalNames]
+    .filter((name) => !preferred.includes(name))
+    .sort((a, b) => ratioDisplayName(a).localeCompare(ratioDisplayName(b)));
+  return [...preferred, ...rest];
+}
+
+function ratioTrendData(history: RatioHistoryRow[], metric: string): { date: string; value: number; period: string | null }[] {
+  const byDate = new Map<string, { date: string; value: number; period: string | null; computedAt: string | null }>();
+  for (const row of history) {
+    if (row.ratio_name !== metric) continue;
+    const value = finiteNumber(row.ratio_value);
+    if (value === null) continue;
+    const existing = byDate.get(row.as_of_date);
+    if (!existing || (row.computed_at ?? "") > (existing.computedAt ?? "")) {
+      byDate.set(row.as_of_date, { date: row.as_of_date, value, period: row.source_period, computedAt: row.computed_at });
+    }
+  }
+  return [...byDate.values()]
+    .sort((a, b) => a.date.localeCompare(b.date))
+    .map(({ date, value, period }) => ({ date, value, period }));
+}
+
+function RatioTrends({
+  ratios,
+  history,
+  formatMode,
+}: {
+  ratios: RatioRow[];
+  history: RatioHistoryRow[];
+  formatMode: FormatMode;
+}) {
+  const options = useMemo(() => trendMetricOptions(ratios, history), [history, ratios]);
+  const [selectedMetric, setSelectedMetric] = useState(options[0] ?? "P/E");
+  const metric = options.includes(selectedMetric) ? selectedMetric : options[0];
+  const data = metric ? ratioTrendData(history, metric) : [];
+  const current = metric ? ratios.find((r) => r.ratio_name === metric) : null;
+
+  return (
+    <section className="space-y-3">
+      <div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
+        <div>
+          <p className="eyebrow">Ratio trends</p>
+          <h3 className="text-lg font-semibold text-slate-950">Historical ratio snapshots</h3>
+          <p className="mt-1 text-xs text-muted-foreground">
+            {history.length ? `${history.length} stored history point${history.length === 1 ? "" : "s"}.` : "No ratio history stored yet."}
+          </p>
+        </div>
+        <Select value={metric ?? ""} onChange={(e) => setSelectedMetric(e.target.value)} disabled={!options.length}>
+          {options.map((name) => <option key={name} value={name}>{ratioDisplayName(name)}</option>)}
+        </Select>
+      </div>
+
+      <Card className="border-slate-200 bg-white shadow-sm">
+        <CardHeader className="p-4 pb-2">
+          <CardTitle className="text-base">{metric ? ratioDisplayName(metric) : "Ratio trend"}</CardTitle>
+          <CardDescription>
+            {current ? `Current ${formatRatioValue(current, formatMode)} · ${formattedPeriod(current.source_period)}` : "Refresh ratios to create dated history."}
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="p-4 pt-2">
+          {metric && data.length >= 2 ? (
+            <ResponsiveContainer width="100%" height={280}>
+              <LineChart data={data} margin={{ top: 10, right: 18, bottom: 0, left: 0 }}>
+                <CartesianGrid stroke={INK.grid} vertical={false} />
+                <XAxis dataKey="date" tick={AXIS_TICK} tickLine={false} axisLine={false} minTickGap={28} />
+                <YAxis tick={AXIS_TICK} tickLine={false} axisLine={false} width={72} tickFormatter={(v) => formatChartValue(Number(v), metric)} />
+                <RechartsTooltip
+                  cursor={CURSOR}
+                  content={<GlassTooltip format={(v) => formatChartValue(v, metric)} />}
+                />
+                <Line type="monotone" dataKey="value" name={ratioDisplayName(metric)} stroke={INK.line} strokeWidth={2} dot={{ r: 2 }} activeDot={{ r: 4 }} />
+              </LineChart>
+            </ResponsiveContainer>
+          ) : (
+            <ChartEmpty note="At least two dated ratio snapshots are required for a trend chart." height={280} />
+          )}
+        </CardContent>
+      </Card>
+    </section>
+  );
+}
+
 function RatioExplorer({
   ticker,
   ratios,
@@ -1056,6 +1168,7 @@ function RatioExplorer({
 export function RatiosWorkspace({
   ticker,
   ratios,
+  history,
   metadata,
   quote,
   peers,
@@ -1063,6 +1176,7 @@ export function RatiosWorkspace({
 }: {
   ticker: string;
   ratios: RatioRow[];
+  history: RatioHistoryRow[];
   metadata: CompanyMetadata;
   quote: RatiosQuoteRow | null;
   peers: RatiosPeerRow[];
@@ -1148,6 +1262,12 @@ export function RatiosWorkspace({
           <div className="flex justify-center pt-4">
             <Button variant="outline" onClick={() => setActiveTab("explorer")}>Explore all {ratios.length} ratios</Button>
           </div>
+        </div>
+      )}
+
+      {activeTab === "trends" && (
+        <div className="space-y-4 mt-2">
+          <RatioTrends ratios={ratios} history={history} formatMode={formatMode} />
         </div>
       )}
 

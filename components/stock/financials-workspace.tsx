@@ -39,7 +39,10 @@ export interface FinancialWorkspaceRow {
   statement_type: string;
   data: Record<string, number | null | string>;
   reported_date: string | null;
+  source_type?: string | null;
   source_url: string | null;
+  reporting_basis?: string | null;
+  review_status?: string | null;
   confidence: number | null;
   updated_at: string | null;
 }

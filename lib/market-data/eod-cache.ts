@@ -3,7 +3,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { fetchPsxEod } from "@/lib/market-data/psx-dps";
 
 /**
- * Shared PSX end-of-day close cache (public.eod_history).
+ * Shared PSX end-of-day close cache (public.company_price_history).
  *
  * The benchmark recompute that runs on every ledger edit needs daily close
  * history for the KSE-100 and each held ticker. Hitting dps.psx.com.pk for ~17
@@ -17,6 +17,7 @@ export const KSE_SYMBOL = "KSE100";
 export interface ClosePoint {
   date: string; // YYYY-MM-DD
   close: number;
+  volume?: number | null;
 }
 
 /** Refetch a symbol when we have nothing cached or the latest day is older than this. */
@@ -48,13 +49,13 @@ export async function ensureEodCached(
 
   // Latest cached date per symbol in one query.
   const { data: latestRows } = await admin
-    .from("eod_history")
-    .select("ticker, trade_date")
+    .from("company_price_history")
+    .select("ticker, price_date")
     .in("ticker", symbols)
-    .order("trade_date", { ascending: false });
+    .order("price_date", { ascending: false });
   const latestByTicker = new Map<string, string>();
   for (const row of latestRows ?? []) {
-    if (!latestByTicker.has(row.ticker)) latestByTicker.set(row.ticker, row.trade_date as string);
+    if (!latestByTicker.has(row.ticker)) latestByTicker.set(row.ticker, row.price_date as string);
   }
 
   const refreshed: string[] = [];
@@ -65,9 +66,10 @@ export async function ensureEodCached(
     const eod = await fetchPsxEod(symbol);
     const fresh = uniqueByDate(eod.filter((c) => !latest || c.date > latest));
     if (fresh.length === 0) { skipped.push(symbol); continue; }
-    const { error } = await admin.from("eod_history").upsert(
-      fresh.map((c) => ({ ticker: symbol, trade_date: c.date, close: c.close })),
-      { onConflict: "ticker,trade_date" }
+    const now = new Date().toISOString();
+    const { error } = await admin.from("company_price_history").upsert(
+      fresh.map((c) => ({ ticker: symbol, price_date: c.date, close: c.close, volume: c.volume, source: "psx-dps", updated_at: now })),
+      { onConflict: "ticker,price_date" }
     );
     if (!error) refreshed.push(symbol);
     else skipped.push(symbol);
@@ -86,15 +88,15 @@ export async function getCachedEod(
   const PAGE = 1000;
   for (let from = 0; ; from += PAGE) {
     const { data, error } = await supabase
-      .from("eod_history")
-      .select("ticker, trade_date, close")
+      .from("company_price_history")
+      .select("ticker, price_date, close")
       .in("ticker", symbols)
-      .order("trade_date", { ascending: true })
+      .order("price_date", { ascending: true })
       .range(from, from + PAGE - 1);
     if (error || !data || data.length === 0) break;
     for (const row of data) {
       const list = byTicker.get(row.ticker) ?? [];
-      list.push({ date: row.trade_date as string, close: Number(row.close) });
+      list.push({ date: row.price_date as string, close: Number(row.close) });
       byTicker.set(row.ticker, list);
     }
     if (data.length < PAGE) break;

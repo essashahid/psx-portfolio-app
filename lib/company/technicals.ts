@@ -288,7 +288,7 @@ async function cacheTechnicals(ticker: string, t: Omit<Technicals, "meta">): Pro
     const recent = t.history.slice(-260);
     if (recent.length) {
       await admin.from("company_price_history").upsert(
-        recent.map((c) => ({ ticker, price_date: c.date, close: c.close, volume: c.volume, source: "psx-dps" })),
+        recent.map((c) => ({ ticker, price_date: c.date, close: c.close, volume: c.volume, source: "psx-dps", updated_at: now })),
         { onConflict: "ticker,price_date" }
       );
     }

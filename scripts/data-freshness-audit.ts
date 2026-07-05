@@ -54,6 +54,7 @@ async function main() {
     const { data } = await db
       .from("company_financials")
       .select("ticker, period_type, fiscal_year, fiscal_period, statement_type, data")
+      .eq("review_status", "published")
       .range(from, from + 999);
     if (!data?.length) break;
     rows.push(...(data as FinRow[]));

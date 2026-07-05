@@ -308,11 +308,11 @@ async function DashboardCharts({ userId, liveValue }: { userId: string; liveValu
     const liveIndex = marketSnapRes.data?.index_value ? Number(marketSnapRes.data.index_value) : null;
     if (liveIndex && marketSnapRes.data!.snapshot_date > anchor.date) {
       const { data: kseRow } = await supabase
-        .from("eod_history")
+        .from("company_price_history")
         .select("close")
         .eq("ticker", "KSE100")
-        .lte("trade_date", anchor.date)
-        .order("trade_date", { ascending: false })
+        .lte("price_date", anchor.date)
+        .order("price_date", { ascending: false })
         .limit(1)
         .maybeSingle();
       const baseClose = Number(kseRow?.close ?? 0);

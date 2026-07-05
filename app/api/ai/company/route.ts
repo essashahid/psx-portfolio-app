@@ -99,8 +99,9 @@ export async function POST(request: Request) {
       getPortfolio(supabase, user.id),
       supabase
         .from("company_financials")
-        .select("period_type, fiscal_year, fiscal_period, statement_type, source_type, data, confidence")
+        .select("period_type, fiscal_year, fiscal_period, statement_type, source_type, reporting_basis, data, confidence")
         .eq("ticker", ticker)
+        .eq("review_status", "published")
         .order("fiscal_year", { ascending: false })
         .limit(12),
       supabase
@@ -114,7 +115,7 @@ export async function POST(request: Request) {
 
     const fins = (financialsRes.data ?? []) as {
       period_type: string; fiscal_year: number | null; fiscal_period: string | null;
-      statement_type: string; source_type: string | null;
+      statement_type: string; source_type: string | null; reporting_basis: string | null;
       data: Record<string, number | null | string>; confidence: number | null;
     }[];
     const ratios = (ratiosRes.data ?? []) as {
@@ -126,7 +127,7 @@ export async function POST(request: Request) {
       if (!fins.length) return "No financial statements extracted yet.";
       const lines: string[] = [];
       for (const row of fins) {
-        const label = `${row.fiscal_year ?? "?"} ${row.fiscal_period ?? row.period_type} [${row.statement_type}] (${row.source_type ?? "?"}, confidence ${((row.confidence ?? 0) * 100).toFixed(0)}%)`;
+        const label = `${row.fiscal_year ?? "?"} ${row.fiscal_period ?? row.period_type} [${row.statement_type}] (${row.source_type ?? "?"}, ${row.reporting_basis ?? "unlabelled"}, confidence ${((row.confidence ?? 0) * 100).toFixed(0)}%)`;
         const entries = Object.entries(row.data)
           .filter(([k, v]) => !k.startsWith("_") && typeof v === "number")
           .map(([k, v]) => `  ${k}: ${formatNumber(v as number)}`)

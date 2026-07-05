@@ -16,6 +16,8 @@ interface FinRow {
   reported_date: string | null;
   source_type: string | null;
   source_url: string | null;
+  reporting_basis: string | null;
+  review_status: string | null;
   confidence: number | null;
   data: Record<string, number | null | string>;
 }
@@ -87,8 +89,9 @@ export async function computeRatios(supabase: SupabaseClient, ticker: string): P
   const [{ data: finRows }, { data: quote }, { data: divRows }] = await Promise.all([
     supabase
       .from("company_financials")
-      .select("period_type, fiscal_year, fiscal_period, statement_type, reported_date, source_type, source_url, confidence, data")
+      .select("period_type, fiscal_year, fiscal_period, statement_type, reported_date, source_type, source_url, reporting_basis, review_status, confidence, data")
       .eq("ticker", t)
+      .eq("review_status", "published")
       .order("reported_date", { ascending: false })
       .limit(30),
     supabase.from("market_quotes").select("price, as_of").eq("ticker", t).maybeSingle(),
@@ -147,7 +150,7 @@ export async function computeRatios(supabase: SupabaseClient, ticker: string): P
   // TTM by the group/standalone gap (PPL's consolidated 9M EPS was 26.72 vs
   // 22.85 standalone).
   const interimIncome = rows.filter(
-    (r) => r.statement_type === "income_statement" && !isAnnual(r) && r.data?._basis !== "consolidated"
+    (r) => r.statement_type === "income_statement" && !isAnnual(r) && (r.reporting_basis ?? r.data?._basis) !== "consolidated"
   );
   const qField = (year: number, q: number, field: string): number | null => {
     const r = interimIncome.find((x) => x.fiscal_year === year && (x.fiscal_period ?? "").toUpperCase() === `Q${q}`);
@@ -361,6 +364,13 @@ export async function refreshRatios(supabase: SupabaseClient, ticker: string): P
   if (process.env.SUPABASE_SERVICE_ROLE_KEY && ratios.length) {
     const db = createAdminClient();
     await db.from("company_ratios").upsert(ratios, { onConflict: "ticker,ratio_name" });
+    await db.from("company_ratio_history").upsert(
+      ratios.map((r) => ({
+        ...r,
+        as_of_date: r.computed_at.slice(0, 10),
+      })),
+      { onConflict: "ticker,ratio_name,as_of_date,source_period" }
+    );
   }
   return { computed: ratios.length, available: ratios.filter((r) => r.ratio_value !== null).length };
 }
