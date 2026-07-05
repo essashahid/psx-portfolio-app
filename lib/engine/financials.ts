@@ -227,6 +227,64 @@ function numericDataDifferences(
   return diffs;
 }
 
+interface IdentityViolation {
+  flag: string;
+  message: string;
+}
+
+/**
+ * Deterministic accounting-identity checks on a single statement's own figures.
+ *
+ * The cross-source and same-source conflict checks only fire when a prior
+ * published row exists to disagree with — so a brand-new period (a quarter
+ * never extracted before) with a transposed or magnitude-wrong digit would
+ * otherwise sail straight to `published`. These identities need nothing but the
+ * incoming row, so they catch that misread in isolation. Each fires only when
+ * every input it needs is present (a partial statement is never penalised for a
+ * missing field), and shares the freshness audit's 2% tolerance.
+ */
+export function statementIdentityViolations(row: {
+  statement_type: FinancialStatementPayload["statement_type"];
+  data: Record<string, number | null | string>;
+}): IdentityViolation[] {
+  const d = row.data;
+  const n = (k: string): number | null => {
+    const v = d[k];
+    return typeof v === "number" && Number.isFinite(v) ? v : null;
+  };
+  // Relative error with a denominator floor so a legitimately-zero expected
+  // value can't blow the ratio up and flag good data.
+  const off = (actual: number, expected: number): number => Math.abs(actual - expected) / Math.max(1, Math.abs(expected));
+  const TOL = 0.02;
+  const out: IdentityViolation[] = [];
+
+  if (row.statement_type === "balance_sheet") {
+    const assets = n("total_assets"), liabilities = n("total_liabilities"), equity = n("equity");
+    if (assets !== null && liabilities !== null && equity !== null && off(assets, liabilities + equity) > TOL) {
+      out.push({ flag: "identity:balance_sheet", message: `total assets ${assets} ≠ liabilities + equity ${liabilities + equity}` });
+    }
+  }
+
+  if (row.statement_type === "income_statement") {
+    const revenue = n("revenue"), cogs = n("cost_of_sales"), grossProfit = n("gross_profit");
+    if (revenue !== null && cogs !== null && grossProfit !== null && off(grossProfit, revenue - Math.abs(cogs)) > TOL) {
+      out.push({ flag: "identity:gross_profit", message: `gross profit ${grossProfit} ≠ revenue − cost of sales ${revenue - Math.abs(cogs)}` });
+    }
+    // Tax is an expense for profit-makers and a credit for loss-makers, and
+    // extractors store either sign — accept the row if either convention
+    // reconciles, flag only when neither does.
+    const pbt = n("profit_before_tax"), tax = n("tax"), pat = n("profit_after_tax");
+    if (pbt !== null && tax !== null && pat !== null) {
+      const reconciles = [pbt - Math.abs(tax), pbt + Math.abs(tax)].some((candidate) => off(pat, candidate) <= TOL);
+      if (!reconciles) {
+        out.push({ flag: "identity:profit_after_tax", message: `profit after tax ${pat} irreconcilable with profit before tax ${pbt} and tax ${tax}` });
+      }
+    }
+  }
+
+  return out;
+}
+
 function financialSourceFingerprint(row: FinancialStatementPayload): string {
   if (row.source_url?.trim()) return row.source_url.trim();
   const raw = JSON.stringify({
@@ -380,11 +438,69 @@ async function stageFinancialConflict(
   return error?.message ?? null;
 }
 
+/**
+ * Stage a self-consistency failure in the same conflicts queue reviewers
+ * already use for cross-source disagreements. No prior row is involved, so the
+ * existing-* columns are left null and the dedupe key is built from the
+ * identity plus the violated checks.
+ */
+async function stageIdentityConflict(
+  db: SupabaseClient,
+  row: FinancialStatementPayload,
+  violations: IdentityViolation[]
+): Promise<string | null> {
+  const dedupe = createHash("sha256")
+    .update(
+      JSON.stringify({
+        ticker: row.ticker,
+        period_type: row.period_type,
+        fiscal_year: row.fiscal_year,
+        fiscal_period: row.fiscal_period,
+        statement_type: row.statement_type,
+        reporting_basis: row.reporting_basis,
+        source_type: row.source_type,
+        conflictType: "identity_violation",
+        flags: violations.map((v) => v.flag).sort(),
+      })
+    )
+    .digest("hex");
+  const { error } = await db.from("financial_statement_conflicts").upsert(
+    {
+      dedupe_key: dedupe,
+      ticker: row.ticker,
+      period_type: row.period_type,
+      fiscal_year: row.fiscal_year,
+      fiscal_period: row.fiscal_period,
+      statement_type: row.statement_type,
+      reporting_basis: row.reporting_basis,
+      new_source_type: row.source_type,
+      existing_source_type: null,
+      new_source_url: row.source_url,
+      existing_source_url: null,
+      conflict_type: "identity_violation",
+      severity: "high",
+      status: "open",
+      differences: violations,
+      observed_row: row,
+      existing_row: null,
+      message: `${row.source_type} ${row.statement_type} fails accounting identities: ${violations.map((v) => v.message).join("; ")}.`,
+    },
+    { onConflict: "dedupe_key" }
+  );
+  return error?.message ?? null;
+}
+
 async function persistFinancialStatement(
   db: SupabaseClient,
   row: FinancialStatementPayload
 ): Promise<{ saved: boolean; conflict: boolean; error?: string }> {
-  const observation = await upsertFinancialObservation(db, row);
+  // Self-consistency first, so the flags travel onto the raw observation too
+  // and a brand-new period with a bad figure is caught even when there is no
+  // prior row to conflict against.
+  const identityViolations = statementIdentityViolations(row);
+  const validationFlags = new Set([...(row.validation_flags ?? []), ...identityViolations.map((v) => v.flag)]);
+
+  const observation = await upsertFinancialObservation(db, { ...row, validation_flags: [...validationFlags] });
   if (observation.error) return { saved: false, conflict: false, error: `observation: ${observation.error}` };
 
   const { rows: existingRows, error: readError } = await readPublishedFinancialCandidates(db, row);
@@ -392,7 +508,14 @@ async function persistFinancialStatement(
 
   let shouldHoldForReview = false;
   let reviewStatus: "published" | "needs_review" = "published";
-  const validationFlags = new Set(row.validation_flags ?? []);
+
+  // A row that fails its own accounting identities must not feed ratios or the
+  // Copilot — hold it for review and surface it in the conflicts queue.
+  if (identityViolations.length > 0) {
+    reviewStatus = "needs_review";
+    const conflictError = await stageIdentityConflict(db, row, identityViolations);
+    if (conflictError) return { saved: false, conflict: false, error: `identity-conflict: ${conflictError}` };
+  }
 
   for (const existing of existingRows) {
     const differences = numericDataDifferences(existing.data, row.data);
