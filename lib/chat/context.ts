@@ -184,8 +184,23 @@ export function briefFromCards(cards: Card[], latestSession: string | null = nul
       }
       case "ratios": {
         const r = c.data;
-        const parts = r.rows.filter((x) => x.value != null).map((x) => `${x.name} ${x.value!.toFixed(2)}`);
-        if (parts.length) lines.push(`${r.ticker} RATIOS (${r.sourcePeriod ?? "latest"}): ${parts.join(", ")}.`);
+        // Group by reporting period so every figure carries its basis (FY vs
+        // TTM vs interim) instead of one blanket label for the whole card.
+        const groups = new Map<string, string[]>();
+        for (const x of r.rows) {
+          if (x.value == null) continue;
+          const key = x.period ?? r.sourcePeriod ?? "latest";
+          if (!groups.has(key)) groups.set(key, []);
+          groups.get(key)!.push(`${x.name} ${x.value.toFixed(2)}`);
+        }
+        if (groups.size) {
+          const body = [...groups.entries()].map(([p, vals]) => `[${p}] ${vals.join(", ")}`).join("; ");
+          const priced = r.priceUsed != null ? ` Price-linked ratios use ${r.priceUsed.toFixed(2)} PKR (${asOfLabel(r.priceAsOf, latestSession)}).` : "";
+          const freshness = r.latestInterimPeriod
+            ? ` Latest annual on file: ${r.latestAnnualPeriod ?? "n/a"}; newer interim results exist for ${r.latestInterimPeriod} — base valuation and earnings-trend statements on the TTM/interim figures and label the period.`
+            : "";
+          lines.push(`${r.ticker} RATIOS (from company filings; consolidation basis not labelled): ${body}.${priced}${freshness}`);
+        }
         break;
       }
       case "technical": {

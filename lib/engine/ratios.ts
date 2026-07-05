@@ -134,6 +134,59 @@ export async function computeRatios(supabase: SupabaseClient, ticker: string): P
 
   const eps = numOf(income?.data, "eps");
   const revenue = numOf(income?.data, "revenue");
+
+  // --- Trailing-12-month EPS -------------------------------------------------
+  // Valuation must not sit on the last full fiscal year once newer interim
+  // quarters exist (the PPL incident: FY2025 EPS priced against a July 2026
+  // quote produced P/E 7.3 while the market was valuing the stock on fresher,
+  // lower earnings). TTM EPS = annual EPS + current-year interim EPS − the
+  // prior year's same-period interim EPS. Interim cumulatives are taken from an
+  // exact cumulative row (Q1/H1/9M), a sum of quarterly rows, or H1 + Q3.
+  const interimIncome = rows.filter((r) => r.statement_type === "income_statement" && !isAnnual(r));
+  const qField = (year: number, q: number, field: string): number | null => {
+    const r = interimIncome.find((x) => x.fiscal_year === year && (x.fiscal_period ?? "").toUpperCase() === `Q${q}`);
+    return numOf(r?.data, field);
+  };
+  const cumLabel = (n: number): string => (n === 1 ? "Q1" : n === 2 ? "H1" : "9M");
+  const cumulativeField = (year: number, n: number, field: string): number | null => {
+    const direct = interimIncome.find((x) => x.fiscal_year === year && (x.fiscal_period ?? "").toUpperCase() === cumLabel(n));
+    const directVal = numOf(direct?.data, field);
+    if (directVal !== null) return directVal;
+    const quarters = Array.from({ length: n }, (_, i) => qField(year, i + 1, field));
+    if (quarters.every((v) => v !== null)) return (quarters as number[]).reduce((a, b) => a + b, 0);
+    if (n === 3) {
+      const h1 = cumulativeField(year, 2, field);
+      const q3 = qField(year, 3, field);
+      if (h1 !== null && q3 !== null) return h1 + q3;
+    }
+    return null;
+  };
+  const annualYear = income && isAnnual(income) ? income.fiscal_year : null;
+  let ttmEps: number | null = null;
+  let ttmPeriod: string | null = null;
+  let interimEpsNow: number | null = null;
+  let interimEpsPrior: number | null = null;
+  let interimPeriod: string | null = null;
+  let interimGrowthPeriod: string | null = null;
+  if (annualYear !== null && annualYear !== undefined) {
+    const y = annualYear + 1;
+    for (const n of [3, 2, 1]) {
+      const current = cumulativeField(y, n, "eps");
+      if (current === null) continue;
+      interimEpsNow = current;
+      interimEpsPrior = cumulativeField(annualYear, n, "eps");
+      interimPeriod = `${y} ${cumLabel(n)}`;
+      interimGrowthPeriod = `${y} ${cumLabel(n)} vs ${annualYear} ${cumLabel(n)}`;
+      if (interimEpsPrior !== null && eps !== null) {
+        ttmEps = eps + current - interimEpsPrior;
+        ttmPeriod = `TTM to ${y} ${cumLabel(n)}`;
+      }
+      break;
+    }
+  }
+  // EPS basis for price-linked ratios: TTM when derivable, else latest annual.
+  const valEps = ttmEps ?? eps;
+  const valEpsPeriod = ttmEps !== null ? ttmPeriod : null;
   const costOfSales = numOf(income?.data, "cost_of_sales");
   const grossProfit = numOf(income?.data, "gross_profit");
   const pat = numOf(income?.data, "profit_after_tax");
@@ -221,9 +274,13 @@ export async function computeRatios(supabase: SupabaseClient, ticker: string): P
       : null;
   const cagrPeriod = income && cagrBase ? `${periodLabel(income)} vs ${periodLabel(cagrBase)}` : incomePeriod;
 
-  // Valuation
-  add("P/E", "Price ÷ EPS", { price, eps }, price !== null && eps ? price / eps : null, need([["price", price], ["EPS", eps]]) ?? (eps === 0 ? "EPS is zero." : null), incomePeriod);
-  add("Earnings yield", "EPS ÷ Price", { price, eps }, price && eps !== null ? (eps / price) * 100 : null, need([["price", price], ["EPS", eps]]), incomePeriod);
+  // Valuation — price-linked earnings ratios use the freshest EPS basis (TTM
+  // when interim rows allow it), and say so in their period label.
+  const valPeriod = valEpsPeriod ?? incomePeriod;
+  add("P/E", "Price ÷ EPS", { price, eps: valEps, eps_basis: valPeriod }, price !== null && valEps ? price / valEps : null, need([["price", price], ["EPS", valEps]]) ?? (valEps === 0 ? "EPS is zero." : null), valPeriod);
+  add("Earnings yield", "EPS ÷ Price", { price, eps: valEps, eps_basis: valPeriod }, price && valEps !== null ? (valEps / price) * 100 : null, need([["price", price], ["EPS", valEps]]), valPeriod);
+  add("EPS (TTM)", "Annual EPS + current interim EPS − prior-year same-period interim EPS", { annual_eps: eps, interim_eps: interimEpsNow, prior_year_interim_eps: interimEpsPrior }, ttmEps, ttmEps === null ? "Cannot calculate — missing: current or prior-year interim EPS." : null, ttmPeriod ?? incomePeriod);
+  add("Interim EPS growth", "(Interim EPS − Prior-year same-period EPS) ÷ |Prior-year same-period EPS|", { interim_eps: interimEpsNow, prior_year_interim_eps: interimEpsPrior }, interimEpsNow !== null && interimEpsPrior ? ((interimEpsNow - interimEpsPrior) / Math.abs(interimEpsPrior)) * 100 : null, need([["current interim EPS", interimEpsNow], ["prior-year interim EPS", interimEpsPrior]]), interimGrowthPeriod ?? interimPeriod);
   add("Shares outstanding (derived)", "(Profit after tax × 1,000) ÷ EPS", { profit_after_tax_pkr_thousands: pat, eps }, sharesOutstanding, need([["profit after tax", pat], ["EPS", eps]]) ?? (eps === 0 ? "EPS is zero." : null), incomePeriod);
   add("Market cap (derived)", "Price × derived shares outstanding", { price, shares_outstanding: sharesOutstanding }, marketCap, need([["price", price], ["derived shares outstanding", sharesOutstanding]]), incomePeriod);
   add("Book value / share", "(Equity × 1,000) ÷ derived shares outstanding", { equity_pkr_thousands: equity, shares_outstanding: sharesOutstanding }, safeDiv(equityRupees, sharesOutstanding), need([["equity", equity], ["derived shares outstanding", sharesOutstanding]]), `${incomePeriod ?? "?"} / ${balancePeriod ?? "?"}`);
@@ -236,8 +293,8 @@ export async function computeRatios(supabase: SupabaseClient, ticker: string): P
   add("EV/Sales", "Enterprise value ÷ Revenue", { enterprise_value: enterpriseValue, revenue_pkr: revenueRupees }, safeDiv(enterpriseValue, revenueRupees), need([["enterprise value", enterpriseValue], ["revenue", revenue]]), `${incomePeriod ?? "?"} / ${balancePeriod ?? "?"}`);
   add("EV/EBIT", "Enterprise value ÷ Operating profit", { enterprise_value: enterpriseValue, operating_profit_pkr: operatingProfitRupees }, safeDiv(enterpriseValue, operatingProfitRupees), need([["enterprise value", enterpriseValue], ["operating profit", operatingProfit]]), `${detailPeriod ?? incomePeriod ?? "?"} / ${balancePeriod ?? "?"}`);
   add("Dividend yield (TTM)", "Trailing 12m cash DPS ÷ Price", { price, ttm_dps: ttmDps }, price && ttmDps ? (ttmDps / price) * 100 : null, need([["price", price], ["trailing dividends", ttmDps]]), "Last 12 months");
-  add("Payout ratio", "TTM DPS ÷ EPS", { ttm_dps: ttmDps, eps }, ttmDps && eps ? (ttmDps / eps) * 100 : null, need([["trailing dividends", ttmDps], ["EPS", eps]]), incomePeriod);
-  add("Dividend cover", "EPS ÷ TTM DPS", { eps, ttm_dps: ttmDps }, eps && ttmDps ? eps / ttmDps : null, need([["EPS", eps], ["trailing dividends", ttmDps]]), incomePeriod);
+  add("Payout ratio", "TTM DPS ÷ EPS", { ttm_dps: ttmDps, eps: valEps, eps_basis: valPeriod }, ttmDps && valEps ? (ttmDps / valEps) * 100 : null, need([["trailing dividends", ttmDps], ["EPS", valEps]]), valPeriod);
+  add("Dividend cover", "EPS ÷ TTM DPS", { eps: valEps, eps_basis: valPeriod, ttm_dps: ttmDps }, valEps && ttmDps ? valEps / ttmDps : null, need([["EPS", valEps], ["trailing dividends", ttmDps]]), valPeriod);
 
   // Profitability (statement-internal — units cancel)
   add("Gross margin", "Gross profit ÷ Revenue", { gross_profit: grossProfit, revenue }, grossProfit !== null && revenue ? (grossProfit / revenue) * 100 : null, need([["gross profit", grossProfit], ["revenue", revenue]]), incomePeriod);
