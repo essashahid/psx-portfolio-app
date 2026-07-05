@@ -1,5 +1,6 @@
 import { createAdminClient } from "@/lib/supabase/admin";
 import { aiAvailable, chatJson } from "@/lib/ai/openai";
+import { claudeConfigured, getClaude } from "@/lib/ai/claude";
 import { getCompanyFilings } from "@/lib/company/filings";
 import { fetchPsxCompanyData, type PsxPeriodFigures } from "@/lib/company/psx-company-data";
 
@@ -41,32 +42,55 @@ const STATEMENT_MARKER =
  * appear within a few pages of each other — and open the window on the first
  * balance-sheet heading in that cluster, capturing a full statement set.
  */
-function focusStatements(text: string): string {
-  if (text.length <= MAX_TEXT_CHARS) return text;
+function statementWindows(text: string): string[] {
+  if (text.length <= MAX_TEXT_CHARS) return [text];
 
   const hits: number[] = [];
   let m: RegExpExecArray | null;
   STATEMENT_MARKER.lastIndex = 0;
   while ((m = STATEMENT_MARKER.exec(text)) !== null) hits.push(m.index);
-  if (hits.length === 0) return text.slice(0, MAX_TEXT_CHARS);
+  if (hits.length === 0) return [text.slice(0, MAX_TEXT_CHARS)];
+
+  const clusterCount = (h: number): number => hits.filter((x) => x >= h && x < h + MAX_TEXT_CHARS).length;
+
+  // Open a window on the first primary balance-sheet heading near the cluster
+  // so it starts at the top of a statement set rather than mid-table.
+  const windowAt = (hit: number): { start: number; slice: string } => {
+    const primary = /(statement of financial position|balance sheet)/gi;
+    primary.lastIndex = Math.max(0, hit - 4_000);
+    const pm = primary.exec(text);
+    const anchor = pm && pm.index < hit + MAX_TEXT_CHARS ? pm.index : hit;
+    const start = Math.max(0, anchor - 1_500);
+    return { start, slice: text.slice(start, start + MAX_TEXT_CHARS) };
+  };
 
   // Densest cluster: the hit that begins the window containing the most headings.
   let bestHit = hits[0];
   let bestCount = 0;
   for (const h of hits) {
-    let c = 0;
-    for (const x of hits) if (x >= h && x < h + MAX_TEXT_CHARS) c++;
+    const c = clusterCount(h);
     if (c > bestCount) { bestCount = c; bestHit = h; }
   }
+  const first = windowAt(bestHit);
+  const windows = [first.slice];
 
-  // Open the window on the first primary balance-sheet heading in that cluster
-  // so it starts at the top of a statement set rather than mid-table.
-  const primary = /(statement of financial position|balance sheet)/gi;
-  primary.lastIndex = Math.max(0, bestHit - 4_000);
-  const pm = primary.exec(text);
-  const anchor = pm && pm.index < bestHit + MAX_TEXT_CHARS ? pm.index : bestHit;
-  const start = Math.max(0, anchor - 1_500);
-  return text.slice(start, start + MAX_TEXT_CHARS);
+  // Second-chance window: the densest cluster OUTSIDE the first window. Annual
+  // reports carry two full statement sets (consolidated and unconsolidated)
+  // plus hundreds of pages of notes; when the first window lands on a region
+  // the model can extract nothing from (PPL's FY2025 annual report did exactly
+  // this), the real statements usually sit in the other set.
+  const outside = hits.filter((h) => h < first.start || h >= first.start + MAX_TEXT_CHARS);
+  if (outside.length) {
+    let secondHit = outside[0];
+    let secondCount = 0;
+    for (const h of outside) {
+      const c = clusterCount(h);
+      if (c > secondCount) { secondCount = c; secondHit = h; }
+    }
+    const second = windowAt(secondHit);
+    if (second.slice !== first.slice) windows.push(second.slice);
+  }
+  return windows;
 }
 
 const BROWSER_HEADERS = {
@@ -83,6 +107,8 @@ interface ExtractedStatement {
   statement_type: "income_statement" | "balance_sheet" | "cash_flow";
   /** Units the figures are stated in, e.g. "PKR thousands". */
   units: string | null;
+  /** Reporting basis as printed on the statement heading. */
+  basis?: "unconsolidated" | "consolidated" | "unlabelled" | null;
   data: Record<string, number | null>;
   confidence: number;
 }
@@ -113,15 +139,15 @@ interface ExtractionResult {
   errors: string[];
 }
 
+type PdfFetchResult = { buf: Buffer } | { error: string };
 type PdfTextResult = { text: string } | { error: string };
 
 /**
- * Download a PSX filing PDF and extract its text. Returns the text on success
- * or a specific reason on failure (HTTP status, oversize, timeout, parse
- * error, or too-little-text) so the caller can log exactly what went wrong
- * instead of a blanket "could not read PDF".
+ * Download a PSX filing PDF. Returns the bytes on success or a specific reason
+ * on failure (HTTP status, oversize, timeout) so the caller can log exactly
+ * what went wrong instead of a blanket "could not read PDF".
  */
-async function fetchPdfText(url: string): Promise<PdfTextResult> {
+async function fetchPdf(url: string): Promise<PdfFetchResult> {
   let buf: Buffer;
   try {
     const res = await fetch(url, { headers: BROWSER_HEADERS, signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS), cache: "no-store" });
@@ -132,7 +158,11 @@ async function fetchPdfText(url: string): Promise<PdfTextResult> {
     return { error: /timeout|abort/i.test(msg) ? `download timed out after ${REQUEST_TIMEOUT_MS / 1000}s` : `download failed: ${msg}` };
   }
   if (buf.byteLength > MAX_PDF_BYTES) return { error: `PDF too large (${(buf.byteLength / 1e6).toFixed(1)}MB)` };
+  return { buf };
+}
 
+/** Extract the text layer from downloaded PDF bytes. */
+async function parsePdfText(buf: Buffer): Promise<PdfTextResult> {
   try {
     const { PDFParse } = await import("pdf-parse");
     const parser = new PDFParse({ data: new Uint8Array(buf) });
@@ -149,7 +179,7 @@ async function fetchPdfText(url: string): Promise<PdfTextResult> {
       return { error: `no text layer (${text.length} chars) — scanned/image PDF, needs OCR` };
     }
     STATEMENT_MARKER.lastIndex = 0;
-    return { text: focusStatements(text) };
+    return { text };
   } catch (err) {
     return { error: `PDF parse failed: ${err instanceof Error ? err.message : String(err)}` };
   }
@@ -162,6 +192,9 @@ STRICT RULES:
 - The ENTIRE filing uses ONE monetary unit. Read the statement headers ("Rupees in '000", "Rupees in million", "(Rupees)", etc.) and report it ONCE as document_units: one of "thousands" | "millions" | "billions" | "rupees". Do NOT convert any figure — echo them exactly as printed.
 - EPS is in rupees per share (never scaled). Percentages stay as printed.
 - Use the CURRENT period column (not the comparative prior-year column).
+- If the document contains both CONSOLIDATED and UNCONSOLIDATED (standalone/separate) statements, extract ONLY the unconsolidated/standalone ones. Never mix figures from the two sets. If only consolidated statements exist, extract those and set basis accordingly.
+- basis: "unconsolidated" | "consolidated" | "unlabelled" — read it from the statement heading (e.g. "Condensed Interim Unconsolidated Statement of Profit or Loss").
+- fiscal_year is the calendar year in which the company's FISCAL YEAR ENDS, derived from the period-end date in the filing title or statement heading. Example: for a company with a June year end, the half year ended 31 December 2025 is fiscal_year 2026 fiscal_period "H1", and the nine months ended 31 March 2025 is fiscal_year 2025 fiscal_period "9M". For a December year end, the quarter ended 31 March 2026 is fiscal_year 2026 fiscal_period "Q1".
 - If you cannot confidently identify a value, use null.
 - confidence: 0-1, how certain you are the numbers are correctly read from the document.
 
@@ -173,6 +206,7 @@ Return JSON:
   "fiscal_period": "FY" | "Q1" | "Q2" | "Q3" | "Q4" | "H1" | "9M",
   "statement_type": "income_statement" | "balance_sheet" | "cash_flow",
   "units": "PKR thousands",
+  "basis": "unconsolidated" | "consolidated" | "unlabelled",
   "confidence": 0.0,
   "data": {
     // income_statement keys (use exactly these, null when absent):
@@ -187,6 +221,69 @@ Return JSON:
 }]}
 
 Include a statement object only when the document actually contains that statement. Banks: treat markup/interest income as revenue. If the document is not a financial result (e.g. a notice), return {"statements": []}.`;
+
+// Vision extraction is capped tighter than the text path: pages are billed as
+// image tokens, so a 30MB annual report would cost dollars per filing. Interim
+// transmissions (the freshest statements, and the ones most often scanned) run
+// well under this.
+const MAX_VISION_PDF_BYTES = 20_000_000;
+
+function visionDisabled(): boolean {
+  const v = (process.env.FILINGS_OCR_DISABLED ?? "").toLowerCase();
+  return v === "true" || v === "1" || v === "yes";
+}
+
+type VisionResult = { statements: ExtractedStatement[]; document_units?: string; model: string } | { error: string };
+
+/**
+ * OCR fallback: many PSX filings are scanned image PDFs with no text layer —
+ * including recent PPL quarterly transmissions, where the statement tables
+ * (pages 30-44) are pure images. Claude reads the PDF pages directly (base64
+ * document input, no separate OCR step), under the same strict echo-only
+ * extraction prompt. Used only when the text-layer path yields nothing.
+ */
+async function extractViaVision(buf: Buffer, filingTitle: string, filingDate: string | null, ticker: string): Promise<VisionResult> {
+  if (visionDisabled()) return { error: "vision extraction disabled (FILINGS_OCR_DISABLED)" };
+  if (!claudeConfigured()) return { error: "CLAUDE_API_KEY not configured — cannot OCR scanned filing" };
+  if (buf.byteLength > MAX_VISION_PDF_BYTES) {
+    return { error: `PDF too large for vision extraction (${(buf.byteLength / 1e6).toFixed(1)}MB > ${MAX_VISION_PDF_BYTES / 1e6}MB)` };
+  }
+  const model = process.env.FILINGS_OCR_MODEL || "claude-opus-4-8";
+  try {
+    const client = getClaude();
+    const response = await client.messages.create({
+      model,
+      max_tokens: 12_000,
+      thinking: { type: "adaptive" },
+      system: EXTRACTION_PROMPT,
+      messages: [
+        {
+          role: "user",
+          content: [
+            {
+              type: "document",
+              source: { type: "base64", media_type: "application/pdf", data: buf.toString("base64") },
+            },
+            {
+              type: "text",
+              text: `Filing title: ${filingTitle}\nFiling date: ${filingDate ?? "unknown"}\nTicker: ${ticker}\n\nThe document is attached. Some or all statement pages may be scanned images — read the tables from the page images. Return ONLY the JSON object, no prose.`,
+            },
+          ],
+        },
+      ],
+    });
+    if (response.stop_reason === "refusal") return { error: "vision extraction refused" };
+    const text = response.content.find((b) => b.type === "text")?.text ?? "";
+    const jsonText = text.replace(/^```(?:json)?\s*/i, "").replace(/\s*```\s*$/, "").trim();
+    const start = jsonText.indexOf("{");
+    const end = jsonText.lastIndexOf("}");
+    if (start < 0 || end <= start) return { error: "vision extraction returned no JSON" };
+    const data = JSON.parse(jsonText.slice(start, end + 1)) as { statements?: ExtractedStatement[]; document_units?: string };
+    return { statements: data.statements ?? [], document_units: data.document_units, model };
+  } catch (err) {
+    return { error: `vision extraction failed: ${err instanceof Error ? err.message : String(err)}` };
+  }
+}
 
 // Monetary line items that must share a unit scale; eps is per-share (rupees)
 // and *_pct fields are ratios, so both are left untouched.
@@ -300,17 +397,35 @@ export async function extractFinancials(ticker: string, maxFilings = 2): Promise
     return out;
   }
 
-  const { data: existing } = await db.from("company_financials").select("source_url").eq("ticker", t);
-  const seen = new Set((existing ?? []).map((r) => r.source_url as string));
+  // Which statement types each filing has already yielded. A filing used to be
+  // skipped forever once ANY row carried its URL — so a quarterly report whose
+  // income statement extracted but whose balance sheet and cash flow didn't
+  // was frozen at income-only for good. Full reports are only "done" once the
+  // balance sheet and cash flow have both landed; brief results notices are
+  // usually just the P&L, so any extraction completes them.
+  const { data: existing } = await db.from("company_financials").select("source_url, statement_type").eq("ticker", t);
+  const typesByUrl = new Map<string, Set<string>>();
+  for (const r of existing ?? []) {
+    const url = r.source_url as string | null;
+    if (!url) continue;
+    if (!typesByUrl.has(url)) typesByUrl.set(url, new Set());
+    typesByUrl.get(url)!.add(r.statement_type as string);
+  }
+  const fullyExtracted = (filing: { url: string; title: string }): boolean => {
+    const types = typesByUrl.get(filing.url);
+    if (!types || types.size === 0) return false;
+    if (rank(filing.title) === 2) return true;
+    return types.has("balance_sheet") && types.has("cash_flow");
+  };
 
   for (const filing of resultPdfs) {
     if (out.processed >= maxFilings) break;
-    if (seen.has(filing.url)) {
+    if (fullyExtracted(filing)) {
       out.skipped.push(`already extracted: ${filing.title}`);
       continue;
     }
 
-    const pdf = await fetchPdfText(filing.url);
+    const pdf = await fetchPdf(filing.url);
     if ("error" in pdf) {
       out.errors.push(`${filing.title}: ${pdf.error}`);
       continue;
@@ -318,20 +433,71 @@ export async function extractFinancials(ticker: string, maxFilings = 2): Promise
     out.processed++;
 
     try {
-      const { data } = await chatJson<{ statements: ExtractedStatement[]; document_units?: string }>(
-        EXTRACTION_PROMPT,
-        `Filing title: ${filing.title}\nFiling date: ${filing.date ?? "unknown"}\nTicker: ${t}\n\n--- DOCUMENT TEXT ---\n${pdf.text}`,
-        12_000,
-      );
+      // Each statement is normalized to PKR thousands by its own source's
+      // reported unit before merging, so text-path and vision-path rows can be
+      // combined without a shared multiplier double-scaling either set.
+      type SourcedStatement = ExtractedStatement & { _extractor: string };
+      let statements: SourcedStatement[] = [];
 
-      const statements = (data.statements ?? []).filter(validStatement);
+      // Text-layer path first (cheap): try each candidate statement window
+      // until one yields statements — large annual reports carry consolidated +
+      // unconsolidated sets, and the first window can land on an unparseable
+      // region.
+      const parsed = await parsePdfText(pdf.buf);
+      if ("text" in parsed) {
+        for (const window of statementWindows(parsed.text)) {
+          const { data } = await chatJson<{ statements: ExtractedStatement[]; document_units?: string }>(
+            EXTRACTION_PROMPT,
+            `Filing title: ${filing.title}\nFiling date: ${filing.date ?? "unknown"}\nTicker: ${t}\n\n--- DOCUMENT TEXT ---\n${window}`,
+            12_000,
+          );
+          const found = (data.statements ?? []).filter(validStatement);
+          if (found.length > 0) {
+            const mult = toThousandsMultiplier(data.document_units ?? found[0]?.units);
+            found.forEach((s) => normalizeUnits(s, mult));
+            statements = found.map((s) => ({ ...s, _extractor: "text+deepseek" }));
+            break;
+          }
+        }
+      }
+
+      // Vision fallback: the filing is a scanned image PDF (no text layer), or
+      // has a partial text layer whose statement tables are images — the common
+      // shape for PSX transmissions, where the notes carry text but the actual
+      // statement pages don't. Also runs when a full report's text extraction
+      // came back without a balance sheet or cash flow: those tables are the
+      // ones most often left as images while the P&L survives in the notes.
+      const missingDeepStatements =
+        rank(filing.title) <= 1 &&
+        !statements.some((s) => s.statement_type === "balance_sheet" || s.statement_type === "cash_flow");
+      if (statements.length === 0 || missingDeepStatements) {
+        const vision = await extractViaVision(pdf.buf, filing.title, filing.date, t);
+        if ("error" in vision) {
+          if (statements.length === 0) {
+            const textNote = "error" in parsed ? parsed.error : "no extractable statements in text layer";
+            out.errors.push(`${filing.title}: ${textNote}; ${vision.error}`);
+            continue;
+          }
+          // Keep the text-path statements; just record why vision added nothing.
+          out.errors.push(`${filing.title}: vision top-up failed: ${vision.error}`);
+        } else {
+          const found = vision.statements.filter(validStatement);
+          const mult = toThousandsMultiplier(vision.document_units ?? found[0]?.units);
+          found.forEach((s) => normalizeUnits(s, mult));
+          const seen = new Set(statements.map((s) => `${s.fiscal_year}-${s.fiscal_period}-${s.statement_type}`));
+          statements = [
+            ...statements,
+            ...found
+              .filter((s) => !seen.has(`${s.fiscal_year}-${s.fiscal_period}-${s.statement_type}`))
+              .map((s) => ({ ...s, _extractor: `vision+${vision.model}` })),
+          ];
+        }
+      }
+
       if (statements.length === 0) {
-        out.skipped.push(`no extractable statements: ${filing.title}`);
+        out.skipped.push(`no extractable statements (text and vision): ${filing.title}`);
         continue;
       }
-      // One unit for the whole filing — scale every statement uniformly to thousands.
-      const mult = toThousandsMultiplier(data.document_units ?? statements[0]?.units);
-      statements.forEach((s) => normalizeUnits(s, mult));
 
       for (const s of statements) {
         const fiscalPeriod = s.fiscal_period ?? (s.period_type === "annual" ? "FY" : null);
@@ -345,7 +511,7 @@ export async function extractFinancials(ticker: string, maxFilings = 2): Promise
             reported_date: filing.date,
             source_type: "psx-filing",
             source_url: filing.url,
-            data: { ...s.data, _units: "PKR thousands" },
+            data: { ...s.data, _units: "PKR thousands", _basis: s.basis ?? "unlabelled", _extractor: s._extractor },
             confidence: Math.max(0, Math.min(1, s.confidence ?? 0)),
             updated_at: new Date().toISOString(),
           },

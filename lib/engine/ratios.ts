@@ -142,7 +142,13 @@ export async function computeRatios(supabase: SupabaseClient, ticker: string): P
   // lower earnings). TTM EPS = annual EPS + current-year interim EPS − the
   // prior year's same-period interim EPS. Interim cumulatives are taken from an
   // exact cumulative row (Q1/H1/9M), a sum of quarterly rows, or H1 + Q3.
-  const interimIncome = rows.filter((r) => r.statement_type === "income_statement" && !isAnnual(r));
+  // Consolidated-basis rows are excluded: the annual series (PSX portal) is
+  // unconsolidated, and one consolidated interim in the sum silently shifts the
+  // TTM by the group/standalone gap (PPL's consolidated 9M EPS was 26.72 vs
+  // 22.85 standalone).
+  const interimIncome = rows.filter(
+    (r) => r.statement_type === "income_statement" && !isAnnual(r) && r.data?._basis !== "consolidated"
+  );
   const qField = (year: number, q: number, field: string): number | null => {
     const r = interimIncome.find((x) => x.fiscal_year === year && (x.fiscal_period ?? "").toUpperCase() === `Q${q}`);
     return numOf(r?.data, field);
