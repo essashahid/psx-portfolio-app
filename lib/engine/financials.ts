@@ -252,7 +252,6 @@ export async function extractFinancials(ticker: string, maxFilings = 2): Promise
   }
   const db = createAdminClient();
 
-  const filings = await getCompanyFilings(t, 40);
   // Only true financial-report PDFs carry statements. The "result" category is
   // loose (it also tags Shariah disclosures, video recordings and briefing
   // notices that merely mention "half year"), so require a report/accounts
@@ -264,6 +263,16 @@ export async function extractFinancials(ticker: string, maxFilings = 2): Promise
     if (/shariah|video|briefing|presentation|clarification|notice of|proxy|agm|egm|book closure|circular|postal ballot|auditor|pattern of shareholding/.test(x)) return false;
     return /transmission|quarterly report|half[\s-]?year|annual report|annual account|financial result|financial statement|accounts for|condensed interim|un-?audited|audited/.test(x);
   };
+  // Operationally newsy companies (frequent director disclosures, discoveries,
+  // corporate notices — E&P names especially) can push the annual report,
+  // the one filing with a full cash-flow statement, past the most recent 40
+  // announcements. Widen the search only when nothing carrying "annual
+  // report/account" turns up in that window, so quiet companies still pay the
+  // cheap 40-item fetch.
+  let filings = await getCompanyFilings(t, 40);
+  if (!filings.some((f) => isReport(f.title) && /annual report|annual account/i.test(f.title))) {
+    filings = await getCompanyFilings(t, 200);
+  }
   // Annual reports first: they carry the full balance sheet AND cash flow, and
   // (unlike many scanned quarterly notices) reliably have a real text layer.
   // Quarterly/half-year transmissions next (condensed interim BS + CF), then
