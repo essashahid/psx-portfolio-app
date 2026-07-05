@@ -127,6 +127,13 @@ export interface RatioCard {
   ticker: string;
   rows: { name: string; value: number | null; period: string | null }[];
   sourcePeriod: string | null;
+  /** Latest annual and latest interim income-statement periods on file, so the
+   * brief can flag when newer interim results exist beyond the annual series. */
+  latestAnnualPeriod: string | null;
+  latestInterimPeriod: string | null;
+  /** Quote used to re-reconcile price-linked ratios at read time. */
+  priceUsed: number | null;
+  priceAsOf: string | null;
 }
 
 export interface TechnicalCard {
@@ -639,7 +646,7 @@ export async function getPositionHistoryCard(
 }
 
 const RATIO_ORDER = [
-  "P/E", "Earnings yield", "P/B", "P/S", "EV/Sales", "EV/EBIT", "FCF yield",
+  "P/E", "Earnings yield", "EPS (TTM)", "Interim EPS growth", "P/B", "P/S", "EV/Sales", "EV/EBIT", "FCF yield",
   "Dividend yield (TTM)", "Payout ratio", "Dividend cover", "Book value / share",
   "Sales / share", "Cash / share", "Gross margin", "Operating margin", "Net margin",
   "ROE", "ROA", "ROIC", "Asset turnover", "Debt-to-equity", "Net debt-to-equity",
@@ -652,15 +659,74 @@ const RATIO_ORDER = [
 
 export async function getRatioCard(db: SupabaseClient, ticker: string): Promise<RatioCard | null> {
   const t = ticker.toUpperCase();
-  const { data } = await db.from("company_ratios").select("ratio_name, ratio_value, source_period").eq("ticker", t);
+  const [{ data }, { data: quote }, { data: periods }] = await Promise.all([
+    db.from("company_ratios").select("ratio_name, ratio_value, source_period, inputs").eq("ticker", t),
+    db.from("market_quotes").select("price, as_of").eq("ticker", t).maybeSingle(),
+    db
+      .from("company_financials")
+      .select("fiscal_year, fiscal_period, period_type")
+      .eq("ticker", t)
+      .eq("statement_type", "income_statement")
+      .order("fiscal_year", { ascending: false })
+      .limit(12),
+  ]);
   if (!data || data.length === 0) return null;
   const byName = new Map(data.map((r) => [r.ratio_name as string, r]));
+
+  // Reconcile price-linked ratios against the live quote at read time. Stored
+  // ratios freeze the price they were computed with; the PPL incident served a
+  // P/E built on a two-day-old close. Recompute from the stored EPS/DPS inputs
+  // and today's quote so price, P/E, and earnings yield always agree.
+  const livePrice = numeric(quote?.price);
+  const inputNum = (name: string, key: string): number | null => {
+    const r = byName.get(name);
+    const inputs = (r?.inputs ?? null) as Record<string, unknown> | null;
+    return inputs ? numeric(inputs[key]) : null;
+  };
+  const repriced = new Map<string, number>();
+  if (livePrice != null && livePrice > 0) {
+    const peEps = inputNum("P/E", "eps");
+    if (peEps != null && peEps !== 0) repriced.set("P/E", livePrice / peEps);
+    const eyEps = inputNum("Earnings yield", "eps");
+    if (eyEps != null) repriced.set("Earnings yield", (eyEps / livePrice) * 100);
+    const dps = inputNum("Dividend yield (TTM)", "ttm_dps");
+    if (dps != null) repriced.set("Dividend yield (TTM)", (dps / livePrice) * 100);
+  }
   const rows = RATIO_ORDER.filter((n) => byName.has(n)).map((n) => {
     const r = byName.get(n)!;
-    return { name: n, value: num(r.ratio_value), period: (r.source_period as string) ?? null };
+    return { name: n, value: repriced.get(n) ?? num(r.ratio_value), period: (r.source_period as string) ?? null };
   });
   const firstWithPeriod = data.find((r) => r.source_period);
-  return { ticker: t, rows, sourcePeriod: (firstWithPeriod?.source_period as string) ?? null };
+
+  // Latest annual vs latest interim income statements on file, so the brief can
+  // say plainly when newer interim results exist beyond the annual series.
+  const isAnnualPeriod = (p: string | null) => (p ?? "").toUpperCase() === "FY";
+  const label = (r: { fiscal_year: number | null; fiscal_period: string | null }) =>
+    `${r.fiscal_year ?? "?"} ${r.fiscal_period ?? ""}`.trim();
+  const annualRow = (periods ?? []).find((r) => isAnnualPeriod(r.fiscal_period as string));
+  // Newest interim: latest fiscal year, then latest period end (9M and Q3 both
+  // end at nine months; prefer the cumulative 9M as the fuller picture).
+  const coverage = (p: string | null) =>
+    ({ "9M": 3.5, Q3: 3, H1: 2, Q2: 2, Q1: 1 })[(p ?? "").toUpperCase()] ?? 0;
+  const interimRow = (periods ?? [])
+    .filter((r) => !isAnnualPeriod(r.fiscal_period as string) && r.fiscal_year != null)
+    .sort(
+      (a, b) =>
+        (b.fiscal_year as number) - (a.fiscal_year as number) ||
+        coverage(b.fiscal_period as string) - coverage(a.fiscal_period as string)
+    )[0];
+  const newerInterim =
+    interimRow && (!annualRow || (interimRow.fiscal_year as number) > ((annualRow.fiscal_year as number) ?? 0));
+
+  return {
+    ticker: t,
+    rows,
+    sourcePeriod: (firstWithPeriod?.source_period as string) ?? null,
+    latestAnnualPeriod: annualRow ? label(annualRow) : null,
+    latestInterimPeriod: newerInterim && interimRow ? label(interimRow) : null,
+    priceUsed: livePrice ?? inputNum("P/E", "price"),
+    priceAsOf: (quote?.as_of as string) ?? null,
+  };
 }
 
 export async function getTechnicalCard(db: SupabaseClient, ticker: string): Promise<TechnicalCard | null> {

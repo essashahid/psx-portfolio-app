@@ -21,10 +21,17 @@ export function looksLikeToolLeak(text: string): boolean {
  * targets — (U+2014) and – (U+2013), so hyphens like "KSE-100" and "52-week" are
  * untouched. Applied both to the live output stream and inside the eval, so the
  * eval scores what actually ships.
+ *
+ * A dash directly before a digit is a MINUS SIGN, not punctuation: models write
+ * "–37%" for negative returns, and rewriting that to ", 37%" silently flips the
+ * sign (a real PPL-thread answer showed lagging holdings as positive). Those
+ * become a plain hyphen, as does U+2212.
  */
 export function stripEmDashes(text: string): string {
   return text
-    .replace(/(\d)\s*[—–]\s*(\d)/g, "$1 to $2")
+    .replace(/(\d)\s*[—–−]\s*(\d)/g, "$1 to $2")
+    .replace(/(^|[\s(])[—–−](?=\d)/g, "$1-")
+    .replace(/−/g, "-")
     .replace(/\s*[—–]\s*/g, ", ")
     .replace(/,\s*,/g, ",");
 }
