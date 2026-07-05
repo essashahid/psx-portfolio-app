@@ -1,6 +1,7 @@
 import { createAdminClient } from "@/lib/supabase/admin";
 import { aiAvailable, chatJson } from "@/lib/ai/openai";
-import { claudeConfigured, getClaude } from "@/lib/ai/claude";
+import { visionConfigured, visionDisabled, visionPdf } from "@/lib/ai/vision";
+import { splitPdfPages } from "@/lib/engine/pdf-chunks";
 import { getCompanyFilings } from "@/lib/company/filings";
 import { fetchPsxCompanyData, type PsxPeriodFigures } from "@/lib/company/psx-company-data";
 
@@ -222,67 +223,95 @@ Return JSON:
 
 Include a statement object only when the document actually contains that statement. Banks: treat markup/interest income as revenue. If the document is not a financial result (e.g. a notice), return {"statements": []}.`;
 
-// Vision extraction is capped tighter than the text path: pages are billed as
-// image tokens, so a 30MB annual report would cost dollars per filing. Interim
-// transmissions (the freshest statements, and the ones most often scanned) run
-// well under this.
-const MAX_VISION_PDF_BYTES = 20_000_000;
-
-function visionDisabled(): boolean {
-  const v = (process.env.FILINGS_OCR_DISABLED ?? "").toLowerCase();
-  return v === "true" || v === "1" || v === "yes";
-}
+// Chunked vision extraction: large filings are split into consecutive
+// page-range sub-PDFs and read in order until every statement type has been
+// found. Annual reports put the standalone statements roughly two-thirds in
+// (after the directors' review and before the notes), so early-stop usually
+// means a handful of chunks, not 400 pages.
+const VISION_CHUNK_PAGES = 25;
+const VISION_MAX_CHUNKS = 24; // hard ceiling: 600 pages per filing
 
 type VisionResult = { statements: ExtractedStatement[]; document_units?: string; model: string } | { error: string };
+
+function parseStatementsJson(text: string): { statements?: ExtractedStatement[]; document_units?: string } | null {
+  const cleaned = text.replace(/^```(?:json)?\s*/i, "").replace(/\s*```\s*$/, "").trim();
+  const start = cleaned.indexOf("{");
+  const end = cleaned.lastIndexOf("}");
+  if (start < 0 || end <= start) return null;
+  try {
+    return JSON.parse(cleaned.slice(start, end + 1)) as { statements?: ExtractedStatement[]; document_units?: string };
+  } catch {
+    return null;
+  }
+}
 
 /**
  * OCR fallback: many PSX filings are scanned image PDFs with no text layer —
  * including recent PPL quarterly transmissions, where the statement tables
- * (pages 30-44) are pure images. Claude reads the PDF pages directly (base64
- * document input, no separate OCR step), under the same strict echo-only
- * extraction prompt. Used only when the text-layer path yields nothing.
+ * (pages 30-44) are pure images. The configured vision model (OpenRouter by
+ * default, Claude fallback — see lib/ai/vision.ts) reads the PDF pages
+ * directly under the same strict echo-only extraction prompt. Used only when
+ * the text-layer path yields nothing or misses the deep statements.
  */
 async function extractViaVision(buf: Buffer, filingTitle: string, filingDate: string | null, ticker: string): Promise<VisionResult> {
-  if (visionDisabled()) return { error: "vision extraction disabled (FILINGS_OCR_DISABLED)" };
-  if (!claudeConfigured()) return { error: "CLAUDE_API_KEY not configured — cannot OCR scanned filing" };
-  if (buf.byteLength > MAX_VISION_PDF_BYTES) {
-    return { error: `PDF too large for vision extraction (${(buf.byteLength / 1e6).toFixed(1)}MB > ${MAX_VISION_PDF_BYTES / 1e6}MB)` };
-  }
-  const model = process.env.FILINGS_OCR_MODEL || "claude-opus-4-8";
+  if (visionDisabled()) return { error: "vision extraction disabled (VISION_DISABLED)" };
+  if (!visionConfigured()) return { error: "no vision provider configured (set OPENROUTER_API_KEY / VISION_API_KEY or CLAUDE_API_KEY)" };
+
+  let chunks;
   try {
-    const client = getClaude();
-    const response = await client.messages.create({
-      model,
-      max_tokens: 12_000,
-      thinking: { type: "adaptive" },
-      system: EXTRACTION_PROMPT,
-      messages: [
-        {
-          role: "user",
-          content: [
-            {
-              type: "document",
-              source: { type: "base64", media_type: "application/pdf", data: buf.toString("base64") },
-            },
-            {
-              type: "text",
-              text: `Filing title: ${filingTitle}\nFiling date: ${filingDate ?? "unknown"}\nTicker: ${ticker}\n\nThe document is attached. Some or all statement pages may be scanned images — read the tables from the page images. Return ONLY the JSON object, no prose.`,
-            },
-          ],
-        },
-      ],
-    });
-    if (response.stop_reason === "refusal") return { error: "vision extraction refused" };
-    const text = response.content.find((b) => b.type === "text")?.text ?? "";
-    const jsonText = text.replace(/^```(?:json)?\s*/i, "").replace(/\s*```\s*$/, "").trim();
-    const start = jsonText.indexOf("{");
-    const end = jsonText.lastIndexOf("}");
-    if (start < 0 || end <= start) return { error: "vision extraction returned no JSON" };
-    const data = JSON.parse(jsonText.slice(start, end + 1)) as { statements?: ExtractedStatement[]; document_units?: string };
-    return { statements: data.statements ?? [], document_units: data.document_units, model };
+    chunks = await splitPdfPages(buf, VISION_CHUNK_PAGES);
   } catch (err) {
-    return { error: `vision extraction failed: ${err instanceof Error ? err.message : String(err)}` };
+    return { error: `PDF split failed: ${err instanceof Error ? err.message : String(err)}` };
   }
+  if (chunks.length > VISION_MAX_CHUNKS) chunks = chunks.slice(0, VISION_MAX_CHUNKS);
+
+  const merged: ExtractedStatement[] = [];
+  const seen = new Set<string>();
+  let documentUnits: string | undefined;
+  let model = "";
+  const errors: string[] = [];
+
+  const totalPages = chunks[chunks.length - 1]?.lastPage ?? 0;
+  for (const chunk of chunks) {
+    const rangeNote =
+      chunks.length > 1
+        ? `\nThis attachment is pages ${chunk.firstPage} to ${chunk.lastPage} of a ${totalPages}-page filing. Extract only statements whose tables are fully visible in these pages; if none are, return {"statements": []}.`
+        : "";
+    const result = await visionPdf(
+      chunk.buf,
+      EXTRACTION_PROMPT,
+      `Filing title: ${filingTitle}\nFiling date: ${filingDate ?? "unknown"}\nTicker: ${ticker}\n\nThe document is attached. Some or all statement pages may be scanned images — read the tables from the page images.${rangeNote}\nReturn ONLY the JSON object, no prose.`,
+    );
+    if ("error" in result) {
+      errors.push(`pages ${chunk.firstPage}-${chunk.lastPage}: ${result.error}`);
+      // Provider-level failures (auth, credits, timeouts) won't heal on the
+      // next chunk — bail instead of repeating the same failure 20 times.
+      if (/HTTP 4|credit|unauthor|not configured|disabled/i.test(result.error)) break;
+      continue;
+    }
+    model = result.model;
+    const parsed = parseStatementsJson(result.text);
+    if (!parsed) {
+      errors.push(`pages ${chunk.firstPage}-${chunk.lastPage}: no JSON in reply`);
+      continue;
+    }
+    documentUnits ??= parsed.document_units;
+    for (const s of parsed.statements ?? []) {
+      const key = `${s.fiscal_year}-${s.fiscal_period}-${s.statement_type}`;
+      if (!seen.has(key)) {
+        seen.add(key);
+        merged.push(s);
+      }
+    }
+    // Early stop: one full statement set is what a filing carries.
+    const types = new Set(merged.map((s) => s.statement_type));
+    if (types.has("income_statement") && types.has("balance_sheet") && types.has("cash_flow")) break;
+  }
+
+  if (merged.length === 0) {
+    return { error: errors.length ? errors.join("; ").slice(0, 400) : "no statements found in any chunk" };
+  }
+  return { statements: merged, document_units: documentUnits, model };
 }
 
 // Monetary line items that must share a unit scale; eps is per-share (rupees)
