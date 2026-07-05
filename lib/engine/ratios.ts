@@ -92,8 +92,8 @@ export async function computeRatios(supabase: SupabaseClient, ticker: string): P
       .select("period_type, fiscal_year, fiscal_period, statement_type, reported_date, source_type, source_url, reporting_basis, review_status, confidence, data")
       .eq("ticker", t)
       .eq("review_status", "published")
-      .order("reported_date", { ascending: false })
-      .limit(30),
+      .order("reported_date", { ascending: false, nullsFirst: false })
+      .limit(60),
     supabase.from("market_quotes").select("price, as_of").eq("ticker", t).maybeSingle(),
     // Market-wide payouts (ticker-scoped, populated from the official PSX feed)
     // so dividend ratios compute for every company, not just imported holdings.
@@ -233,6 +233,33 @@ export async function computeRatios(supabase: SupabaseClient, ticker: string): P
   const capex = numOf(cash?.data, "capex");
   const fcf = ocf !== null && capex !== null ? ocf - Math.abs(capex) : null;
 
+  // Cash-flow ratios must not mix periods: dividing a Q1 OCF by full-year PAT
+  // understates conversion ~4x (the Copilot read FFC's 0.20 as weak earnings
+  // quality when same-period conversion was ~0.84). Pair the cash row with the
+  // income statement of ITS OWN period when one exists; for ratios against
+  // market cap (a point-in-time figure), annualize an interim cash flow.
+  const cashMonths = ((): number => {
+    const p = (cash?.fiscal_period ?? "").toUpperCase();
+    if (p === "9M") return 9;
+    if (p === "H1") return 6;
+    if (/^Q[1-4]$/.test(p)) return 3;
+    return 12;
+  })();
+  const cashPeriodIncome = cash
+    ? rows.find(
+        (r) =>
+          r.statement_type === "income_statement" &&
+          r.fiscal_year === cash.fiscal_year &&
+          (r.fiscal_period ?? "").toUpperCase() === (cash.fiscal_period ?? "").toUpperCase() &&
+          (r as { reporting_basis?: string | null }).reporting_basis !== "consolidated"
+      )
+    : undefined;
+  const cashPat = numOf(cashPeriodIncome?.data, "profit_after_tax");
+  const cashRevenue = numOf(cashPeriodIncome?.data, "revenue");
+  const cashOperatingProfit = numOf(cashPeriodIncome?.data, "operating_profit");
+  const annualizedFcfRupees = fcf !== null ? fcf * 1000 * (12 / cashMonths) : null;
+  const fcfYieldPeriod = cashMonths < 12 ? `annualized from ${periodLabel(cash)}` : periodLabel(cash);
+
   // Financial statements are stored in PKR thousands. EPS and price are per
   // share in PKR, so PAT/EPS derives an approximate share count without mixing
   // units. Require PAT and EPS to have the same sign to avoid nonsense shares.
@@ -297,8 +324,8 @@ export async function computeRatios(supabase: SupabaseClient, ticker: string): P
   add("Cash / share", "(Cash and equivalents × 1,000) ÷ derived shares outstanding", { cash_and_equivalents_pkr_thousands: cashEq, shares_outstanding: sharesOutstanding }, safeDiv(cashRupees, sharesOutstanding), need([["cash and equivalents", cashEq], ["derived shares outstanding", sharesOutstanding]]), `${incomePeriod ?? "?"} / ${balancePeriod ?? "?"}`);
   add("P/B", "Price ÷ Book value per share", { price, equity_pkr_thousands: equity, shares_outstanding: sharesOutstanding }, price !== null ? safeDiv(price, safeDiv(equityRupees, sharesOutstanding)) : null, need([["price", price], ["equity", equity], ["derived shares outstanding", sharesOutstanding]]), `${incomePeriod ?? "?"} / ${balancePeriod ?? "?"}`);
   add("P/S", "Market capitalization ÷ Revenue", { market_cap: marketCap, revenue_pkr: revenueRupees }, safeDiv(marketCap, revenueRupees), need([["market capitalization", marketCap], ["revenue", revenue]]), incomePeriod);
-  add("Price / FCF", "Market capitalization ÷ Free cash flow", { market_cap: marketCap, free_cash_flow_pkr: fcfRupees }, safeDiv(marketCap, fcfRupees), need([["market capitalization", marketCap], ["free cash flow", fcf]]), `${incomePeriod ?? "?"} / ${periodLabel(cash) ?? "?"}`);
-  add("FCF yield", "Free cash flow ÷ Market capitalization", { free_cash_flow_pkr: fcfRupees, market_cap: marketCap }, pct(fcfRupees, marketCap), need([["free cash flow", fcf], ["market capitalization", marketCap]]), `${incomePeriod ?? "?"} / ${periodLabel(cash) ?? "?"}`);
+  add("Price / FCF", "Market capitalization ÷ Annualized free cash flow", { market_cap: marketCap, free_cash_flow_pkr_annualized: annualizedFcfRupees }, safeDiv(marketCap, annualizedFcfRupees), need([["market capitalization", marketCap], ["free cash flow", fcf]]), fcfYieldPeriod);
+  add("FCF yield", "Annualized free cash flow ÷ Market capitalization", { free_cash_flow_pkr_annualized: annualizedFcfRupees, market_cap: marketCap }, pct(annualizedFcfRupees, marketCap), need([["free cash flow", fcf], ["market capitalization", marketCap]]), fcfYieldPeriod);
   add("EV/Sales", "Enterprise value ÷ Revenue", { enterprise_value: enterpriseValue, revenue_pkr: revenueRupees }, safeDiv(enterpriseValue, revenueRupees), need([["enterprise value", enterpriseValue], ["revenue", revenue]]), `${incomePeriod ?? "?"} / ${balancePeriod ?? "?"}`);
   add("EV/EBIT", "Enterprise value ÷ Operating profit", { enterprise_value: enterpriseValue, operating_profit_pkr: operatingProfitRupees }, safeDiv(enterpriseValue, operatingProfitRupees), need([["enterprise value", enterpriseValue], ["operating profit", operatingProfit]]), `${detailPeriod ?? incomePeriod ?? "?"} / ${balancePeriod ?? "?"}`);
   add("Dividend yield (TTM)", "Trailing 12m cash DPS ÷ Price", { price, ttm_dps: ttmDps }, price && ttmDps ? (ttmDps / price) * 100 : null, need([["price", price], ["trailing dividends", ttmDps]]), "Last 12 months");
@@ -350,10 +377,10 @@ export async function computeRatios(supabase: SupabaseClient, ticker: string): P
 
   // Cash flow
   add("FCF (OCF − Capex)", "Operating cash flow − Capex", { operating_cash_flow: ocf, capex }, fcf, need([["operating cash flow", ocf], ["capex", capex]]), periodLabel(cash));
-  add("FCF margin", "Free cash flow ÷ Revenue", { free_cash_flow: fcf, revenue }, pct(fcf, revenue), need([["free cash flow", fcf], ["revenue", revenue]]), `${incomePeriod ?? "?"} / ${periodLabel(cash) ?? "?"}`);
-  add("OCF / PAT", "Operating cash flow ÷ Profit after tax", { operating_cash_flow: ocf, profit_after_tax: pat }, safeDiv(ocf, pat), need([["operating cash flow", ocf], ["profit after tax", pat]]), `${incomePeriod ?? "?"} / ${periodLabel(cash) ?? "?"}`);
-  add("Cash conversion", "Operating cash flow ÷ Operating profit", { operating_cash_flow: ocf, operating_profit: operatingProfit }, safeDiv(ocf, operatingProfit), need([["operating cash flow", ocf], ["operating profit", operatingProfit]]), `${detailPeriod ?? incomePeriod ?? "?"} / ${periodLabel(cash) ?? "?"}`);
-  add("Accrual ratio", "(Profit after tax − Operating cash flow) ÷ Total assets", { profit_after_tax: pat, operating_cash_flow: ocf, total_assets: totalAssets }, pat !== null && ocf !== null ? safeDiv(pat - ocf, totalAssets) : null, need([["profit after tax", pat], ["operating cash flow", ocf], ["total assets", totalAssets]]), `${incomePeriod ?? "?"} / ${periodLabel(cash) ?? "?"} / ${balancePeriod ?? "?"}`);
+  add("FCF margin", "Free cash flow ÷ Same-period revenue", { free_cash_flow: fcf, revenue: cashRevenue ?? revenue }, pct(fcf, cashRevenue ?? (cashMonths === 12 ? revenue : null)), need([["free cash flow", fcf], ["same-period revenue", cashRevenue ?? (cashMonths === 12 ? revenue : null)]]), cashRevenue !== null ? periodLabel(cash) : `${incomePeriod ?? "?"} / ${periodLabel(cash) ?? "?"}`);
+  add("OCF / PAT", "Operating cash flow ÷ Same-period profit after tax", { operating_cash_flow: ocf, profit_after_tax: cashPat ?? pat }, safeDiv(ocf, cashPat ?? (cashMonths === 12 ? pat : null)), need([["operating cash flow", ocf], ["same-period profit after tax", cashPat ?? (cashMonths === 12 ? pat : null)]]), cashPat !== null ? periodLabel(cash) : `${incomePeriod ?? "?"} / ${periodLabel(cash) ?? "?"}`);
+  add("Cash conversion", "Operating cash flow ÷ Same-period operating profit", { operating_cash_flow: ocf, operating_profit: cashOperatingProfit ?? operatingProfit }, safeDiv(ocf, cashOperatingProfit ?? (cashMonths === 12 ? operatingProfit : null)), need([["operating cash flow", ocf], ["same-period operating profit", cashOperatingProfit ?? (cashMonths === 12 ? operatingProfit : null)]]), cashOperatingProfit !== null ? periodLabel(cash) : `${detailPeriod ?? incomePeriod ?? "?"} / ${periodLabel(cash) ?? "?"}`);
+  add("Accrual ratio", "(Same-period PAT − Operating cash flow) ÷ Total assets", { profit_after_tax: cashPat ?? pat, operating_cash_flow: ocf, total_assets: totalAssets }, (cashPat ?? (cashMonths === 12 ? pat : null)) !== null && ocf !== null ? safeDiv((cashPat ?? pat)! - ocf, totalAssets) : null, need([["same-period profit after tax", cashPat ?? (cashMonths === 12 ? pat : null)], ["operating cash flow", ocf], ["total assets", totalAssets]]), `${cashPat !== null ? periodLabel(cash) : incomePeriod ?? "?"} / ${balancePeriod ?? "?"}`);
 
   return out;
 }
