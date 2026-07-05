@@ -242,6 +242,15 @@ interface IdentityViolation {
  * incoming row, so they catch that misread in isolation. Each fires only when
  * every input it needs is present (a partial statement is never penalised for a
  * missing field), and shares the freshness audit's 2% tolerance.
+ *
+ * Only DEFINITIONAL identities that hold for every real statement are enforced:
+ *   - the balance sheet must balance (assets = liabilities + equity)
+ *   - gross profit is revenue minus cost of sales
+ * The tempting "profit before tax − tax = profit after tax" check is NOT here:
+ * associate/JV income booked after tax, non-controlling-interest splits, and
+ * discontinued operations legitimately break it (NML's PAT exceeds its PBT
+ * because of MCB-scale associate income), so enforcing it would quarantine
+ * correct data on exactly the holding-heavy blue chips that matter most.
  */
 export function statementIdentityViolations(row: {
   statement_type: FinancialStatementPayload["statement_type"];
@@ -269,16 +278,6 @@ export function statementIdentityViolations(row: {
     const revenue = n("revenue"), cogs = n("cost_of_sales"), grossProfit = n("gross_profit");
     if (revenue !== null && cogs !== null && grossProfit !== null && off(grossProfit, revenue - Math.abs(cogs)) > TOL) {
       out.push({ flag: "identity:gross_profit", message: `gross profit ${grossProfit} ≠ revenue − cost of sales ${revenue - Math.abs(cogs)}` });
-    }
-    // Tax is an expense for profit-makers and a credit for loss-makers, and
-    // extractors store either sign — accept the row if either convention
-    // reconciles, flag only when neither does.
-    const pbt = n("profit_before_tax"), tax = n("tax"), pat = n("profit_after_tax");
-    if (pbt !== null && tax !== null && pat !== null) {
-      const reconciles = [pbt - Math.abs(tax), pbt + Math.abs(tax)].some((candidate) => off(pat, candidate) <= TOL);
-      if (!reconciles) {
-        out.push({ flag: "identity:profit_after_tax", message: `profit after tax ${pat} irreconcilable with profit before tax ${pbt} and tax ${tax}` });
-      }
     }
   }
 
