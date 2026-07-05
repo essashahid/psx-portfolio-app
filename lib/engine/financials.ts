@@ -549,6 +549,57 @@ async function persistFinancialStatement(
   return { saved: reviewStatus === "published", conflict: reviewStatus !== "published" };
 }
 
+/**
+ * Persist statements read by hand (a human, or Claude reading the PDF pages
+ * directly in a session) through the exact same validated write path as the
+ * automated extractor: basis normalization, the raw-observation ledger,
+ * accounting-identity checks, cross-source conflict detection, and the review
+ * gate. No LLM/API call is made here — the caller supplies already-transcribed
+ * figures — so it is a zero-marginal-cost way to fill high-priority gaps
+ * without the OCR provider. Rows still land as `needs_review` if they fail
+ * their own identities or disagree with a published source.
+ */
+export interface ManualStatementInput {
+  fiscal_year: number | null;
+  fiscal_period: string | null; // FY | Q1..Q4 | H1 | 9M
+  statement_type: "income_statement" | "balance_sheet" | "cash_flow";
+  basis: string | null; // "unconsolidated" | "consolidated" | ...
+  data: Record<string, number | null>;
+  confidence?: number;
+}
+
+export async function saveManualStatements(
+  ticker: string,
+  source: { url: string | null; date: string | null; sourceType?: string; extractor?: string },
+  statements: ManualStatementInput[]
+): Promise<{ saved: number; needsReview: number; skipped: number; errors: string[] }> {
+  const db = createAdminClient();
+  const out = { saved: 0, needsReview: 0, skipped: 0, errors: [] as string[] };
+  const now = new Date().toISOString();
+  for (const s of statements) {
+    const reportingBasis = normalizeReportingBasis(s.basis);
+    const result = await persistFinancialStatement(db, {
+      ticker: ticker.toUpperCase(),
+      period_type: canonicalPeriodType(s.fiscal_period, "quarterly"),
+      fiscal_year: s.fiscal_year,
+      fiscal_period: s.fiscal_period,
+      statement_type: s.statement_type,
+      reported_date: source.date,
+      source_type: source.sourceType ?? "psx-filing",
+      source_url: source.url,
+      reporting_basis: reportingBasis,
+      data: { ...s.data, _units: "PKR thousands", _basis: reportingBasis, _extractor: source.extractor ?? "claude-code-manual" },
+      confidence: s.confidence ?? 0.9,
+      updated_at: now,
+    });
+    if (result.error) out.errors.push(`${s.fiscal_year} ${s.fiscal_period} ${s.statement_type}: ${result.error}`);
+    else if (result.saved) out.saved++;
+    else if (result.conflict) out.needsReview++;
+    else out.skipped++;
+  }
+  return out;
+}
+
 type PdfFetchResult = { buf: Buffer } | { error: string };
 type PdfTextResult = { text: string } | { error: string };
 
