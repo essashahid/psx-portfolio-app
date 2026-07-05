@@ -35,15 +35,10 @@ describe("statementIdentityViolations", () => {
     expect(flags({ statement_type: "income_statement", data: { revenue: 1000, cost_of_sales: 620, gross_profit: 900 } })).toEqual(["identity:gross_profit"]);
   });
 
-  it("accepts PAT under either tax sign convention (expense or credit)", () => {
-    // profit-maker: PAT = PBT − tax
-    expect(flags({ statement_type: "income_statement", data: { profit_before_tax: 1000, tax: 350, profit_after_tax: 650 } })).toEqual([]);
-    // loss-maker with a tax credit: PAT = PBT + tax
-    expect(flags({ statement_type: "income_statement", data: { profit_before_tax: -1000, tax: 200, profit_after_tax: -800 } })).toEqual([]);
-  });
-
-  it("flags PAT that reconciles under neither convention", () => {
-    expect(flags({ statement_type: "income_statement", data: { profit_before_tax: 1000, tax: 350, profit_after_tax: 200 } })).toEqual(["identity:profit_after_tax"]);
+  it("does NOT enforce the PBT−tax=PAT relationship (associate income legitimately breaks it)", () => {
+    // NML-shape: PAT (3.35M) exceeds PBT (3.25M) because associate income is
+    // booked after tax. Correct data — must not be flagged.
+    expect(flags({ statement_type: "income_statement", data: { profit_before_tax: 3252800, tax: 1091519, profit_after_tax: 3346817 } })).toEqual([]);
   });
 
   it("never penalises a partial statement for missing inputs", () => {
