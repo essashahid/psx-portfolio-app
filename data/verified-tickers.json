@@ -1,0 +1,22 @@
+{
+  "_note": "Registry of companies whose financials + ratios have been hand-verified correct (read from the filing, accounting identities checked, and cross-checked against PSX and/or Sarmaaya). 'throughPeriod' is the latest fiscal period verified — once a newer filing lands, the mark is stale and the name needs re-verification. 'basis' is the reporting basis we store (unconsolidated matches PSX; holding-cos also noted). Add entries only after an actual check, not on assumption.",
+  "verified": {
+    "PPL":    { "throughPeriod": "2026 9M", "basis": "unconsolidated", "source": "PSX+Sarmaaya", "date": "2026-07-06", "note": "P/E 8.54 vs PSX 8.57" },
+    "OGDC":   { "throughPeriod": "2026 9M", "basis": "unconsolidated", "source": "PSX+Sarmaaya", "date": "2026-07-06", "note": "EPS 36.17 = Sarmaaya exact; P/E 9.64 (TTM) vs PSX 8.93 annual" },
+    "POL":    { "throughPeriod": "2026 9M", "basis": "unconsolidated", "source": "PSX+Sarmaaya", "date": "2026-07-06", "note": "P/E 7.21 vs PSX 7.22" },
+    "KAPCO":  { "throughPeriod": "2026 9M", "basis": "unconsolidated", "source": "PSX+Sarmaaya", "date": "2026-07-06", "note": "P/E 15.24 = PSX exact" },
+    "INDU":   { "throughPeriod": "2026 9M", "basis": "unconsolidated", "source": "PSX", "date": "2026-07-06", "note": "P/E 6.23 = PSX exact" },
+    "MTL":    { "throughPeriod": "2026 9M", "basis": "unconsolidated", "source": "Sarmaaya", "date": "2026-07-06", "note": "100% bonus; share-count override 399.03M; P/E 16.44 vs Sarmaaya 16.41" },
+    "FFC":    { "throughPeriod": "2026 Q1", "basis": "unconsolidated", "source": "PSX", "date": "2026-07-06", "note": "Dec year-end; P/E 10.58 = PSX exact. Sarmaaya reports consolidated" },
+    "AIRLINK":{ "throughPeriod": "2026 9M", "basis": "unconsolidated", "source": "PSX", "date": "2026-07-05", "note": "P/E 17.54 vs PSX 16.47" },
+    "MUGHAL": { "throughPeriod": "2026 9M", "basis": "unconsolidated", "source": "PSX", "date": "2026-07-05", "note": "full-rupee filing; P/E 12.29 vs PSX 12.30" },
+    "HUBC":   { "throughPeriod": "2026 9M", "basis": "unconsolidated", "source": "filing", "date": "2026-07-06", "note": "holding-co: unconsolidated revenue ~nil (dividend income); Sarmaaya reports consolidated" },
+    "ASTL":   { "throughPeriod": "2026 9M", "basis": "unconsolidated", "source": "filing", "date": "2026-07-05", "note": "loss-making turnaround; negative TTM legitimate" },
+    "ANL":    { "throughPeriod": "2026 9M", "basis": "unconsolidated", "source": "Sarmaaya", "date": "2026-07-06", "note": "EPS 1.61 vs Sarmaaya 1.60 after price backfill" },
+    "SSML":   { "throughPeriod": "2026 9M", "basis": "unconsolidated", "source": "filing", "date": "2026-07-05", "note": "distressed micro-cap; zero revenue" },
+    "LUCK":   { "throughPeriod": "2026 9M", "basis": "unconsolidated", "source": "filing", "date": "2026-07-05", "note": "holding-co; both bases stored; PSX vendor P/E was wrong, ours is right" },
+    "CCM":    { "throughPeriod": "2026 9M", "basis": "unconsolidated", "source": "filing", "date": "2026-07-06", "note": "micro-cap, earnings cross zero; TTM 0.85 rigorous, P/E unreliable on any basis" },
+    "IDYM":   { "throughPeriod": "2026 9M", "basis": "unconsolidated", "source": "filing", "date": "2026-07-07", "note": "fixed basis-mixing bug; TTM 6.60. Holding-co, Sarmaaya reports consolidated 20.56" },
+    "LOADS":  { "throughPeriod": "2026 9M", "basis": "unconsolidated", "source": "filing+Sarmaaya", "date": "2026-07-07", "note": "rights issue; share-count override 371.25M; P/E 14.61 vs Sarmaaya 14.04" }
+  }
+}
