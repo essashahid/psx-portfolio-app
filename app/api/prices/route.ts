@@ -11,6 +11,12 @@ import { rejectDemoWrite } from "@/lib/demo-mode";
 
 export const maxDuration = 60;
 
+/** Keep ticker lists in user-facing messages short instead of dumping the whole batch. */
+function summarizeTickers(tickers: string[], max = 6): string {
+  if (tickers.length <= max) return tickers.join(", ");
+  return `${tickers.slice(0, max).join(", ")} and ${tickers.length - max} more`;
+}
+
 /**
  * Manual price management.
  * POST { prices: [{ticker, price, date?}] }  — set prices directly
@@ -42,7 +48,7 @@ export async function POST(request: Request) {
           skipped: result.skipped,
           message:
             result.skipped.length > 0
-              ? `Manual mode: no external provider configured. ${result.skipped.length} holding(s) still have no price: ${result.skipped.join(", ")}. Set prices below or upload a price CSV.`
+              ? `Manual mode: no external provider configured. ${result.skipped.length} holding(s) still have no price: ${summarizeTickers(result.skipped)}. Set prices below or upload a price CSV.`
               : "Manual mode: all holdings already have prices. Update them below whenever you like.",
         });
       }
@@ -78,8 +84,8 @@ export async function POST(request: Request) {
         ...result,
         message:
           result.updated > 0
-            ? `${result.updated} price(s) refreshed from ${provider.name}${result.skipped.length ? `; no data for ${result.skipped.join(", ")}` : ""}.`
-            : `${provider.name} returned no prices${result.skipped.length ? ` for ${result.skipped.join(", ")}` : ""}. Try again shortly.`,
+            ? `${result.updated} price(s) refreshed from ${provider.name}${result.skipped.length ? `; no data for ${summarizeTickers(result.skipped)}` : ""}.`
+            : `${provider.name} returned no prices${result.skipped.length ? ` for ${summarizeTickers(result.skipped)}` : ""}. Try again shortly.`,
       });
     }
 
