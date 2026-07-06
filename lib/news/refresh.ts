@@ -43,6 +43,7 @@ export async function refreshNewsForUser(
     .from("holdings")
     .select("ticker, company_name, sector")
     .eq("user_id", userId)
+    .eq("hidden", false)
     .gt("quantity", 0)
     .order("ticker")
     .limit(MAX_HOLDINGS);

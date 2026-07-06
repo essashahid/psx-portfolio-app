@@ -52,7 +52,7 @@ export async function getScreenerData(supabase: SupabaseClient, userId: string):
     .maybeSingle();
 
   const [{ data: holdings }, { data: watch }] = await Promise.all([
-    supabase.from("holdings").select("ticker").eq("user_id", userId).gt("quantity", 0),
+    supabase.from("holdings").select("ticker").eq("user_id", userId).eq("hidden", false).gt("quantity", 0),
     supabase.from("stock_watchlist").select("ticker").eq("user_id", userId),
   ]);
   const owned = new Set((holdings ?? []).map((h) => (h.ticker as string).toUpperCase()));

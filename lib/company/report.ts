@@ -667,6 +667,7 @@ export async function getReportPreview(
     .select("quantity")
     .eq("user_id", userId)
     .eq("ticker", symbol)
+    .eq("hidden", false)
     .gt("quantity", 0)
     .maybeSingle();
   const filings = await getCompanyFilings(symbol, 1);

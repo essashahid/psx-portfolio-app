@@ -99,6 +99,7 @@ export async function getDailyHoldingPerformance(
     .from("holdings")
     .select("ticker, company_name, sector, quantity, avg_cost, total_cost")
     .eq("user_id", userId)
+    .eq("hidden", false)
     .gt("quantity", 0)
     .order("ticker");
 

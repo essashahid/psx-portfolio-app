@@ -70,6 +70,7 @@ export async function GET(request: Request) {
     .select("avg_cost")
     .eq("user_id", user.id)
     .eq("ticker", ticker)
+    .eq("hidden", false)
     .gt("quantity", 0)
     .maybeSingle();
   if (holding?.avg_cost) avgCost = Number(holding.avg_cost);

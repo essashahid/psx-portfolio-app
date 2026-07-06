@@ -21,7 +21,7 @@ export async function rebuildBenchmarkSeries(
   supabase: SupabaseClient,
   userId: string
 ): Promise<{ points: number } | null> {
-  const [txnsRes, cashRes] = await Promise.all([
+  const [txnsRes, cashRes, hiddenRes] = await Promise.all([
     supabase
       .from("transactions")
       .select("id, trade_date, type, ticker, quantity, price, net_amount, notes")
@@ -32,7 +32,12 @@ export async function rebuildBenchmarkSeries(
       .select("id, movement_date, type, amount, description")
       .eq("user_id", userId)
       .order("movement_date", { ascending: true }),
+    supabase.from("holdings").select("ticker").eq("user_id", userId).eq("hidden", true),
   ]);
+  // Hidden positions are excluded from the portfolio value line (their share
+  // events are dropped below); the cash series keeps every transaction because
+  // cash that moved is real either way.
+  const hiddenTickers = new Set((hiddenRes.data ?? []).map((h) => h.ticker as string));
   const txns = (txnsRes.data ?? []) as LedgerTxnInput[];
   const cash = (cashRes.data ?? []) as LedgerCashInput[];
   if (txns.length === 0 && cash.length === 0) return null;
@@ -52,6 +57,7 @@ export async function rebuildBenchmarkSeries(
   const shareEvents: ShareEvent[] = [];
   for (const t of txns) {
     if (!t.ticker || !t.trade_date || !SHARE_TYPES.has(t.type)) continue;
+    if (hiddenTickers.has(t.ticker)) continue;
     const raw = Number(t.quantity ?? 0);
     let qty: number;
     if (t.type === "SELL") qty = -Math.abs(raw);

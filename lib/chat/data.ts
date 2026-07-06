@@ -280,6 +280,7 @@ export async function getPositionCard(db: SupabaseClient, userId: string, ticker
     .select("quantity, avg_cost, total_cost")
     .eq("user_id", userId)
     .eq("ticker", t)
+    .eq("hidden", false)
     .gt("quantity", 0)
     .maybeSingle();
   if (!h) return null;
@@ -323,6 +324,7 @@ export async function getPositionHistoryCard(
       .select("ticker, quantity, avg_cost, total_cost, source, last_updated")
       .eq("user_id", userId)
       .eq("ticker", t)
+      .eq("hidden", false)
       .maybeSingle(),
     db
       .from("transactions")
@@ -909,6 +911,7 @@ export async function getHoldingsSummary(db: SupabaseClient, userId: string): Pr
     .from("holdings")
     .select("ticker, quantity, sector, avg_cost, total_cost")
     .eq("user_id", userId)
+    .eq("hidden", false)
     .gt("quantity", 0);
   if (!hs || hs.length === 0) return null;
 

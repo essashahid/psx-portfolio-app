@@ -37,6 +37,7 @@ export async function POST(request: Request) {
         .from("holdings")
         .select("ticker, company_name, sector, quantity, avg_cost")
         .eq("user_id", user.id)
+        .eq("hidden", false)
         .gt("quantity", 0),
     ]);
 

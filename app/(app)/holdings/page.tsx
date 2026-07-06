@@ -9,7 +9,7 @@ import { AsOf } from "@/components/as-of";
 import { ActionButton } from "@/components/action-button";
 import { formatMoney, formatNumber, formatSignedPct } from "@/lib/utils";
 import { normalizeEnabledFeatures } from "@/lib/features";
-import { Briefcase, ChevronDown, Download, RefreshCw, Sparkles } from "lucide-react";
+import { Briefcase, ChevronDown, Download, Eye, RefreshCw, Sparkles } from "lucide-react";
 
 export const dynamic = "force-dynamic";
 
@@ -63,12 +63,14 @@ export default async function HoldingsPage() {
         </div>
       </header>
       {summary.holdings.length === 0 ? (
+        summary.hiddenHoldings.length > 0 ? null : (
         <EmptyState
           icon={Briefcase}
           title="No holdings yet"
           description="Add a manual buy transaction to start tracking positions and prices."
           action={isDemo ? undefined : <AddTransactionDialog label="Add transaction" variant="default" />}
         />
+        )
       ) : (
         <>
           <section>
@@ -83,6 +85,31 @@ export default async function HoldingsPage() {
           {(missingCompany > 0 || unclassified > 0 || unpriced > 0) && <div className="flex flex-wrap items-center justify-between gap-2 rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-900"><span><strong>Portfolio data</strong> · {[missingCompany && `${missingCompany} holding${missingCompany === 1 ? "" : "s"} missing company information`, unclassified && `${unclassified} unclassified sector${unclassified === 1 ? "" : "s"}`, unpriced && `${unpriced} unpriced position${unpriced === 1 ? "" : "s"}`].filter(Boolean).join(" · ")}</span>{companyEnrichmentEnabled && !isDemo && <ActionButton endpoint="/api/holdings/enrich" label={<>Review issues</>} variant="outline" size="sm" />}</div>}
           <HoldingsTable holdings={summary.holdings} summary={summary} dailyRows={dailyPerformance.rows.map((row) => ({ ticker: row.ticker, dayChangePct: row.dayChangePct, dayPnl: row.dayPnl }))} companyReportsEnabled={companyReportsEnabled && !isDemo} companyEnrichmentEnabled={companyEnrichmentEnabled && !isDemo} readOnly={isDemo} />
         </>
+      )}
+      {summary.hiddenHoldings.length > 0 && (
+        <section className="rounded-lg border border-border bg-card">
+          <div className="flex items-center justify-between border-b border-border px-4 py-3">
+            <div>
+              <h2 className="text-sm font-semibold">Hidden holdings</h2>
+              <p className="mt-0.5 text-xs text-muted-foreground">Kept in your ledger but excluded from totals, performance, dividends and Copilot.</p>
+            </div>
+            <span className="text-xs tabular-nums text-muted-foreground">{summary.hiddenHoldings.length}</span>
+          </div>
+          <ul>
+            {summary.hiddenHoldings.map((h) => (
+              <li key={h.ticker} className="flex flex-wrap items-center justify-between gap-2 border-b border-border px-4 py-2.5 last:border-b-0">
+                <div className="flex items-baseline gap-2">
+                  <span className="text-sm font-medium">{h.ticker}</span>
+                  {h.company_name && <span className="text-xs text-muted-foreground">{h.company_name}</span>}
+                </div>
+                <div className="flex items-center gap-3">
+                  <span className="text-xs tabular-nums text-muted-foreground">{formatNumber(h.quantity, 0)} shares · cost {formatMoney(h.total_cost)}</span>
+                  {!isDemo && <ActionButton endpoint={`/api/holdings/${h.ticker}`} method="PATCH" body={{ hidden: false }} label={<><Eye className="h-3.5 w-3.5" /> Unhide</>} variant="outline" size="sm" />}
+                </div>
+              </li>
+            ))}
+          </ul>
+        </section>
       )}
     </div>
   );

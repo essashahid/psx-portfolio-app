@@ -423,7 +423,7 @@ export async function getBullsBears(supabase: SupabaseClient, userId: string): P
     .maybeSingle();
 
   const [{ data: holdings }, universe, regime, foreignFlow] = await Promise.all([
-    supabase.from("holdings").select("ticker, company_name, sector, quantity, avg_cost, total_cost").eq("user_id", userId).gt("quantity", 0),
+    supabase.from("holdings").select("ticker, company_name, sector, quantity, avg_cost, total_cost").eq("user_id", userId).eq("hidden", false).gt("quantity", 0),
     getScoreUniverse(supabase),
     snap ? buildRegime(supabase, snap.id) : Promise.resolve(null),
     getForeignFlowSnapshot(supabase),

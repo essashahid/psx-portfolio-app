@@ -185,6 +185,7 @@ export async function generateDividendForecasts(
     .from("holdings")
     .select("ticker, company_name, quantity")
     .eq("user_id", userId)
+    .eq("hidden", false)
     .gt("quantity", 0);
   const holdingList = holdings ?? [];
   const tickers = holdingList.map((h) => String(h.ticker));

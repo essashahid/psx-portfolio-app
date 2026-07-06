@@ -19,7 +19,7 @@ export function ActionButton({
   ...buttonProps
 }: {
   endpoint: string;
-  method?: "POST" | "DELETE";
+  method?: "POST" | "PATCH" | "DELETE";
   body?: Record<string, unknown>;
   label: React.ReactNode;
   confirmText?: string;

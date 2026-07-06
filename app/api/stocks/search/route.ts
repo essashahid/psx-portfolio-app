@@ -25,7 +25,7 @@ export async function GET(request: Request) {
     if (tickers.length === 0) return NextResponse.json({ results: [] });
 
     const [{ data: holdings }, { data: watch }, { data: quotes }, { data: tech }] = await Promise.all([
-      supabase.from("holdings").select("ticker, quantity").eq("user_id", user.id).in("ticker", tickers).gt("quantity", 0),
+      supabase.from("holdings").select("ticker, quantity").eq("user_id", user.id).in("ticker", tickers).eq("hidden", false).gt("quantity", 0),
       supabase.from("stock_watchlist").select("ticker").eq("user_id", user.id).in("ticker", tickers),
       supabase.from("market_quotes").select("ticker, price, day_change_pct, as_of").in("ticker", tickers),
       supabase.from("company_technicals").select("ticker, latest_price, day_change_pct").in("ticker", tickers),

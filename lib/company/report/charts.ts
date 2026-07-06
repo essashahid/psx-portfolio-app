@@ -92,6 +92,7 @@ export async function buildTransactionMarkers(
     .select("quantity, avg_cost")
     .eq("user_id", userId)
     .eq("ticker", ticker.toUpperCase())
+    .eq("hidden", false)
     .maybeSingle();
 
   const markers: TransactionMarker[] = (txns ?? []).map((t) => ({
