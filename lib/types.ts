@@ -73,7 +73,18 @@ export interface Holding {
   total_cost: number;
   source: string;
   notes: string | null;
+  hidden: boolean;
   last_updated: string;
+}
+
+/** Holding the user has excluded from analysis; listed only on the holdings page. */
+export interface HiddenHolding {
+  ticker: string;
+  company_name: string | null;
+  sector: string | null;
+  quantity: number;
+  avg_cost: number;
+  total_cost: number;
 }
 
 export interface Transaction {
@@ -279,4 +290,6 @@ export interface PortfolioSummary {
   sectorWeights: { sector: string; value: number; weight: number }[];
   largestSector: { sector: string; weight: number } | null;
   pricedHoldings: number;
+  /** Positions excluded from all analysis; kept here so the holdings page can list and unhide them. */
+  hiddenHoldings: HiddenHolding[];
 }

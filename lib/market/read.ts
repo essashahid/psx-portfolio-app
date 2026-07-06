@@ -184,7 +184,7 @@ export async function getMarketDashboard(supabase: SupabaseClient, userId: strin
   // ownership/watchlist overlay needs the per-request RLS client.
   const [global, { data: holdings }, { data: watch }] = await Promise.all([
     getCachedMarketGlobal(),
-    supabase.from("holdings").select("ticker, company_name, sector, quantity").eq("user_id", userId),
+    supabase.from("holdings").select("ticker, company_name, sector, quantity").eq("user_id", userId).eq("hidden", false),
     supabase.from("stock_watchlist").select("ticker").eq("user_id", userId),
   ]);
 

@@ -16,6 +16,7 @@ import type { EnrichedHolding, PortfolioSummary } from "@/lib/types";
 import { formatMoney, formatNumber, formatSignedPct, cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import { SectorChip } from "@/components/sector-chip";
+import { ActionButton } from "@/components/action-button";
 import { AddTransactionDialog } from "@/components/add-transaction-dialog";
 import { GenerateReportDialog } from "@/components/stock/generate-report-dialog";
 import { Input } from "@/components/ui/input";
@@ -221,6 +222,18 @@ function HoldingActionMenu({
         <Link href="/dividends" className="rounded px-2 py-1.5 hover:bg-muted">Record dividend</Link>
         {!readOnly && <Link href={`/stocks/${holding.ticker}`} className="rounded px-2 py-1.5 hover:bg-muted">Edit target</Link>}
         {!readOnly && <Link href={`/stocks/${holding.ticker}`} className="rounded px-2 py-1.5 hover:bg-muted">Edit thesis</Link>}
+        {!readOnly && (
+          <ActionButton
+            endpoint={`/api/holdings/${holding.ticker}`}
+            method="PATCH"
+            body={{ hidden: true }}
+            label="Hide from analysis"
+            confirmText={`Hide ${holding.ticker}? It stays in your ledger but is excluded from totals, performance, dividends and Copilot until you unhide it.`}
+            variant="ghost"
+            size="sm"
+            className="h-auto justify-start px-2 py-1.5 text-xs font-normal"
+          />
+        )}
         {companyEnrichmentEnabled && (
           <Link href={`/stocks/${holding.ticker}`} className="rounded px-2 py-1.5 hover:bg-muted">Update company information</Link>
         )}

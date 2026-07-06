@@ -30,7 +30,8 @@ export async function POST() {
       supabase
         .from("holdings")
         .select("ticker, sector, quantity, avg_cost")
-        .eq("user_id", user.id),
+        .eq("user_id", user.id)
+        .eq("hidden", false),
     ]);
 
     if (!entries || entries.length < 2) {

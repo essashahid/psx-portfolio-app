@@ -1,6 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type {
   EnrichedHolding,
+  HiddenHolding,
   Holding,
   PortfolioSummary,
   Target,
@@ -25,7 +26,21 @@ export async function getPortfolio(
     .eq("user_id", userId)
     .gt("quantity", 0)
     .order("ticker");
-  const holdings = (holdingsRes.data ?? []) as Holding[];
+  // Hidden positions stay in the ledger but drop out of every aggregate below;
+  // they are surfaced separately so the holdings page can list and unhide them.
+  const allHoldings = (holdingsRes.data ?? []) as Holding[];
+  const holdings = allHoldings.filter((h) => !h.hidden);
+  const hiddenHoldings: HiddenHolding[] = allHoldings
+    .filter((h) => h.hidden)
+    .map((h) => ({
+      ticker: h.ticker,
+      company_name: h.company_name,
+      sector: h.sector,
+      quantity: Number(h.quantity),
+      avg_cost: Number(h.avg_cost),
+      total_cost: Number(h.total_cost),
+    }));
+  const hiddenTickers = new Set(hiddenHoldings.map((h) => h.ticker));
   const tickers = [...new Set(holdings.map((h) => h.ticker))];
 
   const [pricesRes, targetsRes, thesesRes, divRes, realizedRes, cashRes] =
@@ -37,7 +52,7 @@ export async function getPortfolio(
       supabase.from("targets").select("*").eq("user_id", userId),
       supabase.from("theses").select("*").eq("user_id", userId),
       supabase.from("dividends").select("ticker, amount, net_amount, status").eq("user_id", userId),
-      supabase.from("transactions").select("type, net_amount, realized_pl").eq("user_id", userId),
+      supabase.from("transactions").select("ticker, type, net_amount, realized_pl").eq("user_id", userId),
       supabase.from("cash_movements").select("type, amount").eq("user_id", userId),
     ]);
 
@@ -59,6 +74,7 @@ export async function getPortfolio(
   let pendingDividendIncome = 0;
   let pendingDividends = 0;
   for (const d of divRes.data ?? []) {
+    if (d.ticker && hiddenTickers.has(d.ticker)) continue;
     const amt = Number(d.net_amount ?? d.amount ?? 0);
     const status = d.status ?? "received";
     if (status === "received") {
@@ -73,10 +89,11 @@ export async function getPortfolio(
     }
   }
 
-  const realizedPl = (realizedRes.data ?? []).reduce(
-    (s, r) => s + Number(r.realized_pl ?? 0),
-    0
-  );
+  // Realized P/L excludes hidden tickers (it is an analysis figure); the cash
+  // ledger below keeps every row because cash movements are real either way.
+  const realizedPl = (realizedRes.data ?? [])
+    .filter((r) => !r.ticker || !hiddenTickers.has(r.ticker))
+    .reduce((s, r) => s + Number(r.realized_pl ?? 0), 0);
 
   // Broker cash on hand, derived from the full ledger so it always reconciles:
   // deposits and sale proceeds add, buys, withdrawals, fees and CGT subtract.
@@ -181,6 +198,7 @@ export async function getPortfolio(
       ? { sector: sectorWeights[0].sector, weight: sectorWeights[0].weight }
       : null,
     pricedHoldings: enriched.filter((h) => h.latest_price !== null).length,
+    hiddenHoldings,
   };
 }
 

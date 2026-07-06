@@ -104,6 +104,7 @@ export async function checkUpcomingDividends(
       .from("holdings")
       .select("ticker, company_name, quantity")
       .eq("user_id", userId)
+      .eq("hidden", false)
       .gt("quantity", 0),
     getStockMasterMap(),
   ]);

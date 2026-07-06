@@ -8,6 +8,7 @@ const PatchSchema = z.object({
   quantity: z.number().positive().optional(),
   avg_cost: z.number().nonnegative().optional(),
   notes: z.string().max(1000).optional(),
+  hidden: z.boolean().optional(),
 });
 
 export async function PATCH(
@@ -27,11 +28,30 @@ export async function PATCH(
 
   const { data: existing, error: readErr } = await supabase
     .from("holdings")
-    .select("quantity, avg_cost")
+    .select("quantity, avg_cost, hidden")
     .eq("user_id", user.id)
     .eq("ticker", symbol)
     .maybeSingle();
   if (readErr) return errorResponse(readErr);
+
+  // Hide/unhide is a flag flip, not a ledger event: update the row, then
+  // re-derive the snapshot, benchmark series and alerts so every analysis
+  // surface reflects the exclusion immediately.
+  if (parsed.data.hidden !== undefined && parsed.data.hidden !== Boolean(existing?.hidden)) {
+    if (!existing) return NextResponse.json({ error: `No holding for ${symbol}` }, { status: 404 });
+    const { error: hideErr } = await supabase
+      .from("holdings")
+      .update({ hidden: parsed.data.hidden })
+      .eq("user_id", user.id)
+      .eq("ticker", symbol);
+    if (hideErr) return errorResponse(hideErr);
+    await recomputeAll(supabase, user.id, { changedTickers: [symbol] });
+    return NextResponse.json({
+      message: parsed.data.hidden
+        ? `${symbol} hidden. It is excluded from all analysis until you unhide it.`
+        : `${symbol} is back in your analysis.`,
+    });
+  }
 
   const currentQty = Number(existing?.quantity ?? 0);
   const currentAvg = Number(existing?.avg_cost ?? 0);
