@@ -22,6 +22,24 @@ interface FinRow {
   data: Record<string, number | null | string>;
 }
 
+// Hand-verified current shares outstanding for names where a bonus/split has
+// made the filing EPS's share base stale, so price ÷ (filing EPS) mis-values
+// them. Each entry is confirmed against Sarmaaya's snapshot (shares + P/E). The
+// default everywhere else is the filing-derived count (PAT ÷ EPS), which is
+// correct for companies with no recent corporate action. Keep this list small
+// and sourced — it exists to correct real corporate actions, not to paper over
+// bad extractions. When adding a name, verify shares AND that the resulting P/E
+// matches Sarmaaya before committing.
+const SHARE_COUNT_OVERRIDES: Record<string, number> = {
+  // MTL: 100% bonus after the 9M FY2026 filing. Filing implies ~199.5M; current
+  // ~399.03M (Sarmaaya). Restores P/E ~16.4 (Sarmaaya 16.41) from a false 8.2.
+  MTL: 399_030_000,
+  // LOADS: rights issue completed 27 Mar 2026 (+120M shares). Paid-up capital
+  // in the 9M FY2026 filing = Rs 3,712,500,000 = 371.25M shares (Sarmaaya
+  // agrees); the reported EPS still uses the ~272M weighted-average base.
+  LOADS: 371_250_000,
+};
+
 // A truly-annual row: trust the specific fiscal_period so a row mis-tagged
 // period_type "annual" but carrying an interim period (9M/H1/Qx) is excluded
 // from the annual series used for valuation and year-over-year growth.
@@ -94,7 +112,7 @@ export async function computeRatios(supabase: SupabaseClient, ticker: string): P
       .eq("review_status", "published")
       .order("reported_date", { ascending: false, nullsFirst: false })
       .limit(60),
-    supabase.from("market_quotes").select("price, as_of").eq("ticker", t).maybeSingle(),
+    supabase.from("market_quotes").select("price, as_of, market_cap").eq("ticker", t).maybeSingle(),
     // Market-wide payouts (ticker-scoped, populated from the official PSX feed)
     // so dividend ratios compute for every company, not just imported holdings.
     supabase
@@ -265,6 +283,41 @@ export async function computeRatios(supabase: SupabaseClient, ticker: string): P
   // units. Require PAT and EPS to have the same sign to avoid nonsense shares.
   const sharesOutstanding =
     pat !== null && eps !== null && eps !== 0 && pat / eps > 0 ? Math.abs((pat * 1000) / eps) : null;
+
+  // --- Share-count reconciliation (bonus / split robustness) -----------------
+  // EPS is printed per the share count on the filing date. A bonus or split
+  // AFTER the filing changes the true share count but not the filing's EPS, so
+  // price ÷ EPS silently breaks (MTL 2026: a 100% bonus made our P/E read 8.2
+  // against a true 16.4; PSX carried the same stale number, only Sarmaaya's
+  // current-share figure was right). We CANNOT derive the fix from market_cap ÷
+  // price: our price feed is frequently stale (ANL's stored price was two days
+  // old, so market_cap ÷ price implied 579M shares when both the filing and
+  // Sarmaaya agree on ~485M), and our recorded payouts miss most bonus events.
+  // So the reliable current share count is the filing-derived one by default,
+  // overridden only for names where a corporate action is hand-verified against
+  // Sarmaaya. The reconciliation flag below surfaces divergences for review.
+  const quoteMarketCap =
+    quote?.market_cap != null && Number(quote.market_cap) > 0 ? Number(quote.market_cap) : null;
+  const quoteShares =
+    quoteMarketCap !== null && price !== null && price > 0 ? quoteMarketCap / price : null;
+  const shareRatio =
+    quoteShares !== null && sharesOutstanding !== null && sharesOutstanding > 0
+      ? quoteShares / sharesOutstanding
+      : null;
+  const shareAnomaly = shareRatio !== null && Math.abs(shareRatio - 1) > 0.12;
+  const overrideShares = SHARE_COUNT_OVERRIDES[t] ?? null;
+  const effectiveShares = overrideShares ?? sharesOutstanding;
+  const epsAdjust =
+    overrideShares !== null && sharesOutstanding !== null && overrideShares > 0
+      ? sharesOutstanding / overrideShares
+      : 1;
+  const valEpsAdj = valEps !== null ? valEps * epsAdjust : null;
+  const ttmEpsAdj = ttmEps !== null ? ttmEps * epsAdjust : null;
+  // A bonus/split restates per-share dividend history too. Recorded DPS is on
+  // the pre-action share base, so convert it to the current base with the same
+  // factor (MTL's yield read 11.5% on the old count vs a true 5.8%). epsAdjust
+  // is 1 for every name without an override, so this is a no-op elsewhere.
+  const ttmDpsAdj = ttmDps !== null ? ttmDps * epsAdjust : null;
   const revenueRupees = revenue !== null ? revenue * 1000 : null;
   const equityRupees = equity !== null ? equity * 1000 : null;
   const cashRupees = cashEq !== null ? cashEq * 1000 : null;
@@ -272,7 +325,7 @@ export async function computeRatios(supabase: SupabaseClient, ticker: string): P
   const borrowingsRupees = borrowings !== null ? borrowings * 1000 : null;
   const fcfRupees = fcf !== null ? fcf * 1000 : null;
   const operatingProfitRupees = operatingProfit !== null ? operatingProfit * 1000 : null;
-  const marketCap = price !== null && sharesOutstanding !== null ? price * sharesOutstanding : null;
+  const marketCap = price !== null && effectiveShares !== null ? price * effectiveShares : null;
   const enterpriseValue =
     marketCap !== null ? marketCap + (borrowingsRupees ?? 0) - (cashRupees ?? 0) : null;
   const netDebt = borrowings !== null && cashEq !== null ? borrowings - cashEq : null;
@@ -313,24 +366,26 @@ export async function computeRatios(supabase: SupabaseClient, ticker: string): P
   // Valuation — price-linked earnings ratios use the freshest EPS basis (TTM
   // when interim rows allow it), and say so in their period label.
   const valPeriod = valEpsPeriod ?? incomePeriod;
-  add("P/E", "Price ÷ EPS", { price, eps: valEps, eps_basis: valPeriod }, price !== null && valEps ? price / valEps : null, need([["price", price], ["EPS", valEps]]) ?? (valEps === 0 ? "EPS is zero." : null), valPeriod);
-  add("Earnings yield", "EPS ÷ Price", { price, eps: valEps, eps_basis: valPeriod }, price && valEps !== null ? (valEps / price) * 100 : null, need([["price", price], ["EPS", valEps]]), valPeriod);
-  add("EPS (TTM)", "Annual EPS + current interim EPS − prior-year same-period interim EPS", { annual_eps: eps, interim_eps: interimEpsNow, prior_year_interim_eps: interimEpsPrior }, ttmEps, ttmEps === null ? "Cannot calculate — missing: current or prior-year interim EPS." : null, ttmPeriod ?? incomePeriod);
+  const shareNote = overrideShares !== null ? " (share count overridden to current, corporate-action adjusted)" : "";
+  add("P/E", "Price ÷ EPS", { price, eps: valEpsAdj, eps_basis: valPeriod, share_adjust: epsAdjust }, price !== null && valEpsAdj ? price / valEpsAdj : null, need([["price", price], ["EPS", valEpsAdj]]) ?? (valEpsAdj === 0 ? "EPS is zero." : null), valPeriod);
+  add("Earnings yield", "EPS ÷ Price", { price, eps: valEpsAdj, eps_basis: valPeriod, share_adjust: epsAdjust }, price && valEpsAdj !== null ? (valEpsAdj / price) * 100 : null, need([["price", price], ["EPS", valEpsAdj]]), valPeriod);
+  add("EPS (TTM)", `Annual EPS + current interim EPS − prior-year same-period interim EPS${shareNote}`, { annual_eps: eps, interim_eps: interimEpsNow, prior_year_interim_eps: interimEpsPrior, share_adjust: epsAdjust }, ttmEpsAdj, ttmEpsAdj === null ? "Cannot calculate — missing: current or prior-year interim EPS." : null, ttmPeriod ?? incomePeriod);
   add("Interim EPS growth", "(Interim EPS − Prior-year same-period EPS) ÷ |Prior-year same-period EPS|", { interim_eps: interimEpsNow, prior_year_interim_eps: interimEpsPrior }, interimEpsNow !== null && interimEpsPrior ? ((interimEpsNow - interimEpsPrior) / Math.abs(interimEpsPrior)) * 100 : null, need([["current interim EPS", interimEpsNow], ["prior-year interim EPS", interimEpsPrior]]), interimGrowthPeriod ?? interimPeriod);
   add("Shares outstanding (derived)", "(Profit after tax × 1,000) ÷ EPS", { profit_after_tax_pkr_thousands: pat, eps }, sharesOutstanding, need([["profit after tax", pat], ["EPS", eps]]) ?? (eps === 0 ? "EPS is zero." : null), incomePeriod);
-  add("Market cap (derived)", "Price × derived shares outstanding", { price, shares_outstanding: sharesOutstanding }, marketCap, need([["price", price], ["derived shares outstanding", sharesOutstanding]]), incomePeriod);
-  add("Book value / share", "(Equity × 1,000) ÷ derived shares outstanding", { equity_pkr_thousands: equity, shares_outstanding: sharesOutstanding }, safeDiv(equityRupees, sharesOutstanding), need([["equity", equity], ["derived shares outstanding", sharesOutstanding]]), `${incomePeriod ?? "?"} / ${balancePeriod ?? "?"}`);
-  add("Sales / share", "(Revenue × 1,000) ÷ derived shares outstanding", { revenue_pkr_thousands: revenue, shares_outstanding: sharesOutstanding }, safeDiv(revenueRupees, sharesOutstanding), need([["revenue", revenue], ["derived shares outstanding", sharesOutstanding]]), incomePeriod);
-  add("Cash / share", "(Cash and equivalents × 1,000) ÷ derived shares outstanding", { cash_and_equivalents_pkr_thousands: cashEq, shares_outstanding: sharesOutstanding }, safeDiv(cashRupees, sharesOutstanding), need([["cash and equivalents", cashEq], ["derived shares outstanding", sharesOutstanding]]), `${incomePeriod ?? "?"} / ${balancePeriod ?? "?"}`);
-  add("P/B", "Price ÷ Book value per share", { price, equity_pkr_thousands: equity, shares_outstanding: sharesOutstanding }, price !== null ? safeDiv(price, safeDiv(equityRupees, sharesOutstanding)) : null, need([["price", price], ["equity", equity], ["derived shares outstanding", sharesOutstanding]]), `${incomePeriod ?? "?"} / ${balancePeriod ?? "?"}`);
+  add("Share count reconciliation", "Market shares (market cap ÷ price) ÷ filing-derived shares — a >12% gap flags a possible post-filing bonus/split or a stale price/market-cap feed; verify against Sarmaaya before overriding", { market_shares: quoteShares, filing_shares: sharesOutstanding, override_shares: overrideShares, anomaly: shareAnomaly ? 1 : 0 }, shareRatio, need([["market cap", quoteMarketCap], ["filing-derived shares", sharesOutstanding]]), incomePeriod);
+  add("Market cap (derived)", "Price × effective shares outstanding", { price, shares_outstanding: effectiveShares }, marketCap, need([["price", price], ["effective shares outstanding", effectiveShares]]), incomePeriod);
+  add("Book value / share", "(Equity × 1,000) ÷ effective shares outstanding", { equity_pkr_thousands: equity, shares_outstanding: effectiveShares }, safeDiv(equityRupees, effectiveShares), need([["equity", equity], ["effective shares outstanding", effectiveShares]]), `${incomePeriod ?? "?"} / ${balancePeriod ?? "?"}`);
+  add("Sales / share", "(Revenue × 1,000) ÷ effective shares outstanding", { revenue_pkr_thousands: revenue, shares_outstanding: effectiveShares }, safeDiv(revenueRupees, effectiveShares), need([["revenue", revenue], ["effective shares outstanding", effectiveShares]]), incomePeriod);
+  add("Cash / share", "(Cash and equivalents × 1,000) ÷ effective shares outstanding", { cash_and_equivalents_pkr_thousands: cashEq, shares_outstanding: effectiveShares }, safeDiv(cashRupees, effectiveShares), need([["cash and equivalents", cashEq], ["effective shares outstanding", effectiveShares]]), `${incomePeriod ?? "?"} / ${balancePeriod ?? "?"}`);
+  add("P/B", "Price ÷ Book value per share", { price, equity_pkr_thousands: equity, shares_outstanding: effectiveShares }, price !== null ? safeDiv(price, safeDiv(equityRupees, effectiveShares)) : null, need([["price", price], ["equity", equity], ["effective shares outstanding", effectiveShares]]), `${incomePeriod ?? "?"} / ${balancePeriod ?? "?"}`);
   add("P/S", "Market capitalization ÷ Revenue", { market_cap: marketCap, revenue_pkr: revenueRupees }, safeDiv(marketCap, revenueRupees), need([["market capitalization", marketCap], ["revenue", revenue]]), incomePeriod);
   add("Price / FCF", "Market capitalization ÷ Annualized free cash flow", { market_cap: marketCap, free_cash_flow_pkr_annualized: annualizedFcfRupees }, safeDiv(marketCap, annualizedFcfRupees), need([["market capitalization", marketCap], ["free cash flow", fcf]]), fcfYieldPeriod);
   add("FCF yield", "Annualized free cash flow ÷ Market capitalization", { free_cash_flow_pkr_annualized: annualizedFcfRupees, market_cap: marketCap }, pct(annualizedFcfRupees, marketCap), need([["free cash flow", fcf], ["market capitalization", marketCap]]), fcfYieldPeriod);
   add("EV/Sales", "Enterprise value ÷ Revenue", { enterprise_value: enterpriseValue, revenue_pkr: revenueRupees }, safeDiv(enterpriseValue, revenueRupees), need([["enterprise value", enterpriseValue], ["revenue", revenue]]), `${incomePeriod ?? "?"} / ${balancePeriod ?? "?"}`);
   add("EV/EBIT", "Enterprise value ÷ Operating profit", { enterprise_value: enterpriseValue, operating_profit_pkr: operatingProfitRupees }, safeDiv(enterpriseValue, operatingProfitRupees), need([["enterprise value", enterpriseValue], ["operating profit", operatingProfit]]), `${detailPeriod ?? incomePeriod ?? "?"} / ${balancePeriod ?? "?"}`);
-  add("Dividend yield (TTM)", "Trailing 12m cash DPS ÷ Price", { price, ttm_dps: ttmDps }, price && ttmDps ? (ttmDps / price) * 100 : null, need([["price", price], ["trailing dividends", ttmDps]]), "Last 12 months");
-  add("Payout ratio", "TTM DPS ÷ EPS", { ttm_dps: ttmDps, eps: valEps, eps_basis: valPeriod }, ttmDps && valEps ? (ttmDps / valEps) * 100 : null, need([["trailing dividends", ttmDps], ["EPS", valEps]]), valPeriod);
-  add("Dividend cover", "EPS ÷ TTM DPS", { eps: valEps, eps_basis: valPeriod, ttm_dps: ttmDps }, valEps && ttmDps ? valEps / ttmDps : null, need([["EPS", valEps], ["trailing dividends", ttmDps]]), valPeriod);
+  add("Dividend yield (TTM)", "Trailing 12m cash DPS ÷ Price", { price, ttm_dps: ttmDpsAdj, share_adjust: epsAdjust }, price && ttmDpsAdj ? (ttmDpsAdj / price) * 100 : null, need([["price", price], ["trailing dividends", ttmDpsAdj]]), "Last 12 months");
+  add("Payout ratio", "TTM DPS ÷ EPS", { ttm_dps: ttmDpsAdj, eps: valEpsAdj, eps_basis: valPeriod, share_adjust: epsAdjust }, ttmDpsAdj && valEpsAdj ? (ttmDpsAdj / valEpsAdj) * 100 : null, need([["trailing dividends", ttmDpsAdj], ["EPS", valEpsAdj]]), valPeriod);
+  add("Dividend cover", "EPS ÷ TTM DPS", { eps: valEpsAdj, eps_basis: valPeriod, ttm_dps: ttmDpsAdj, share_adjust: epsAdjust }, valEpsAdj && ttmDpsAdj ? valEpsAdj / ttmDpsAdj : null, need([["EPS", valEpsAdj], ["trailing dividends", ttmDpsAdj]]), valPeriod);
 
   // Profitability (statement-internal — units cancel)
   add("Gross margin", "Gross profit ÷ Revenue", { gross_profit: grossProfit, revenue }, grossProfit !== null && revenue ? (grossProfit / revenue) * 100 : null, need([["gross profit", grossProfit], ["revenue", revenue]]), incomePeriod);
@@ -355,7 +410,7 @@ export async function computeRatios(supabase: SupabaseClient, ticker: string): P
   add("Quick ratio", "(Current assets − Inventory) ÷ Current liabilities", { current_assets: currentAssets, inventory, current_liabilities: currentLiabilities }, currentAssets !== null && inventory !== null && currentLiabilities ? (currentAssets - inventory) / currentLiabilities : null, need([["current assets", currentAssets], ["inventory", inventory], ["current liabilities", currentLiabilities]]), balancePeriod);
   add("Cash ratio", "Cash and equivalents ÷ Current liabilities", { cash_and_equivalents: cashEq, current_liabilities: currentLiabilities }, safeDiv(cashEq, currentLiabilities), need([["cash and equivalents", cashEq], ["current liabilities", currentLiabilities]]), balancePeriod);
   add("Receivables / revenue", "Receivables ÷ Revenue", { receivables, revenue }, safeDiv(receivables, revenue), need([["receivables", receivables], ["revenue", revenue]]), `${incomePeriod ?? "?"} / ${balancePeriod ?? "?"}`);
-  add("Receivables / share", "(Receivables × 1,000) ÷ derived shares outstanding", { receivables_pkr_thousands: receivables, shares_outstanding: sharesOutstanding }, safeDiv(receivablesRupees, sharesOutstanding), need([["receivables", receivables], ["derived shares outstanding", sharesOutstanding]]), `${incomePeriod ?? "?"} / ${balancePeriod ?? "?"}`);
+  add("Receivables / share", "(Receivables × 1,000) ÷ effective shares outstanding", { receivables_pkr_thousands: receivables, shares_outstanding: effectiveShares }, safeDiv(receivablesRupees, effectiveShares), need([["receivables", receivables], ["effective shares outstanding", effectiveShares]]), `${incomePeriod ?? "?"} / ${balancePeriod ?? "?"}`);
   add("Receivables % of market cap", "(Receivables × 1,000) ÷ Market capitalization", { receivables_pkr_thousands: receivables, market_cap: marketCap }, pct(receivablesRupees, marketCap), need([["receivables", receivables], ["market capitalization", marketCap]]), `${balancePeriod ?? "?"}`);
   add("Days sales outstanding", "(Receivables ÷ Revenue) × 365", { receivables, revenue }, receivables !== null && revenue ? (receivables / revenue) * 365 : null, need([["receivables", receivables], ["revenue", revenue]]), `${incomePeriod ?? "?"} / ${balancePeriod ?? "?"}`);
   add("Retained earnings / assets", "Retained earnings ÷ Total assets", { retained_earnings: retainedEarnings, total_assets: totalAssets }, safeDiv(retainedEarnings, totalAssets), need([["retained earnings", retainedEarnings], ["total assets", totalAssets]]), balancePeriod);

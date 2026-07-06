@@ -1,6 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Candle, TechnicalSignals } from "@/lib/market/technicals";
 import { getPortfolio } from "@/lib/portfolio";
+import { verificationStatus } from "@/lib/engine/verified";
 import { getUserNewsFeed } from "@/lib/news/global-store";
 
 /**
@@ -134,6 +135,16 @@ export interface RatioCard {
   /** Quote used to re-reconcile price-linked ratios at read time. */
   priceUsed: number | null;
   priceAsOf: string | null;
+  /** Hand-verification status: "verified" = checked correct and still current,
+   * "stale" = verified but a newer filing has since landed, null = never
+   * checked. Carries the period/source/note of the check. */
+  verified: {
+    status: "verified" | "stale";
+    throughPeriod: string;
+    source: string;
+    basis: string;
+    note?: string;
+  } | null;
 }
 
 export interface TechnicalCard {
@@ -721,6 +732,10 @@ export async function getRatioCard(db: SupabaseClient, ticker: string): Promise<
   const newerInterim =
     interimRow && (!annualRow || (interimRow.fiscal_year as number) > ((annualRow.fiscal_year as number) ?? 0));
 
+  const latestPeriodOnFile =
+    (newerInterim && interimRow ? label(interimRow) : null) ?? (annualRow ? label(annualRow) : null);
+  const v = verificationStatus(t, latestPeriodOnFile);
+
   return {
     ticker: t,
     rows,
@@ -729,6 +744,15 @@ export async function getRatioCard(db: SupabaseClient, ticker: string): Promise<
     latestInterimPeriod: newerInterim && interimRow ? label(interimRow) : null,
     priceUsed: livePrice ?? inputNum("P/E", "price"),
     priceAsOf: (quote?.as_of as string) ?? null,
+    verified: v
+      ? {
+          status: v.status,
+          throughPeriod: v.verification.throughPeriod,
+          source: v.verification.source,
+          basis: v.verification.basis,
+          note: v.verification.note,
+        }
+      : null,
   };
 }
 
