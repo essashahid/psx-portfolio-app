@@ -136,10 +136,16 @@ export async function computeRatios(supabase: SupabaseClient, ticker: string): P
     .filter((r) => r.statement_type === "income_statement" && isAnnual(r) && r.source_type === "psx-portal")
     .sort((a, b) => (b.fiscal_year ?? 0) - (a.fiscal_year ?? 0));
 
-  // Valuation / margins / growth: prefer the clean page annual series; fall back
-  // to any annual, then any income statement.
+  // Valuation / margins / growth: prefer the clean page annual series, but only
+  // when it is not OLDER than the newest annual on file. A stale portal series
+  // (e.g. SCBPL's portal stuck at FY2024 while the filed FY2025 annual exists)
+  // must not override the newer filing annual — that broke TTM composition.
   const annualRows = rows.filter(isAnnual);
-  const income = pageAnnual[0] ?? latest(annualRows, "income_statement") ?? latest(rows, "income_statement");
+  const latestAnnual = latest(annualRows, "income_statement") ?? latest(rows, "income_statement");
+  const income =
+    pageAnnual[0] && (pageAnnual[0].fiscal_year ?? 0) >= (latestAnnual?.fiscal_year ?? 0)
+      ? pageAnnual[0]
+      : latestAnnual;
   const prevIncome = pageAnnual.length > 1 && income === pageAnnual[0] ? pageAnnual[1] : previous(income && isAnnual(income) ? annualRows : rows, income);
   const balance = latest(rows, "balance_sheet");
   const cash = latest(rows, "cash_flow");
@@ -239,6 +245,28 @@ export async function computeRatios(supabase: SupabaseClient, ticker: string): P
   const fcRaw = numOf(detailedIncome?.data, "finance_cost");
   const financeCost = fcRaw != null ? Math.abs(fcRaw) : null;
   const detailPeriod = periodLabel(detailedIncome);
+  // Bank-specific income items: pick the latest non-consolidated income row that
+  // carries net markup income (banks only). Months drive annualization of NIM.
+  const bankIncome = rows
+    .filter(
+      (r) =>
+        r.statement_type === "income_statement" &&
+        numOf(r.data, "net_markup_income") !== null &&
+        (r as { reporting_basis?: string | null }).reporting_basis !== "consolidated"
+    )
+    .sort((a, b) => (b.reported_date ?? "").localeCompare(a.reported_date ?? "") || (b.fiscal_year ?? 0) - (a.fiscal_year ?? 0))[0];
+  const netMarkupIncome = numOf(bankIncome?.data, "net_markup_income");
+  const nonMarkupIncome = numOf(bankIncome?.data, "non_markup_income");
+  const bankOpexRaw = numOf(bankIncome?.data, "operating_expenses");
+  const bankOpex = bankOpexRaw != null ? Math.abs(bankOpexRaw) : null;
+  const bankMonths = ((): number => {
+    const p = (bankIncome?.fiscal_period ?? "").toUpperCase();
+    if (p === "9M") return 9;
+    if (p === "H1") return 6;
+    if (/^Q[1-4]$/.test(p)) return 3;
+    return 12;
+  })();
+  const bankPeriod = periodLabel(bankIncome);
   const equity = numOf(balance?.data, "equity");
   const totalAssets = numOf(balance?.data, "total_assets");
   const currentAssets = numOf(balance?.data, "current_assets");
@@ -249,6 +277,12 @@ export async function computeRatios(supabase: SupabaseClient, ticker: string): P
   const receivables = numOf(balance?.data, "receivables");
   const totalLiabilities = numOf(balance?.data, "total_liabilities");
   const retainedEarnings = numOf(balance?.data, "retained_earnings");
+  // Bank-specific balance-sheet items (null for non-banks, so bank ratios below
+  // simply don't compute for industrial companies).
+  const deposits = numOf(balance?.data, "deposits");
+  const advances = numOf(balance?.data, "advances");
+  const grossAdvances = numOf(balance?.data, "gross_advances");
+  const nonPerformingLoans = numOf(balance?.data, "non_performing_loans");
   const ocf = numOf(cash?.data, "operating_cash_flow");
   const capex = numOf(cash?.data, "capex");
   const fcf = ocf !== null && capex !== null ? ocf - Math.abs(capex) : null;
@@ -473,6 +507,18 @@ export async function computeRatios(supabase: SupabaseClient, ticker: string): P
   add("Days sales outstanding", "(Receivables ÷ Revenue) × 365", { receivables, revenue: flowRevenue }, receivables !== null && flowRevenue ? (receivables / flowRevenue) * 365 : null, need([["receivables", receivables], ["revenue", flowRevenue]]), `${balancePeriod ?? "?"} / ${flowRevenuePeriod ?? "?"}`);
   add("Retained earnings / assets", "Retained earnings ÷ Total assets", { retained_earnings: retainedEarnings, total_assets: totalAssets }, safeDiv(retainedEarnings, totalAssets), need([["retained earnings", retainedEarnings], ["total assets", totalAssets]]), balancePeriod);
   add("Interest coverage", "(Profit before tax + Finance cost) ÷ Finance cost", { profit_before_tax: pbt, finance_cost: financeCost }, pbt !== null && financeCost ? (pbt + financeCost) / financeCost : null, need([["profit before tax", pbt], ["finance cost", financeCost]]), detailPeriod ?? incomePeriod);
+
+  // Bank-specific ratios. These only produce a value when the bank line items
+  // are present (net markup income, deposits, advances, NPLs), so they stay
+  // null for industrial companies. NIM annualizes an interim net markup income
+  // against total assets (a proxy for average earning assets); cost-to-income
+  // and the balance-sheet ratios are same-period, so no annualization.
+  const bankIncomeTotal = netMarkupIncome !== null || nonMarkupIncome !== null ? (netMarkupIncome ?? 0) + (nonMarkupIncome ?? 0) : null;
+  add("Net interest margin", "Annualized net markup income ÷ Total assets", { net_markup_income: netMarkupIncome, total_assets: totalAssets, months: bankMonths }, netMarkupIncome !== null && totalAssets ? ((netMarkupIncome * (12 / bankMonths)) / totalAssets) * 100 : null, need([["net markup income", netMarkupIncome], ["total assets", totalAssets]]), `${bankPeriod ?? "?"} / ${balancePeriod ?? "?"}`);
+  add("Cost-to-income", "Operating expenses ÷ (Net markup + non-markup income)", { operating_expenses: bankOpex, total_income: bankIncomeTotal }, bankOpex !== null && bankIncomeTotal ? (bankOpex / bankIncomeTotal) * 100 : null, need([["operating expenses", bankOpex], ["net markup income", netMarkupIncome]]), bankPeriod);
+  add("Non-markup income ratio", "Non-markup income ÷ (Net markup + non-markup income)", { non_markup_income: nonMarkupIncome, total_income: bankIncomeTotal }, nonMarkupIncome !== null && bankIncomeTotal ? (nonMarkupIncome / bankIncomeTotal) * 100 : null, need([["non-markup income", nonMarkupIncome], ["total income", bankIncomeTotal]]), bankPeriod);
+  add("Advances-to-deposits (ADR)", "Advances ÷ Deposits", { advances, deposits }, advances !== null && deposits ? (advances / deposits) * 100 : null, need([["advances", advances], ["deposits", deposits]]), balancePeriod);
+  add("NPL ratio", "Non-performing loans ÷ Gross advances", { non_performing_loans: nonPerformingLoans, gross_advances: grossAdvances }, nonPerformingLoans !== null && grossAdvances ? (nonPerformingLoans / grossAdvances) * 100 : null, need([["non-performing loans", nonPerformingLoans], ["gross advances", grossAdvances]]), balancePeriod);
 
   // Growth (vs previous extracted period of the same kind)
   const prevRevenue = numOf(prevIncome?.data, "revenue");

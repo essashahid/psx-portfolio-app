@@ -41,6 +41,7 @@
     "PIOC":   { "throughPeriod": "2026 9M", "basis": "unconsolidated", "source": "Sarmaaya", "date": "2026-07-07", "note": "cement; forward P/E 11.09 vs 11.77 — match" },
     "FLYNG":  { "throughPeriod": "2026 9M", "basis": "unconsolidated", "source": "Sarmaaya", "date": "2026-07-07", "note": "cement; was stale FY2025, extracted via OpenRouter → P/E 36.23 vs 36.70 match" },
     "DGKC":   { "throughPeriod": "2026 9M", "basis": "unconsolidated", "source": "filing+Sarmaaya", "date": "2026-07-07", "note": "cement; hand-read fixed corrupt 9M FY2025 comparative (real EPS 12.60 not composed 17.92). TTM 26.27, P/E 8.91 vs 8.47, net margin 14.88 vs 14.23" },
-    "MLCF":   { "throughPeriod": "2026 9M", "basis": "unconsolidated", "source": "filing+Sarmaaya", "date": "2026-07-07", "note": "cement; hand-read fixed 9M FY2025 comparative (real EPS 11.57; that period had a one-off 5.9B dividend). TTM 10.50, P/E 10.43 vs 10.20" }
+    "MLCF":   { "throughPeriod": "2026 9M", "basis": "unconsolidated", "source": "filing+Sarmaaya", "date": "2026-07-07", "note": "cement; hand-read fixed 9M FY2025 comparative (real EPS 11.57; that period had a one-off 5.9B dividend). TTM 10.50, P/E 10.43 vs 10.20" },
+    "SCBPL":  { "throughPeriod": "2026 Q1", "basis": "unconsolidated", "source": "filing+Sarmaaya", "date": "2026-07-07", "note": "bank; hand-read fixed stale FY2025 annual (real EPS 7.43 from equity statement, portal was stuck at 11.9). TTM 6.82 = P/E 9.83 EXACT. Bank ratios: NIM 5.91%, cost-to-income 32%, ADR 40%" }
   }
 }

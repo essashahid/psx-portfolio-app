@@ -672,9 +672,19 @@ Return JSON:
     // income_statement keys (use exactly these, null when absent):
     // revenue, cost_of_sales, gross_profit, operating_expenses, operating_profit,
     // finance_cost, profit_before_tax, tax, profit_after_tax, eps
+    // BANK income_statement extra keys (only for banks/DFIs, else null):
+    //   markup_earned (interest/markup/return earned), markup_expensed (interest expense),
+    //   net_markup_income (markup earned − expensed, "net markup/interest income"),
+    //   non_markup_income (fee/commission/FX/dividend/other non-markup income - total),
+    //   provisions (provisions/credit loss/reversal against advances & investments - as printed, negative if a charge)
     // balance_sheet keys:
     // total_assets, current_assets, cash_and_equivalents, inventory, receivables,
     // total_liabilities, current_liabilities, borrowings, equity, retained_earnings
+    // BANK balance_sheet extra keys (only for banks/DFIs, else null):
+    //   deposits (deposits and other accounts), advances (net advances/financing),
+    //   gross_advances (gross advances before provision, from the advances note if on the face),
+    //   non_performing_loans (non-performing advances/loans, from the advances note if shown),
+    //   investments (total investments)
     // cash_flow keys:
     // operating_cash_flow, investing_cash_flow, financing_cash_flow, capex, cash_balance
   }
