@@ -1,6 +1,6 @@
 {
   "_note": "Sarmaaya Company Snapshot reference data, pasted from https://sarmaaya.pk/stocks/{TICKER}. Used to validate our ratio engine. Add/refresh entries with: npx tsx scripts/sarmaaya-verify.ts add <TICKER> <html-file>. basis='consolidated' marks names where Sarmaaya reports the group (we compute unconsolidated to match PSX), so an EPS/PE gap there is expected, not a bug.",
-  "_asOf": "2026-07-06",
+  "_asOf": "2026-07-07",
   "snapshots": {
     "PPL": {
       "priceClose": 252.66,
@@ -161,6 +161,134 @@
       "pb": 1.77,
       "pe": 8.59,
       "basis": "consolidated"
+    },
+    "MEBL": {
+      "priceClose": 566.77,
+      "high52": 572,
+      "low52": 349.89,
+      "marketCap": 1020000000000,
+      "shares": 1800000000,
+      "dividendYield": 5.03,
+      "eps": 50.58,
+      "netMargin": 19.77,
+      "pb": 3.59,
+      "pe": 11.2
+    },
+    "MARI": {
+      "priceClose": 704.1,
+      "high52": 795,
+      "low52": 544.56,
+      "marketCap": 845360000000,
+      "shares": 1200000000,
+      "dividendYield": 4.26,
+      "eps": 57.11,
+      "netMargin": 37.45,
+      "pb": 2.96,
+      "pe": 12.33,
+      "peg": 0.53
+    },
+    "UBL": {
+      "priceClose": 494.67,
+      "high52": 517,
+      "low52": 293.25,
+      "marketCap": 1240000000000,
+      "shares": 2500000000,
+      "dividendYield": 6.47,
+      "eps": 56.83,
+      "netMargin": 10.63,
+      "pb": 2.93,
+      "pe": 8.7
+    },
+    "MCB": {
+      "priceClose": 432.59,
+      "high52": 452,
+      "low52": 317.63,
+      "marketCap": 512650000000,
+      "shares": 1190000000,
+      "dividendYield": 8.32,
+      "eps": 47.99,
+      "netMargin": 15.37,
+      "pb": 1.62,
+      "pe": 9.01,
+      "note": "unverified: our EPS/PE/DY all diverge together, needs filing check"
+    },
+    "NBP": {
+      "priceClose": 217.48,
+      "high52": 287.8,
+      "low52": 118.01,
+      "marketCap": 462690000000,
+      "shares": 2130000000,
+      "dividendYield": 16.09,
+      "eps": 37.26,
+      "netMargin": 9.75,
+      "pb": 1.06,
+      "pe": 5.84
+    },
+    "HBL": {
+      "priceClose": 318.15,
+      "high52": 369.99,
+      "low52": 200.01,
+      "marketCap": 466680000000,
+      "shares": 1470000000,
+      "dividendYield": 6.29,
+      "eps": 45.16,
+      "netMargin": 8.43,
+      "pb": 1.03,
+      "pe": 7.04
+    },
+    "PAKT": {
+      "priceClose": 1490,
+      "high52": 1720,
+      "low52": 1140,
+      "marketCap": 380250000000,
+      "shares": 255490000,
+      "dividendYield": 8.06,
+      "eps": 128.9,
+      "netMargin": 22.48,
+      "pb": 7.91,
+      "pe": 11.55,
+      "peg": 0.45
+    },
+    "ENGROH": {
+      "priceClose": 293.83,
+      "high52": 302.5,
+      "low52": 182.71,
+      "marketCap": 353840000000,
+      "shares": 1200000000,
+      "dividendYield": 0,
+      "eps": 53.18,
+      "netMargin": 10.18,
+      "pe": 5.53,
+      "peg": 0.33,
+      "basis": "consolidated",
+      "note": "BROKEN on our side: unconsolidated standalone parent earns near-zero profit; TTM math on a near-zero denominator produces P/E ~9731. Needs consolidated read or basis-architecture fix."
+    },
+    "NESTLE": {
+      "priceClose": 7690,
+      "high52": 10520,
+      "low52": 7000,
+      "marketCap": 348690000000,
+      "shares": 45350000,
+      "dividendYield": 7.24,
+      "eps": 393.76,
+      "netMargin": 8.81,
+      "pb": 12.97,
+      "pe": 19.53,
+      "peg": 1.29
+    },
+    "FATIMA": {
+      "priceClose": 165.92,
+      "high52": 192.8,
+      "low52": 100.5,
+      "marketCap": 348430000000,
+      "shares": 2100000000,
+      "dividendYield": 5.73,
+      "eps": 17.58,
+      "netMargin": 13.62,
+      "pb": 2.01,
+      "pe": 9.44,
+      "peg": 0.26,
+      "note": "unverified: our EPS/PE/DY all diverge together, needs filing check"
     }
   }
 }

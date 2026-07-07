@@ -318,7 +318,6 @@ export async function computeRatios(supabase: SupabaseClient, ticker: string): P
   // factor (MTL's yield read 11.5% on the old count vs a true 5.8%). epsAdjust
   // is 1 for every name without an override, so this is a no-op elsewhere.
   const ttmDpsAdj = ttmDps !== null ? ttmDps * epsAdjust : null;
-  const revenueRupees = revenue !== null ? revenue * 1000 : null;
   const equityRupees = equity !== null ? equity * 1000 : null;
   const cashRupees = cashEq !== null ? cashEq * 1000 : null;
   const receivablesRupees = receivables !== null ? receivables * 1000 : null;
@@ -335,7 +334,54 @@ export async function computeRatios(supabase: SupabaseClient, ticker: string): P
 
   const incomePeriod = periodLabel(income);
   const balancePeriod = periodLabel(balance);
+  // Market cap is price × shares from the LIVE quote, not a filing period, so
+  // label it by the quote date rather than an income period.
+  const priceAsOfPeriod = quote?.as_of ? `as of ${quote.as_of}` : null;
   const source = income?.source_url ?? balance?.source_url ?? null;
+
+  // --- TTM flow figures (revenue, PAT) for margin/return/turnover ratios -----
+  // Margin, return, and turnover ratios historically divided by the last FULL
+  // fiscal year's income while P/E already used TTM — so ROE / net margin /
+  // asset turnover lagged a whole year once interim results landed. Build TTM
+  // revenue and PAT the same way as TTM EPS (annual + current interim −
+  // prior-year same interim). These are absolute rupee figures, so a bonus /
+  // split (share-count override) does not affect them. PAT falls back to
+  // ttmEps × shares when interim rows are portal-EPS-only (no PAT line), and
+  // the whole thing falls back to the latest annual value when no TTM is
+  // derivable — so nothing regresses for names lacking interim detail.
+  const ttmFlow = (field: string): { value: number; period: string } | null => {
+    if (annualYear === null || annualYear === undefined) return null;
+    const annual = numOf(income?.data, field);
+    if (annual === null) return null;
+    const y = annualYear + 1;
+    for (const n of [3, 2, 1]) {
+      const cur = cumulativeField(y, n, field);
+      if (cur === null) continue;
+      const prior = cumulativeField(annualYear, n, field);
+      if (prior === null) return null;
+      return { value: annual + cur - prior, period: `TTM to ${y} ${cumLabel(n)}` };
+    }
+    return null;
+  };
+  const ttmRevInfo = ttmFlow("revenue");
+  const ttmPatInfo = ttmFlow("profit_after_tax");
+  const ttmPatFromEps =
+    ttmEps !== null && sharesOutstanding !== null ? (ttmEps * sharesOutstanding) / 1000 : null;
+  const ttmRevenue = ttmRevInfo?.value ?? null;
+  const ttmPat = ttmPatInfo?.value ?? ttmPatFromEps;
+  const ttmPatPeriod = ttmPatInfo?.period ?? (ttmPatFromEps !== null ? ttmPeriod : null);
+  // Preferred (freshest) flow figures used below: TTM when available, else the
+  // latest annual value. Net margin must pair PAT and revenue from the SAME
+  // period, so it only goes TTM when both are TTM-derivable.
+  const flowRevenue = ttmRevenue ?? revenue;
+  const flowRevenueRupees = flowRevenue !== null ? flowRevenue * 1000 : null;
+  const flowRevenuePeriod = ttmRevenue !== null ? ttmRevInfo?.period ?? incomePeriod : incomePeriod;
+  const flowPat = ttmPat ?? pat;
+  const flowPatPeriod = ttmPat !== null ? ttmPatPeriod ?? incomePeriod : incomePeriod;
+  const marginTtm = ttmPat !== null && ttmRevenue !== null;
+  const marginPat = marginTtm ? ttmPat : pat;
+  const marginRevenue = marginTtm ? ttmRevenue : revenue;
+  const marginPeriod = marginTtm ? ttmRevInfo?.period ?? incomePeriod : incomePeriod;
 
   const out: RatioRow[] = [];
   const add = (
@@ -373,15 +419,15 @@ export async function computeRatios(supabase: SupabaseClient, ticker: string): P
   add("Interim EPS growth", "(Interim EPS − Prior-year same-period EPS) ÷ |Prior-year same-period EPS|", { interim_eps: interimEpsNow, prior_year_interim_eps: interimEpsPrior }, interimEpsNow !== null && interimEpsPrior ? ((interimEpsNow - interimEpsPrior) / Math.abs(interimEpsPrior)) * 100 : null, need([["current interim EPS", interimEpsNow], ["prior-year interim EPS", interimEpsPrior]]), interimGrowthPeriod ?? interimPeriod);
   add("Shares outstanding (derived)", "(Profit after tax × 1,000) ÷ EPS", { profit_after_tax_pkr_thousands: pat, eps }, sharesOutstanding, need([["profit after tax", pat], ["EPS", eps]]) ?? (eps === 0 ? "EPS is zero." : null), incomePeriod);
   add("Share count reconciliation", "Market shares (market cap ÷ price) ÷ filing-derived shares — a >12% gap flags a possible post-filing bonus/split or a stale price/market-cap feed; verify against Sarmaaya before overriding", { market_shares: quoteShares, filing_shares: sharesOutstanding, override_shares: overrideShares, anomaly: shareAnomaly ? 1 : 0 }, shareRatio, need([["market cap", quoteMarketCap], ["filing-derived shares", sharesOutstanding]]), incomePeriod);
-  add("Market cap (derived)", "Price × effective shares outstanding", { price, shares_outstanding: effectiveShares }, marketCap, need([["price", price], ["effective shares outstanding", effectiveShares]]), incomePeriod);
-  add("Book value / share", "(Equity × 1,000) ÷ effective shares outstanding", { equity_pkr_thousands: equity, shares_outstanding: effectiveShares }, safeDiv(equityRupees, effectiveShares), need([["equity", equity], ["effective shares outstanding", effectiveShares]]), `${incomePeriod ?? "?"} / ${balancePeriod ?? "?"}`);
-  add("Sales / share", "(Revenue × 1,000) ÷ effective shares outstanding", { revenue_pkr_thousands: revenue, shares_outstanding: effectiveShares }, safeDiv(revenueRupees, effectiveShares), need([["revenue", revenue], ["effective shares outstanding", effectiveShares]]), incomePeriod);
-  add("Cash / share", "(Cash and equivalents × 1,000) ÷ effective shares outstanding", { cash_and_equivalents_pkr_thousands: cashEq, shares_outstanding: effectiveShares }, safeDiv(cashRupees, effectiveShares), need([["cash and equivalents", cashEq], ["effective shares outstanding", effectiveShares]]), `${incomePeriod ?? "?"} / ${balancePeriod ?? "?"}`);
-  add("P/B", "Price ÷ Book value per share", { price, equity_pkr_thousands: equity, shares_outstanding: effectiveShares }, price !== null ? safeDiv(price, safeDiv(equityRupees, effectiveShares)) : null, need([["price", price], ["equity", equity], ["effective shares outstanding", effectiveShares]]), `${incomePeriod ?? "?"} / ${balancePeriod ?? "?"}`);
-  add("P/S", "Market capitalization ÷ Revenue", { market_cap: marketCap, revenue_pkr: revenueRupees }, safeDiv(marketCap, revenueRupees), need([["market capitalization", marketCap], ["revenue", revenue]]), incomePeriod);
+  add("Market cap (derived)", "Price × effective shares outstanding", { price, shares_outstanding: effectiveShares }, marketCap, need([["price", price], ["effective shares outstanding", effectiveShares]]), priceAsOfPeriod);
+  add("Book value / share", "(Equity × 1,000) ÷ effective shares outstanding", { equity_pkr_thousands: equity, shares_outstanding: effectiveShares }, safeDiv(equityRupees, effectiveShares), need([["equity", equity], ["effective shares outstanding", effectiveShares]]), balancePeriod);
+  add("Sales / share", "(Revenue × 1,000) ÷ effective shares outstanding", { revenue_pkr_thousands: flowRevenue, shares_outstanding: effectiveShares }, safeDiv(flowRevenueRupees, effectiveShares), need([["revenue", flowRevenue], ["effective shares outstanding", effectiveShares]]), flowRevenuePeriod);
+  add("Cash / share", "(Cash and equivalents × 1,000) ÷ effective shares outstanding", { cash_and_equivalents_pkr_thousands: cashEq, shares_outstanding: effectiveShares }, safeDiv(cashRupees, effectiveShares), need([["cash and equivalents", cashEq], ["effective shares outstanding", effectiveShares]]), balancePeriod);
+  add("P/B", "Price ÷ Book value per share", { price, equity_pkr_thousands: equity, shares_outstanding: effectiveShares }, price !== null ? safeDiv(price, safeDiv(equityRupees, effectiveShares)) : null, need([["price", price], ["equity", equity], ["effective shares outstanding", effectiveShares]]), balancePeriod);
+  add("P/S", "Market capitalization ÷ Revenue", { market_cap: marketCap, revenue_pkr: flowRevenueRupees }, safeDiv(marketCap, flowRevenueRupees), need([["market capitalization", marketCap], ["revenue", flowRevenue]]), flowRevenuePeriod);
   add("Price / FCF", "Market capitalization ÷ Annualized free cash flow", { market_cap: marketCap, free_cash_flow_pkr_annualized: annualizedFcfRupees }, safeDiv(marketCap, annualizedFcfRupees), need([["market capitalization", marketCap], ["free cash flow", fcf]]), fcfYieldPeriod);
   add("FCF yield", "Annualized free cash flow ÷ Market capitalization", { free_cash_flow_pkr_annualized: annualizedFcfRupees, market_cap: marketCap }, pct(annualizedFcfRupees, marketCap), need([["free cash flow", fcf], ["market capitalization", marketCap]]), fcfYieldPeriod);
-  add("EV/Sales", "Enterprise value ÷ Revenue", { enterprise_value: enterpriseValue, revenue_pkr: revenueRupees }, safeDiv(enterpriseValue, revenueRupees), need([["enterprise value", enterpriseValue], ["revenue", revenue]]), `${incomePeriod ?? "?"} / ${balancePeriod ?? "?"}`);
+  add("EV/Sales", "Enterprise value ÷ Revenue", { enterprise_value: enterpriseValue, revenue_pkr: flowRevenueRupees }, safeDiv(enterpriseValue, flowRevenueRupees), need([["enterprise value", enterpriseValue], ["revenue", flowRevenue]]), `${flowRevenuePeriod ?? "?"} / ${balancePeriod ?? "?"}`);
   add("EV/EBIT", "Enterprise value ÷ Operating profit", { enterprise_value: enterpriseValue, operating_profit_pkr: operatingProfitRupees }, safeDiv(enterpriseValue, operatingProfitRupees), need([["enterprise value", enterpriseValue], ["operating profit", operatingProfit]]), `${detailPeriod ?? incomePeriod ?? "?"} / ${balancePeriod ?? "?"}`);
   add("Dividend yield (TTM)", "Trailing 12m cash DPS ÷ Price", { price, ttm_dps: ttmDpsAdj, share_adjust: epsAdjust }, price && ttmDpsAdj ? (ttmDpsAdj / price) * 100 : null, need([["price", price], ["trailing dividends", ttmDpsAdj]]), "Last 12 months");
   add("Payout ratio", "TTM DPS ÷ EPS", { ttm_dps: ttmDpsAdj, eps: valEpsAdj, eps_basis: valPeriod, share_adjust: epsAdjust }, ttmDpsAdj && valEpsAdj ? (ttmDpsAdj / valEpsAdj) * 100 : null, need([["trailing dividends", ttmDpsAdj], ["EPS", valEpsAdj]]), valPeriod);
@@ -390,14 +436,14 @@ export async function computeRatios(supabase: SupabaseClient, ticker: string): P
   // Profitability (statement-internal — units cancel)
   add("Gross margin", "Gross profit ÷ Revenue", { gross_profit: grossProfit, revenue }, grossProfit !== null && revenue ? (grossProfit / revenue) * 100 : null, need([["gross profit", grossProfit], ["revenue", revenue]]), incomePeriod);
   add("Operating margin", "Operating profit ÷ Revenue", { operating_profit: operatingProfit, revenue: detailRevenue }, operatingProfit !== null && detailRevenue ? (operatingProfit / detailRevenue) * 100 : null, need([["operating profit", operatingProfit], ["revenue", detailRevenue]]), detailPeriod ?? incomePeriod);
-  add("Net margin", "Profit after tax ÷ Revenue", { profit_after_tax: pat, revenue }, pat !== null && revenue ? (pat / revenue) * 100 : null, need([["profit after tax", pat], ["revenue", revenue]]), incomePeriod);
+  add("Net margin", "Profit after tax ÷ Revenue", { profit_after_tax: marginPat, revenue: marginRevenue }, marginPat !== null && marginRevenue ? (marginPat / marginRevenue) * 100 : null, need([["profit after tax", marginPat], ["revenue", marginRevenue]]), marginPeriod);
   add("Cost of sales ratio", "Cost of sales ÷ Revenue", { cost_of_sales: costOfSales ?? detailCostOfSales, revenue: costOfSales !== null ? revenue : detailRevenue }, pct(costOfSales ?? detailCostOfSales, costOfSales !== null ? revenue : detailRevenue), need([["cost of sales", costOfSales ?? detailCostOfSales], ["revenue", costOfSales !== null ? revenue : detailRevenue]]), costOfSales !== null ? incomePeriod : detailPeriod ?? incomePeriod);
   add("Operating expense ratio", "Operating expenses ÷ Revenue", { operating_expenses: operatingExpenses, revenue: detailRevenue }, pct(operatingExpenses, detailRevenue), need([["operating expenses", operatingExpenses], ["revenue", detailRevenue]]), detailPeriod ?? incomePeriod);
   add("Effective tax rate", "Tax expense ÷ Profit before tax", { tax_expense: tax, profit_before_tax: pbt }, pct(tax, pbt), need([["tax", tax], ["profit before tax", pbt]]), detailPeriod ?? incomePeriod);
-  add("ROE", "Profit after tax ÷ Equity", { profit_after_tax: pat, equity }, pat !== null && equity ? (pat / equity) * 100 : null, need([["profit after tax", pat], ["equity", equity]]), `${incomePeriod ?? "?"} / ${balancePeriod ?? "?"}`);
-  add("ROA", "Profit after tax ÷ Total assets", { profit_after_tax: pat, total_assets: totalAssets }, pat !== null && totalAssets ? (pat / totalAssets) * 100 : null, need([["profit after tax", pat], ["total assets", totalAssets]]), `${incomePeriod ?? "?"} / ${balancePeriod ?? "?"}`);
+  add("ROE", "Profit after tax ÷ Equity", { profit_after_tax: flowPat, equity }, flowPat !== null && equity ? (flowPat / equity) * 100 : null, need([["profit after tax", flowPat], ["equity", equity]]), `${flowPatPeriod ?? "?"} / ${balancePeriod ?? "?"}`);
+  add("ROA", "Profit after tax ÷ Total assets", { profit_after_tax: flowPat, total_assets: totalAssets }, flowPat !== null && totalAssets ? (flowPat / totalAssets) * 100 : null, need([["profit after tax", flowPat], ["total assets", totalAssets]]), `${flowPatPeriod ?? "?"} / ${balancePeriod ?? "?"}`);
   add("ROIC", "NOPAT ÷ (Equity + Borrowings − Cash)", { nopat, equity, borrowings, cash_and_equivalents: cashEq, tax_rate: taxRate }, pct(nopat, investedCapital), need([["operating profit", operatingProfit], ["tax", tax], ["profit before tax", pbt], ["equity", equity], ["borrowings", borrowings], ["cash and equivalents", cashEq]]), `${detailPeriod ?? incomePeriod ?? "?"} / ${balancePeriod ?? "?"}`);
-  add("Asset turnover", "Revenue ÷ Total assets", { revenue, total_assets: totalAssets }, safeDiv(revenue, totalAssets), need([["revenue", revenue], ["total assets", totalAssets]]), `${incomePeriod ?? "?"} / ${balancePeriod ?? "?"}`);
+  add("Asset turnover", "Revenue ÷ Total assets", { revenue: flowRevenue, total_assets: totalAssets }, safeDiv(flowRevenue, totalAssets), need([["revenue", flowRevenue], ["total assets", totalAssets]]), `${flowRevenuePeriod ?? "?"} / ${balancePeriod ?? "?"}`);
   add("Equity multiplier", "Total assets ÷ Equity", { total_assets: totalAssets, equity }, safeDiv(totalAssets, equity), need([["total assets", totalAssets], ["equity", equity]]), balancePeriod);
 
   // Leverage & liquidity
@@ -409,10 +455,10 @@ export async function computeRatios(supabase: SupabaseClient, ticker: string): P
   add("Current ratio", "Current assets ÷ Current liabilities", { current_assets: currentAssets, current_liabilities: currentLiabilities }, currentAssets !== null && currentLiabilities ? currentAssets / currentLiabilities : null, need([["current assets", currentAssets], ["current liabilities", currentLiabilities]]), balancePeriod);
   add("Quick ratio", "(Current assets − Inventory) ÷ Current liabilities", { current_assets: currentAssets, inventory, current_liabilities: currentLiabilities }, currentAssets !== null && inventory !== null && currentLiabilities ? (currentAssets - inventory) / currentLiabilities : null, need([["current assets", currentAssets], ["inventory", inventory], ["current liabilities", currentLiabilities]]), balancePeriod);
   add("Cash ratio", "Cash and equivalents ÷ Current liabilities", { cash_and_equivalents: cashEq, current_liabilities: currentLiabilities }, safeDiv(cashEq, currentLiabilities), need([["cash and equivalents", cashEq], ["current liabilities", currentLiabilities]]), balancePeriod);
-  add("Receivables / revenue", "Receivables ÷ Revenue", { receivables, revenue }, safeDiv(receivables, revenue), need([["receivables", receivables], ["revenue", revenue]]), `${incomePeriod ?? "?"} / ${balancePeriod ?? "?"}`);
-  add("Receivables / share", "(Receivables × 1,000) ÷ effective shares outstanding", { receivables_pkr_thousands: receivables, shares_outstanding: effectiveShares }, safeDiv(receivablesRupees, effectiveShares), need([["receivables", receivables], ["effective shares outstanding", effectiveShares]]), `${incomePeriod ?? "?"} / ${balancePeriod ?? "?"}`);
+  add("Receivables / revenue", "Receivables ÷ Revenue", { receivables, revenue: flowRevenue }, safeDiv(receivables, flowRevenue), need([["receivables", receivables], ["revenue", flowRevenue]]), `${balancePeriod ?? "?"} / ${flowRevenuePeriod ?? "?"}`);
+  add("Receivables / share", "(Receivables × 1,000) ÷ effective shares outstanding", { receivables_pkr_thousands: receivables, shares_outstanding: effectiveShares }, safeDiv(receivablesRupees, effectiveShares), need([["receivables", receivables], ["effective shares outstanding", effectiveShares]]), balancePeriod);
   add("Receivables % of market cap", "(Receivables × 1,000) ÷ Market capitalization", { receivables_pkr_thousands: receivables, market_cap: marketCap }, pct(receivablesRupees, marketCap), need([["receivables", receivables], ["market capitalization", marketCap]]), `${balancePeriod ?? "?"}`);
-  add("Days sales outstanding", "(Receivables ÷ Revenue) × 365", { receivables, revenue }, receivables !== null && revenue ? (receivables / revenue) * 365 : null, need([["receivables", receivables], ["revenue", revenue]]), `${incomePeriod ?? "?"} / ${balancePeriod ?? "?"}`);
+  add("Days sales outstanding", "(Receivables ÷ Revenue) × 365", { receivables, revenue: flowRevenue }, receivables !== null && flowRevenue ? (receivables / flowRevenue) * 365 : null, need([["receivables", receivables], ["revenue", flowRevenue]]), `${balancePeriod ?? "?"} / ${flowRevenuePeriod ?? "?"}`);
   add("Retained earnings / assets", "Retained earnings ÷ Total assets", { retained_earnings: retainedEarnings, total_assets: totalAssets }, safeDiv(retainedEarnings, totalAssets), need([["retained earnings", retainedEarnings], ["total assets", totalAssets]]), balancePeriod);
   add("Interest coverage", "(Profit before tax + Finance cost) ÷ Finance cost", { profit_before_tax: pbt, finance_cost: financeCost }, pbt !== null && financeCost ? (pbt + financeCost) / financeCost : null, need([["profit before tax", pbt], ["finance cost", financeCost]]), detailPeriod ?? incomePeriod);
 
