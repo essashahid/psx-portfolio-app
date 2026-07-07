@@ -17,6 +17,13 @@
     "LUCK":   { "throughPeriod": "2026 9M", "basis": "unconsolidated", "source": "filing", "date": "2026-07-05", "note": "holding-co; both bases stored; PSX vendor P/E was wrong, ours is right" },
     "CCM":    { "throughPeriod": "2026 9M", "basis": "unconsolidated", "source": "filing", "date": "2026-07-06", "note": "micro-cap, earnings cross zero; TTM 0.85 rigorous, P/E unreliable on any basis" },
     "IDYM":   { "throughPeriod": "2026 9M", "basis": "unconsolidated", "source": "filing", "date": "2026-07-07", "note": "fixed basis-mixing bug; TTM 6.60. Holding-co, Sarmaaya reports consolidated 20.56" },
-    "LOADS":  { "throughPeriod": "2026 9M", "basis": "unconsolidated", "source": "filing+Sarmaaya", "date": "2026-07-07", "note": "rights issue; share-count override 371.25M; P/E 14.61 vs Sarmaaya 14.04" }
+    "LOADS":  { "throughPeriod": "2026 9M", "basis": "unconsolidated", "source": "filing+Sarmaaya", "date": "2026-07-07", "note": "rights issue; share-count override 371.25M; P/E 14.61 vs Sarmaaya 14.04" },
+    "MEBL":   { "throughPeriod": "2026 Q1", "basis": "unconsolidated", "source": "Sarmaaya", "date": "2026-07-07", "note": "P/E 11.06 vs 11.2, EPS 50.26 vs 50.58, P/B 3.58 vs 3.59 — bank, all metrics close" },
+    "MARI":   { "throughPeriod": "2026 9M", "basis": "unconsolidated", "source": "Sarmaaya", "date": "2026-07-07", "note": "P/E 11.80 vs 12.33, EPS 58.43 vs 57.11 — minor TTM composition variance" },
+    "UBL":    { "throughPeriod": "2026 Q1", "basis": "unconsolidated", "source": "Sarmaaya", "date": "2026-07-07", "note": "P/E 8.70 = Sarmaaya exact, EPS 56.43 vs 56.83. Dividend yield 13.04 vs Sarmaaya 6.47: confirmed 4 distinct genuine board declarations (Rs16 each) fall in our trailing-365-day window, not a duplicate bug — methodology difference (announcement-date window vs Sarmaaya's convention), unresolved" },
+    "NBP":    { "throughPeriod": "2026 Q1", "basis": "unconsolidated", "source": "Sarmaaya", "date": "2026-07-07", "note": "P/E 5.70 vs 5.84, dividend yield 16.09 = Sarmaaya EXACT match" },
+    "HBL":    { "throughPeriod": "2026 Q1", "basis": "unconsolidated", "source": "Sarmaaya", "date": "2026-07-07", "note": "P/E 7.15 vs 7.04, EPS 42.81 vs 45.16 — bank, within normal TTM variance" },
+    "PAKT":   { "throughPeriod": "2026 Q1", "basis": "unconsolidated", "source": "Sarmaaya", "date": "2026-07-07", "note": "EPS 128.89 vs 128.9 near-exact, P/E 11.28 vs 11.55. Dividend yield 11.01 vs Sarmaaya 8.06: same trailing-window methodology difference as UBL, confirmed genuine distinct declarations not duplicates" },
+    "NESTLE": { "throughPeriod": "2026 Q1", "basis": "unconsolidated", "source": "Sarmaaya", "date": "2026-07-07", "note": "P/E 19.55 vs 19.53, EPS 393.75 vs 393.76, P/B 12.99 vs 12.97, div yield 7.23 vs 7.24 — near-exact on every metric" }
   }
 }
