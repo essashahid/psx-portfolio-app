@@ -195,12 +195,14 @@ export async function computeRatios(supabase: SupabaseClient, ticker: string): P
   let interimEpsPrior: number | null = null;
   let interimPeriod: string | null = null;
   let interimGrowthPeriod: string | null = null;
+  let interimMonths: number | null = null;
   if (annualYear !== null && annualYear !== undefined) {
     const y = annualYear + 1;
     for (const n of [3, 2, 1]) {
       const current = cumulativeField(y, n, "eps");
       if (current === null) continue;
       interimEpsNow = current;
+      interimMonths = n * 3;
       interimEpsPrior = cumulativeField(annualYear, n, "eps");
       interimPeriod = `${y} ${cumLabel(n)}`;
       interimGrowthPeriod = `${y} ${cumLabel(n)} vs ${annualYear} ${cumLabel(n)}`;
@@ -313,6 +315,14 @@ export async function computeRatios(supabase: SupabaseClient, ticker: string): P
       : 1;
   const valEpsAdj = valEps !== null ? valEps * epsAdjust : null;
   const ttmEpsAdj = ttmEps !== null ? ttmEps * epsAdjust : null;
+  // Forward / run-rate EPS: the current interim cumulative annualized to a full
+  // year. For a stable company this ≈ TTM; for a recovering cyclical (cement)
+  // it runs well above trailing-12m and matches how some vendors quote P/E. We
+  // keep trailing-12m as the primary P/E (it is what actually happened) and
+  // surface this run-rate figure alongside so both views are visible.
+  const annualizedEps =
+    interimEpsNow !== null && interimMonths ? interimEpsNow * (12 / interimMonths) * epsAdjust : null;
+  const annualizedEpsPeriod = interimPeriod ? `annualized from ${interimPeriod}` : null;
   // A bonus/split restates per-share dividend history too. Recorded DPS is on
   // the pre-action share base, so convert it to the current base with the same
   // factor (MTL's yield read 11.5% on the old count vs a true 5.8%). epsAdjust
@@ -416,6 +426,8 @@ export async function computeRatios(supabase: SupabaseClient, ticker: string): P
   add("P/E", "Price ÷ EPS", { price, eps: valEpsAdj, eps_basis: valPeriod, share_adjust: epsAdjust }, price !== null && valEpsAdj ? price / valEpsAdj : null, need([["price", price], ["EPS", valEpsAdj]]) ?? (valEpsAdj === 0 ? "EPS is zero." : null), valPeriod);
   add("Earnings yield", "EPS ÷ Price", { price, eps: valEpsAdj, eps_basis: valPeriod, share_adjust: epsAdjust }, price && valEpsAdj !== null ? (valEpsAdj / price) * 100 : null, need([["price", price], ["EPS", valEpsAdj]]), valPeriod);
   add("EPS (TTM)", `Annual EPS + current interim EPS − prior-year same-period interim EPS${shareNote}`, { annual_eps: eps, interim_eps: interimEpsNow, prior_year_interim_eps: interimEpsPrior, share_adjust: epsAdjust }, ttmEpsAdj, ttmEpsAdj === null ? "Cannot calculate — missing: current or prior-year interim EPS." : null, ttmPeriod ?? incomePeriod);
+  add("EPS (annualized)", "Current interim EPS annualized to a full year (run-rate)", { interim_eps: interimEpsNow, months: interimMonths, share_adjust: epsAdjust }, annualizedEps, need([["current interim EPS", interimEpsNow]]), annualizedEpsPeriod ?? incomePeriod);
+  add("P/E (forward)", "Price ÷ annualized run-rate EPS", { price, eps: annualizedEps }, price !== null && annualizedEps ? price / annualizedEps : null, need([["price", price], ["annualized EPS", annualizedEps]]) ?? (annualizedEps === 0 ? "EPS is zero." : null), annualizedEpsPeriod ?? incomePeriod);
   add("Interim EPS growth", "(Interim EPS − Prior-year same-period EPS) ÷ |Prior-year same-period EPS|", { interim_eps: interimEpsNow, prior_year_interim_eps: interimEpsPrior }, interimEpsNow !== null && interimEpsPrior ? ((interimEpsNow - interimEpsPrior) / Math.abs(interimEpsPrior)) * 100 : null, need([["current interim EPS", interimEpsNow], ["prior-year interim EPS", interimEpsPrior]]), interimGrowthPeriod ?? interimPeriod);
   add("Shares outstanding (derived)", "(Profit after tax × 1,000) ÷ EPS", { profit_after_tax_pkr_thousands: pat, eps }, sharesOutstanding, need([["profit after tax", pat], ["EPS", eps]]) ?? (eps === 0 ? "EPS is zero." : null), incomePeriod);
   add("Share count reconciliation", "Market shares (market cap ÷ price) ÷ filing-derived shares — a >12% gap flags a possible post-filing bonus/split or a stale price/market-cap feed; verify against Sarmaaya before overriding", { market_shares: quoteShares, filing_shares: sharesOutstanding, override_shares: overrideShares, anomaly: shareAnomaly ? 1 : 0 }, shareRatio, need([["market cap", quoteMarketCap], ["filing-derived shares", sharesOutstanding]]), incomePeriod);

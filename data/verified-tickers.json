@@ -32,6 +32,15 @@
     "HMB":    { "throughPeriod": "2026 Q1", "basis": "unconsolidated", "source": "Sarmaaya", "date": "2026-07-07", "note": "bank; P/E 5.73 vs 5.50, P/B 1.01 vs 1.02, div yield 10.25 vs 10.08" },
     "BOP":    { "throughPeriod": "2026 Q1", "basis": "unconsolidated", "source": "Sarmaaya", "date": "2026-07-07", "note": "bank; P/E 6.38 vs 6.62, P/B 1.24 vs 1.27, div yield 6.78 vs 6.73" },
     "BOK":    { "throughPeriod": "2026 Q1", "basis": "unconsolidated", "source": "Sarmaaya", "date": "2026-07-07", "note": "bank; P/E 7.33 vs 7.57, P/B 1.79 vs 1.85, div yield 9.68 vs 9.36" },
-    "BIPL":   { "throughPeriod": "2026 Q1", "basis": "unconsolidated", "source": "Sarmaaya", "date": "2026-07-07", "note": "bank; P/E 7.38 vs 7.35, P/B 0.68 vs 0.68, div yield 9.66 vs 9.66 — near-exact" }
+    "BIPL":   { "throughPeriod": "2026 Q1", "basis": "unconsolidated", "source": "Sarmaaya", "date": "2026-07-07", "note": "bank; P/E 7.38 vs 7.35, P/B 0.68 vs 0.68, div yield 9.66 vs 9.66 — near-exact" },
+    "ACPL":   { "throughPeriod": "2026 9M", "basis": "unconsolidated", "source": "filing+Sarmaaya", "date": "2026-07-07", "note": "cement; hand-read to add missing 9M FY2025 comparative (EPS 9.53). TTM EPS 20.97 = Sarmaaya EXACT, net margin 6.74 = exact, P/E 10.88 vs 10.97" },
+    "BWCL":   { "throughPeriod": "2026 9M", "basis": "unconsolidated", "source": "Sarmaaya", "date": "2026-07-07", "note": "cement; trailing P/E 12.75 vs 12.55, forward 12.74 — both match" },
+    "FCCL":   { "throughPeriod": "2026 9M", "basis": "unconsolidated", "source": "Sarmaaya", "date": "2026-07-07", "note": "cement; forward P/E 10.02 vs 9.79 (Sarmaaya uses run-rate). Trailing 12.61 is correct trailing-12m; diverges only by convention" },
+    "KOHC":   { "throughPeriod": "2026 9M", "basis": "unconsolidated", "source": "Sarmaaya", "date": "2026-07-07", "note": "cement; forward P/E 9.87 vs 9.98 — match" },
+    "CHCC":   { "throughPeriod": "2026 9M", "basis": "unconsolidated", "source": "Sarmaaya", "date": "2026-07-07", "note": "cement; forward P/E 8.98 vs 8.97 — near-exact" },
+    "PIOC":   { "throughPeriod": "2026 9M", "basis": "unconsolidated", "source": "Sarmaaya", "date": "2026-07-07", "note": "cement; forward P/E 11.09 vs 11.77 — match" },
+    "FLYNG":  { "throughPeriod": "2026 9M", "basis": "unconsolidated", "source": "Sarmaaya", "date": "2026-07-07", "note": "cement; was stale FY2025, extracted via OpenRouter → P/E 36.23 vs 36.70 match" },
+    "DGKC":   { "throughPeriod": "2026 9M", "basis": "unconsolidated", "source": "filing+Sarmaaya", "date": "2026-07-07", "note": "cement; hand-read fixed corrupt 9M FY2025 comparative (real EPS 12.60 not composed 17.92). TTM 26.27, P/E 8.91 vs 8.47, net margin 14.88 vs 14.23" },
+    "MLCF":   { "throughPeriod": "2026 9M", "basis": "unconsolidated", "source": "filing+Sarmaaya", "date": "2026-07-07", "note": "cement; hand-read fixed 9M FY2025 comparative (real EPS 11.57; that period had a one-off 5.9B dividend). TTM 10.50, P/E 10.43 vs 10.20" }
   }
 }

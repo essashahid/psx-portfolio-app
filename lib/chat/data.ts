@@ -659,7 +659,7 @@ export async function getPositionHistoryCard(
 }
 
 const RATIO_ORDER = [
-  "P/E", "Earnings yield", "EPS (TTM)", "Interim EPS growth", "P/B", "P/S", "EV/Sales", "EV/EBIT", "FCF yield",
+  "P/E", "P/E (forward)", "Earnings yield", "EPS (TTM)", "EPS (annualized)", "Interim EPS growth", "P/B", "P/S", "EV/Sales", "EV/EBIT", "FCF yield",
   "Dividend yield (TTM)", "Payout ratio", "Dividend cover", "Book value / share",
   "Sales / share", "Cash / share", "Gross margin", "Operating margin", "Net margin",
   "ROE", "ROA", "ROIC", "Asset turnover", "Debt-to-equity", "Net debt-to-equity",
@@ -701,6 +701,8 @@ export async function getRatioCard(db: SupabaseClient, ticker: string): Promise<
   if (livePrice != null && livePrice > 0) {
     const peEps = inputNum("P/E", "eps");
     if (peEps != null && peEps !== 0) repriced.set("P/E", livePrice / peEps);
+    const fwdEps = inputNum("P/E (forward)", "eps");
+    if (fwdEps != null && fwdEps !== 0) repriced.set("P/E (forward)", livePrice / fwdEps);
     const eyEps = inputNum("Earnings yield", "eps");
     if (eyEps != null) repriced.set("Earnings yield", (eyEps / livePrice) * 100);
     const dps = inputNum("Dividend yield (TTM)", "ttm_dps");
