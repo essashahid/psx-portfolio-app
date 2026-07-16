@@ -278,11 +278,22 @@ export async function computeRatios(supabase: SupabaseClient, ticker: string): P
   const totalLiabilities = numOf(balance?.data, "total_liabilities");
   const retainedEarnings = numOf(balance?.data, "retained_earnings");
   // Bank-specific balance-sheet items (null for non-banks, so bank ratios below
-  // simply don't compute for industrial companies).
-  const deposits = numOf(balance?.data, "deposits");
-  const advances = numOf(balance?.data, "advances");
-  const grossAdvances = numOf(balance?.data, "gross_advances");
-  const nonPerformingLoans = numOf(balance?.data, "non_performing_loans");
+  // simply don't compute for industrial companies). Like bankIncome, use the
+  // latest balance sheet that actually CARRIES the bank fields — the newest BS
+  // may predate the bank-aware extraction schema and lack deposits/advances.
+  const bankBalance = rows
+    .filter(
+      (r) =>
+        r.statement_type === "balance_sheet" &&
+        numOf(r.data, "deposits") !== null &&
+        (r as { reporting_basis?: string | null }).reporting_basis !== "consolidated"
+    )
+    .sort((a, b) => (b.fiscal_year ?? 0) - (a.fiscal_year ?? 0) || (b.reported_date ?? "").localeCompare(a.reported_date ?? ""))[0];
+  const deposits = numOf(bankBalance?.data, "deposits");
+  const advances = numOf(bankBalance?.data, "advances");
+  const grossAdvances = numOf(bankBalance?.data, "gross_advances");
+  const nonPerformingLoans = numOf(bankBalance?.data, "non_performing_loans");
+  const bankBalancePeriod = periodLabel(bankBalance);
   const ocf = numOf(cash?.data, "operating_cash_flow");
   const capex = numOf(cash?.data, "capex");
   const fcf = ocf !== null && capex !== null ? ocf - Math.abs(capex) : null;
@@ -517,8 +528,8 @@ export async function computeRatios(supabase: SupabaseClient, ticker: string): P
   add("Net interest margin", "Annualized net markup income ÷ Total assets", { net_markup_income: netMarkupIncome, total_assets: totalAssets, months: bankMonths }, netMarkupIncome !== null && totalAssets ? ((netMarkupIncome * (12 / bankMonths)) / totalAssets) * 100 : null, need([["net markup income", netMarkupIncome], ["total assets", totalAssets]]), `${bankPeriod ?? "?"} / ${balancePeriod ?? "?"}`);
   add("Cost-to-income", "Operating expenses ÷ (Net markup + non-markup income)", { operating_expenses: bankOpex, total_income: bankIncomeTotal }, bankOpex !== null && bankIncomeTotal ? (bankOpex / bankIncomeTotal) * 100 : null, need([["operating expenses", bankOpex], ["net markup income", netMarkupIncome]]), bankPeriod);
   add("Non-markup income ratio", "Non-markup income ÷ (Net markup + non-markup income)", { non_markup_income: nonMarkupIncome, total_income: bankIncomeTotal }, nonMarkupIncome !== null && bankIncomeTotal ? (nonMarkupIncome / bankIncomeTotal) * 100 : null, need([["non-markup income", nonMarkupIncome], ["total income", bankIncomeTotal]]), bankPeriod);
-  add("Advances-to-deposits (ADR)", "Advances ÷ Deposits", { advances, deposits }, advances !== null && deposits ? (advances / deposits) * 100 : null, need([["advances", advances], ["deposits", deposits]]), balancePeriod);
-  add("NPL ratio", "Non-performing loans ÷ Gross advances", { non_performing_loans: nonPerformingLoans, gross_advances: grossAdvances }, nonPerformingLoans !== null && grossAdvances ? (nonPerformingLoans / grossAdvances) * 100 : null, need([["non-performing loans", nonPerformingLoans], ["gross advances", grossAdvances]]), balancePeriod);
+  add("Advances-to-deposits (ADR)", "Advances ÷ Deposits", { advances, deposits }, advances !== null && deposits ? (advances / deposits) * 100 : null, need([["advances", advances], ["deposits", deposits]]), bankBalancePeriod ?? balancePeriod);
+  add("NPL ratio", "Non-performing loans ÷ Gross advances", { non_performing_loans: nonPerformingLoans, gross_advances: grossAdvances }, nonPerformingLoans !== null && grossAdvances ? (nonPerformingLoans / grossAdvances) * 100 : null, need([["non-performing loans", nonPerformingLoans], ["gross advances", grossAdvances]]), bankBalancePeriod ?? balancePeriod);
 
   // Growth (vs previous extracted period of the same kind)
   const prevRevenue = numOf(prevIncome?.data, "revenue");
