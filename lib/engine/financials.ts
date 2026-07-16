@@ -833,7 +833,7 @@ function validStatement(s: ExtractedStatement): boolean {
  * structured statements with Gemini, validate, and upsert company_financials.
  * Skips filings already extracted (matched by source_url).
  */
-export async function extractFinancials(ticker: string, maxFilings = 2): Promise<ExtractionResult> {
+export async function extractFinancials(ticker: string, maxFilings = 2, force = false): Promise<ExtractionResult> {
   const t = ticker.toUpperCase();
   const out: ExtractionResult = { ticker: t, processed: 0, saved: 0, skipped: [], errors: [] };
 
@@ -923,7 +923,11 @@ export async function extractFinancials(ticker: string, maxFilings = 2): Promise
 
   for (const filing of resultPdfs) {
     if (out.processed >= maxFilings) break;
-    if (fullyExtracted(filing)) {
+    // force=true re-reads filings whose statements are already saved — needed
+    // after a schema extension (e.g. the bank line items) so existing rows get
+    // enriched with the new fields. Matching values upsert cleanly; differing
+    // values still stage for review, so a bad re-read cannot clobber good data.
+    if (!force && fullyExtracted(filing)) {
       out.skipped.push(`already extracted: ${filing.title}`);
       continue;
     }
