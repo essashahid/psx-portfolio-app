@@ -30,7 +30,11 @@ import { loadEnvLocal } from "./load-env";
 loadEnvLocal();
 
 const APPLY = process.argv.includes("--apply");
-const TOL = 0.02; // rupees per share; EPS is printed to 2dp
+// Each period's EPS is independently rounded to 2dp in the filing, so a sum
+// of N quarters can legitimately differ from the printed cumulative by up to
+// about N/2 paisa. Anything inside that band is presentation rounding, not a
+// data defect; only larger gaps are reported as material.
+const roundingBand = (n: number) => 0.005 * n + 0.02;
 
 type Row = {
   id: string;
@@ -97,14 +101,20 @@ async function main() {
         (acc, opts) => acc.flatMap((prefix) => opts.map((o) => [...prefix, o])),
         [[]]
       );
-      const matching = combos.filter((c) => Math.abs(c.reduce((s, r) => s + eps(r)!, 0) - target) <= TOL);
+      const tol = roundingBand(quarters.length);
+      const matching = combos.filter((c) => Math.abs(c.reduce((s, r) => s + eps(r)!, 0) - target) <= tol);
 
       if (matching.length === 0) {
-        reportOnly.push(
-          `${ticker} ${cums[0].fiscal_year}: ${cumLabel} eps ${target} but no combination of ${quarters.join("+")} sums to it (best ${combos
-            .map((c) => c.reduce((s, r) => s + eps(r)!, 0).toFixed(2))
-            .join(", ")})`
-        );
+        const best = combos
+          .map((c) => c.reduce((s, r) => s + eps(r)!, 0))
+          .sort((a, b) => Math.abs(a - target) - Math.abs(b - target))[0];
+        const gap = Math.abs(best - target);
+        // Scale-aware: a 0.10 gap means nothing on an EPS of 47 and a lot on 0.37.
+        const material = gap > tol * 3 && gap / Math.max(Math.abs(target), 0.5) > 0.05;
+        if (material)
+          reportOnly.push(
+            `${ticker} ${cums[0].fiscal_year}: ${cumLabel} eps ${target} vs quarters summing to ${best.toFixed(2)} (gap ${gap.toFixed(2)})`
+          );
         continue;
       }
       if (!hasDuplicate) continue; // already consistent, nothing to do
