@@ -654,7 +654,20 @@ STRICT RULES:
 - Use the CURRENT period column (not the comparative prior-year column).
 - If the document contains both CONSOLIDATED and UNCONSOLIDATED (standalone/separate) statements, extract ONLY the unconsolidated/standalone ones. Never mix figures from the two sets. If only consolidated statements exist, extract those and set basis accordingly.
 - basis: "unconsolidated" | "consolidated" | "unlabelled" — read it from the statement heading (e.g. "Condensed Interim Unconsolidated Statement of Profit or Loss").
-- fiscal_year is the calendar year in which the company's FISCAL YEAR ENDS, derived from the period-end date in the filing title or statement heading. Example: for a company with a June year end, the half year ended 31 December 2025 is fiscal_year 2026 fiscal_period "H1", and the nine months ended 31 March 2025 is fiscal_year 2025 fiscal_period "9M". For a December year end, the quarter ended 31 March 2026 is fiscal_year 2026 fiscal_period "Q1".
+- fiscal_year is the calendar year in which the company's FISCAL YEAR ENDS. It is NOT the calendar year of the period-end date. Derive it in three steps:
+    1. Find the company's year end. The comparative balance sheet column states it ("Audited 30 June 2025" means a June year end; "Audited December 31, 2025" means a December year end).
+    2. Find the period-end date of the statements you are reading.
+    3. fiscal_year = the calendar year of the FIRST year end that falls ON or AFTER that period-end date.
+  Worked examples for a JUNE year end (fiscal year runs 1 July to 30 June):
+    quarter ended 30 September 2025 -> next June end is June 2026 -> fiscal_year 2026, fiscal_period "Q1"
+    quarter ended 31 December 2025  -> next June end is June 2026 -> fiscal_year 2026, fiscal_period "Q2"
+    half year ended 31 December 2025 -> next June end is June 2026 -> fiscal_year 2026, fiscal_period "H1"
+    nine months ended 31 March 2026 -> next June end is June 2026 -> fiscal_year 2026, fiscal_period "9M"
+  Note that the first three all end in calendar 2025 but belong to fiscal_year 2026. Taking the calendar year of the period end would label them 2025 and is WRONG.
+  Worked examples for a DECEMBER year end (fiscal year runs 1 January to 31 December):
+    quarter ended 31 March 2026 -> next December end is December 2026 -> fiscal_year 2026, fiscal_period "Q1"
+    half year ended 30 June 2026 -> fiscal_year 2026, fiscal_period "H1"
+- Comparative columns get their OWN fiscal_year by the same rule, normally one year less than the current column. Never emit a comparative under the current period's fiscal_year.
 - If you cannot confidently identify a value, use null.
 - confidence: 0-1, how certain you are the numbers are correctly read from the document.
 
