@@ -76,7 +76,13 @@ export async function GET(
         latestInterim: card?.latestInterimPeriod ?? null,
       },
       priceUsed: card?.priceUsed ?? null,
-      ratios: card?.rows ?? [],
+      // Ratio values carry binary-float artifacts from the arithmetic
+      // (10.410000000000002); round at the boundary so consumers do not each
+      // have to. The stored value stays full precision.
+      ratios: (card?.rows ?? []).map((r) => ({
+        ...r,
+        value: typeof r.value === "number" && Number.isFinite(r.value) ? Number(r.value.toFixed(4)) : r.value,
+      })),
       payouts: (payouts ?? []).map((p) => ({
         date: p.announcement_date,
         kind: p.kind,
