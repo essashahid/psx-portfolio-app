@@ -18,13 +18,18 @@ async function main(){
   const live = await activeUniverseTickers(db,'companies');
   const V = new Set(verifiedTickers());
 
-  const page = async <T,>(t:string,c:string):Promise<T[]> => {
-    const o:T[]=[]; for(let i=0;;i+=1000){const {data}=await db.from(t).select(c).range(i,i+999); if(!data?.length)break; o.push(...(data as T[])); if(data.length<1000)break;} return o; };
+  const page = async <T,>(t: string, c: string): Promise<T[]> => {
+    const o:T[]=[]; for(let i=0;;i+=1000){const {data}=await db.from(t).select(c).range(i,i+999); if(!data?.length)break; o.push(...(data as unknown as T[])); if(data.length<1000)break;} return o; };
 
-  const sm = await page<any>('stock_master','ticker,company_name,sector');
-  const q  = await page<any>('market_quotes','ticker,market_cap,price,as_of');
-  const fin= await page<any>('company_financials','ticker,fiscal_year,statement_type,review_status');
-  const rat= await page<any>('company_ratios','ticker,ratio_name,source_period');
+  type Master = { ticker: string; company_name: string | null; sector: string | null };
+  type Quote = { ticker: string; market_cap: number | null };
+  type Fin = { ticker: string; fiscal_year: number | null; statement_type: string; review_status: string | null };
+  type Ratio = { ticker: string; ratio_name: string; source_period: string | null };
+
+  const sm = await page<Master>('stock_master','ticker,company_name,sector');
+  const q  = await page<Quote>('market_quotes','ticker,market_cap');
+  const fin= await page<Fin>('company_financials','ticker,fiscal_year,statement_type,review_status');
+  const rat= await page<Ratio>('company_ratios','ticker,ratio_name,source_period');
 
   const cap=new Map(q.map(r=>[r.ticker,Number(r.market_cap)||0]));
   const meta=new Map(sm.map(r=>[r.ticker,r]));
