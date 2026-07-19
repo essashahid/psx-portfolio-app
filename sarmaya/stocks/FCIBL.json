@@ -1,0 +1,19 @@
+{
+  "symbol": "FCIBL",
+  "name": "First Credit and Investment Bank Limited",
+  "source": "https://sarmaaya.pk/stocks/FCIBL",
+  "scraped_at": "2026-07-19T13:35:40",
+  "snapshot": {
+    "Price open": "35.5",
+    "Price close": "35.29",
+    "Price high": "35.9",
+    "Price low": "35",
+    "52 week high price": "61.33",
+    "52 week low price": "12.25",
+    "Market cap": "2.29B",
+    "Shares outstanding": "65M",
+    "Free float shares": "26M",
+    "Weekly average volume": "6.78K",
+    "Free Float %": "40"
+  }
+}

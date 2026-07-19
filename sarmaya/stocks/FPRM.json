@@ -1,0 +1,19 @@
+{
+  "symbol": "FPRM",
+  "name": "First Paramount Modaraba",
+  "source": "https://sarmaaya.pk/stocks/FPRM",
+  "scraped_at": "2026-07-19T13:35:40",
+  "snapshot": {
+    "Price open": "13.9",
+    "Price close": "12.94",
+    "Price high": "13.9",
+    "Price low": "12.7",
+    "52 week high price": "16.99",
+    "52 week low price": "9",
+    "Market cap": "178.42M",
+    "Shares outstanding": "13.79M",
+    "Free float shares": "6.2M",
+    "Weekly average volume": "56.84K",
+    "Free Float %": "45"
+  }
+}

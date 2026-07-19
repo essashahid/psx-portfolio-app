@@ -1,0 +1,19 @@
+{
+  "symbol": "IMS",
+  "name": "Intermarket Securities Limited",
+  "source": "https://sarmaaya.pk/stocks/IMS",
+  "scraped_at": "2026-07-19T13:35:40",
+  "snapshot": {
+    "Price open": "24",
+    "Price close": "22.54",
+    "Price high": "24",
+    "Price low": "22.4",
+    "52 week high price": "26.7",
+    "52 week low price": "10",
+    "Market cap": "29.02B",
+    "Shares outstanding": "1.29B",
+    "Free float shares": "128.75M",
+    "Weekly average volume": "2.03M",
+    "Free Float %": "10"
+  }
+}

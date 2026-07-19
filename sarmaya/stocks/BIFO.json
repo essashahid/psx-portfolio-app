@@ -1,0 +1,25 @@
+{
+  "symbol": "BIFO",
+  "name": "Biafo Industries Limited",
+  "source": "https://sarmaaya.pk/stocks/BIFO",
+  "scraped_at": "2026-07-19T13:35:40",
+  "snapshot": {
+    "Price open": "122",
+    "Price close": "120.65",
+    "Price high": "124.88",
+    "Price low": "116.01",
+    "52 week high price": "207.1",
+    "52 week low price": "79.1",
+    "Market cap": "5.6B",
+    "Shares outstanding": "46.38M",
+    "Free float shares": "16.23M",
+    "Weekly average volume": "90.29K",
+    "Free Float %": "35",
+    "Dividend Yield (%)": "4.67",
+    "Earnings Per Share": "9.41",
+    "Net Income Margin (%)": "12.78",
+    "Price to Book Value": "1.72",
+    "Price to Earnings": "8.68",
+    "PEG Ratio": "0.6"
+  }
+}

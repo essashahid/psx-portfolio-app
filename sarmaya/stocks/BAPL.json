@@ -1,0 +1,25 @@
+{
+  "symbol": "BAPL",
+  "name": "Bawany Air Products Limited",
+  "source": "https://sarmaaya.pk/stocks/BAPL",
+  "scraped_at": "2026-07-19T13:35:40",
+  "snapshot": {
+    "Price open": "29.55",
+    "Price close": "29.27",
+    "Price high": "30",
+    "Price low": "29",
+    "52 week high price": "64.03",
+    "52 week low price": "27",
+    "Market cap": "219.6M",
+    "Shares outstanding": "7.5M",
+    "Free float shares": "6.75M",
+    "Weekly average volume": "141.67K",
+    "Free Float %": "90",
+    "Dividend Yield (%)": "0",
+    "Earnings Per Share": "-13.61",
+    "Net Income Margin (%)": "-",
+    "Price to Book Value": "-2.62",
+    "Price to Earnings": "-2.15",
+    "PEG Ratio": "-0.02"
+  }
+}

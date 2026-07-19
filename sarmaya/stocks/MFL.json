@@ -1,0 +1,25 @@
+{
+  "symbol": "MFL",
+  "name": "Matco Foods Limited",
+  "source": "https://sarmaaya.pk/stocks/MFL",
+  "scraped_at": "2026-07-19T13:35:40",
+  "snapshot": {
+    "Price open": "46",
+    "Price close": "45.51",
+    "Price high": "46",
+    "Price low": "45.42",
+    "52 week high price": "85.73",
+    "52 week low price": "39.1",
+    "Market cap": "5.57B",
+    "Shares outstanding": "122.4M",
+    "Free float shares": "42.84M",
+    "Weekly average volume": "1.2M",
+    "Free Float %": "35",
+    "Dividend Yield (%)": "0",
+    "Earnings Per Share": "4.13",
+    "Net Income Margin (%)": "1.98",
+    "Price to Book Value": "0.52",
+    "Price to Earnings": "11.01",
+    "PEG Ratio": "0.22"
+  }
+}

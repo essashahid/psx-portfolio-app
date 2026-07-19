@@ -1,0 +1,25 @@
+{
+  "symbol": "FCEPL",
+  "name": "Frieslandcampina Engro Pakistan Limited",
+  "source": "https://sarmaaya.pk/stocks/FCEPL",
+  "scraped_at": "2026-07-19T13:35:40",
+  "snapshot": {
+    "Price open": "104.47",
+    "Price close": "102.31",
+    "Price high": "104.8",
+    "Price low": "101",
+    "52 week high price": "118.01",
+    "52 week low price": "63.86",
+    "Market cap": "78.43B",
+    "Shares outstanding": "766.6M",
+    "Free float shares": "76.66M",
+    "Weekly average volume": "354.78K",
+    "Free Float %": "10",
+    "Dividend Yield (%)": "4.05",
+    "Earnings Per Share": "4.51",
+    "Net Income Margin (%)": "3.23",
+    "Price to Book Value": "4.17",
+    "Price to Earnings": "15.68",
+    "PEG Ratio": "0.66"
+  }
+}

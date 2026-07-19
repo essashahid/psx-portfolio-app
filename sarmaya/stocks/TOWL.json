@@ -1,0 +1,19 @@
+{
+  "symbol": "TOWL",
+  "name": "Towellers Limited",
+  "source": "https://sarmaaya.pk/stocks/TOWL",
+  "scraped_at": "2026-07-19T13:35:40",
+  "snapshot": {
+    "Price open": "125.66",
+    "Price close": "123.42",
+    "Price high": "126.55",
+    "Price low": "122",
+    "52 week high price": "195.95",
+    "52 week low price": "92.5",
+    "Market cap": "2.1B",
+    "Shares outstanding": "17M",
+    "Free float shares": "3.4M",
+    "Weekly average volume": "8.08K",
+    "Free Float %": "20"
+  }
+}

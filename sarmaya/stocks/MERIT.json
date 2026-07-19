@@ -1,0 +1,25 @@
+{
+  "symbol": "MERIT",
+  "name": "Merit Packaging Limited",
+  "source": "https://sarmaaya.pk/stocks/MERIT",
+  "scraped_at": "2026-07-19T13:35:40",
+  "snapshot": {
+    "Price open": "9.95",
+    "Price close": "9.78",
+    "Price high": "10",
+    "Price low": "9.76",
+    "52 week high price": "14.69",
+    "52 week low price": "7.1",
+    "Market cap": "1.96B",
+    "Shares outstanding": "199.96M",
+    "Free float shares": "39.99M",
+    "Weekly average volume": "182.39K",
+    "Free Float %": "20",
+    "Dividend Yield (%)": "0",
+    "Earnings Per Share": "-1.75",
+    "Net Income Margin (%)": "-10.52",
+    "Price to Book Value": "0.83",
+    "Price to Earnings": "-5.59",
+    "PEG Ratio": "0.01"
+  }
+}

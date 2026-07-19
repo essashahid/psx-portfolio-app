@@ -1,0 +1,19 @@
+{
+  "symbol": "SPAC1",
+  "name": "LSE SPAC-I Limited",
+  "source": "https://sarmaaya.pk/stocks/SPAC1",
+  "scraped_at": "2026-07-19T13:35:40",
+  "snapshot": {
+    "Price open": "15.01",
+    "Price close": "14.41",
+    "Price high": "15.29",
+    "Price low": "14.25",
+    "52 week high price": "21.97",
+    "52 week low price": "11.15",
+    "Market cap": "374.66M",
+    "Shares outstanding": "26M",
+    "Free float shares": "15.6M",
+    "Weekly average volume": "138.82K",
+    "Free Float %": "60"
+  }
+}

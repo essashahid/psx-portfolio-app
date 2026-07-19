@@ -1,0 +1,19 @@
+{
+  "symbol": "MFFL",
+  "name": "Mitchells Fruit Farms Limited",
+  "source": "https://sarmaaya.pk/stocks/MFFL",
+  "scraped_at": "2026-07-19T13:35:40",
+  "snapshot": {
+    "Price open": "174.99",
+    "Price close": "173.34",
+    "Price high": "174.99",
+    "Price low": "172",
+    "52 week high price": "237",
+    "52 week low price": "139.66",
+    "Market cap": "3.97B",
+    "Shares outstanding": "22.88M",
+    "Free float shares": "3.85M",
+    "Weekly average volume": "2.98K",
+    "Free Float %": "16.82"
+  }
+}

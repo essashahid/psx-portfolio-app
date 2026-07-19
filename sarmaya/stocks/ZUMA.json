@@ -1,0 +1,19 @@
+{
+  "symbol": "ZUMA",
+  "name": "Zuma Resources Limited",
+  "source": "https://sarmaaya.pk/stocks/ZUMA",
+  "scraped_at": "2026-07-19T13:35:40",
+  "snapshot": {
+    "Price open": "105.75",
+    "Price close": "106.11",
+    "Price high": "112.79",
+    "Price low": "103.15",
+    "52 week high price": "119.49",
+    "52 week low price": "32.1",
+    "Market cap": "1.5B",
+    "Shares outstanding": "14.1M",
+    "Free float shares": "13.4M",
+    "Weekly average volume": "634.73K",
+    "Free Float %": "95"
+  }
+}

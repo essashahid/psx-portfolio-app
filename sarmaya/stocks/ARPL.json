@@ -1,0 +1,25 @@
+{
+  "symbol": "ARPL",
+  "name": "Archroma Pakistan Limited",
+  "source": "https://sarmaaya.pk/stocks/ARPL",
+  "scraped_at": "2026-07-19T13:35:40",
+  "snapshot": {
+    "Price open": "381",
+    "Price close": "379.99",
+    "Price high": "381",
+    "Price low": "377",
+    "52 week high price": "535",
+    "52 week low price": "325",
+    "Market cap": "13.13B",
+    "Shares outstanding": "34.56M",
+    "Free float shares": "8.64M",
+    "Weekly average volume": "6.5K",
+    "Free Float %": "25",
+    "Dividend Yield (%)": "6.46",
+    "Earnings Per Share": "38.21",
+    "Net Income Margin (%)": "4.75",
+    "Price to Book Value": "2.71",
+    "Price to Earnings": "8.57",
+    "PEG Ratio": "4.74"
+  }
+}

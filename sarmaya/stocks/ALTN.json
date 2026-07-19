@@ -1,0 +1,25 @@
+{
+  "symbol": "ALTN",
+  "name": "Altern Energy Limited",
+  "source": "https://sarmaaya.pk/stocks/ALTN",
+  "scraped_at": "2026-07-19T13:35:40",
+  "snapshot": {
+    "Price open": "8.2",
+    "Price close": "8.09",
+    "Price high": "8.29",
+    "Price low": "8.03",
+    "52 week high price": "15.52",
+    "52 week low price": "7.75",
+    "Market cap": "2.94B",
+    "Shares outstanding": "363.38M",
+    "Free float shares": "90.85M",
+    "Weekly average volume": "380.65K",
+    "Free Float %": "25",
+    "Dividend Yield (%)": "0",
+    "Earnings Per Share": "-4.61",
+    "Net Income Margin (%)": "-332.87",
+    "Price to Book Value": "0.53",
+    "Price to Earnings": "-1.75",
+    "PEG Ratio": "0.07"
+  }
+}

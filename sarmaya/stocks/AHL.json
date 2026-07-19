@@ -1,0 +1,25 @@
+{
+  "symbol": "AHL",
+  "name": "Arif Habib Limited",
+  "source": "https://sarmaaya.pk/stocks/AHL",
+  "scraped_at": "2026-07-19T13:35:40",
+  "snapshot": {
+    "Price open": "123.2",
+    "Price close": "124.29",
+    "Price high": "126.4",
+    "Price low": "123.2",
+    "52 week high price": "141.77",
+    "52 week low price": "74.75",
+    "Market cap": "8.12B",
+    "Shares outstanding": "65.34M",
+    "Free float shares": "16.34M",
+    "Weekly average volume": "215.05K",
+    "Free Float %": "25",
+    "Dividend Yield (%)": "13.26",
+    "Earnings Per Share": "15.32",
+    "Net Income Margin (%)": "29.14",
+    "Price to Book Value": "3.92",
+    "Price to Earnings": "5.48",
+    "PEG Ratio": "-1.23"
+  }
+}

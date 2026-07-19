@@ -1,0 +1,19 @@
+{
+  "symbol": "QTECH",
+  "name": "Quantum Data Technologies Limited",
+  "source": "https://sarmaaya.pk/stocks/QTECH",
+  "scraped_at": "2026-07-19T13:35:40",
+  "snapshot": {
+    "Price open": "51.11",
+    "Price close": "49.7",
+    "Price high": "52.35",
+    "Price low": "49.2",
+    "52 week high price": "57.8",
+    "52 week low price": "23.1",
+    "Market cap": "6.04B",
+    "Shares outstanding": "121.58M",
+    "Free float shares": "30.39M",
+    "Weekly average volume": "3.06M",
+    "Free Float %": "25"
+  }
+}

@@ -1,0 +1,25 @@
+{
+  "symbol": "CEPB",
+  "name": "Century Paper & Board Mills Limited",
+  "source": "https://sarmaaya.pk/stocks/CEPB",
+  "scraped_at": "2026-07-19T13:35:40",
+  "snapshot": {
+    "Price open": "29.35",
+    "Price close": "28.66",
+    "Price high": "29.46",
+    "Price low": "28.5",
+    "52 week high price": "46.7",
+    "52 week low price": "24.59",
+    "Market cap": "11.51B",
+    "Shares outstanding": "401.71M",
+    "Free float shares": "120.51M",
+    "Weekly average volume": "580.48K",
+    "Free Float %": "30",
+    "Dividend Yield (%)": "0",
+    "Earnings Per Share": "-1.87",
+    "Net Income Margin (%)": "-1.96",
+    "Price to Book Value": "0.88",
+    "Price to Earnings": "-15.33",
+    "PEG Ratio": "1.03"
+  }
+}

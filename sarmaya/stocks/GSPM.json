@@ -1,0 +1,19 @@
+{
+  "symbol": "GSPM",
+  "name": "Gulshan Spinning Mills Limited",
+  "source": "https://sarmaaya.pk/stocks/GSPM",
+  "scraped_at": "2026-07-19T13:35:40",
+  "snapshot": {
+    "Price open": "7.1",
+    "Price close": "6.8",
+    "Price high": "7.2",
+    "Price low": "6.72",
+    "52 week high price": "8.45",
+    "52 week low price": "2.8",
+    "Market cap": "151.13M",
+    "Shares outstanding": "22.23M",
+    "Free float shares": "20.63M",
+    "Weekly average volume": "114.66K",
+    "Free Float %": "92.84"
+  }
+}

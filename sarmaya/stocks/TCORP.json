@@ -1,0 +1,25 @@
+{
+  "symbol": "TCORP",
+  "name": "Tariq Corporation Limited",
+  "source": "https://sarmaaya.pk/stocks/TCORP",
+  "scraped_at": "2026-07-19T13:35:40",
+  "snapshot": {
+    "Price open": "22.23",
+    "Price close": "22.89",
+    "Price high": "22.99",
+    "Price low": "22.21",
+    "52 week high price": "31.87",
+    "52 week low price": "15.62",
+    "Market cap": "1.52B",
+    "Shares outstanding": "66.21M",
+    "Free float shares": "23.17M",
+    "Weekly average volume": "49.53K",
+    "Free Float %": "35",
+    "Dividend Yield (%)": "0",
+    "Earnings Per Share": "0.85",
+    "Net Income Margin (%)": "0.7",
+    "Price to Book Value": "0.4",
+    "Price to Earnings": "29.22",
+    "PEG Ratio": "-1.46"
+  }
+}

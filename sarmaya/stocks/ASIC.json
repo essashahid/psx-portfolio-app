@@ -1,0 +1,19 @@
+{
+  "symbol": "ASIC",
+  "name": "Asia Insurance Company Limited",
+  "source": "https://sarmaaya.pk/stocks/ASIC",
+  "scraped_at": "2026-07-19T13:35:40",
+  "snapshot": {
+    "Price open": "34.38",
+    "Price close": "34.45",
+    "Price high": "34.45",
+    "Price low": "34.3",
+    "52 week high price": "58.31",
+    "52 week low price": "13",
+    "Market cap": "2.52B",
+    "Shares outstanding": "73.01M",
+    "Free float shares": "21.9M",
+    "Weekly average volume": "734.6",
+    "Free Float %": "30"
+  }
+}

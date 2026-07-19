@@ -1,0 +1,25 @@
+{
+  "symbol": "FCCL",
+  "name": "Fauji Cement Company Limited",
+  "source": "https://sarmaaya.pk/stocks/FCCL",
+  "scraped_at": "2026-07-19T13:35:40",
+  "snapshot": {
+    "Price open": "58.6",
+    "Price close": "57.65",
+    "Price high": "58.9",
+    "Price low": "57.6",
+    "52 week high price": "62.84",
+    "52 week low price": "36.26",
+    "Market cap": "141.41B",
+    "Shares outstanding": "2.45B",
+    "Free float shares": "858.5M",
+    "Weekly average volume": "6.57M",
+    "Free Float %": "35",
+    "Dividend Yield (%)": "2.13",
+    "Earnings Per Share": "5.99",
+    "Net Income Margin (%)": "16.04",
+    "Price to Book Value": "1.56",
+    "Price to Earnings": "9.79",
+    "PEG Ratio": "0.09"
+  }
+}

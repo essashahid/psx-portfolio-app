@@ -1,0 +1,25 @@
+{
+  "symbol": "GAL",
+  "name": "Ghandhara Automobiles Limited",
+  "source": "https://sarmaaya.pk/stocks/GAL",
+  "scraped_at": "2026-07-19T13:35:40",
+  "snapshot": {
+    "Price open": "584.8",
+    "Price close": "572.23",
+    "Price high": "584.8",
+    "Price low": "568",
+    "52 week high price": "633",
+    "52 week low price": "291",
+    "Market cap": "32.62B",
+    "Shares outstanding": "57M",
+    "Free float shares": "22.8M",
+    "Weekly average volume": "1.49M",
+    "Free Float %": "40",
+    "Dividend Yield (%)": "2.65",
+    "Earnings Per Share": "117.24",
+    "Net Income Margin (%)": "12.52",
+    "Price to Book Value": "1.7",
+    "Price to Earnings": "2.62",
+    "PEG Ratio": "0"
+  }
+}

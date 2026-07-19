@@ -1,0 +1,25 @@
+{
+  "symbol": "SNGP",
+  "name": "Sui Northern Gas Pipelines Limited",
+  "source": "https://sarmaaya.pk/stocks/SNGP",
+  "scraped_at": "2026-07-19T13:35:40",
+  "snapshot": {
+    "Price open": "110",
+    "Price close": "107.49",
+    "Price high": "110.98",
+    "Price low": "106.5",
+    "52 week high price": "142.6",
+    "52 week low price": "83.2",
+    "Market cap": "68.17B",
+    "Shares outstanding": "634.22M",
+    "Free float shares": "253.69M",
+    "Weekly average volume": "3.37M",
+    "Free Float %": "40",
+    "Dividend Yield (%)": "2.57",
+    "Earnings Per Share": "22.94",
+    "Net Income Margin (%)": "1.17",
+    "Price to Book Value": "0.86",
+    "Price to Earnings": "3.86",
+    "PEG Ratio": "-0.85"
+  }
+}

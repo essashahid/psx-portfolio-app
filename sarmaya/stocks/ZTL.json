@@ -1,0 +1,25 @@
+{
+  "symbol": "ZTL",
+  "name": "Zephyr Textiles Limited",
+  "source": "https://sarmaaya.pk/stocks/ZTL",
+  "scraped_at": "2026-07-19T13:35:40",
+  "snapshot": {
+    "Price open": "20.8",
+    "Price close": "20.06",
+    "Price high": "20.8",
+    "Price low": "18.65",
+    "52 week high price": "24.48",
+    "52 week low price": "9.75",
+    "Market cap": "1.19B",
+    "Shares outstanding": "59.43M",
+    "Free float shares": "14.86M",
+    "Weekly average volume": "139.1K",
+    "Free Float %": "25",
+    "Dividend Yield (%)": "0",
+    "Earnings Per Share": "-0.82",
+    "Net Income Margin (%)": "-0.65",
+    "Price to Book Value": "0.48",
+    "Price to Earnings": "22.01",
+    "PEG Ratio": "3.17"
+  }
+}

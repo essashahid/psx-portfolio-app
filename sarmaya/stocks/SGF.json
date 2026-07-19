@@ -1,0 +1,25 @@
+{
+  "symbol": "SGF",
+  "name": "Service GlobalFootwear Limited",
+  "source": "https://sarmaaya.pk/stocks/SGF",
+  "scraped_at": "2026-07-19T13:35:40",
+  "snapshot": {
+    "Price open": "116.5",
+    "Price close": "116.26",
+    "Price high": "117.35",
+    "Price low": "116",
+    "52 week high price": "141.89",
+    "52 week low price": "71.51",
+    "Market cap": "24B",
+    "Shares outstanding": "206.47M",
+    "Free float shares": "51.62M",
+    "Weekly average volume": "282.12K",
+    "Free Float %": "25",
+    "Dividend Yield (%)": "1.71",
+    "Earnings Per Share": "11.16",
+    "Net Income Margin (%)": "12.03",
+    "Price to Book Value": "2.7",
+    "Price to Earnings": "6.55",
+    "PEG Ratio": "-"
+  }
+}

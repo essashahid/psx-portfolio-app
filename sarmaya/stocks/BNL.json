@@ -1,0 +1,25 @@
+{
+  "symbol": "BNL",
+  "name": "Bunnys Limited",
+  "source": "https://sarmaaya.pk/stocks/BNL",
+  "scraped_at": "2026-07-19T13:35:40",
+  "snapshot": {
+    "Price open": "6.75",
+    "Price close": "6.65",
+    "Price high": "6.8",
+    "Price low": "6.61",
+    "52 week high price": "170.73",
+    "52 week low price": "6.6",
+    "Market cap": "4.44B",
+    "Shares outstanding": "668.05M",
+    "Free float shares": "434.23M",
+    "Weekly average volume": "2.23M",
+    "Free Float %": "65",
+    "Dividend Yield (%)": "0",
+    "Earnings Per Share": "0.67",
+    "Net Income Margin (%)": "5.69",
+    "Price to Book Value": "1.51",
+    "Price to Earnings": "11.37",
+    "PEG Ratio": "0.61"
+  }
+}

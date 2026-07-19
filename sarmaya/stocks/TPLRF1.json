@@ -1,0 +1,19 @@
+{
+  "symbol": "TPLRF1",
+  "name": "TPL REIT Fund I",
+  "source": "https://sarmaaya.pk/stocks/TPLRF1",
+  "scraped_at": "2026-07-19T13:35:40",
+  "snapshot": {
+    "Price open": "10.2",
+    "Price close": "10.09",
+    "Price high": "10.5",
+    "Price low": "10",
+    "52 week high price": "18.39",
+    "52 week low price": "7.5",
+    "Market cap": "18.52B",
+    "Shares outstanding": "1.84B",
+    "Free float shares": "1.38B",
+    "Weekly average volume": "15.58M",
+    "Free Float %": "75"
+  }
+}

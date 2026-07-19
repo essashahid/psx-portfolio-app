@@ -1,0 +1,25 @@
+{
+  "symbol": "SNAI",
+  "name": "Sana Industries Limited",
+  "source": "https://sarmaaya.pk/stocks/SNAI",
+  "scraped_at": "2026-07-19T13:35:40",
+  "snapshot": {
+    "Price open": "37",
+    "Price close": "37.05",
+    "Price high": "39",
+    "Price low": "35.6",
+    "52 week high price": "43.9",
+    "52 week low price": "24.5",
+    "Market cap": "739.7M",
+    "Shares outstanding": "19.97M",
+    "Free float shares": "6.99M",
+    "Weekly average volume": "465.6",
+    "Free Float %": "35",
+    "Dividend Yield (%)": "0",
+    "Earnings Per Share": "6.54",
+    "Net Income Margin (%)": "5.84",
+    "Price to Book Value": "1.04",
+    "Price to Earnings": "5.2",
+    "PEG Ratio": "-0.6"
+  }
+}

@@ -1,0 +1,25 @@
+{
+  "symbol": "SNBL",
+  "name": "Soneri Bank Limited",
+  "source": "https://sarmaaya.pk/stocks/SNBL",
+  "scraped_at": "2026-07-19T13:35:40",
+  "snapshot": {
+    "Price open": "22.91",
+    "Price close": "24.01",
+    "Price high": "24.1",
+    "Price low": "22.85",
+    "52 week high price": "32.98",
+    "52 week low price": "17.12",
+    "Market cap": "26.47B",
+    "Shares outstanding": "1.1B",
+    "Free float shares": "330.74M",
+    "Weekly average volume": "1.97M",
+    "Free Float %": "30",
+    "Dividend Yield (%)": "6.55",
+    "Earnings Per Share": "4.31",
+    "Net Income Margin (%)": "5.2",
+    "Price to Book Value": "0.75",
+    "Price to Earnings": "5.32",
+    "PEG Ratio": "-"
+  }
+}

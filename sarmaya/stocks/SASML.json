@@ -1,0 +1,25 @@
+{
+  "symbol": "SASML",
+  "name": "Sindh Abadgars Sugar Mills Limited",
+  "source": "https://sarmaaya.pk/stocks/SASML",
+  "scraped_at": "2026-07-19T13:35:40",
+  "snapshot": {
+    "Price open": "435.99",
+    "Price close": "399.01",
+    "Price high": "435.99",
+    "Price low": "371",
+    "52 week high price": "469.49",
+    "52 week low price": "70.9",
+    "Market cap": "4.16B",
+    "Shares outstanding": "10.43M",
+    "Free float shares": "2.61M",
+    "Weekly average volume": "469.8",
+    "Free Float %": "25",
+    "Dividend Yield (%)": "1.01",
+    "Earnings Per Share": "6.09",
+    "Net Income Margin (%)": "1.12",
+    "Price to Book Value": "1.55",
+    "Price to Earnings": "34.54",
+    "PEG Ratio": "2.43"
+  }
+}

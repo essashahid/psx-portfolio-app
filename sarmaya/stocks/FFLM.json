@@ -1,0 +1,19 @@
+{
+  "symbol": "FFLM",
+  "name": "First Fidelity Leasing Modaraba",
+  "source": "https://sarmaaya.pk/stocks/FFLM",
+  "scraped_at": "2026-07-19T13:35:40",
+  "snapshot": {
+    "Price open": "16.35",
+    "Price close": "15.14",
+    "Price high": "16.55",
+    "Price low": "14.85",
+    "52 week high price": "27.23",
+    "52 week low price": "4.4",
+    "Market cap": "399.9M",
+    "Shares outstanding": "26.41M",
+    "Free float shares": "17.17M",
+    "Weekly average volume": "640.38K",
+    "Free Float %": "65"
+  }
+}

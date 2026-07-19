@@ -1,0 +1,25 @@
+{
+  "symbol": "DWSM",
+  "name": "Dewan Sugar Mills Limited",
+  "source": "https://sarmaaya.pk/stocks/DWSM",
+  "scraped_at": "2026-07-19T13:35:40",
+  "snapshot": {
+    "Price open": "7.1",
+    "Price close": "7.01",
+    "Price high": "7.3",
+    "Price low": "6.98",
+    "52 week high price": "10.29",
+    "52 week low price": "4.91",
+    "Market cap": "641.5M",
+    "Shares outstanding": "91.51M",
+    "Free float shares": "18.3M",
+    "Weekly average volume": "103.91K",
+    "Free Float %": "20",
+    "Dividend Yield (%)": "0",
+    "Earnings Per Share": "-6.03",
+    "Net Income Margin (%)": "-45.28",
+    "Price to Book Value": "-0.35",
+    "Price to Earnings": "-1.16",
+    "PEG Ratio": "-0.08"
+  }
+}

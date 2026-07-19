@@ -1,0 +1,19 @@
+{
+  "symbol": "LSEFSL",
+  "name": "LSE Financial Services Limited.",
+  "source": "https://sarmaaya.pk/stocks/LSEFSL",
+  "scraped_at": "2026-07-19T13:35:40",
+  "snapshot": {
+    "Price open": "21",
+    "Price close": "20.75",
+    "Price high": "21",
+    "Price low": "19.2",
+    "52 week high price": "35.97",
+    "52 week low price": "11.31",
+    "Market cap": "560.25M",
+    "Shares outstanding": "27M",
+    "Free float shares": "8.1M",
+    "Weekly average volume": "309.19K",
+    "Free Float %": "30"
+  }
+}

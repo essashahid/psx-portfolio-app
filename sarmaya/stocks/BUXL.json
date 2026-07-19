@@ -1,0 +1,25 @@
+{
+  "symbol": "BUXL",
+  "name": "Buxly Paints Limited",
+  "source": "https://sarmaaya.pk/stocks/BUXL",
+  "scraped_at": "2026-07-19T13:35:40",
+  "snapshot": {
+    "Price open": "187.76",
+    "Price close": "189.94",
+    "Price high": "209",
+    "Price low": "180.1",
+    "52 week high price": "274.4",
+    "52 week low price": "133.02",
+    "Market cap": "273.51M",
+    "Shares outstanding": "1.44M",
+    "Free float shares": "576K",
+    "Weekly average volume": "3.49K",
+    "Free Float %": "40",
+    "Dividend Yield (%)": "0",
+    "Earnings Per Share": "-17.12",
+    "Net Income Margin (%)": "-4.42",
+    "Price to Book Value": "1.68",
+    "Price to Earnings": "342.25",
+    "PEG Ratio": "0.12"
+  }
+}

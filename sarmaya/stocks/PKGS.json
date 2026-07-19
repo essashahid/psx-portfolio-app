@@ -1,0 +1,25 @@
+{
+  "symbol": "PKGS",
+  "name": "Packages Limited",
+  "source": "https://sarmaaya.pk/stocks/PKGS",
+  "scraped_at": "2026-07-19T13:35:40",
+  "snapshot": {
+    "Price open": "790",
+    "Price close": "795.92",
+    "Price high": "798.18",
+    "Price low": "786",
+    "52 week high price": "855",
+    "52 week low price": "610",
+    "Market cap": "71.14B",
+    "Shares outstanding": "89.38M",
+    "Free float shares": "17.88M",
+    "Weekly average volume": "6.65K",
+    "Free Float %": "20",
+    "Dividend Yield (%)": "2.09",
+    "Earnings Per Share": "-9.43",
+    "Net Income Margin (%)": "-0.43",
+    "Price to Book Value": "1.08",
+    "Price to Earnings": "-84.4",
+    "PEG Ratio": "-3.57"
+  }
+}

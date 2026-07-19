@@ -1,0 +1,19 @@
+{
+  "symbol": "POML",
+  "name": "Punjab Oil Mills Limited",
+  "source": "https://sarmaaya.pk/stocks/POML",
+  "scraped_at": "2026-07-19T13:35:40",
+  "snapshot": {
+    "Price open": "166",
+    "Price close": "164.5",
+    "Price high": "179.94",
+    "Price low": "158.1",
+    "52 week high price": "240.95",
+    "52 week low price": "113.11",
+    "Market cap": "1.28B",
+    "Shares outstanding": "7.76M",
+    "Free float shares": "3.11M",
+    "Weekly average volume": "4.48K",
+    "Free Float %": "40"
+  }
+}

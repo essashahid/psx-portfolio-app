@@ -1,0 +1,19 @@
+{
+  "symbol": "FIL",
+  "name": "Fateh Industries Limited",
+  "source": "https://sarmaaya.pk/stocks/FIL",
+  "scraped_at": "2026-07-19T13:35:40",
+  "snapshot": {
+    "Price open": "378.17",
+    "Price close": "366.07",
+    "Price high": "378.17",
+    "Price low": "342",
+    "52 week high price": "472.05",
+    "52 week low price": "128.89",
+    "Market cap": "732.14M",
+    "Shares outstanding": "2M",
+    "Free float shares": "52.3K",
+    "Weekly average volume": "4.16K",
+    "Free Float %": "2.61"
+  }
+}

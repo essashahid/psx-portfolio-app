@@ -1,0 +1,19 @@
+{
+  "symbol": "TRSM",
+  "name": "Trust Modaraba",
+  "source": "https://sarmaaya.pk/stocks/TRSM",
+  "scraped_at": "2026-07-19T13:35:40",
+  "snapshot": {
+    "Price open": "15.7",
+    "Price close": "15.7",
+    "Price high": "16",
+    "Price low": "15.59",
+    "52 week high price": "71.65",
+    "52 week low price": "5.72",
+    "Market cap": "467.86M",
+    "Shares outstanding": "29.8M",
+    "Free float shares": "23.84M",
+    "Weekly average volume": "675.94K",
+    "Free Float %": "80"
+  }
+}

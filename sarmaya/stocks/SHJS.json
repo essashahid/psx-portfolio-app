@@ -1,0 +1,25 @@
+{
+  "symbol": "SHJS",
+  "name": "Shahtaj Sugar Mills Limited",
+  "source": "https://sarmaaya.pk/stocks/SHJS",
+  "scraped_at": "2026-07-19T13:35:40",
+  "snapshot": {
+    "Price open": "170",
+    "Price close": "166.21",
+    "Price high": "179.99",
+    "Price low": "158",
+    "52 week high price": "234.94",
+    "52 week low price": "118.53",
+    "Market cap": "2B",
+    "Shares outstanding": "12.01M",
+    "Free float shares": "4.2M",
+    "Weekly average volume": "232.4",
+    "Free Float %": "35",
+    "Dividend Yield (%)": "0.75",
+    "Earnings Per Share": "22.81",
+    "Net Income Margin (%)": "3.26",
+    "Price to Book Value": "0.59",
+    "Price to Earnings": "6.57",
+    "PEG Ratio": "0.14"
+  }
+}

@@ -1,0 +1,25 @@
+{
+  "symbol": "PNSC",
+  "name": "Pakistan National Shipping Corporation",
+  "source": "https://sarmaaya.pk/stocks/PNSC",
+  "scraped_at": "2026-07-19T13:35:40",
+  "snapshot": {
+    "Price open": "579.5",
+    "Price close": "564.5",
+    "Price high": "579.5",
+    "Price low": "557",
+    "52 week high price": "719",
+    "52 week low price": "391.74",
+    "Market cap": "111.82B",
+    "Shares outstanding": "198.1M",
+    "Free float shares": "17.88M",
+    "Weekly average volume": "13.72K",
+    "Free Float %": "9.03",
+    "Dividend Yield (%)": "6.73",
+    "Earnings Per Share": "63.18",
+    "Net Income Margin (%)": "29.72",
+    "Price to Book Value": "1.07",
+    "Price to Earnings": "7.29",
+    "PEG Ratio": "0.26"
+  }
+}

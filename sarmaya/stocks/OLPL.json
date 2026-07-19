@@ -1,0 +1,25 @@
+{
+  "symbol": "OLPL",
+  "name": "OLP Financial Services Pakistan Limited",
+  "source": "https://sarmaaya.pk/stocks/OLPL",
+  "scraped_at": "2026-07-19T13:35:40",
+  "snapshot": {
+    "Price open": "49.59",
+    "Price close": "49.28",
+    "Price high": "50",
+    "Price low": "49",
+    "52 week high price": "59.45",
+    "52 week low price": "40",
+    "Market cap": "8.64B",
+    "Shares outstanding": "175.41M",
+    "Free float shares": "87.7M",
+    "Weekly average volume": "57.33K",
+    "Free Float %": "50",
+    "Dividend Yield (%)": "11.58",
+    "Earnings Per Share": "7.62",
+    "Net Income Margin (%)": "17.39",
+    "Price to Book Value": "0.76",
+    "Price to Earnings": "6.23",
+    "PEG Ratio": "0.68"
+  }
+}

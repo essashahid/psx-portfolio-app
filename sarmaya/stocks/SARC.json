@@ -1,0 +1,19 @@
+{
+  "symbol": "SARC",
+  "name": "Sardar Chemical Industries Limited",
+  "source": "https://sarmaaya.pk/stocks/SARC",
+  "scraped_at": "2026-07-19T13:35:40",
+  "snapshot": {
+    "Price open": "115",
+    "Price close": "107.26",
+    "Price high": "115",
+    "Price low": "105.13",
+    "52 week high price": "120.32",
+    "52 week low price": "46.68",
+    "Market cap": "643.56M",
+    "Shares outstanding": "6M",
+    "Free float shares": "2.7M",
+    "Weekly average volume": "77.34K",
+    "Free Float %": "45"
+  }
+}

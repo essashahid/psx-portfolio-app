@@ -1,0 +1,25 @@
+{
+  "symbol": "BAFL",
+  "name": "Bank Alfalah Limited",
+  "source": "https://sarmaaya.pk/stocks/BAFL",
+  "scraped_at": "2026-07-19T13:35:40",
+  "snapshot": {
+    "Price open": "63",
+    "Price close": "61.7",
+    "Price high": "63.4",
+    "Price low": "61.4",
+    "52 week high price": "137",
+    "52 week low price": "54.16",
+    "Market cap": "194.62B",
+    "Shares outstanding": "3.15B",
+    "Free float shares": "1.42B",
+    "Weekly average volume": "6.53M",
+    "Free Float %": "45",
+    "Dividend Yield (%)": "16.67",
+    "Earnings Per Share": "10.05",
+    "Net Income Margin (%)": "8.11",
+    "Price to Book Value": "1.04",
+    "Price to Earnings": "6.27",
+    "PEG Ratio": "-"
+  }
+}

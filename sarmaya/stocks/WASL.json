@@ -1,0 +1,19 @@
+{
+  "symbol": "WASL",
+  "name": "Wasl Mobility Modaraba",
+  "source": "https://sarmaaya.pk/stocks/WASL",
+  "scraped_at": "2026-07-19T13:35:40",
+  "snapshot": {
+    "Price open": "6.14",
+    "Price close": "5.99",
+    "Price high": "6.14",
+    "Price low": "5.87",
+    "52 week high price": "6.14",
+    "52 week low price": "4.31",
+    "Market cap": "962.7M",
+    "Shares outstanding": "160.72M",
+    "Free float shares": "96.43M",
+    "Weekly average volume": "2.29M",
+    "Free Float %": "60"
+  }
+}

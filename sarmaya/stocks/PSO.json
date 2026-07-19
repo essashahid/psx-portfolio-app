@@ -1,0 +1,25 @@
+{
+  "symbol": "PSO",
+  "name": "Pakistan State Oil Company Limited",
+  "source": "https://sarmaaya.pk/stocks/PSO",
+  "scraped_at": "2026-07-19T13:35:40",
+  "snapshot": {
+    "Price open": "354.11",
+    "Price close": "347.64",
+    "Price high": "354.69",
+    "Price low": "347.03",
+    "52 week high price": "506.75",
+    "52 week low price": "320.11",
+    "Market cap": "163.21B",
+    "Shares outstanding": "469.47M",
+    "Free float shares": "234.74M",
+    "Weekly average volume": "2.6M",
+    "Free Float %": "50",
+    "Dividend Yield (%)": "2.65",
+    "Earnings Per Share": "92.73",
+    "Net Income Margin (%)": "1.35",
+    "Price to Book Value": "0.56",
+    "Price to Earnings": "3.54",
+    "PEG Ratio": "0.03"
+  }
+}

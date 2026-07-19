@@ -1,0 +1,19 @@
+{
+  "symbol": "FECM",
+  "name": "First Elite Capital Modaraba",
+  "source": "https://sarmaaya.pk/stocks/FECM",
+  "scraped_at": "2026-07-19T13:35:40",
+  "snapshot": {
+    "Price open": "17.8",
+    "Price close": "17.66",
+    "Price high": "18.39",
+    "Price low": "17.4",
+    "52 week high price": "57.06",
+    "52 week low price": "11.75",
+    "Market cap": "200.26M",
+    "Shares outstanding": "11.34M",
+    "Free float shares": "8.51M",
+    "Weekly average volume": "11.32K",
+    "Free Float %": "75"
+  }
+}
