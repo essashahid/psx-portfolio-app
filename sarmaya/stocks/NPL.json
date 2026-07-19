@@ -1,0 +1,25 @@
+{
+  "symbol": "NPL",
+  "name": "Nishat Power Limited",
+  "source": "https://sarmaaya.pk/stocks/NPL",
+  "scraped_at": "2026-07-19T13:35:40",
+  "snapshot": {
+    "Price open": "69.87",
+    "Price close": "67.79",
+    "Price high": "71.5",
+    "Price low": "67.16",
+    "52 week high price": "100.45",
+    "52 week low price": "33.3",
+    "Market cap": "24B",
+    "Shares outstanding": "354.09M",
+    "Free float shares": "173.08M",
+    "Weekly average volume": "2.71M",
+    "Free Float %": "48.88",
+    "Dividend Yield (%)": "2.33",
+    "Earnings Per Share": "8.54",
+    "Net Income Margin (%)": "43.29",
+    "Price to Book Value": "0.81",
+    "Price to Earnings": "7.54",
+    "PEG Ratio": "-0.64"
+  }
+}

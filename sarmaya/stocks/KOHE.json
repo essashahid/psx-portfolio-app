@@ -1,0 +1,25 @@
+{
+  "symbol": "KOHE",
+  "name": "Kohinoor Energy Limited",
+  "source": "https://sarmaaya.pk/stocks/KOHE",
+  "scraped_at": "2026-07-19T13:35:40",
+  "snapshot": {
+    "Price open": "15.6",
+    "Price close": "15.56",
+    "Price high": "15.82",
+    "Price low": "15.53",
+    "52 week high price": "23.49",
+    "52 week low price": "12.33",
+    "Market cap": "2.64B",
+    "Shares outstanding": "169.46M",
+    "Free float shares": "67.78M",
+    "Weekly average volume": "94.05K",
+    "Free Float %": "40",
+    "Dividend Yield (%)": "0",
+    "Earnings Per Share": "3.94",
+    "Net Income Margin (%)": "15.83",
+    "Price to Book Value": "0.58",
+    "Price to Earnings": "3.4",
+    "PEG Ratio": "-0.38"
+  }
+}

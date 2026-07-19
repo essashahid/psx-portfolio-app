@@ -1,0 +1,25 @@
+{
+  "symbol": "PIBTL",
+  "name": "Pakistan International Bulk Terminal",
+  "source": "https://sarmaaya.pk/stocks/PIBTL",
+  "scraped_at": "2026-07-19T13:35:40",
+  "snapshot": {
+    "Price open": "16.85",
+    "Price close": "16.5",
+    "Price high": "16.88",
+    "Price low": "16.45",
+    "52 week high price": "22.97",
+    "52 week low price": "9.33",
+    "Market cap": "29.47B",
+    "Shares outstanding": "1.79B",
+    "Free float shares": "803.74M",
+    "Weekly average volume": "10.96M",
+    "Free Float %": "45",
+    "Dividend Yield (%)": "0",
+    "Earnings Per Share": "1.18",
+    "Net Income Margin (%)": "14.81",
+    "Price to Book Value": "1.68",
+    "Price to Earnings": "12.09",
+    "PEG Ratio": "7.89"
+  }
+}

@@ -1,0 +1,19 @@
+{
+  "symbol": "SPAC2",
+  "name": "LSE SPAC-II Limited",
+  "source": "https://sarmaaya.pk/stocks/SPAC2",
+  "scraped_at": "2026-07-19T13:35:40",
+  "snapshot": {
+    "Price open": "16.75",
+    "Price close": "16.9",
+    "Price high": "17.08",
+    "Price low": "16.25",
+    "52 week high price": "18.15",
+    "52 week low price": "14.85",
+    "Market cap": "354.9M",
+    "Shares outstanding": "21M",
+    "Free float shares": "10.5M",
+    "Weekly average volume": "1.47M",
+    "Free Float %": "50"
+  }
+}

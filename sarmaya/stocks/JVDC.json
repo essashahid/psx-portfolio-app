@@ -1,0 +1,25 @@
+{
+  "symbol": "JVDC",
+  "name": "Javedan Corporation Limited",
+  "source": "https://sarmaaya.pk/stocks/JVDC",
+  "scraped_at": "2026-07-19T13:35:40",
+  "snapshot": {
+    "Price open": "145.1",
+    "Price close": "144.68",
+    "Price high": "147",
+    "Price low": "143.5",
+    "52 week high price": "163.9",
+    "52 week low price": "65.15",
+    "Market cap": "55.1B",
+    "Shares outstanding": "380.86M",
+    "Free float shares": "190.43M",
+    "Weekly average volume": "955.94K",
+    "Free Float %": "50",
+    "Dividend Yield (%)": "7.77",
+    "Earnings Per Share": "10.67",
+    "Net Income Margin (%)": "38.34",
+    "Price to Book Value": "1.99",
+    "Price to Earnings": "9.51",
+    "PEG Ratio": "-0.01"
+  }
+}

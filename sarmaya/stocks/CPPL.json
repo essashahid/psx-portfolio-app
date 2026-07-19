@@ -1,0 +1,25 @@
+{
+  "symbol": "CPPL",
+  "name": "Cherat Packaging Limited",
+  "source": "https://sarmaaya.pk/stocks/CPPL",
+  "scraped_at": "2026-07-19T13:35:40",
+  "snapshot": {
+    "Price open": "108.26",
+    "Price close": "106.99",
+    "Price high": "108.26",
+    "Price low": "105.11",
+    "52 week high price": "126.15",
+    "52 week low price": "64.79",
+    "Market cap": "5.25B",
+    "Shares outstanding": "49.1M",
+    "Free float shares": "29.46M",
+    "Weekly average volume": "361.95K",
+    "Free Float %": "60",
+    "Dividend Yield (%)": "4.52",
+    "Earnings Per Share": "1.5",
+    "Net Income Margin (%)": "0.52",
+    "Price to Book Value": "0.61",
+    "Price to Earnings": "44.29",
+    "PEG Ratio": "-5.33"
+  }
+}

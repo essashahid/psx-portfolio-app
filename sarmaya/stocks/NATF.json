@@ -1,0 +1,25 @@
+{
+  "symbol": "NATF",
+  "name": "National Foods Limited",
+  "source": "https://sarmaaya.pk/stocks/NATF",
+  "scraped_at": "2026-07-19T13:35:40",
+  "snapshot": {
+    "Price open": "394.3",
+    "Price close": "388.42",
+    "Price high": "404.8",
+    "Price low": "387.01",
+    "52 week high price": "439",
+    "52 week low price": "322.31",
+    "Market cap": "90.55B",
+    "Shares outstanding": "233.12M",
+    "Free float shares": "58.28M",
+    "Weekly average volume": "215.67K",
+    "Free Float %": "25",
+    "Dividend Yield (%)": "8.99",
+    "Earnings Per Share": "110.99",
+    "Net Income Margin (%)": "8.43",
+    "Price to Book Value": "2.85",
+    "Price to Earnings": "3.01",
+    "PEG Ratio": "0.14"
+  }
+}

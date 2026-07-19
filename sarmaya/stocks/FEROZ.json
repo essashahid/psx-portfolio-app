@@ -1,0 +1,25 @@
+{
+  "symbol": "FEROZ",
+  "name": "Ferozsons Laboratories Limited",
+  "source": "https://sarmaaya.pk/stocks/FEROZ",
+  "scraped_at": "2026-07-19T13:35:40",
+  "snapshot": {
+    "Price open": "387",
+    "Price close": "386.48",
+    "Price high": "397.6",
+    "Price low": "375.1",
+    "52 week high price": "475",
+    "52 week low price": "293.01",
+    "Market cap": "16.8B",
+    "Shares outstanding": "43.47M",
+    "Free float shares": "17.39M",
+    "Weekly average volume": "11.57K",
+    "Free Float %": "40",
+    "Dividend Yield (%)": "1.03",
+    "Earnings Per Share": "21.66",
+    "Net Income Margin (%)": "4.15",
+    "Price to Book Value": "1.3",
+    "Price to Earnings": "15.23",
+    "PEG Ratio": "0.79"
+  }
+}

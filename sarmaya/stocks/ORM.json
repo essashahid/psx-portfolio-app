@@ -1,0 +1,19 @@
+{
+  "symbol": "ORM",
+  "name": "Orient Rental Mod",
+  "source": "https://sarmaaya.pk/stocks/ORM",
+  "scraped_at": "2026-07-19T13:35:40",
+  "snapshot": {
+    "Price open": "10.65",
+    "Price close": "10.36",
+    "Price high": "10.71",
+    "Price low": "10.28",
+    "52 week high price": "16.79",
+    "52 week low price": "9.2",
+    "Market cap": "777M",
+    "Shares outstanding": "75M",
+    "Free float shares": "26.25M",
+    "Weekly average volume": "50.06K",
+    "Free Float %": "35"
+  }
+}

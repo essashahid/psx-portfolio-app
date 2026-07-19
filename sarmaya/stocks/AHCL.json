@@ -1,0 +1,25 @@
+{
+  "symbol": "AHCL",
+  "name": "Arif Habib Corporation Limited",
+  "source": "https://sarmaaya.pk/stocks/AHCL",
+  "scraped_at": "2026-07-19T13:35:40",
+  "snapshot": {
+    "Price open": "15.26",
+    "Price close": "14.93",
+    "Price high": "15.4",
+    "Price low": "14.77",
+    "52 week high price": "19.33",
+    "52 week low price": "11.51",
+    "Market cap": "62.96B",
+    "Shares outstanding": "4.22B",
+    "Free float shares": "632.55M",
+    "Weekly average volume": "2M",
+    "Free Float %": "15",
+    "Dividend Yield (%)": "9.26",
+    "Earnings Per Share": "2.89",
+    "Net Income Margin (%)": "91.88",
+    "Price to Book Value": "1.14",
+    "Price to Earnings": "4.41",
+    "PEG Ratio": "0.72"
+  }
+}

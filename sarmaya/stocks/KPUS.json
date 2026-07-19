@@ -1,0 +1,25 @@
+{
+  "symbol": "KPUS",
+  "name": "Khairpur Sugar Mills Limited",
+  "source": "https://sarmaaya.pk/stocks/KPUS",
+  "scraped_at": "2026-07-19T13:35:40",
+  "snapshot": {
+    "Price open": "2.06K",
+    "Price close": "1.87K",
+    "Price high": "2.06K",
+    "Price low": "1.87K",
+    "52 week high price": "2.85K",
+    "52 week low price": "115.11",
+    "Market cap": "29.98B",
+    "Shares outstanding": "16.02M",
+    "Free float shares": "800.88K",
+    "Weekly average volume": "13.87K",
+    "Free Float %": "5",
+    "Dividend Yield (%)": "0",
+    "Earnings Per Share": "5.5",
+    "Net Income Margin (%)": "1.09",
+    "Price to Book Value": "7.55",
+    "Price to Earnings": "40.56",
+    "PEG Ratio": "11.01"
+  }
+}

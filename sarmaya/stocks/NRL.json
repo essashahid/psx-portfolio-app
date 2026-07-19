@@ -1,0 +1,25 @@
+{
+  "symbol": "NRL",
+  "name": "National Refinery Limited",
+  "source": "https://sarmaaya.pk/stocks/NRL",
+  "scraped_at": "2026-07-19T13:35:40",
+  "snapshot": {
+    "Price open": "385.5",
+    "Price close": "396.56",
+    "Price high": "406.6",
+    "Price low": "384",
+    "52 week high price": "477.45",
+    "52 week low price": "224",
+    "Market cap": "31.71B",
+    "Shares outstanding": "79.97M",
+    "Free float shares": "26.31M",
+    "Weekly average volume": "2.4M",
+    "Free Float %": "32.91",
+    "Dividend Yield (%)": "0",
+    "Earnings Per Share": "108.68",
+    "Net Income Margin (%)": "2.33",
+    "Price to Book Value": "0.53",
+    "Price to Earnings": "2.68",
+    "PEG Ratio": "0.01"
+  }
+}

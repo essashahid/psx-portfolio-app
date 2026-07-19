@@ -1,0 +1,25 @@
+{
+  "symbol": "GHGL",
+  "name": "Ghani Glass Limited",
+  "source": "https://sarmaaya.pk/stocks/GHGL",
+  "scraped_at": "2026-07-19T13:35:40",
+  "snapshot": {
+    "Price open": "39.31",
+    "Price close": "38.81",
+    "Price high": "39.75",
+    "Price low": "38.25",
+    "52 week high price": "52.25",
+    "52 week low price": "27.78",
+    "Market cap": "38.8B",
+    "Shares outstanding": "999.71M",
+    "Free float shares": "349.9M",
+    "Weekly average volume": "220.72K",
+    "Free Float %": "35",
+    "Dividend Yield (%)": "5.15",
+    "Earnings Per Share": "6.21",
+    "Net Income Margin (%)": "13.11",
+    "Price to Book Value": "0.96",
+    "Price to Earnings": "5",
+    "PEG Ratio": "0.25"
+  }
+}

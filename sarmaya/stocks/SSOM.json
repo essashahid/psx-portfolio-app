@@ -1,0 +1,19 @@
+{
+  "symbol": "SSOM",
+  "name": "S.S.Oil Mills Limited",
+  "source": "https://sarmaaya.pk/stocks/SSOM",
+  "scraped_at": "2026-07-19T13:35:40",
+  "snapshot": {
+    "Price open": "461.01",
+    "Price close": "461.82",
+    "Price high": "468",
+    "Price low": "450",
+    "52 week high price": "1.18K",
+    "52 week low price": "351.1",
+    "Market cap": "2.61B",
+    "Shares outstanding": "5.66M",
+    "Free float shares": "1.4M",
+    "Weekly average volume": "15.95K",
+    "Free Float %": "24.69"
+  }
+}

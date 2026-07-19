@@ -1,0 +1,19 @@
+{
+  "symbol": "PIAHCLA",
+  "name": "PIA Holding Company Limited",
+  "source": "https://sarmaaya.pk/stocks/PIAHCLA",
+  "scraped_at": "2026-07-19T13:35:40",
+  "snapshot": {
+    "Price open": "28.88",
+    "Price close": "28.72",
+    "Price high": "29.65",
+    "Price low": "28.57",
+    "52 week high price": "49.65",
+    "52 week low price": "16.3",
+    "Market cap": "150.31B",
+    "Shares outstanding": "5.23B",
+    "Free float shares": "189.17M",
+    "Weekly average volume": "7.72M",
+    "Free Float %": "3.61"
+  }
+}

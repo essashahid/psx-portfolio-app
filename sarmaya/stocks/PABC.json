@@ -1,0 +1,25 @@
+{
+  "symbol": "PABC",
+  "name": "Pakistan Aluminium Beverage Cans Limited",
+  "source": "https://sarmaaya.pk/stocks/PABC",
+  "scraped_at": "2026-07-19T13:35:40",
+  "snapshot": {
+    "Price open": "106",
+    "Price close": "105",
+    "Price high": "109.88",
+    "Price low": "105",
+    "52 week high price": "170.85",
+    "52 week low price": "80.33",
+    "Market cap": "37.92B",
+    "Shares outstanding": "361.11M",
+    "Free float shares": "54.17M",
+    "Weekly average volume": "30.92K",
+    "Free Float %": "15",
+    "Dividend Yield (%)": "0",
+    "Earnings Per Share": "14.75",
+    "Net Income Margin (%)": "23.04",
+    "Price to Book Value": "1.62",
+    "Price to Earnings": "5.9",
+    "PEG Ratio": "-"
+  }
+}

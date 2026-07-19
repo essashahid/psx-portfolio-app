@@ -1,0 +1,19 @@
+{
+  "symbol": "ANTM",
+  "name": "AN Textile Mills Limited",
+  "source": "https://sarmaaya.pk/stocks/ANTM",
+  "scraped_at": "2026-07-19T13:35:40",
+  "snapshot": {
+    "Price open": "59",
+    "Price close": "52.56",
+    "Price high": "59",
+    "Price low": "51.32",
+    "52 week high price": "66.38",
+    "52 week low price": "20.81",
+    "Market cap": "507.73M",
+    "Shares outstanding": "9.66M",
+    "Free float shares": "1.45M",
+    "Weekly average volume": "16.99K",
+    "Free Float %": "15"
+  }
+}

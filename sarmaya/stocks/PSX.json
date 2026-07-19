@@ -1,0 +1,25 @@
+{
+  "symbol": "PSX",
+  "name": "Pakistan Stock Exchange Limited",
+  "source": "https://sarmaaya.pk/stocks/PSX",
+  "scraped_at": "2026-07-19T13:35:40",
+  "snapshot": {
+    "Price open": "53.5",
+    "Price close": "51.53",
+    "Price high": "53.8",
+    "Price low": "51.3",
+    "52 week high price": "57.97",
+    "52 week low price": "29.02",
+    "Market cap": "41.3B",
+    "Shares outstanding": "801.48M",
+    "Free float shares": "480.89M",
+    "Weekly average volume": "6.38M",
+    "Free Float %": "60",
+    "Dividend Yield (%)": "6.08",
+    "Earnings Per Share": "2.49",
+    "Net Income Margin (%)": "69.84",
+    "Price to Book Value": "3.37",
+    "Price to Earnings": "12",
+    "PEG Ratio": "0.19"
+  }
+}

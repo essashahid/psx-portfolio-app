@@ -1,0 +1,25 @@
+{
+  "symbol": "EPQL",
+  "name": "Engro Powergen Qadirpur Limited",
+  "source": "https://sarmaaya.pk/stocks/EPQL",
+  "scraped_at": "2026-07-19T13:35:40",
+  "snapshot": {
+    "Price open": "25.7",
+    "Price close": "25.61",
+    "Price high": "25.88",
+    "Price low": "25.5",
+    "52 week high price": "34.98",
+    "52 week low price": "22.3",
+    "Market cap": "8.29B",
+    "Shares outstanding": "323.8M",
+    "Free float shares": "161.9M",
+    "Weekly average volume": "327.09K",
+    "Free Float %": "50",
+    "Dividend Yield (%)": "45.88",
+    "Earnings Per Share": "1.86",
+    "Net Income Margin (%)": "5.05",
+    "Price to Book Value": "0.73",
+    "Price to Earnings": "13.07",
+    "PEG Ratio": "-4.92"
+  }
+}

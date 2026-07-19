@@ -1,0 +1,19 @@
+{
+  "symbol": "KCL",
+  "name": "Karam Ceramics Limited",
+  "source": "https://sarmaaya.pk/stocks/KCL",
+  "scraped_at": "2026-07-19T13:35:40",
+  "snapshot": {
+    "Price open": "152.33",
+    "Price close": "141.37",
+    "Price high": "160",
+    "Price low": "137.11",
+    "52 week high price": "195.69",
+    "52 week low price": "115.02",
+    "Market cap": "2.06B",
+    "Shares outstanding": "14.55M",
+    "Free float shares": "10.91M",
+    "Weekly average volume": "308.4",
+    "Free Float %": "75"
+  }
+}

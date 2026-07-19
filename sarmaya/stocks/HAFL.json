@@ -1,0 +1,19 @@
+{
+  "symbol": "HAFL",
+  "name": "Hafiz Limited",
+  "source": "https://sarmaaya.pk/stocks/HAFL",
+  "scraped_at": "2026-07-19T13:35:40",
+  "snapshot": {
+    "Price open": "494.9",
+    "Price close": "499.89",
+    "Price high": "500",
+    "Price low": "450",
+    "52 week high price": "629.5",
+    "52 week low price": "283.58",
+    "Market cap": "599.87M",
+    "Shares outstanding": "1.2M",
+    "Free float shares": "42.48K",
+    "Weekly average volume": "113.6",
+    "Free Float %": "3.54"
+  }
+}

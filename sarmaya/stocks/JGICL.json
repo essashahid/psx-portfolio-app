@@ -1,0 +1,25 @@
+{
+  "symbol": "JGICL",
+  "name": "Jubilee General Insurance Company Ltd.",
+  "source": "https://sarmaaya.pk/stocks/JGICL",
+  "scraped_at": "2026-07-19T13:35:40",
+  "snapshot": {
+    "Price open": "80",
+    "Price close": "78.38",
+    "Price high": "80.75",
+    "Price low": "77.1",
+    "52 week high price": "95.5",
+    "52 week low price": "59.26",
+    "Market cap": "15.56B",
+    "Shares outstanding": "198.49M",
+    "Free float shares": "79.4M",
+    "Weekly average volume": "31.06K",
+    "Free Float %": "40",
+    "Dividend Yield (%)": "7.33",
+    "Earnings Per Share": "22.46",
+    "Net Income Margin (%)": "26.09",
+    "Price to Book Value": "0.79",
+    "Price to Earnings": "2.75",
+    "PEG Ratio": "-"
+  }
+}

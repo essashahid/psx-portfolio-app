@@ -1,0 +1,19 @@
+{
+  "symbol": "MCBIM",
+  "name": "MCB Investment Management Limited.",
+  "source": "https://sarmaaya.pk/stocks/MCBIM",
+  "scraped_at": "2026-07-19T13:35:40",
+  "snapshot": {
+    "Price open": "158.2",
+    "Price close": "155.12",
+    "Price high": "158.2",
+    "Price low": "155",
+    "52 week high price": "247.99",
+    "52 week low price": "127.99",
+    "Market cap": "11.17B",
+    "Shares outstanding": "72M",
+    "Free float shares": "10.8M",
+    "Weekly average volume": "5.02K",
+    "Free Float %": "15"
+  }
+}

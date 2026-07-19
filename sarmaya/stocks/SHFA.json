@@ -1,0 +1,25 @@
+{
+  "symbol": "SHFA",
+  "name": "Shifa International Hospitals Limited",
+  "source": "https://sarmaaya.pk/stocks/SHFA",
+  "scraped_at": "2026-07-19T13:35:40",
+  "snapshot": {
+    "Price open": "535",
+    "Price close": "529.69",
+    "Price high": "541",
+    "Price low": "526.06",
+    "52 week high price": "615.28",
+    "52 week low price": "424.13",
+    "Market cap": "33.48B",
+    "Shares outstanding": "63.21M",
+    "Free float shares": "28.45M",
+    "Weekly average volume": "30.71K",
+    "Free Float %": "45",
+    "Dividend Yield (%)": "1.05",
+    "Earnings Per Share": "41.05",
+    "Net Income Margin (%)": "8.72",
+    "Price to Book Value": "2.02",
+    "Price to Earnings": "10.71",
+    "PEG Ratio": "0.26"
+  }
+}

@@ -1,0 +1,19 @@
+{
+  "symbol": "TATM",
+  "name": "Tata Textile Mills Limited",
+  "source": "https://sarmaaya.pk/stocks/TATM",
+  "scraped_at": "2026-07-19T13:35:40",
+  "snapshot": {
+    "Price open": "133",
+    "Price close": "128.73",
+    "Price high": "133.56",
+    "Price low": "127.22",
+    "52 week high price": "311",
+    "52 week low price": "82",
+    "Market cap": "7.21B",
+    "Shares outstanding": "55.99M",
+    "Free float shares": "11.2M",
+    "Weekly average volume": "36.77K",
+    "Free Float %": "20"
+  }
+}

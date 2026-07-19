@@ -1,0 +1,19 @@
+{
+  "symbol": "DEL",
+  "name": "Dawood Equities Limited",
+  "source": "https://sarmaaya.pk/stocks/DEL",
+  "scraped_at": "2026-07-19T13:35:40",
+  "snapshot": {
+    "Price open": "20.31",
+    "Price close": "20.03",
+    "Price high": "20.83",
+    "Price low": "20",
+    "52 week high price": "32.38",
+    "52 week low price": "10.55",
+    "Market cap": "550.83M",
+    "Shares outstanding": "27.5M",
+    "Free float shares": "11M",
+    "Weekly average volume": "33.17K",
+    "Free Float %": "40"
+  }
+}

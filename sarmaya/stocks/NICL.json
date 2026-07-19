@@ -1,0 +1,25 @@
+{
+  "symbol": "NICL",
+  "name": "Nimir Industrial Chemicals Limited",
+  "source": "https://sarmaaya.pk/stocks/NICL",
+  "scraped_at": "2026-07-19T13:35:40",
+  "snapshot": {
+    "Price open": "225",
+    "Price close": "220.57",
+    "Price high": "228",
+    "Price low": "220",
+    "52 week high price": "254.7",
+    "52 week low price": "146",
+    "Market cap": "24.39B",
+    "Shares outstanding": "110.59M",
+    "Free float shares": "38.71M",
+    "Weekly average volume": "172.2K",
+    "Free Float %": "35",
+    "Dividend Yield (%)": "2.95",
+    "Earnings Per Share": "18.26",
+    "Net Income Margin (%)": "4.24",
+    "Price to Book Value": "2.3",
+    "Price to Earnings": "8.32",
+    "PEG Ratio": "1.49"
+  }
+}

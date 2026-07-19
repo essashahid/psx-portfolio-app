@@ -1,0 +1,25 @@
+{
+  "symbol": "JKSM",
+  "name": "J.K. Spinning Mills Limited",
+  "source": "https://sarmaaya.pk/stocks/JKSM",
+  "scraped_at": "2026-07-19T13:35:40",
+  "snapshot": {
+    "Price open": "228",
+    "Price close": "210",
+    "Price high": "228",
+    "Price low": "190.2",
+    "52 week high price": "340.05",
+    "52 week low price": "96.1",
+    "Market cap": "21.49B",
+    "Shares outstanding": "102.32M",
+    "Free float shares": "5.12M",
+    "Weekly average volume": "320",
+    "Free Float %": "5",
+    "Dividend Yield (%)": "1.75",
+    "Earnings Per Share": "11.31",
+    "Net Income Margin (%)": "2.69",
+    "Price to Book Value": "1.42",
+    "Price to Earnings": "15.23",
+    "PEG Ratio": "1.32"
+  }
+}

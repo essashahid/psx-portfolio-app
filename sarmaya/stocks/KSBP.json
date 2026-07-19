@@ -1,0 +1,25 @@
+{
+  "symbol": "KSBP",
+  "name": "KSB Pumps Company Limited",
+  "source": "https://sarmaaya.pk/stocks/KSBP",
+  "scraped_at": "2026-07-19T13:35:40",
+  "snapshot": {
+    "Price open": "244",
+    "Price close": "242.91",
+    "Price high": "245.7",
+    "Price low": "240",
+    "52 week high price": "257",
+    "52 week low price": "155.2",
+    "Market cap": "7.51B",
+    "Shares outstanding": "30.9M",
+    "Free float shares": "8.37M",
+    "Weekly average volume": "295.64K",
+    "Free Float %": "27.08",
+    "Dividend Yield (%)": "0.51",
+    "Earnings Per Share": "7.14",
+    "Net Income Margin (%)": "3.26",
+    "Price to Book Value": "1.76",
+    "Price to Earnings": "24.85",
+    "PEG Ratio": "3.52"
+  }
+}

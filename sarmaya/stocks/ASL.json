@@ -1,0 +1,25 @@
+{
+  "symbol": "ASL",
+  "name": "Aisha Steel Mills Limited",
+  "source": "https://sarmaaya.pk/stocks/ASL",
+  "scraped_at": "2026-07-19T13:35:40",
+  "snapshot": {
+    "Price open": "12.6",
+    "Price close": "12.64",
+    "Price high": "12.87",
+    "Price low": "12.42",
+    "52 week high price": "15.94",
+    "52 week low price": "8.51",
+    "Market cap": "11.77B",
+    "Shares outstanding": "930.78M",
+    "Free float shares": "279.24M",
+    "Weekly average volume": "2.85M",
+    "Free Float %": "30",
+    "Dividend Yield (%)": "0",
+    "Earnings Per Share": "0.07",
+    "Net Income Margin (%)": "0.28",
+    "Price to Book Value": "1.18",
+    "Price to Earnings": "134.2",
+    "PEG Ratio": "-13.43"
+  }
+}

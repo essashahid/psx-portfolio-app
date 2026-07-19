@@ -1,0 +1,25 @@
+{
+  "symbol": "TPLT",
+  "name": "TPL Trakker Limited",
+  "source": "https://sarmaaya.pk/stocks/TPLT",
+  "scraped_at": "2026-07-19T13:35:40",
+  "snapshot": {
+    "Price open": "25.41",
+    "Price close": "27.91",
+    "Price high": "27.95",
+    "Price low": "25.41",
+    "52 week high price": "27.95",
+    "52 week low price": "6.06",
+    "Market cap": "5.23B",
+    "Shares outstanding": "187.26M",
+    "Free float shares": "93.63M",
+    "Weekly average volume": "2.8M",
+    "Free Float %": "50",
+    "Dividend Yield (%)": "0",
+    "Earnings Per Share": "-0.56",
+    "Net Income Margin (%)": "-6.89",
+    "Price to Book Value": "3.73",
+    "Price to Earnings": "-49.65",
+    "PEG Ratio": "-"
+  }
+}

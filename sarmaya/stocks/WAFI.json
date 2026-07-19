@@ -1,0 +1,19 @@
+{
+  "symbol": "WAFI",
+  "name": "Wafi Energy Pakistan Limited",
+  "source": "https://sarmaaya.pk/stocks/WAFI",
+  "scraped_at": "2026-07-19T13:35:40",
+  "snapshot": {
+    "Price open": "188.79",
+    "Price close": "184.28",
+    "Price high": "188.92",
+    "Price low": "183.52",
+    "52 week high price": "260",
+    "52 week low price": "165",
+    "Market cap": "39.44B",
+    "Shares outstanding": "214.02M",
+    "Free float shares": "32.1M",
+    "Weekly average volume": "127.42K",
+    "Free Float %": "15"
+  }
+}

@@ -351,8 +351,14 @@
     "AHCL": "Arif Habib Corporation: mis-sectored as Fertilizer — it is a holding company (Power Cement, Aisha Steel, PIA stakes). No annual row exists at all, so P/E 3.68 is being computed off a 9-month EPS rather than a trailing twelve months. Added the real 9M FY2025 comparative (EPS 4.33) and quarantined a duplicated H1. Even once the annual lands, P/E is close to meaningless here: 12.75bn of the 17.12bn 9M profit is unrealised mark-to-market gain on listed investments. Same basis-architecture class as ENGROH."
   },
   "_needsRecheck": {
-    "_note": "Was verified, but the fiscal-year off-by-one fix (scripts/fix-interim-fiscal-year.ts) changed the prior-year leg of the TTM chain, so the trailing figure these were checked against no longer holds. Re-read the filing before restoring the mark.",
+    "_note": "Was verified, or was changed by an automated pass, but the trailing figure no longer stands. Re-read the filing before restoring or granting the mark.",
     "FCCL": "Trailing TTM moved 4.65 -> 7.31 after the mislabelled 2025 Q1/Q2 were relabelled to 2026. The remaining 2025 H1 row (eps 1.64) carries a different revenue from 2026 H1 so it survived the duplicate check, but an identical EPS in both years is suspicious and it implies a FY2025 Q4 EPS of 2.92 against a 9M of only 2.51. Run-rate 5.85 still matches Sarmaaya 5.99. Needs the H1 FY2025 filing read.",
-    "MUGHAL": "Trailing TTM moved to 7.24 against Sarmaaya 6.37 (13.7%). Our 9M FY2025 of 1.35 implies Sarmaaya is working from 2.22. Needs the 9M FY2025 comparative confirmed from the filing."
+    "MUGHAL": "Trailing TTM moved to 7.24 against Sarmaaya 6.37 (13.7%). Our 9M FY2025 of 1.35 implies Sarmaaya is working from 2.22. Needs the 9M FY2025 comparative confirmed from the filing.",
+    "SEARL": "Backfill produced trailing 4.32 against Sarmaaya 2.04 (+112%). Multi-basis rows from one filing; needs the correct standalone column identified.",
+    "GAL": "Backfill produced trailing 69.76 against Sarmaaya 117.24 (-40%).",
+    "PSEL": "Backfill produced trailing 21.06 against Sarmaaya 5.58 (+277%). Also holds contradictory FY rows (2022 FY at -10.99 and 18.73; 2023 FY at -6.71 and -52.35).",
+    "AVN": "Backfill produced trailing 0.14 against Sarmaaya 1.02 (-86%). Filing 277710 yielded three 2025 FY rows: consolidated 1.51, unconsolidated 0.14, unlabelled 1.54. The 0.14 the engine selected is almost certainly a misread.",
+    "HUMNL": "Backfill produced trailing 1.20 against Sarmaaya 0.10.",
+    "SIEM": "Backfill produced trailing -6.49 against Sarmaaya 31.37, a sign flip. 2025 Q1 of 122.06 is inconsistent with 2025 H1 of -17.07, and 2025 Q3 holds two values (-55.66 and 22.52)."
   }
 }

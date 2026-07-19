@@ -1,0 +1,25 @@
+{
+  "symbol": "HALEON",
+  "name": "Haleon Pakistan Limited",
+  "source": "https://sarmaaya.pk/stocks/HALEON",
+  "scraped_at": "2026-07-19T13:35:40",
+  "snapshot": {
+    "Price open": "762",
+    "Price close": "759.56",
+    "Price high": "765.99",
+    "Price low": "755.02",
+    "52 week high price": "1.01K",
+    "52 week low price": "655",
+    "Market cap": "88.91B",
+    "Shares outstanding": "117.05M",
+    "Free float shares": "15.74M",
+    "Weekly average volume": "45.12K",
+    "Free Float %": "13.44",
+    "Dividend Yield (%)": "3.6",
+    "Earnings Per Share": "55.96",
+    "Net Income Margin (%)": "15.35",
+    "Price to Book Value": "6.1",
+    "Price to Earnings": "12.32",
+    "PEG Ratio": "0.19"
+  }
+}

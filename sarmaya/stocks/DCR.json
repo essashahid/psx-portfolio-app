@@ -1,0 +1,25 @@
+{
+  "symbol": "DCR",
+  "name": "Dolmen City REIT",
+  "source": "https://sarmaaya.pk/stocks/DCR",
+  "scraped_at": "2026-07-19T13:35:40",
+  "snapshot": {
+    "Price open": "38.46",
+    "Price close": "38.42",
+    "Price high": "38.6",
+    "Price low": "36.52",
+    "52 week high price": "41.8",
+    "52 week low price": "27.9",
+    "Market cap": "85.43B",
+    "Shares outstanding": "2.22B",
+    "Free float shares": "555.93M",
+    "Weekly average volume": "522.82K",
+    "Free Float %": "25",
+    "Dividend Yield (%)": "7.05",
+    "Earnings Per Share": "2.31",
+    "Net Income Margin (%)": "78.71",
+    "Price to Book Value": "1.12",
+    "Price to Earnings": "15.64",
+    "PEG Ratio": "-"
+  }
+}

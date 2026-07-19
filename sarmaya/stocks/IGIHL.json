@@ -1,0 +1,25 @@
+{
+  "symbol": "IGIHL",
+  "name": "IGI Holdings Limited",
+  "source": "https://sarmaaya.pk/stocks/IGIHL",
+  "scraped_at": "2026-07-19T13:35:40",
+  "snapshot": {
+    "Price open": "255",
+    "Price close": "251.19",
+    "Price high": "255",
+    "Price low": "246",
+    "52 week high price": "365",
+    "52 week low price": "165",
+    "Market cap": "35.83B",
+    "Shares outstanding": "142.63M",
+    "Free float shares": "28.53M",
+    "Weekly average volume": "108.37K",
+    "Free Float %": "20",
+    "Dividend Yield (%)": "3.16",
+    "Earnings Per Share": "35.61",
+    "Net Income Margin (%)": "18.89",
+    "Price to Book Value": "0.53",
+    "Price to Earnings": "4.9",
+    "PEG Ratio": "-"
+  }
+}

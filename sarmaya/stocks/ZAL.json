@@ -1,0 +1,19 @@
+{
+  "symbol": "ZAL",
+  "name": "Zarea Limited",
+  "source": "https://sarmaaya.pk/stocks/ZAL",
+  "scraped_at": "2026-07-19T13:35:40",
+  "snapshot": {
+    "Price open": "41",
+    "Price close": "40.2",
+    "Price high": "41.29",
+    "Price low": "40",
+    "52 week high price": "79.5",
+    "52 week low price": "23.11",
+    "Market cap": "10.55B",
+    "Shares outstanding": "262.5M",
+    "Free float shares": "65.63M",
+    "Weekly average volume": "741.1K",
+    "Free Float %": "25"
+  }
+}

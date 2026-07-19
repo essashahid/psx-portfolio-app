@@ -1,0 +1,25 @@
+{
+  "symbol": "APL",
+  "name": "Attock Petroleum Limited",
+  "source": "https://sarmaaya.pk/stocks/APL",
+  "scraped_at": "2026-07-19T13:35:40",
+  "snapshot": {
+    "Price open": "544.69",
+    "Price close": "541.13",
+    "Price high": "546.99",
+    "Price low": "540",
+    "52 week high price": "646",
+    "52 week low price": "485",
+    "Market cap": "67.33B",
+    "Shares outstanding": "124.42M",
+    "Free float shares": "31.1M",
+    "Weekly average volume": "28.21K",
+    "Free Float %": "25",
+    "Dividend Yield (%)": "6.41",
+    "Earnings Per Share": "140.32",
+    "Net Income Margin (%)": "3.51",
+    "Price to Book Value": "0.92",
+    "Price to Earnings": "3.67",
+    "PEG Ratio": "0.07"
+  }
+}

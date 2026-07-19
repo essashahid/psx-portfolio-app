@@ -1,0 +1,25 @@
+{
+  "symbol": "ATIL",
+  "name": "Atlas Insurance Limited",
+  "source": "https://sarmaaya.pk/stocks/ATIL",
+  "scraped_at": "2026-07-19T13:35:40",
+  "snapshot": {
+    "Price open": "75.51",
+    "Price close": "76.46",
+    "Price high": "76.98",
+    "Price low": "75.5",
+    "52 week high price": "111.8",
+    "52 week low price": "63",
+    "Market cap": "11.42B",
+    "Shares outstanding": "149.42M",
+    "Free float shares": "29.88M",
+    "Weekly average volume": "15.08K",
+    "Free Float %": "20",
+    "Dividend Yield (%)": "11.12",
+    "Earnings Per Share": "15.31",
+    "Net Income Margin (%)": "35.07",
+    "Price to Book Value": "1.05",
+    "Price to Earnings": "4.89",
+    "PEG Ratio": "-"
+  }
+}

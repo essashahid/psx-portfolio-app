@@ -1,0 +1,19 @@
+{
+  "symbol": "FTSM",
+  "name": "First Tri-Star Modaraba",
+  "source": "https://sarmaaya.pk/stocks/FTSM",
+  "scraped_at": "2026-07-19T13:35:40",
+  "snapshot": {
+    "Price open": "33.51",
+    "Price close": "33.35",
+    "Price high": "34",
+    "Price low": "33",
+    "52 week high price": "57",
+    "52 week low price": "11.52",
+    "Market cap": "705.79M",
+    "Shares outstanding": "21.16M",
+    "Free float shares": "8.47M",
+    "Weekly average volume": "12.17K",
+    "Free Float %": "40"
+  }
+}

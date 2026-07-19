@@ -1,0 +1,25 @@
+{
+  "symbol": "SYS",
+  "name": "Systems Limited",
+  "source": "https://sarmaaya.pk/stocks/SYS",
+  "scraped_at": "2026-07-19T13:35:40",
+  "snapshot": {
+    "Price open": "141.12",
+    "Price close": "137.11",
+    "Price high": "142.45",
+    "Price low": "136.12",
+    "52 week high price": "174.4",
+    "52 week low price": "105.98",
+    "Market cap": "202.02B",
+    "Shares outstanding": "1.47B",
+    "Free float shares": "957.71M",
+    "Weekly average volume": "1.4M",
+    "Free Float %": "65",
+    "Dividend Yield (%)": "1.17",
+    "Earnings Per Share": "7.86",
+    "Net Income Margin (%)": "13.4",
+    "Price to Book Value": "3.27",
+    "Price to Earnings": "17.65",
+    "PEG Ratio": "0.23"
+  }
+}

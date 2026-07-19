@@ -1,0 +1,19 @@
+{
+  "symbol": "UDPL",
+  "name": "United Distributors Pakistan Limited",
+  "source": "https://sarmaaya.pk/stocks/UDPL",
+  "scraped_at": "2026-07-19T13:35:40",
+  "snapshot": {
+    "Price open": "121",
+    "Price close": "122.04",
+    "Price high": "123.65",
+    "Price low": "121",
+    "52 week high price": "168.99",
+    "52 week low price": "70.5",
+    "Market cap": "4.3B",
+    "Shares outstanding": "35.27M",
+    "Free float shares": "5.29M",
+    "Weekly average volume": "19.77K",
+    "Free Float %": "15"
+  }
+}

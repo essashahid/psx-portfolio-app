@@ -1,0 +1,19 @@
+{
+  "symbol": "PAKD",
+  "name": "Pak Datacom Limited",
+  "source": "https://sarmaaya.pk/stocks/PAKD",
+  "scraped_at": "2026-07-19T13:35:40",
+  "snapshot": {
+    "Price open": "127",
+    "Price close": "126.43",
+    "Price high": "128",
+    "Price low": "125.99",
+    "52 week high price": "252",
+    "52 week low price": "85.01",
+    "Market cap": "1.5B",
+    "Shares outstanding": "11.86M",
+    "Free float shares": "5.06M",
+    "Weekly average volume": "6.41K",
+    "Free Float %": "42.63"
+  }
+}

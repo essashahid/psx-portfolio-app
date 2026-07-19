@@ -1,0 +1,25 @@
+{
+  "symbol": "OTSU",
+  "name": "Otsuka Pakistan Limited",
+  "source": "https://sarmaaya.pk/stocks/OTSU",
+  "scraped_at": "2026-07-19T13:35:40",
+  "snapshot": {
+    "Price open": "410",
+    "Price close": "401.51",
+    "Price high": "425",
+    "Price low": "399.99",
+    "52 week high price": "447.94",
+    "52 week low price": "254.95",
+    "Market cap": "4.86B",
+    "Shares outstanding": "12.1M",
+    "Free float shares": "3.03M",
+    "Weekly average volume": "26.02K",
+    "Free Float %": "25",
+    "Dividend Yield (%)": "0",
+    "Earnings Per Share": "28.78",
+    "Net Income Margin (%)": "8.39",
+    "Price to Book Value": "4.52",
+    "Price to Earnings": "10.43",
+    "PEG Ratio": "1.82"
+  }
+}

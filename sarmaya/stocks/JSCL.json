@@ -1,0 +1,25 @@
+{
+  "symbol": "JSCL",
+  "name": "Jahangir Siddiqui & Co. Ltd.",
+  "source": "https://sarmaaya.pk/stocks/JSCL",
+  "scraped_at": "2026-07-19T13:35:40",
+  "snapshot": {
+    "Price open": "26.75",
+    "Price close": "25.89",
+    "Price high": "27.18",
+    "Price low": "25.75",
+    "52 week high price": "32.2",
+    "52 week low price": "16.5",
+    "Market cap": "23.71B",
+    "Shares outstanding": "915.94M",
+    "Free float shares": "183.19M",
+    "Weekly average volume": "956.25K",
+    "Free Float %": "20",
+    "Dividend Yield (%)": "0",
+    "Earnings Per Share": "6.02",
+    "Net Income Margin (%)": "3.42",
+    "Price to Book Value": "0.41",
+    "Price to Earnings": "2.82",
+    "PEG Ratio": "0.05"
+  }
+}

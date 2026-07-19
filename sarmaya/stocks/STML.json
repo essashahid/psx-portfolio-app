@@ -1,0 +1,25 @@
+{
+  "symbol": "STML",
+  "name": "Shams Textile Mills Limited",
+  "source": "https://sarmaaya.pk/stocks/STML",
+  "scraped_at": "2026-07-19T13:35:40",
+  "snapshot": {
+    "Price open": "58.99",
+    "Price close": "58.17",
+    "Price high": "63.12",
+    "Price low": "52.51",
+    "52 week high price": "63.12",
+    "52 week low price": "22.8",
+    "Market cap": "502.59M",
+    "Shares outstanding": "8.64M",
+    "Free float shares": "2.59M",
+    "Weekly average volume": "18.39K",
+    "Free Float %": "30",
+    "Dividend Yield (%)": "0",
+    "Earnings Per Share": "-6.99",
+    "Net Income Margin (%)": "-1.76",
+    "Price to Book Value": "0.66",
+    "Price to Earnings": "-8.32",
+    "PEG Ratio": "0.62"
+  }
+}

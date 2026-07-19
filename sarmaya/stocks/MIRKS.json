@@ -1,0 +1,25 @@
+{
+  "symbol": "MIRKS",
+  "name": "Mirpurkhas Sugar Mills Limited",
+  "source": "https://sarmaaya.pk/stocks/MIRKS",
+  "scraped_at": "2026-07-19T13:35:40",
+  "snapshot": {
+    "Price open": "37.4",
+    "Price close": "35.52",
+    "Price high": "37.4",
+    "Price low": "35.2",
+    "52 week high price": "44.5",
+    "52 week low price": "22.28",
+    "Market cap": "2.36B",
+    "Shares outstanding": "66.56M",
+    "Free float shares": "29.95M",
+    "Weekly average volume": "67.09K",
+    "Free Float %": "45",
+    "Dividend Yield (%)": "0",
+    "Earnings Per Share": "0.03",
+    "Net Income Margin (%)": "0.01",
+    "Price to Book Value": "0.98",
+    "Price to Earnings": "887.59",
+    "PEG Ratio": "19.69"
+  }
+}

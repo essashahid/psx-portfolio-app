@@ -1,0 +1,19 @@
+{
+  "symbol": "BBFL",
+  "name": "Big Bird Foods Limited",
+  "source": "https://sarmaaya.pk/stocks/BBFL",
+  "scraped_at": "2026-07-19T13:35:40",
+  "snapshot": {
+    "Price open": "43.89",
+    "Price close": "42.99",
+    "Price high": "44.1",
+    "Price low": "42.5",
+    "52 week high price": "57.35",
+    "52 week low price": "34",
+    "Market cap": "12.85B",
+    "Shares outstanding": "298.91M",
+    "Free float shares": "115.24M",
+    "Weekly average volume": "781.37K",
+    "Free Float %": "38.55"
+  }
+}

@@ -651,7 +651,8 @@ STRICT RULES:
 - Echo ONLY numbers that literally appear in the document text. Never compute, estimate, or fill in missing values — use null.
 - The ENTIRE filing uses ONE monetary unit. Read the statement headers ("Rupees in '000", "Rupees in million", "(Rupees)", etc.) and report it ONCE as document_units: one of "thousands" | "millions" | "billions" | "rupees". Do NOT convert any figure — echo them exactly as printed.
 - EPS is in rupees per share (never scaled). Percentages stay as printed.
-- Emit EVERY period column the statement prints, each as its own object in "statements", including the comparative prior-year columns. Do not discard the comparative: it is the prior-year leg of the trailing-twelve-month calculation and is often available nowhere else.
+- FIRST choose ONE set of statements, then read every column in it. Order matters: pick the unconsolidated/standalone set if the filing has one (see the basis rule below), and ignore the consolidated set entirely. Only after that choice do you read columns. A filing that prints both sets must still yield exactly one object per period, never one per period per basis.
+- Within that chosen set, emit EVERY period column it prints, each as its own object in "statements", including the comparative prior-year columns. Do not discard the comparative: it is the prior-year leg of the trailing-twelve-month calculation and is often available nowhere else.
   An interim profit-or-loss typically prints four columns, so emit four objects:
     "Nine months ended 31 March 2026"  -> fiscal_year 2026, fiscal_period "9M"
     "Nine months ended 31 March 2025"  -> fiscal_year 2025, fiscal_period "9M"

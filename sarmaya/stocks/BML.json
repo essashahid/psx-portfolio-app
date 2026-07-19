@@ -1,0 +1,25 @@
+{
+  "symbol": "BML",
+  "name": "Bank Makramah Limited",
+  "source": "https://sarmaaya.pk/stocks/BML",
+  "scraped_at": "2026-07-19T13:35:40",
+  "snapshot": {
+    "Price open": "59.5",
+    "Price close": "61.8",
+    "Price high": "62",
+    "Price low": "59.5",
+    "52 week high price": "91.85",
+    "52 week low price": "4.68",
+    "Market cap": "61.8B",
+    "Shares outstanding": "1B",
+    "Free float shares": "150M",
+    "Weekly average volume": "467.56K",
+    "Free Float %": "15",
+    "Dividend Yield (%)": "0",
+    "Earnings Per Share": "141.53",
+    "Net Income Margin (%)": "42.07",
+    "Price to Book Value": "2.23",
+    "Price to Earnings": "0.41",
+    "PEG Ratio": "-"
+  }
+}

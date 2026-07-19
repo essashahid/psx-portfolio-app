@@ -1,0 +1,25 @@
+{
+  "symbol": "WAHN",
+  "name": "Wah Noble Chemicals Limited",
+  "source": "https://sarmaaya.pk/stocks/WAHN",
+  "scraped_at": "2026-07-19T13:35:40",
+  "snapshot": {
+    "Price open": "298",
+    "Price close": "291.36",
+    "Price high": "298",
+    "Price low": "291",
+    "52 week high price": "435",
+    "52 week low price": "225.23",
+    "Market cap": "2.62B",
+    "Shares outstanding": "9M",
+    "Free float shares": "3.15M",
+    "Weekly average volume": "3.81K",
+    "Free Float %": "35",
+    "Dividend Yield (%)": "3.21",
+    "Earnings Per Share": "51.77",
+    "Net Income Margin (%)": "9.43",
+    "Price to Book Value": "0.91",
+    "Price to Earnings": "4.67",
+    "PEG Ratio": "0.36"
+  }
+}

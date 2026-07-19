@@ -1,0 +1,25 @@
+{
+  "symbol": "FTMM",
+  "name": "First Treet Manufacturing Modaraba",
+  "source": "https://sarmaaya.pk/stocks/FTMM",
+  "scraped_at": "2026-07-19T13:35:40",
+  "snapshot": {
+    "Price open": "16.77",
+    "Price close": "16.28",
+    "Price high": "16.77",
+    "Price low": "16.25",
+    "52 week high price": "23.75",
+    "52 week low price": "11.14",
+    "Market cap": "3.18B",
+    "Shares outstanding": "195.6M",
+    "Free float shares": "9.78M",
+    "Weekly average volume": "4.42K",
+    "Free Float %": "5",
+    "Dividend Yield (%)": "7.45",
+    "Earnings Per Share": "0.5",
+    "Net Income Margin (%)": "2.47",
+    "Price to Book Value": "1.14",
+    "Price to Earnings": "26.19",
+    "PEG Ratio": "-1.46"
+  }
+}
