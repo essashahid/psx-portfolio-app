@@ -288,22 +288,92 @@
       "pb": 2.01,
       "pe": 9.44,
       "peg": 0.26,
-      "note": "unverified: our EPS/PE/DY all diverge together, needs filing check"
+      "basis": "consolidated",
+      "note": "RESOLVED 2026-07-19: not a bug. Filing gives standalone Q1-2026 EPS 1.99 (our 1.99) and consolidated 1.54; Sarmaaya reports the group. Our unconsolidated TTM 12.66 is correct and P/B agrees at 2.07 vs 2.01."
     },
-    "BWCL":  { "priceClose": 510.2,  "eps": 40.65, "pe": 12.55 },
-    "FCCL":  { "priceClose": 57.65,  "eps": 5.99,  "pe": 9.79,  "note": "Sarmaaya quotes the run-rate EPS; our trailing-12m 4.65 is the correct trailing figure" },
-    "MLCF":  { "priceClose": 107.41, "eps": 10.74, "pe": 10.2 },
-    "DGKC":  { "priceClose": 233,    "eps": 27.64, "pe": 8.47 },
-    "KOHC":  { "priceClose": 104.6,  "eps": 10.62, "pe": 9.98,  "note": "Sarmaaya quotes the run-rate EPS" },
-    "CHCC":  { "priceClose": 339.95, "eps": 37.91, "pe": 8.97,  "note": "Sarmaaya quotes the run-rate EPS" },
-    "PIOC":  { "priceClose": 282.5,  "eps": 24.32, "pe": 11.77, "note": "Sarmaaya quotes the run-rate EPS" },
-    "ACPL":  { "priceClose": 232.95, "eps": 20.97, "pe": 10.97 },
-    "FLYNG": { "priceClose": 48.61,  "eps": 1.29,  "pe": 36.7 },
-    "GWLC":  { "priceClose": 54.98,  "eps": 6.74,  "pe": 8.17 },
-    "POWER": { "priceClose": 23.1,   "eps": 2.24,  "pe": 10.42 },
-    "FECTC": { "priceClose": 120.99, "eps": 14,    "pe": 8.78,  "note": "Sarmaaya carries the restated FY2025 annual; we still hold the original, leaving a ~5% TTM gap" },
-    "DNCC":  { "priceClose": 19.8,   "eps": -0.39, "pe": -50.41, "note": "loss-making; P/E not meaningful" },
-    "DCL":   { "priceClose": 11.79,  "eps": -2.37, "pe": -5.02,  "note": "loss-making; P/E not meaningful" },
-    "THCCL": { "priceClose": 74.59,  "eps": 7.24,  "pe": 9.78,  "basis": "consolidated", "note": "group figure; our unconsolidated TTM is 6.54. Company also did a 5:1 split to Rs 2 par during FY2026" }
+    "BWCL": {
+      "priceClose": 510.2,
+      "eps": 40.65,
+      "pe": 12.55
+    },
+    "FCCL": {
+      "priceClose": 57.65,
+      "eps": 5.99,
+      "pe": 9.79,
+      "note": "Sarmaaya quotes the run-rate EPS; our trailing-12m 4.65 is the correct trailing figure"
+    },
+    "MLCF": {
+      "priceClose": 107.41,
+      "eps": 10.74,
+      "pe": 10.2
+    },
+    "DGKC": {
+      "priceClose": 233,
+      "eps": 27.64,
+      "pe": 8.47
+    },
+    "KOHC": {
+      "priceClose": 104.6,
+      "eps": 10.62,
+      "pe": 9.98,
+      "note": "Sarmaaya quotes the run-rate EPS"
+    },
+    "CHCC": {
+      "priceClose": 339.95,
+      "eps": 37.91,
+      "pe": 8.97,
+      "note": "Sarmaaya quotes the run-rate EPS"
+    },
+    "PIOC": {
+      "priceClose": 282.5,
+      "eps": 24.32,
+      "pe": 11.77,
+      "note": "Sarmaaya quotes the run-rate EPS"
+    },
+    "ACPL": {
+      "priceClose": 232.95,
+      "eps": 20.97,
+      "pe": 10.97
+    },
+    "FLYNG": {
+      "priceClose": 48.61,
+      "eps": 1.29,
+      "pe": 36.7
+    },
+    "GWLC": {
+      "priceClose": 54.98,
+      "eps": 6.74,
+      "pe": 8.17
+    },
+    "POWER": {
+      "priceClose": 23.1,
+      "eps": 2.24,
+      "pe": 10.42
+    },
+    "FECTC": {
+      "priceClose": 120.99,
+      "eps": 14,
+      "pe": 8.78,
+      "note": "Sarmaaya carries the restated FY2025 annual; we still hold the original, leaving a ~5% TTM gap"
+    },
+    "DNCC": {
+      "priceClose": 19.8,
+      "eps": -0.39,
+      "pe": -50.41,
+      "note": "loss-making; P/E not meaningful"
+    },
+    "DCL": {
+      "priceClose": 11.79,
+      "eps": -2.37,
+      "pe": -5.02,
+      "note": "loss-making; P/E not meaningful"
+    },
+    "THCCL": {
+      "priceClose": 74.59,
+      "eps": 7.24,
+      "pe": 9.78,
+      "basis": "consolidated",
+      "note": "group figure; our unconsolidated TTM is 6.54. Company also did a 5:1 split to Rs 2 par during FY2026"
+    }
   }
 }
