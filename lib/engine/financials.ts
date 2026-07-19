@@ -651,7 +651,15 @@ STRICT RULES:
 - Echo ONLY numbers that literally appear in the document text. Never compute, estimate, or fill in missing values — use null.
 - The ENTIRE filing uses ONE monetary unit. Read the statement headers ("Rupees in '000", "Rupees in million", "(Rupees)", etc.) and report it ONCE as document_units: one of "thousands" | "millions" | "billions" | "rupees". Do NOT convert any figure — echo them exactly as printed.
 - EPS is in rupees per share (never scaled). Percentages stay as printed.
-- Use the CURRENT period column (not the comparative prior-year column).
+- Emit EVERY period column the statement prints, each as its own object in "statements", including the comparative prior-year columns. Do not discard the comparative: it is the prior-year leg of the trailing-twelve-month calculation and is often available nowhere else.
+  An interim profit-or-loss typically prints four columns, so emit four objects:
+    "Nine months ended 31 March 2026"  -> fiscal_year 2026, fiscal_period "9M"
+    "Nine months ended 31 March 2025"  -> fiscal_year 2025, fiscal_period "9M"
+    "Quarter ended 31 March 2026"      -> fiscal_year 2026, fiscal_period "Q3"
+    "Quarter ended 31 March 2025"      -> fiscal_year 2025, fiscal_period "Q3"
+  A balance sheet prints two columns (current unaudited, prior audited year end); emit both.
+  Read each column independently. Never carry a figure across columns, and never emit the same figures twice under different years — if a line is blank in one column, that column's value is null.
+  If a comparative column is marked "Restated", still emit it: the restated figure is the correct comparative.
 - If the document contains both CONSOLIDATED and UNCONSOLIDATED (standalone/separate) statements, extract ONLY the unconsolidated/standalone ones. Never mix figures from the two sets. If only consolidated statements exist, extract those and set basis accordingly.
 - basis: "unconsolidated" | "consolidated" | "unlabelled" — read it from the statement heading (e.g. "Condensed Interim Unconsolidated Statement of Profit or Loss").
 - fiscal_year is the calendar year in which the company's FISCAL YEAR ENDS. It is NOT the calendar year of the period-end date. Derive it in three steps:
