@@ -47,15 +47,15 @@ NOT mean the numbers have been checked against an external source.
 | 36 | JDWS | JDW Sugar Mills Limited | Sugar & Allied Industries | 54.4B | 63.9% | 2026 | ok |
 | 37 | SEARL | The Searle Company Limited | Pharmaceuticals | 53.2B | 64.7% | 2026 | ok |
 | 38 | THALL | Thal Limited | Automobile Parts & Accessories | 49.8B | 65.4% | 2026 | ok |
-| 39 | CNERGY | Cnergyico PK  Limited | Refinery | 45.7B | 66.0% | 2026 | basis 2025 FY |
+| 39 | CNERGY | Cnergyico PK  Limited | Refinery | 45.7B | 66.0% | 2026 | ok |
 | 40 | DLL | Dawood Lawrencepur Limited | Inv. Banks / Inv. Cos. / Securities Cos. | 45.7B | 66.6% | 2026 | ok |
 | 41 | FFL | Fauji Foods Limited | Food & Personal Care Products | 45.7B | 67.3% | 2026 | ok |
 | 42 | LOTCHEM | Lotte Chemical Pakistan Limited | Chemical | 44.5B | 67.9% | 2026 | ok |
-| 43 | PSX | Pakistan Stock Exchange Limited | Inv. Banks / Inv. Cos. / Securities Cos. | 42.4B | 68.5% | 2026 | basis 2025 FY |
-| 44 | GHNI | Ghandhara Industries Limited | Automobile Assembler | 42.4B | 69.1% | 2026 | basis 2025 FY |
+| 43 | PSX | Pakistan Stock Exchange Limited | Inv. Banks / Inv. Cos. / Securities Cos. | 42.4B | 68.5% | 2026 | ok |
+| 44 | GHNI | Ghandhara Industries Limited | Automobile Assembler | 42.4B | 69.1% | 2026 | ok |
 | 45 | WAFI | Wafi Energy Pakistan Limited | Oil & Gas Marketing Companies | 42.1B | 69.7% | 2026 | ok |
 | 46 | GHGL | Ghani Glass Limited | Glass & Ceramics | 41.0B | 70.2% | 2026 | ok |
-| 47 | ISL | International Steels Limited | Engineering | 41.0B | 70.8% | 2026 | basis 2025 FY |
+| 47 | ISL | International Steels Limited | Engineering | 41.0B | 70.8% | 2026 | ok |
 | 48 | PABC | Pakistan Aluminium Beverage Cans Limited | Miscellaneous | 40.1B | 71.3% | 2026 | ok |
 | 49 | HPL | Hoechst Pakistan Limited | Pharmaceuticals | 38.6B | 71.9% | 2026 | ok |
 | 50 | PAEL | Pak Elektron Limited | Cable & Electrical Goods | 38.6B | 72.4% | 2026 | ok |
