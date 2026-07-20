@@ -70,7 +70,7 @@ export const NAV_SECTIONS: { title: string; items: NavItemDef[] }[] = [
       { href: "/research", label: "Saved Reports", icon: FileText, hint: "Company research reports library", tier: "plus" },
       { href: "/stocks", label: "Stock Research", icon: Search, hint: "Fundamentals, ratios and structure per stock", tier: "plus" },
       { href: "/market", label: "Market Pulse", icon: Activity, hint: "Index, breadth, sectors and flows", tier: "plus" },
-      { href: "/outlook", label: "PSX Market Outlook", icon: Radar, hint: "Early-warning and forecasting system", tier: "advanced", adminOnly: true },
+      { href: "/outlook", label: "PSX Market Outlook", icon: Radar, hint: "Early-warning and forecasting system", tier: "advanced" },
       { href: "/bulls-bears", label: "Bulls & Bears", icon: BarChart3, hint: "Weekly regime, picks and watchlist", tier: "advanced", adminOnly: true },
       { href: "/news", label: "News Center", icon: Newspaper, hint: "Portfolio and market news", tier: "plus" },
       { href: "/chat", label: "Research Copilot", icon: Sparkles, hint: "Ask anything about your portfolio and PSX", tier: "core" },

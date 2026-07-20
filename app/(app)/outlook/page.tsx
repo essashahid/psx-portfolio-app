@@ -1,6 +1,4 @@
-import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import { getAdminContext } from "@/lib/admin/guard";
 import { PageHeader } from "@/components/page-header";
 import { OutlookCoverageView } from "@/components/outlook/outlook-coverage-view";
 import { buildOutlookCoverage } from "@/lib/engine/outlook/coverage";
@@ -12,13 +10,11 @@ export const dynamic = "force-dynamic";
  *
  * The finished feature will carry probability-based scenarios. Today it carries
  * only the data audit that decides whether those scenarios can be built at all,
- * and over which horizons. Kept admin-only until a model exists and has been
- * validated, so nothing here can be mistaken for a market call.
+ * and over which horizons. Gated by the enabled_features flag rather than
+ * is_admin, so nothing here can be mistaken for a market call until a model
+ * exists and has been validated, but access does not require admin rights.
  */
 export default async function OutlookPage() {
-  const { isAdmin } = await getAdminContext();
-  if (!isAdmin) redirect("/dashboard");
-
   const supabase = await createClient();
   const report = await buildOutlookCoverage(supabase);
 
