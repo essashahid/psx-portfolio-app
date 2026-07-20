@@ -17,7 +17,14 @@ import { activeUniverseTickers } from "@/lib/engine/universe";
  */
 
 export type HealthFinding = {
-  code: "NO_COMPARATIVE" | "DUPLICATE_PERIOD" | "SHARE_BREAK" | "UNDATED_STATEMENT" | "STALE_BASIS" | "SARMAAYA_DIVERGENCE";
+  code:
+    | "NO_COMPARATIVE"
+    | "DUPLICATE_PERIOD"
+    | "SHARE_BREAK"
+    | "UNDATED_STATEMENT"
+    | "STALE_BASIS"
+    | "SARMAAYA_DIVERGENCE"
+    | "PRICE_MISMATCH";
   ticker: string;
   detail: string;
   marketCap: number;
@@ -51,10 +58,12 @@ async function pageAll<T>(db: SupabaseClient, table: string, cols: string, filte
 }
 
 /** Sarmaaya reference store, read from disk. Absent in some deploys — optional. */
-function sarmaayaStore(): Record<string, { eps?: number; basis?: string }> {
+type SarmaayaSnap = { eps?: number; basis?: string; priceClose?: number; shares?: number };
+
+function sarmaayaStore(): Record<string, SarmaayaSnap> {
   try {
     const raw = readFileSync(join(process.cwd(), "data/sarmaaya-snapshots.json"), "utf8");
-    return (JSON.parse(raw) as { snapshots: Record<string, { eps?: number; basis?: string }> }).snapshots ?? {};
+    return (JSON.parse(raw) as { snapshots: Record<string, SarmaayaSnap> }).snapshots ?? {};
   } catch {
     return {};
   }
@@ -73,7 +82,11 @@ export async function runDataHealth(db: SupabaseClient): Promise<{
   const fins = (await pageAll<Fin>(db, "company_financials", "ticker,fiscal_year,fiscal_period,statement_type,reported_date,data")).filter(
     (r) => live.has(r.ticker)
   );
-  const quotes = await pageAll<{ ticker: string; market_cap: number | null }>(db, "market_quotes", "ticker,market_cap");
+  const quotes = await pageAll<{ ticker: string; market_cap: number | null; price: number | null; provider: string | null }>(
+    db,
+    "market_quotes",
+    "ticker,market_cap,price,provider"
+  );
   const ratios = await pageAll<{ ticker: string; ratio_name: string; ratio_value: number | null; inputs: { eps?: number } | null; source_period: string | null }>(
     db,
     "company_ratios",
@@ -198,8 +211,41 @@ export async function runDataHealth(db: SupabaseClient): Promise<{
     }
   }
 
+  // Price integrity. A wrong price corrupts every price-derived ratio at once
+  // (P/E, P/B, P/S, EV/*, both yields) while the financials stay perfectly
+  // correct, so none of the checks above can see it. This is how PPL came to
+  // serve a P/E of 1.21: the quote was PPL Corp, a US utility, not the PSX
+  // company. Checked against two independent references so one stale source
+  // cannot condemn a good price.
+  const priceOf = new Map(quotes.map((q) => [q.ticker, q]));
+  for (const ticker of byTicker.keys()) {
+    const q = priceOf.get(ticker);
+    const ours = Number(q?.price);
+    if (!Number.isFinite(ours) || ours <= 0) continue;
+    const snap = store[ticker];
+    const theirs = typeof snap?.priceClose === "number" ? snap.priceClose : null;
+    const shares = typeof snap?.shares === "number" ? snap.shares : null;
+    const implied = shares && q?.market_cap ? Number(q.market_cap) / shares : null;
+    const off = (ref: number | null) => ref !== null && ref > 0 && Math.abs(ours / ref - 1) > 0.15;
+    if (off(theirs) && (implied === null || off(implied))) {
+      add(
+        "PRICE_MISMATCH",
+        ticker,
+        `price ${ours.toFixed(2)} (${q?.provider ?? "?"}) vs Sarmaaya ${theirs?.toFixed(2)}${implied !== null ? ` and cap/shares ${implied.toFixed(2)}` : ""}`
+      );
+    }
+  }
+
   const summary: Record<string, { companies: number; marketCap: number }> = {};
-  for (const code of ["NO_COMPARATIVE", "DUPLICATE_PERIOD", "SHARE_BREAK", "UNDATED_STATEMENT", "STALE_BASIS", "SARMAAYA_DIVERGENCE"]) {
+  for (const code of [
+    "NO_COMPARATIVE",
+    "DUPLICATE_PERIOD",
+    "SHARE_BREAK",
+    "UNDATED_STATEMENT",
+    "STALE_BASIS",
+    "SARMAAYA_DIVERGENCE",
+    "PRICE_MISMATCH",
+  ]) {
     const t = [...new Set(findings.filter((f) => f.code === code).map((f) => f.ticker))];
     summary[code] = { companies: t.length, marketCap: t.reduce((s, x) => s + (cap.get(x) ?? 0), 0) };
   }
