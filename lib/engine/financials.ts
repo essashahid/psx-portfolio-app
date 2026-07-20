@@ -652,7 +652,9 @@ STRICT RULES:
 - The ENTIRE filing uses ONE monetary unit. Read the statement headers ("Rupees in '000", "Rupees in million", "(Rupees)", etc.) and report it ONCE as document_units: one of "thousands" | "millions" | "billions" | "rupees". Do NOT convert any figure — echo them exactly as printed.
 - EPS is in rupees per share (never scaled). Percentages stay as printed.
 - fiscal_year_end_month is the calendar month (1-12) in which this company's financial year ENDS. Read it from the balance sheet's audited comparative column heading, which always states the year-end date ("Audited 30 June 2025" -> 6; "Audited December 31, 2025" -> 12; "Audited 31 March 2026" -> 3). Report it once for the document. This is the same fact you use to derive fiscal_year below, so state it explicitly rather than leaving it implicit.
-- FIRST choose ONE set of statements, then read every column in it. Order matters: pick the unconsolidated/standalone set if the filing has one (see the basis rule below), and ignore the consolidated set entirely. Only after that choice do you read columns. A filing that prints both sets must still yield exactly one object per period, never one per period per basis.
+- A filing may print an UNCONSOLIDATED (standalone) set and a CONSOLIDATED (group) set. Extract BOTH when both are present, and set "basis" correctly on every object. They are different facts about different reporting entities, and for a group holding company the consolidated figure is the one the market quotes, so discarding it loses the number that matters.
+- Read the two sets INDEPENDENTLY and never mix a figure from one into the other. Within a single set, emit at most one object per (period, statement_type): if you find yourself producing two objects with the same basis, period and statement type, you have read the same column twice — emit one.
+- If a set's basis is not stated in the heading, use "unlabelled" rather than guessing. Do not label a set "unconsolidated" merely because it appears first.
 - Within that chosen set, emit EVERY period column it prints, each as its own object in "statements", including the comparative prior-year columns. Do not discard the comparative: it is the prior-year leg of the trailing-twelve-month calculation and is often available nowhere else.
   An interim profit-or-loss typically prints four columns, so emit four objects:
     "Nine months ended 31 March 2026"  -> fiscal_year 2026, fiscal_period "9M"
@@ -662,7 +664,7 @@ STRICT RULES:
   A balance sheet prints two columns (current unaudited, prior audited year end); emit both.
   Read each column independently. Never carry a figure across columns, and never emit the same figures twice under different years — if a line is blank in one column, that column's value is null.
   If a comparative column is marked "Restated", still emit it: the restated figure is the correct comparative.
-- If the document contains both CONSOLIDATED and UNCONSOLIDATED (standalone/separate) statements, extract ONLY the unconsolidated/standalone ones. Never mix figures from the two sets. If only consolidated statements exist, extract those and set basis accordingly.
+- If only one set of statements exists, extract it and set basis from its heading.
 - basis: "unconsolidated" | "consolidated" | "unlabelled" — read it from the statement heading (e.g. "Condensed Interim Unconsolidated Statement of Profit or Loss").
 - fiscal_year is the calendar year in which the company's FISCAL YEAR ENDS. It is NOT the calendar year of the period-end date. Derive it in three steps:
     1. Find the company's year end. The comparative balance sheet column states it ("Audited 30 June 2025" means a June year end; "Audited December 31, 2025" means a December year end).
