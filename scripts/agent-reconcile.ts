@@ -265,6 +265,16 @@ Explain the gap and give the correct figures. Use the annual report for the FY r
         continue;
       }
       const p = JSON.parse(m[0]) as Proposal;
+      // The prompt specifies "unconsolidated"|"consolidated" but the model
+      // sometimes writes a synonym ("standalone" for unconsolidated, "group"
+      // for consolidated). Normalize before matching, or a correction with
+      // the right figures gets silently excluded from the rebuild for
+      // spelling reasons — MUGHAL's FY2025 standalone row was invisible to
+      // trailingFrom() until this was added (did not change MUGHAL's outcome
+      // here, since its prior-year interim comparative was still missing
+      // entirely, but would silently misfire on a future company that has
+      // the full chain and just uses the word "standalone").
+      const normBasis = (b?: string): string => (b === "standalone" ? "unconsolidated" : b === "group" ? "consolidated" : (b ?? "unconsolidated"));
 
       // Validation. Rebuild the trailing figure from the proposed rows rather
       // than trusting implied_trailing_eps, which the model often omits and
@@ -273,11 +283,9 @@ Explain the gap and give the correct figures. Use the annual report for the FY r
       // belongs to neither company.
       const trailingFrom = (basis: string): number | null => {
         const at = (fy: number, fp: string) =>
-          p.corrections.find(
-            (c) => c.fiscal_year === fy && (c.fiscal_period ?? "").toUpperCase() === fp && (c.basis ?? "unconsolidated") === basis
-          )?.eps ?? null;
+          p.corrections.find((c) => c.fiscal_year === fy && (c.fiscal_period ?? "").toUpperCase() === fp && normBasis(c.basis) === basis)?.eps ?? null;
         const annual = p.corrections
-          .filter((c) => (c.fiscal_period ?? "").toUpperCase() === "FY" && (c.basis ?? "unconsolidated") === basis)
+          .filter((c) => (c.fiscal_period ?? "").toUpperCase() === "FY" && normBasis(c.basis) === basis)
           .sort((a, b) => b.fiscal_year - a.fiscal_year)[0];
         if (!annual) return null;
         for (const lbl of ["9M", "H1", "Q1"]) {

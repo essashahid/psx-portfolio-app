@@ -3,230 +3,256 @@
   "_asOf": "2026-07-20",
   "results": [
     {
-      "ticker": "BAFL",
-      "marketCap": 0,
-      "verdict": "we_are_right",
-      "status": "claims-we-are-right",
-      "diagnosis": "Our stored EPS for FY2025 unconsolidated and Q3 2025 are correct. The reference EPS is stale or incorrect, likely from a different reporting basis or period, or not the current year. Our stored Q1 EPS values align with the filing. The fiscal year ends in December.",
-      "impliedTrailing": 17.97,
-      "rebuiltTrailing": [],
-      "reference": 10.05,
-      "fiscalYearEndMonth": 12,
-      "confidence": 0.9,
-      "corrections": []
-    },
-    {
-      "ticker": "JSBL",
-      "marketCap": 27458371360,
-      "verdict": "basis_difference",
+      "ticker": "FCCL",
+      "marketCap": 127253713770,
+      "verdict": "we_are_wrong",
       "status": "no-rebuildable-chain",
-      "diagnosis": "The discrepancy in the EPS figure for FY2025 is due to the reference figure using consolidated results, while our stored figure is unconsolidated. The standalone (unconsolidated) EPS for FY2025 is PKR 1.36, and the consolidated EPS is PKR 2.84.",
+      "diagnosis": "The discrepancy for FY2025 EPS is due to differences between the stored unlabelled EPS of 5.43 and the reference EPS of 5.99. Another discrepancy is found with Q2 2025 EPS, where stored EPS is 2.96, while the filed Q2 2025 EPS is 1.64. The trailing EPS also differs due to these discrepancies and stale data. The fiscal year end month is June (6). The annual report for FY2025 shows an EPS of 5.43 on page 96. The quarterly breakdown for FY2025 EPS is provided on page 210, with Q1 EPS of 1.32, Q2 EPS of 1.64, Q3 EPS of 0.87, and Q4 EPS of 1.59. The unlabelled 2025 H1 EPS of 1.64 matches the sum of Q1 2025 and Q2 2025 EPS (1.32 + 1.64 = 2.96). The interim filings provided only cover the half year ended December 31, 2025, which is H1 FY2026. This filing shows an H1 FY2026 EPS of 1.64 on page 2. Therefore, without Q3 FY2026 and Q4 FY2026 data, a full-year 9M or TTM calculation for FY2026 cannot be accurately determined.",
       "impliedTrailing": null,
       "rebuiltTrailing": [],
-      "reference": 2.1,
-      "fiscalYearEndMonth": 12,
+      "reference": 5.99,
+      "fiscalYearEndMonth": 6,
       "confidence": 0.9,
       "corrections": [
         {
           "fiscal_year": 2025,
-          "fiscal_period": "FY",
-          "basis": "consolidated",
-          "eps": 2.84,
-          "revenue": 87088802,
-          "profit_after_tax": 7539228,
-          "page": 186
+          "fiscal_period": "Q2",
+          "basis": "unconsolidated",
+          "eps": 1.64,
+          "revenue": 0,
+          "profit_after_tax": 4020416,
+          "page": 210
         }
       ]
     },
     {
-      "ticker": "BAHL",
-      "marketCap": 194410534290,
+      "ticker": "MUGHAL",
+      "marketCap": 27579040270,
       "verdict": "basis_difference",
-      "status": "RECONCILES(consolidated)",
-      "diagnosis": "The discrepancy in EPS is due to our use of unconsolidated figures for calculations instead of consolidated figures. The filing provides both unconsolidated and consolidated financial statements. The fiscal year end date is December 31.",
-      "impliedTrailing": 26.08,
-      "rebuiltTrailing": [
-        {
-          "basis": "consolidated",
-          "eps": 26.080000000000005
-        }
-      ],
-      "reference": 26.08,
-      "fiscalYearEndMonth": 12,
+      "status": "no-rebuildable-chain",
+      "diagnosis": "The discrepancy in EPS figures is due to the reference (Sarmaaya) providing consolidated EPS, while our stored figures are a mix of standalone and an unlabelled basis. The filing provides both standalone and consolidated figures.",
+      "impliedTrailing": null,
+      "rebuiltTrailing": [],
+      "reference": 6.37,
+      "fiscalYearEndMonth": 6,
       "confidence": 0.9,
       "corrections": [
         {
           "fiscal_year": 2025,
           "fiscal_period": "FY",
-          "basis": "consolidated",
-          "eps": 29.19,
-          "revenue": null,
-          "profit_after_tax": 32467224,
-          "page": 177
+          "basis": "standalone",
+          "eps": 2.83,
+          "revenue": 102791772465,
+          "profit_after_tax": 965518174,
+          "page": 84
         },
         {
           "fiscal_year": 2025,
-          "fiscal_period": "Q1",
+          "fiscal_period": "FY",
           "basis": "consolidated",
-          "eps": 9.65,
-          "revenue": null,
-          "profit_after_tax": 10723967,
-          "page": 58
+          "eps": 2.5,
+          "revenue": 102279112016,
+          "profit_after_tax": 852224693,
+          "page": 155
         },
         {
           "fiscal_year": 2026,
           "fiscal_period": "Q1",
-          "basis": "consolidated",
-          "eps": 6.54,
-          "revenue": null,
-          "profit_after_tax": 7274739,
-          "page": 58
+          "basis": "unconsolidated",
+          "eps": -0.36,
+          "revenue": 21584159000,
+          "profit_after_tax": 6946000,
+          "page": 69
+        },
+        {
+          "fiscal_year": 2026,
+          "fiscal_period": "Q2",
+          "basis": "unconsolidated",
+          "eps": 1.85,
+          "revenue": 25241258000,
+          "profit_after_tax": 210189000,
+          "page": 69
+        },
+        {
+          "fiscal_year": 2026,
+          "fiscal_period": "Q3",
+          "basis": "unconsolidated",
+          "eps": 0.77,
+          "revenue": 19342719000,
+          "profit_after_tax": 235867000,
+          "page": 69
+        },
+        {
+          "fiscal_year": 2026,
+          "fiscal_period": "9M",
+          "basis": "unconsolidated",
+          "eps": 1.52,
+          "revenue": 89413926000,
+          "profit_after_tax": 965518000,
+          "page": 69
         }
       ]
     },
     {
-      "ticker": "SNBL",
-      "marketCap": 25025921520,
-      "verdict": "we_are_right",
-      "status": "claims-we-are-right",
-      "diagnosis": "There is a discrepancy in our stored EPS figure for FY2025 related to trailing twelve months calculation. The reported EPS for FY2025 is 4.1341, and Q1 2025 EPS is 1.0406 (from current filing). The Q1 2026 EPS is 1.2146. From the 2025 Annual Report, Q1 2024 EPS is 1.760 and Q3 2024 EPS is 0.488. The 9M EPS for 2025, from the 2025 Annual report, is 2.9968. The trailing 12 months EPS when calculated using reported data (FY2025 + Q1 2026 - Q1 2025) is 4.3087. The total EPS for 2025 is 4.1341. Sarmaaya EPS value of 4.31 appears to be accurate.",
-      "impliedTrailing": 4.3087,
+      "ticker": "SEARL",
+      "marketCap": 53227900210,
+      "verdict": "basis_difference",
+      "status": "no-rebuildable-chain",
+      "diagnosis": "The discrepancy in our stored trailing EPS is due to using unconsolidated figures, while the reference likely uses consolidated figures. The company reports both unconsolidated and consolidated statements.",
+      "impliedTrailing": 6.62,
       "rebuiltTrailing": [],
-      "reference": 4.31,
+      "reference": 2.04,
+      "fiscalYearEndMonth": 6,
+      "confidence": 0.9,
+      "corrections": [
+        {
+          "fiscal_year": 2025,
+          "fiscal_period": "FY",
+          "basis": "consolidated",
+          "eps": -2.73,
+          "revenue": 28599834,
+          "profit_after_tax": -1372143,
+          "page": 219
+        },
+        {
+          "fiscal_year": 2026,
+          "fiscal_period": "9M",
+          "basis": "consolidated",
+          "eps": 3.89,
+          "revenue": 29388881,
+          "profit_after_tax": 2308351,
+          "page": 25
+        }
+      ]
+    },
+    {
+      "ticker": "GAL",
+      "verdict": "read_failed",
+      "diagnosis": "vision request timed out after 240s"
+    },
+    {
+      "ticker": "PSEL",
+      "marketCap": 30215028250,
+      "verdict": "basis_difference",
+      "status": "no-rebuildable-chain",
+      "diagnosis": "The discrepancy in the EPS figure is due to a difference in the reporting basis. Our stored figure is for unconsolidated EPS, while the independent reference is for consolidated EPS. The company typically reports both consolidated and unconsolidated financial statements. Additionally, the independent reference's EPS figure seems to refer to an older period, or is outdated.",
+      "impliedTrailing": 25.19,
+      "rebuiltTrailing": [],
+      "reference": 5.58,
+      "fiscalYearEndMonth": 6,
+      "confidence": 0.9,
+      "corrections": [
+        {
+          "fiscal_year": 2024,
+          "fiscal_period": "FY",
+          "basis": "consolidated",
+          "eps": 13.16,
+          "revenue": 16629837,
+          "profit_after_tax": 404676,
+          "page": 132
+        },
+        {
+          "fiscal_year": 2024,
+          "fiscal_period": "FY",
+          "basis": "unconsolidated",
+          "eps": 13.08,
+          "revenue": 15044702,
+          "profit_after_tax": 425464,
+          "page": 54
+        },
+        {
+          "fiscal_year": 2025,
+          "fiscal_period": "9M",
+          "basis": "unconsolidated",
+          "eps": 30.5,
+          "revenue": 12944756,
+          "profit_after_tax": 991902,
+          "page": 14
+        },
+        {
+          "fiscal_year": 2025,
+          "fiscal_period": "9M",
+          "basis": "consolidated",
+          "eps": 28.36,
+          "revenue": 13132241,
+          "profit_after_tax": 922997,
+          "page": 38
+        },
+        {
+          "fiscal_year": 2025,
+          "fiscal_period": "Q3",
+          "basis": "unconsolidated",
+          "eps": 15.14,
+          "revenue": 4211462,
+          "profit_after_tax": 492501,
+          "page": 14
+        },
+        {
+          "fiscal_year": 2025,
+          "fiscal_period": "Q3",
+          "basis": "consolidated",
+          "eps": 14.69,
+          "revenue": 4254295,
+          "profit_after_tax": 477883,
+          "page": 38
+        }
+      ]
+    },
+    {
+      "ticker": "AVN",
+      "marketCap": 15394981010,
+      "verdict": "we_are_wrong",
+      "status": "no-rebuildable-chain",
+      "diagnosis": "There is a discrepancy in the EPS figure for Fiscal Year 2025. The stored value for 2025 FY unconsolidated EPS does not match the figure reported in the company's annual filing, whereas the stored value for 2025 FY unlabelled EPS in the previous system does match the consolidated EPS in the annual filing. Additionally, the reference EPS figure from Sarmaaya (1.02) does not align with either the consolidated or unconsolidated EPS reported in the annual filing.",
+      "impliedTrailing": 1.56,
+      "rebuiltTrailing": [],
+      "reference": 1.02,
       "fiscalYearEndMonth": 12,
+      "confidence": 0.9,
+      "corrections": [
+        {
+          "fiscal_year": 2025,
+          "fiscal_period": "FY",
+          "basis": "unconsolidated",
+          "eps": 0.144,
+          "revenue": 3101473,
+          "profit_after_tax": 60181,
+          "page": 151
+        },
+        {
+          "fiscal_year": 2025,
+          "fiscal_period": "FY",
+          "basis": "consolidated",
+          "eps": 1.54,
+          "revenue": 15885492,
+          "profit_after_tax": 654860,
+          "page": 200
+        }
+      ]
+    },
+    {
+      "ticker": "HUMNL",
+      "verdict": "read_failed",
+      "diagnosis": "vision provider returned an empty response"
+    },
+    {
+      "ticker": "SIEM",
+      "marketCap": 12694334170,
+      "verdict": "basis_difference",
+      "status": "no-rebuildable-chain",
+      "diagnosis": "The Sarmaaya reference figure seems to be trailing twelve months EPS ending in Q3 FY2025. Our stored trailing EPS is for Q2 FY2026. The company reports both standalone and consolidated financials, but only standalone interim statements are provided. However, the annual report provides consolidated figures, and since the company's annual filing date is September 30, 2024, our 2024 FY `eps=-248.34` is likely from its consolidated financials. We will provide standalone values, and our own consolidated trailing twelve month calculation to match Sarmaaya's trailing value.",
+      "impliedTrailing": -248.34,
+      "rebuiltTrailing": [],
+      "reference": 31.37,
+      "fiscalYearEndMonth": 9,
       "confidence": 1,
       "corrections": [
         {
-          "fiscal_year": 2025,
+          "fiscal_year": 2024,
           "fiscal_period": "FY",
           "basis": "unconsolidated",
-          "eps": 4.1341,
-          "revenue": 35175907,
-          "profit_after_tax": 4557734,
-          "page": 62
-        }
-      ]
-    },
-    {
-      "ticker": "SBL",
-      "marketCap": 13328914930,
-      "verdict": "we_are_wrong",
-      "status": "RECONCILES(unconsolidated)",
-      "diagnosis": "The discrepancy in the EPS for FY2025 and 9M2025 is due to the 'unlabelled' basis we use versus the unconsolidated basis found in the filing. The independent reference's EPS for TTM is also slightly different due to rounding or a different calculation of the 9M period that might include Q1, Q2, and Q3 of 2025 from interim reports, instead of using the latest annual figure and subtracting prior interim from it.",
-      "impliedTrailing": 0.74,
-      "rebuiltTrailing": [
-        {
-          "basis": "unconsolidated",
-          "eps": 0.7399999999999999
-        }
-      ],
-      "reference": 0.75,
-      "fiscalYearEndMonth": 12,
-      "confidence": 0.9,
-      "corrections": [
-        {
-          "fiscal_year": 2025,
-          "fiscal_period": "FY",
-          "basis": "unconsolidated",
-          "eps": 0.72,
-          "revenue": 7721788,
-          "profit_after_tax": 727248,
-          "page": 36
-        },
-        {
-          "fiscal_year": 2025,
-          "fiscal_period": "Q1",
-          "basis": "unconsolidated",
-          "eps": 0.17,
-          "revenue": 1940223,
-          "profit_after_tax": 166849,
-          "page": 13
-        },
-        {
-          "fiscal_year": 2026,
-          "fiscal_period": "Q1",
-          "basis": "unconsolidated",
-          "eps": 0.19,
-          "revenue": 1643311,
-          "profit_after_tax": 193330,
-          "page": 13
-        }
-      ]
-    },
-    {
-      "ticker": "BML",
-      "marketCap": 57050000000,
-      "verdict": "basis_difference",
-      "status": "rebuilt-but-off",
-      "diagnosis": "The discrepancy in the TTM EPS is due to a difference in the number of shares used in the calculation. Our system uses a diluted weighted average number of shares of 1,000,309,872 for 2026 Q1. Sarmaaya seems to be using 1,000,000,000 shares for diluted EPS in prior periods, but there seems to be a significant difference for the latest period for which there is no explanation in the filing. The filing reports a diluted EPS of 8.83 for FY 2025 (on 1,000,000,000 shares) consolidated and a diluted loss per share of (0.75) for 2026 Q1 (on 1,000,309,872 shares) consolidated. FY2025 consolidated profit after tax is 8,830,263 and FY2025 Q1 consolidated loss after tax is (868,092). The total revenue for 2025 FY consolidated is 7,100,089 and for 2026 Q1 consolidated is 465,520.",
-      "impliedTrailing": 8.82,
-      "rebuiltTrailing": [
-        {
-          "basis": "unconsolidated",
-          "eps": 8.949999999999998
-        },
-        {
-          "basis": "consolidated",
-          "eps": 8.95
-        }
-      ],
-      "reference": 141.53,
-      "fiscalYearEndMonth": 12,
-      "confidence": 0.95,
-      "corrections": [
-        {
-          "fiscal_year": 2025,
-          "fiscal_period": "FY",
-          "basis": "consolidated",
-          "eps": 8.83,
-          "revenue": 7100089,
-          "profit_after_tax": 8830263,
-          "page": 207
-        },
-        {
-          "fiscal_year": 2026,
-          "fiscal_period": "Q1",
-          "basis": "consolidated",
-          "eps": -0.75,
-          "revenue": 465520,
-          "profit_after_tax": -751214,
-          "page": 59
-        },
-        {
-          "fiscal_year": 2025,
-          "fiscal_period": "Q1",
-          "basis": "consolidated",
-          "eps": -0.87,
-          "revenue": 1114097,
-          "profit_after_tax": -868092,
-          "page": 59
-        },
-        {
-          "fiscal_year": 2025,
-          "fiscal_period": "FY",
-          "basis": "unconsolidated",
-          "eps": 8.79,
-          "revenue": 6898769,
-          "profit_after_tax": 8794880,
-          "page": 88
-        },
-        {
-          "fiscal_year": 2026,
-          "fiscal_period": "Q1",
-          "basis": "unconsolidated",
-          "eps": -0.71,
-          "revenue": 460706,
-          "profit_after_tax": -714132,
-          "page": 21
-        },
-        {
-          "fiscal_year": 2025,
-          "fiscal_period": "Q1",
-          "basis": "unconsolidated",
-          "eps": -0.87,
-          "revenue": 1079674,
-          "profit_after_tax": -869829,
-          "page": 21
+          "eps": -248.34,
+          "page": 40
         }
       ]
     }
