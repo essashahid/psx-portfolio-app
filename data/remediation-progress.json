@@ -64,6 +64,62 @@
       "theirs": -9.43,
       "note": "basis TTM to 2026 Q1, saved 16",
       "at": "2026-07-20T18:41:45.416Z"
+    },
+    "AGP": {
+      "ticker": "AGP",
+      "ok": false,
+      "ours": 8.43,
+      "theirs": 13.41,
+      "note": "basis 2026 FY, saved 10",
+      "at": "2026-07-20T18:43:26.570Z"
+    },
+    "NML": {
+      "ticker": "NML",
+      "ok": false,
+      "ours": 14.410000000000002,
+      "theirs": 33.41,
+      "note": "basis TTM to 2026 9M, saved 20",
+      "at": "2026-07-20T18:44:20.482Z"
+    },
+    "BML": {
+      "ticker": "BML",
+      "ok": false,
+      "ours": 8.949999999999998,
+      "theirs": 141.53,
+      "note": "basis TTM to 2026 Q1, saved 18",
+      "at": "2026-07-20T18:45:20.139Z"
+    },
+    "THALL": {
+      "ticker": "THALL",
+      "ok": true,
+      "ours": 113.80999999999999,
+      "theirs": 115.4,
+      "note": "basis TTM to 2026 9M, saved 21",
+      "at": "2026-07-20T18:46:24.612Z"
+    },
+    "DLL": {
+      "ticker": "DLL",
+      "ok": false,
+      "ours": 227.89,
+      "theirs": -4.26,
+      "note": "basis TTM to 2026 Q1, saved 17",
+      "at": "2026-07-20T18:47:15.491Z"
+    },
+    "FFL": {
+      "ticker": "FFL",
+      "ok": false,
+      "ours": 0.48,
+      "theirs": 0.44,
+      "note": "basis TTM to 2026 Q1, saved 17",
+      "at": "2026-07-20T18:48:03.952Z"
+    },
+    "LOTCHEM": {
+      "ticker": "LOTCHEM",
+      "ok": false,
+      "ours": 1.27,
+      "theirs": 3.09,
+      "note": "basis TTM to 2026 Q1, saved 12",
+      "at": "2026-07-20T18:48:51.107Z"
     }
   }
 }
