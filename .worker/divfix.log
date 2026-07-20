@@ -1,19 +1,5 @@
-132 divergent companies to re-extract
-combined cap 2292.2B, est cost ~$5.54
+130 divergent companies to re-extract
+combined cap 2149.0B, est cost ~$5.46
 
-  1/132 PTC      still  ours=0.27 sarmaaya=-0.53 (2026 FY, saved 23)
-  2/132 KEL      still  ours=0.15 sarmaaya=0.42 (2024 FY, saved 20)
-  3/132 SYS      still  ours=6.68 sarmaaya=7.86 (TTM to 2026 9M, saved 18)
-  4/132 SRVI     still  ours=25.07 sarmaaya=223.93 (TTM to 2026 Q1, saved 11)
-  5/132 NATF     still  ours=23.71 sarmaaya=110.99 (TTM to 2026 9M, saved 19)
-  6/132 ATRL     FIXED  ours=185.17 sarmaaya=180.56 (TTM to 2026 9M, saved 22)
-  7/132 KTML     still  ours=10.21 sarmaaya=7.94 (2025 FY, saved 16)
-  8/132 PKGS     still  ours=28.80 sarmaaya=-9.43 (TTM to 2026 Q1, saved 16)
-  9/132 AGP      still  ours=8.43 sarmaaya=13.41 (2026 FY, saved 10)
- 10/132 NML      still  ours=14.41 sarmaaya=33.41 (TTM to 2026 9M, saved 20)
- 11/132 BML      still  ours=8.95 sarmaaya=141.53 (TTM to 2026 Q1, saved 18)
- 12/132 THALL    FIXED  ours=113.81 sarmaaya=115.4 (TTM to 2026 9M, saved 21)
- 13/132 DLL      still  ours=227.89 sarmaaya=-4.26 (TTM to 2026 Q1, saved 17)
- 14/132 FFL      still  ours=0.48 sarmaaya=0.44 (TTM to 2026 Q1, saved 17)
- 15/132 LOTCHEM  still  ours=1.27 sarmaaya=3.09 (TTM to 2026 Q1, saved 12)
- 16/132 IGIHL    still  ours=12.59 sarmaaya=35.61 (TTM to 2026 Q1, saved 17)
+checkpoint holds 2 completed; 130 still to do
+
