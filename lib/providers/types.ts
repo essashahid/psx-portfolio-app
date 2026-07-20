@@ -44,10 +44,17 @@ export function symbolVariants(ticker: string, provider: ProviderName): string[]
   switch (provider) {
     case "twelve-data":
       return [t]; // exchange passed separately as XKAR
+    // Exchange-qualified symbols only. These are global providers with little
+    // or no PSX coverage, and a BARE ticker silently resolves to whatever
+    // same-named listing they do carry — almost always a US one. That is how
+    // PPL came back at 35.85 (PPL Corp, a US utility) instead of ~252, COST at
+    // 940 (Costco) and HUBC at 1.20, corrupting every price-derived ratio for
+    // those names while the financials stayed correct. A missing price is
+    // recoverable; a confident wrong one is not.
     case "finnhub":
-      return [`${t}.KAR`, t, `PSX:${t}`];
+      return [`${t}.KAR`, `PSX:${t}`];
     case "alpha-vantage":
-      return [`${t}.KAR`, `${t}.PSX`, t];
+      return [`${t}.KAR`, `${t}.PSX`];
     default:
       return [t];
   }

@@ -82,10 +82,36 @@ async function main() {
   const { extractFinancials } = await import("@/lib/engine/financials");
   const { refreshRatios } = await import("@/lib/engine/ratios");
 
+  // Resumable: this run takes hours and has been interrupted before. Every
+  // company's outcome is appended to a checkpoint the moment it completes, so
+  // a restart skips finished work instead of re-paying for it.
+  const CKPT = "data/remediation-progress.json";
+  type Outcome = { ticker: string; ok: boolean; ours: number | null; theirs: number; note: string; at: string };
+  let done: Record<string, Outcome> = {};
+  try {
+    done = JSON.parse(readFileSync(CKPT, "utf8")).done ?? {};
+  } catch {
+    done = {};
+  }
+  const pending = targets.filter((t) => !done[t]);
+  if (Object.keys(done).length) {
+    console.log(`checkpoint holds ${Object.keys(done).length} completed; ${pending.length} still to do\n`);
+  }
+
+  const saveCkpt = () =>
+    writeFileSync(
+      CKPT,
+      JSON.stringify({ _note: "Per-company outcome of the divergence remediation pass. Delete to force a full re-run.", done }, null, 2) + "\n"
+    );
+
   const residue: { ticker: string; ours: number | null; theirs: number; note: string }[] = [];
   let fixed = 0;
+  for (const o of Object.values(done)) {
+    if (o.ok) fixed++;
+    else residue.push({ ticker: o.ticker, ours: o.ours, theirs: o.theirs, note: o.note });
+  }
 
-  for (const [i, t] of targets.entries()) {
+  for (const [i, t] of pending.entries()) {
     const theirs = store[t].eps!;
     try {
       // Supersede prior filing reads so the corrected prompt's rows win cleanly.
@@ -111,14 +137,20 @@ async function main() {
         .eq("ratio_name", "EPS (annualized)")
         .maybeSingle();
       const ok = near(ours, theirs, 0.08) || near(rr?.ratio_value == null ? null : Number(rr.ratio_value), theirs, 0.05) || (theirs < 0 && ours !== null && ours < 0);
+      const note = `basis ${data?.source_period ?? "none"}, saved ${r.saved}`;
       if (ok) fixed++;
-      else residue.push({ ticker: t, ours, theirs, note: `basis ${data?.source_period ?? "none"}, saved ${r.saved}` });
+      else residue.push({ ticker: t, ours, theirs, note });
+      done[t] = { ticker: t, ok, ours, theirs, note, at: new Date().toISOString() };
+      saveCkpt();
       console.log(
-        `${String(i + 1).padStart(3)}/${targets.length} ${t.padEnd(8)} ${ok ? "FIXED " : "still "} ours=${ours === null ? "-" : ours.toFixed(2)} sarmaaya=${theirs} (${data?.source_period ?? "none"}, saved ${r.saved})`
+        `${String(i + 1).padStart(3)}/${pending.length} ${t.padEnd(8)} ${ok ? "FIXED " : "still "} ours=${ours === null ? "-" : ours.toFixed(2)} sarmaaya=${theirs} (${data?.source_period ?? "none"}, saved ${r.saved})`
       );
     } catch (e) {
-      residue.push({ ticker: t, ours: null, theirs, note: `ERROR ${(e as Error).message.slice(0, 80)}` });
-      console.log(`${String(i + 1).padStart(3)}/${targets.length} ${t.padEnd(8)} ERROR ${(e as Error).message.slice(0, 70)}`);
+      const note = `ERROR ${(e as Error).message.slice(0, 80)}`;
+      residue.push({ ticker: t, ours: null, theirs, note });
+      done[t] = { ticker: t, ok: false, ours: null, theirs, note, at: new Date().toISOString() };
+      saveCkpt();
+      console.log(`${String(i + 1).padStart(3)}/${pending.length} ${t.padEnd(8)} ERROR ${(e as Error).message.slice(0, 70)}`);
     }
   }
 

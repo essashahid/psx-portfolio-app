@@ -1,0 +1,53 @@
+{
+  "_note": "Per-company outcome of the divergence remediation pass. Delete to force a full re-run.",
+  "done": {
+    "PTC": {
+      "ticker": "PTC",
+      "ok": false,
+      "ours": 0.27,
+      "theirs": -0.53,
+      "note": "basis 2026 FY, saved 23",
+      "at": "2026-07-20T18:35:16.567Z"
+    },
+    "KEL": {
+      "ticker": "KEL",
+      "ok": false,
+      "ours": 0.15,
+      "theirs": 0.42,
+      "note": "basis 2024 FY, saved 20",
+      "at": "2026-07-20T18:36:20.055Z"
+    },
+    "SYS": {
+      "ticker": "SYS",
+      "ok": false,
+      "ours": 6.680000000000001,
+      "theirs": 7.86,
+      "note": "basis TTM to 2026 9M, saved 18",
+      "at": "2026-07-20T18:37:15.446Z"
+    },
+    "SRVI": {
+      "ticker": "SRVI",
+      "ok": false,
+      "ours": 25.07,
+      "theirs": 223.93,
+      "note": "basis TTM to 2026 Q1, saved 11",
+      "at": "2026-07-20T18:37:53.664Z"
+    },
+    "NATF": {
+      "ticker": "NATF",
+      "ok": false,
+      "ours": 23.71,
+      "theirs": 110.99,
+      "note": "basis TTM to 2026 9M, saved 19",
+      "at": "2026-07-20T18:39:11.285Z"
+    },
+    "ATRL": {
+      "ticker": "ATRL",
+      "ok": true,
+      "ours": 185.17000000000002,
+      "theirs": 180.56,
+      "note": "basis TTM to 2026 9M, saved 22",
+      "at": "2026-07-20T18:40:05.583Z"
+    }
+  }
+}
