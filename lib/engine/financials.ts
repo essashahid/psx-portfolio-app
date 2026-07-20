@@ -651,6 +651,7 @@ STRICT RULES:
 - Echo ONLY numbers that literally appear in the document text. Never compute, estimate, or fill in missing values — use null.
 - The ENTIRE filing uses ONE monetary unit. Read the statement headers ("Rupees in '000", "Rupees in million", "(Rupees)", etc.) and report it ONCE as document_units: one of "thousands" | "millions" | "billions" | "rupees". Do NOT convert any figure — echo them exactly as printed.
 - EPS is in rupees per share (never scaled). Percentages stay as printed.
+- fiscal_year_end_month is the calendar month (1-12) in which this company's financial year ENDS. Read it from the balance sheet's audited comparative column heading, which always states the year-end date ("Audited 30 June 2025" -> 6; "Audited December 31, 2025" -> 12; "Audited 31 March 2026" -> 3). Report it once for the document. This is the same fact you use to derive fiscal_year below, so state it explicitly rather than leaving it implicit.
 - FIRST choose ONE set of statements, then read every column in it. Order matters: pick the unconsolidated/standalone set if the filing has one (see the basis rule below), and ignore the consolidated set entirely. Only after that choice do you read columns. A filing that prints both sets must still yield exactly one object per period, never one per period per basis.
 - Within that chosen set, emit EVERY period column it prints, each as its own object in "statements", including the comparative prior-year columns. Do not discard the comparative: it is the prior-year leg of the trailing-twelve-month calculation and is often available nowhere else.
   An interim profit-or-loss typically prints four columns, so emit four objects:
@@ -682,6 +683,7 @@ STRICT RULES:
 
 Return JSON:
 {"document_units": "thousands" | "millions" | "billions" | "rupees",
+ "fiscal_year_end_month": 1-12,
  "statements": [{
   "period_type": "annual" | "quarterly",
   "fiscal_year": 2025,
@@ -722,15 +724,15 @@ Include a statement object only when the document actually contains that stateme
 const VISION_CHUNK_PAGES = 25;
 const VISION_MAX_CHUNKS = 24; // hard ceiling: 600 pages per filing
 
-type VisionResult = { statements: ExtractedStatement[]; document_units?: string; model: string } | { error: string };
+type VisionResult = { statements: ExtractedStatement[]; document_units?: string; fiscal_year_end_month?: number; model: string } | { error: string };
 
-function parseStatementsJson(text: string): { statements?: ExtractedStatement[]; document_units?: string } | null {
+function parseStatementsJson(text: string): { statements?: ExtractedStatement[]; document_units?: string; fiscal_year_end_month?: number } | null {
   const cleaned = text.replace(/^```(?:json)?\s*/i, "").replace(/\s*```\s*$/, "").trim();
   const start = cleaned.indexOf("{");
   const end = cleaned.lastIndexOf("}");
   if (start < 0 || end <= start) return null;
   try {
-    return JSON.parse(cleaned.slice(start, end + 1)) as { statements?: ExtractedStatement[]; document_units?: string };
+    return JSON.parse(cleaned.slice(start, end + 1)) as { statements?: ExtractedStatement[]; document_units?: string; fiscal_year_end_month?: number };
   } catch {
     return null;
   }
@@ -972,10 +974,16 @@ export async function extractFinancials(ticker: string, maxFilings = 2, force = 
       // until one yields statements — large annual reports carry consolidated +
       // unconsolidated sets, and the first window can land on an unparseable
       // region.
+      // The company's fiscal year end, read off the balance sheet's audited
+      // comparative heading. Stored because it cannot be reliably inferred
+      // afterwards: comparative rows inherit the current filing's date, so a
+      // March close filed in June looks identical to a June close filed in
+      // June. Knowing it makes period labelling checkable rather than guessed.
+      let yearEndMonth: number | null = null;
       const parsed = await parsePdfText(pdf.buf);
       if ("text" in parsed) {
         for (const window of statementWindows(parsed.text)) {
-          const { data } = await chatJson<{ statements: ExtractedStatement[]; document_units?: string }>(
+          const { data } = await chatJson<{ statements: ExtractedStatement[]; document_units?: string; fiscal_year_end_month?: number }>(
             EXTRACTION_PROMPT,
             `Filing title: ${filing.title}\nFiling date: ${filing.date ?? "unknown"}\nTicker: ${t}\n\n--- DOCUMENT TEXT ---\n${window}`,
             12_000,
@@ -985,6 +993,7 @@ export async function extractFinancials(ticker: string, maxFilings = 2, force = 
             const mult = toThousandsMultiplier(data.document_units ?? found[0]?.units);
             found.forEach((s) => normalizeUnits(s, mult));
             statements = found.map((s) => ({ ...s, _extractor: "text+deepseek" }));
+            yearEndMonth ??= data.fiscal_year_end_month ?? null;
             break;
           }
         }
@@ -1010,6 +1019,7 @@ export async function extractFinancials(ticker: string, maxFilings = 2, force = 
           // Keep the text-path statements; just record why vision added nothing.
           out.errors.push(`${filing.title}: vision top-up failed: ${vision.error}`);
         } else {
+          yearEndMonth ??= vision.fiscal_year_end_month ?? null;
           const found = vision.statements.filter(validStatement);
           const mult = toThousandsMultiplier(vision.document_units ?? found[0]?.units);
           found.forEach((s) => normalizeUnits(s, mult));
@@ -1026,6 +1036,15 @@ export async function extractFinancials(ticker: string, maxFilings = 2, force = 
       if (statements.length === 0) {
         out.skipped.push(`no extractable statements (text and vision): ${filing.title}`);
         continue;
+      }
+
+      if (yearEndMonth !== null && yearEndMonth >= 1 && yearEndMonth <= 12) {
+        await db
+          .from("company_metadata")
+          .upsert({ ticker: t, fiscal_year_end_month: yearEndMonth, last_updated: new Date().toISOString() }, { onConflict: "ticker" })
+          .then(({ error }) => {
+            if (error) out.errors.push(`year-end: ${error.message}`);
+          });
       }
 
       for (const s of statements) {
