@@ -989,6 +989,10 @@ export async function extractFinancials(ticker: string, maxFilings = 2, force = 
       // March close filed in June looks identical to a June close filed in
       // June. Knowing it makes period labelling checkable rather than guessed.
       let yearEndMonth: number | null = null;
+      // Held aside when a window turns out to be a summary table: if no better
+      // window exists, the interim rows in it are still worth keeping (the
+      // annual rows get dropped downstream either way).
+      let fallback: ExtractedStatement[] | null = null;
       const parsed = await parsePdfText(pdf.buf);
       if ("text" in parsed) {
         for (const window of statementWindows(parsed.text)) {
@@ -998,14 +1002,30 @@ export async function extractFinancials(ticker: string, maxFilings = 2, force = 
             12_000,
           );
           const found = (data.statements ?? []).filter(validStatement);
-          if (found.length > 0) {
-            const mult = toThousandsMultiplier(data.document_units ?? found[0]?.units);
-            found.forEach((s) => normalizeUnits(s, mult));
-            statements = found.map((s) => ({ ...s, _extractor: "text+deepseek" }));
-            yearEndMonth ??= data.fiscal_year_end_month ?? null;
-            break;
+          yearEndMonth ??= data.fiscal_year_end_month ?? null;
+          if (found.length === 0) continue;
+          // A window that yields three or more fiscal years is the annual
+          // report's multi-year summary table, not its statements. Keep
+          // looking: statementWindows offers a second window precisely because
+          // an annual report holds several statement-shaped regions, and the
+          // real statements are usually the other one. Taking the first window
+          // that returns anything is how PTC ended up with six years of
+          // summary-table figures standing in for its annual accounts.
+          const years = new Set(found.filter((s) => (s.fiscal_period ?? "") === "FY").map((s) => s.fiscal_year));
+          const summaryTable = years.size >= 3;
+          if (summaryTable && !fallback) {
+            fallback = found;
+            continue;
           }
+          const mult = toThousandsMultiplier(data.document_units ?? found[0]?.units);
+          found.forEach((s) => normalizeUnits(s, mult));
+          statements = found.map((s) => ({ ...s, _extractor: "text+deepseek" }));
+          break;
         }
+      }
+
+      if (statements.length === 0 && fallback) {
+        statements = fallback.map((s) => ({ ...s, _extractor: "text+deepseek" }));
       }
 
       // Vision fallback: the filing is a scanned image PDF (no text layer), or
@@ -1045,6 +1065,29 @@ export async function extractFinancials(ticker: string, maxFilings = 2, force = 
       if (statements.length === 0) {
         out.skipped.push(`no extractable statements (text and vision): ${filing.title}`);
         continue;
+      }
+
+      // Drop annual rows that came from a multi-year summary table.
+      //
+      // A financial statement prints the current period and at most one
+      // comparative, so a single filing yielding three or more distinct fiscal
+      // YEARS means the reader landed on a "Six Year Financial Summary" or
+      // similar. Those tables restate figures, omit line items and never state
+      // their reporting basis, yet they look statement-shaped enough that
+      // asking the model to skip them does not work — PTC still returned seven
+      // years after the prompt was told not to, and labelled them
+      // "unconsolidated" into the bargain. Enforcing it here is deterministic
+      // and does not depend on instruction-following.
+      const annualYears = new Set(
+        statements.filter((s) => (s.fiscal_period ?? "") === "FY" && s.fiscal_year !== null).map((s) => s.fiscal_year)
+      );
+      if (annualYears.size >= 3) {
+        const before = statements.length;
+        statements = statements.filter((s) => (s.fiscal_period ?? "") !== "FY");
+        out.skipped.push(
+          `${filing.title}: dropped ${before - statements.length} annual rows spanning ${annualYears.size} fiscal years (multi-year summary table, not a statement)`
+        );
+        if (statements.length === 0) continue;
       }
 
       if (yearEndMonth !== null && yearEndMonth >= 1 && yearEndMonth <= 12) {
