@@ -17,6 +17,7 @@ export const ALL_APP_FEATURES = [
   "/research",
   "/stocks",
   "/market",
+  "/outlook",
   "/bulls-bears",
   "/news",
   "/chat",
@@ -39,7 +40,7 @@ export const ALL_ACCOUNT_FEATURES = [
   ...ACCOUNT_CAPABILITIES,
 ] as const;
 
-export const ADMIN_ONLY_FEATURES = ["/bulls-bears", "/allocation", "/coverage"] as const;
+export const ADMIN_ONLY_FEATURES = ["/bulls-bears", "/allocation", "/coverage", "/outlook"] as const;
 
 export type AppFeatureHref = (typeof ALL_APP_FEATURES)[number];
 export type AccountFeature = (typeof ALL_ACCOUNT_FEATURES)[number];
