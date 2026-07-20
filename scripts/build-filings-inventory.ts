@@ -122,11 +122,18 @@ async function processTicker(ticker: string): Promise<Entry> {
   mkdirSync(dir, { recursive: true });
 
   try {
-    const all = (await getCompanyFilings(ticker, 40)).filter(
-      (f) =>
-        /transmission|quarterly report|half[\s-]?year|annual report|annual account|condensed interim/i.test(f.title) &&
-        !/revoked|withdrawn|cancell?ed/i.test(f.title)
-    );
+    const isReport = (f: { title: string }) =>
+      /transmission|quarterly report|half[\s-]?year|annual report|annual account|condensed interim/i.test(f.title) &&
+      !/revoked|withdrawn|cancell?ed/i.test(f.title);
+    let all = (await getCompanyFilings(ticker, 40)).filter(isReport);
+    // Operationally newsy companies push the annual report past the most
+    // recent 40 announcements (director disclosures, notices). Widen only
+    // when nothing carrying "annual report/account" turns up, so quiet
+    // companies still pay the cheap 40-item fetch. Same escalation
+    // extractFinancials() already uses.
+    if (!all.some((f) => /annual report|annual account/i.test(f.title))) {
+      all = (await getCompanyFilings(ticker, 200)).filter(isReport);
+    }
     const annualFiling = all.find((f) => /annual report|annual account/i.test(f.title));
     const interimFiling = all.find((f) => !/annual report|annual account/i.test(f.title));
 
@@ -176,6 +183,13 @@ async function main() {
     }
   }
   if (ONLY_TICKERS.size) live = live.filter((t) => ONLY_TICKERS.has(t));
+  // --refresh forces re-checking of specific tickers; it must not also widen
+  // scope to the whole universe when neither --sector nor --tickers is given.
+  // Without this, `--refresh A,B,C` alone processed all 473 companies (since
+  // REFRESH only affects needsWork(), not which tickers are in scope at all,
+  // and every company not yet inventoried also satisfies needsWork()) —
+  // downloaded ~1.5GB for 80 unintended companies before being caught.
+  else if (REFRESH.size) live = live.filter((t) => REFRESH.has(t));
 
   const manifest = loadManifest();
 

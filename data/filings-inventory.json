@@ -1,9 +1,9 @@
 {
   "_note": "Filing inventory for the extraction cache. 'interim'/'annual' point at the latest report of each kind that was found and downloaded to .cache/filings/. A null value means none was found on PSX's public feed as of checkedAt — re-run with --refresh TICKER to re-check.",
-  "_asOf": "2026-07-20T20:08:57.100Z",
+  "_asOf": "2026-07-20T20:41:48.038Z",
   "summary": {
-    "total": 6,
-    "bothFilings": 6,
+    "total": 14,
+    "bothFilings": 14,
     "interimOnly": 0,
     "annualOnly": 0,
     "neither": 0
@@ -116,6 +116,150 @@
         "bytes": 10797587
       },
       "checkedAt": "2026-07-20T20:08:35.559Z"
+    },
+    "PSEL": {
+      "ticker": "PSEL",
+      "interim": {
+        "title": "Transmission of Quarterly Report for the period ended March 31, 2025",
+        "date": "Apr 30, 2025",
+        "url": "https://dps.psx.com.pk/download/document/253189.pdf",
+        "path": ".cache/filings/PSEL/interim.pdf",
+        "bytes": 2166686
+      },
+      "annual": {
+        "title": "Transmission of Annual Report for the year ended June 30, 2024",
+        "date": "Nov 4, 2024",
+        "url": "https://dps.psx.com.pk/download/document/242150.pdf",
+        "path": ".cache/filings/PSEL/annual.pdf",
+        "bytes": 3835569
+      },
+      "checkedAt": "2026-07-20T20:41:40.786Z"
+    },
+    "MUGHAL": {
+      "ticker": "MUGHAL",
+      "interim": {
+        "title": "Submission of revised Shariah disclosure (Half yearly accounts - December 31, 2025)",
+        "date": "Apr 30, 2026",
+        "url": "https://dps.psx.com.pk/download/document/275995.pdf",
+        "path": ".cache/filings/MUGHAL/interim.pdf",
+        "bytes": 911585
+      },
+      "annual": {
+        "title": "Transmission of Annual Report for the Year Ended June 30, 2025",
+        "date": "Oct 6, 2025",
+        "url": "https://dps.psx.com.pk/download/document/261170.pdf",
+        "path": ".cache/filings/MUGHAL/annual.pdf",
+        "bytes": 13933755
+      },
+      "checkedAt": "2026-07-20T20:41:41.046Z"
+    },
+    "HUMNL": {
+      "ticker": "HUMNL",
+      "interim": {
+        "title": "Transmission of Quarterly Report for the Period Ended 31-03-2026",
+        "date": "Apr 30, 2026",
+        "url": "https://dps.psx.com.pk/download/document/276439.pdf",
+        "path": ".cache/filings/HUMNL/interim.pdf",
+        "bytes": 4658411
+      },
+      "annual": {
+        "title": "HUMNL | Hum Network Limited TRANSMISSION OF ANNUAL REPORT FOR THE YEAR ENDED JUNE 30, 2025",
+        "date": "Oct 6, 2025",
+        "url": "https://dps.psx.com.pk/announcements/companies",
+        "path": ".cache/filings/HUMNL/annual.pdf",
+        "bytes": 48795
+      },
+      "checkedAt": "2026-07-20T20:35:19.242Z"
+    },
+    "SIEM": {
+      "ticker": "SIEM",
+      "interim": {
+        "title": "Transmission of Quarterly Financial Statements for the Period Ended 03/31/2026",
+        "date": "May 29, 2026",
+        "url": "https://dps.psx.com.pk/download/document/277869.pdf",
+        "path": ".cache/filings/SIEM/interim.pdf",
+        "bytes": 7476607
+      },
+      "annual": {
+        "title": "Transmission of Annual Report for the Year Ended 2024-09-30",
+        "date": "Dec 23, 2024",
+        "url": "https://dps.psx.com.pk/download/document/244806.pdf",
+        "path": ".cache/filings/SIEM/annual.pdf",
+        "bytes": 2818055
+      },
+      "checkedAt": "2026-07-20T20:41:41.079Z"
+    },
+    "AVN": {
+      "ticker": "AVN",
+      "interim": {
+        "title": "Transmission of Quarterly Report for the Period Ended 31 March 2026",
+        "date": "Jun 5, 2026",
+        "url": "https://dps.psx.com.pk/download/document/278246.pdf",
+        "path": ".cache/filings/AVN/interim.pdf",
+        "bytes": 9479616
+      },
+      "annual": {
+        "title": "Transmission of Annual Report for the Year Ended 31 December 2025",
+        "date": "May 22, 2026",
+        "url": "https://dps.psx.com.pk/download/document/277710.pdf",
+        "path": ".cache/filings/AVN/annual.pdf",
+        "bytes": 30287648
+      },
+      "checkedAt": "2026-07-20T20:35:19.316Z"
+    },
+    "FCCL": {
+      "ticker": "FCCL",
+      "interim": {
+        "title": "Mandatory Shariah Disclosure for the Half Year Ended 31 December 2025",
+        "date": "Apr 30, 2026",
+        "url": "https://dps.psx.com.pk/download/document/275987.pdf",
+        "path": ".cache/filings/FCCL/interim.pdf",
+        "bytes": 1082218
+      },
+      "annual": {
+        "title": "Transmission of Annual Report for the Year Ended 2025-06-30",
+        "date": "Sep 9, 2025",
+        "url": "https://dps.psx.com.pk/download/document/259049.pdf",
+        "path": ".cache/filings/FCCL/annual.pdf",
+        "bytes": 16158836
+      },
+      "checkedAt": "2026-07-20T20:35:19.240Z"
+    },
+    "SEARL": {
+      "ticker": "SEARL",
+      "interim": {
+        "title": "Transmission of Quarterly Financial Statements for the Period Ended 31/03/2026",
+        "date": "Apr 30, 2026",
+        "url": "https://dps.psx.com.pk/download/document/276421.pdf",
+        "path": ".cache/filings/SEARL/interim.pdf",
+        "bytes": 2212239
+      },
+      "annual": {
+        "title": "Transmission of Annual Report for the Year Ended June 30, 2025",
+        "date": "Oct 7, 2025",
+        "url": "https://dps.psx.com.pk/download/document/261651.pdf",
+        "path": ".cache/filings/SEARL/annual.pdf",
+        "bytes": 4336411
+      },
+      "checkedAt": "2026-07-20T20:35:18.446Z"
+    },
+    "GAL": {
+      "ticker": "GAL",
+      "interim": {
+        "title": "Transmission of Quarterly Report for the Period Ended March 31, 2026",
+        "date": "Apr 27, 2026",
+        "url": "https://dps.psx.com.pk/download/document/275242.pdf",
+        "path": ".cache/filings/GAL/interim.pdf",
+        "bytes": 1830798
+      },
+      "annual": {
+        "title": "Transmission of Annual Report for the Year Ended 06-30-2025",
+        "date": "Oct 3, 2025",
+        "url": "https://dps.psx.com.pk/download/document/261060.pdf",
+        "path": ".cache/filings/GAL/annual.pdf",
+        "bytes": 26690124
+      },
+      "checkedAt": "2026-07-20T20:35:18.158Z"
     }
   }
 }
