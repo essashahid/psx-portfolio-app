@@ -104,6 +104,30 @@
       "theirs": -4.26,
       "note": "basis TTM to 2026 9M, saved 31",
       "at": "2026-07-20T19:27:10.514Z"
+    },
+    "FFL": {
+      "ticker": "FFL",
+      "ok": false,
+      "ours": 0.48,
+      "theirs": 0.44,
+      "note": "basis TTM to 2026 Q1, saved 21",
+      "at": "2026-07-20T19:28:05.556Z"
+    },
+    "LOTCHEM": {
+      "ticker": "LOTCHEM",
+      "ok": true,
+      "ours": 3.0999999999999996,
+      "theirs": 3.09,
+      "note": "basis TTM to 2026 H1, saved 19",
+      "at": "2026-07-20T19:28:55.742Z"
+    },
+    "IGIHL": {
+      "ticker": "IGIHL",
+      "ok": false,
+      "ours": 2.4,
+      "theirs": 35.61,
+      "note": "basis 2026 Q1, saved 14",
+      "at": "2026-07-20T19:30:13.922Z"
     }
   }
 }

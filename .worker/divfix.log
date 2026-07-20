@@ -14,3 +14,6 @@ checkpoint holds 2 completed; 130 still to do
   9/130 NML      still  ours=14.41 sarmaaya=33.41 (TTM to 2026 9M, saved 36)
  10/130 BML      still  ours=8.95 sarmaaya=141.53 (TTM to 2026 Q1, saved 15)
  11/130 DLL      still  ours=541.78 sarmaaya=-4.26 (TTM to 2026 9M, saved 31)
+ 12/130 FFL      still  ours=0.48 sarmaaya=0.44 (TTM to 2026 Q1, saved 21)
+ 13/130 LOTCHEM  FIXED  ours=3.10 sarmaaya=3.09 (TTM to 2026 H1, saved 19)
+ 14/130 IGIHL    still  ours=2.40 sarmaaya=35.61 (2026 Q1, saved 14)

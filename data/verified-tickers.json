@@ -343,6 +343,13 @@
       "source": "filing",
       "date": "2026-07-19",
       "note": "fertilizer; Dec year-end. Unconsolidated Q1-2026 net sales 26,338,683 / PAT 2,891,066 / EPS 2.17 and Q1-2025 EPS 2.94 confirmed against the filing; TTM 17.03. Hand-read the missing 2026 Q1 balance sheet (equity 42,509,710 + liabilities 157,049,968 = assets 199,559,678), which had been silently falling back to the Dec 2025 sheet — P/B corrected 5.71 to 6.04"
+    },
+    "SBL": {
+      "throughPeriod": "2026 Q1",
+      "basis": "unconsolidated",
+      "source": "agent+Sarmaaya",
+      "date": "2026-07-20",
+      "note": "bank; agent-read filing corrected FY2025 unconsolidated EPS (was stored 'unlabelled' at a different value) and added the missing 2025 Q1 comparative. Rebuilt TTM 0.74 vs Sarmaaya 0.75, page-cited (FY p36, Q1s p13). 'agent+Sarmaaya' source distinguishes this from a human-read filing (filing+Sarmaaya) — the model read it and the figures were independently rebuilt and checked here, but no person opened the PDF."
     }
   },
   "_unverifiable": {
@@ -360,5 +367,14 @@
     "AVN": "Backfill produced trailing 0.14 against Sarmaaya 1.02 (-86%). Filing 277710 yielded three 2025 FY rows: consolidated 1.51, unconsolidated 0.14, unlabelled 1.54. The 0.14 the engine selected is almost certainly a misread.",
     "HUMNL": "Backfill produced trailing 1.20 against Sarmaaya 0.10.",
     "SIEM": "Backfill produced trailing -6.49 against Sarmaaya 31.37, a sign flip. 2025 Q1 of 122.06 is inconsistent with 2025 H1 of -17.07, and 2025 Q3 holds two values (-55.66 and 22.52)."
+  },
+  "_pendingConsolidatedBasis": {
+    "_note": "The ratio engine computes unconsolidated only (its TTM builder explicitly excludes consolidated rows, the guard that fixed the PPL mixed-basis bug). For a group/holding company, or a bank where Sarmaaya quotes the group figure, the CONSOLIDATED data below has been captured and page-cited but the platform's served P/E still reflects unconsolidated — so these are NOT verified even though the correct consolidated figure is known and stored. Promotable in one pass once the engine gains a per-company basis preference.",
+    "BAHL": "bank; agent-read and rebuilt consolidated TTM 26.08 exact to Sarmaaya's 26.08 (FY2025 29.19 p177, Q1 2025 9.65 p58, Q1 2026 6.54 p58 — all consolidated). Stored, but the engine's default P/E still shows 24.76 (an unconsolidated annual + portal interims), because consolidated rows are excluded from the TTM chain by design.",
+    "PTC": "no reachable consolidated annual — see agent-reconcile-report.json",
+    "NATF": "no reachable consolidated annual — see agent-reconcile-report.json",
+    "LUCK": "holding-co; both bases stored, PSX vendor P/E was wrong, unconsolidated is what we serve and what PSX shows",
+    "FFC": "Dec year-end; unconsolidated matches PSX exactly, Sarmaaya reports consolidated",
+    "HUBC": "holding-co; unconsolidated revenue near-nil (dividend income), Sarmaaya reports consolidated"
   }
 }
