@@ -40,6 +40,36 @@ const SHARE_COUNT_OVERRIDES: Record<string, number> = {
   LOADS: 371_250_000,
 };
 
+// Companies whose market-quoted figure is the CONSOLIDATED (group) one, not
+// the unconsolidated (standalone) figure PSX's own portal carries. The default
+// everywhere else — and correct for the large majority, including holding
+// companies like LUCK/FFC/HUBC where PSX's own quoted P/E matches our
+// unconsolidated figure — is unconsolidated. Flip a company into this set only
+// after an independent reference reconciles on consolidated AND fails to
+// reconcile on unconsolidated; do not add on the assumption that "it's a
+// group, so it must be consolidated" (LUCK is a holding company and is
+// correctly unconsolidated).
+//
+// Effect: the annual/interim selection below excludes the PSX portal series
+// (which is always unconsolidated) and unconsolidated/unlabelled filing rows,
+// keeping only rows explicitly headed "consolidated" in the filing.
+const CONSOLIDATED_BASIS_TICKERS = new Set<string>([
+  // BAHL: filing prints both; Sarmaaya quotes the group. Consolidated TTM
+  // (FY2025 29.19 + Q1 2026 6.54 - Q1 2025 9.65 = 26.08) is exact to
+  // Sarmaaya's 26.08; unconsolidated (24.76) is not within tolerance.
+  "BAHL",
+]);
+
+function preferredBasis(ticker: string): "consolidated" | "unconsolidated" {
+  return CONSOLIDATED_BASIS_TICKERS.has(ticker.toUpperCase()) ? "consolidated" : "unconsolidated";
+}
+
+/** True when a row should be EXCLUDED from the ticker's default-basis series. */
+function excludedByBasis(ticker: string, row: Pick<FinRow, "reporting_basis" | "data">): boolean {
+  const basis = row.reporting_basis ?? (row.data?._basis as string | undefined) ?? null;
+  return preferredBasis(ticker) === "consolidated" ? basis !== "consolidated" : basis === "consolidated";
+}
+
 // A truly-annual row: trust the specific fiscal_period so a row mis-tagged
 // period_type "annual" but carrying an interim period (9M/H1/Qx) is excluded
 // from the annual series used for valuation and year-over-year growth.
@@ -132,16 +162,23 @@ export async function computeRatios(supabase: SupabaseClient, ticker: string): P
   //    series (sales/EPS/margins) for valuation and year-over-year growth.
   //  • Filing extraction (source_type "psx-filing") — full statements (operating
   //    profit, finance cost, balance sheet, cash flow) for the deep ratios.
-  const pageAnnual = rows
-    .filter((r) => r.statement_type === "income_statement" && isAnnual(r) && r.source_type === "psx-portal")
-    .sort((a, b) => (b.fiscal_year ?? 0) - (a.fiscal_year ?? 0));
+  // The PSX portal series is always unconsolidated (it has no notion of
+  // group vs standalone), so for a consolidated-preference ticker it can
+  // never stand in for the annual series — using it would silently revert
+  // the company to unconsolidated regardless of CONSOLIDATED_BASIS_TICKERS.
+  const pageAnnual =
+    preferredBasis(t) === "consolidated"
+      ? []
+      : rows
+          .filter((r) => r.statement_type === "income_statement" && isAnnual(r) && r.source_type === "psx-portal")
+          .sort((a, b) => (b.fiscal_year ?? 0) - (a.fiscal_year ?? 0));
 
   // Valuation / margins / growth: prefer the clean page annual series, but only
   // when it is not OLDER than the newest annual on file. A stale portal series
   // (e.g. SCBPL's portal stuck at FY2024 while the filed FY2025 annual exists)
   // must not override the newer filing annual — that broke TTM composition.
-  const annualRows = rows.filter(isAnnual);
-  const latestAnnual = latest(annualRows, "income_statement") ?? latest(rows, "income_statement");
+  const annualRows = rows.filter((r) => isAnnual(r) && !excludedByBasis(t, r));
+  const latestAnnual = latest(annualRows, "income_statement") ?? latest(rows.filter((r) => !excludedByBasis(t, r)), "income_statement");
   const income =
     pageAnnual[0] && (pageAnnual[0].fiscal_year ?? 0) >= (latestAnnual?.fiscal_year ?? 0)
       ? pageAnnual[0]
@@ -173,9 +210,7 @@ export async function computeRatios(supabase: SupabaseClient, ticker: string): P
   // unconsolidated, and one consolidated interim in the sum silently shifts the
   // TTM by the group/standalone gap (PPL's consolidated 9M EPS was 26.72 vs
   // 22.85 standalone).
-  const interimIncome = rows.filter(
-    (r) => r.statement_type === "income_statement" && !isAnnual(r) && (r.reporting_basis ?? r.data?._basis) !== "consolidated"
-  );
+  const interimIncome = rows.filter((r) => r.statement_type === "income_statement" && !isAnnual(r) && !excludedByBasis(t, r));
   const qField = (year: number, q: number, field: string): number | null => {
     const r = interimIncome.find((x) => x.fiscal_year === year && (x.fiscal_period ?? "").toUpperCase() === `Q${q}`);
     return numOf(r?.data, field);
@@ -248,12 +283,7 @@ export async function computeRatios(supabase: SupabaseClient, ticker: string): P
   // Bank-specific income items: pick the latest non-consolidated income row that
   // carries net markup income (banks only). Months drive annualization of NIM.
   const bankIncome = rows
-    .filter(
-      (r) =>
-        r.statement_type === "income_statement" &&
-        numOf(r.data, "net_markup_income") !== null &&
-        (r as { reporting_basis?: string | null }).reporting_basis !== "consolidated"
-    )
+    .filter((r) => r.statement_type === "income_statement" && numOf(r.data, "net_markup_income") !== null && !excludedByBasis(t, r))
     .sort((a, b) => (b.reported_date ?? "").localeCompare(a.reported_date ?? "") || (b.fiscal_year ?? 0) - (a.fiscal_year ?? 0))[0];
   const netMarkupIncome = numOf(bankIncome?.data, "net_markup_income");
   const nonMarkupIncome = numOf(bankIncome?.data, "non_markup_income");
@@ -282,12 +312,7 @@ export async function computeRatios(supabase: SupabaseClient, ticker: string): P
   // latest balance sheet that actually CARRIES the bank fields — the newest BS
   // may predate the bank-aware extraction schema and lack deposits/advances.
   const bankBalance = rows
-    .filter(
-      (r) =>
-        r.statement_type === "balance_sheet" &&
-        numOf(r.data, "deposits") !== null &&
-        (r as { reporting_basis?: string | null }).reporting_basis !== "consolidated"
-    )
+    .filter((r) => r.statement_type === "balance_sheet" && numOf(r.data, "deposits") !== null && !excludedByBasis(t, r))
     .sort((a, b) => (b.fiscal_year ?? 0) - (a.fiscal_year ?? 0) || (b.reported_date ?? "").localeCompare(a.reported_date ?? ""))[0];
   const deposits = numOf(bankBalance?.data, "deposits");
   const advances = numOf(bankBalance?.data, "advances");
@@ -316,7 +341,7 @@ export async function computeRatios(supabase: SupabaseClient, ticker: string): P
           r.statement_type === "income_statement" &&
           r.fiscal_year === cash.fiscal_year &&
           (r.fiscal_period ?? "").toUpperCase() === (cash.fiscal_period ?? "").toUpperCase() &&
-          (r as { reporting_basis?: string | null }).reporting_basis !== "consolidated"
+          !excludedByBasis(t, r)
       )
     : undefined;
   const cashPat = numOf(cashPeriodIncome?.data, "profit_after_tax");
