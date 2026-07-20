@@ -120,6 +120,19 @@ export async function refreshQuote(ticker: string): Promise<ProviderQuote | null
         await recordSymbol(t, attempt.provider, null, false, { quote: false }, "no quote coverage");
         continue;
       }
+      // Reject a price that contradicts what we already know the company is
+      // worth. Belt-and-braces behind the exchange-qualified-symbol fix: a
+      // provider resolving a PSX ticker to a same-named foreign listing
+      // returns a perfectly well-formed quote for the wrong company, and it
+      // corrupts every price-derived ratio at once while the financials stay
+      // correct. Cross-checking against cap/shares catches that; skipping to
+      // the next provider is strictly better than storing it.
+      const implausible = await quoteContradictsKnownValue(t, q.price);
+      if (implausible) {
+        await recordSymbol(t, attempt.provider, q.providerSymbol, false, { quote: false }, implausible);
+        await logFetch(t, "quote", attempt.provider, "error", 0, `rejected: ${implausible}`);
+        continue;
+      }
       await Promise.all([
         persistQuote(t, q),
         recordStatus(attempt.provider, true),
@@ -135,6 +148,38 @@ export async function refreshQuote(ticker: string): Promise<ProviderQuote | null
   }
 
   await logFetch(t, "quote", "all", "empty", 0, "no provider has coverage");
+  return null;
+}
+
+/**
+ * Sanity-check a candidate price against the company's own cached equity
+ * profile (shares outstanding and market cap from the PSX portal). Those two
+ * imply a price independently of any quote feed, so a large disagreement means
+ * the quote describes a different company.
+ *
+ * Returns a reason string when the quote should be rejected, or null to accept.
+ * Silent on companies with no cached profile: no reference, no opinion.
+ */
+async function quoteContradictsKnownValue(ticker: string, price: number): Promise<string | null> {
+  if (!Number.isFinite(price) || price <= 0) return `non-positive price ${price}`;
+  const db = admin();
+  if (!db) return null;
+  const { data } = await db
+    .from("company_metadata")
+    .select("shares_outstanding, market_cap")
+    .eq("ticker", ticker)
+    .maybeSingle();
+  const shares = Number(data?.shares_outstanding);
+  const cap = Number(data?.market_cap);
+  if (!Number.isFinite(shares) || shares <= 0 || !Number.isFinite(cap) || cap <= 0) return null;
+  const implied = cap / shares;
+  // Generous band: prices genuinely move, and the cached profile can be weeks
+  // old. This is aimed at wrong-company errors (which are typically several
+  // multiples out), not at normal drift.
+  const ratio = price / implied;
+  if (ratio > 2.5 || ratio < 0.4) {
+    return `price ${price.toFixed(2)} contradicts cap/shares implied ${implied.toFixed(2)} (${ratio.toFixed(2)}x) — likely a different listing`;
+  }
   return null;
 }
 
