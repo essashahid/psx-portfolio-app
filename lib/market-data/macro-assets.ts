@@ -17,7 +17,27 @@ const REQUEST_TIMEOUT_MS = 15_000;
 const TD_BASE = "https://api.twelvedata.com";
 const TD_SOURCE = "twelve-data";
 
-export type MacroAsset = "BTC" | "GOLD" | "USDPKR" | "TBILL";
+/** Spacing between Twelve Data calls, to stay inside the free-tier rate limit. */
+const TD_REQUEST_SPACING_MS = 8_000;
+
+function pause(ms = TD_REQUEST_SPACING_MS): Promise<void> {
+  return new Promise((r) => setTimeout(r, ms));
+}
+
+export type MacroAsset = "BTC" | "GOLD" | "USDPKR" | "TBILL" | "SPY" | "EEM";
+
+/**
+ * Global risk proxies for the market-outlook work: SPY tracks developed-market
+ * (S&P 500) risk appetite, EEM tracks emerging-market risk appetite, which is
+ * the closer read for PSX. Both are ETFs rather than the underlying indices
+ * because Twelve Data gates raw index symbols (SPX) behind a paid plan while
+ * serving the ETFs on the current one; the ETF tracks the index closely enough
+ * for a risk-regime signal.
+ *
+ * These stay in USD (close_native). Converting them to PKR would fold currency
+ * moves into what is meant to be a pure global-risk read.
+ */
+export const GLOBAL_RISK_ASSETS = ["SPY", "EEM"] as const;
 
 export interface MacroPoint {
   date: string; // YYYY-MM-DD
@@ -96,6 +116,16 @@ export function fetchGoldUsdHistory(): Promise<MacroPoint[]> {
 /** Daily USD/PKR rate history, oldest first. */
 export function fetchUsdPkrHistory(): Promise<MacroPoint[]> {
   return fetchTwelveDataDaily("USD/PKR");
+}
+
+/** Daily S&P 500 proxy (SPY) close history in USD, oldest first. */
+export function fetchSpyHistory(): Promise<MacroPoint[]> {
+  return fetchTwelveDataDaily("SPY");
+}
+
+/** Daily emerging-market proxy (EEM) close history in USD, oldest first. */
+export function fetchEemHistory(): Promise<MacroPoint[]> {
+  return fetchTwelveDataDaily("EEM");
 }
 
 // --- T-bill / policy yield (admin-editable step series) -------------------
@@ -224,17 +254,33 @@ export async function buildMacroAssetRows(): Promise<{
   rows: MacroAssetRow[];
   fetched: Record<MacroAsset, number>;
 }> {
-  const [btc, gold, usdpkr] = await Promise.all([
-    fetchBtcUsdHistory(),
-    fetchGoldUsdHistory(),
-    fetchUsdPkrHistory(),
-  ]);
+  // Fetched one at a time with a pause between calls. Twelve Data's free tier
+  // allows only a handful of requests per minute, and firing all five at once
+  // reliably drops the last symbols in the batch (they come back empty, which
+  // assessDataQuality then grades "missing" — a silent data loss rather than a
+  // visible error). Sequential + spaced trades a slower refresh for complete data.
+  const btc = await fetchBtcUsdHistory();
+  await pause();
+  const gold = await fetchGoldUsdHistory();
+  await pause();
+  const usdpkr = await fetchUsdPkrHistory();
+  await pause();
+  const spy = await fetchSpyHistory();
+  await pause();
+  const eem = await fetchEemHistory();
 
   const fxAt = forwardFillLookup(usdpkr);
   const rows: MacroAssetRow[] = [];
 
   for (const p of usdpkr) {
     rows.push({ asset: "USDPKR", asof_date: p.date, close_native: p.value, close_pkr: null, source: TD_SOURCE });
+  }
+  // Global risk proxies stay in USD on purpose (see GLOBAL_RISK_ASSETS).
+  for (const p of spy) {
+    rows.push({ asset: "SPY", asof_date: p.date, close_native: p.value, close_pkr: null, source: TD_SOURCE });
+  }
+  for (const p of eem) {
+    rows.push({ asset: "EEM", asof_date: p.date, close_native: p.value, close_pkr: null, source: TD_SOURCE });
   }
   for (const p of btc) {
     const fx = fxAt(p.date);
@@ -257,23 +303,57 @@ export async function buildMacroAssetRows(): Promise<{
     });
   }
 
-  // T-bill series spans the union of the fetched asset dates.
-  const allDates = rows.map((r) => r.asof_date).sort();
-  if (allDates.length > 0) {
-    const tbill = buildTbillSeries(allDates[0], allDates[allDates.length - 1]);
-    for (const p of tbill) {
-      rows.push({ asset: "TBILL", asof_date: p.date, close_native: p.value, close_pkr: null, source: TBILL_SOURCE });
+  // T-bill series spans the fetched PKR-relevant assets only. The global risk
+  // proxies reach back ~20 years, far beyond the first policy step we actually
+  // know (TBILL_YIELD_STEPS starts 2021-01-01); spanning them would make
+  // tbillYieldOn() carry the earliest known rate backwards for a decade and
+  // invent a policy path that never happened. Clamping to the first known step
+  // keeps the rule that we never synthesise observations we do not have.
+  const pkrDates = rows
+    .filter((r) => r.asset === "USDPKR" || r.asset === "BTC" || r.asset === "GOLD")
+    .map((r) => r.asof_date)
+    .sort();
+  if (pkrDates.length > 0) {
+    const firstKnownStep = TBILL_YIELD_STEPS[0].from;
+    const start = pkrDates[0] > firstKnownStep ? pkrDates[0] : firstKnownStep;
+    const end = pkrDates[pkrDates.length - 1];
+    if (start <= end) {
+      const tbill = buildTbillSeries(start, end);
+      for (const p of tbill) {
+        rows.push({ asset: "TBILL", asof_date: p.date, close_native: p.value, close_pkr: null, source: TBILL_SOURCE });
+      }
     }
   }
 
   return {
     rows,
-    fetched: { BTC: btc.length, GOLD: gold.length, USDPKR: usdpkr.length, TBILL: rows.filter((r) => r.asset === "TBILL").length },
+    fetched: {
+      BTC: btc.length,
+      GOLD: gold.length,
+      USDPKR: usdpkr.length,
+      SPY: spy.length,
+      EEM: eem.length,
+      TBILL: rows.filter((r) => r.asset === "TBILL").length,
+    },
   };
 }
 
+/**
+ * Collapse rows to one per (asset, date). Providers sometimes return two bars
+ * that reduce to the same calendar date once the time component is sliced off
+ * (a settled daily bar plus a partial bar for the session in progress), and
+ * Postgres rejects the entire batch when a single upsert touches one row twice.
+ * Last value wins, which favours the more recent bar.
+ */
+function dedupeRows(rows: MacroAssetRow[]): MacroAssetRow[] {
+  const byKey = new Map<string, MacroAssetRow>();
+  for (const r of rows) byKey.set(`${r.asset}|${r.asof_date}`, r);
+  return [...byKey.values()];
+}
+
 /** Upsert macro rows into the shared cache. Returns number written. */
-export async function writeMacroAssetRows(admin: SupabaseClient, rows: MacroAssetRow[]): Promise<number> {
+export async function writeMacroAssetRows(admin: SupabaseClient, input: MacroAssetRow[]): Promise<number> {
+  const rows = dedupeRows(input);
   if (rows.length === 0) return 0;
   // Chunk to stay well under request-size limits.
   const CHUNK = 1000;
@@ -319,7 +399,7 @@ export async function readMacroSeries(
   const PAGE = 1000;
   const allRows: { asof_date: string; close_native: number; close_pkr: number | null }[] = [];
   let offset = 0;
-  // eslint-disable-next-line no-constant-condition
+   
   while (true) {
     const { data } = await supabase
       .from("macro_asset_history")

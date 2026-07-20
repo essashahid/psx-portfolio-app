@@ -8,7 +8,9 @@
     "start": "next start",
     "lint": "eslint",
     "eval:chat": "tsx scripts/eval-chat.ts",
-    "eval:chat:live": "tsx scripts/eval-chat-live.ts"
+    "eval:chat:live": "tsx scripts/eval-chat-live.ts",
+    "audit:outlook": "tsx scripts/audit-outlook-data.ts",
+    "backfill:index": "tsx scripts/backfill-index-history.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.104.2",
