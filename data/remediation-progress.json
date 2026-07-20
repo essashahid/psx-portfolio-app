@@ -48,6 +48,22 @@
       "theirs": 180.56,
       "note": "basis TTM to 2026 9M, saved 22",
       "at": "2026-07-20T18:40:05.583Z"
+    },
+    "KTML": {
+      "ticker": "KTML",
+      "ok": false,
+      "ours": 10.21,
+      "theirs": 7.94,
+      "note": "basis 2025 FY, saved 16",
+      "at": "2026-07-20T18:40:57.309Z"
+    },
+    "PKGS": {
+      "ticker": "PKGS",
+      "ok": false,
+      "ours": 28.8,
+      "theirs": -9.43,
+      "note": "basis TTM to 2026 Q1, saved 16",
+      "at": "2026-07-20T18:41:45.416Z"
     }
   }
 }
