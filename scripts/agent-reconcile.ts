@@ -61,6 +61,7 @@ const DRY = process.argv.includes("--dry");
 const CALIBRATE = process.argv.includes("--calibrate");
 const LIMIT = Number(arg("limit") ?? (CALIBRATE ? 49 : 10));
 const ONE = arg("ticker")?.toUpperCase() ?? null;
+const TICKERS = (arg("tickers") ?? "").split(",").map((s) => s.trim().toUpperCase()).filter(Boolean);
 
 const SYSTEM = `You are auditing a Pakistan Stock Exchange company's stored financial data against an independent reference, by reading its filing.
 
@@ -106,6 +107,13 @@ async function main() {
   const db = createAdminClient();
 
   const store = JSON.parse(readFileSync("data/sarmaaya-snapshots.json", "utf8")).snapshots as Record<string, Snap>;
+  type CacheFiling = { title: string; date: string | null; url: string; path: string; bytes: number };
+  let filingsCache: Record<string, { interim: CacheFiling | null; annual: CacheFiling | null }> = {};
+  try {
+    filingsCache = JSON.parse(readFileSync("data/filings-inventory.json", "utf8")).entries ?? {};
+  } catch {
+    filingsCache = {};
+  }
   const live = await activeUniverseTickers(db, "companies");
 
   const page = async <T,>(t: string, c: string): Promise<T[]> => {
@@ -140,7 +148,9 @@ async function main() {
 
   const targets = ONE
     ? [ONE]
-    : CALIBRATE
+    : TICKERS.length
+      ? TICKERS
+      : CALIBRATE
       ? verifiedTickers()
           .sort((a, b) => (cap.get(b) ?? 0) - (cap.get(a) ?? 0))
           .slice(0, LIMIT)
@@ -181,10 +191,32 @@ async function main() {
       .sort()
       .join("\n");
 
-    const allFilings = (await getCompanyFilings(t, 40)).filter(
-      (f) => /transmission|quarterly report|half[\s-]?year|annual report|condensed interim/i.test(f.title) && !/revoked|withdrawn/i.test(f.title)
-    );
-    if (!allFilings.length) {
+    // Prefer the local cache built by build-filings-inventory.ts: no network
+    // fetch, no dependence on PSX being reachable, and a durable record of
+    // exactly which document backed this read. Falls back to a live fetch for
+    // a ticker that has not been inventoried, so this script still works
+    // standalone.
+    const cacheEntry = filingsCache[t];
+    let filings: { title: string; date: string | null; url: string }[];
+    let cachedPaths: { interim?: string; annual?: string } = {};
+    if (cacheEntry && (cacheEntry.interim || cacheEntry.annual)) {
+      filings = [cacheEntry.interim, cacheEntry.annual].filter((f): f is NonNullable<typeof f> => !!f);
+      cachedPaths = { interim: cacheEntry.interim?.path, annual: cacheEntry.annual?.path };
+    } else {
+      const allFilings = (await getCompanyFilings(t, 40)).filter(
+        (f) => /transmission|quarterly report|half[\s-]?year|annual report|condensed interim/i.test(f.title) && !/revoked|withdrawn/i.test(f.title)
+      );
+      if (!allFilings.length) {
+        results.push({ ticker: t, verdict: "no_filing", diagnosis: "no readable report filing found" });
+        console.log(`${i + 1}/${targets.length} ${t.padEnd(8)} no filing`);
+        continue;
+      }
+      const latestInterim = allFilings.find((f) => !/annual report|annual account/i.test(f.title));
+      const latestAnnual = allFilings.find((f) => /annual report|annual account/i.test(f.title));
+      filings = [latestInterim, latestAnnual].filter((f): f is NonNullable<typeof f> => !!f);
+      if (filings.length === 0) filings.push(allFilings[0]);
+    }
+    if (!filings.length) {
       results.push({ ticker: t, verdict: "no_filing", diagnosis: "no readable report filing found" });
       console.log(`${i + 1}/${targets.length} ${t.padEnd(8)} no filing`);
       continue;
@@ -197,17 +229,17 @@ async function main() {
     // reads as a disagreement in calibration but is actually a starvation
     // problem. OGDC surfaced this: fed only its 9M filing, the agent
     // correctly refused to compute a TTM it did not have the annual for.
-    const latestInterim = allFilings.find((f) => !/annual report|annual account/i.test(f.title));
-    const latestAnnual = allFilings.find((f) => /annual report|annual account/i.test(f.title));
-    const filings = [latestInterim, latestAnnual].filter((f): f is NonNullable<typeof f> => !!f);
-    if (filings.length === 0) filings.push(allFilings[0]);
 
     try {
       const files = await Promise.all(
-        filings.map(async (f) => ({
-          buf: Buffer.from(await (await fetch(f.url, { headers: { "User-Agent": "Mozilla/5.0", Referer: "https://dps.psx.com.pk/" } })).arrayBuffer()),
-          name: /annual/i.test(f.title) ? "annual-report.pdf" : "latest-interim.pdf",
-        }))
+        filings.map(async (f) => {
+          const isAnnual = /annual/i.test(f.title);
+          const cachedPath = isAnnual ? cachedPaths.annual : cachedPaths.interim;
+          const buf = cachedPath
+            ? readFileSync(cachedPath)
+            : Buffer.from(await (await fetch(f.url, { headers: { "User-Agent": "Mozilla/5.0", Referer: "https://dps.psx.com.pk/" } })).arrayBuffer());
+          return { buf, name: isAnnual ? "annual-report.pdf" : "latest-interim.pdf" };
+        })
       );
       const user = `Ticker: ${t} (${snap?.name ?? ""})
 Filings attached: ${filings.map((f) => `${f.title} (${f.date})`).join("; ")}
