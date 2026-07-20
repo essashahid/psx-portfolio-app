@@ -1,0 +1,92 @@
+{
+  "_note": "Per-company agent audits. 'RECONCILES(basis)' means the proposed rows, recombined here into a trailing figure on that basis, independently reproduce the reference — safe to apply. Everything else needs a human: the model's reasoning may be right, but nothing here has been verified.",
+  "_asOf": "2026-07-20",
+  "results": [
+    {
+      "ticker": "NATF",
+      "marketCap": 95623875550,
+      "verdict": "basis_difference",
+      "status": "no-rebuildable-chain",
+      "diagnosis": "The discrepancy in the trailing EPS is due to a difference in the reporting basis. The provided reference figure for EPS seems to be using consolidated figures, while the stored TTM EPS calculation may be based on unconsolidated figures or incorrect historical data. Additionally, there are multiple EPS figures for the same period with 'unlabelled' basis, which should be explicitly 'unconsolidated'. The filing shows a significant gain from discontinued operations in consolidated results for 9M FY2026, which substantially increases the consolidated EPS for the period.",
+      "impliedTrailing": null,
+      "rebuiltTrailing": [],
+      "reference": 110.99,
+      "fiscalYearEndMonth": 6,
+      "confidence": 0.95,
+      "corrections": [
+        {
+          "fiscal_year": 2025,
+          "fiscal_period": "Q3",
+          "basis": "unconsolidated",
+          "eps": 9.32,
+          "revenue": 14741346,
+          "profit_after_tax": 2172740,
+          "page": 15
+        },
+        {
+          "fiscal_year": 2025,
+          "fiscal_period": "Q3",
+          "basis": "consolidated",
+          "eps": 7.85,
+          "revenue": 16003661,
+          "profit_after_tax": 1536839,
+          "page": 25
+        },
+        {
+          "fiscal_year": 2026,
+          "fiscal_period": "Q1",
+          "basis": "unconsolidated",
+          "eps": 4.49,
+          "revenue": null,
+          "profit_after_tax": null,
+          "page": 20
+        },
+        {
+          "fiscal_year": 2026,
+          "fiscal_period": "Q2",
+          "basis": "unconsolidated",
+          "eps": 6.38,
+          "revenue": null,
+          "profit_after_tax": null,
+          "page": 20
+        },
+        {
+          "fiscal_year": 2026,
+          "fiscal_period": "Q3",
+          "basis": "unconsolidated",
+          "eps": 11.43,
+          "revenue": 16115384,
+          "profit_after_tax": 2663426,
+          "page": 15
+        },
+        {
+          "fiscal_year": 2026,
+          "fiscal_period": "Q3",
+          "basis": "consolidated",
+          "eps": 11.39,
+          "revenue": 16329866,
+          "profit_after_tax": 2698870,
+          "page": 25
+        },
+        {
+          "fiscal_year": 2026,
+          "fiscal_period": "9M",
+          "basis": "unconsolidated",
+          "eps": 22.3,
+          "revenue": 38135140,
+          "profit_after_tax": 5198209,
+          "page": 15
+        },
+        {
+          "fiscal_year": 2026,
+          "fiscal_period": "9M",
+          "basis": "consolidated",
+          "eps": 108.66,
+          "revenue": 38916771,
+          "profit_after_tax": 25330816,
+          "page": 25
+        }
+      ]
+    }
+  ]
+}
