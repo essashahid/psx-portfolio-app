@@ -1,0 +1,21 @@
+{
+  "_note": "Calibration run: the agent audited companies already hand-verified, where the correct answer is known. 'agreesWithHandRead' is the number that matters — it is what decides whether this agent's verdicts on the ~376 unexamined companies can be trusted. A disagreement is either the agent being wrong or a real regression (a newer filing landed since the hand-read); read 'diagnosis' and 'ourExistingNote' to tell which.",
+  "_asOf": "2026-07-20",
+  "results": [
+    {
+      "ticker": "OGDC",
+      "marketCap": 1380555007120,
+      "verdict": "we_are_right",
+      "status": "claims-we-are-right",
+      "diagnosis": "The fiscal year end month is June. The reference figure matches our computed trailing twelve months EPS.",
+      "impliedTrailing": 36.17,
+      "rebuiltTrailing": [],
+      "reference": 36.17,
+      "fiscalYearEndMonth": 6,
+      "confidence": 1,
+      "corrections": [],
+      "agreesWithHandRead": true,
+      "ourExistingNote": "EPS 36.17 = Sarmaaya exact; P/E 9.64 (TTM) vs PSX 8.93 annual"
+    }
+  ]
+}

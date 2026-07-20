@@ -36,6 +36,10 @@ yarn-error.log*
 # vercel
 .vercel
 
+# cached filing PDFs (data/filings-cache/) — large binaries, rebuildable from
+# data/filings-inventory.json, which records the source URL and fetch date
+.cache/filings/
+
 # typescript
 *.tsbuildinfo
 next-env.d.ts

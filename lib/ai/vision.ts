@@ -58,21 +58,30 @@ export function getVisionUsage(): VisionUsage {
 }
 
 export type VisionPdfResult = { text: string; model: string } | { error: string };
+export type NamedPdf = { buf: Buffer; name: string };
 
 /**
  * Send a PDF plus instructions to the configured vision model and return the
  * raw text reply. Callers own prompt design and response parsing.
+ *
+ * Accepts one PDF or several — several when a single document does not carry
+ * everything needed. Verifying a trailing-twelve-month figure needs BOTH the
+ * latest interim AND the latest annual report; asking the agent to do that
+ * off one filing means it either guesses or (correctly) refuses. Multiple
+ * named files let it cross-reference the way the hand-reads did.
  */
-export async function visionPdf(pdf: Buffer, system: string, user: string, maxTokens = 12_000): Promise<VisionPdfResult> {
+export async function visionPdf(pdf: Buffer | NamedPdf[], system: string, user: string, maxTokens = 12_000): Promise<VisionPdfResult> {
   if (visionDisabled()) return { error: "vision extraction disabled (VISION_DISABLED)" };
+  const files: NamedPdf[] = Array.isArray(pdf) ? pdf : [{ buf: pdf, name: "filing.pdf" }];
+  if (files.length === 0) return { error: "no PDF provided" };
 
   const orKey = openRouterKey();
-  if (orKey) return openRouterPdf(orKey, pdf, system, user, maxTokens);
-  if (claudeConfigured()) return claudePdf(pdf, system, user, maxTokens);
+  if (orKey) return openRouterPdf(orKey, files, system, user, maxTokens);
+  if (claudeConfigured()) return claudePdf(files, system, user, maxTokens);
   return { error: "no vision provider configured (set OPENROUTER_API_KEY / VISION_API_KEY, or CLAUDE_API_KEY)" };
 }
 
-async function openRouterPdf(key: string, pdf: Buffer, system: string, user: string, maxTokens: number): Promise<VisionPdfResult> {
+async function openRouterPdf(key: string, files: NamedPdf[], system: string, user: string, maxTokens: number): Promise<VisionPdfResult> {
   const base = (process.env.VISION_BASE_URL || OPENROUTER_BASE).replace(/\/$/, "");
   const model = process.env.VISION_MODEL || DEFAULT_OPENROUTER_MODEL;
   const engine = process.env.VISION_PDF_ENGINE || undefined;
@@ -89,7 +98,10 @@ async function openRouterPdf(key: string, pdf: Buffer, system: string, user: str
           {
             role: "user",
             content: [
-              { type: "file", file: { filename: "filing.pdf", file_data: `data:application/pdf;base64,${pdf.toString("base64")}` } },
+              ...files.map((f) => ({
+                type: "file",
+                file: { filename: f.name, file_data: `data:application/pdf;base64,${f.buf.toString("base64")}` },
+              })),
               { type: "text", text: user },
             ],
           },
@@ -120,7 +132,7 @@ async function openRouterPdf(key: string, pdf: Buffer, system: string, user: str
   }
 }
 
-async function claudePdf(pdf: Buffer, system: string, user: string, maxTokens: number): Promise<VisionPdfResult> {
+async function claudePdf(files: NamedPdf[], system: string, user: string, maxTokens: number): Promise<VisionPdfResult> {
   const model = process.env.FILINGS_OCR_MODEL || DEFAULT_CLAUDE_MODEL;
   try {
     const client = getClaude();
@@ -132,7 +144,10 @@ async function claudePdf(pdf: Buffer, system: string, user: string, maxTokens: n
         {
           role: "user",
           content: [
-            { type: "document", source: { type: "base64", media_type: "application/pdf", data: pdf.toString("base64") } },
+            ...files.map((f) => ({
+              type: "document" as const,
+              source: { type: "base64" as const, media_type: "application/pdf" as const, data: f.buf.toString("base64") },
+            })),
             { type: "text", text: user },
           ],
         },

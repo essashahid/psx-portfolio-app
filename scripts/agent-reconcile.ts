@@ -32,6 +32,19 @@
  *   npx tsx scripts/agent-reconcile.ts --limit 3 --dry
  *   npx tsx scripts/agent-reconcile.ts --limit 20
  *   npx tsx scripts/agent-reconcile.ts --ticker NATF
+ *
+ * CALIBRATION MODE (--calibrate): run against the 49 companies already
+ * hand-verified, where the correct answer is already known, instead of the
+ * unknown divergent set. Before trusting this agent's verdicts on ~376
+ * companies nobody has checked, the question to answer cheaply first is
+ * whether it reproduces verdicts on the 49 where the answer is known. A
+ * verified company should come back "we_are_right" / RECONCILES; anything
+ * else is the agent disagreeing with a hand-read finding, which is either a
+ * real regression (a newer filing landed) or the agent being wrong — both
+ * worth knowing before spending on the other 376.
+ *
+ *   npx tsx scripts/agent-reconcile.ts --calibrate
+ *   npx tsx scripts/agent-reconcile.ts --calibrate --limit 10
  */
 import { loadEnvLocal } from "./load-env";
 import { readFileSync, writeFileSync } from "node:fs";
@@ -45,7 +58,8 @@ const arg = (n: string): string | null => {
   return i >= 0 ? process.argv[i + 1] ?? null : null;
 };
 const DRY = process.argv.includes("--dry");
-const LIMIT = Number(arg("limit") ?? 10);
+const CALIBRATE = process.argv.includes("--calibrate");
+const LIMIT = Number(arg("limit") ?? (CALIBRATE ? 49 : 10));
 const ONE = arg("ticker")?.toUpperCase() ?? null;
 
 const SYSTEM = `You are auditing a Pakistan Stock Exchange company's stored financial data against an independent reference, by reading its filing.
@@ -111,23 +125,40 @@ async function main() {
   const R2: Record<string, Record<string, R>> = {};
   for (const r of ratios) (R2[r.ticker] ??= {})[r.ratio_name] = r;
 
-  const near = (a: number | null, b: number, p: number) => a !== null && b !== 0 && Math.abs(a / b - 1) <= p;
+  // Scale-aware: a straight percentage band is too strict for sub-rupee EPS,
+  // where 2dp rounding alone moves the ratio several percent. FFL at 0.48 vs
+  // Sarmaaya's 0.44 is 4 paisa apart but reads as a 9% gap under a pure
+  // percentage test. An absolute floor fixes that without loosening the test
+  // for large-EPS companies, where percentage is the right measure.
+  const near = (a: number | null, b: number, p: number) => {
+    if (a === null || b === 0) return false;
+    const floor = Math.max(Math.abs(b) * p, 0.06);
+    return Math.abs(a - b) <= floor;
+  };
+
+  const { verifiedTickers, getVerification } = await import("@/lib/engine/verified");
 
   const targets = ONE
     ? [ONE]
-    : live
-        .filter((t) => {
-          const s = store[t];
-          if (!s || s.eps == null || s.basis === "consolidated") return false;
-          const ours = R2[t]?.["P/E"]?.inputs?.eps ?? null;
-          const rr = R2[t]?.["EPS (annualized)"]?.ratio_value ?? null;
-          if (ours !== null && s.eps < 0 && ours < 0) return false;
-          return !near(ours, s.eps, 0.08) && !near(rr === null ? null : Number(rr), s.eps, 0.05);
-        })
-        .sort((a, b) => (cap.get(b) ?? 0) - (cap.get(a) ?? 0))
-        .slice(0, LIMIT);
+    : CALIBRATE
+      ? verifiedTickers()
+          .sort((a, b) => (cap.get(b) ?? 0) - (cap.get(a) ?? 0))
+          .slice(0, LIMIT)
+      : live
+          .filter((t) => {
+            const s = store[t];
+            if (!s || s.eps == null || s.basis === "consolidated") return false;
+            const ours = R2[t]?.["P/E"]?.inputs?.eps ?? null;
+            const rr = R2[t]?.["EPS (annualized)"]?.ratio_value ?? null;
+            if (ours !== null && s.eps < 0 && ours < 0) return false;
+            return !near(ours, s.eps, 0.08) && !near(rr === null ? null : Number(rr), s.eps, 0.05);
+          })
+          .sort((a, b) => (cap.get(b) ?? 0) - (cap.get(a) ?? 0))
+          .slice(0, LIMIT);
 
-  console.log(`${targets.length} companies to audit, est cost ~$${(targets.length * 0.06).toFixed(2)}\n`);
+  console.log(
+    `${CALIBRATE ? "CALIBRATION: " : ""}${targets.length} companies to audit, est cost ~$${(targets.length * 0.06).toFixed(2)}\n`
+  );
   if (DRY) {
     console.log(targets.join(", "));
     return;
@@ -150,18 +181,36 @@ async function main() {
       .sort()
       .join("\n");
 
-    const filings = (await getCompanyFilings(t, 40)).filter((f) => /transmission|quarterly report|half[\s-]?year|annual report|condensed interim/i.test(f.title) && !/revoked|withdrawn/i.test(f.title));
-    if (!filings.length) {
+    const allFilings = (await getCompanyFilings(t, 40)).filter(
+      (f) => /transmission|quarterly report|half[\s-]?year|annual report|condensed interim/i.test(f.title) && !/revoked|withdrawn/i.test(f.title)
+    );
+    if (!allFilings.length) {
       results.push({ ticker: t, verdict: "no_filing", diagnosis: "no readable report filing found" });
       console.log(`${i + 1}/${targets.length} ${t.padEnd(8)} no filing`);
       continue;
     }
+    // A trailing figure needs BOTH the latest interim and the latest annual —
+    // TTM = annual + current interim - prior-year same interim. Feeding only
+    // the newest filing (typically the interim) leaves the agent unable to
+    // complete that arithmetic even when it reads everything correctly; it
+    // then either guesses or (properly) reports cannot_determine, which
+    // reads as a disagreement in calibration but is actually a starvation
+    // problem. OGDC surfaced this: fed only its 9M filing, the agent
+    // correctly refused to compute a TTM it did not have the annual for.
+    const latestInterim = allFilings.find((f) => !/annual report|annual account/i.test(f.title));
+    const latestAnnual = allFilings.find((f) => /annual report|annual account/i.test(f.title));
+    const filings = [latestInterim, latestAnnual].filter((f): f is NonNullable<typeof f> => !!f);
+    if (filings.length === 0) filings.push(allFilings[0]);
 
     try {
-      const res = await fetch(filings[0].url, { headers: { "User-Agent": "Mozilla/5.0", Referer: "https://dps.psx.com.pk/" } });
-      const pdf = Buffer.from(await res.arrayBuffer());
+      const files = await Promise.all(
+        filings.map(async (f) => ({
+          buf: Buffer.from(await (await fetch(f.url, { headers: { "User-Agent": "Mozilla/5.0", Referer: "https://dps.psx.com.pk/" } })).arrayBuffer()),
+          name: /annual/i.test(f.title) ? "annual-report.pdf" : "latest-interim.pdf",
+        }))
+      );
       const user = `Ticker: ${t} (${snap?.name ?? ""})
-Filing: ${filings[0].title} (${filings[0].date})
+Filings attached: ${filings.map((f) => `${f.title} (${f.date})`).join("; ")}
 
 WHAT WE STORE (income statement rows):
 ${summary || "(none)"}
@@ -169,9 +218,9 @@ ${summary || "(none)"}
 Our computed trailing EPS: ${R2[t]?.["P/E"]?.inputs?.eps ?? "none"} on basis "${R2[t]?.["P/E"]?.source_period ?? "none"}"
 Independent reference (Sarmaaya) EPS: ${snap?.eps}${snap?.pb ? `, P/B ${snap.pb}` : ""}${snap?.priceClose ? `, price ${snap.priceClose}` : ""}
 
-Explain the gap and give the correct figures from this filing.`;
+Explain the gap and give the correct figures. Use the annual report for the FY row and the interim filing for the quarterly/cumulative rows.`;
 
-      const reply = await visionPdf(pdf, SYSTEM, user, 6_000);
+      const reply = await visionPdf(files, SYSTEM, user, 6_000);
       if ("error" in reply) {
         results.push({ ticker: t, verdict: "read_failed", diagnosis: reply.error });
         console.log(`${i + 1}/${targets.length} ${t.padEnd(8)} read failed`);
@@ -219,6 +268,29 @@ Explain the gap and give the correct figures from this filing.`;
             ? "rebuilt-but-off"
             : "no-rebuildable-chain";
 
+      // Calibration verdict: does the agent land where the hand-read already
+      // did? "Agrees" covers both an independent reconciliation (the agent
+      // found the same number) and a we_are_right call backed by an
+      // independent cross-check — either is evidence the agent's read is
+      // sound, not just that it produced a number.
+      let agreesWithHandRead: boolean | null = null;
+      if (CALIBRATE) {
+        const ourEps = R2[t]?.["P/E"]?.inputs?.eps ?? null;
+        // "we_are_right" with no corrections offered means the agent read the
+        // filing, found nothing to change, and confirmed our number as
+        // printed — the direct case, and the most common shape "right" takes
+        // (OGDC: our stored EPS is already 36.17, exact to Sarmaaya, so the
+        // agent had nothing to correct). Corrections-based backing is the
+        // fallback for when the agent DID propose figures.
+        const alreadyMatches = ourEps !== null && snap?.eps != null && near(ourEps, snap.eps, 0.08);
+        const backedRight =
+          p.verdict === "we_are_right" &&
+          ((p.corrections.length === 0 && alreadyMatches) ||
+            (snap?.pb != null && near(R2[t]?.["P/B"]?.ratio_value ?? null, snap.pb, 0.06)) ||
+            (ourEps !== null && rebuilt.some((x) => near(x.eps, ourEps, 0.03))));
+        agreesWithHandRead = reconciles || p.verdict === "basis_difference" || backedRight;
+      }
+
       results.push({
         ticker: t,
         marketCap: cap.get(t) ?? 0,
@@ -231,9 +303,10 @@ Explain the gap and give the correct figures from this filing.`;
         fiscalYearEndMonth: p.fiscal_year_end_month,
         confidence: p.confidence,
         corrections: p.corrections,
+        ...(CALIBRATE ? { agreesWithHandRead, ourExistingNote: getVerification(t)?.note ?? null } : {}),
       });
       console.log(
-        `${String(i + 1).padStart(3)}/${targets.length} ${t.padEnd(8)} ${status.padEnd(24)} ${p.verdict.padEnd(18)} rebuilt=[${rebuilt.map((x) => `${x.basis[0]}:${x.eps!.toFixed(2)}`).join(" ")}] ref=${snap?.eps}  ${p.diagnosis.slice(0, 60)}`
+        `${String(i + 1).padStart(3)}/${targets.length} ${t.padEnd(8)} ${CALIBRATE ? (agreesWithHandRead ? "AGREE   " : "DISAGREE") + " " : ""}${status.padEnd(24)} ${p.verdict.padEnd(18)} rebuilt=[${rebuilt.map((x) => `${x.basis[0]}:${x.eps!.toFixed(2)}`).join(" ")}] ref=${snap?.eps}  ${p.diagnosis.slice(0, 60)}`
       );
     } catch (e) {
       results.push({ ticker: t, verdict: "error", diagnosis: (e as Error).message.slice(0, 150) });
@@ -241,12 +314,14 @@ Explain the gap and give the correct figures from this filing.`;
     }
   }
 
+  const outFile = CALIBRATE ? "data/agent-calibration-report.json" : "data/agent-reconcile-report.json";
   writeFileSync(
-    "data/agent-reconcile-report.json",
+    outFile,
     JSON.stringify(
       {
-        _note:
-          "Per-company agent audits. 'RECONCILES(basis)' means the proposed rows, recombined here into a trailing figure on that basis, independently reproduce the reference — safe to apply. Everything else needs a human: the model's reasoning may be right, but nothing here has been verified.",
+        _note: CALIBRATE
+          ? "Calibration run: the agent audited companies already hand-verified, where the correct answer is known. 'agreesWithHandRead' is the number that matters — it is what decides whether this agent's verdicts on the ~376 unexamined companies can be trusted. A disagreement is either the agent being wrong or a real regression (a newer filing landed since the hand-read); read 'diagnosis' and 'ourExistingNote' to tell which."
+          : "Per-company agent audits. 'RECONCILES(basis)' means the proposed rows, recombined here into a trailing figure on that basis, independently reproduce the reference — safe to apply. Everything else needs a human: the model's reasoning may be right, but nothing here has been verified.",
         _asOf: new Date().toISOString().slice(0, 10),
         results,
       },
@@ -254,9 +329,25 @@ Explain the gap and give the correct figures from this filing.`;
       2
     ) + "\n"
   );
-  const rec = results.filter((r) => String(r.status ?? "").startsWith("RECONCILES")).length;
-  console.log(`\nreconciling proposals: ${rec}/${results.length}`);
-  console.log("written: data/agent-reconcile-report.json (nothing applied — review first)");
+
+  if (CALIBRATE) {
+    const scored = results.filter((r) => r.agreesWithHandRead !== undefined && r.agreesWithHandRead !== null);
+    const agree = scored.filter((r) => r.agreesWithHandRead === true).length;
+    const rate = scored.length ? (agree / scored.length) * 100 : 0;
+    console.log(`\nCALIBRATION RESULT: agrees with hand-read on ${agree}/${scored.length} (${rate.toFixed(0)}%)`);
+    if (rate >= 90) console.log("=> agent verdicts are trustworthy; proceed to the full sweep");
+    else if (rate >= 70) console.log("=> mixed; read the disagreements before scaling up");
+    else console.log("=> not ready; do not run the full sweep until the disagreements are understood");
+    const dis = results.filter((r) => r.agreesWithHandRead === false);
+    if (dis.length) {
+      console.log(`\ndisagreements:`);
+      for (const r of dis) console.log(`  ${r.ticker}: agent says "${r.diagnosis}" (verdict ${r.verdict}) vs our note: "${r.ourExistingNote}"`);
+    }
+  } else {
+    const rec = results.filter((r) => String(r.status ?? "").startsWith("RECONCILES")).length;
+    console.log(`\nreconciling proposals: ${rec}/${results.length}`);
+  }
+  console.log(`written: ${outFile} (nothing applied — review first)`);
 }
 
 main().catch((e) => {
