@@ -16,6 +16,94 @@
       "theirs": 115.4,
       "note": "basis TTM to 2026 9M, saved 21",
       "at": "2026-07-20T18:46:24.612Z"
+    },
+    "PTC": {
+      "ticker": "PTC",
+      "ok": false,
+      "ours": 0.22,
+      "theirs": -0.53,
+      "note": "basis TTM to 2026 Q1, saved 28",
+      "at": "2026-07-20T19:14:42.921Z"
+    },
+    "KEL": {
+      "ticker": "KEL",
+      "ok": false,
+      "ours": 0.15,
+      "theirs": 0.42,
+      "note": "basis 2024 FY, saved 15",
+      "at": "2026-07-20T19:16:01.419Z"
+    },
+    "SYS": {
+      "ticker": "SYS",
+      "ok": false,
+      "ours": 5.47,
+      "theirs": 7.86,
+      "note": "basis TTM to 2026 Q1, saved 30",
+      "at": "2026-07-20T19:17:19.462Z"
+    },
+    "SRVI": {
+      "ticker": "SRVI",
+      "ok": false,
+      "ours": 25.07,
+      "theirs": 223.93,
+      "note": "basis TTM to 2026 Q1, saved 18",
+      "at": "2026-07-20T19:18:10.041Z"
+    },
+    "NATF": {
+      "ticker": "NATF",
+      "ok": false,
+      "ours": 23.71,
+      "theirs": 110.99,
+      "note": "basis TTM to 2026 9M, saved 33",
+      "at": "2026-07-20T19:19:25.209Z"
+    },
+    "KTML": {
+      "ticker": "KTML",
+      "ok": false,
+      "ours": 10.4,
+      "theirs": 7.94,
+      "note": "basis TTM to 2026 9M, saved 27",
+      "at": "2026-07-20T19:20:32.197Z"
+    },
+    "PKGS": {
+      "ticker": "PKGS",
+      "ok": false,
+      "ours": 28.8,
+      "theirs": -9.43,
+      "note": "basis TTM to 2026 Q1, saved 19",
+      "at": "2026-07-20T19:21:38.683Z"
+    },
+    "AGP": {
+      "ticker": "AGP",
+      "ok": false,
+      "ours": 8.76,
+      "theirs": 13.41,
+      "note": "basis TTM to 2026 Q1, saved 12",
+      "at": "2026-07-20T19:23:48.698Z"
+    },
+    "NML": {
+      "ticker": "NML",
+      "ok": false,
+      "ours": 14.410000000000002,
+      "theirs": 33.41,
+      "note": "basis TTM to 2026 9M, saved 36",
+      "at": "2026-07-20T19:25:05.291Z"
+    },
+    "BML": {
+      "ticker": "BML",
+      "ok": false,
+      "ours": 8.949999999999998,
+      "theirs": 141.53,
+      "note": "basis TTM to 2026 Q1, saved 15",
+      "at": "2026-07-20T19:26:00.114Z"
+    },
+    "DLL": {
+      "ticker": "DLL",
+      "ok": false,
+      "ours": 541.78,
+      "theirs": -4.26,
+      "note": "basis TTM to 2026 9M, saved 31",
+      "at": "2026-07-20T19:27:10.514Z"
     }
   }
 }
