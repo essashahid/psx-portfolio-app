@@ -120,6 +120,14 @@
       "theirs": 3.09,
       "note": "basis TTM to 2026 Q1, saved 12",
       "at": "2026-07-20T18:48:51.107Z"
+    },
+    "IGIHL": {
+      "ticker": "IGIHL",
+      "ok": false,
+      "ours": 12.59,
+      "theirs": 35.61,
+      "note": "basis TTM to 2026 Q1, saved 17",
+      "at": "2026-07-20T18:50:08.148Z"
     }
   }
 }
