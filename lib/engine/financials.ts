@@ -882,6 +882,12 @@ export async function extractFinancials(ticker: string, maxFilings = 2, force = 
   const isReport = (title: string): boolean => {
     const x = title.toLowerCase();
     if (/shariah|video|briefing|presentation|clarification|notice of|proxy|agm|egm|book closure|circular|postal ballot|auditor|pattern of shareholding/.test(x)) return false;
+    // Withdrawn filings. PSX marks a superseded submission REVOKED and the
+    // company refiles, so the revoked document holds figures the company has
+    // itself retracted. NATF revoked its 31 Mar 2026 quarterly on 30 April and
+    // refiled on 4 May; reading the revoked one means reporting numbers that
+    // were withdrawn.
+    if (/\brevoked\b|\bwithdrawn\b|\bcancelled\b|\bcanceled\b/.test(x)) return false;
     return /transmission|quarterly report|half[\s-]?year|annual report|annual account|financial result|financial statement|accounts for|condensed interim|un-?audited|audited/.test(x);
   };
   // Operationally newsy companies (frequent director disclosures, discoveries,

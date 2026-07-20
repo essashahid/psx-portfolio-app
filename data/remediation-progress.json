@@ -1,5 +1,5 @@
 {
-  "_note": "Per-company outcome of the divergence remediation pass. Entries are cleared when a prompt change means the earlier read is no longer representative. Delete to force a full re-run.",
+  "_note": "Per-company outcome of the divergence remediation pass. Delete to force a full re-run.",
   "done": {
     "ATRL": {
       "ticker": "ATRL",
@@ -16,6 +16,38 @@
       "theirs": 115.4,
       "note": "basis TTM to 2026 9M, saved 21",
       "at": "2026-07-20T18:46:24.612Z"
+    },
+    "PTC": {
+      "ticker": "PTC",
+      "ok": false,
+      "ours": 0.22,
+      "theirs": -0.53,
+      "note": "basis TTM to 2026 Q1, saved 42",
+      "at": "2026-07-20T18:56:12.722Z"
+    },
+    "KEL": {
+      "ticker": "KEL",
+      "ok": false,
+      "ours": 0.15,
+      "theirs": 0.42,
+      "note": "basis 2024 FY, saved 15",
+      "at": "2026-07-20T18:57:36.529Z"
+    },
+    "SYS": {
+      "ticker": "SYS",
+      "ok": false,
+      "ours": 5.47,
+      "theirs": 7.86,
+      "note": "basis TTM to 2026 Q1, saved 30",
+      "at": "2026-07-20T18:58:54.827Z"
+    },
+    "SRVI": {
+      "ticker": "SRVI",
+      "ok": false,
+      "ours": 25.07,
+      "theirs": 223.93,
+      "note": "basis TTM to 2026 Q1, saved 18",
+      "at": "2026-07-20T18:59:44.835Z"
     }
   }
 }
