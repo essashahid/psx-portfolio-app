@@ -665,6 +665,7 @@ STRICT RULES:
   Read each column independently. Never carry a figure across columns, and never emit the same figures twice under different years — if a line is blank in one column, that column's value is null.
   If a comparative column is marked "Restated", still emit it: the restated figure is the correct comparative.
 - If only one set of statements exists, extract it and set basis from its heading.
+- Extract ONLY from an actual financial statement, never from a multi-year summary. Annual reports carry tables titled "Six Year Financial Summary", "Ten Year Review", "Financial Highlights", "Key Operating and Financial Data" or similar, laying out five or more years side by side. Those are condensed marketing summaries: they restate figures, omit line items, and never state their reporting basis. A real statement shows the current period and AT MOST ONE comparative. If a table presents three or more fiscal years as columns, skip it entirely — do not emit those years.
 - basis: "unconsolidated" | "consolidated" | "unlabelled" — read it from the statement heading (e.g. "Condensed Interim Unconsolidated Statement of Profit or Loss").
 - fiscal_year is the calendar year in which the company's FISCAL YEAR ENDS. It is NOT the calendar year of the period-end date. Derive it in three steps:
     1. Find the company's year end. The comparative balance sheet column states it ("Audited 30 June 2025" means a June year end; "Audited December 31, 2025" means a December year end).
