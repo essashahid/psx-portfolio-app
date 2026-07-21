@@ -34,17 +34,17 @@ function coverage(rows: MacroAssetRow[], asset: MacroAsset) {
 async function main() {
   const write = process.argv.includes("--write");
 
-  console.log("Fetching BTC, gold (XAU) + USD/PKR (Twelve Data), T-bill path...");
+  console.log("Fetching BTC, gold (XAU), USD/PKR, SPY + EEM (Twelve Data), T-bill path...");
   const { rows, fetched } = await buildMacroAssetRows();
 
   console.log("\n=== Coverage ===");
-  for (const asset of ["BTC", "GOLD", "USDPKR", "TBILL"] as MacroAsset[]) {
+  for (const asset of ["BTC", "GOLD", "USDPKR", "SPY", "EEM", "BNO", "TBILL"] as MacroAsset[]) {
     const q = coverage(rows, asset);
     const span = q.firstDate ? `${q.firstDate} -> ${q.lastDate} (${q.years.toFixed(1)}y)` : "none";
     console.log(`  ${asset.padEnd(7)} fetched ${String(fetched[asset]).padStart(6)}  ${q.quality.padEnd(8)} ${span}`);
   }
 
-  const missing = (["BTC", "GOLD", "USDPKR"] as MacroAsset[]).filter((a) => fetched[a] === 0);
+  const missing = (["BTC", "GOLD", "USDPKR", "SPY", "EEM", "BNO"] as MacroAsset[]).filter((a) => fetched[a] === 0);
   if (missing.length) console.warn(`\n! No data fetched for: ${missing.join(", ")} (source may be rate-limited; retry later).`);
 
   if (!write) {

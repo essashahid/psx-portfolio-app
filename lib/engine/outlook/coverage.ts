@@ -279,6 +279,7 @@ export async function buildOutlookCoverage(
     ["BTC", "Bitcoin (PKR-converted)", "Speculative risk-appetite proxy."],
     ["SPY", "S&P 500 proxy (SPY, USD)", "Developed-market risk appetite. Kept in USD so currency moves do not contaminate the signal."],
     ["EEM", "Emerging markets proxy (EEM, USD)", "Emerging-market risk appetite, the closer global read for PSX."],
+    ["BNO", "Brent crude proxy (BNO, USD)", "Oil-import cost pressure. Pakistan imports its energy, so Brent is the one commodity with a first-order macro link."],
     ["TBILL", "PKR policy / T-bill yield", "Hand-maintained step series of SBP policy decisions, not a live feed."],
   ] as const) {
     series.push(

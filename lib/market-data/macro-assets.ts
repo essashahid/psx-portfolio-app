@@ -24,7 +24,7 @@ function pause(ms = TD_REQUEST_SPACING_MS): Promise<void> {
   return new Promise((r) => setTimeout(r, ms));
 }
 
-export type MacroAsset = "BTC" | "GOLD" | "USDPKR" | "TBILL" | "SPY" | "EEM";
+export type MacroAsset = "BTC" | "GOLD" | "USDPKR" | "TBILL" | "SPY" | "EEM" | "BNO";
 
 /**
  * Global risk proxies for the market-outlook work: SPY tracks developed-market
@@ -126,6 +126,17 @@ export function fetchSpyHistory(): Promise<MacroPoint[]> {
 /** Daily emerging-market proxy (EEM) close history in USD, oldest first. */
 export function fetchEemHistory(): Promise<MacroPoint[]> {
   return fetchTwelveDataDaily("EEM");
+}
+
+/**
+ * Daily Brent crude proxy (BNO, the US Brent Oil ETF) in USD, oldest first.
+ * An ETF rather than the future for the same reason as SPY/EEM: Twelve Data
+ * serves it on the current plan, and it tracks the price closely enough for an
+ * oil-shock signal. Pakistan imports its energy, so Brent is the single
+ * commodity with a first-order macro link.
+ */
+export function fetchBnoHistory(): Promise<MacroPoint[]> {
+  return fetchTwelveDataDaily("BNO");
 }
 
 // --- T-bill / policy yield (admin-editable step series) -------------------
@@ -268,6 +279,8 @@ export async function buildMacroAssetRows(): Promise<{
   const spy = await fetchSpyHistory();
   await pause();
   const eem = await fetchEemHistory();
+  await pause();
+  const bno = await fetchBnoHistory();
 
   const fxAt = forwardFillLookup(usdpkr);
   const rows: MacroAssetRow[] = [];
@@ -281,6 +294,9 @@ export async function buildMacroAssetRows(): Promise<{
   }
   for (const p of eem) {
     rows.push({ asset: "EEM", asof_date: p.date, close_native: p.value, close_pkr: null, source: TD_SOURCE });
+  }
+  for (const p of bno) {
+    rows.push({ asset: "BNO", asof_date: p.date, close_native: p.value, close_pkr: null, source: TD_SOURCE });
   }
   for (const p of btc) {
     const fx = fxAt(p.date);
@@ -333,6 +349,7 @@ export async function buildMacroAssetRows(): Promise<{
       USDPKR: usdpkr.length,
       SPY: spy.length,
       EEM: eem.length,
+      BNO: bno.length,
       TBILL: rows.filter((r) => r.asset === "TBILL").length,
     },
   };
