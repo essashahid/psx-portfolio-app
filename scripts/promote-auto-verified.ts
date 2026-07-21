@@ -102,13 +102,24 @@ async function main() {
 
   const reg = JSON.parse(readFileSync(REGISTRY, "utf8"));
   for (const p of pass) {
+    // A loss-maker's P/E is not a valuation metric, and P/B agreement between
+    // two NEGATIVE book values is a materially weaker signal than between two
+    // positive ones (a company with negative equity is insolvent on paper —
+    // small absolute differences read as small percentages off a number that
+    // should not be used as a denominator at all). Say so in the entry rather
+    // than let the generic wording imply a clean valuation check.
+    const distress: string[] = [];
+    if (p.eps < 0) distress.push("EPS is negative (loss-making), so the agreement certifies the loss figure, not a usable P/E");
+    if (p.pb! < 0) distress.push("book value is NEGATIVE, so the P/B cross-check is much weaker than it looks and P/B should not be used for this name at all");
+
     reg.verified[p.t] = {
       throughPeriod: p.period,
       basis: "unconsolidated",
       source: "auto+Sarmaaya",
       date: "2026-07-21",
       note:
-        `bulk-promoted on independent agreement, NOT a filing read. Our engine-computed trailing EPS ${p.eps.toFixed(2)} vs Sarmaaya ${p.refEps} (${(p.epsOff * 100).toFixed(1)}%), and P/B ${p.pb!.toFixed(2)} vs ${p.refPb} (${(p.pbOff! * 100).toFixed(1)}%) — two ratios off different statements agreeing independently. No one opened the filing, so an un-restated bonus/rights issue or a basis subtlety could still be hiding underneath (the failure modes that caught SEARL, MUGHAL and GAL). Weaker tier than the "filing+Sarmaaya"/"hand+Sarmaaya" entries; re-verify by hand before relying on it for anything load-bearing.`,
+        `bulk-promoted on independent agreement, NOT a filing read. Our engine-computed trailing EPS ${p.eps.toFixed(2)} vs Sarmaaya ${p.refEps} (${(p.epsOff * 100).toFixed(1)}%), and P/B ${p.pb!.toFixed(2)} vs ${p.refPb} (${(p.pbOff! * 100).toFixed(1)}%) — two ratios off different statements agreeing independently. No one opened the filing, so an un-restated bonus/rights issue or a basis subtlety could still be hiding underneath (the failure modes that caught SEARL, MUGHAL and GAL). Weaker tier than the "filing+Sarmaaya"/"hand+Sarmaaya" entries; re-verify by hand before relying on it for anything load-bearing.` +
+        (distress.length ? ` CAUTION: ${distress.join("; ")}.` : ""),
     };
   }
   writeFileSync(REGISTRY, JSON.stringify(reg, null, 2) + "\n");

@@ -83,6 +83,22 @@ const CONSOLIDATED_BASIS_TICKERS = new Set<string>([
   // 9M 2026 EPS 85.28 and 9M 2025 comparative EPS 39.89 (interim p5). TTM =
   // 71.85 + 85.28 - 39.89 = 117.24, exact to Sarmaaya's 117.24.
   "GAL",
+  // ALTN, UNITY: found by sweeping stored data for a basis whose rebuilt TTM
+  // matches the reference when the served one does not. Both chains use the
+  // LATEST interim held and the same period we already serve, so the match is
+  // a real basis difference rather than an artifact of comparing against an
+  // older period. ALTN: FY2025 -12.54 + 9M2026 -4.09 - 9M2025 -12.03 = -4.60
+  // vs -4.61. UNITY: FY2025 1.37 + Q1'26 0.10 - Q1'25 -0.10 = 1.57 vs 1.60.
+  // Unlike BAHL/MUGHAL/SEARL/GAL these were NOT confirmed against the filing
+  // itself, so they carry the weaker "auto+Sarmaaya" tier in the registry.
+  //
+  // SIEM and SFL also matched on a stored basis but are deliberately excluded:
+  // both matched a chain built from an OLDER interim than the one we serve, so
+  // the agreement is with a stale reference rather than evidence we are right.
+  // SIEM's case is worse — it serves a 9M built from a Q3 row byte-identical to
+  // its Q2, so the 9M itself is suspect (same duplicate-label shape as FCCL).
+  "ALTN",
+  "UNITY",
 ]);
 
 function preferredBasis(ticker: string): "consolidated" | "unconsolidated" {
