@@ -973,6 +973,34 @@
       "source": "agent-read+Sarmaaya",
       "date": "2026-07-21",
       "note": "Masood Textile Mills, 30 June fiscal year end so the March interim is the NINE MONTH period. EPS 15.05 vs 15.06 exact. EPS IS STRUCK AFTER DEDUCTING THE CUMULATIVE PREFERENCE DIVIDEND: the company has 67,500,000 ordinary shares AND 27,500,000 cumulative non-voting preference shares, and the annual's note 36 prints the arithmetic (FY2025 profit 131,279 less preference dividend 50,003 = 81,276, the EPS numerator). FY2025's numerator is a READ figure; the interim prints no EPS note so its numerators are DERIVED as EPS x 67,500k ordinary shares, because storing the face profit of 603,462 against an EPS of 8.54 would imply 70,663k shares rather than the true 67,500k. P/B IS NOT VERIFIED: ours reads 0.73 against Sarmaaya's 0.53, and unlike EPCL, excluding preference capital does not close the gap, so something else differs in the equity definition. EPS is the verified dimension. SOURCE FILE IS TRUNCATED: the cached annual.pdf arrives byte-truncated and null-padded with no PDF trailer, and re-fetching REPRODUCES it, so PSX is serving a broken document rather than this being a transient fault. The agent recovered 119 pages via PyMuPDF and every figure reconciles, but a stricter parser will fail on that file. Also note OCR misread the prior-year 9M EPS as -8.31; the rendered image and the directors' report both say -5.31."
+    },
+    "JVDC": {
+      "throughPeriod": "TTM to 2026 9M",
+      "basis": "unconsolidated",
+      "source": "auto+Sarmaaya",
+      "date": "2026-07-22",
+      "note": "Promoted WITHOUT a fresh document read. The stored chain we already serve was compared against Sarmaaya on TWO independent dimensions, P/E and P/B, and both agreed. That is weaker evidence than the agent-read tier (nobody opened the filing, so a shared upstream error would go undetected) but stronger than the EPS-only agreement used for ALTN and UNITY, because P/B depends on equity and share count rather than on earnings, so a single bad extraction is unlikely to satisfy both. EPS 10.41 vs 10.67 (2.4%), P/B 1.99 vs 1.99 (0.2%). Has psx-filing rows, so the served figure is not portal-only."
+    },
+    "BERG": {
+      "throughPeriod": "TTM to 2026 9M",
+      "basis": "unconsolidated",
+      "source": "auto+Sarmaaya",
+      "date": "2026-07-22",
+      "note": "Promoted WITHOUT a fresh document read. The stored chain we already serve was compared against Sarmaaya on TWO independent dimensions, P/E and P/B, and both agreed. That is weaker evidence than the agent-read tier (nobody opened the filing, so a shared upstream error would go undetected) but stronger than the EPS-only agreement used for ALTN and UNITY, because P/B depends on equity and share count rather than on earnings, so a single bad extraction is unlikely to satisfy both. EPS 12.10 vs 12.44 (2.7%), P/B 0.65 vs 0.65 (0.7%). Has psx-filing rows."
+    },
+    "EFUG": {
+      "throughPeriod": "TTM to 2026 Q1",
+      "basis": "unconsolidated",
+      "source": "auto+Sarmaaya",
+      "date": "2026-07-22",
+      "note": "Promoted WITHOUT a fresh document read. The stored chain we already serve was compared against Sarmaaya on TWO independent dimensions, P/E and P/B, and both agreed. That is weaker evidence than the agent-read tier (nobody opened the filing, so a shared upstream error would go undetected) but stronger than the EPS-only agreement used for ALTN and UNITY, because P/B depends on equity and share count rather than on earnings, so a single bad extraction is unlikely to satisfy both. EPS 27.09 vs 27.72 (2.3%), P/B 0.88 vs 0.92 (3.9%). Has psx-filing rows. Note EFUG is a general insurer and its sister company EFUL was verified by a full agent read; the two are separate entities and were reconciled independently."
+    },
+    "IGIL": {
+      "throughPeriod": "2025 FY",
+      "basis": "unconsolidated",
+      "source": "auto+Sarmaaya",
+      "date": "2026-07-22",
+      "note": "Promoted WITHOUT a fresh document read. The stored chain we already serve was compared against Sarmaaya on TWO independent dimensions, P/E and P/B, and both agreed. That is weaker evidence than the agent-read tier (nobody opened the filing, so a shared upstream error would go undetected) but stronger than the EPS-only agreement used for ALTN and UNITY, because P/B depends on equity and share count rather than on earnings, so a single bad extraction is unlikely to satisfy both. EPS 2.48 vs 2.54 (2.4%), P/B 1.22 vs 1.19 (2.2%). WEAKEST OF THE FOUR: its served period is a bare 2025 FY, not a trailing chain, meaning no interim leg is being combined. It will go stale as soon as an interim is filed, and should be re-checked then rather than trusted indefinitely."
     }
   },
   "_unverifiable": {
