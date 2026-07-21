@@ -798,6 +798,27 @@
       "source": "agent-read+Sarmaaya",
       "date": "2026-07-21",
       "note": "bank; Sarmaaya quotes the group. Read off the cached PDFs by a subagent using the Read tool, which was the ONLY route available: the filings are scanned/image-only so the DeepSeek text-layer extractor could not touch them, and both vision API providers (OpenRouter, Anthropic) were out of credits. Consolidated FY2025 2.84 (annual printed p183) + Q1'26 0.44 - Q1'25 1.18 (both interim printed p51) = TTM 2.10, exact to Sarmaaya's 2.1. Unconsolidated (1.36 + 0.51 - 0.63 = 1.24) does not reconcile. P/B 0.41 vs Sarmaaya 0.42 as an independent second check, using equity ATTRIBUTABLE TO OWNERS (66,531,130k, interim p50) not total equity including NCI (78,803,779k) -- consolidated EPS is struck on owners' profit, so total equity would mismatch numerator and denominator. Same reason profit_after_tax is stored as 5,826,980k (owners) not 7,539,228k (total incl. 1,712,248k NCI). The automated pass this morning had the two FY figures but not the Q1 comparatives, so it could not build a chain and reported 'neither basis matches' -- the gap was missing data, not bad reasoning."
+    },
+    "BAFL": {
+      "throughPeriod": "2026 Q1",
+      "basis": "consolidated",
+      "source": "agent-read+Sarmaaya",
+      "date": "2026-07-21",
+      "note": "bank. Read off the cached PDFs by a subagent (interim text layer is garbled; figures taken from the page images). THE SHARE SPLIT IS THE POINT: the 26 Mar 2026 AGM approved a 2:1 split, but the FY2025 annual was published 5 Mar 2026, BEFORE it, so its EPS 17.62 (annual printed p539) is on the pre-split 1,577,165k base while the interim's 3.48 and restated comparative 2.24 (interim printed p60) are on the post-split 3,154,330k base. Halving the FY figure to 8.81 gives TTM 8.81 + 3.48 - 2.24 = 10.05, exact to Sarmaaya. Chaining unadjusted would give 18.86, off by 88%. The halving is derived arithmetic, not a printed figure, but the exact reconciliation confirms it. Unconsolidated (10.28) lands within 2.3% -- close enough to mislead -- so the exact consolidated match is what decides the basis. P/E 5.66 vs Sarmaaya 6.27 and P/B 0.94 vs 1.04 both differ by ~9.7% in the same direction, which is our live price against their snapshot price, not a data fault."
+    },
+    "AGP": {
+      "throughPeriod": "2026 Q1",
+      "basis": "consolidated",
+      "source": "agent-read+Sarmaaya",
+      "date": "2026-07-21",
+      "note": "pharma. Read off the cached PDFs by a subagent (the annual is a scanned image, two printed pages per sheet, no text layer). Consolidated FY2025 13.34 (annual printed p320) + Q1'26 3.06 - Q1'25 3.04 (both interim printed p25) = 13.36 vs Sarmaaya 13.41, 0.4%. Unconsolidated (8.43 + 1.99 - 1.66 = 8.76) is nowhere near: subsidiaries carry about a third of group earnings, so basis choice moves EPS over 50%. EPS struck on profit attributable to owners (3,736,178k) not group total (4,335,979k incl. 599,801k NCI); equity likewise owners-only (16,323,194k ex-NCI 1,763,534k). P/B 3.34 vs 3.36. Agent flagged an oddity it did NOT adjust: Q1 consolidated cost of sales prints LOWER than unconsolidated, which is unusual for a consolidation adding two trading subsidiaries."
+    },
+    "EPCL": {
+      "throughPeriod": "2026 Q1",
+      "basis": "consolidated",
+      "source": "agent-read+Sarmaaya",
+      "date": "2026-07-21",
+      "note": "chemicals, FY2025 LOSS year. Read off the cached PDFs by a subagent (interim is a scan with ~454 characters of text layer across 39 pages). Consolidated FY2025 -4.29 (annual printed p273) + Q1'26 0.41 - Q1'25 -0.91 = -2.97, exact to Sarmaaya. Unconsolidated (-2.11) does not reconcile. BASIC not diluted throughout: Q1 2026 returned to profit so the 3,000,000k of convertible preference shares stop being antidilutive and the series diverge (0.41 basic vs 0.31 diluted); Sarmaaya reconciles against basic. No NCI (subsidiaries wholly owned). P/B needed a second correction found by cross-checking: storing total equity 23,770,045k gave P/B 1.25 vs Sarmaaya 1.43, a gap that could not be price vintage because P/E agreed to 0.2% and both ratios share a price. Inverting their P/B implied ~20.8bn equity = total LESS the 3,000,000k preference capital; book value per ORDINARY share must exclude it since the denominator counts ordinary shares only. Ex-preference gives P/B 1.43 exactly. Caution for display: EPS is negative so P/E computes to -11.02, which is not a meaningful multiple."
     }
   },
   "_unverifiable": {

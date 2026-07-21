@@ -108,6 +108,19 @@ const CONSOLIDATED_BASIS_TICKERS = new Set<string>([
   // PAT 7,539,228k includes 1,712,248k of non-controlling interest — which is
   // why consolidated EPS cannot be rederived from consolidated PAT alone.
   "JSBL",
+  // BAFL: bank. Consolidated 10.05 exact to Sarmaaya. NOTE the FY2025 annual
+  // predates the 26 Mar 2026 AGM that approved a 2:1 split, so its EPS is on
+  // the pre-split base and is halved before chaining onto post-split interim
+  // figures. Unadjusted the chain gives 18.86, off by 88%.
+  "BAFL",
+  // AGP: pharma. Consolidated 13.36 vs Sarmaaya 13.41; unconsolidated 8.76 is
+  // nowhere near it. Subsidiaries carry roughly a third of group earnings.
+  "AGP",
+  // EPCL: chemicals, FY2025 loss year. Consolidated -2.97 exact to Sarmaaya.
+  // Basic (not diluted) throughout: Q1 2026 returned to profit so the
+  // convertible preference shares stop being antidilutive and the two series
+  // diverge; Sarmaaya reconciles against basic.
+  "EPCL",
 ]);
 
 function preferredBasis(ticker: string): "consolidated" | "unconsolidated" {
