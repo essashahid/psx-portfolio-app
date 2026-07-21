@@ -31,6 +31,17 @@ const INDICATOR_PARAMS: Record<string, number[]> = {
   VOL: [],
 };
 
+/**
+ * Decimal places per indicator. KLineCharts defaults oscillators to four,
+ * which renders an RSI as "55.2681" against a "72.0000" axis. Nobody reads an
+ * RSI past the decimal point.
+ */
+const INDICATOR_PRECISION: Record<string, number> = {
+  RSI: 1,
+  MACD: 2,
+  VOL: 0,
+};
+
 /** App palette: emerald price ink on a near-invisible slate scaffold. */
 const COLOR = {
   line: "#059669",
@@ -52,8 +63,10 @@ export class KLineChartsAdapter implements ChartEngineAdapter {
   private _bars: import("klinecharts").KLineData[] = [];
   private activeIndicators: string[] = [];
   private closeOnly = false;
+  private container: HTMLElement | null = null;
 
   initializeChart(container: HTMLElement, options?: any): void {
+    this.container = container;
     this.chart = init(container, options);
     this.applyBaseStyles();
   }
@@ -185,6 +198,37 @@ export class KLineChartsAdapter implements ChartEngineAdapter {
     });
     this.chart.setSymbol({ ticker: this.currentSymbol, pricePrecision: 2, volumePrecision: 0 });
     this.chart.setPeriod(PERIODS[this.currentResolution] ?? PERIODS["1D"]);
+    this.fitToWidth(bars.length);
+  }
+
+  /**
+   * Size the bars so the series fills the chart, and keep the right margin
+   * under one bar wide.
+   *
+   * Two visible bugs came out of leaving this to the library. Bar width is
+   * sticky across a period change, so switching from ~1,240 daily bars to ~60
+   * monthly ones left the series crammed against the right edge with most of
+   * the canvas empty. And the default 80px right margin is several months wide
+   * once bars are monthly, which the x-axis fills with extrapolated labels —
+   * that is why a series ending in July 2026 was labelled out to 2026-11.
+   *
+   * The floor is the library's own default width: on a five-year daily series
+   * filling the canvas would mean 1px bars, so dense resolutions stay scrolled
+   * to the latest data instead.
+   */
+  private fitToWidth(barCount: number): void {
+    if (!this.chart || barCount === 0) return;
+    const width = this.container?.clientWidth ?? 0;
+    if (width <= 0) return;
+
+    const RIGHT_MARGIN = 12;
+    const Y_AXIS_WIDTH = 70;
+    this.chart.setOffsetRightDistance(RIGHT_MARGIN);
+
+    const usable = Math.max(1, width - Y_AXIS_WIDTH - RIGHT_MARGIN);
+    const ideal = usable / barCount;
+    this.chart.setBarSpace(Math.min(50, Math.max(10, ideal)));
+    this.chart.scrollToRealTime(0);
   }
 
   /**
@@ -195,23 +239,31 @@ export class KLineChartsAdapter implements ChartEngineAdapter {
    */
   private barsForResolution(): KLineData[] {
     if (this.currentResolution === "1D") return this._bars;
+    const monthly = this.currentResolution === "1M";
 
-    const keyOf = (ts: number): string => {
+    /**
+     * Start of the period a timestamp falls in. Aggregated bars have to sit on
+     * real period boundaries — the first of the month, the Monday of the week
+     * — rather than on whichever trading day happened to open the period.
+     * KLineCharts derives its axis labels from the bar timestamps, so a bar
+     * stamped "5 July" in a monthly series makes the axis drift off the
+     * calendar.
+     */
+    const startOf = (ts: number): number => {
       const d = new Date(ts);
-      if (this.currentResolution === "1M") return `${d.getUTCFullYear()}-${d.getUTCMonth()}`;
-      // ISO-ish week key: year plus week index from the epoch, which is enough
-      // to group consecutive days without a calendar library.
-      return String(Math.floor(ts / (7 * 86400000)));
+      if (monthly) return Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), 1);
+      const dow = (d.getUTCDay() + 6) % 7; // Monday = 0
+      return Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate() - dow);
     };
 
     const out: KLineData[] = [];
-    let currentKey: string | null = null;
+    let currentStart: number | null = null;
     for (const bar of this._bars) {
-      const key = keyOf(bar.timestamp);
+      const start = startOf(bar.timestamp);
       const last = out[out.length - 1];
-      if (key !== currentKey || !last) {
-        out.push({ ...bar });
-        currentKey = key;
+      if (start !== currentStart || !last) {
+        out.push({ ...bar, timestamp: start });
+        currentStart = start;
         continue;
       }
       last.high = Math.max(last.high, bar.high);
@@ -288,6 +340,7 @@ export class KLineChartsAdapter implements ChartEngineAdapter {
       name,
       calcParams: options?.calcParams ?? INDICATOR_PARAMS[name],
       shortName: options?.shortName,
+      ...(INDICATOR_PRECISION[name] !== undefined ? { precision: INDICATOR_PRECISION[name] } : {}),
     };
     const created = this.chart.createIndicator(create, {
       isStack: onPricePane,

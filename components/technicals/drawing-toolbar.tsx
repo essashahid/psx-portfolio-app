@@ -15,14 +15,14 @@ interface DrawingToolbarProps {
 export function DrawingToolbar({ onSelectTool, onClearAll, onClose }: DrawingToolbarProps) {
   const tools = [
     { name: "segment", label: "Trend line", desc: "Two points", icon: TrendingUp },
-    { name: "rayLine", label: "Ray", desc: "Extends from a point", icon: MoveUpRight },
-    { name: "horizontalStraightLine", label: "Horizontal line", desc: "A level across the chart", icon: Minus },
-    { name: "priceLine", label: "Price line", desc: "A level with its price label", icon: Tag },
-    { name: "fibonacciLine", label: "Fibonacci", desc: "Retracement levels", icon: Ruler },
+    { name: "rayLine", label: "Ray", desc: "From one point", icon: MoveUpRight },
+    { name: "horizontalStraightLine", label: "Horizontal", desc: "A flat level", icon: Minus },
+    { name: "priceLine", label: "Price line", desc: "Level with label", icon: Tag },
+    { name: "fibonacciLine", label: "Fibonacci", desc: "Retracements", icon: Ruler },
   ];
 
   return (
-    <div className="absolute right-3 top-14 z-50 w-64 rounded-lg border border-border bg-popover p-2 shadow-lg">
+    <div className="absolute right-3 top-14 z-50 w-64 rounded-lg border border-border bg-card p-2 shadow-lg">
       <div className="mb-1 flex items-center justify-between px-2">
         <h3 className="text-sm font-semibold">Draw</h3>
         <Button variant="ghost" size="sm" className="h-6 w-6 p-0" onClick={onClose}>×</Button>

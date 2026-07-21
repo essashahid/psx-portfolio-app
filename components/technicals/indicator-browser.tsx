@@ -10,16 +10,16 @@ interface IndicatorBrowserProps {
 
 export function IndicatorBrowser({ active, onToggleIndicator, onClose }: IndicatorBrowserProps) {
   const indicators = [
-    { name: "MA", desc: "Moving averages 20, 50, 200" },
-    { name: "EMA", desc: "Exponential averages 21, 55" },
+    { name: "MA", desc: "20, 50, 200" },
+    { name: "EMA", desc: "21, 55" },
     { name: "BOLL", desc: "Bollinger Bands" },
     { name: "VOL", desc: "Volume" },
     { name: "MACD", desc: "Trend momentum" },
-    { name: "RSI", desc: "Relative strength, 14 day" },
+    { name: "RSI", desc: "Relative strength, 14" },
   ];
 
   return (
-    <div className="absolute right-3 top-14 z-50 w-64 rounded-lg border border-border bg-popover p-2 shadow-lg">
+    <div className="absolute right-3 top-14 z-50 w-64 rounded-lg border border-border bg-card p-2 shadow-lg">
       <div className="mb-1 flex items-center justify-between px-2">
         <h3 className="text-sm font-semibold">Indicators</h3>
         <Button variant="ghost" size="sm" className="h-6 w-6 p-0" onClick={onClose}>×</Button>
