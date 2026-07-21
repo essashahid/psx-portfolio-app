@@ -840,6 +840,55 @@
       "source": "agent-read+Sarmaaya",
       "date": "2026-07-21",
       "note": "Siemens Pakistan Engineering, 30 Sep fiscal year end. NOT a cement company and not Siddiqsons; the reading agent corrected that identification. Unconsolidated because there is nothing to consolidate: SIEM is itself 93.03% owned by Siemens AG and discloses no subsidiaries. FY2025 100.57 (annual p40) + H1 FY2026 1.53 - H1 FY2025 70.73 (both interim p6, cumulative columns) = 31.37, exact to Sarmaaya; P/B 2.04 vs 2.04. Needed BOTH a refetch and a data cleanup. The FY2025 annual was missing for the same 'Annual Financial Statements' spelling reason as ENGROH. Separately the extractor had stored CONTINUING-operations EPS as though it were the total, for a company whose result is dominated by discontinued operations: FY2025 held 12.77 against a true 100.57, and FY2024 held 38.07 against a true -248.34, which even flips the sign. A quarter mislabelled Q3 (impossible for a 30 Sep year ending 31 Mar) was also removed. TWO THINGS THAT LOOK WRONG AND ARE NOT: the magnitude, because only ~8.2m shares are outstanding (six-year series runs 100.57, -248.34, 117.72, 203.81, 103.07, -60.14); and the composition, because 87.80 of FY2025's 100.57 is DISCONTINUED operations from the Energy Business disposal while continuing-operations EPS actually fell from 38.07 to 12.77. The headline is not repeatable earnings."
+    },
+    "PKGS": {
+      "throughPeriod": "2026 Q1",
+      "basis": "consolidated",
+      "source": "agent-read+Sarmaaya",
+      "date": "2026-07-21",
+      "note": "Packages. Consolidated -9.43 and P/B 1.08, both exact. Unconsolidated (28.80) is dividend-upstreaming: standalone revenue is dividend and rental income of 5.87bn against group revenue of 193.2bn. HEADLINE ODDITY THAT IS NOT AN ERROR: the group made a PROFIT of 260,587k yet reports a LOSS per share of -20.55, because the entire profit and more accrued to NCI (2,096,893k) while owners absorbed -1,836,306k. EPS is struck on the owners' portion. THIS FILE POISONS TEXT-LAYER EXTRACTION: the interim PDF carries a stale hidden text layer over the consolidated statements, so pdftotext returns a phantom column of 10.61 / -5.13 where the RENDERED PAGE shows 7.73 / -3.39. The phantom figures carry a matching phantom profit of 948,158k and are internally self-consistent, so an arithmetic sanity check does NOT catch them. Values here were read from page images; anything re-extracting PKGS from its text layer will silently disagree and look plausible doing it."
+    },
+    "JSCL": {
+      "throughPeriod": "2026 Q1",
+      "basis": "consolidated",
+      "source": "agent-read+Sarmaaya",
+      "date": "2026-07-21",
+      "note": "Jahangir Siddiqui & Co, investment holding company. Consolidated 6.02 exact, P/B 0.40 vs 0.41. Unconsolidated 0.34 is essentially dividend income from related parties (445.11m of 475.13m total return on investments), and group profit is ~32x standalone, so the basis choice is not cosmetic. NCI takes 38% of FY2025 group profit and 55% of Q1 FY2026, so EPS is struck on the owners' share (6,480,825k of 10,391,006k). Equity likewise owners-only (58,370,289k ex-NCI 35,497,252k). Note the 183,188,477 Class A preference shares were fully redeemed at par on 31 Dec 2025, which is why diluted equals basic from FY2025 onward when FY2024 had a dilutive gap."
+    },
+    "TPL": {
+      "throughPeriod": "2026 9M",
+      "basis": "consolidated",
+      "source": "agent-read+Sarmaaya",
+      "date": "2026-07-21",
+      "note": "TPL Corp, holding company, 30 June fiscal year end so the March interim is the NINE MONTH period. Consolidated -10.61 exact; unconsolidated -3.96 does not reconcile. NCI absorbs the MAJORITY of group losses and its share is growing (35% of FY2025, 57% of 9M FY2026), so the owners-only numerator is essential. Figures converted from whole rupees to thousands. P/B IS NOT RELIABLE HERE and is recorded only for completeness: owners' consolidated equity went NEGATIVE at 31 Mar 2026 (-2,123,697k, down from +399,046k), total consolidated equity collapsed from 5,925,171k to 137,314k in nine months, and a price-to-book ratio on negative book value is not a meaningful multiple. Ours reads -2.30 against Sarmaaya's -1.08; both are negative and neither is interpretable. The unconsolidated reserves position is only positive because a 2bn subordinated loan from the parent is presented within equity."
+    },
+    "ZTL": {
+      "throughPeriod": "2026 9M",
+      "basis": "unconsolidated",
+      "source": "agent-read+Sarmaaya",
+      "date": "2026-07-21",
+      "note": "Zephyr Textiles (NOT 'Z-Tech'; corrected by the reading agent from the cover). 30 June fiscal year end so the March interim is the NINE MONTH period. Unconsolidated -0.82 exact, P/B 0.47 vs 0.48. No consolidated statements exist. Figures converted from whole rupees to thousands. The 9M FY2026 loss is driven by a 70.32m LEVY charge, not by operations: operating profit stayed positive at 184.05m, and Q3 in isolation was profitable at 0.12 against the 9M figure of -0.67. FY2025 EPS of 0.03 is genuinely that small (PAT 1,819k on sales of 8.28bn), so deriving a share count from profit/EPS carries meaningful rounding error at two decimals; equity comes from the balance sheet instead. Equity taken from the BALANCE SHEET, not the statement of changes in equity: the SOCIE omits a 39,000k 'Contribution from sponsor' column and is exactly that much lower, and the balance sheet is the statement that foots."
+    },
+    "PINL": {
+      "throughPeriod": "2026 Q1",
+      "basis": "unconsolidated",
+      "source": "agent-read+Sarmaaya",
+      "date": "2026-07-21",
+      "note": "Premier Insurance. NOT a bulk terminal and NOT Pioneer -- the ticker label used when commissioning the read was wrong and the agent corrected it from the statements' own legal-status note. General insurer with a Window Takaful Operations business reported as separate supplementary statements, NOT consolidated (Takaful is under 25% of gross contribution so consolidation is not required). No subsidiaries, so unconsolidated is the only basis. 3.86 vs 3.89, P/B 0.51 vs 0.49. FY2024 comparatives were restated but for balance-sheet presentation only (Participants' Takaful Fund shown gross per amended SECP regulations); equity, profit and EPS are unaffected. Equity fell over Q1 despite a 94,754k profit, driven by the investment revaluation reserve, so equity direction contradicts earnings direction here."
+    },
+    "EFUL": {
+      "throughPeriod": "2026 Q1",
+      "basis": "unconsolidated",
+      "source": "agent-read+Sarmaaya",
+      "date": "2026-07-21",
+      "note": "EFU Life Assurance. 20.86 vs 20.91, P/B 1.71 vs 1.75. No consolidated statements exist: EFU Health was merged by amalgamation into EFUL effective 1 May 2024, so there is no subsidiary left to consolidate. BASIS CAVEAT WORTH KNOWING: for a life assurer, EPS sits on the AGGREGATE statement, which the company's own note describes as shareholders'-fund profit PLUS surplus transferred from the statutory funds PLUS undistributed statutory-fund surplus including solvency margins. A shareholders'-fund-only profit is not printed anywhere in either document, so the aggregate is the only available basis and is the one the company strikes EPS on. Surplus transferred to the shareholders' fund was 3,017m in FY2025. FY2024 and Q1 FY2025 comparatives are RESTATED: the 2024 EFU Health acquisition was booked at provisional fair values, finalised in the current period and applied retrospectively per IFRS 3."
+    },
+    "ADAMS": {
+      "throughPeriod": "2026 H1",
+      "basis": "unconsolidated",
+      "source": "agent-read (reference stale)",
+      "date": "2026-07-21",
+      "note": "Adam Sugar Mills, 30 September fiscal year end so the March interim is a HALF YEAR. No subsidiaries, so unconsolidated is the only basis. P/B 0.23 vs 0.23. Highly seasonal: the 127-day crushing season (15 Nov to 21 Mar) falls almost entirely inside H1, so H1 is NOT half a year and annualising it would be wrong. THE REFERENCE DISAGREES AND WE ARE THE ONES WHO ARE RIGHT. Our chain gives 8.78 against Sarmaaya's 9.29. The 0.51 gap is EXACTLY the restatement the company made: H1 FY2025 EPS was restated from -2.54 as previously reported to -2.03, correcting a deferred-tax rate error (interim note 24; the annual makes the matching FY2024 correction, 3.14 to 4.23). Chaining the SUPERSEDED comparative gives 2.67 + 4.08 + 2.54 = 9.29, reproducing Sarmaaya exactly, which is how the disagreement was identified rather than merely tolerated. We use the corrected figure as IAS 8 requires. Recorded at a lower confidence tier because the independent check does not agree, though the discrepancy is fully explained. Also note the interim's auditor review report in this copy is an unsigned DRAFT watermark with blank date and UDIN."
     }
   },
   "_unverifiable": {
