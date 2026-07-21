@@ -9,6 +9,7 @@ import { ChartHeader } from "./chart-header";
 import { TechnicalState } from "./technical-state";
 import { SupportResistance } from "./support-resistance";
 import { IndicatorBrowser } from "./indicator-browser";
+import { DrawingToolbar } from "./drawing-toolbar";
 import { LayoutManager } from "./layout-manager";
 
 interface TechnicalWorkstationProps {
@@ -16,28 +17,32 @@ interface TechnicalWorkstationProps {
   ohlcvData: CanonicalOHLCV;
   signals: TechnicalSignals;
   supportResistanceZones: SupportResistanceZone[];
+  changePct?: number | null;
+  volatility?: number | null;
 }
 
 export function TechnicalWorkstation({
-  ticker, ohlcvData, signals, supportResistanceZones
+  ticker, ohlcvData, signals, supportResistanceZones, changePct = null, volatility = null
 }: TechnicalWorkstationProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const adapterRef = useRef<KLineChartsAdapter | null>(null);
   const [resolution, setResolution] = useState("1D");
   const [chartType, setChartType] = useState<"candlestick" | "line" | "area">("candlestick");
   const [isFullscreen, setIsFullscreen] = useState(false);
-  const [showIndicators, setShowIndicators] = useState(false);
-  const [showLayouts, setShowLayouts] = useState(false);
+  const [openPanel, setOpenPanel] = useState<"indicators" | "draw" | "layouts" | null>(null);
+  const [activeIndicators, setActiveIndicators] = useState<string[]>(["VOL"]);
+
+  const closeOnly = ohlcvData.dataQuality === "close-only";
 
   useEffect(() => {
     if (!containerRef.current) return;
-    
-    // Initialize adapter
+
     const adapter = new KLineChartsAdapter();
     adapter.initializeChart(containerRef.current);
     adapter.setSymbol(ticker);
-    
-    // Determine initial chart type
+    adapter.setDataQuality(ohlcvData.dataQuality);
+
+    // Close-only data cannot draw candles, so fall back to the line style.
     if (ohlcvData.dataQuality === "close-only") {
       setChartType("line");
       adapter.setChartType("line");
@@ -46,9 +51,12 @@ export function TechnicalWorkstation({
     }
 
     adapter.setOHLCVData(ohlcvData);
-    
-    // Add default volume indicator
-    adapter.addIndicator("VOL");
+
+    // Re-apply whatever the user had on before a re-mount (ticker change).
+    setActiveIndicators((current) => {
+      for (const name of current) adapter.addIndicator(name);
+      return adapter.getActiveIndicators();
+    });
 
     adapterRef.current = adapter;
 
@@ -56,17 +64,17 @@ export function TechnicalWorkstation({
       adapter.destroyChart();
       adapterRef.current = null;
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [ticker, ohlcvData]);
 
   const handleResolutionChange = (res: string) => {
     setResolution(res);
     adapterRef.current?.setResolution(res);
-    // Real app would fetch new data here
   };
 
   const handleChartTypeChange = (type: "candlestick" | "line" | "area") => {
-    // Prevent changing to candlestick if data is unverified/close-only
-    if (type === "candlestick" && ohlcvData.dataQuality === "close-only") return;
+    // Close-only data has no real open/high/low to draw candles from.
+    if (type === "candlestick" && closeOnly) return;
     setChartType(type);
     adapterRef.current?.setChartType(type);
   };
@@ -81,8 +89,21 @@ export function TechnicalWorkstation({
     }
   };
 
-  const handleAddIndicator = (name: string) => {
-    adapterRef.current?.addIndicator(name);
+  const handleToggleIndicator = (name: string) => {
+    const adapter = adapterRef.current;
+    if (!adapter) return;
+    adapter.toggleIndicator(name);
+    setActiveIndicators(adapter.getActiveIndicators());
+  };
+
+  const handleStartDrawing = (name: string) => {
+    adapterRef.current?.startDrawing(name);
+    setOpenPanel(null);
+  };
+
+  const handleClearDrawings = () => {
+    adapterRef.current?.clearDrawings();
+    setOpenPanel(null);
   };
 
   const handleSaveLayout = () => {
@@ -91,8 +112,12 @@ export function TechnicalWorkstation({
   };
 
   const handleLoadLayout = () => {
+    const adapter = adapterRef.current;
     const state = localStorage.getItem(`chart_layout_${ticker}`);
-    if (state) adapterRef.current?.loadLayoutState(state);
+    if (adapter && state) {
+      adapter.loadLayoutState(state);
+      setActiveIndicators(adapter.getActiveIndicators());
+    }
   };
 
   // Listen to fullscreen changes outside the button
@@ -110,42 +135,56 @@ export function TechnicalWorkstation({
         <ChartHeader
           ticker={ticker}
           price={signals.lastClose}
-          changePct={null} // compute from technicals if needed
+          changePct={changePct}
           resolution={resolution}
           onResolutionChange={handleResolutionChange}
           chartType={chartType}
+          candlesDisabled={closeOnly}
           onChartTypeChange={handleChartTypeChange}
           onFullscreenToggle={handleFullscreenToggle}
           isFullscreen={isFullscreen}
-          onOpenIndicators={() => setShowIndicators(!showIndicators)}
-          onOpenDrawings={() => { /* Toggle drawing toolbar */ }}
-          onOpenLayouts={() => setShowLayouts(!showLayouts)}
+          onOpenIndicators={() => setOpenPanel(openPanel === "indicators" ? null : "indicators")}
+          onOpenDrawings={() => setOpenPanel(openPanel === "draw" ? null : "draw")}
+          onOpenLayouts={() => setOpenPanel(openPanel === "layouts" ? null : "layouts")}
         />
-        
-        {showIndicators && (
-          <IndicatorBrowser onSelectIndicator={handleAddIndicator} onClose={() => setShowIndicators(false)} />
+
+        {openPanel === "indicators" && (
+          <IndicatorBrowser
+            active={activeIndicators}
+            onToggleIndicator={handleToggleIndicator}
+            onClose={() => setOpenPanel(null)}
+          />
         )}
-        
-        {showLayouts && (
-          <LayoutManager onSave={handleSaveLayout} onLoad={handleLoadLayout} onClose={() => setShowLayouts(false)} />
+
+        {openPanel === "draw" && (
+          <DrawingToolbar
+            onSelectTool={handleStartDrawing}
+            onClearAll={handleClearDrawings}
+            onClose={() => setOpenPanel(null)}
+          />
+        )}
+
+        {openPanel === "layouts" && (
+          <LayoutManager onSave={handleSaveLayout} onLoad={handleLoadLayout} onClose={() => setOpenPanel(null)} />
         )}
 
         {/* Main Chart Area */}
-        <div 
-          ref={containerRef} 
+        <div
+          ref={containerRef}
           className="w-full"
           style={{ height: isFullscreen ? "calc(100vh - 64px)" : "500px" }}
         />
-        
-        {ohlcvData.dataQuality === "close-only" && (
-          <div className="absolute bottom-4 left-4 right-4 rounded-md border border-amber-200 bg-amber-50/90 px-3 py-2 text-xs text-amber-800 backdrop-blur-sm z-10 pointer-events-none">
-            Verified OHLC data is not currently available. Candlestick charting and range-based indicators are disabled. A close-price line chart is shown instead.
-          </div>
+
+        {closeOnly && (
+          <p className="border-t border-border px-4 py-2 text-xs text-muted-foreground">
+            PSX publishes daily closing prices only, so this chart is drawn as a close price line.
+            Candlesticks and range indicators need open, high and low data that is not available.
+          </p>
         )}
       </div>
 
       <div className="grid gap-4 lg:grid-cols-[2fr_1fr]">
-        <TechnicalState signals={signals} volatility={null} />
+        <TechnicalState signals={signals} volatility={volatility} />
         <SupportResistance zones={supportResistanceZones} />
       </div>
     </div>

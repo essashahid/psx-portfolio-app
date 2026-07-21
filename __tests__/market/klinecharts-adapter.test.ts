@@ -12,6 +12,9 @@ const chart = {
   setPeriod: jest.fn(),
   setStyles: jest.fn(),
   createIndicator: jest.fn(() => "ind_1"),
+  removeIndicator: jest.fn(),
+  createOverlay: jest.fn(() => "ov_1"),
+  removeOverlay: jest.fn(),
 };
 
 jest.mock("klinecharts", () => ({
@@ -127,5 +130,80 @@ describe("KLineChartsAdapter", () => {
     const first = monthly[0];
     expect(first.high).toBeGreaterThanOrEqual(first.low);
     expect(first.volume).toBeGreaterThan(1000); // summed, not copied
+  });
+
+  describe("indicators", () => {
+    test("moving averages overlay the price pane, oscillators get their own", () => {
+      const a = mounted();
+      a.addIndicator("MA");
+      expect(chart.createIndicator).toHaveBeenLastCalledWith(
+        expect.objectContaining({ name: "MA", calcParams: [20, 50, 200] }),
+        expect.objectContaining({ isStack: true, pane: expect.objectContaining({ id: "candle_pane" }) })
+      );
+      a.addIndicator("RSI");
+      expect(chart.createIndicator).toHaveBeenLastCalledWith(
+        expect.objectContaining({ name: "RSI", calcParams: [14] }),
+        expect.objectContaining({ isStack: false, pane: expect.objectContaining({ id: "pane_RSI" }) })
+      );
+    });
+
+    test("volume has no moving-average clutter", () => {
+      const a = mounted();
+      a.addIndicator("VOL");
+      expect(chart.createIndicator).toHaveBeenLastCalledWith(
+        expect.objectContaining({ name: "VOL", calcParams: [] }),
+        expect.anything()
+      );
+    });
+
+    test("adding twice keeps a single instance; toggle removes it", () => {
+      const a = mounted();
+      a.addIndicator("MA");
+      a.addIndicator("MA");
+      expect(chart.createIndicator).toHaveBeenCalledTimes(1);
+      expect(a.getActiveIndicators()).toEqual(["MA"]);
+
+      expect(a.toggleIndicator("MA")).toBe(false);
+      expect(chart.removeIndicator).toHaveBeenCalledWith({ name: "MA" });
+      expect(a.getActiveIndicators()).toEqual([]);
+    });
+  });
+
+  describe("close-only presentation", () => {
+    test("tooltip collapses to time, price, volume and hides fake extremes", () => {
+      const a = mounted();
+      a.setDataQuality("close-only");
+      const styles = chart.setStyles.mock.calls.at(-1)![0];
+      const legendTitles = styles.candle.tooltip.legend.template.map((t: { title: string }) => t.title);
+      expect(legendTitles).toEqual(["time", "Price: ", "volume"]);
+      expect(styles.candle.priceMark.high.show).toBe(false);
+      expect(styles.candle.priceMark.low.show).toBe(false);
+    });
+  });
+
+  describe("drawings", () => {
+    test("startDrawing creates the named overlay, clearDrawings removes all", () => {
+      const a = mounted();
+      a.startDrawing("horizontalStraightLine");
+      expect(chart.createOverlay).toHaveBeenCalledWith(
+        expect.objectContaining({ name: "horizontalStraightLine" })
+      );
+      a.clearDrawings();
+      expect(chart.removeOverlay).toHaveBeenCalledWith();
+    });
+  });
+
+  describe("layout persistence", () => {
+    test("round-trips the active indicator set", () => {
+      const a = mounted();
+      a.addIndicator("MA");
+      a.addIndicator("RSI");
+      const saved = a.saveLayoutState();
+
+      const b = mounted();
+      b.addIndicator("BOLL"); // should be removed on load
+      b.loadLayoutState(saved);
+      expect(b.getActiveIndicators().sort()).toEqual(["MA", "RSI"]);
+    });
   });
 });
