@@ -1,0 +1,5662 @@
+{
+  "generatedAt": "2026-07-21T12:26:50.402Z",
+  "window": {
+    "firstDate": "2021-06-28",
+    "lastDate": "2026-07-21",
+    "sessions": 1254
+  },
+  "horizons": [
+    {
+      "key": "5d",
+      "sessions": 5,
+      "secondary": false
+    },
+    {
+      "key": "10d",
+      "sessions": 10,
+      "secondary": false
+    },
+    {
+      "key": "20d",
+      "sessions": 20,
+      "secondary": false
+    },
+    {
+      "key": "1m",
+      "sessions": 21,
+      "secondary": true
+    }
+  ],
+  "thresholds": [
+    -0.03,
+    -0.05
+  ],
+  "signals": [
+    {
+      "key": "mom_21d",
+      "family": "momentum",
+      "label": "KSE-100 1-month momentum",
+      "riskyDirection": "low",
+      "coverage": {
+        "firstDate": "2022-08-03",
+        "lastDate": "2026-07-21",
+        "observations": 982
+      },
+      "cells": [
+        {
+          "horizonKey": "5d",
+          "sessions": 5,
+          "secondary": false,
+          "threshold": -0.03,
+          "n": 977,
+          "riskyWindows": 204,
+          "safeWindows": 530,
+          "baseRate": 0.13920163766632548,
+          "riskyRate": 0.23039215686274508,
+          "safeRate": 0.1169811320754717,
+          "lift": 1.6550965974625143,
+          "firstHalfLift": 1.2065934065934065,
+          "secondHalfLift": 1.7129424778761062,
+          "hits": 47,
+          "hitEpisodes": 13,
+          "beyondVol": {
+            "calmWindows": 263,
+            "calmRiskyWindows": 27,
+            "calmBaseRate": 0.030418250950570342,
+            "calmRiskyRate": 0.07407407407407407,
+            "lift": 2.435185185185185,
+            "hitEpisodes": 1
+          },
+          "classification": "weak",
+          "reasons": [
+            "lift 1.66x does not clear the moderate bar with its evidence"
+          ]
+        },
+        {
+          "horizonKey": "5d",
+          "sessions": 5,
+          "secondary": false,
+          "threshold": -0.05,
+          "n": 977,
+          "riskyWindows": 204,
+          "safeWindows": 530,
+          "baseRate": 0.038894575230296824,
+          "riskyRate": 0.08333333333333333,
+          "safeRate": 0.02830188679245283,
+          "lift": 2.142543859649123,
+          "firstHalfLift": 0.4125105663567203,
+          "secondHalfLift": 2.7695575221238937,
+          "hits": 17,
+          "hitEpisodes": 5,
+          "beyondVol": {
+            "calmWindows": 263,
+            "calmRiskyWindows": 27,
+            "calmBaseRate": 0.0038022813688212928,
+            "calmRiskyRate": 0.037037037037037035,
+            "lift": 9.74074074074074,
+            "hitEpisodes": 1
+          },
+          "classification": "unstable",
+          "reasons": [
+            "lift flips between halves (0.41x then 2.77x)"
+          ]
+        },
+        {
+          "horizonKey": "10d",
+          "sessions": 10,
+          "secondary": false,
+          "threshold": -0.03,
+          "n": 972,
+          "riskyWindows": 204,
+          "safeWindows": 526,
+          "baseRate": 0.23148148148148148,
+          "riskyRate": 0.28431372549019607,
+          "safeRate": 0.20722433460076045,
+          "lift": 1.228235294117647,
+          "firstHalfLift": 0.9494505494505496,
+          "secondHalfLift": 1.3380530973451328,
+          "hits": 58,
+          "hitEpisodes": 11,
+          "beyondVol": {
+            "calmWindows": 263,
+            "calmRiskyWindows": 27,
+            "calmBaseRate": 0.11406844106463879,
+            "calmRiskyRate": 0.2222222222222222,
+            "lift": 1.948148148148148,
+            "hitEpisodes": 2
+          },
+          "classification": "weak",
+          "reasons": [
+            "lift 1.23x does not clear the moderate bar with its evidence"
+          ]
+        },
+        {
+          "horizonKey": "10d",
+          "sessions": 10,
+          "secondary": false,
+          "threshold": -0.05,
+          "n": 972,
+          "riskyWindows": 204,
+          "safeWindows": 526,
+          "baseRate": 0.10185185185185185,
+          "riskyRate": 0.16666666666666666,
+          "safeRate": 0.0817490494296578,
+          "lift": 1.6363636363636365,
+          "firstHalfLift": 0.7417582417582418,
+          "secondHalfLift": 1.9797724399494312,
+          "hits": 34,
+          "hitEpisodes": 6,
+          "beyondVol": {
+            "calmWindows": 263,
+            "calmRiskyWindows": 27,
+            "calmBaseRate": 0.022813688212927757,
+            "calmRiskyRate": 0.14814814814814814,
+            "lift": 6.493827160493827,
+            "hitEpisodes": 1
+          },
+          "classification": "unstable",
+          "reasons": [
+            "lift flips between halves (0.74x then 1.98x)"
+          ]
+        },
+        {
+          "horizonKey": "20d",
+          "sessions": 20,
+          "secondary": false,
+          "threshold": -0.03,
+          "n": 962,
+          "riskyWindows": 204,
+          "safeWindows": 516,
+          "baseRate": 0.3503118503118503,
+          "riskyRate": 0.36764705882352944,
+          "safeRate": 0.34108527131782945,
+          "lift": 1.0494850759294816,
+          "firstHalfLift": 0.920545746388443,
+          "secondHalfLift": 1.1779373295486169,
+          "hits": 75,
+          "hitEpisodes": 10,
+          "beyondVol": {
+            "calmWindows": 263,
+            "calmRiskyWindows": 27,
+            "calmBaseRate": 0.1520912547528517,
+            "calmRiskyRate": 0.2222222222222222,
+            "lift": 1.461111111111111,
+            "hitEpisodes": 2
+          },
+          "classification": "weak",
+          "reasons": [
+            "lift 1.05x does not clear the moderate bar with its evidence"
+          ]
+        },
+        {
+          "horizonKey": "20d",
+          "sessions": 20,
+          "secondary": false,
+          "threshold": -0.05,
+          "n": 962,
+          "riskyWindows": 204,
+          "safeWindows": 516,
+          "baseRate": 0.1704781704781705,
+          "riskyRate": 0.19607843137254902,
+          "safeRate": 0.16085271317829458,
+          "lift": 1.1501673840267814,
+          "firstHalfLift": 0.6178107606679034,
+          "secondHalfLift": 1.5167327840504525,
+          "hits": 40,
+          "hitEpisodes": 5,
+          "beyondVol": {
+            "calmWindows": 263,
+            "calmRiskyWindows": 27,
+            "calmBaseRate": 0.053231939163498096,
+            "calmRiskyRate": 0.14814814814814814,
+            "lift": 2.7830687830687832,
+            "hitEpisodes": 1
+          },
+          "classification": "unstable",
+          "reasons": [
+            "lift flips between halves (0.62x then 1.52x)"
+          ]
+        },
+        {
+          "horizonKey": "1m",
+          "sessions": 21,
+          "secondary": true,
+          "threshold": -0.03,
+          "n": 961,
+          "riskyWindows": 204,
+          "safeWindows": 515,
+          "baseRate": 0.3537981269510926,
+          "riskyRate": 0.36764705882352944,
+          "safeRate": 0.34757281553398056,
+          "lift": 1.0391435986159172,
+          "firstHalfLift": 0.9134999079133157,
+          "secondHalfLift": 1.16330456769087,
+          "hits": 75,
+          "hitEpisodes": 10,
+          "beyondVol": {
+            "calmWindows": 263,
+            "calmRiskyWindows": 27,
+            "calmBaseRate": 0.1520912547528517,
+            "calmRiskyRate": 0.2222222222222222,
+            "lift": 1.461111111111111,
+            "hitEpisodes": 2
+          },
+          "classification": "weak",
+          "reasons": [
+            "lift 1.04x does not clear the moderate bar with its evidence"
+          ]
+        },
+        {
+          "horizonKey": "1m",
+          "sessions": 21,
+          "secondary": true,
+          "threshold": -0.05,
+          "n": 961,
+          "riskyWindows": 204,
+          "safeWindows": 515,
+          "baseRate": 0.18106139438085328,
+          "riskyRate": 0.2107843137254902,
+          "safeRate": 0.170873786407767,
+          "lift": 1.1641593418976786,
+          "firstHalfLift": 0.7626108830928109,
+          "secondHalfLift": 1.450063211125158,
+          "hits": 43,
+          "hitEpisodes": 5,
+          "beyondVol": {
+            "calmWindows": 263,
+            "calmRiskyWindows": 27,
+            "calmBaseRate": 0.057034220532319393,
+            "calmRiskyRate": 0.14814814814814814,
+            "lift": 2.5975308641975308,
+            "hitEpisodes": 1
+          },
+          "classification": "unstable",
+          "reasons": [
+            "lift flips between halves (0.76x then 1.45x)"
+          ]
+        }
+      ],
+      "verdict": "unstable",
+      "verdictReason": "Lift inverts between sample halves in two or more primary cells."
+    },
+    {
+      "key": "mom_63d",
+      "family": "momentum",
+      "label": "KSE-100 3-month momentum",
+      "riskyDirection": "low",
+      "coverage": {
+        "firstDate": "2022-10-04",
+        "lastDate": "2026-07-21",
+        "observations": 940
+      },
+      "cells": [
+        {
+          "horizonKey": "5d",
+          "sessions": 5,
+          "secondary": false,
+          "threshold": -0.03,
+          "n": 935,
+          "riskyWindows": 99,
+          "safeWindows": 588,
+          "baseRate": 0.14545454545454545,
+          "riskyRate": 0.3434343434343434,
+          "safeRate": 0.11734693877551021,
+          "lift": 2.361111111111111,
+          "firstHalfLift": 0.7783333333333333,
+          "secondHalfLift": 2.2608695652173916,
+          "hits": 34,
+          "hitEpisodes": 10,
+          "beyondVol": {
+            "calmWindows": 244,
+            "calmRiskyWindows": 0,
+            "calmBaseRate": 0.03278688524590164,
+            "calmRiskyRate": null,
+            "lift": null,
+            "hitEpisodes": 0
+          },
+          "classification": "unstable",
+          "reasons": [
+            "lift flips between halves (0.78x then 2.26x)"
+          ]
+        },
+        {
+          "horizonKey": "5d",
+          "sessions": 5,
+          "secondary": false,
+          "threshold": -0.05,
+          "n": 935,
+          "riskyWindows": 99,
+          "safeWindows": 588,
+          "baseRate": 0.040641711229946524,
+          "riskyRate": 0.10101010101010101,
+          "safeRate": 0.02891156462585034,
+          "lift": 2.4853801169590644,
+          "firstHalfLift": 0,
+          "secondHalfLift": 2.71304347826087,
+          "hits": 10,
+          "hitEpisodes": 5,
+          "beyondVol": {
+            "calmWindows": 244,
+            "calmRiskyWindows": 0,
+            "calmBaseRate": 0.004098360655737705,
+            "calmRiskyRate": null,
+            "lift": null,
+            "hitEpisodes": 0
+          },
+          "classification": "unstable",
+          "reasons": [
+            "lift flips between halves (0.00x then 2.71x)"
+          ]
+        },
+        {
+          "horizonKey": "10d",
+          "sessions": 10,
+          "secondary": false,
+          "threshold": -0.03,
+          "n": 930,
+          "riskyWindows": 99,
+          "safeWindows": 584,
+          "baseRate": 0.23548387096774193,
+          "riskyRate": 0.42424242424242425,
+          "safeRate": 0.21746575342465754,
+          "lift": 1.8015774180157742,
+          "firstHalfLift": 0.7380952380952381,
+          "secondHalfLift": 1.896940418679549,
+          "hits": 42,
+          "hitEpisodes": 6,
+          "beyondVol": {
+            "calmWindows": 244,
+            "calmRiskyWindows": 0,
+            "calmBaseRate": 0.11065573770491803,
+            "calmRiskyRate": null,
+            "lift": null,
+            "hitEpisodes": 0
+          },
+          "classification": "unstable",
+          "reasons": [
+            "lift flips between halves (0.74x then 1.90x)"
+          ]
+        },
+        {
+          "horizonKey": "10d",
+          "sessions": 10,
+          "secondary": false,
+          "threshold": -0.05,
+          "n": 930,
+          "riskyWindows": 99,
+          "safeWindows": 584,
+          "baseRate": 0.1064516129032258,
+          "riskyRate": 0.20202020202020202,
+          "safeRate": 0.08732876712328767,
+          "lift": 1.8977655341291706,
+          "firstHalfLift": 0.861111111111111,
+          "secondHalfLift": 1.9254658385093166,
+          "hits": 20,
+          "hitEpisodes": 6,
+          "beyondVol": {
+            "calmWindows": 244,
+            "calmRiskyWindows": 0,
+            "calmBaseRate": 0.02459016393442623,
+            "calmRiskyRate": null,
+            "lift": null,
+            "hitEpisodes": 0
+          },
+          "classification": "unstable",
+          "reasons": [
+            "lift flips between halves (0.86x then 1.93x)"
+          ]
+        },
+        {
+          "horizonKey": "20d",
+          "sessions": 20,
+          "secondary": false,
+          "threshold": -0.03,
+          "n": 920,
+          "riskyWindows": 99,
+          "safeWindows": 574,
+          "baseRate": 0.3467391304347826,
+          "riskyRate": 0.494949494949495,
+          "safeRate": 0.34146341463414637,
+          "lift": 1.427440549697603,
+          "firstHalfLift": 0.5679012345679012,
+          "secondHalfLift": 1.8259023354564756,
+          "hits": 49,
+          "hitEpisodes": 5,
+          "beyondVol": {
+            "calmWindows": 244,
+            "calmRiskyWindows": 0,
+            "calmBaseRate": 0.15163934426229508,
+            "calmRiskyRate": null,
+            "lift": null,
+            "hitEpisodes": 0
+          },
+          "classification": "unstable",
+          "reasons": [
+            "lift flips between halves (0.57x then 1.83x)"
+          ]
+        },
+        {
+          "horizonKey": "20d",
+          "sessions": 20,
+          "secondary": false,
+          "threshold": -0.05,
+          "n": 920,
+          "riskyWindows": 99,
+          "safeWindows": 574,
+          "baseRate": 0.17717391304347826,
+          "riskyRate": 0.25252525252525254,
+          "safeRate": 0.16898954703832753,
+          "lift": 1.4252959038235113,
+          "firstHalfLift": 0.39826839826839827,
+          "secondHalfLift": 1.7829457364341084,
+          "hits": 25,
+          "hitEpisodes": 4,
+          "beyondVol": {
+            "calmWindows": 244,
+            "calmRiskyWindows": 0,
+            "calmBaseRate": 0.05737704918032787,
+            "calmRiskyRate": null,
+            "lift": null,
+            "hitEpisodes": 0
+          },
+          "classification": "unstable",
+          "reasons": [
+            "lift flips between halves (0.40x then 1.78x)"
+          ]
+        },
+        {
+          "horizonKey": "1m",
+          "sessions": 21,
+          "secondary": true,
+          "threshold": -0.03,
+          "n": 919,
+          "riskyWindows": 99,
+          "safeWindows": 573,
+          "baseRate": 0.35038084874863984,
+          "riskyRate": 0.494949494949495,
+          "safeRate": 0.34554973821989526,
+          "lift": 1.4126043039086518,
+          "firstHalfLift": 0.5597560975609756,
+          "secondHalfLift": 1.8143459915611813,
+          "hits": 49,
+          "hitEpisodes": 5,
+          "beyondVol": {
+            "calmWindows": 244,
+            "calmRiskyWindows": 0,
+            "calmBaseRate": 0.15163934426229508,
+            "calmRiskyRate": null,
+            "lift": null,
+            "hitEpisodes": 0
+          },
+          "classification": "unstable",
+          "reasons": [
+            "lift flips between halves (0.56x then 1.81x)"
+          ]
+        },
+        {
+          "horizonKey": "1m",
+          "sessions": 21,
+          "secondary": true,
+          "threshold": -0.05,
+          "n": 919,
+          "riskyWindows": 99,
+          "safeWindows": 573,
+          "baseRate": 0.18607181719260066,
+          "riskyRate": 0.26262626262626265,
+          "safeRate": 0.1762652705061082,
+          "lift": 1.411424183354008,
+          "firstHalfLift": 0.373170731707317,
+          "secondHalfLift": 1.797752808988764,
+          "hits": 26,
+          "hitEpisodes": 4,
+          "beyondVol": {
+            "calmWindows": 244,
+            "calmRiskyWindows": 0,
+            "calmBaseRate": 0.06147540983606557,
+            "calmRiskyRate": null,
+            "lift": null,
+            "hitEpisodes": 0
+          },
+          "classification": "unstable",
+          "reasons": [
+            "lift flips between halves (0.37x then 1.80x)"
+          ]
+        }
+      ],
+      "verdict": "unstable",
+      "verdictReason": "Lift inverts between sample halves in two or more primary cells."
+    },
+    {
+      "key": "dist_ma200",
+      "family": "trend",
+      "label": "KSE-100 distance from 200-day average",
+      "riskyDirection": "low",
+      "coverage": {
+        "firstDate": "2023-04-17",
+        "lastDate": "2026-07-21",
+        "observations": 804
+      },
+      "cells": [
+        {
+          "horizonKey": "5d",
+          "sessions": 5,
+          "secondary": false,
+          "threshold": -0.03,
+          "n": 799,
+          "riskyWindows": 61,
+          "safeWindows": 540,
+          "baseRate": 0.15269086357947434,
+          "riskyRate": 0.45901639344262296,
+          "safeRate": 0.1037037037037037,
+          "lift": 3.006181134103736,
+          "firstHalfLift": null,
+          "secondHalfLift": 1.9532612486920127,
+          "hits": 28,
+          "hitEpisodes": 7,
+          "beyondVol": {
+            "calmWindows": 193,
+            "calmRiskyWindows": 0,
+            "calmBaseRate": 0.015544041450777202,
+            "calmRiskyRate": null,
+            "lift": null,
+            "hitEpisodes": 0
+          },
+          "classification": "weak",
+          "reasons": [
+            "stability across halves not measurable; capped at moderate",
+            "lift 3.01x does not clear the moderate bar with its evidence"
+          ]
+        },
+        {
+          "horizonKey": "5d",
+          "sessions": 5,
+          "secondary": false,
+          "threshold": -0.05,
+          "n": 799,
+          "riskyWindows": 61,
+          "safeWindows": 540,
+          "baseRate": 0.0425531914893617,
+          "riskyRate": 0.16393442622950818,
+          "safeRate": 0.025925925925925925,
+          "lift": 3.8524590163934422,
+          "firstHalfLift": null,
+          "secondHalfLift": 2.622950819672131,
+          "hits": 10,
+          "hitEpisodes": 4,
+          "beyondVol": {
+            "calmWindows": 193,
+            "calmRiskyWindows": 0,
+            "calmBaseRate": 0,
+            "calmRiskyRate": null,
+            "lift": null,
+            "hitEpisodes": 0
+          },
+          "classification": "weak",
+          "reasons": [
+            "stability across halves not measurable; capped at moderate",
+            "lift 3.85x does not clear the moderate bar with its evidence"
+          ]
+        },
+        {
+          "horizonKey": "10d",
+          "sessions": 10,
+          "secondary": false,
+          "threshold": -0.03,
+          "n": 794,
+          "riskyWindows": 60,
+          "safeWindows": 540,
+          "baseRate": 0.23425692695214106,
+          "riskyRate": 0.48333333333333334,
+          "safeRate": 0.1925925925925926,
+          "lift": 2.0632616487455198,
+          "firstHalfLift": null,
+          "secondHalfLift": 1.4427318295739349,
+          "hits": 29,
+          "hitEpisodes": 5,
+          "beyondVol": {
+            "calmWindows": 193,
+            "calmRiskyWindows": 0,
+            "calmBaseRate": 0.08290155440414508,
+            "calmRiskyRate": null,
+            "lift": null,
+            "hitEpisodes": 0
+          },
+          "classification": "weak",
+          "reasons": [
+            "stability across halves not measurable; capped at moderate",
+            "lift 2.06x does not clear the moderate bar with its evidence"
+          ]
+        },
+        {
+          "horizonKey": "10d",
+          "sessions": 10,
+          "secondary": false,
+          "threshold": -0.05,
+          "n": 794,
+          "riskyWindows": 60,
+          "safeWindows": 540,
+          "baseRate": 0.1070528967254408,
+          "riskyRate": 0.16666666666666666,
+          "safeRate": 0.06296296296296296,
+          "lift": 1.5568627450980392,
+          "firstHalfLift": null,
+          "secondHalfLift": 1.0502645502645502,
+          "hits": 10,
+          "hitEpisodes": 3,
+          "beyondVol": {
+            "calmWindows": 193,
+            "calmRiskyWindows": 0,
+            "calmBaseRate": 0.010362694300518135,
+            "calmRiskyRate": null,
+            "lift": null,
+            "hitEpisodes": 0
+          },
+          "classification": "weak",
+          "reasons": [
+            "stability across halves not measurable; capped at moderate",
+            "lift 1.56x does not clear the moderate bar with its evidence"
+          ]
+        },
+        {
+          "horizonKey": "20d",
+          "sessions": 20,
+          "secondary": false,
+          "threshold": -0.03,
+          "n": 784,
+          "riskyWindows": 60,
+          "safeWindows": 540,
+          "baseRate": 0.32908163265306123,
+          "riskyRate": 0.5,
+          "safeRate": 0.3074074074074074,
+          "lift": 1.5193798449612403,
+          "firstHalfLift": null,
+          "secondHalfLift": 1.248407643312102,
+          "hits": 30,
+          "hitEpisodes": 3,
+          "beyondVol": {
+            "calmWindows": 193,
+            "calmRiskyWindows": 0,
+            "calmBaseRate": 0.12953367875647667,
+            "calmRiskyRate": null,
+            "lift": null,
+            "hitEpisodes": 0
+          },
+          "classification": "weak",
+          "reasons": [
+            "stability across halves not measurable; capped at moderate",
+            "lift 1.52x does not clear the moderate bar with its evidence"
+          ]
+        },
+        {
+          "horizonKey": "20d",
+          "sessions": 20,
+          "secondary": false,
+          "threshold": -0.05,
+          "n": 784,
+          "riskyWindows": 60,
+          "safeWindows": 540,
+          "baseRate": 0.1683673469387755,
+          "riskyRate": 0.21666666666666667,
+          "safeRate": 0.1388888888888889,
+          "lift": 1.286868686868687,
+          "firstHalfLift": null,
+          "secondHalfLift": 0.9875968992248063,
+          "hits": 13,
+          "hitEpisodes": 2,
+          "beyondVol": {
+            "calmWindows": 193,
+            "calmRiskyWindows": 0,
+            "calmBaseRate": 0.025906735751295335,
+            "calmRiskyRate": null,
+            "lift": null,
+            "hitEpisodes": 0
+          },
+          "classification": "insufficient",
+          "reasons": [
+            "only 2 distinct hit episodes (need 3)"
+          ]
+        },
+        {
+          "horizonKey": "1m",
+          "sessions": 21,
+          "secondary": true,
+          "threshold": -0.03,
+          "n": 783,
+          "riskyWindows": 60,
+          "safeWindows": 540,
+          "baseRate": 0.3333333333333333,
+          "riskyRate": 0.5,
+          "safeRate": 0.3148148148148148,
+          "lift": 1.5,
+          "firstHalfLift": null,
+          "secondHalfLift": 1.240506329113924,
+          "hits": 30,
+          "hitEpisodes": 3,
+          "beyondVol": {
+            "calmWindows": 193,
+            "calmRiskyWindows": 0,
+            "calmBaseRate": 0.12953367875647667,
+            "calmRiskyRate": null,
+            "lift": null,
+            "hitEpisodes": 0
+          },
+          "classification": "weak",
+          "reasons": [
+            "stability across halves not measurable; capped at moderate",
+            "lift 1.50x does not clear the moderate bar with its evidence"
+          ]
+        },
+        {
+          "horizonKey": "1m",
+          "sessions": 21,
+          "secondary": true,
+          "threshold": -0.05,
+          "n": 783,
+          "riskyWindows": 60,
+          "safeWindows": 540,
+          "baseRate": 0.17624521072796934,
+          "riskyRate": 0.21666666666666667,
+          "safeRate": 0.14814814814814814,
+          "lift": 1.2293478260869566,
+          "firstHalfLift": null,
+          "secondHalfLift": 0.954307116104869,
+          "hits": 13,
+          "hitEpisodes": 2,
+          "beyondVol": {
+            "calmWindows": 193,
+            "calmRiskyWindows": 0,
+            "calmBaseRate": 0.031088082901554404,
+            "calmRiskyRate": null,
+            "lift": null,
+            "hitEpisodes": 0
+          },
+          "classification": "insufficient",
+          "reasons": [
+            "only 2 distinct hit episodes (need 3)"
+          ]
+        }
+      ],
+      "verdict": "weak",
+      "verdictReason": "No primary cell clears the moderate bar."
+    },
+    {
+      "key": "drawdown_252d",
+      "family": "trend",
+      "label": "KSE-100 drawdown from 52-week high",
+      "riskyDirection": "low",
+      "coverage": {
+        "firstDate": "2023-07-07",
+        "lastDate": "2026-07-21",
+        "observations": 752
+      },
+      "cells": [
+        {
+          "horizonKey": "5d",
+          "sessions": 5,
+          "secondary": false,
+          "threshold": -0.03,
+          "n": 747,
+          "riskyWindows": 95,
+          "safeWindows": 428,
+          "baseRate": 0.16198125836680052,
+          "riskyRate": 0.4105263157894737,
+          "safeRate": 0.10046728971962617,
+          "lift": 2.534406263592867,
+          "firstHalfLift": null,
+          "secondHalfLift": 1.825531914893617,
+          "hits": 39,
+          "hitEpisodes": 9,
+          "beyondVol": {
+            "calmWindows": 160,
+            "calmRiskyWindows": 0,
+            "calmBaseRate": 0.0125,
+            "calmRiskyRate": null,
+            "lift": null,
+            "hitEpisodes": 0
+          },
+          "classification": "weak",
+          "reasons": [
+            "stability across halves not measurable; capped at moderate",
+            "lift 2.53x does not clear the moderate bar with its evidence"
+          ]
+        },
+        {
+          "horizonKey": "5d",
+          "sessions": 5,
+          "secondary": false,
+          "threshold": -0.05,
+          "n": 747,
+          "riskyWindows": 95,
+          "safeWindows": 428,
+          "baseRate": 0.04551539491298527,
+          "riskyRate": 0.1368421052631579,
+          "safeRate": 0.028037383177570093,
+          "lift": 3.0065015479876167,
+          "firstHalfLift": null,
+          "secondHalfLift": 2.463019250253293,
+          "hits": 13,
+          "hitEpisodes": 5,
+          "beyondVol": {
+            "calmWindows": 160,
+            "calmRiskyWindows": 0,
+            "calmBaseRate": 0,
+            "calmRiskyRate": null,
+            "lift": null,
+            "hitEpisodes": 0
+          },
+          "classification": "weak",
+          "reasons": [
+            "stability across halves not measurable; capped at moderate",
+            "lift 3.01x does not clear the moderate bar with its evidence"
+          ]
+        },
+        {
+          "horizonKey": "10d",
+          "sessions": 10,
+          "secondary": false,
+          "threshold": -0.03,
+          "n": 742,
+          "riskyWindows": 94,
+          "safeWindows": 428,
+          "baseRate": 0.2398921832884097,
+          "riskyRate": 0.4787234042553192,
+          "safeRate": 0.1705607476635514,
+          "lift": 1.995577336839589,
+          "firstHalfLift": null,
+          "secondHalfLift": 1.483604372167422,
+          "hits": 45,
+          "hitEpisodes": 6,
+          "beyondVol": {
+            "calmWindows": 160,
+            "calmRiskyWindows": 0,
+            "calmBaseRate": 0.05,
+            "calmRiskyRate": null,
+            "lift": null,
+            "hitEpisodes": 0
+          },
+          "classification": "weak",
+          "reasons": [
+            "stability across halves not measurable; capped at moderate",
+            "lift 2.00x does not clear the moderate bar with its evidence"
+          ]
+        },
+        {
+          "horizonKey": "10d",
+          "sessions": 10,
+          "secondary": false,
+          "threshold": -0.05,
+          "n": 742,
+          "riskyWindows": 94,
+          "safeWindows": 428,
+          "baseRate": 0.11455525606469003,
+          "riskyRate": 0.26595744680851063,
+          "safeRate": 0.0794392523364486,
+          "lift": 2.3216520650813517,
+          "firstHalfLift": null,
+          "secondHalfLift": 1.690359030435575,
+          "hits": 25,
+          "hitEpisodes": 6,
+          "beyondVol": {
+            "calmWindows": 160,
+            "calmRiskyWindows": 0,
+            "calmBaseRate": 0.0125,
+            "calmRiskyRate": null,
+            "lift": null,
+            "hitEpisodes": 0
+          },
+          "classification": "weak",
+          "reasons": [
+            "stability across halves not measurable; capped at moderate",
+            "lift 2.32x does not clear the moderate bar with its evidence"
+          ]
+        },
+        {
+          "horizonKey": "20d",
+          "sessions": 20,
+          "secondary": false,
+          "threshold": -0.03,
+          "n": 732,
+          "riskyWindows": 94,
+          "safeWindows": 427,
+          "baseRate": 0.3333333333333333,
+          "riskyRate": 0.48936170212765956,
+          "safeRate": 0.28337236533957844,
+          "lift": 1.4680851063829787,
+          "firstHalfLift": null,
+          "secondHalfLift": 1.2315119596225588,
+          "hits": 46,
+          "hitEpisodes": 4,
+          "beyondVol": {
+            "calmWindows": 160,
+            "calmRiskyWindows": 0,
+            "calmBaseRate": 0.075,
+            "calmRiskyRate": null,
+            "lift": null,
+            "hitEpisodes": 0
+          },
+          "classification": "weak",
+          "reasons": [
+            "stability across halves not measurable; capped at moderate",
+            "lift 1.47x does not clear the moderate bar with its evidence"
+          ]
+        },
+        {
+          "horizonKey": "20d",
+          "sessions": 20,
+          "secondary": false,
+          "threshold": -0.05,
+          "n": 732,
+          "riskyWindows": 94,
+          "safeWindows": 427,
+          "baseRate": 0.18032786885245902,
+          "riskyRate": 0.2978723404255319,
+          "safeRate": 0.16159250585480095,
+          "lift": 1.6518375241779495,
+          "firstHalfLift": null,
+          "secondHalfLift": 1.3438237608182535,
+          "hits": 28,
+          "hitEpisodes": 4,
+          "beyondVol": {
+            "calmWindows": 160,
+            "calmRiskyWindows": 0,
+            "calmBaseRate": 0.03125,
+            "calmRiskyRate": null,
+            "lift": null,
+            "hitEpisodes": 0
+          },
+          "classification": "weak",
+          "reasons": [
+            "stability across halves not measurable; capped at moderate",
+            "lift 1.65x does not clear the moderate bar with its evidence"
+          ]
+        },
+        {
+          "horizonKey": "1m",
+          "sessions": 21,
+          "secondary": true,
+          "threshold": -0.03,
+          "n": 731,
+          "riskyWindows": 94,
+          "safeWindows": 427,
+          "baseRate": 0.3378932968536252,
+          "riskyRate": 0.48936170212765956,
+          "safeRate": 0.2903981264637002,
+          "lift": 1.4482728917219398,
+          "firstHalfLift": null,
+          "secondHalfLift": 1.2231909328683521,
+          "hits": 46,
+          "hitEpisodes": 4,
+          "beyondVol": {
+            "calmWindows": 160,
+            "calmRiskyWindows": 0,
+            "calmBaseRate": 0.075,
+            "calmRiskyRate": null,
+            "lift": null,
+            "hitEpisodes": 0
+          },
+          "classification": "weak",
+          "reasons": [
+            "stability across halves not measurable; capped at moderate",
+            "lift 1.45x does not clear the moderate bar with its evidence"
+          ]
+        },
+        {
+          "horizonKey": "1m",
+          "sessions": 21,
+          "secondary": true,
+          "threshold": -0.05,
+          "n": 731,
+          "riskyWindows": 94,
+          "safeWindows": 427,
+          "baseRate": 0.18878248974008208,
+          "riskyRate": 0.2978723404255319,
+          "safeRate": 0.17330210772833723,
+          "lift": 1.577860006167129,
+          "firstHalfLift": null,
+          "secondHalfLift": 1.2963946869070209,
+          "hits": 28,
+          "hitEpisodes": 4,
+          "beyondVol": {
+            "calmWindows": 160,
+            "calmRiskyWindows": 0,
+            "calmBaseRate": 0.0375,
+            "calmRiskyRate": null,
+            "lift": null,
+            "hitEpisodes": 0
+          },
+          "classification": "weak",
+          "reasons": [
+            "stability across halves not measurable; capped at moderate",
+            "lift 1.58x does not clear the moderate bar with its evidence"
+          ]
+        }
+      ],
+      "verdict": "weak",
+      "verdictReason": "No primary cell clears the moderate bar."
+    },
+    {
+      "key": "vol_21d",
+      "family": "volatility",
+      "label": "Realised volatility, 21 sessions",
+      "riskyDirection": "high",
+      "coverage": {
+        "firstDate": "2022-08-03",
+        "lastDate": "2026-07-21",
+        "observations": 982
+      },
+      "cells": [
+        {
+          "horizonKey": "5d",
+          "sessions": 5,
+          "secondary": false,
+          "threshold": -0.03,
+          "n": 977,
+          "riskyWindows": 385,
+          "safeWindows": 263,
+          "baseRate": 0.13920163766632548,
+          "riskyRate": 0.23116883116883116,
+          "safeRate": 0.030418250950570342,
+          "lift": 1.6606760886172651,
+          "firstHalfLift": 1.316546762589928,
+          "secondHalfLift": 1.5322662601626018,
+          "hits": 89,
+          "hitEpisodes": 23,
+          "beyondVol": null,
+          "classification": "strong",
+          "reasons": [
+            "lift 1.66x on 23 episodes, stable across halves"
+          ]
+        },
+        {
+          "horizonKey": "5d",
+          "sessions": 5,
+          "secondary": false,
+          "threshold": -0.05,
+          "n": 977,
+          "riskyWindows": 385,
+          "safeWindows": 263,
+          "baseRate": 0.038894575230296824,
+          "riskyRate": 0.07532467532467532,
+          "safeRate": 0.0038022813688212928,
+          "lift": 1.936637047163363,
+          "firstHalfLift": 1.620365246264527,
+          "secondHalfLift": 1.828780487804878,
+          "hits": 29,
+          "hitEpisodes": 10,
+          "beyondVol": null,
+          "classification": "strong",
+          "reasons": [
+            "lift 1.94x on 10 episodes, stable across halves"
+          ]
+        },
+        {
+          "horizonKey": "10d",
+          "sessions": 10,
+          "secondary": false,
+          "threshold": -0.03,
+          "n": 972,
+          "riskyWindows": 380,
+          "safeWindows": 263,
+          "baseRate": 0.23148148148148148,
+          "riskyRate": 0.32105263157894737,
+          "safeRate": 0.11406844106463879,
+          "lift": 1.3869473684210527,
+          "firstHalfLift": 0.8546762589928057,
+          "secondHalfLift": 1.4937759336099585,
+          "hits": 122,
+          "hitEpisodes": 21,
+          "beyondVol": null,
+          "classification": "unstable",
+          "reasons": [
+            "lift flips between halves (0.85x then 1.49x)"
+          ]
+        },
+        {
+          "horizonKey": "10d",
+          "sessions": 10,
+          "secondary": false,
+          "threshold": -0.05,
+          "n": 972,
+          "riskyWindows": 380,
+          "safeWindows": 263,
+          "baseRate": 0.10185185185185185,
+          "riskyRate": 0.1763157894736842,
+          "safeRate": 0.022813688212927757,
+          "lift": 1.7311004784688995,
+          "firstHalfLift": 1.1654676258992807,
+          "secondHalfLift": 1.7605216360403082,
+          "hits": 67,
+          "hitEpisodes": 14,
+          "beyondVol": null,
+          "classification": "moderate",
+          "reasons": [
+            "lift 1.73x on 14 episodes, direction holds in both halves"
+          ]
+        },
+        {
+          "horizonKey": "20d",
+          "sessions": 20,
+          "secondary": false,
+          "threshold": -0.03,
+          "n": 962,
+          "riskyWindows": 376,
+          "safeWindows": 263,
+          "baseRate": 0.3503118503118503,
+          "riskyRate": 0.4574468085106383,
+          "safeRate": 0.1520912547528517,
+          "lift": 1.3058273880926827,
+          "firstHalfLift": 0.9986565705911088,
+          "secondHalfLift": 1.5380001057026582,
+          "hits": 172,
+          "hitEpisodes": 17,
+          "beyondVol": null,
+          "classification": "weak",
+          "reasons": [
+            "lift 1.31x does not clear the moderate bar with its evidence"
+          ]
+        },
+        {
+          "horizonKey": "20d",
+          "sessions": 20,
+          "secondary": false,
+          "threshold": -0.05,
+          "n": 962,
+          "riskyWindows": 376,
+          "safeWindows": 263,
+          "baseRate": 0.1704781704781705,
+          "riskyRate": 0.24468085106382978,
+          "safeRate": 0.053231939163498096,
+          "lift": 1.4352620653866113,
+          "firstHalfLift": 0.9958592132505174,
+          "secondHalfLift": 1.6260987153482083,
+          "hits": 92,
+          "hitEpisodes": 11,
+          "beyondVol": null,
+          "classification": "weak",
+          "reasons": [
+            "lift 1.44x does not clear the moderate bar with its evidence"
+          ]
+        },
+        {
+          "horizonKey": "1m",
+          "sessions": 21,
+          "secondary": true,
+          "threshold": -0.03,
+          "n": 961,
+          "riskyWindows": 375,
+          "safeWindows": 263,
+          "baseRate": 0.3537981269510926,
+          "riskyRate": 0.464,
+          "safeRate": 0.1520912547528517,
+          "lift": 1.3114823529411765,
+          "firstHalfLift": 1.0178200057089262,
+          "secondHalfLift": 1.5314473615533168,
+          "hits": 174,
+          "hitEpisodes": 17,
+          "beyondVol": null,
+          "classification": "moderate",
+          "reasons": [
+            "lift 1.31x on 17 episodes, direction holds in both halves"
+          ]
+        },
+        {
+          "horizonKey": "1m",
+          "sessions": 21,
+          "secondary": true,
+          "threshold": -0.05,
+          "n": 961,
+          "riskyWindows": 375,
+          "safeWindows": 263,
+          "baseRate": 0.18106139438085328,
+          "riskyRate": 0.25333333333333335,
+          "safeRate": 0.057034220532319393,
+          "lift": 1.3991570881226054,
+          "firstHalfLift": 1.013103508926216,
+          "secondHalfLift": 1.5768307322929171,
+          "hits": 95,
+          "hitEpisodes": 12,
+          "beyondVol": null,
+          "classification": "moderate",
+          "reasons": [
+            "lift 1.40x on 12 episodes, direction holds in both halves"
+          ]
+        }
+      ],
+      "verdict": "strong",
+      "verdictReason": "Strong at the 3% / 5d cell: lift 1.66x on 23 episodes, stable across halves."
+    },
+    {
+      "key": "vol_63d",
+      "family": "volatility",
+      "label": "Realised volatility, 63 sessions",
+      "riskyDirection": "high",
+      "coverage": {
+        "firstDate": "2022-10-04",
+        "lastDate": "2026-07-21",
+        "observations": 940
+      },
+      "cells": [
+        {
+          "horizonKey": "5d",
+          "sessions": 5,
+          "secondary": false,
+          "threshold": -0.03,
+          "n": 935,
+          "riskyWindows": 362,
+          "safeWindows": 272,
+          "baseRate": 0.14545454545454545,
+          "riskyRate": 0.20441988950276244,
+          "safeRate": 0.1213235294117647,
+          "lift": 1.405386740331492,
+          "firstHalfLift": 1.4825396825396826,
+          "secondHalfLift": 1.1980932203389831,
+          "hits": 74,
+          "hitEpisodes": 21,
+          "beyondVol": {
+            "calmWindows": 244,
+            "calmRiskyWindows": 18,
+            "calmBaseRate": 0.03278688524590164,
+            "calmRiskyRate": 0.1111111111111111,
+            "lift": 3.3888888888888884,
+            "hitEpisodes": 1
+          },
+          "classification": "weak",
+          "reasons": [
+            "lift 1.41x does not clear the moderate bar with its evidence"
+          ]
+        },
+        {
+          "horizonKey": "5d",
+          "sessions": 5,
+          "secondary": false,
+          "threshold": -0.05,
+          "n": 935,
+          "riskyWindows": 362,
+          "safeWindows": 272,
+          "baseRate": 0.040641711229946524,
+          "riskyRate": 0.055248618784530384,
+          "safeRate": 0.03308823529411765,
+          "lift": 1.3594068043035765,
+          "firstHalfLift": 0.8553113553113553,
+          "secondHalfLift": 1.3484745762711865,
+          "hits": 20,
+          "hitEpisodes": 8,
+          "beyondVol": {
+            "calmWindows": 244,
+            "calmRiskyWindows": 18,
+            "calmBaseRate": 0.004098360655737705,
+            "calmRiskyRate": 0,
+            "lift": 0,
+            "hitEpisodes": 0
+          },
+          "classification": "unstable",
+          "reasons": [
+            "lift flips between halves (0.86x then 1.35x)"
+          ]
+        },
+        {
+          "horizonKey": "10d",
+          "sessions": 10,
+          "secondary": false,
+          "threshold": -0.03,
+          "n": 930,
+          "riskyWindows": 357,
+          "safeWindows": 272,
+          "baseRate": 0.23548387096774193,
+          "riskyRate": 0.2969187675070028,
+          "safeRate": 0.2536764705882353,
+          "lift": 1.2608879168105598,
+          "firstHalfLift": 1.3180272108843538,
+          "secondHalfLift": 1.1332371332371332,
+          "hits": 106,
+          "hitEpisodes": 17,
+          "beyondVol": {
+            "calmWindows": 244,
+            "calmRiskyWindows": 18,
+            "calmBaseRate": 0.11065573770491803,
+            "calmRiskyRate": 0.2777777777777778,
+            "lift": 2.5102880658436217,
+            "hitEpisodes": 2
+          },
+          "classification": "weak",
+          "reasons": [
+            "lift 1.26x does not clear the moderate bar with its evidence"
+          ]
+        },
+        {
+          "horizonKey": "10d",
+          "sessions": 10,
+          "secondary": false,
+          "threshold": -0.05,
+          "n": 930,
+          "riskyWindows": 357,
+          "safeWindows": 272,
+          "baseRate": 0.1064516129032258,
+          "riskyRate": 0.12044817927170869,
+          "safeRate": 0.11764705882352941,
+          "lift": 1.1314828961887786,
+          "firstHalfLift": 1.1276455026455026,
+          "secondHalfLift": 1.0224695938981652,
+          "hits": 43,
+          "hitEpisodes": 10,
+          "beyondVol": {
+            "calmWindows": 244,
+            "calmRiskyWindows": 18,
+            "calmBaseRate": 0.02459016393442623,
+            "calmRiskyRate": 0,
+            "lift": 0,
+            "hitEpisodes": 0
+          },
+          "classification": "weak",
+          "reasons": [
+            "lift 1.13x does not clear the moderate bar with its evidence"
+          ]
+        },
+        {
+          "horizonKey": "20d",
+          "sessions": 20,
+          "secondary": false,
+          "threshold": -0.03,
+          "n": 920,
+          "riskyWindows": 347,
+          "safeWindows": 272,
+          "baseRate": 0.3467391304347826,
+          "riskyRate": 0.40634005763688763,
+          "safeRate": 0.40441176470588236,
+          "lift": 1.1718898213979205,
+          "firstHalfLift": 1.262002743484225,
+          "secondHalfLift": 1.1268985791278787,
+          "hits": 141,
+          "hitEpisodes": 14,
+          "beyondVol": {
+            "calmWindows": 244,
+            "calmRiskyWindows": 18,
+            "calmBaseRate": 0.15163934426229508,
+            "calmRiskyRate": 0.3333333333333333,
+            "lift": 2.198198198198198,
+            "hitEpisodes": 2
+          },
+          "classification": "weak",
+          "reasons": [
+            "lift 1.17x does not clear the moderate bar with its evidence"
+          ]
+        },
+        {
+          "horizonKey": "20d",
+          "sessions": 20,
+          "secondary": false,
+          "threshold": -0.05,
+          "n": 920,
+          "riskyWindows": 347,
+          "safeWindows": 272,
+          "baseRate": 0.17717391304347826,
+          "riskyRate": 0.17579250720461095,
+          "safeRate": 0.22058823529411764,
+          "lift": 0.9922031081487244,
+          "firstHalfLift": 1.4223871366728509,
+          "secondHalfLift": 0.7502893823003262,
+          "hits": 61,
+          "hitEpisodes": 9,
+          "beyondVol": {
+            "calmWindows": 244,
+            "calmRiskyWindows": 18,
+            "calmBaseRate": 0.05737704918032787,
+            "calmRiskyRate": 0.16666666666666666,
+            "lift": 2.9047619047619047,
+            "hitEpisodes": 1
+          },
+          "classification": "unstable",
+          "reasons": [
+            "lift flips between halves (1.42x then 0.75x)"
+          ]
+        },
+        {
+          "horizonKey": "1m",
+          "sessions": 21,
+          "secondary": true,
+          "threshold": -0.03,
+          "n": 919,
+          "riskyWindows": 346,
+          "safeWindows": 272,
+          "baseRate": 0.35038084874863984,
+          "riskyRate": 0.41040462427745666,
+          "safeRate": 0.40808823529411764,
+          "lift": 1.1713100922701325,
+          "firstHalfLift": 1.266114982578397,
+          "secondHalfLift": 1.124856156501726,
+          "hits": 142,
+          "hitEpisodes": 14,
+          "beyondVol": {
+            "calmWindows": 244,
+            "calmRiskyWindows": 18,
+            "calmBaseRate": 0.15163934426229508,
+            "calmRiskyRate": 0.3333333333333333,
+            "lift": 2.198198198198198,
+            "hitEpisodes": 2
+          },
+          "classification": "weak",
+          "reasons": [
+            "lift 1.17x does not clear the moderate bar with its evidence"
+          ]
+        },
+        {
+          "horizonKey": "1m",
+          "sessions": 21,
+          "secondary": true,
+          "threshold": -0.05,
+          "n": 919,
+          "riskyWindows": 346,
+          "safeWindows": 272,
+          "baseRate": 0.18607181719260066,
+          "riskyRate": 0.18208092485549132,
+          "safeRate": 0.23161764705882354,
+          "lift": 0.9785518710069971,
+          "firstHalfLift": 1.4216027874564459,
+          "secondHalfLift": 0.7282941777323799,
+          "hits": 63,
+          "hitEpisodes": 9,
+          "beyondVol": {
+            "calmWindows": 244,
+            "calmRiskyWindows": 18,
+            "calmBaseRate": 0.06147540983606557,
+            "calmRiskyRate": 0.16666666666666666,
+            "lift": 2.711111111111111,
+            "hitEpisodes": 1
+          },
+          "classification": "unstable",
+          "reasons": [
+            "lift flips between halves (1.42x then 0.73x)"
+          ]
+        }
+      ],
+      "verdict": "unstable",
+      "verdictReason": "Lift inverts between sample halves in two or more primary cells."
+    },
+    {
+      "key": "breadth_ma200",
+      "family": "breadth",
+      "label": "Share of stocks above their 200-day average",
+      "riskyDirection": "low",
+      "coverage": {
+        "firstDate": "2023-04-17",
+        "lastDate": "2026-07-20",
+        "observations": 803
+      },
+      "cells": [
+        {
+          "horizonKey": "5d",
+          "sessions": 5,
+          "secondary": false,
+          "threshold": -0.03,
+          "n": 799,
+          "riskyWindows": 36,
+          "safeWindows": 577,
+          "baseRate": 0.15269086357947434,
+          "riskyRate": 0.5,
+          "safeRate": 0.1022530329289428,
+          "lift": 3.2745901639344264,
+          "firstHalfLift": null,
+          "secondHalfLift": 2.127659574468085,
+          "hits": 18,
+          "hitEpisodes": 5,
+          "beyondVol": {
+            "calmWindows": 193,
+            "calmRiskyWindows": 0,
+            "calmBaseRate": 0.015544041450777202,
+            "calmRiskyRate": null,
+            "lift": null,
+            "hitEpisodes": 0
+          },
+          "classification": "insufficient",
+          "reasons": [
+            "only 36 risky windows (need 60)"
+          ]
+        },
+        {
+          "horizonKey": "5d",
+          "sessions": 5,
+          "secondary": false,
+          "threshold": -0.05,
+          "n": 799,
+          "riskyWindows": 36,
+          "safeWindows": 577,
+          "baseRate": 0.0425531914893617,
+          "riskyRate": 0.16666666666666666,
+          "safeRate": 0.024263431542461005,
+          "lift": 3.9166666666666665,
+          "firstHalfLift": null,
+          "secondHalfLift": 2.6666666666666665,
+          "hits": 6,
+          "hitEpisodes": 2,
+          "beyondVol": {
+            "calmWindows": 193,
+            "calmRiskyWindows": 0,
+            "calmBaseRate": 0,
+            "calmRiskyRate": null,
+            "lift": null,
+            "hitEpisodes": 0
+          },
+          "classification": "insufficient",
+          "reasons": [
+            "only 36 risky windows (need 60)"
+          ]
+        },
+        {
+          "horizonKey": "10d",
+          "sessions": 10,
+          "secondary": false,
+          "threshold": -0.03,
+          "n": 794,
+          "riskyWindows": 36,
+          "safeWindows": 577,
+          "baseRate": 0.23425692695214106,
+          "riskyRate": 0.5277777777777778,
+          "safeRate": 0.18370883882149047,
+          "lift": 2.2529868578255674,
+          "firstHalfLift": null,
+          "secondHalfLift": 1.5753968253968254,
+          "hits": 19,
+          "hitEpisodes": 3,
+          "beyondVol": {
+            "calmWindows": 193,
+            "calmRiskyWindows": 0,
+            "calmBaseRate": 0.08290155440414508,
+            "calmRiskyRate": null,
+            "lift": null,
+            "hitEpisodes": 0
+          },
+          "classification": "insufficient",
+          "reasons": [
+            "only 36 risky windows (need 60)"
+          ]
+        },
+        {
+          "horizonKey": "10d",
+          "sessions": 10,
+          "secondary": false,
+          "threshold": -0.05,
+          "n": 794,
+          "riskyWindows": 36,
+          "safeWindows": 577,
+          "baseRate": 0.1070528967254408,
+          "riskyRate": 0.16666666666666666,
+          "safeRate": 0.058925476603119586,
+          "lift": 1.5568627450980392,
+          "firstHalfLift": null,
+          "secondHalfLift": 1.0502645502645502,
+          "hits": 6,
+          "hitEpisodes": 2,
+          "beyondVol": {
+            "calmWindows": 193,
+            "calmRiskyWindows": 0,
+            "calmBaseRate": 0.010362694300518135,
+            "calmRiskyRate": null,
+            "lift": null,
+            "hitEpisodes": 0
+          },
+          "classification": "insufficient",
+          "reasons": [
+            "only 36 risky windows (need 60)"
+          ]
+        },
+        {
+          "horizonKey": "20d",
+          "sessions": 20,
+          "secondary": false,
+          "threshold": -0.03,
+          "n": 784,
+          "riskyWindows": 36,
+          "safeWindows": 577,
+          "baseRate": 0.32908163265306123,
+          "riskyRate": 0.5277777777777778,
+          "safeRate": 0.292894280762565,
+          "lift": 1.603789836347976,
+          "firstHalfLift": null,
+          "secondHalfLift": 1.3177636234961077,
+          "hits": 19,
+          "hitEpisodes": 2,
+          "beyondVol": {
+            "calmWindows": 193,
+            "calmRiskyWindows": 0,
+            "calmBaseRate": 0.12953367875647667,
+            "calmRiskyRate": null,
+            "lift": null,
+            "hitEpisodes": 0
+          },
+          "classification": "insufficient",
+          "reasons": [
+            "only 36 risky windows (need 60)"
+          ]
+        },
+        {
+          "horizonKey": "20d",
+          "sessions": 20,
+          "secondary": false,
+          "threshold": -0.05,
+          "n": 784,
+          "riskyWindows": 36,
+          "safeWindows": 577,
+          "baseRate": 0.1683673469387755,
+          "riskyRate": 0.2222222222222222,
+          "safeRate": 0.12478336221837089,
+          "lift": 1.3198653198653199,
+          "firstHalfLift": null,
+          "secondHalfLift": 1.0129198966408268,
+          "hits": 8,
+          "hitEpisodes": 1,
+          "beyondVol": {
+            "calmWindows": 193,
+            "calmRiskyWindows": 0,
+            "calmBaseRate": 0.025906735751295335,
+            "calmRiskyRate": null,
+            "lift": null,
+            "hitEpisodes": 0
+          },
+          "classification": "insufficient",
+          "reasons": [
+            "only 36 risky windows (need 60)"
+          ]
+        },
+        {
+          "horizonKey": "1m",
+          "sessions": 21,
+          "secondary": true,
+          "threshold": -0.03,
+          "n": 783,
+          "riskyWindows": 36,
+          "safeWindows": 577,
+          "baseRate": 0.3333333333333333,
+          "riskyRate": 0.5277777777777778,
+          "safeRate": 0.29982668977469673,
+          "lift": 1.5833333333333335,
+          "firstHalfLift": null,
+          "secondHalfLift": 1.309423347398031,
+          "hits": 19,
+          "hitEpisodes": 2,
+          "beyondVol": {
+            "calmWindows": 193,
+            "calmRiskyWindows": 0,
+            "calmBaseRate": 0.12953367875647667,
+            "calmRiskyRate": null,
+            "lift": null,
+            "hitEpisodes": 0
+          },
+          "classification": "insufficient",
+          "reasons": [
+            "only 36 risky windows (need 60)"
+          ]
+        },
+        {
+          "horizonKey": "1m",
+          "sessions": 21,
+          "secondary": true,
+          "threshold": -0.05,
+          "n": 783,
+          "riskyWindows": 36,
+          "safeWindows": 577,
+          "baseRate": 0.17624521072796934,
+          "riskyRate": 0.2222222222222222,
+          "safeRate": 0.1317157712305026,
+          "lift": 1.2608695652173914,
+          "firstHalfLift": null,
+          "secondHalfLift": 0.978776529338327,
+          "hits": 8,
+          "hitEpisodes": 1,
+          "beyondVol": {
+            "calmWindows": 193,
+            "calmRiskyWindows": 0,
+            "calmBaseRate": 0.031088082901554404,
+            "calmRiskyRate": null,
+            "lift": null,
+            "hitEpisodes": 0
+          },
+          "classification": "insufficient",
+          "reasons": [
+            "only 36 risky windows (need 60)"
+          ]
+        }
+      ],
+      "verdict": "insufficient",
+      "verdictReason": "No primary cell carries enough windows or distinct episodes to judge."
+    },
+    {
+      "key": "breadth_advance_10d",
+      "family": "breadth",
+      "label": "Advance share, 10-session mean",
+      "riskyDirection": "low",
+      "coverage": {
+        "firstDate": "2022-07-18",
+        "lastDate": "2026-07-21",
+        "observations": 994
+      },
+      "cells": [
+        {
+          "horizonKey": "5d",
+          "sessions": 5,
+          "secondary": false,
+          "threshold": -0.03,
+          "n": 989,
+          "riskyWindows": 314,
+          "safeWindows": 331,
+          "baseRate": 0.1385237613751264,
+          "riskyRate": 0.1751592356687898,
+          "safeRate": 0.12386706948640483,
+          "lift": 1.2644706866892927,
+          "firstHalfLift": 1.2211601845748188,
+          "secondHalfLift": 1.2424698795180722,
+          "hits": 55,
+          "hitEpisodes": 17,
+          "beyondVol": {
+            "calmWindows": 263,
+            "calmRiskyWindows": 73,
+            "calmBaseRate": 0.030418250950570342,
+            "calmRiskyRate": 0.0410958904109589,
+            "lift": 1.351027397260274,
+            "hitEpisodes": 2
+          },
+          "classification": "moderate",
+          "reasons": [
+            "lift 1.26x on 17 episodes, direction holds in both halves"
+          ]
+        },
+        {
+          "horizonKey": "5d",
+          "sessions": 5,
+          "secondary": false,
+          "threshold": -0.05,
+          "n": 989,
+          "riskyWindows": 314,
+          "safeWindows": 331,
+          "baseRate": 0.03842264914054601,
+          "riskyRate": 0.06687898089171974,
+          "safeRate": 0.03927492447129909,
+          "lift": 1.7406134763660743,
+          "firstHalfLift": 1.0270270270270272,
+          "secondHalfLift": 2.027710843373494,
+          "hits": 21,
+          "hitEpisodes": 7,
+          "beyondVol": {
+            "calmWindows": 263,
+            "calmRiskyWindows": 73,
+            "calmBaseRate": 0.0038022813688212928,
+            "calmRiskyRate": 0.0136986301369863,
+            "lift": 3.602739726027397,
+            "hitEpisodes": 1
+          },
+          "classification": "weak",
+          "reasons": [
+            "lift 1.74x does not clear the moderate bar with its evidence"
+          ]
+        },
+        {
+          "horizonKey": "10d",
+          "sessions": 10,
+          "secondary": false,
+          "threshold": -0.03,
+          "n": 984,
+          "riskyWindows": 314,
+          "safeWindows": 327,
+          "baseRate": 0.22967479674796748,
+          "riskyRate": 0.267515923566879,
+          "safeRate": 0.20795107033639143,
+          "lift": 1.1647595964150836,
+          "firstHalfLift": 1.232614637109019,
+          "secondHalfLift": 1.1033330401899568,
+          "hits": 84,
+          "hitEpisodes": 16,
+          "beyondVol": {
+            "calmWindows": 263,
+            "calmRiskyWindows": 73,
+            "calmBaseRate": 0.11406844106463879,
+            "calmRiskyRate": 0.0958904109589041,
+            "lift": 0.8406392694063927,
+            "hitEpisodes": 3
+          },
+          "classification": "weak",
+          "reasons": [
+            "lift 1.16x does not clear the moderate bar with its evidence"
+          ]
+        },
+        {
+          "horizonKey": "10d",
+          "sessions": 10,
+          "secondary": false,
+          "threshold": -0.05,
+          "n": 984,
+          "riskyWindows": 314,
+          "safeWindows": 327,
+          "baseRate": 0.10060975609756098,
+          "riskyRate": 0.14968152866242038,
+          "safeRate": 0.10091743119266056,
+          "lift": 1.4877436788264813,
+          "firstHalfLift": 1.4247104247104247,
+          "secondHalfLift": 1.4819277108433735,
+          "hits": 47,
+          "hitEpisodes": 8,
+          "beyondVol": {
+            "calmWindows": 263,
+            "calmRiskyWindows": 73,
+            "calmBaseRate": 0.022813688212927757,
+            "calmRiskyRate": 0.0547945205479452,
+            "lift": 2.401826484018265,
+            "hitEpisodes": 1
+          },
+          "classification": "weak",
+          "reasons": [
+            "lift 1.49x does not clear the moderate bar with its evidence"
+          ]
+        },
+        {
+          "horizonKey": "20d",
+          "sessions": 20,
+          "secondary": false,
+          "threshold": -0.03,
+          "n": 974,
+          "riskyWindows": 314,
+          "safeWindows": 317,
+          "baseRate": 0.3470225872689938,
+          "riskyRate": 0.3853503184713376,
+          "safeRate": 0.334384858044164,
+          "lift": 1.1104473674292392,
+          "firstHalfLift": 1.0841665364786752,
+          "secondHalfLift": 1.1379335523913836,
+          "hits": 121,
+          "hitEpisodes": 13,
+          "beyondVol": {
+            "calmWindows": 263,
+            "calmRiskyWindows": 73,
+            "calmBaseRate": 0.1520912547528517,
+            "calmRiskyRate": 0.0958904109589041,
+            "lift": 0.6304794520547945,
+            "hitEpisodes": 3
+          },
+          "classification": "weak",
+          "reasons": [
+            "lift 1.11x does not clear the moderate bar with its evidence"
+          ]
+        },
+        {
+          "horizonKey": "20d",
+          "sessions": 20,
+          "secondary": false,
+          "threshold": -0.05,
+          "n": 974,
+          "riskyWindows": 314,
+          "safeWindows": 317,
+          "baseRate": 0.16837782340862423,
+          "riskyRate": 0.22929936305732485,
+          "safeRate": 0.13564668769716087,
+          "lift": 1.361814509864844,
+          "firstHalfLift": 1.125711237553343,
+          "secondHalfLift": 1.5335432639649507,
+          "hits": 72,
+          "hitEpisodes": 8,
+          "beyondVol": {
+            "calmWindows": 263,
+            "calmRiskyWindows": 73,
+            "calmBaseRate": 0.053231939163498096,
+            "calmRiskyRate": 0.0547945205479452,
+            "lift": 1.0293542074363993,
+            "hitEpisodes": 1
+          },
+          "classification": "weak",
+          "reasons": [
+            "lift 1.36x does not clear the moderate bar with its evidence"
+          ]
+        },
+        {
+          "horizonKey": "1m",
+          "sessions": 21,
+          "secondary": true,
+          "threshold": -0.03,
+          "n": 973,
+          "riskyWindows": 314,
+          "safeWindows": 316,
+          "baseRate": 0.35046248715313466,
+          "riskyRate": 0.3853503184713376,
+          "safeRate": 0.33860759493670883,
+          "lift": 1.099547976166016,
+          "firstHalfLift": 1.0757222739981362,
+          "secondHalfLift": 1.1243056056561578,
+          "hits": 121,
+          "hitEpisodes": 13,
+          "beyondVol": {
+            "calmWindows": 263,
+            "calmRiskyWindows": 73,
+            "calmBaseRate": 0.1520912547528517,
+            "calmRiskyRate": 0.0958904109589041,
+            "lift": 0.6304794520547945,
+            "hitEpisodes": 3
+          },
+          "classification": "weak",
+          "reasons": [
+            "lift 1.10x does not clear the moderate bar with its evidence"
+          ]
+        },
+        {
+          "horizonKey": "1m",
+          "sessions": 21,
+          "secondary": true,
+          "threshold": -0.05,
+          "n": 973,
+          "riskyWindows": 314,
+          "safeWindows": 316,
+          "baseRate": 0.17882836587872558,
+          "riskyRate": 0.24203821656050956,
+          "safeRate": 0.14240506329113925,
+          "lift": 1.3534665788125047,
+          "firstHalfLift": 1.147346141322045,
+          "secondHalfLift": 1.5152257381173047,
+          "hits": 76,
+          "hitEpisodes": 8,
+          "beyondVol": {
+            "calmWindows": 263,
+            "calmRiskyWindows": 73,
+            "calmBaseRate": 0.057034220532319393,
+            "calmRiskyRate": 0.0547945205479452,
+            "lift": 0.9607305936073058,
+            "hitEpisodes": 1
+          },
+          "classification": "weak",
+          "reasons": [
+            "lift 1.35x does not clear the moderate bar with its evidence"
+          ]
+        }
+      ],
+      "verdict": "moderate",
+      "verdictReason": "Moderate at the 3% / 5d cell: lift 1.26x on 17 episodes, direction holds in both halves."
+    },
+    {
+      "key": "breadth_newlows_10d",
+      "family": "breadth",
+      "label": "New 52-week lows share, 10-session mean",
+      "riskyDirection": "high",
+      "coverage": {
+        "firstDate": "2023-07-18",
+        "lastDate": "2026-07-21",
+        "observations": 745
+      },
+      "cells": [
+        {
+          "horizonKey": "5d",
+          "sessions": 5,
+          "secondary": false,
+          "threshold": -0.03,
+          "n": 740,
+          "riskyWindows": 40,
+          "safeWindows": 467,
+          "baseRate": 0.1635135135135135,
+          "riskyRate": 0.525,
+          "safeRate": 0.15417558886509636,
+          "lift": 3.210743801652893,
+          "firstHalfLift": null,
+          "secondHalfLift": 2.2852941176470587,
+          "hits": 21,
+          "hitEpisodes": 6,
+          "beyondVol": {
+            "calmWindows": 160,
+            "calmRiskyWindows": 0,
+            "calmBaseRate": 0.0125,
+            "calmRiskyRate": null,
+            "lift": null,
+            "hitEpisodes": 0
+          },
+          "classification": "insufficient",
+          "reasons": [
+            "only 40 risky windows (need 60)"
+          ]
+        },
+        {
+          "horizonKey": "5d",
+          "sessions": 5,
+          "secondary": false,
+          "threshold": -0.05,
+          "n": 740,
+          "riskyWindows": 40,
+          "safeWindows": 467,
+          "baseRate": 0.04594594594594595,
+          "riskyRate": 0.25,
+          "safeRate": 0.03640256959314775,
+          "lift": 5.441176470588235,
+          "firstHalfLift": null,
+          "secondHalfLift": 4.404761904761904,
+          "hits": 10,
+          "hitEpisodes": 3,
+          "beyondVol": {
+            "calmWindows": 160,
+            "calmRiskyWindows": 0,
+            "calmBaseRate": 0,
+            "calmRiskyRate": null,
+            "lift": null,
+            "hitEpisodes": 0
+          },
+          "classification": "insufficient",
+          "reasons": [
+            "only 40 risky windows (need 60)"
+          ]
+        },
+        {
+          "horizonKey": "10d",
+          "sessions": 10,
+          "secondary": false,
+          "threshold": -0.03,
+          "n": 735,
+          "riskyWindows": 40,
+          "safeWindows": 462,
+          "baseRate": 0.24217687074829933,
+          "riskyRate": 0.55,
+          "safeRate": 0.24891774891774893,
+          "lift": 2.271067415730337,
+          "firstHalfLift": null,
+          "secondHalfLift": 1.6727272727272728,
+          "hits": 22,
+          "hitEpisodes": 4,
+          "beyondVol": {
+            "calmWindows": 160,
+            "calmRiskyWindows": 0,
+            "calmBaseRate": 0.05,
+            "calmRiskyRate": null,
+            "lift": null,
+            "hitEpisodes": 0
+          },
+          "classification": "insufficient",
+          "reasons": [
+            "only 40 risky windows (need 60)"
+          ]
+        },
+        {
+          "horizonKey": "10d",
+          "sessions": 10,
+          "secondary": false,
+          "threshold": -0.05,
+          "n": 735,
+          "riskyWindows": 40,
+          "safeWindows": 462,
+          "baseRate": 0.11564625850340136,
+          "riskyRate": 0.3,
+          "safeRate": 0.1038961038961039,
+          "lift": 2.594117647058823,
+          "firstHalfLift": null,
+          "secondHalfLift": 1.8711864406779661,
+          "hits": 12,
+          "hitEpisodes": 2,
+          "beyondVol": {
+            "calmWindows": 160,
+            "calmRiskyWindows": 0,
+            "calmBaseRate": 0.0125,
+            "calmRiskyRate": null,
+            "lift": null,
+            "hitEpisodes": 0
+          },
+          "classification": "insufficient",
+          "reasons": [
+            "only 40 risky windows (need 60)"
+          ]
+        },
+        {
+          "horizonKey": "20d",
+          "sessions": 20,
+          "secondary": false,
+          "threshold": -0.03,
+          "n": 725,
+          "riskyWindows": 40,
+          "safeWindows": 452,
+          "baseRate": 0.33655172413793105,
+          "riskyRate": 0.55,
+          "safeRate": 0.3584070796460177,
+          "lift": 1.6342213114754098,
+          "firstHalfLift": null,
+          "secondHalfLift": 1.376896551724138,
+          "hits": 22,
+          "hitEpisodes": 3,
+          "beyondVol": {
+            "calmWindows": 160,
+            "calmRiskyWindows": 0,
+            "calmBaseRate": 0.075,
+            "calmRiskyRate": null,
+            "lift": null,
+            "hitEpisodes": 0
+          },
+          "classification": "insufficient",
+          "reasons": [
+            "only 40 risky windows (need 60)"
+          ]
+        },
+        {
+          "horizonKey": "20d",
+          "sessions": 20,
+          "secondary": false,
+          "threshold": -0.05,
+          "n": 725,
+          "riskyWindows": 40,
+          "safeWindows": 452,
+          "baseRate": 0.1820689655172414,
+          "riskyRate": 0.35,
+          "safeRate": 0.18141592920353983,
+          "lift": 1.9223484848484846,
+          "firstHalfLift": null,
+          "secondHalfLift": 1.549390243902439,
+          "hits": 14,
+          "hitEpisodes": 2,
+          "beyondVol": {
+            "calmWindows": 160,
+            "calmRiskyWindows": 0,
+            "calmBaseRate": 0.03125,
+            "calmRiskyRate": null,
+            "lift": null,
+            "hitEpisodes": 0
+          },
+          "classification": "insufficient",
+          "reasons": [
+            "only 40 risky windows (need 60)"
+          ]
+        },
+        {
+          "horizonKey": "1m",
+          "sessions": 21,
+          "secondary": true,
+          "threshold": -0.03,
+          "n": 724,
+          "riskyWindows": 40,
+          "safeWindows": 451,
+          "baseRate": 0.3411602209944751,
+          "riskyRate": 0.55,
+          "safeRate": 0.36585365853658536,
+          "lift": 1.6121457489878543,
+          "firstHalfLift": null,
+          "secondHalfLift": 1.3731034482758622,
+          "hits": 22,
+          "hitEpisodes": 3,
+          "beyondVol": {
+            "calmWindows": 160,
+            "calmRiskyWindows": 0,
+            "calmBaseRate": 0.075,
+            "calmRiskyRate": null,
+            "lift": null,
+            "hitEpisodes": 0
+          },
+          "classification": "insufficient",
+          "reasons": [
+            "only 40 risky windows (need 60)"
+          ]
+        },
+        {
+          "horizonKey": "1m",
+          "sessions": 21,
+          "secondary": true,
+          "threshold": -0.05,
+          "n": 724,
+          "riskyWindows": 40,
+          "safeWindows": 451,
+          "baseRate": 0.19060773480662985,
+          "riskyRate": 0.35,
+          "safeRate": 0.19068736141906872,
+          "lift": 1.8362318840579708,
+          "firstHalfLift": null,
+          "secondHalfLift": 1.4905882352941175,
+          "hits": 14,
+          "hitEpisodes": 2,
+          "beyondVol": {
+            "calmWindows": 160,
+            "calmRiskyWindows": 0,
+            "calmBaseRate": 0.0375,
+            "calmRiskyRate": null,
+            "lift": null,
+            "hitEpisodes": 0
+          },
+          "classification": "insufficient",
+          "reasons": [
+            "only 40 risky windows (need 60)"
+          ]
+        }
+      ],
+      "verdict": "insufficient",
+      "verdictReason": "No primary cell carries enough windows or distinct episodes to judge."
+    },
+    {
+      "key": "breadth_dispersion_10d",
+      "family": "breadth",
+      "label": "Cross-sectional dispersion, 10-session mean",
+      "riskyDirection": "high",
+      "coverage": {
+        "firstDate": "2022-07-18",
+        "lastDate": "2026-07-21",
+        "observations": 994
+      },
+      "cells": [
+        {
+          "horizonKey": "5d",
+          "sessions": 5,
+          "secondary": false,
+          "threshold": -0.03,
+          "n": 989,
+          "riskyWindows": 376,
+          "safeWindows": 328,
+          "baseRate": 0.1385237613751264,
+          "riskyRate": 0.1622340425531915,
+          "safeRate": 0.125,
+          "lift": 1.1711640006212145,
+          "firstHalfLift": 1.0501230700380397,
+          "secondHalfLift": 1.3706487341772151,
+          "hits": 61,
+          "hitEpisodes": 18,
+          "beyondVol": {
+            "calmWindows": 263,
+            "calmRiskyWindows": 76,
+            "calmBaseRate": 0.030418250950570342,
+            "calmRiskyRate": 0.05263157894736842,
+            "lift": 1.7302631578947367,
+            "hitEpisodes": 3
+          },
+          "classification": "weak",
+          "reasons": [
+            "lift 1.17x does not clear the moderate bar with its evidence"
+          ]
+        },
+        {
+          "horizonKey": "5d",
+          "sessions": 5,
+          "secondary": false,
+          "threshold": -0.05,
+          "n": 989,
+          "riskyWindows": 376,
+          "safeWindows": 328,
+          "baseRate": 0.03842264914054601,
+          "riskyRate": 0.05585106382978723,
+          "safeRate": 0.01524390243902439,
+          "lift": 1.453597424412094,
+          "firstHalfLift": 1.2201834862385323,
+          "secondHalfLift": 1.7544303797468355,
+          "hits": 21,
+          "hitEpisodes": 8,
+          "beyondVol": {
+            "calmWindows": 263,
+            "calmRiskyWindows": 76,
+            "calmBaseRate": 0.0038022813688212928,
+            "calmRiskyRate": 0.013157894736842105,
+            "lift": 3.4605263157894735,
+            "hitEpisodes": 1
+          },
+          "classification": "weak",
+          "reasons": [
+            "lift 1.45x does not clear the moderate bar with its evidence"
+          ]
+        },
+        {
+          "horizonKey": "10d",
+          "sessions": 10,
+          "secondary": false,
+          "threshold": -0.03,
+          "n": 984,
+          "riskyWindows": 374,
+          "safeWindows": 325,
+          "baseRate": 0.22967479674796748,
+          "riskyRate": 0.23529411764705882,
+          "safeRate": 0.24615384615384617,
+          "lift": 1.0244664237376366,
+          "firstHalfLift": 0.9469413233458177,
+          "secondHalfLift": 1.159198004250208,
+          "hits": 88,
+          "hitEpisodes": 15,
+          "beyondVol": {
+            "calmWindows": 263,
+            "calmRiskyWindows": 76,
+            "calmBaseRate": 0.11406844106463879,
+            "calmRiskyRate": 0.13157894736842105,
+            "lift": 1.1535087719298245,
+            "hitEpisodes": 3
+          },
+          "classification": "weak",
+          "reasons": [
+            "lift 1.02x does not clear the moderate bar with its evidence"
+          ]
+        },
+        {
+          "horizonKey": "10d",
+          "sessions": 10,
+          "secondary": false,
+          "threshold": -0.05,
+          "n": 984,
+          "riskyWindows": 374,
+          "safeWindows": 325,
+          "baseRate": 0.10060975609756098,
+          "riskyRate": 0.12566844919786097,
+          "safeRate": 0.08923076923076922,
+          "lift": 1.2490682223302543,
+          "firstHalfLift": 1.3015873015873016,
+          "secondHalfLift": 1.3136867088607593,
+          "hits": 47,
+          "hitEpisodes": 10,
+          "beyondVol": {
+            "calmWindows": 263,
+            "calmRiskyWindows": 76,
+            "calmBaseRate": 0.022813688212927757,
+            "calmRiskyRate": 0.05263157894736842,
+            "lift": 2.307017543859649,
+            "hitEpisodes": 1
+          },
+          "classification": "weak",
+          "reasons": [
+            "lift 1.25x does not clear the moderate bar with its evidence"
+          ]
+        },
+        {
+          "horizonKey": "20d",
+          "sessions": 20,
+          "secondary": false,
+          "threshold": -0.03,
+          "n": 974,
+          "riskyWindows": 374,
+          "safeWindows": 318,
+          "baseRate": 0.3470225872689938,
+          "riskyRate": 0.3342245989304813,
+          "safeRate": 0.3867924528301887,
+          "lift": 0.9631205898174224,
+          "firstHalfLift": 0.8805303673670658,
+          "secondHalfLift": 1.0683398401189812,
+          "hits": 125,
+          "hitEpisodes": 16,
+          "beyondVol": {
+            "calmWindows": 263,
+            "calmRiskyWindows": 76,
+            "calmBaseRate": 0.1520912547528517,
+            "calmRiskyRate": 0.18421052631578946,
+            "lift": 1.2111842105263158,
+            "hitEpisodes": 5
+          },
+          "classification": "weak",
+          "reasons": [
+            "lift 0.96x does not clear the moderate bar with its evidence"
+          ]
+        },
+        {
+          "horizonKey": "20d",
+          "sessions": 20,
+          "secondary": false,
+          "threshold": -0.05,
+          "n": 974,
+          "riskyWindows": 374,
+          "safeWindows": 318,
+          "baseRate": 0.16837782340862423,
+          "riskyRate": 0.16042780748663102,
+          "safeRate": 0.22327044025157233,
+          "lift": 0.9527846615364549,
+          "firstHalfLift": 0.9110750810675978,
+          "secondHalfLift": 1.0185443390964861,
+          "hits": 60,
+          "hitEpisodes": 9,
+          "beyondVol": {
+            "calmWindows": 263,
+            "calmRiskyWindows": 76,
+            "calmBaseRate": 0.053231939163498096,
+            "calmRiskyRate": 0.09210526315789473,
+            "lift": 1.730263157894737,
+            "hitEpisodes": 2
+          },
+          "classification": "weak",
+          "reasons": [
+            "lift 0.95x does not clear the moderate bar with its evidence"
+          ]
+        },
+        {
+          "horizonKey": "1m",
+          "sessions": 21,
+          "secondary": true,
+          "threshold": -0.03,
+          "n": 973,
+          "riskyWindows": 374,
+          "safeWindows": 318,
+          "baseRate": 0.35046248715313466,
+          "riskyRate": 0.339572192513369,
+          "safeRate": 0.389937106918239,
+          "lift": 0.9689259334765631,
+          "firstHalfLift": 0.8911330049261084,
+          "secondHalfLift": 1.0668906090258508,
+          "hits": 127,
+          "hitEpisodes": 15,
+          "beyondVol": {
+            "calmWindows": 263,
+            "calmRiskyWindows": 76,
+            "calmBaseRate": 0.1520912547528517,
+            "calmRiskyRate": 0.18421052631578946,
+            "lift": 1.2111842105263158,
+            "hitEpisodes": 5
+          },
+          "classification": "weak",
+          "reasons": [
+            "lift 0.97x does not clear the moderate bar with its evidence"
+          ]
+        },
+        {
+          "horizonKey": "1m",
+          "sessions": 21,
+          "secondary": true,
+          "threshold": -0.05,
+          "n": 973,
+          "riskyWindows": 374,
+          "safeWindows": 318,
+          "baseRate": 0.17882836587872558,
+          "riskyRate": 0.1657754010695187,
+          "safeRate": 0.2389937106918239,
+          "lift": 0.9270084209232282,
+          "firstHalfLift": 0.8922547332185887,
+          "secondHalfLift": 0.978960064325918,
+          "hits": 62,
+          "hitEpisodes": 9,
+          "beyondVol": {
+            "calmWindows": 263,
+            "calmRiskyWindows": 76,
+            "calmBaseRate": 0.057034220532319393,
+            "calmRiskyRate": 0.09210526315789473,
+            "lift": 1.6149122807017542,
+            "hitEpisodes": 2
+          },
+          "classification": "weak",
+          "reasons": [
+            "lift 0.93x does not clear the moderate bar with its evidence"
+          ]
+        }
+      ],
+      "verdict": "weak",
+      "verdictReason": "No primary cell clears the moderate bar."
+    },
+    {
+      "key": "breadth_upvol_10d",
+      "family": "breadth",
+      "label": "Up-volume share, 10-session mean",
+      "riskyDirection": "low",
+      "coverage": {
+        "firstDate": "2022-07-18",
+        "lastDate": "2026-07-21",
+        "observations": 994
+      },
+      "cells": [
+        {
+          "horizonKey": "5d",
+          "sessions": 5,
+          "secondary": false,
+          "threshold": -0.03,
+          "n": 989,
+          "riskyWindows": 214,
+          "safeWindows": 472,
+          "baseRate": 0.1385237613751264,
+          "riskyRate": 0.2102803738317757,
+          "safeRate": 0.11228813559322035,
+          "lift": 1.5180094140118698,
+          "firstHalfLift": 1.364012885411873,
+          "secondHalfLift": 1.5755208333333335,
+          "hits": 45,
+          "hitEpisodes": 13,
+          "beyondVol": {
+            "calmWindows": 263,
+            "calmRiskyWindows": 34,
+            "calmBaseRate": 0.030418250950570342,
+            "calmRiskyRate": 0,
+            "lift": 0,
+            "hitEpisodes": 0
+          },
+          "classification": "weak",
+          "reasons": [
+            "lift 1.52x does not clear the moderate bar with its evidence"
+          ]
+        },
+        {
+          "horizonKey": "5d",
+          "sessions": 5,
+          "secondary": false,
+          "threshold": -0.05,
+          "n": 989,
+          "riskyWindows": 214,
+          "safeWindows": 472,
+          "baseRate": 0.03842264914054601,
+          "riskyRate": 0.06542056074766354,
+          "safeRate": 0.03177966101694915,
+          "lift": 1.702656173143138,
+          "firstHalfLift": 0.3584905660377359,
+          "secondHalfLift": 2.3833333333333333,
+          "hits": 14,
+          "hitEpisodes": 6,
+          "beyondVol": {
+            "calmWindows": 263,
+            "calmRiskyWindows": 34,
+            "calmBaseRate": 0.0038022813688212928,
+            "calmRiskyRate": 0,
+            "lift": 0,
+            "hitEpisodes": 0
+          },
+          "classification": "unstable",
+          "reasons": [
+            "lift flips between halves (0.36x then 2.38x)"
+          ]
+        },
+        {
+          "horizonKey": "10d",
+          "sessions": 10,
+          "secondary": false,
+          "threshold": -0.03,
+          "n": 984,
+          "riskyWindows": 214,
+          "safeWindows": 468,
+          "baseRate": 0.22967479674796748,
+          "riskyRate": 0.308411214953271,
+          "safeRate": 0.19230769230769232,
+          "lift": 1.3428169713009677,
+          "firstHalfLift": 1.1473394106423573,
+          "secondHalfLift": 1.4630981346309813,
+          "hits": 66,
+          "hitEpisodes": 13,
+          "beyondVol": {
+            "calmWindows": 263,
+            "calmRiskyWindows": 34,
+            "calmBaseRate": 0.11406844106463879,
+            "calmRiskyRate": 0.08823529411764706,
+            "lift": 0.7735294117647059,
+            "hitEpisodes": 2
+          },
+          "classification": "redundant",
+          "reasons": [
+            "lift 1.34x overall but 0.77x within calm volatility; the information is volatility's"
+          ]
+        },
+        {
+          "horizonKey": "10d",
+          "sessions": 10,
+          "secondary": false,
+          "threshold": -0.05,
+          "n": 984,
+          "riskyWindows": 214,
+          "safeWindows": 468,
+          "baseRate": 0.10060975609756098,
+          "riskyRate": 0.1588785046728972,
+          "safeRate": 0.08974358974358974,
+          "lift": 1.579156046445766,
+          "firstHalfLift": 1.4587601078167116,
+          "secondHalfLift": 1.6371527777777777,
+          "hits": 34,
+          "hitEpisodes": 9,
+          "beyondVol": {
+            "calmWindows": 263,
+            "calmRiskyWindows": 34,
+            "calmBaseRate": 0.022813688212927757,
+            "calmRiskyRate": 0.029411764705882353,
+            "lift": 1.2892156862745097,
+            "hitEpisodes": 1
+          },
+          "classification": "weak",
+          "reasons": [
+            "lift 1.58x does not clear the moderate bar with its evidence"
+          ]
+        },
+        {
+          "horizonKey": "20d",
+          "sessions": 20,
+          "secondary": false,
+          "threshold": -0.03,
+          "n": 974,
+          "riskyWindows": 214,
+          "safeWindows": 458,
+          "baseRate": 0.3470225872689938,
+          "riskyRate": 0.4672897196261682,
+          "safeRate": 0.3034934497816594,
+          "lift": 1.3465686003428636,
+          "firstHalfLift": 1.1685025629839678,
+          "secondHalfLift": 1.5304152637485968,
+          "hits": 100,
+          "hitEpisodes": 14,
+          "beyondVol": {
+            "calmWindows": 263,
+            "calmRiskyWindows": 34,
+            "calmBaseRate": 0.1520912547528517,
+            "calmRiskyRate": 0.17647058823529413,
+            "lift": 1.160294117647059,
+            "hitEpisodes": 3
+          },
+          "classification": "moderate",
+          "reasons": [
+            "lift 1.35x on 14 episodes, direction holds in both halves"
+          ]
+        },
+        {
+          "horizonKey": "20d",
+          "sessions": 20,
+          "secondary": false,
+          "threshold": -0.05,
+          "n": 974,
+          "riskyWindows": 214,
+          "safeWindows": 458,
+          "baseRate": 0.16837782340862423,
+          "riskyRate": 0.2570093457943925,
+          "safeRate": 0.1462882096069869,
+          "lift": 1.5263847731935263,
+          "firstHalfLift": 1.2090367428003972,
+          "secondHalfLift": 1.793455387205387,
+          "hits": 55,
+          "hitEpisodes": 8,
+          "beyondVol": {
+            "calmWindows": 263,
+            "calmRiskyWindows": 34,
+            "calmBaseRate": 0.053231939163498096,
+            "calmRiskyRate": 0.029411764705882353,
+            "lift": 0.5525210084033614,
+            "hitEpisodes": 1
+          },
+          "classification": "weak",
+          "reasons": [
+            "lift 1.53x does not clear the moderate bar with its evidence"
+          ]
+        },
+        {
+          "horizonKey": "1m",
+          "sessions": 21,
+          "secondary": true,
+          "threshold": -0.03,
+          "n": 973,
+          "riskyWindows": 214,
+          "safeWindows": 457,
+          "baseRate": 0.35046248715313466,
+          "riskyRate": 0.4672897196261682,
+          "safeRate": 0.3085339168490153,
+          "lift": 1.3333516046811191,
+          "firstHalfLift": 1.159401431359792,
+          "secondHalfLift": 1.512086937236638,
+          "hits": 100,
+          "hitEpisodes": 14,
+          "beyondVol": {
+            "calmWindows": 263,
+            "calmRiskyWindows": 34,
+            "calmBaseRate": 0.1520912547528517,
+            "calmRiskyRate": 0.17647058823529413,
+            "lift": 1.160294117647059,
+            "hitEpisodes": 3
+          },
+          "classification": "moderate",
+          "reasons": [
+            "lift 1.33x on 14 episodes, direction holds in both halves"
+          ]
+        },
+        {
+          "horizonKey": "1m",
+          "sessions": 21,
+          "secondary": true,
+          "threshold": -0.05,
+          "n": 973,
+          "riskyWindows": 214,
+          "safeWindows": 457,
+          "baseRate": 0.17882836587872558,
+          "riskyRate": 0.27102803738317754,
+          "safeRate": 0.15317286652078774,
+          "lift": 1.5155763239875388,
+          "firstHalfLift": 1.1600363719027051,
+          "secondHalfLift": 1.8334350834350837,
+          "hits": 58,
+          "hitEpisodes": 8,
+          "beyondVol": {
+            "calmWindows": 263,
+            "calmRiskyWindows": 34,
+            "calmBaseRate": 0.057034220532319393,
+            "calmRiskyRate": 0.029411764705882353,
+            "lift": 0.5156862745098039,
+            "hitEpisodes": 1
+          },
+          "classification": "weak",
+          "reasons": [
+            "lift 1.52x does not clear the moderate bar with its evidence"
+          ]
+        }
+      ],
+      "verdict": "moderate",
+      "verdictReason": "Moderate at the 3% / 20d cell: lift 1.35x on 14 episodes, direction holds in both halves."
+    },
+    {
+      "key": "fipi_net_21d",
+      "family": "flows",
+      "label": "Foreign net flow, 21-session sum (USD mn)",
+      "riskyDirection": "low",
+      "coverage": {
+        "firstDate": "2022-08-23",
+        "lastDate": "2026-07-21",
+        "observations": 970
+      },
+      "cells": [
+        {
+          "horizonKey": "5d",
+          "sessions": 5,
+          "secondary": false,
+          "threshold": -0.03,
+          "n": 965,
+          "riskyWindows": 432,
+          "safeWindows": 345,
+          "baseRate": 0.14093264248704662,
+          "riskyRate": 0.19907407407407407,
+          "safeRate": 0.08115942028985507,
+          "lift": 1.4125476579520697,
+          "firstHalfLift": 2.450847457627119,
+          "secondHalfLift": 0.9981568364611261,
+          "hits": 86,
+          "hitEpisodes": 22,
+          "beyondVol": {
+            "calmWindows": 263,
+            "calmRiskyWindows": 115,
+            "calmBaseRate": 0.030418250950570342,
+            "calmRiskyRate": 0.008695652173913044,
+            "lift": 0.2858695652173913,
+            "hitEpisodes": 1
+          },
+          "classification": "weak",
+          "reasons": [
+            "lift 1.41x does not clear the moderate bar with its evidence"
+          ]
+        },
+        {
+          "horizonKey": "5d",
+          "sessions": 5,
+          "secondary": false,
+          "threshold": -0.05,
+          "n": 965,
+          "riskyWindows": 432,
+          "safeWindows": 345,
+          "baseRate": 0.039378238341968914,
+          "riskyRate": 0.05092592592592592,
+          "safeRate": 0.03188405797101449,
+          "lift": 1.2932504873294346,
+          "firstHalfLift": 1.8852672750977837,
+          "secondHalfLift": 0.9841286863270777,
+          "hits": 22,
+          "hitEpisodes": 9,
+          "beyondVol": {
+            "calmWindows": 263,
+            "calmRiskyWindows": 115,
+            "calmBaseRate": 0.0038022813688212928,
+            "calmRiskyRate": 0,
+            "lift": 0,
+            "hitEpisodes": 0
+          },
+          "classification": "weak",
+          "reasons": [
+            "lift 1.29x does not clear the moderate bar with its evidence"
+          ]
+        },
+        {
+          "horizonKey": "10d",
+          "sessions": 10,
+          "secondary": false,
+          "threshold": -0.03,
+          "n": 960,
+          "riskyWindows": 427,
+          "safeWindows": 345,
+          "baseRate": 0.23333333333333334,
+          "riskyRate": 0.28337236533957844,
+          "safeRate": 0.19710144927536233,
+          "lift": 1.2144529943124789,
+          "firstHalfLift": 1.736812035802704,
+          "secondHalfLift": 0.9855072463768116,
+          "hits": 121,
+          "hitEpisodes": 19,
+          "beyondVol": {
+            "calmWindows": 263,
+            "calmRiskyWindows": 115,
+            "calmBaseRate": 0.11406844106463879,
+            "calmRiskyRate": 0.06086956521739131,
+            "lift": 0.5336231884057971,
+            "hitEpisodes": 2
+          },
+          "classification": "weak",
+          "reasons": [
+            "lift 1.21x does not clear the moderate bar with its evidence"
+          ]
+        },
+        {
+          "horizonKey": "10d",
+          "sessions": 10,
+          "secondary": false,
+          "threshold": -0.05,
+          "n": 960,
+          "riskyWindows": 427,
+          "safeWindows": 345,
+          "baseRate": 0.103125,
+          "riskyRate": 0.12646370023419204,
+          "safeRate": 0.08115942028985507,
+          "lift": 1.2263146689376199,
+          "firstHalfLift": 2.4858757062146895,
+          "secondHalfLift": 0.8902691511387164,
+          "hits": 54,
+          "hitEpisodes": 12,
+          "beyondVol": {
+            "calmWindows": 263,
+            "calmRiskyWindows": 115,
+            "calmBaseRate": 0.022813688212927757,
+            "calmRiskyRate": 0.017391304347826087,
+            "lift": 0.7623188405797101,
+            "hitEpisodes": 1
+          },
+          "classification": "unstable",
+          "reasons": [
+            "lift flips between halves (2.49x then 0.89x)"
+          ]
+        },
+        {
+          "horizonKey": "20d",
+          "sessions": 20,
+          "secondary": false,
+          "threshold": -0.03,
+          "n": 950,
+          "riskyWindows": 417,
+          "safeWindows": 345,
+          "baseRate": 0.34842105263157896,
+          "riskyRate": 0.3405275779376499,
+          "safeRate": 0.3565217391304348,
+          "lift": 0.9773450122077564,
+          "firstHalfLift": 1.2492694330800702,
+          "secondHalfLift": 0.97187133046294,
+          "hits": 142,
+          "hitEpisodes": 14,
+          "beyondVol": {
+            "calmWindows": 263,
+            "calmRiskyWindows": 115,
+            "calmBaseRate": 0.1520912547528517,
+            "calmRiskyRate": 0.09565217391304348,
+            "lift": 0.6289130434782609,
+            "hitEpisodes": 3
+          },
+          "classification": "weak",
+          "reasons": [
+            "lift 0.98x does not clear the moderate bar with its evidence"
+          ]
+        },
+        {
+          "horizonKey": "20d",
+          "sessions": 20,
+          "secondary": false,
+          "threshold": -0.05,
+          "n": 950,
+          "riskyWindows": 417,
+          "safeWindows": 345,
+          "baseRate": 0.1726315789473684,
+          "riskyRate": 0.17026378896882494,
+          "safeRate": 0.17391304347826086,
+          "lift": 0.9862841434169738,
+          "firstHalfLift": 1.4450239026510214,
+          "secondHalfLift": 0.8794010653501363,
+          "hits": 71,
+          "hitEpisodes": 10,
+          "beyondVol": {
+            "calmWindows": 263,
+            "calmRiskyWindows": 115,
+            "calmBaseRate": 0.053231939163498096,
+            "calmRiskyRate": 0.017391304347826087,
+            "lift": 0.3267080745341615,
+            "hitEpisodes": 1
+          },
+          "classification": "unstable",
+          "reasons": [
+            "lift flips between halves (1.45x then 0.88x)"
+          ]
+        },
+        {
+          "horizonKey": "1m",
+          "sessions": 21,
+          "secondary": true,
+          "threshold": -0.03,
+          "n": 949,
+          "riskyWindows": 416,
+          "safeWindows": 345,
+          "baseRate": 0.3519494204425711,
+          "riskyRate": 0.34375,
+          "safeRate": 0.36231884057971014,
+          "lift": 0.9767028443113773,
+          "firstHalfLift": 1.232473035439137,
+          "secondHalfLift": 0.9768464347764422,
+          "hits": 143,
+          "hitEpisodes": 14,
+          "beyondVol": {
+            "calmWindows": 263,
+            "calmRiskyWindows": 115,
+            "calmBaseRate": 0.1520912547528517,
+            "calmRiskyRate": 0.09565217391304348,
+            "lift": 0.6289130434782609,
+            "hitEpisodes": 3
+          },
+          "classification": "weak",
+          "reasons": [
+            "lift 0.98x does not clear the moderate bar with its evidence"
+          ]
+        },
+        {
+          "horizonKey": "1m",
+          "sessions": 21,
+          "secondary": true,
+          "threshold": -0.05,
+          "n": 949,
+          "riskyWindows": 416,
+          "safeWindows": 345,
+          "baseRate": 0.1833508956796628,
+          "riskyRate": 0.17548076923076922,
+          "safeRate": 0.18840579710144928,
+          "lift": 0.9570761494252873,
+          "firstHalfLift": 1.3232303090727817,
+          "secondHalfLift": 0.8820382085418437,
+          "hits": 73,
+          "hitEpisodes": 10,
+          "beyondVol": {
+            "calmWindows": 263,
+            "calmRiskyWindows": 115,
+            "calmBaseRate": 0.057034220532319393,
+            "calmRiskyRate": 0.02608695652173913,
+            "lift": 0.45739130434782604,
+            "hitEpisodes": 1
+          },
+          "classification": "unstable",
+          "reasons": [
+            "lift flips between halves (1.32x then 0.88x)"
+          ]
+        }
+      ],
+      "verdict": "unstable",
+      "verdictReason": "Lift inverts between sample halves in two or more primary cells."
+    },
+    {
+      "key": "fipi_net_63d",
+      "family": "flows",
+      "label": "Foreign net flow, 63-session sum (USD mn)",
+      "riskyDirection": "low",
+      "coverage": {
+        "firstDate": "2022-10-07",
+        "lastDate": "2026-07-21",
+        "observations": 937
+      },
+      "cells": [
+        {
+          "horizonKey": "5d",
+          "sessions": 5,
+          "secondary": false,
+          "threshold": -0.03,
+          "n": 932,
+          "riskyWindows": 422,
+          "safeWindows": 353,
+          "baseRate": 0.1459227467811159,
+          "riskyRate": 0.22748815165876776,
+          "safeRate": 0.09348441926345609,
+          "lift": 1.5589629216615555,
+          "firstHalfLift": null,
+          "secondHalfLift": 1.1042654028436019,
+          "hits": 96,
+          "hitEpisodes": 23,
+          "beyondVol": {
+            "calmWindows": 241,
+            "calmRiskyWindows": 88,
+            "calmBaseRate": 0.03319502074688797,
+            "calmRiskyRate": 0.011363636363636364,
+            "lift": 0.34232954545454547,
+            "hitEpisodes": 1
+          },
+          "classification": "weak",
+          "reasons": [
+            "stability across halves not measurable; capped at moderate",
+            "lift 1.56x does not clear the moderate bar with its evidence"
+          ]
+        },
+        {
+          "horizonKey": "5d",
+          "sessions": 5,
+          "secondary": false,
+          "threshold": -0.05,
+          "n": 932,
+          "riskyWindows": 422,
+          "safeWindows": 353,
+          "baseRate": 0.0407725321888412,
+          "riskyRate": 0.05924170616113744,
+          "safeRate": 0.028328611898016998,
+          "lift": 1.4529807932152659,
+          "firstHalfLift": null,
+          "secondHalfLift": 1.1042654028436019,
+          "hits": 25,
+          "hitEpisodes": 10,
+          "beyondVol": {
+            "calmWindows": 241,
+            "calmRiskyWindows": 88,
+            "calmBaseRate": 0.004149377593360996,
+            "calmRiskyRate": 0,
+            "lift": 0,
+            "hitEpisodes": 0
+          },
+          "classification": "weak",
+          "reasons": [
+            "stability across halves not measurable; capped at moderate",
+            "lift 1.45x does not clear the moderate bar with its evidence"
+          ]
+        },
+        {
+          "horizonKey": "10d",
+          "sessions": 10,
+          "secondary": false,
+          "threshold": -0.03,
+          "n": 927,
+          "riskyWindows": 417,
+          "safeWindows": 353,
+          "baseRate": 0.23624595469255663,
+          "riskyRate": 0.3237410071942446,
+          "safeRate": 0.1813031161473088,
+          "lift": 1.3703557701783777,
+          "firstHalfLift": null,
+          "secondHalfLift": 1.1127098321342925,
+          "hits": 135,
+          "hitEpisodes": 19,
+          "beyondVol": {
+            "calmWindows": 241,
+            "calmRiskyWindows": 88,
+            "calmBaseRate": 0.11203319502074689,
+            "calmRiskyRate": 0.07954545454545454,
+            "lift": 0.710016835016835,
+            "hitEpisodes": 2
+          },
+          "classification": "redundant",
+          "reasons": [
+            "stability across halves not measurable; capped at moderate",
+            "lift 1.37x overall but 0.71x within calm volatility; the information is volatility's"
+          ]
+        },
+        {
+          "horizonKey": "10d",
+          "sessions": 10,
+          "secondary": false,
+          "threshold": -0.05,
+          "n": 927,
+          "riskyWindows": 417,
+          "safeWindows": 353,
+          "baseRate": 0.10679611650485436,
+          "riskyRate": 0.1510791366906475,
+          "safeRate": 0.07932011331444759,
+          "lift": 1.4146500981033356,
+          "firstHalfLift": null,
+          "secondHalfLift": 1.1127098321342925,
+          "hits": 63,
+          "hitEpisodes": 13,
+          "beyondVol": {
+            "calmWindows": 241,
+            "calmRiskyWindows": 88,
+            "calmBaseRate": 0.024896265560165973,
+            "calmRiskyRate": 0.022727272727272728,
+            "lift": 0.912878787878788,
+            "hitEpisodes": 1
+          },
+          "classification": "weak",
+          "reasons": [
+            "stability across halves not measurable; capped at moderate",
+            "lift 1.41x does not clear the moderate bar with its evidence"
+          ]
+        },
+        {
+          "horizonKey": "20d",
+          "sessions": 20,
+          "secondary": false,
+          "threshold": -0.03,
+          "n": 917,
+          "riskyWindows": 409,
+          "safeWindows": 353,
+          "baseRate": 0.3478735005452563,
+          "riskyRate": 0.37163814180929094,
+          "safeRate": 0.3597733711048159,
+          "lift": 1.068314031470595,
+          "firstHalfLift": null,
+          "secondHalfLift": 1.086508962359647,
+          "hits": 152,
+          "hitEpisodes": 11,
+          "beyondVol": {
+            "calmWindows": 241,
+            "calmRiskyWindows": 88,
+            "calmBaseRate": 0.15352697095435686,
+            "calmRiskyRate": 0.09090909090909091,
+            "lift": 0.5921375921375921,
+            "hitEpisodes": 2
+          },
+          "classification": "weak",
+          "reasons": [
+            "stability across halves not measurable; capped at moderate",
+            "lift 1.07x does not clear the moderate bar with its evidence"
+          ]
+        },
+        {
+          "horizonKey": "20d",
+          "sessions": 20,
+          "secondary": false,
+          "threshold": -0.05,
+          "n": 917,
+          "riskyWindows": 409,
+          "safeWindows": 353,
+          "baseRate": 0.1777535441657579,
+          "riskyRate": 0.21026894865525672,
+          "safeRate": 0.18980169971671387,
+          "lift": 1.1829240853795733,
+          "firstHalfLift": null,
+          "secondHalfLift": 1.1222493887530562,
+          "hits": 86,
+          "hitEpisodes": 9,
+          "beyondVol": {
+            "calmWindows": 241,
+            "calmRiskyWindows": 88,
+            "calmBaseRate": 0.058091286307053944,
+            "calmRiskyRate": 0.022727272727272728,
+            "lift": 0.3912337662337662,
+            "hitEpisodes": 1
+          },
+          "classification": "weak",
+          "reasons": [
+            "stability across halves not measurable; capped at moderate",
+            "lift 1.18x does not clear the moderate bar with its evidence"
+          ]
+        },
+        {
+          "horizonKey": "1m",
+          "sessions": 21,
+          "secondary": true,
+          "threshold": -0.03,
+          "n": 916,
+          "riskyWindows": 409,
+          "safeWindows": 353,
+          "baseRate": 0.35152838427947597,
+          "riskyRate": 0.3765281173594132,
+          "safeRate": 0.3654390934844193,
+          "lift": 1.0711172531093867,
+          "firstHalfLift": null,
+          "secondHalfLift": 1.091454922472223,
+          "hits": 154,
+          "hitEpisodes": 11,
+          "beyondVol": {
+            "calmWindows": 241,
+            "calmRiskyWindows": 88,
+            "calmBaseRate": 0.15352697095435686,
+            "calmRiskyRate": 0.09090909090909091,
+            "lift": 0.5921375921375921,
+            "hitEpisodes": 2
+          },
+          "classification": "weak",
+          "reasons": [
+            "stability across halves not measurable; capped at moderate",
+            "lift 1.07x does not clear the moderate bar with its evidence"
+          ]
+        },
+        {
+          "horizonKey": "1m",
+          "sessions": 21,
+          "secondary": true,
+          "threshold": -0.05,
+          "n": 916,
+          "riskyWindows": 409,
+          "safeWindows": 353,
+          "baseRate": 0.18668122270742357,
+          "riskyRate": 0.2176039119804401,
+          "safeRate": 0.20396600566572237,
+          "lift": 1.1656443472168605,
+          "firstHalfLift": null,
+          "secondHalfLift": 1.119804400977995,
+          "hits": 89,
+          "hitEpisodes": 9,
+          "beyondVol": {
+            "calmWindows": 241,
+            "calmRiskyWindows": 88,
+            "calmBaseRate": 0.06224066390041494,
+            "calmRiskyRate": 0.03409090909090909,
+            "lift": 0.5477272727272727,
+            "hitEpisodes": 1
+          },
+          "classification": "weak",
+          "reasons": [
+            "stability across halves not measurable; capped at moderate",
+            "lift 1.17x does not clear the moderate bar with its evidence"
+          ]
+        }
+      ],
+      "verdict": "redundant",
+      "verdictReason": "Lift exists but disappears within calm volatility; the signal restates volatility."
+    },
+    {
+      "key": "pkr_chg_63d",
+      "family": "macro",
+      "label": "PKR depreciation over 3 months",
+      "riskyDirection": "high",
+      "coverage": {
+        "firstDate": "2022-10-04",
+        "lastDate": "2026-07-21",
+        "observations": 940
+      },
+      "cells": [
+        {
+          "horizonKey": "5d",
+          "sessions": 5,
+          "secondary": false,
+          "threshold": -0.03,
+          "n": 935,
+          "riskyWindows": 69,
+          "safeWindows": 624,
+          "baseRate": 0.14545454545454545,
+          "riskyRate": 0.057971014492753624,
+          "safeRate": 0.15224358974358973,
+          "lift": 0.3985507246376812,
+          "firstHalfLift": 0.6867647058823529,
+          "secondHalfLift": null,
+          "hits": 4,
+          "hitEpisodes": 2,
+          "beyondVol": {
+            "calmWindows": 244,
+            "calmRiskyWindows": 36,
+            "calmBaseRate": 0.03278688524590164,
+            "calmRiskyRate": 0.08333333333333333,
+            "lift": 2.5416666666666665,
+            "hitEpisodes": 1
+          },
+          "classification": "insufficient",
+          "reasons": [
+            "only 2 distinct hit episodes (need 3)"
+          ]
+        },
+        {
+          "horizonKey": "5d",
+          "sessions": 5,
+          "secondary": false,
+          "threshold": -0.05,
+          "n": 935,
+          "riskyWindows": 69,
+          "safeWindows": 624,
+          "baseRate": 0.040641711229946524,
+          "riskyRate": 0,
+          "safeRate": 0.041666666666666664,
+          "lift": 0,
+          "firstHalfLift": 0,
+          "secondHalfLift": null,
+          "hits": 0,
+          "hitEpisodes": 0,
+          "beyondVol": {
+            "calmWindows": 244,
+            "calmRiskyWindows": 36,
+            "calmBaseRate": 0.004098360655737705,
+            "calmRiskyRate": 0,
+            "lift": 0,
+            "hitEpisodes": 0
+          },
+          "classification": "insufficient",
+          "reasons": [
+            "only 0 distinct hit episodes (need 3)"
+          ]
+        },
+        {
+          "horizonKey": "10d",
+          "sessions": 10,
+          "secondary": false,
+          "threshold": -0.03,
+          "n": 930,
+          "riskyWindows": 69,
+          "safeWindows": 620,
+          "baseRate": 0.23548387096774193,
+          "riskyRate": 0.13043478260869565,
+          "safeRate": 0.24516129032258063,
+          "lift": 0.5539011316259679,
+          "firstHalfLift": 0.7326680672268908,
+          "secondHalfLift": null,
+          "hits": 9,
+          "hitEpisodes": 2,
+          "beyondVol": {
+            "calmWindows": 244,
+            "calmRiskyWindows": 36,
+            "calmBaseRate": 0.11065573770491803,
+            "calmRiskyRate": 0.16666666666666666,
+            "lift": 1.5061728395061729,
+            "hitEpisodes": 1
+          },
+          "classification": "insufficient",
+          "reasons": [
+            "only 2 distinct hit episodes (need 3)"
+          ]
+        },
+        {
+          "horizonKey": "10d",
+          "sessions": 10,
+          "secondary": false,
+          "threshold": -0.05,
+          "n": 930,
+          "riskyWindows": 69,
+          "safeWindows": 620,
+          "baseRate": 0.1064516129032258,
+          "riskyRate": 0,
+          "safeRate": 0.11774193548387096,
+          "lift": 0,
+          "firstHalfLift": 0,
+          "secondHalfLift": null,
+          "hits": 0,
+          "hitEpisodes": 0,
+          "beyondVol": {
+            "calmWindows": 244,
+            "calmRiskyWindows": 36,
+            "calmBaseRate": 0.02459016393442623,
+            "calmRiskyRate": 0,
+            "lift": 0,
+            "hitEpisodes": 0
+          },
+          "classification": "insufficient",
+          "reasons": [
+            "only 0 distinct hit episodes (need 3)"
+          ]
+        },
+        {
+          "horizonKey": "20d",
+          "sessions": 20,
+          "secondary": false,
+          "threshold": -0.03,
+          "n": 920,
+          "riskyWindows": 69,
+          "safeWindows": 610,
+          "baseRate": 0.3467391304347826,
+          "riskyRate": 0.2463768115942029,
+          "safeRate": 0.3622950819672131,
+          "lift": 0.71055381400209,
+          "firstHalfLift": 0.7098765432098765,
+          "secondHalfLift": null,
+          "hits": 17,
+          "hitEpisodes": 3,
+          "beyondVol": {
+            "calmWindows": 244,
+            "calmRiskyWindows": 36,
+            "calmBaseRate": 0.15163934426229508,
+            "calmRiskyRate": 0.19444444444444445,
+            "lift": 1.2822822822822824,
+            "hitEpisodes": 2
+          },
+          "classification": "weak",
+          "reasons": [
+            "stability across halves not measurable; capped at moderate",
+            "lift 0.71x does not clear the moderate bar with its evidence"
+          ]
+        },
+        {
+          "horizonKey": "20d",
+          "sessions": 20,
+          "secondary": false,
+          "threshold": -0.05,
+          "n": 920,
+          "riskyWindows": 69,
+          "safeWindows": 610,
+          "baseRate": 0.17717391304347826,
+          "riskyRate": 0.057971014492753624,
+          "safeRate": 0.19836065573770492,
+          "lift": 0.32719836400818,
+          "firstHalfLift": 0.35141329258976317,
+          "secondHalfLift": null,
+          "hits": 4,
+          "hitEpisodes": 1,
+          "beyondVol": {
+            "calmWindows": 244,
+            "calmRiskyWindows": 36,
+            "calmBaseRate": 0.05737704918032787,
+            "calmRiskyRate": 0.08333333333333333,
+            "lift": 1.4523809523809523,
+            "hitEpisodes": 1
+          },
+          "classification": "insufficient",
+          "reasons": [
+            "only 1 distinct hit episodes (need 3)"
+          ]
+        },
+        {
+          "horizonKey": "1m",
+          "sessions": 21,
+          "secondary": true,
+          "threshold": -0.03,
+          "n": 919,
+          "riskyWindows": 69,
+          "safeWindows": 609,
+          "baseRate": 0.35038084874863984,
+          "riskyRate": 0.2463768115942029,
+          "safeRate": 0.367816091954023,
+          "lift": 0.7031686020343866,
+          "firstHalfLift": 0.6996951219512194,
+          "secondHalfLift": null,
+          "hits": 17,
+          "hitEpisodes": 3,
+          "beyondVol": {
+            "calmWindows": 244,
+            "calmRiskyWindows": 36,
+            "calmBaseRate": 0.15163934426229508,
+            "calmRiskyRate": 0.19444444444444445,
+            "lift": 1.2822822822822824,
+            "hitEpisodes": 2
+          },
+          "classification": "weak",
+          "reasons": [
+            "stability across halves not measurable; capped at moderate",
+            "lift 0.70x does not clear the moderate bar with its evidence"
+          ]
+        },
+        {
+          "horizonKey": "1m",
+          "sessions": 21,
+          "secondary": true,
+          "threshold": -0.05,
+          "n": 919,
+          "riskyWindows": 69,
+          "safeWindows": 609,
+          "baseRate": 0.18607181719260066,
+          "riskyRate": 0.057971014492753624,
+          "safeRate": 0.20853858784893267,
+          "lift": 0.3115518264259683,
+          "firstHalfLift": 0.3292682926829268,
+          "secondHalfLift": null,
+          "hits": 4,
+          "hitEpisodes": 1,
+          "beyondVol": {
+            "calmWindows": 244,
+            "calmRiskyWindows": 36,
+            "calmBaseRate": 0.06147540983606557,
+            "calmRiskyRate": 0.08333333333333333,
+            "lift": 1.3555555555555554,
+            "hitEpisodes": 1
+          },
+          "classification": "insufficient",
+          "reasons": [
+            "only 1 distinct hit episodes (need 3)"
+          ]
+        }
+      ],
+      "verdict": "weak",
+      "verdictReason": "No primary cell clears the moderate bar."
+    },
+    {
+      "key": "gold_mom_63d",
+      "family": "macro",
+      "label": "Gold (USD) 3-month momentum",
+      "riskyDirection": "high",
+      "coverage": {
+        "firstDate": "2022-10-04",
+        "lastDate": "2026-07-21",
+        "observations": 940
+      },
+      "cells": [
+        {
+          "horizonKey": "5d",
+          "sessions": 5,
+          "secondary": false,
+          "threshold": -0.03,
+          "n": 935,
+          "riskyWindows": 534,
+          "safeWindows": 167,
+          "baseRate": 0.14545454545454545,
+          "riskyRate": 0.15917602996254682,
+          "safeRate": 0.1497005988023952,
+          "lift": 1.0943352059925093,
+          "firstHalfLift": 1.1005122950819672,
+          "secondHalfLift": 1.0422413793103449,
+          "hits": 85,
+          "hitEpisodes": 21,
+          "beyondVol": {
+            "calmWindows": 244,
+            "calmRiskyWindows": 148,
+            "calmBaseRate": 0.03278688524590164,
+            "calmRiskyRate": 0.05405405405405406,
+            "lift": 1.6486486486486487,
+            "hitEpisodes": 5
+          },
+          "classification": "weak",
+          "reasons": [
+            "lift 1.09x does not clear the moderate bar with its evidence"
+          ]
+        },
+        {
+          "horizonKey": "5d",
+          "sessions": 5,
+          "secondary": false,
+          "threshold": -0.05,
+          "n": 935,
+          "riskyWindows": 534,
+          "safeWindows": 167,
+          "baseRate": 0.040641711229946524,
+          "riskyRate": 0.05056179775280899,
+          "safeRate": 0.03592814371257485,
+          "lift": 1.244086339444116,
+          "firstHalfLift": 1.325031525851198,
+          "secondHalfLift": 1.1619310344827587,
+          "hits": 27,
+          "hitEpisodes": 9,
+          "beyondVol": {
+            "calmWindows": 244,
+            "calmRiskyWindows": 148,
+            "calmBaseRate": 0.004098360655737705,
+            "calmRiskyRate": 0.006756756756756757,
+            "lift": 1.6486486486486487,
+            "hitEpisodes": 1
+          },
+          "classification": "weak",
+          "reasons": [
+            "lift 1.24x does not clear the moderate bar with its evidence"
+          ]
+        },
+        {
+          "horizonKey": "10d",
+          "sessions": 10,
+          "secondary": false,
+          "threshold": -0.03,
+          "n": 930,
+          "riskyWindows": 534,
+          "safeWindows": 162,
+          "baseRate": 0.23548387096774193,
+          "riskyRate": 0.26217228464419473,
+          "safeRate": 0.22839506172839505,
+          "lift": 1.1133343594479503,
+          "firstHalfLift": 1.1570550351288058,
+          "secondHalfLift": 1.057088122605364,
+          "hits": 140,
+          "hitEpisodes": 20,
+          "beyondVol": {
+            "calmWindows": 244,
+            "calmRiskyWindows": 148,
+            "calmBaseRate": 0.11065573770491803,
+            "calmRiskyRate": 0.17567567567567569,
+            "lift": 1.5875875875875878,
+            "hitEpisodes": 7
+          },
+          "classification": "weak",
+          "reasons": [
+            "lift 1.11x does not clear the moderate bar with its evidence"
+          ]
+        },
+        {
+          "horizonKey": "10d",
+          "sessions": 10,
+          "secondary": false,
+          "threshold": -0.05,
+          "n": 930,
+          "riskyWindows": 534,
+          "safeWindows": 162,
+          "baseRate": 0.1064516129032258,
+          "riskyRate": 0.1254681647940075,
+          "safeRate": 0.11728395061728394,
+          "lift": 1.1786403359437068,
+          "firstHalfLift": 1.1646174863387977,
+          "secondHalfLift": 1.145320197044335,
+          "hits": 67,
+          "hitEpisodes": 11,
+          "beyondVol": {
+            "calmWindows": 244,
+            "calmRiskyWindows": 148,
+            "calmBaseRate": 0.02459016393442623,
+            "calmRiskyRate": 0.04054054054054054,
+            "lift": 1.6486486486486487,
+            "hitEpisodes": 2
+          },
+          "classification": "weak",
+          "reasons": [
+            "lift 1.18x does not clear the moderate bar with its evidence"
+          ]
+        },
+        {
+          "horizonKey": "20d",
+          "sessions": 20,
+          "secondary": false,
+          "threshold": -0.03,
+          "n": 920,
+          "riskyWindows": 534,
+          "safeWindows": 152,
+          "baseRate": 0.3467391304347826,
+          "riskyRate": 0.38764044943820225,
+          "safeRate": 0.3026315789473684,
+          "lift": 1.117959916875066,
+          "firstHalfLift": 1.201782695558629,
+          "secondHalfLift": 1.049977174409252,
+          "hits": 207,
+          "hitEpisodes": 18,
+          "beyondVol": {
+            "calmWindows": 244,
+            "calmRiskyWindows": 148,
+            "calmBaseRate": 0.15163934426229508,
+            "calmRiskyRate": 0.22297297297297297,
+            "lift": 1.4704163623082542,
+            "hitEpisodes": 7
+          },
+          "classification": "weak",
+          "reasons": [
+            "lift 1.12x does not clear the moderate bar with its evidence"
+          ]
+        },
+        {
+          "horizonKey": "20d",
+          "sessions": 20,
+          "secondary": false,
+          "threshold": -0.05,
+          "n": 920,
+          "riskyWindows": 534,
+          "safeWindows": 152,
+          "baseRate": 0.17717391304347826,
+          "riskyRate": 0.20599250936329588,
+          "safeRate": 0.16447368421052633,
+          "lift": 1.1626571080627743,
+          "firstHalfLift": 0.991539580751199,
+          "secondHalfLift": 1.2778791967616476,
+          "hits": 110,
+          "hitEpisodes": 11,
+          "beyondVol": {
+            "calmWindows": 244,
+            "calmRiskyWindows": 148,
+            "calmBaseRate": 0.05737704918032787,
+            "calmRiskyRate": 0.06756756756756757,
+            "lift": 1.1776061776061777,
+            "hitEpisodes": 3
+          },
+          "classification": "weak",
+          "reasons": [
+            "lift 1.16x does not clear the moderate bar with its evidence"
+          ]
+        },
+        {
+          "horizonKey": "1m",
+          "sessions": 21,
+          "secondary": true,
+          "threshold": -0.03,
+          "n": 919,
+          "riskyWindows": 534,
+          "safeWindows": 151,
+          "baseRate": 0.35038084874863984,
+          "riskyRate": 0.3895131086142322,
+          "safeRate": 0.31125827814569534,
+          "lift": 1.1116849280014889,
+          "firstHalfLift": 1.1961592956178524,
+          "secondHalfLift": 1.043331749254763,
+          "hits": 208,
+          "hitEpisodes": 18,
+          "beyondVol": {
+            "calmWindows": 244,
+            "calmRiskyWindows": 148,
+            "calmBaseRate": 0.15163934426229508,
+            "calmRiskyRate": 0.22297297297297297,
+            "lift": 1.4704163623082542,
+            "hitEpisodes": 7
+          },
+          "classification": "weak",
+          "reasons": [
+            "lift 1.11x does not clear the moderate bar with its evidence"
+          ]
+        },
+        {
+          "horizonKey": "1m",
+          "sessions": 21,
+          "secondary": true,
+          "threshold": -0.05,
+          "n": 919,
+          "riskyWindows": 534,
+          "safeWindows": 151,
+          "baseRate": 0.18607181719260066,
+          "riskyRate": 0.21722846441947566,
+          "safeRate": 0.16556291390728478,
+          "lift": 1.167444203517533,
+          "firstHalfLift": 0.9987349458556826,
+          "secondHalfLift": 1.2877248149710472,
+          "hits": 116,
+          "hitEpisodes": 11,
+          "beyondVol": {
+            "calmWindows": 244,
+            "calmRiskyWindows": 148,
+            "calmBaseRate": 0.06147540983606557,
+            "calmRiskyRate": 0.07432432432432433,
+            "lift": 1.209009009009009,
+            "hitEpisodes": 3
+          },
+          "classification": "weak",
+          "reasons": [
+            "lift 1.17x does not clear the moderate bar with its evidence"
+          ]
+        }
+      ],
+      "verdict": "weak",
+      "verdictReason": "No primary cell clears the moderate bar."
+    },
+    {
+      "key": "policy_chg_63d",
+      "family": "macro",
+      "label": "Policy-rate change over 3 months (pp)",
+      "riskyDirection": "high",
+      "coverage": {
+        "firstDate": "2022-10-04",
+        "lastDate": "2026-07-21",
+        "observations": 940
+      },
+      "cells": [
+        {
+          "horizonKey": "5d",
+          "sessions": 5,
+          "secondary": false,
+          "threshold": -0.03,
+          "n": 935,
+          "riskyWindows": 237,
+          "safeWindows": 346,
+          "baseRate": 0.14545454545454545,
+          "riskyRate": 0.16455696202531644,
+          "safeRate": 0.18208092485549132,
+          "lift": 1.1313291139240507,
+          "firstHalfLift": 0.7296875,
+          "secondHalfLift": 0.9862716763005781,
+          "hits": 39,
+          "hitEpisodes": 10,
+          "beyondVol": {
+            "calmWindows": 244,
+            "calmRiskyWindows": 50,
+            "calmBaseRate": 0.03278688524590164,
+            "calmRiskyRate": 0.02,
+            "lift": 0.61,
+            "hitEpisodes": 1
+          },
+          "classification": "weak",
+          "reasons": [
+            "lift 1.13x does not clear the moderate bar with its evidence"
+          ]
+        },
+        {
+          "horizonKey": "5d",
+          "sessions": 5,
+          "secondary": false,
+          "threshold": -0.05,
+          "n": 935,
+          "riskyWindows": 237,
+          "safeWindows": 346,
+          "baseRate": 0.040641711229946524,
+          "riskyRate": 0.03375527426160337,
+          "safeRate": 0.057803468208092484,
+          "lift": 0.8305574061736619,
+          "firstHalfLift": 1.6838942307692308,
+          "secondHalfLift": 0.5410404624277457,
+          "hits": 8,
+          "hitEpisodes": 6,
+          "beyondVol": {
+            "calmWindows": 244,
+            "calmRiskyWindows": 50,
+            "calmBaseRate": 0.004098360655737705,
+            "calmRiskyRate": 0,
+            "lift": 0,
+            "hitEpisodes": 0
+          },
+          "classification": "unstable",
+          "reasons": [
+            "lift flips between halves (1.68x then 0.54x)"
+          ]
+        },
+        {
+          "horizonKey": "10d",
+          "sessions": 10,
+          "secondary": false,
+          "threshold": -0.03,
+          "n": 930,
+          "riskyWindows": 232,
+          "safeWindows": 346,
+          "baseRate": 0.23548387096774193,
+          "riskyRate": 0.2672413793103448,
+          "safeRate": 0.24855491329479767,
+          "lift": 1.134860651865848,
+          "firstHalfLift": 0.9514508928571429,
+          "secondHalfLift": 1.0456349206349205,
+          "hits": 62,
+          "hitEpisodes": 9,
+          "beyondVol": {
+            "calmWindows": 244,
+            "calmRiskyWindows": 50,
+            "calmBaseRate": 0.11065573770491803,
+            "calmRiskyRate": 0.1,
+            "lift": 0.9037037037037038,
+            "hitEpisodes": 1
+          },
+          "classification": "weak",
+          "reasons": [
+            "lift 1.13x does not clear the moderate bar with its evidence"
+          ]
+        },
+        {
+          "horizonKey": "10d",
+          "sessions": 10,
+          "secondary": false,
+          "threshold": -0.05,
+          "n": 930,
+          "riskyWindows": 232,
+          "safeWindows": 346,
+          "baseRate": 0.1064516129032258,
+          "riskyRate": 0.125,
+          "safeRate": 0.12427745664739884,
+          "lift": 1.1742424242424243,
+          "firstHalfLift": 1.6145833333333333,
+          "secondHalfLift": 0.9226190476190476,
+          "hits": 29,
+          "hitEpisodes": 8,
+          "beyondVol": {
+            "calmWindows": 244,
+            "calmRiskyWindows": 50,
+            "calmBaseRate": 0.02459016393442623,
+            "calmRiskyRate": 0.04,
+            "lift": 1.6266666666666667,
+            "hitEpisodes": 1
+          },
+          "classification": "weak",
+          "reasons": [
+            "lift 1.17x does not clear the moderate bar with its evidence"
+          ]
+        },
+        {
+          "horizonKey": "20d",
+          "sessions": 20,
+          "secondary": false,
+          "threshold": -0.03,
+          "n": 920,
+          "riskyWindows": 222,
+          "safeWindows": 346,
+          "baseRate": 0.3467391304347826,
+          "riskyRate": 0.31981981981981983,
+          "safeRate": 0.33815028901734107,
+          "lift": 0.9223643706402327,
+          "firstHalfLift": 0.8873456790123456,
+          "secondHalfLift": 0.9457389341288399,
+          "hits": 71,
+          "hitEpisodes": 7,
+          "beyondVol": {
+            "calmWindows": 244,
+            "calmRiskyWindows": 50,
+            "calmBaseRate": 0.15163934426229508,
+            "calmRiskyRate": 0.16,
+            "lift": 1.0551351351351352,
+            "hitEpisodes": 2
+          },
+          "classification": "weak",
+          "reasons": [
+            "lift 0.92x does not clear the moderate bar with its evidence"
+          ]
+        },
+        {
+          "horizonKey": "20d",
+          "sessions": 20,
+          "secondary": false,
+          "threshold": -0.05,
+          "n": 920,
+          "riskyWindows": 222,
+          "safeWindows": 346,
+          "baseRate": 0.17717391304347826,
+          "riskyRate": 0.17567567567567569,
+          "safeRate": 0.1936416184971098,
+          "lift": 0.991543690930194,
+          "firstHalfLift": 1.6801948051948052,
+          "secondHalfLift": 0.7109214012363849,
+          "hits": 39,
+          "hitEpisodes": 5,
+          "beyondVol": {
+            "calmWindows": 244,
+            "calmRiskyWindows": 50,
+            "calmBaseRate": 0.05737704918032787,
+            "calmRiskyRate": 0.1,
+            "lift": 1.7428571428571429,
+            "hitEpisodes": 2
+          },
+          "classification": "unstable",
+          "reasons": [
+            "lift flips between halves (1.68x then 0.71x)"
+          ]
+        },
+        {
+          "horizonKey": "1m",
+          "sessions": 21,
+          "secondary": true,
+          "threshold": -0.03,
+          "n": 919,
+          "riskyWindows": 221,
+          "safeWindows": 346,
+          "baseRate": 0.35038084874863984,
+          "riskyRate": 0.3212669683257919,
+          "safeRate": 0.3439306358381503,
+          "lift": 0.9169079002838594,
+          "firstHalfLift": 0.9183498475609756,
+          "secondHalfLift": 0.9271950334596468,
+          "hits": 71,
+          "hitEpisodes": 7,
+          "beyondVol": {
+            "calmWindows": 244,
+            "calmRiskyWindows": 50,
+            "calmBaseRate": 0.15163934426229508,
+            "calmRiskyRate": 0.16,
+            "lift": 1.0551351351351352,
+            "hitEpisodes": 2
+          },
+          "classification": "weak",
+          "reasons": [
+            "lift 0.92x does not clear the moderate bar with its evidence"
+          ]
+        },
+        {
+          "horizonKey": "1m",
+          "sessions": 21,
+          "secondary": true,
+          "threshold": -0.05,
+          "n": 919,
+          "riskyWindows": 221,
+          "safeWindows": 346,
+          "baseRate": 0.18607181719260066,
+          "riskyRate": 0.18552036199095023,
+          "safeRate": 0.1994219653179191,
+          "lift": 0.9970363314016565,
+          "firstHalfLift": 1.6617759146341462,
+          "secondHalfLift": 0.7242539182709511,
+          "hits": 41,
+          "hitEpisodes": 5,
+          "beyondVol": {
+            "calmWindows": 244,
+            "calmRiskyWindows": 50,
+            "calmBaseRate": 0.06147540983606557,
+            "calmRiskyRate": 0.12,
+            "lift": 1.952,
+            "hitEpisodes": 2
+          },
+          "classification": "unstable",
+          "reasons": [
+            "lift flips between halves (1.66x then 0.72x)"
+          ]
+        }
+      ],
+      "verdict": "unstable",
+      "verdictReason": "Lift inverts between sample halves in two or more primary cells."
+    },
+    {
+      "key": "real_policy_rate",
+      "family": "macro",
+      "label": "Real policy rate (policy minus CPI YoY)",
+      "riskyDirection": "low",
+      "coverage": {
+        "firstDate": "2025-02-13",
+        "lastDate": "2026-07-21",
+        "observations": 355
+      },
+      "cells": [
+        {
+          "horizonKey": "5d",
+          "sessions": 5,
+          "secondary": false,
+          "threshold": -0.03,
+          "n": 350,
+          "riskyWindows": 255,
+          "safeWindows": 74,
+          "baseRate": 0.24,
+          "riskyRate": 0.27058823529411763,
+          "safeRate": 0.1891891891891892,
+          "lift": 1.1274509803921569,
+          "firstHalfLift": 1.1290322580645162,
+          "secondHalfLift": 1,
+          "hits": 69,
+          "hitEpisodes": 15,
+          "beyondVol": {
+            "calmWindows": 73,
+            "calmRiskyWindows": 44,
+            "calmBaseRate": 0.0136986301369863,
+            "calmRiskyRate": 0,
+            "lift": 0,
+            "hitEpisodes": 0
+          },
+          "classification": "weak",
+          "reasons": [
+            "lift 1.13x does not clear the moderate bar with its evidence"
+          ]
+        },
+        {
+          "horizonKey": "5d",
+          "sessions": 5,
+          "secondary": false,
+          "threshold": -0.05,
+          "n": 350,
+          "riskyWindows": 255,
+          "safeWindows": 74,
+          "baseRate": 0.06,
+          "riskyRate": 0.058823529411764705,
+          "safeRate": 0.08108108108108109,
+          "lift": 0.9803921568627452,
+          "firstHalfLift": 0.3125,
+          "secondHalfLift": 1,
+          "hits": 15,
+          "hitEpisodes": 7,
+          "beyondVol": {
+            "calmWindows": 73,
+            "calmRiskyWindows": 44,
+            "calmBaseRate": 0,
+            "calmRiskyRate": 0,
+            "lift": null,
+            "hitEpisodes": 0
+          },
+          "classification": "weak",
+          "reasons": [
+            "lift 0.98x does not clear the moderate bar with its evidence"
+          ]
+        },
+        {
+          "horizonKey": "10d",
+          "sessions": 10,
+          "secondary": false,
+          "threshold": -0.03,
+          "n": 345,
+          "riskyWindows": 250,
+          "safeWindows": 74,
+          "baseRate": 0.3333333333333333,
+          "riskyRate": 0.356,
+          "safeRate": 0.28378378378378377,
+          "lift": 1.068,
+          "firstHalfLift": 1.0238095238095237,
+          "secondHalfLift": 1,
+          "hits": 89,
+          "hitEpisodes": 11,
+          "beyondVol": {
+            "calmWindows": 73,
+            "calmRiskyWindows": 44,
+            "calmBaseRate": 0.0958904109589041,
+            "calmRiskyRate": 0,
+            "lift": 0,
+            "hitEpisodes": 0
+          },
+          "classification": "weak",
+          "reasons": [
+            "lift 1.07x does not clear the moderate bar with its evidence"
+          ]
+        },
+        {
+          "horizonKey": "10d",
+          "sessions": 10,
+          "secondary": false,
+          "threshold": -0.05,
+          "n": 345,
+          "riskyWindows": 250,
+          "safeWindows": 74,
+          "baseRate": 0.17101449275362318,
+          "riskyRate": 0.176,
+          "safeRate": 0.17567567567567569,
+          "lift": 1.0291525423728813,
+          "firstHalfLift": 0.6382189239332097,
+          "secondHalfLift": 1,
+          "hits": 44,
+          "hitEpisodes": 9,
+          "beyondVol": {
+            "calmWindows": 73,
+            "calmRiskyWindows": 44,
+            "calmBaseRate": 0.0273972602739726,
+            "calmRiskyRate": 0,
+            "lift": 0,
+            "hitEpisodes": 0
+          },
+          "classification": "weak",
+          "reasons": [
+            "lift 1.03x does not clear the moderate bar with its evidence"
+          ]
+        },
+        {
+          "horizonKey": "20d",
+          "sessions": 20,
+          "secondary": false,
+          "threshold": -0.03,
+          "n": 335,
+          "riskyWindows": 240,
+          "safeWindows": 74,
+          "baseRate": 0.39104477611940297,
+          "riskyRate": 0.39166666666666666,
+          "safeRate": 0.43243243243243246,
+          "lift": 1.001590330788804,
+          "firstHalfLift": 0.7590909090909091,
+          "secondHalfLift": 1,
+          "hits": 94,
+          "hitEpisodes": 7,
+          "beyondVol": {
+            "calmWindows": 73,
+            "calmRiskyWindows": 44,
+            "calmBaseRate": 0.1095890410958904,
+            "calmRiskyRate": 0,
+            "lift": 0,
+            "hitEpisodes": 0
+          },
+          "classification": "weak",
+          "reasons": [
+            "lift 1.00x does not clear the moderate bar with its evidence"
+          ]
+        },
+        {
+          "horizonKey": "20d",
+          "sessions": 20,
+          "secondary": false,
+          "threshold": -0.05,
+          "n": 335,
+          "riskyWindows": 240,
+          "safeWindows": 74,
+          "baseRate": 0.2417910447761194,
+          "riskyRate": 0.23333333333333334,
+          "safeRate": 0.3108108108108108,
+          "lift": 0.9650205761316872,
+          "firstHalfLift": 0.5073784722222222,
+          "secondHalfLift": 1,
+          "hits": 56,
+          "hitEpisodes": 6,
+          "beyondVol": {
+            "calmWindows": 73,
+            "calmRiskyWindows": 44,
+            "calmBaseRate": 0.0273972602739726,
+            "calmRiskyRate": 0,
+            "lift": 0,
+            "hitEpisodes": 0
+          },
+          "classification": "weak",
+          "reasons": [
+            "lift 0.97x does not clear the moderate bar with its evidence"
+          ]
+        },
+        {
+          "horizonKey": "1m",
+          "sessions": 21,
+          "secondary": true,
+          "threshold": -0.03,
+          "n": 334,
+          "riskyWindows": 239,
+          "safeWindows": 74,
+          "baseRate": 0.39221556886227543,
+          "riskyRate": 0.39330543933054396,
+          "safeRate": 0.43243243243243246,
+          "lift": 1.00277875371299,
+          "firstHalfLift": 0.7590909090909091,
+          "secondHalfLift": 1,
+          "hits": 94,
+          "hitEpisodes": 7,
+          "beyondVol": {
+            "calmWindows": 73,
+            "calmRiskyWindows": 44,
+            "calmBaseRate": 0.1095890410958904,
+            "calmRiskyRate": 0,
+            "lift": 0,
+            "hitEpisodes": 0
+          },
+          "classification": "weak",
+          "reasons": [
+            "lift 1.00x does not clear the moderate bar with its evidence"
+          ]
+        },
+        {
+          "horizonKey": "1m",
+          "sessions": 21,
+          "secondary": true,
+          "threshold": -0.05,
+          "n": 334,
+          "riskyWindows": 239,
+          "safeWindows": 74,
+          "baseRate": 0.25149700598802394,
+          "riskyRate": 0.23430962343096234,
+          "safeRate": 0.33783783783783783,
+          "lift": 0.9316596931659694,
+          "firstHalfLift": 0.4638888888888889,
+          "secondHalfLift": 1,
+          "hits": 56,
+          "hitEpisodes": 6,
+          "beyondVol": {
+            "calmWindows": 73,
+            "calmRiskyWindows": 44,
+            "calmBaseRate": 0.0410958904109589,
+            "calmRiskyRate": 0,
+            "lift": 0,
+            "hitEpisodes": 0
+          },
+          "classification": "weak",
+          "reasons": [
+            "lift 0.93x does not clear the moderate bar with its evidence"
+          ]
+        }
+      ],
+      "verdict": "weak",
+      "verdictReason": "No primary cell clears the moderate bar."
+    },
+    {
+      "key": "spy_dd_252d",
+      "family": "global",
+      "label": "S&P 500 proxy drawdown from 52-week high",
+      "riskyDirection": "low",
+      "coverage": {
+        "firstDate": "2023-07-07",
+        "lastDate": "2026-07-21",
+        "observations": 752
+      },
+      "cells": [
+        {
+          "horizonKey": "5d",
+          "sessions": 5,
+          "secondary": false,
+          "threshold": -0.03,
+          "n": 747,
+          "riskyWindows": 49,
+          "safeWindows": 442,
+          "baseRate": 0.16198125836680052,
+          "riskyRate": 0.3877551020408163,
+          "safeRate": 0.13122171945701358,
+          "lift": 2.393826952268511,
+          "firstHalfLift": null,
+          "secondHalfLift": 1.7061224489795919,
+          "hits": 19,
+          "hitEpisodes": 5,
+          "beyondVol": {
+            "calmWindows": 160,
+            "calmRiskyWindows": 8,
+            "calmBaseRate": 0.0125,
+            "calmRiskyRate": 0,
+            "lift": 0,
+            "hitEpisodes": 0
+          },
+          "classification": "insufficient",
+          "reasons": [
+            "only 49 risky windows (need 60)"
+          ]
+        },
+        {
+          "horizonKey": "5d",
+          "sessions": 5,
+          "secondary": false,
+          "threshold": -0.05,
+          "n": 747,
+          "riskyWindows": 49,
+          "safeWindows": 442,
+          "baseRate": 0.04551539491298527,
+          "riskyRate": 0.12244897959183673,
+          "safeRate": 0.038461538461538464,
+          "lift": 2.6902761104441777,
+          "firstHalfLift": null,
+          "secondHalfLift": 2.1807580174927113,
+          "hits": 6,
+          "hitEpisodes": 3,
+          "beyondVol": {
+            "calmWindows": 160,
+            "calmRiskyWindows": 8,
+            "calmBaseRate": 0,
+            "calmRiskyRate": 0,
+            "lift": null,
+            "hitEpisodes": 0
+          },
+          "classification": "insufficient",
+          "reasons": [
+            "only 49 risky windows (need 60)"
+          ]
+        },
+        {
+          "horizonKey": "10d",
+          "sessions": 10,
+          "secondary": false,
+          "threshold": -0.03,
+          "n": 742,
+          "riskyWindows": 49,
+          "safeWindows": 441,
+          "baseRate": 0.2398921832884097,
+          "riskyRate": 0.5102040816326531,
+          "safeRate": 0.20634920634920634,
+          "lift": 2.126805778491172,
+          "firstHalfLift": null,
+          "secondHalfLift": 1.5643447461629278,
+          "hits": 25,
+          "hitEpisodes": 5,
+          "beyondVol": {
+            "calmWindows": 160,
+            "calmRiskyWindows": 8,
+            "calmBaseRate": 0.05,
+            "calmRiskyRate": 0.25,
+            "lift": 5,
+            "hitEpisodes": 1
+          },
+          "classification": "insufficient",
+          "reasons": [
+            "only 49 risky windows (need 60)"
+          ]
+        },
+        {
+          "horizonKey": "10d",
+          "sessions": 10,
+          "secondary": false,
+          "threshold": -0.05,
+          "n": 742,
+          "riskyWindows": 49,
+          "safeWindows": 441,
+          "baseRate": 0.11455525606469003,
+          "riskyRate": 0.2653061224489796,
+          "safeRate": 0.10204081632653061,
+          "lift": 2.315966386554622,
+          "firstHalfLift": null,
+          "secondHalfLift": 1.6682808716707023,
+          "hits": 13,
+          "hitEpisodes": 3,
+          "beyondVol": {
+            "calmWindows": 160,
+            "calmRiskyWindows": 8,
+            "calmBaseRate": 0.0125,
+            "calmRiskyRate": 0,
+            "lift": 0,
+            "hitEpisodes": 0
+          },
+          "classification": "insufficient",
+          "reasons": [
+            "only 49 risky windows (need 60)"
+          ]
+        },
+        {
+          "horizonKey": "20d",
+          "sessions": 20,
+          "secondary": false,
+          "threshold": -0.03,
+          "n": 732,
+          "riskyWindows": 49,
+          "safeWindows": 441,
+          "baseRate": 0.3333333333333333,
+          "riskyRate": 0.673469387755102,
+          "safeRate": 0.31746031746031744,
+          "lift": 2.0204081632653064,
+          "firstHalfLift": null,
+          "secondHalfLift": 1.6768013327780091,
+          "hits": 33,
+          "hitEpisodes": 3,
+          "beyondVol": {
+            "calmWindows": 160,
+            "calmRiskyWindows": 8,
+            "calmBaseRate": 0.075,
+            "calmRiskyRate": 0.375,
+            "lift": 5,
+            "hitEpisodes": 1
+          },
+          "classification": "insufficient",
+          "reasons": [
+            "only 49 risky windows (need 60)"
+          ]
+        },
+        {
+          "horizonKey": "20d",
+          "sessions": 20,
+          "secondary": false,
+          "threshold": -0.05,
+          "n": 732,
+          "riskyWindows": 49,
+          "safeWindows": 441,
+          "baseRate": 0.18032786885245902,
+          "riskyRate": 0.4489795918367347,
+          "safeRate": 0.17687074829931973,
+          "lift": 2.489795918367347,
+          "firstHalfLift": null,
+          "secondHalfLift": 2.003982080637133,
+          "hits": 22,
+          "hitEpisodes": 3,
+          "beyondVol": {
+            "calmWindows": 160,
+            "calmRiskyWindows": 8,
+            "calmBaseRate": 0.03125,
+            "calmRiskyRate": 0,
+            "lift": 0,
+            "hitEpisodes": 0
+          },
+          "classification": "insufficient",
+          "reasons": [
+            "only 49 risky windows (need 60)"
+          ]
+        },
+        {
+          "horizonKey": "1m",
+          "sessions": 21,
+          "secondary": true,
+          "threshold": -0.03,
+          "n": 731,
+          "riskyWindows": 49,
+          "safeWindows": 441,
+          "baseRate": 0.3378932968536252,
+          "riskyRate": 0.673469387755102,
+          "safeRate": 0.3219954648526077,
+          "lift": 1.9931421961497149,
+          "firstHalfLift": null,
+          "secondHalfLift": 1.6654715940430225,
+          "hits": 33,
+          "hitEpisodes": 3,
+          "beyondVol": {
+            "calmWindows": 160,
+            "calmRiskyWindows": 8,
+            "calmBaseRate": 0.075,
+            "calmRiskyRate": 0.375,
+            "lift": 5,
+            "hitEpisodes": 1
+          },
+          "classification": "insufficient",
+          "reasons": [
+            "only 49 risky windows (need 60)"
+          ]
+        },
+        {
+          "horizonKey": "1m",
+          "sessions": 21,
+          "secondary": true,
+          "threshold": -0.05,
+          "n": 731,
+          "riskyWindows": 49,
+          "safeWindows": 441,
+          "baseRate": 0.18878248974008208,
+          "riskyRate": 0.46938775510204084,
+          "safeRate": 0.18594104308390022,
+          "lift": 2.4863945578231292,
+          "firstHalfLift": null,
+          "secondHalfLift": 2.021128451380552,
+          "hits": 23,
+          "hitEpisodes": 3,
+          "beyondVol": {
+            "calmWindows": 160,
+            "calmRiskyWindows": 8,
+            "calmBaseRate": 0.0375,
+            "calmRiskyRate": 0,
+            "lift": 0,
+            "hitEpisodes": 0
+          },
+          "classification": "insufficient",
+          "reasons": [
+            "only 49 risky windows (need 60)"
+          ]
+        }
+      ],
+      "verdict": "insufficient",
+      "verdictReason": "No primary cell carries enough windows or distinct episodes to judge."
+    },
+    {
+      "key": "eem_mom_63d",
+      "family": "global",
+      "label": "Emerging-markets proxy 3-month momentum",
+      "riskyDirection": "low",
+      "coverage": {
+        "firstDate": "2022-10-04",
+        "lastDate": "2026-07-21",
+        "observations": 940
+      },
+      "cells": [
+        {
+          "horizonKey": "5d",
+          "sessions": 5,
+          "secondary": false,
+          "threshold": -0.03,
+          "n": 935,
+          "riskyWindows": 80,
+          "safeWindows": 682,
+          "baseRate": 0.14545454545454545,
+          "riskyRate": 0.05,
+          "safeRate": 0.1744868035190616,
+          "lift": 0.34375000000000006,
+          "firstHalfLift": 0,
+          "secondHalfLift": 0.5735294117647058,
+          "hits": 4,
+          "hitEpisodes": 2,
+          "beyondVol": {
+            "calmWindows": 244,
+            "calmRiskyWindows": 40,
+            "calmBaseRate": 0.03278688524590164,
+            "calmRiskyRate": 0,
+            "lift": 0,
+            "hitEpisodes": 0
+          },
+          "classification": "insufficient",
+          "reasons": [
+            "only 2 distinct hit episodes (need 3)"
+          ]
+        },
+        {
+          "horizonKey": "5d",
+          "sessions": 5,
+          "secondary": false,
+          "threshold": -0.05,
+          "n": 935,
+          "riskyWindows": 80,
+          "safeWindows": 682,
+          "baseRate": 0.040641711229946524,
+          "riskyRate": 0,
+          "safeRate": 0.051319648093841645,
+          "lift": 0,
+          "firstHalfLift": 0,
+          "secondHalfLift": 0,
+          "hits": 0,
+          "hitEpisodes": 0,
+          "beyondVol": {
+            "calmWindows": 244,
+            "calmRiskyWindows": 40,
+            "calmBaseRate": 0.004098360655737705,
+            "calmRiskyRate": 0,
+            "lift": 0,
+            "hitEpisodes": 0
+          },
+          "classification": "insufficient",
+          "reasons": [
+            "only 0 distinct hit episodes (need 3)"
+          ]
+        },
+        {
+          "horizonKey": "10d",
+          "sessions": 10,
+          "secondary": false,
+          "threshold": -0.03,
+          "n": 930,
+          "riskyWindows": 80,
+          "safeWindows": 677,
+          "baseRate": 0.23548387096774193,
+          "riskyRate": 0.125,
+          "safeRate": 0.27326440177252587,
+          "lift": 0.5308219178082192,
+          "firstHalfLift": 0,
+          "secondHalfLift": 1.0130718954248366,
+          "hits": 10,
+          "hitEpisodes": 2,
+          "beyondVol": {
+            "calmWindows": 244,
+            "calmRiskyWindows": 40,
+            "calmBaseRate": 0.11065573770491803,
+            "calmRiskyRate": 0,
+            "lift": 0,
+            "hitEpisodes": 0
+          },
+          "classification": "insufficient",
+          "reasons": [
+            "only 2 distinct hit episodes (need 3)"
+          ]
+        },
+        {
+          "horizonKey": "10d",
+          "sessions": 10,
+          "secondary": false,
+          "threshold": -0.05,
+          "n": 930,
+          "riskyWindows": 80,
+          "safeWindows": 677,
+          "baseRate": 0.1064516129032258,
+          "riskyRate": 0,
+          "safeRate": 0.13146233382570163,
+          "lift": 0,
+          "firstHalfLift": 0,
+          "secondHalfLift": 0,
+          "hits": 0,
+          "hitEpisodes": 0,
+          "beyondVol": {
+            "calmWindows": 244,
+            "calmRiskyWindows": 40,
+            "calmBaseRate": 0.02459016393442623,
+            "calmRiskyRate": 0,
+            "lift": 0,
+            "hitEpisodes": 0
+          },
+          "classification": "insufficient",
+          "reasons": [
+            "only 0 distinct hit episodes (need 3)"
+          ]
+        },
+        {
+          "horizonKey": "20d",
+          "sessions": 20,
+          "secondary": false,
+          "threshold": -0.03,
+          "n": 920,
+          "riskyWindows": 80,
+          "safeWindows": 667,
+          "baseRate": 0.3467391304347826,
+          "riskyRate": 0.2625,
+          "safeRate": 0.3988005997001499,
+          "lift": 0.7570532915360502,
+          "firstHalfLift": 0.12345679012345678,
+          "secondHalfLift": 1.6373173473210942,
+          "hits": 21,
+          "hitEpisodes": 4,
+          "beyondVol": {
+            "calmWindows": 244,
+            "calmRiskyWindows": 40,
+            "calmBaseRate": 0.15163934426229508,
+            "calmRiskyRate": 0.025,
+            "lift": 0.16486486486486487,
+            "hitEpisodes": 1
+          },
+          "classification": "unstable",
+          "reasons": [
+            "lift flips between halves (0.12x then 1.64x)"
+          ]
+        },
+        {
+          "horizonKey": "20d",
+          "sessions": 20,
+          "secondary": false,
+          "threshold": -0.05,
+          "n": 920,
+          "riskyWindows": 80,
+          "safeWindows": 667,
+          "baseRate": 0.17717391304347826,
+          "riskyRate": 0.0375,
+          "safeRate": 0.2098950524737631,
+          "lift": 0.2116564417177914,
+          "firstHalfLift": 0,
+          "secondHalfLift": 0.47195622435020523,
+          "hits": 3,
+          "hitEpisodes": 2,
+          "beyondVol": {
+            "calmWindows": 244,
+            "calmRiskyWindows": 40,
+            "calmBaseRate": 0.05737704918032787,
+            "calmRiskyRate": 0,
+            "lift": 0,
+            "hitEpisodes": 0
+          },
+          "classification": "insufficient",
+          "reasons": [
+            "only 2 distinct hit episodes (need 3)"
+          ]
+        },
+        {
+          "horizonKey": "1m",
+          "sessions": 21,
+          "secondary": true,
+          "threshold": -0.03,
+          "n": 919,
+          "riskyWindows": 80,
+          "safeWindows": 666,
+          "baseRate": 0.35038084874863984,
+          "riskyRate": 0.275,
+          "safeRate": 0.4024024024024024,
+          "lift": 0.784860248447205,
+          "firstHalfLift": 0.12168610816542946,
+          "secondHalfLift": 1.712583767684289,
+          "hits": 22,
+          "hitEpisodes": 4,
+          "beyondVol": {
+            "calmWindows": 244,
+            "calmRiskyWindows": 40,
+            "calmBaseRate": 0.15163934426229508,
+            "calmRiskyRate": 0.025,
+            "lift": 0.16486486486486487,
+            "hitEpisodes": 1
+          },
+          "classification": "unstable",
+          "reasons": [
+            "lift flips between halves (0.12x then 1.71x)"
+          ]
+        },
+        {
+          "horizonKey": "1m",
+          "sessions": 21,
+          "secondary": true,
+          "threshold": -0.05,
+          "n": 919,
+          "riskyWindows": 80,
+          "safeWindows": 666,
+          "baseRate": 0.18607181719260066,
+          "riskyRate": 0.05,
+          "safeRate": 0.22072072072072071,
+          "lift": 0.2687134502923977,
+          "firstHalfLift": 0,
+          "secondHalfLift": 0.6080634500991408,
+          "hits": 4,
+          "hitEpisodes": 2,
+          "beyondVol": {
+            "calmWindows": 244,
+            "calmRiskyWindows": 40,
+            "calmBaseRate": 0.06147540983606557,
+            "calmRiskyRate": 0,
+            "lift": 0,
+            "hitEpisodes": 0
+          },
+          "classification": "insufficient",
+          "reasons": [
+            "only 2 distinct hit episodes (need 3)"
+          ]
+        }
+      ],
+      "verdict": "weak",
+      "verdictReason": "No primary cell clears the moderate bar."
+    },
+    {
+      "key": "kse30_rel_21d",
+      "family": "cross-index",
+      "label": "KSE-30 vs All-Share 1-month return spread",
+      "riskyDirection": "high",
+      "coverage": {
+        "firstDate": "2022-08-29",
+        "lastDate": "2026-07-20",
+        "observations": 965
+      },
+      "cells": [
+        {
+          "horizonKey": "5d",
+          "sessions": 5,
+          "secondary": false,
+          "threshold": -0.03,
+          "n": 961,
+          "riskyWindows": 394,
+          "safeWindows": 295,
+          "baseRate": 0.14151925078043703,
+          "riskyRate": 0.14213197969543148,
+          "safeRate": 0.07796610169491526,
+          "lift": 1.0043296506419828,
+          "firstHalfLift": 1.6310679611650485,
+          "secondHalfLift": 0.746232269503546,
+          "hits": 56,
+          "hitEpisodes": 18,
+          "beyondVol": {
+            "calmWindows": 263,
+            "calmRiskyWindows": 93,
+            "calmBaseRate": 0.030418250950570342,
+            "calmRiskyRate": 0.053763440860215055,
+            "lift": 1.76747311827957,
+            "hitEpisodes": 3
+          },
+          "classification": "unstable",
+          "reasons": [
+            "lift flips between halves (1.63x then 0.75x)"
+          ]
+        },
+        {
+          "horizonKey": "5d",
+          "sessions": 5,
+          "secondary": false,
+          "threshold": -0.05,
+          "n": 961,
+          "riskyWindows": 394,
+          "safeWindows": 295,
+          "baseRate": 0.03954214360041623,
+          "riskyRate": 0.04314720812182741,
+          "safeRate": 0.020338983050847456,
+          "lift": 1.091170184344109,
+          "firstHalfLift": 1.613144137415982,
+          "secondHalfLift": 0.8187234042553191,
+          "hits": 17,
+          "hitEpisodes": 7,
+          "beyondVol": {
+            "calmWindows": 263,
+            "calmRiskyWindows": 93,
+            "calmBaseRate": 0.0038022813688212928,
+            "calmRiskyRate": 0.010752688172043012,
+            "lift": 2.827956989247312,
+            "hitEpisodes": 1
+          },
+          "classification": "unstable",
+          "reasons": [
+            "lift flips between halves (1.61x then 0.82x)"
+          ]
+        },
+        {
+          "horizonKey": "10d",
+          "sessions": 10,
+          "secondary": false,
+          "threshold": -0.03,
+          "n": 956,
+          "riskyWindows": 394,
+          "safeWindows": 295,
+          "baseRate": 0.23221757322175732,
+          "riskyRate": 0.25380710659898476,
+          "safeRate": 0.14915254237288136,
+          "lift": 1.092971143732565,
+          "firstHalfLift": 1.3602276531637094,
+          "secondHalfLift": 0.9228526398739165,
+          "hits": 100,
+          "hitEpisodes": 18,
+          "beyondVol": {
+            "calmWindows": 263,
+            "calmRiskyWindows": 93,
+            "calmBaseRate": 0.11406844106463879,
+            "calmRiskyRate": 0.15053763440860216,
+            "lift": 1.3197132616487455,
+            "hitEpisodes": 4
+          },
+          "classification": "weak",
+          "reasons": [
+            "lift 1.09x does not clear the moderate bar with its evidence"
+          ]
+        },
+        {
+          "horizonKey": "10d",
+          "sessions": 10,
+          "secondary": false,
+          "threshold": -0.05,
+          "n": 956,
+          "riskyWindows": 394,
+          "safeWindows": 295,
+          "baseRate": 0.10355648535564854,
+          "riskyRate": 0.1065989847715736,
+          "safeRate": 0.04067796610169491,
+          "lift": 1.029380095369943,
+          "firstHalfLift": 1.611380798274002,
+          "secondHalfLift": 0.6860857818304626,
+          "hits": 42,
+          "hitEpisodes": 11,
+          "beyondVol": {
+            "calmWindows": 263,
+            "calmRiskyWindows": 93,
+            "calmBaseRate": 0.022813688212927757,
+            "calmRiskyRate": 0.06451612903225806,
+            "lift": 2.8279569892473115,
+            "hitEpisodes": 2
+          },
+          "classification": "unstable",
+          "reasons": [
+            "lift flips between halves (1.61x then 0.69x)"
+          ]
+        },
+        {
+          "horizonKey": "20d",
+          "sessions": 20,
+          "secondary": false,
+          "threshold": -0.03,
+          "n": 946,
+          "riskyWindows": 394,
+          "safeWindows": 291,
+          "baseRate": 0.3456659619450317,
+          "riskyRate": 0.3934010152284264,
+          "safeRate": 0.21993127147766323,
+          "lift": 1.1380959033825426,
+          "firstHalfLift": 1.2696173615077098,
+          "secondHalfLift": 0.977537606721778,
+          "hits": 155,
+          "hitEpisodes": 16,
+          "beyondVol": {
+            "calmWindows": 263,
+            "calmRiskyWindows": 93,
+            "calmBaseRate": 0.1520912547528517,
+            "calmRiskyRate": 0.1935483870967742,
+            "lift": 1.2725806451612902,
+            "hitEpisodes": 4
+          },
+          "classification": "weak",
+          "reasons": [
+            "lift 1.14x does not clear the moderate bar with its evidence"
+          ]
+        },
+        {
+          "horizonKey": "20d",
+          "sessions": 20,
+          "secondary": false,
+          "threshold": -0.05,
+          "n": 946,
+          "riskyWindows": 394,
+          "safeWindows": 291,
+          "baseRate": 0.17230443974630022,
+          "riskyRate": 0.2182741116751269,
+          "safeRate": 0.07560137457044673,
+          "lift": 1.2667933107034972,
+          "firstHalfLift": 1.610263522884882,
+          "secondHalfLift": 0.9361702127659574,
+          "hits": 86,
+          "hitEpisodes": 12,
+          "beyondVol": {
+            "calmWindows": 263,
+            "calmRiskyWindows": 93,
+            "calmBaseRate": 0.053231939163498096,
+            "calmRiskyRate": 0.15053763440860216,
+            "lift": 2.827956989247312,
+            "hitEpisodes": 4
+          },
+          "classification": "weak",
+          "reasons": [
+            "lift 1.27x does not clear the moderate bar with its evidence"
+          ]
+        },
+        {
+          "horizonKey": "1m",
+          "sessions": 21,
+          "secondary": true,
+          "threshold": -0.03,
+          "n": 945,
+          "riskyWindows": 394,
+          "safeWindows": 291,
+          "baseRate": 0.3492063492063492,
+          "riskyRate": 0.4010152284263959,
+          "safeRate": 0.21993127147766323,
+          "lift": 1.1483617904937702,
+          "firstHalfLift": 1.26552269135245,
+          "secondHalfLift": 1.0031982224616214,
+          "hits": 158,
+          "hitEpisodes": 16,
+          "beyondVol": {
+            "calmWindows": 263,
+            "calmRiskyWindows": 93,
+            "calmBaseRate": 0.1520912547528517,
+            "calmRiskyRate": 0.1935483870967742,
+            "lift": 1.2725806451612902,
+            "hitEpisodes": 4
+          },
+          "classification": "weak",
+          "reasons": [
+            "lift 1.15x does not clear the moderate bar with its evidence"
+          ]
+        },
+        {
+          "horizonKey": "1m",
+          "sessions": 21,
+          "secondary": true,
+          "threshold": -0.05,
+          "n": 945,
+          "riskyWindows": 394,
+          "safeWindows": 291,
+          "baseRate": 0.18095238095238095,
+          "riskyRate": 0.22842639593908629,
+          "safeRate": 0.08247422680412371,
+          "lift": 1.26235639861074,
+          "firstHalfLift": 1.5927066066777171,
+          "secondHalfLift": 0.9328830982548411,
+          "hits": 90,
+          "hitEpisodes": 12,
+          "beyondVol": {
+            "calmWindows": 263,
+            "calmRiskyWindows": 93,
+            "calmBaseRate": 0.057034220532319393,
+            "calmRiskyRate": 0.16129032258064516,
+            "lift": 2.8279569892473115,
+            "hitEpisodes": 4
+          },
+          "classification": "weak",
+          "reasons": [
+            "lift 1.26x does not clear the moderate bar with its evidence"
+          ]
+        }
+      ],
+      "verdict": "unstable",
+      "verdictReason": "Lift inverts between sample halves in two or more primary cells."
+    }
+  ],
+  "pairs": [
+    {
+      "anchor": "vol_21d",
+      "other": "breadth_ma200",
+      "why": "The Phase 1 lead: narrow participation during calm looked informative in-sample.",
+      "cells": [
+        {
+          "horizonKey": "10d",
+          "threshold": -0.03,
+          "anchorSafeOtherSafe": {
+            "rate": 0.09210526315789473,
+            "windows": 152
+          },
+          "anchorSafeOtherRisky": {
+            "rate": null,
+            "windows": 0
+          },
+          "anchorRiskyOtherSafe": {
+            "rate": 0.21,
+            "windows": 200
+          },
+          "anchorRiskyOtherRisky": {
+            "rate": 0.5277777777777778,
+            "windows": 36
+          },
+          "liftWithinAnchorSafe": null,
+          "hitEpisodes": 0,
+          "quotable": false
+        },
+        {
+          "horizonKey": "10d",
+          "threshold": -0.05,
+          "anchorSafeOtherSafe": {
+            "rate": 0.013157894736842105,
+            "windows": 152
+          },
+          "anchorSafeOtherRisky": {
+            "rate": null,
+            "windows": 0
+          },
+          "anchorRiskyOtherSafe": {
+            "rate": 0.065,
+            "windows": 200
+          },
+          "anchorRiskyOtherRisky": {
+            "rate": 0.16666666666666666,
+            "windows": 36
+          },
+          "liftWithinAnchorSafe": null,
+          "hitEpisodes": 0,
+          "quotable": false
+        },
+        {
+          "horizonKey": "20d",
+          "threshold": -0.03,
+          "anchorSafeOtherSafe": {
+            "rate": 0.14473684210526316,
+            "windows": 152
+          },
+          "anchorSafeOtherRisky": {
+            "rate": null,
+            "windows": 0
+          },
+          "anchorRiskyOtherSafe": {
+            "rate": 0.365,
+            "windows": 200
+          },
+          "anchorRiskyOtherRisky": {
+            "rate": 0.5277777777777778,
+            "windows": 36
+          },
+          "liftWithinAnchorSafe": null,
+          "hitEpisodes": 0,
+          "quotable": false
+        },
+        {
+          "horizonKey": "20d",
+          "threshold": -0.05,
+          "anchorSafeOtherSafe": {
+            "rate": 0.03289473684210526,
+            "windows": 152
+          },
+          "anchorSafeOtherRisky": {
+            "rate": null,
+            "windows": 0
+          },
+          "anchorRiskyOtherSafe": {
+            "rate": 0.125,
+            "windows": 200
+          },
+          "anchorRiskyOtherRisky": {
+            "rate": 0.2222222222222222,
+            "windows": 36
+          },
+          "liftWithinAnchorSafe": null,
+          "hitEpisodes": 0,
+          "quotable": false
+        }
+      ]
+    },
+    {
+      "anchor": "vol_21d",
+      "other": "dist_ma200",
+      "why": "The classic trend-volatility interaction; also the naive baseline for Phase 3.",
+      "cells": [
+        {
+          "horizonKey": "10d",
+          "threshold": -0.03,
+          "anchorSafeOtherSafe": {
+            "rate": 0.10884353741496598,
+            "windows": 147
+          },
+          "anchorSafeOtherRisky": {
+            "rate": null,
+            "windows": 0
+          },
+          "anchorRiskyOtherSafe": {
+            "rate": 0.24242424242424243,
+            "windows": 165
+          },
+          "anchorRiskyOtherRisky": {
+            "rate": 0.48333333333333334,
+            "windows": 60
+          },
+          "liftWithinAnchorSafe": null,
+          "hitEpisodes": 0,
+          "quotable": false
+        },
+        {
+          "horizonKey": "10d",
+          "threshold": -0.05,
+          "anchorSafeOtherSafe": {
+            "rate": 0.013605442176870748,
+            "windows": 147
+          },
+          "anchorSafeOtherRisky": {
+            "rate": null,
+            "windows": 0
+          },
+          "anchorRiskyOtherSafe": {
+            "rate": 0.07878787878787878,
+            "windows": 165
+          },
+          "anchorRiskyOtherRisky": {
+            "rate": 0.16666666666666666,
+            "windows": 60
+          },
+          "liftWithinAnchorSafe": null,
+          "hitEpisodes": 0,
+          "quotable": false
+        },
+        {
+          "horizonKey": "20d",
+          "threshold": -0.03,
+          "anchorSafeOtherSafe": {
+            "rate": 0.17006802721088435,
+            "windows": 147
+          },
+          "anchorSafeOtherRisky": {
+            "rate": null,
+            "windows": 0
+          },
+          "anchorRiskyOtherSafe": {
+            "rate": 0.41818181818181815,
+            "windows": 165
+          },
+          "anchorRiskyOtherRisky": {
+            "rate": 0.5,
+            "windows": 60
+          },
+          "liftWithinAnchorSafe": null,
+          "hitEpisodes": 0,
+          "quotable": false
+        },
+        {
+          "horizonKey": "20d",
+          "threshold": -0.05,
+          "anchorSafeOtherSafe": {
+            "rate": 0.034013605442176874,
+            "windows": 147
+          },
+          "anchorSafeOtherRisky": {
+            "rate": null,
+            "windows": 0
+          },
+          "anchorRiskyOtherSafe": {
+            "rate": 0.15151515151515152,
+            "windows": 165
+          },
+          "anchorRiskyOtherRisky": {
+            "rate": 0.21666666666666667,
+            "windows": 60
+          },
+          "liftWithinAnchorSafe": null,
+          "hitEpisodes": 0,
+          "quotable": false
+        }
+      ]
+    },
+    {
+      "anchor": "vol_21d",
+      "other": "fipi_net_21d",
+      "why": "Foreign selling into a calm market is a hypothesised early warning.",
+      "cells": [
+        {
+          "horizonKey": "10d",
+          "threshold": -0.03,
+          "anchorSafeOtherSafe": {
+            "rate": 0.2391304347826087,
+            "windows": 92
+          },
+          "anchorSafeOtherRisky": {
+            "rate": 0.06086956521739131,
+            "windows": 115
+          },
+          "anchorRiskyOtherSafe": {
+            "rate": 0.13043478260869565,
+            "windows": 92
+          },
+          "anchorRiskyOtherRisky": {
+            "rate": 0.4166666666666667,
+            "windows": 192
+          },
+          "liftWithinAnchorSafe": 0.2545454545454546,
+          "hitEpisodes": 2,
+          "quotable": false
+        },
+        {
+          "horizonKey": "10d",
+          "threshold": -0.05,
+          "anchorSafeOtherSafe": {
+            "rate": 0.043478260869565216,
+            "windows": 92
+          },
+          "anchorSafeOtherRisky": {
+            "rate": 0.017391304347826087,
+            "windows": 115
+          },
+          "anchorRiskyOtherSafe": {
+            "rate": 0.07608695652173914,
+            "windows": 92
+          },
+          "anchorRiskyOtherRisky": {
+            "rate": 0.22395833333333334,
+            "windows": 192
+          },
+          "liftWithinAnchorSafe": 0.4,
+          "hitEpisodes": 1,
+          "quotable": false
+        },
+        {
+          "horizonKey": "20d",
+          "threshold": -0.03,
+          "anchorSafeOtherSafe": {
+            "rate": 0.2826086956521739,
+            "windows": 92
+          },
+          "anchorSafeOtherRisky": {
+            "rate": 0.09565217391304348,
+            "windows": 115
+          },
+          "anchorRiskyOtherSafe": {
+            "rate": 0.31521739130434784,
+            "windows": 92
+          },
+          "anchorRiskyOtherRisky": {
+            "rate": 0.5053191489361702,
+            "windows": 188
+          },
+          "liftWithinAnchorSafe": 0.3384615384615385,
+          "hitEpisodes": 3,
+          "quotable": true
+        },
+        {
+          "horizonKey": "20d",
+          "threshold": -0.05,
+          "anchorSafeOtherSafe": {
+            "rate": 0.13043478260869565,
+            "windows": 92
+          },
+          "anchorSafeOtherRisky": {
+            "rate": 0.017391304347826087,
+            "windows": 115
+          },
+          "anchorRiskyOtherSafe": {
+            "rate": 0.10869565217391304,
+            "windows": 92
+          },
+          "anchorRiskyOtherRisky": {
+            "rate": 0.2712765957446808,
+            "windows": 188
+          },
+          "liftWithinAnchorSafe": 0.13333333333333333,
+          "hitEpisodes": 1,
+          "quotable": false
+        }
+      ]
+    },
+    {
+      "anchor": "vol_21d",
+      "other": "spy_dd_252d",
+      "why": "Local calm during global stress; tests whether global risk leads PSX.",
+      "cells": [
+        {
+          "horizonKey": "10d",
+          "threshold": -0.03,
+          "anchorSafeOtherSafe": {
+            "rate": 0.05660377358490566,
+            "windows": 106
+          },
+          "anchorSafeOtherRisky": {
+            "rate": 0.25,
+            "windows": 8
+          },
+          "anchorRiskyOtherSafe": {
+            "rate": 0.24431818181818182,
+            "windows": 176
+          },
+          "anchorRiskyOtherRisky": {
+            "rate": 0.6,
+            "windows": 35
+          },
+          "liftWithinAnchorSafe": 4.416666666666667,
+          "hitEpisodes": 1,
+          "quotable": false
+        },
+        {
+          "horizonKey": "10d",
+          "threshold": -0.05,
+          "anchorSafeOtherSafe": {
+            "rate": 0.018867924528301886,
+            "windows": 106
+          },
+          "anchorSafeOtherRisky": {
+            "rate": 0,
+            "windows": 8
+          },
+          "anchorRiskyOtherSafe": {
+            "rate": 0.13636363636363635,
+            "windows": 176
+          },
+          "anchorRiskyOtherRisky": {
+            "rate": 0.37142857142857144,
+            "windows": 35
+          },
+          "liftWithinAnchorSafe": 0,
+          "hitEpisodes": 0,
+          "quotable": false
+        },
+        {
+          "horizonKey": "20d",
+          "threshold": -0.03,
+          "anchorSafeOtherSafe": {
+            "rate": 0.08490566037735849,
+            "windows": 106
+          },
+          "anchorSafeOtherRisky": {
+            "rate": 0.375,
+            "windows": 8
+          },
+          "anchorRiskyOtherSafe": {
+            "rate": 0.39204545454545453,
+            "windows": 176
+          },
+          "anchorRiskyOtherRisky": {
+            "rate": 0.7428571428571429,
+            "windows": 35
+          },
+          "liftWithinAnchorSafe": 4.416666666666667,
+          "hitEpisodes": 1,
+          "quotable": false
+        },
+        {
+          "horizonKey": "20d",
+          "threshold": -0.05,
+          "anchorSafeOtherSafe": {
+            "rate": 0.04716981132075472,
+            "windows": 106
+          },
+          "anchorSafeOtherRisky": {
+            "rate": 0,
+            "windows": 8
+          },
+          "anchorRiskyOtherSafe": {
+            "rate": 0.19886363636363635,
+            "windows": 176
+          },
+          "anchorRiskyOtherRisky": {
+            "rate": 0.5714285714285714,
+            "windows": 35
+          },
+          "liftWithinAnchorSafe": 0,
+          "hitEpisodes": 0,
+          "quotable": false
+        }
+      ]
+    },
+    {
+      "anchor": "dist_ma200",
+      "other": "breadth_ma200",
+      "why": "Index above trend while breadth deteriorates is the divergence pattern.",
+      "cells": [
+        {
+          "horizonKey": "10d",
+          "threshold": -0.03,
+          "anchorSafeOtherSafe": {
+            "rate": 0.19631901840490798,
+            "windows": 489
+          },
+          "anchorSafeOtherRisky": {
+            "rate": null,
+            "windows": 0
+          },
+          "anchorRiskyOtherSafe": {
+            "rate": null,
+            "windows": 0
+          },
+          "anchorRiskyOtherRisky": {
+            "rate": 0.5277777777777778,
+            "windows": 36
+          },
+          "liftWithinAnchorSafe": null,
+          "hitEpisodes": 0,
+          "quotable": false
+        },
+        {
+          "horizonKey": "10d",
+          "threshold": -0.05,
+          "anchorSafeOtherSafe": {
+            "rate": 0.065439672801636,
+            "windows": 489
+          },
+          "anchorSafeOtherRisky": {
+            "rate": null,
+            "windows": 0
+          },
+          "anchorRiskyOtherSafe": {
+            "rate": null,
+            "windows": 0
+          },
+          "anchorRiskyOtherRisky": {
+            "rate": 0.16666666666666666,
+            "windows": 36
+          },
+          "liftWithinAnchorSafe": null,
+          "hitEpisodes": 0,
+          "quotable": false
+        },
+        {
+          "horizonKey": "20d",
+          "threshold": -0.03,
+          "anchorSafeOtherSafe": {
+            "rate": 0.3210633946830266,
+            "windows": 489
+          },
+          "anchorSafeOtherRisky": {
+            "rate": null,
+            "windows": 0
+          },
+          "anchorRiskyOtherSafe": {
+            "rate": null,
+            "windows": 0
+          },
+          "anchorRiskyOtherRisky": {
+            "rate": 0.5277777777777778,
+            "windows": 36
+          },
+          "liftWithinAnchorSafe": null,
+          "hitEpisodes": 0,
+          "quotable": false
+        },
+        {
+          "horizonKey": "20d",
+          "threshold": -0.05,
+          "anchorSafeOtherSafe": {
+            "rate": 0.14314928425357873,
+            "windows": 489
+          },
+          "anchorSafeOtherRisky": {
+            "rate": null,
+            "windows": 0
+          },
+          "anchorRiskyOtherSafe": {
+            "rate": null,
+            "windows": 0
+          },
+          "anchorRiskyOtherRisky": {
+            "rate": 0.2222222222222222,
+            "windows": 36
+          },
+          "liftWithinAnchorSafe": null,
+          "hitEpisodes": 0,
+          "quotable": false
+        }
+      ]
+    }
+  ],
+  "regimes": [
+    {
+      "key": "up_calm",
+      "label": "Uptrend, calm",
+      "occupancyShare": 0.1934826883910387,
+      "cells": [
+        {
+          "horizonKey": "10d",
+          "threshold": -0.03,
+          "rate": 0.11052631578947368,
+          "windows": 190,
+          "hitEpisodes": 6
+        },
+        {
+          "horizonKey": "10d",
+          "threshold": -0.05,
+          "rate": 0.010526315789473684,
+          "windows": 190,
+          "hitEpisodes": 1
+        },
+        {
+          "horizonKey": "20d",
+          "threshold": -0.03,
+          "rate": 0.15263157894736842,
+          "windows": 190,
+          "hitEpisodes": 8
+        },
+        {
+          "horizonKey": "20d",
+          "threshold": -0.05,
+          "rate": 0.04736842105263158,
+          "windows": 190,
+          "hitEpisodes": 4
+        }
+      ]
+    },
+    {
+      "key": "up_mid",
+      "label": "Uptrend, mid volatility",
+      "occupancyShare": 0.26578411405295316,
+      "cells": [
+        {
+          "horizonKey": "10d",
+          "threshold": -0.03,
+          "rate": 0.24521072796934865,
+          "windows": 261,
+          "hitEpisodes": 13
+        },
+        {
+          "horizonKey": "10d",
+          "threshold": -0.05,
+          "rate": 0.09195402298850575,
+          "windows": 261,
+          "hitEpisodes": 5
+        },
+        {
+          "horizonKey": "20d",
+          "threshold": -0.03,
+          "rate": 0.33725490196078434,
+          "windows": 255,
+          "hitEpisodes": 14
+        },
+        {
+          "horizonKey": "20d",
+          "threshold": -0.05,
+          "rate": 0.18823529411764706,
+          "windows": 255,
+          "hitEpisodes": 8
+        }
+      ]
+    },
+    {
+      "key": "up_turbulent",
+      "label": "Uptrend, turbulent",
+      "occupancyShare": 0.32790224032586557,
+      "cells": [
+        {
+          "horizonKey": "10d",
+          "threshold": -0.03,
+          "rate": 0.3141025641025641,
+          "windows": 312,
+          "hitEpisodes": 18
+        },
+        {
+          "horizonKey": "10d",
+          "threshold": -0.05,
+          "rate": 0.18269230769230768,
+          "windows": 312,
+          "hitEpisodes": 12
+        },
+        {
+          "horizonKey": "20d",
+          "threshold": -0.03,
+          "rate": 0.4642857142857143,
+          "windows": 308,
+          "hitEpisodes": 15
+        },
+        {
+          "horizonKey": "20d",
+          "threshold": -0.05,
+          "rate": 0.2532467532467532,
+          "windows": 308,
+          "hitEpisodes": 10
+        }
+      ]
+    },
+    {
+      "key": "down_calm",
+      "label": "Downtrend, calm",
+      "occupancyShare": 0.07433808553971487,
+      "cells": [
+        {
+          "horizonKey": "10d",
+          "threshold": -0.03,
+          "rate": 0.1232876712328767,
+          "windows": 73,
+          "hitEpisodes": 3
+        },
+        {
+          "horizonKey": "10d",
+          "threshold": -0.05,
+          "rate": 0.0547945205479452,
+          "windows": 73,
+          "hitEpisodes": 1
+        },
+        {
+          "horizonKey": "20d",
+          "threshold": -0.03,
+          "rate": 0.1506849315068493,
+          "windows": 73,
+          "hitEpisodes": 4
+        },
+        {
+          "horizonKey": "20d",
+          "threshold": -0.05,
+          "rate": 0.0684931506849315,
+          "windows": 73,
+          "hitEpisodes": 1
+        }
+      ]
+    },
+    {
+      "key": "down_mid",
+      "label": "Downtrend, mid volatility",
+      "occupancyShare": 0.06924643584521385,
+      "cells": [
+        {
+          "horizonKey": "10d",
+          "threshold": -0.03,
+          "rate": 0.1323529411764706,
+          "windows": 68,
+          "hitEpisodes": 3
+        },
+        {
+          "horizonKey": "10d",
+          "threshold": -0.05,
+          "rate": 0.029411764705882353,
+          "windows": 68,
+          "hitEpisodes": 1
+        },
+        {
+          "horizonKey": "20d",
+          "threshold": -0.03,
+          "rate": 0.5735294117647058,
+          "windows": 68,
+          "hitEpisodes": 4
+        },
+        {
+          "horizonKey": "20d",
+          "threshold": -0.05,
+          "rate": 0.14705882352941177,
+          "windows": 68,
+          "hitEpisodes": 2
+        }
+      ]
+    },
+    {
+      "key": "down_turbulent",
+      "label": "Downtrend, turbulent",
+      "occupancyShare": 0.06924643584521385,
+      "cells": [
+        {
+          "horizonKey": "10d",
+          "threshold": -0.03,
+          "rate": 0.35294117647058826,
+          "windows": 68,
+          "hitEpisodes": 4
+        },
+        {
+          "horizonKey": "10d",
+          "threshold": -0.05,
+          "rate": 0.14705882352941177,
+          "windows": 68,
+          "hitEpisodes": 3
+        },
+        {
+          "horizonKey": "20d",
+          "threshold": -0.03,
+          "rate": 0.4264705882352941,
+          "windows": 68,
+          "hitEpisodes": 4
+        },
+        {
+          "horizonKey": "20d",
+          "threshold": -0.05,
+          "rate": 0.20588235294117646,
+          "windows": 68,
+          "hitEpisodes": 2
+        }
+      ]
+    }
+  ],
+  "method": [
+    "States are expanding-percentile terciles over each signal's own history, with a 252-observation warmup; the cut-offs a date is judged by existed on that date.",
+    "Non-PSX series (SPY, EEM, gold, USD/PKR) are lagged one session because their daily bar closes after the PKT close. CPI carries a ~35-day publication lag. Flows are lagged one session.",
+    "Outcomes are the worst intra-window decline from the entry close, matching the early-warning target.",
+    "Distinct episodes collapse runs of overlapping hit windows; classification bars are set on episodes, not windows.",
+    "Beyond-volatility lift re-measures each signal inside the calm-volatility third; redundant means the lift lives entirely in turbulent periods.",
+    "Stability recomputes lift on each half of the sample; a flip between halves classifies the cell unstable.",
+    "Everything here is descriptive and in-sample. No model has been fitted and nothing is a forecast."
+  ]
+}
