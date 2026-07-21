@@ -1,50 +1,14 @@
 {
   "_note": "Filing inventory for the extraction cache. 'interim'/'annual' point at the latest report of each kind that was found and downloaded to .cache/filings/. A null value means none was found on PSX's public feed as of checkedAt — re-run with --refresh TICKER to re-check.",
-  "_asOf": "2026-07-21T17:02:38.161Z",
+  "_asOf": "2026-07-21T17:16:03.838Z",
   "summary": {
-    "total": 15,
-    "bothFilings": 13,
+    "total": 7,
+    "bothFilings": 6,
     "interimOnly": 1,
     "annualOnly": 0,
-    "neither": 1
+    "neither": 0
   },
   "entries": {
-    "BML": {
-      "ticker": "BML",
-      "interim": {
-        "title": "Transmission of Quarterly Report for the Period Ended March 31, 2026",
-        "date": "May 5, 2026",
-        "url": "https://dps.psx.com.pk/download/document/276649.pdf",
-        "path": ".cache/filings/BML/interim.pdf",
-        "bytes": 2999173
-      },
-      "annual": {
-        "title": "Transmission of Annual Report for the Year Ended December 31, 2025",
-        "date": "Mar 5, 2026",
-        "url": "https://dps.psx.com.pk/download/document/272052.pdf",
-        "path": ".cache/filings/BML/annual.pdf",
-        "bytes": 6683047
-      },
-      "checkedAt": "2026-07-20T20:08:34.630Z"
-    },
-    "BAHL": {
-      "ticker": "BAHL",
-      "interim": {
-        "title": "BAHL - Transmission of Quarterly Report for the period ended March 31, 2026",
-        "date": "Apr 29, 2026",
-        "url": "https://dps.psx.com.pk/download/document/275851.pdf",
-        "path": ".cache/filings/BAHL/interim.pdf",
-        "bytes": 5402557
-      },
-      "annual": {
-        "title": "BAHL-Transmission of Annual Report for the Year Ended December 31, 2025",
-        "date": "Mar 6, 2026",
-        "url": "https://dps.psx.com.pk/download/document/272165.pdf",
-        "path": ".cache/filings/BAHL/annual.pdf",
-        "bytes": 9565041
-      },
-      "checkedAt": "2026-07-20T20:08:34.758Z"
-    },
     "BAFL": {
       "ticker": "BAFL",
       "interim": {
@@ -62,109 +26,6 @@
         "bytes": 12515420
       },
       "checkedAt": "2026-07-20T20:08:34.498Z"
-    },
-    "JSBL": {
-      "ticker": "JSBL",
-      "interim": {
-        "title": "Transmission of Quarterly Report for the Period Ended March 31, 2026",
-        "date": "Apr 30, 2026",
-        "url": "https://dps.psx.com.pk/download/document/275957.pdf",
-        "path": ".cache/filings/JSBL/interim.pdf",
-        "bytes": 6548464
-      },
-      "annual": {
-        "title": "Transmission of Annual Report for the Year Ended December 31, 2025",
-        "date": "Mar 6, 2026",
-        "url": "https://dps.psx.com.pk/download/document/272164.pdf",
-        "path": ".cache/filings/JSBL/annual.pdf",
-        "bytes": 11626509
-      },
-      "checkedAt": "2026-07-20T20:08:34.755Z"
-    },
-    "SNBL": {
-      "ticker": "SNBL",
-      "interim": {
-        "title": "Transmission of 1st Quarterly Report for the Period Ended 31 March 2026",
-        "date": "Apr 30, 2026",
-        "url": "https://dps.psx.com.pk/download/document/276267.pdf",
-        "path": ".cache/filings/SNBL/interim.pdf",
-        "bytes": 3421254
-      },
-      "annual": {
-        "title": "Transmission of Annual Report for the Year Ended 31 December 2025",
-        "date": "Feb 19, 2026",
-        "url": "https://dps.psx.com.pk/download/document/270561.pdf",
-        "path": ".cache/filings/SNBL/annual.pdf",
-        "bytes": 18912381
-      },
-      "checkedAt": "2026-07-20T20:08:35.576Z"
-    },
-    "SBL": {
-      "ticker": "SBL",
-      "interim": {
-        "title": "Transmission of quarterly report for the period ended March 31, 2026",
-        "date": "Apr 30, 2026",
-        "url": "https://dps.psx.com.pk/download/document/275941.pdf",
-        "path": ".cache/filings/SBL/interim.pdf",
-        "bytes": 8458831
-      },
-      "annual": {
-        "title": "Transmission of annual report for the year ended December 31, 2025",
-        "date": "Mar 5, 2026",
-        "url": "https://dps.psx.com.pk/download/document/272065.pdf",
-        "path": ".cache/filings/SBL/annual.pdf",
-        "bytes": 10797587
-      },
-      "checkedAt": "2026-07-20T20:08:35.559Z"
-    },
-    "PSEL": {
-      "ticker": "PSEL",
-      "interim": {
-        "title": "Transmission of Quarterly Report for the period ended March 31, 2025",
-        "date": "Apr 30, 2025",
-        "url": "https://dps.psx.com.pk/download/document/253189.pdf",
-        "path": ".cache/filings/PSEL/interim.pdf",
-        "bytes": 2166686
-      },
-      "annual": {
-        "title": "Transmission of Annual Report for the year ended June 30, 2024",
-        "date": "Nov 4, 2024",
-        "url": "https://dps.psx.com.pk/download/document/242150.pdf",
-        "path": ".cache/filings/PSEL/annual.pdf",
-        "bytes": 3835569
-      },
-      "checkedAt": "2026-07-20T20:41:40.786Z"
-    },
-    "MUGHAL": {
-      "ticker": "MUGHAL",
-      "interim": {
-        "title": "Transmission of Quarterly Report for the Period Ended March 31, 2026",
-        "date": "Apr 30, 2026",
-        "url": "https://dps.psx.com.pk/download/document/275991.pdf",
-        "path": ".cache/filings/MUGHAL/interim.pdf",
-        "bytes": 22338600
-      },
-      "annual": {
-        "title": "Transmission of Annual Report for the Year Ended June 30, 2025",
-        "date": "Oct 6, 2025",
-        "url": "https://dps.psx.com.pk/download/document/261170.pdf",
-        "path": ".cache/filings/MUGHAL/annual.pdf",
-        "bytes": 13933755
-      },
-      "checkedAt": "2026-07-21T13:53:59.707Z"
-    },
-    "HUMNL": {
-      "ticker": "HUMNL",
-      "interim": {
-        "title": "Transmission of Quarterly Report for the Period Ended 31-03-2026",
-        "date": "Apr 30, 2026",
-        "url": "https://dps.psx.com.pk/download/document/276439.pdf",
-        "path": ".cache/filings/HUMNL/interim.pdf",
-        "bytes": 4658411
-      },
-      "annual": null,
-      "checkedAt": "2026-07-20T21:13:50.681Z",
-      "error": "annual: response is not a PDF (got <!DOCTYPE html><html)"
     },
     "SIEM": {
       "ticker": "SIEM",
@@ -184,83 +45,90 @@
       },
       "checkedAt": "2026-07-20T20:41:41.079Z"
     },
-    "AVN": {
-      "ticker": "AVN",
+    "AABS": {
+      "ticker": "AABS",
       "interim": {
-        "title": "Transmission of Quarterly Report for the Period Ended 31 March 2026",
-        "date": "Jun 5, 2026",
-        "url": "https://dps.psx.com.pk/download/document/278246.pdf",
-        "path": ".cache/filings/AVN/interim.pdf",
-        "bytes": 9479616
+        "title": "Advertisement regarding Credit of Interim Dividend for the half year ended March 31, 2026",
+        "date": "Jun 15, 2026",
+        "url": "https://dps.psx.com.pk/download/document/278575.pdf",
+        "path": ".cache/filings/AABS/interim.pdf",
+        "bytes": 1940087
       },
       "annual": {
-        "title": "Transmission of Annual Report for the Year Ended 31 December 2025",
-        "date": "May 22, 2026",
-        "url": "https://dps.psx.com.pk/download/document/277710.pdf",
-        "path": ".cache/filings/AVN/annual.pdf",
-        "bytes": 30287648
+        "title": "Transmission of Annual Report for the Year Ended September 30, 2025",
+        "date": "Jan 6, 2026",
+        "url": "https://dps.psx.com.pk/download/document/268358.pdf",
+        "path": ".cache/filings/AABS/annual.pdf",
+        "bytes": 15200932
       },
-      "checkedAt": "2026-07-20T20:35:19.316Z"
+      "checkedAt": "2026-07-21T17:12:22.137Z"
     },
-    "FCCL": {
-      "ticker": "FCCL",
-      "interim": {
-        "title": "Mandatory Shariah Disclosure for the Half Year Ended 31 December 2025",
-        "date": "Apr 30, 2026",
-        "url": "https://dps.psx.com.pk/download/document/275987.pdf",
-        "path": ".cache/filings/FCCL/interim.pdf",
-        "bytes": 1082218
-      },
-      "annual": {
-        "title": "Transmission of Annual Report for the Year Ended 2025-06-30",
-        "date": "Sep 9, 2025",
-        "url": "https://dps.psx.com.pk/download/document/259049.pdf",
-        "path": ".cache/filings/FCCL/annual.pdf",
-        "bytes": 16158836
-      },
-      "checkedAt": "2026-07-20T20:35:19.240Z"
-    },
-    "SEARL": {
-      "ticker": "SEARL",
-      "interim": {
-        "title": "Transmission of Quarterly Financial Statements for the Period Ended 31/03/2026",
-        "date": "Apr 30, 2026",
-        "url": "https://dps.psx.com.pk/download/document/276421.pdf",
-        "path": ".cache/filings/SEARL/interim.pdf",
-        "bytes": 2212239
-      },
-      "annual": {
-        "title": "Transmission of Annual Report for the Year Ended June 30, 2025",
-        "date": "Oct 7, 2025",
-        "url": "https://dps.psx.com.pk/download/document/261651.pdf",
-        "path": ".cache/filings/SEARL/annual.pdf",
-        "bytes": 4336411
-      },
-      "checkedAt": "2026-07-20T20:35:18.446Z"
-    },
-    "GAL": {
-      "ticker": "GAL",
+    "AGP": {
+      "ticker": "AGP",
       "interim": {
         "title": "Transmission of Quarterly Report for the Period Ended March 31, 2026",
-        "date": "Apr 27, 2026",
-        "url": "https://dps.psx.com.pk/download/document/275242.pdf",
-        "path": ".cache/filings/GAL/interim.pdf",
-        "bytes": 1830798
+        "date": "Apr 30, 2026",
+        "url": "https://dps.psx.com.pk/download/document/276308.pdf",
+        "path": ".cache/filings/AGP/interim.pdf",
+        "bytes": 3251387
       },
       "annual": {
-        "title": "Transmission of Annual Report for the Year Ended 06-30-2025",
-        "date": "Oct 3, 2025",
-        "url": "https://dps.psx.com.pk/download/document/261060.pdf",
-        "path": ".cache/filings/GAL/annual.pdf",
-        "bytes": 26690124
+        "title": "Transmission of Annual Report for the Year Ended December 31, 2025",
+        "date": "Mar 30, 2026",
+        "url": "https://dps.psx.com.pk/download/document/273215.pdf",
+        "path": ".cache/filings/AGP/annual.pdf",
+        "bytes": 8957916
       },
-      "checkedAt": "2026-07-20T20:35:18.158Z"
+      "checkedAt": "2026-07-21T17:12:42.928Z"
     },
-    "KEL": {
-      "ticker": "KEL",
-      "interim": null,
+    "ENGROH": {
+      "ticker": "ENGROH",
+      "interim": {
+        "title": "Transmission of Quarterly Financial Statements for the Period Ended March 31, 2026",
+        "date": "Apr 30, 2026",
+        "url": "https://dps.psx.com.pk/download/document/276212.pdf",
+        "path": ".cache/filings/ENGROH/interim.pdf",
+        "bytes": 6802511
+      },
+      "annual": {
+        "title": "Transmission of Annual Report for the year ended December 31, 2024 - Engro Holdings Limited",
+        "date": "Apr 4, 2025",
+        "url": "https://dps.psx.com.pk/download/document/250529.pdf",
+        "path": ".cache/filings/ENGROH/annual.pdf",
+        "bytes": 10099893
+      },
+      "checkedAt": "2026-07-21T17:14:12.728Z"
+    },
+    "EPCL": {
+      "ticker": "EPCL",
+      "interim": {
+        "title": "Transmission of Quarterly Financial Statements for the Period Ended March 31, 2026 - Engro Polymer & Chemicals Limited",
+        "date": "Apr 30, 2026",
+        "url": "https://dps.psx.com.pk/download/document/276370.pdf",
+        "path": ".cache/filings/EPCL/interim.pdf",
+        "bytes": 20469180
+      },
+      "annual": {
+        "title": "Transmission of Annual Report for the year ended December 31, 2025 - Engro Polymer & Chemicals Limited",
+        "date": "Apr 6, 2026",
+        "url": "https://dps.psx.com.pk/download/document/273548.pdf",
+        "path": ".cache/filings/EPCL/annual.pdf",
+        "bytes": 20450403
+      },
+      "checkedAt": "2026-07-21T17:14:12.047Z"
+    },
+    "FFL": {
+      "ticker": "FFL",
+      "interim": {
+        "title": "Transmission of Quarterly Report for the Period Ended March 31, 2026",
+        "date": "Apr 30, 2026",
+        "url": "https://dps.psx.com.pk/download/document/276166.pdf",
+        "path": ".cache/filings/FFL/interim.pdf",
+        "bytes": 1806571
+      },
       "annual": null,
-      "checkedAt": "2026-07-21T17:02:38.155Z"
+      "checkedAt": "2026-07-21T17:14:49.566Z",
+      "error": "annual: only 193MB free on disk — stopping before it fills. Free some space and re-run; already-cached files"
     }
   }
 }

@@ -47,10 +47,47 @@ const arg = (n: string): string | null => {
   const i = process.argv.indexOf(`--${n}`);
   return i >= 0 ? process.argv[i + 1] ?? null : null;
 };
+
+// Reject unknown flags instead of ignoring them. A typo or a flag that only
+// exists on a sibling script (--from-file lives on backfill-deep-extraction,
+// not here) used to be silently dropped, which quietly widened the run to the
+// ENTIRE universe. That happened: a 12-ticker request downloaded 471
+// companies, filled the disk, and left 376 tickers falsely marked as having
+// no filings. Failing loudly on an unrecognised flag is the whole fix.
+const KNOWN_FLAGS = new Set(["limit", "refresh", "sector", "tickers", "from-file"]);
+for (const a of process.argv.slice(2)) {
+  if (!a.startsWith("--")) continue;
+  const name = a.slice(2).split("=")[0];
+  if (!KNOWN_FLAGS.has(name)) {
+    console.error(`unknown flag --${name}. Known flags: ${[...KNOWN_FLAGS].map((f) => `--${f}`).join(", ")}`);
+    process.exit(1);
+  }
+}
 const LIMIT = arg("limit") ? Number(arg("limit")) : Infinity;
 const REFRESH = new Set((arg("refresh") ?? "").split(",").map((s) => s.trim().toUpperCase()).filter(Boolean));
 const SECTOR = arg("sector");
-const ONLY_TICKERS = new Set((arg("tickers") ?? "").split(",").map((s) => s.trim().toUpperCase()).filter(Boolean));
+const FROM_FILE = arg("from-file");
+const ONLY_TICKERS = new Set(
+  [
+    ...(arg("tickers") ?? "").split(","),
+    // --from-file takes a newline-delimited ticker list, which is easier to
+    // review than a long comma string when the batch is more than a handful.
+    ...(FROM_FILE ? readFileSync(FROM_FILE, "utf8").split("\n") : []),
+  ]
+    .map((s) => s.trim().toUpperCase())
+    .filter(Boolean)
+);
+if (FROM_FILE && ONLY_TICKERS.size === 0) {
+  console.error(`--from-file ${FROM_FILE} yielded no tickers. Refusing to fall through to the whole universe.`);
+  process.exit(1);
+}
+
+// Set once the disk guard trips, to stop the ENTIRE run rather than let each
+// company catch its own download failure and get recorded as "no filings
+// found". Without this the run completes "successfully" while writing a
+// manifest that says hundreds of companies have nothing — indistinguishable
+// from a genuine absence, and it silently poisons every downstream decision.
+let diskExhausted = false;
 
 type Entry = {
   ticker: string;
@@ -99,6 +136,7 @@ function checkDiskHeadroom() {
     const s = statfsSync(".");
     const freeBytes = s.bavail * s.bsize;
     if (freeBytes < 200 * 1024 * 1024) {
+      diskExhausted = true;
       throw new Error(`only ${(freeBytes / 1024 / 1024).toFixed(0)}MB free on disk — stopping before it fills. Free some space and re-run; already-cached files are untouched.`);
     }
   } catch (e) {
@@ -246,6 +284,11 @@ async function main() {
   const queue = [...todo];
   const workers = Array.from({ length: CONCURRENCY }, async () => {
     while (queue.length) {
+      // Stop the whole run the moment the disk guard trips. Previously each
+      // ticker caught its own download failure and was recorded with both
+      // files null, so an out-of-space run finished "successfully" while
+      // writing a manifest that claimed hundreds of companies had no filings.
+      if (diskExhausted) break;
       const t = queue.shift();
       if (!t) break;
       const entry = manifest[t]?.error && !manifest[t]?.interim && !manifest[t]?.annual ? await processTicker(t) : await processTicker(t);
@@ -260,6 +303,13 @@ async function main() {
   });
   await Promise.all(workers);
   saveManifest(manifest);
+
+  if (diskExhausted) {
+    console.error(`\nSTOPPED: disk ran out of headroom after ${done}/${todo.length} tickers.`);
+    console.error(`The ${todo.length - done} unprocessed tickers are NOT recorded as "no filings" — they were simply never attempted.`);
+    console.error(`Free space and re-run; cached files are untouched and already-done tickers are skipped.`);
+    process.exit(1);
+  }
 
   console.log(`\ndone in ${((Date.now() - startedAt) / 1000).toFixed(0)}s`);
   printSummary(manifest);
