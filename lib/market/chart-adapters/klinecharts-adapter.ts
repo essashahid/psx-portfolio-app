@@ -1,5 +1,12 @@
-import { init, dispose, Chart, KLineData, OverlayCreate, IndicatorCreate } from "klinecharts";
+import { init, dispose, Chart, KLineData, OverlayCreate, IndicatorCreate, Period } from "klinecharts";
 import type { ChartEngineAdapter, CanonicalOHLCV, ChartDrawing } from "@/types/chart-engine";
+
+/** Resolution label from the chart header to a KLineCharts period. */
+const PERIODS: Record<string, Period> = {
+  "1D": { type: "day", span: 1 },
+  "1W": { type: "week", span: 1 },
+  "1M": { type: "month", span: 1 },
+};
 
 export class KLineChartsAdapter implements ChartEngineAdapter {
   private chart: Chart | null = null;
@@ -20,6 +27,69 @@ export class KLineChartsAdapter implements ChartEngineAdapter {
 
   setSymbol(symbol: string): void {
     this.currentSymbol = symbol;
+    this.applyToChart();
+  }
+
+  /**
+   * Push the current symbol, period and bars into the chart.
+   *
+   * KLineCharts v10 pulls data rather than being handed it: it calls the data
+   * loader's getBars only once a symbol AND a period are set on the chart
+   * instance. Registering a loader alone leaves the chart empty, which is what
+   * happened here — the axis fell back to its default 0-10 range on every
+   * stock. The loader has to be registered first so the load that setSymbol and
+   * setPeriod trigger has something to read.
+   */
+  private applyToChart(): void {
+    if (!this.chart || !this.currentSymbol || this._bars.length === 0) return;
+
+    const bars = this.barsForResolution();
+    this.chart.setDataLoader({
+      getBars: ({ type, callback }) => {
+        // The whole history is already in memory, so only the initial load has
+        // anything to return. Paging requests must report no more data or the
+        // chart keeps asking as the user scrolls back.
+        if (type === "init") callback(bars, false);
+        else callback([], false);
+      },
+    });
+    this.chart.setSymbol({ ticker: this.currentSymbol, pricePrecision: 2, volumePrecision: 0 });
+    this.chart.setPeriod(PERIODS[this.currentResolution] ?? PERIODS["1D"]);
+  }
+
+  /**
+   * Daily bars rolled up to the selected resolution. The portal only serves
+   * daily closes, so weekly and monthly views are aggregated here rather than
+   * refetched — without this the 1W and 1M buttons change the axis but not the
+   * data.
+   */
+  private barsForResolution(): KLineData[] {
+    if (this.currentResolution === "1D") return this._bars;
+
+    const keyOf = (ts: number): string => {
+      const d = new Date(ts);
+      if (this.currentResolution === "1M") return `${d.getUTCFullYear()}-${d.getUTCMonth()}`;
+      // ISO-ish week key: year plus week index from the epoch, which is enough
+      // to group consecutive days without a calendar library.
+      return String(Math.floor(ts / (7 * 86400000)));
+    };
+
+    const out: KLineData[] = [];
+    let currentKey: string | null = null;
+    for (const bar of this._bars) {
+      const key = keyOf(bar.timestamp);
+      const last = out[out.length - 1];
+      if (key !== currentKey || !last) {
+        out.push({ ...bar });
+        currentKey = key;
+        continue;
+      }
+      last.high = Math.max(last.high, bar.high);
+      last.low = Math.min(last.low, bar.low);
+      last.close = bar.close;
+      last.volume = (last.volume ?? 0) + (bar.volume ?? 0);
+    }
+    return out;
   }
 
   setChartType(type: "candlestick" | "ohlc" | "line" | "area"): void {
@@ -39,6 +109,7 @@ export class KLineChartsAdapter implements ChartEngineAdapter {
 
   setResolution(resolution: string): void {
     this.currentResolution = resolution;
+    this.applyToChart();
   }
 
   setDateRange(range: string): void {
@@ -56,10 +127,7 @@ export class KLineChartsAdapter implements ChartEngineAdapter {
       close: bar.close,
       volume: bar.volume
     }));
-    const bars = this._bars;
-    this.chart.setDataLoader({
-      getBars: ({ callback }) => { callback(bars, { forward: false, backward: false }); }
-    });
+    this.applyToChart();
   }
 
   updateLatestBar(bar: CanonicalOHLCV["bars"][number]): void {
@@ -78,10 +146,7 @@ export class KLineChartsAdapter implements ChartEngineAdapter {
     } else {
       this._bars.push(updated);
     }
-    const bars = this._bars;
-    this.chart.setDataLoader({
-      getBars: ({ callback }) => { callback(bars, { forward: false, backward: false }); }
-    });
+    this.applyToChart();
   }
 
   addIndicator(name: string, options?: any): string {
