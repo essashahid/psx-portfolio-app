@@ -43,15 +43,14 @@ export function OutlookView({ model }: { model: OutlookViewModel }) {
               {evidence
                 ? `Every figure here comes from ${evidence.sessions.toLocaleString()} trading days of KSE-100 history, covering ${evidence.years.toFixed(1)} years. `
                 : ""}
-              A short plain-language page explains what this feature can and cannot say, and where its information
-              comes from.
+              The full record of what was tested, what passed and what was withheld is kept in the open.
             </p>
           </div>
           <Link
-            href="/outlook/data"
+            href="/outlook/research"
             className="inline-flex min-h-9 shrink-0 items-center gap-1.5 self-start rounded-md border border-border px-3 text-[13px] font-medium text-foreground transition-colors duration-(--dur-fast) ease-(--ease-ui) hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2 focus-visible:ring-offset-card sm:self-auto"
           >
-            About this outlook
+            Research and evidence
             <ArrowRight aria-hidden className="h-3.5 w-3.5" />
           </Link>
         </CardContent>

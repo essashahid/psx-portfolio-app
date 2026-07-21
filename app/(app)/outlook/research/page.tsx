@@ -34,11 +34,11 @@ export default async function OutlookResearchPage() {
         description="Model evaluation, signal research and data coverage in full. Nothing here is customer-facing; the experimental preview is not production-approved."
         actions={
           <Link
-            href="/outlook/data"
+            href="/outlook"
             className="inline-flex min-h-9 items-center gap-1.5 rounded-md border border-border px-3 text-[13px] font-medium text-foreground transition-colors duration-(--dur-fast) ease-(--ease-ui) hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2 focus-visible:ring-offset-background"
           >
             <ArrowLeft aria-hidden className="h-3.5 w-3.5" />
-            Plain-language version
+            Back to Outlook
           </Link>
         }
       />
