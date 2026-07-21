@@ -28,13 +28,22 @@ export function verifiedTickers(): string[] {
 }
 
 // Order a period string like "2026 9M" so a newer filing can be detected.
+//
+// The match is deliberately NOT anchored. Registry entries record the period
+// as a trailing chain ("TTM to 2026 9M"), while stored rows are bare ("2026
+// 9M"). An anchored pattern silently failed on the former and returned 0,
+// which made every "TTM to ..." entry rank below any real period and report
+// as stale — that is, almost the entire registry, including entries checked
+// against the very period they were being compared to.
+//
+// Q2 and H1 are the same point in the year, as are Q3 and 9M.
 function periodRank(period: string | null | undefined): number {
   if (!period) return 0;
-  const m = period.trim().toUpperCase().match(/^(\d{4})\s*(FY|9M|H1|Q[1-4])?$/);
+  const m = period.trim().toUpperCase().match(/(\d{4})\s*(FY|9M|H1|H2|Q[1-4])/);
   if (!m) return 0;
   const year = Number(m[1]);
-  const within = { Q1: 1, H1: 2, "9M": 3, Q3: 3, FY: 4 }[m[2] ?? "FY"] ?? 0;
-  return year * 10 + within;
+  const within: Record<string, number> = { Q1: 1, H1: 2, Q2: 2, "9M": 3, Q3: 3, Q4: 4, H2: 4, FY: 4 };
+  return year * 10 + (within[m[2]] ?? 0);
 }
 
 /**
@@ -51,4 +60,28 @@ export function verificationStatus(
   if (!v) return null;
   const stale = periodRank(latestPeriodOnFile) > periodRank(v.throughPeriod);
   return { status: stale ? "stale" : "verified", verification: v };
+}
+
+/**
+ * The newest period among stored financial rows, as a label periodRank can
+ * read ("2026 9M"). Ranking lives here rather than at each call site so the
+ * UI and scripts/check-verified-freshness.ts cannot drift apart on what
+ * counts as "newer".
+ *
+ * Pass INCOME STATEMENT rows only. A balance sheet alone does not move the
+ * earnings chain forward, so counting one would report a company as having
+ * newer data when its EPS series has not actually advanced.
+ */
+export function latestPeriodLabel(
+  rows: { fiscal_year: number | null; fiscal_period: string | null }[]
+): string | null {
+  let best: { rank: number; label: string } | null = null;
+  for (const r of rows) {
+    if (!r.fiscal_year || !r.fiscal_period) continue;
+    const label = `${r.fiscal_year} ${r.fiscal_period.toUpperCase()}`;
+    const rank = periodRank(label);
+    if (rank === 0) continue;
+    if (!best || rank > best.rank) best = { rank, label };
+  }
+  return best?.label ?? null;
 }

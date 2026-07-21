@@ -13,7 +13,9 @@
     "eval:signals": "tsx scripts/eval-signals.ts",
     "eval:forecast": "tsx scripts/eval-outlook-forecast.ts",
     "backfill:index": "tsx scripts/backfill-index-history.ts",
-    "check:drift": "tsx scripts/check-verified-drift.ts"
+    "check:drift": "tsx scripts/check-verified-drift.ts",
+    "check:freshness": "tsx scripts/check-verified-freshness.ts",
+    "check:registry": "npm run check:drift && npm run check:freshness"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.104.2",

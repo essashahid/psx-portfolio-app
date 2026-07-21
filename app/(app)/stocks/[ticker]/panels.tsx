@@ -9,6 +9,7 @@ import { METRIC_HINTS } from "@/lib/market/glossary";
 import { getCompanyDividends } from "@/lib/company/dividends";
 import { getCompanyFilings } from "@/lib/company/filings";
 import { computeRatios, type RatioRow } from "@/lib/engine/ratios";
+import { verificationStatus, latestPeriodLabel } from "@/lib/engine/verified";
 import { getPortfolio } from "@/lib/portfolio";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -811,7 +812,7 @@ export async function RatiosPanel({ ticker, readOnly = false }: { ticker: string
   // Always compute live from stored inputs — the engine is pure reads, so the
   // tab reflects the newest extracted financials and quote without waiting on
   // a persisted snapshot.
-  const [ratios, metadata, quoteRes, historyRes] = await Promise.all([
+  const [ratios, metadata, quoteRes, historyRes, periodsRes] = await Promise.all([
     computeRatios(supabase, ticker),
     getCompanyMetadata(supabase, ticker),
     supabase
@@ -826,6 +827,14 @@ export async function RatiosPanel({ ticker, readOnly = false }: { ticker: string
       .not("ratio_value", "is", null)
       .order("as_of_date", { ascending: false })
       .limit(500),
+    // Income statements only: a balance sheet alone does not move the earnings
+    // chain forward, so counting one would tell the user newer data exists
+    // when the EPS series has not actually advanced.
+    supabase
+      .from("company_financials")
+      .select("fiscal_year, fiscal_period")
+      .eq("ticker", ticker.toUpperCase())
+      .eq("statement_type", "income_statement"),
   ]);
 
   const quote = (quoteRes.data ?? null) as RatiosQuoteRow | null;
@@ -865,16 +874,43 @@ export async function RatiosPanel({ ticker, readOnly = false }: { ticker: string
 
   const usableRatios = ratios.filter((row) => row.ratio_value !== null && Number.isFinite(row.ratio_value));
 
+  // Verification provenance. Three distinct states, and the middle one is the
+  // reason this exists: an entry can be genuinely checked AND no longer cover
+  // the newest filing. Showing that as plain "verified" would tell the user a
+  // stale figure had been checked against current data.
+  const latestHeld = latestPeriodLabel(
+    (periodsRes.data ?? []) as { fiscal_year: number | null; fiscal_period: string | null }[]
+  );
+  const verification = verificationStatus(ticker, latestHeld);
+
   return (
-    <RatiosWorkspace
-      ticker={ticker.toUpperCase()}
-      ratios={usableRatios}
-      history={(historyRes.data ?? []) as RatioHistoryRow[]}
-      metadata={metadata}
-      quote={quote}
-      peers={peers}
-      readOnly={readOnly}
-    />
+    <div className="space-y-3">
+      {verification ? (
+        <p className="text-xs text-slate-500">
+          {verification.status === "stale" ? (
+            <>
+              Checked against the filing through {verification.verification.throughPeriod}. A newer
+              filing ({latestHeld}) has since been loaded, so these ratios reflect the newer data but
+              have not been re-checked against it.
+            </>
+          ) : (
+            <>
+              Checked against the filing through {verification.verification.throughPeriod}, on a{" "}
+              {verification.verification.basis} basis.
+            </>
+          )}
+        </p>
+      ) : null}
+      <RatiosWorkspace
+        ticker={ticker.toUpperCase()}
+        ratios={usableRatios}
+        history={(historyRes.data ?? []) as RatioHistoryRow[]}
+        metadata={metadata}
+        quote={quote}
+        peers={peers}
+        readOnly={readOnly}
+      />
+    </div>
   );
 }
 
