@@ -1,33 +1,25 @@
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
-import { createClient } from "@/lib/supabase/server";
 import { PageHeader } from "@/components/page-header";
-import { DataDashboardView } from "@/components/outlook/data-dashboard-view";
-import { buildOutlookCoverage } from "@/lib/engine/outlook/coverage";
-import { loadAlignedInputs } from "@/lib/engine/outlook/inputs";
-import { buildSignalEvidence } from "@/lib/engine/outlook/evaluate";
-import { buildDataDashboard } from "@/lib/engine/outlook/data-dashboard";
+import { AboutDataView } from "@/components/outlook/about-data-view";
 
 export const dynamic = "force-dynamic";
 
 /**
- * The research and evidence dashboard behind the Outlook tab.
+ * Plain-language companion to the Outlook tab.
  *
- * Access is inherited from /outlook through the feature flag, so this stays
- * gated with the parent rather than carrying its own rule.
+ * Deliberately number-free and table-free: what the feature is, what it is
+ * allowed to say, and where its information comes from, written for a reader
+ * who is not a market specialist. The full research detail lives at
+ * /outlook/research for anyone who wants the workings.
  */
-export default async function OutlookDataPage() {
-  const supabase = await createClient();
-  const [coverage, inputs] = await Promise.all([buildOutlookCoverage(supabase), loadAlignedInputs(supabase)]);
-  const evidence = buildSignalEvidence(inputs);
-  const dashboard = buildDataDashboard(coverage, evidence);
-
+export default function OutlookDataPage() {
   return (
     <div className="space-y-4">
       <PageHeader
         eyebrow="PSX Market Outlook"
-        title="Research and evidence"
-        description="What the market has done, which warning signals survived testing against that record, and what data stands behind the conclusions."
+        title="About this outlook"
+        description="What this feature is, what it is allowed to say, and where its information comes from."
         actions={
           <Link
             href="/outlook"
@@ -38,7 +30,7 @@ export default async function OutlookDataPage() {
           </Link>
         }
       />
-      <DataDashboardView dashboard={dashboard} coverage={coverage} evidence={evidence} />
+      <AboutDataView />
     </div>
   );
 }
