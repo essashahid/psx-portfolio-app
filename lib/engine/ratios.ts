@@ -99,6 +99,15 @@ const CONSOLIDATED_BASIS_TICKERS = new Set<string>([
   // its Q2, so the 9M itself is suspect (same duplicate-label shape as FCCL).
   "ALTN",
   "UNITY",
+  // JSBL: bank; Sarmaaya quotes the group. Read from the filings by a subagent
+  // (the PDFs are scanned/image-only, so the text-layer extractor could not
+  // touch them). Consolidated FY2025 2.84 (annual p183) + Q1'26 0.44 - Q1'25
+  // 1.18 (both interim p51) = 2.10, exact to Sarmaaya's 2.1. Unconsolidated
+  // (1.36 + 0.51 - 0.63 = 1.24) does not reconcile. Note the consolidated EPS
+  // is struck on profit attributable to owners, not total PAT — FY2025 total
+  // PAT 7,539,228k includes 1,712,248k of non-controlling interest — which is
+  // why consolidated EPS cannot be rederived from consolidated PAT alone.
+  "JSBL",
 ]);
 
 function preferredBasis(ticker: string): "consolidated" | "unconsolidated" {

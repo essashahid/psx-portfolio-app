@@ -1,12 +1,12 @@
 {
   "_note": "Filing inventory for the extraction cache. 'interim'/'annual' point at the latest report of each kind that was found and downloaded to .cache/filings/. A null value means none was found on PSX's public feed as of checkedAt — re-run with --refresh TICKER to re-check.",
-  "_asOf": "2026-07-21T13:54:10.766Z",
+  "_asOf": "2026-07-21T17:02:38.161Z",
   "summary": {
-    "total": 14,
+    "total": 15,
     "bothFilings": 13,
     "interimOnly": 1,
     "annualOnly": 0,
-    "neither": 0
+    "neither": 1
   },
   "entries": {
     "BML": {
@@ -255,6 +255,12 @@
         "bytes": 26690124
       },
       "checkedAt": "2026-07-20T20:35:18.158Z"
+    },
+    "KEL": {
+      "ticker": "KEL",
+      "interim": null,
+      "annual": null,
+      "checkedAt": "2026-07-21T17:02:38.155Z"
     }
   }
 }
