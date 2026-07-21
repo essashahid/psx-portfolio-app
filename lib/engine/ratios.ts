@@ -78,6 +78,11 @@ const CONSOLIDATED_BASIS_TICKERS = new Set<string>([
   // (4.32) is not a basis difference alone -- it also carries the same
   // un-restated FY2025 annual EPS problem, compounding the gap.
   "SEARL",
+  // GAL: filing prints both (99.9%-owned subsidiary Ghandhara DF); Sarmaaya
+  // quotes the group. FY2025 consolidated EPS 71.85 (annual report p133),
+  // 9M 2026 EPS 85.28 and 9M 2025 comparative EPS 39.89 (interim p5). TTM =
+  // 71.85 + 85.28 - 39.89 = 117.24, exact to Sarmaaya's 117.24.
+  "GAL",
 ]);
 
 function preferredBasis(ticker: string): "consolidated" | "unconsolidated" {
@@ -204,8 +209,16 @@ export async function computeRatios(supabase: SupabaseClient, ticker: string): P
       ? pageAnnual[0]
       : latestAnnual;
   const prevIncome = pageAnnual.length > 1 && income === pageAnnual[0] ? pageAnnual[1] : previous(income && isAnnual(income) ? annualRows : rows, income);
-  const balance = latest(rows, "balance_sheet");
-  const cash = latest(rows, "cash_flow");
+  // Same basis discipline as the income statement: a consolidated-preference
+  // ticker's book value must come from the CONSOLIDATED balance sheet, not
+  // whichever row happens to sort first. GAL's tie-broke silently to the
+  // unconsolidated row (P/B 2.55 vs Sarmaaya 1.7); the actual consolidated
+  // equity (19,165,213 vs 12,792,068 standalone) gives P/B 1.70, exact.
+  // No fallback to the unfiltered set when nothing matches — same as the
+  // income side (PTC/NATF sit unresolved rather than served from the wrong
+  // basis) — missing is preferable to silently wrong.
+  const balance = latest(rows.filter((r) => !excludedByBasis(t, r)), "balance_sheet");
+  const cash = latest(rows.filter((r) => !excludedByBasis(t, r)), "cash_flow");
 
   const price = quote?.price != null && Number(quote.price) > 0 ? Number(quote.price) : null;
 
