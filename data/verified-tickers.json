@@ -819,6 +819,27 @@
       "source": "agent-read+Sarmaaya",
       "date": "2026-07-21",
       "note": "chemicals, FY2025 LOSS year. Read off the cached PDFs by a subagent (interim is a scan with ~454 characters of text layer across 39 pages). Consolidated FY2025 -4.29 (annual printed p273) + Q1'26 0.41 - Q1'25 -0.91 = -2.97, exact to Sarmaaya. Unconsolidated (-2.11) does not reconcile. BASIC not diluted throughout: Q1 2026 returned to profit so the 3,000,000k of convertible preference shares stop being antidilutive and the series diverge (0.41 basic vs 0.31 diluted); Sarmaaya reconciles against basic. No NCI (subsidiaries wholly owned). P/B needed a second correction found by cross-checking: storing total equity 23,770,045k gave P/B 1.25 vs Sarmaaya 1.43, a gap that could not be price vintage because P/E agreed to 0.2% and both ratios share a price. Inverting their P/B implied ~20.8bn equity = total LESS the 3,000,000k preference capital; book value per ORDINARY share must exclude it since the denominator counts ordinary shares only. Ex-preference gives P/B 1.43 exactly. Caution for display: EPS is negative so P/E computes to -11.02, which is not a meaningful multiple."
+    },
+    "ENGROH": {
+      "throughPeriod": "2026 Q1",
+      "basis": "consolidated",
+      "source": "agent-read+Sarmaaya",
+      "date": "2026-07-21",
+      "note": "holding company. Was blocked only because the FY2025 annual was never fetched: ENGROH files under 'Transmission of Annual Financial Statements', a spelling the filing matcher did not recognise, so it fell through to the FY2024 report. The FY2025 annual had been on PSX since 7 Apr 2026. Consolidated FY2025 46.20 (annual printed p187) + Q1'26 8.50 - Q1'25 restated 1.52 (interim p26) = 53.18, exact to Sarmaaya. Unconsolidated (0.21) is not a rival basis but a non-measure: post-Scheme the company holds only its ECL investment, so standalone profit is dividend income, which fell 6,666,606k -> 536,620k. NCI is ~48% of group profit (51,398,032k of 107,030,650k) so EPS is struck on the owners' share 55,632,618k; equity likewise owners-only 219,582,659k ex-NCI 100,708,888k. CAUTION for any multi-year view: FY2024 comparatives sit on the OLD pre-Scheme 481,287k share base while FY2025 sits on 1,204,232k, and the report does NOT mark them restated, so a naive YoY EPS comparison is corrupted by a 2.5x denominator change. Only FY2025 onward is stored. FY2025 also flattered by one-off thermal-asset items (35,758,730k carrying-value adjustment, 24,099,000k remeasurement gain)."
+    },
+    "AABS": {
+      "throughPeriod": "2026 H1",
+      "basis": "unconsolidated",
+      "source": "agent-read+Sarmaaya",
+      "date": "2026-07-21",
+      "note": "sugar, 30 Sep fiscal year end. Unconsolidated is not a preference: the company has no subsidiaries and the word 'consolidated' appears nowhere in its accounts. Was blocked because the interim slot had been taken by 'Advertisement regarding Credit of Interim Dividend for the half year ended March 31, 2026' -- a one-page newspaper notice that matched the report filter on 'half year' and was newer than the real quarterly report filed three weeks earlier. FY2025 73.17 (annual printed p42) + H1 FY2026 21.40 - H1 FY2025 34.63 (both interim printed p09) = 59.94, exact to Sarmaaya. P/B 1.82 vs 1.84. The March interim is a HALF YEAR, not a quarter, and prints cumulative AND quarter-only columns side by side (21.40 vs 10.12); taking the quarter column would give 48.66 and look plausible. Also removed a fabricated 2026 Q3 row carrying the H1 filing's own reported_date -- AABS has filed no Q3, and that row alone dragged the TTM to 35.43."
+    },
+    "SIEM": {
+      "throughPeriod": "2026 H1",
+      "basis": "unconsolidated",
+      "source": "agent-read+Sarmaaya",
+      "date": "2026-07-21",
+      "note": "Siemens Pakistan Engineering, 30 Sep fiscal year end. NOT a cement company and not Siddiqsons; the reading agent corrected that identification. Unconsolidated because there is nothing to consolidate: SIEM is itself 93.03% owned by Siemens AG and discloses no subsidiaries. FY2025 100.57 (annual p40) + H1 FY2026 1.53 - H1 FY2025 70.73 (both interim p6, cumulative columns) = 31.37, exact to Sarmaaya; P/B 2.04 vs 2.04. Needed BOTH a refetch and a data cleanup. The FY2025 annual was missing for the same 'Annual Financial Statements' spelling reason as ENGROH. Separately the extractor had stored CONTINUING-operations EPS as though it were the total, for a company whose result is dominated by discontinued operations: FY2025 held 12.77 against a true 100.57, and FY2024 held 38.07 against a true -248.34, which even flips the sign. A quarter mislabelled Q3 (impossible for a 30 Sep year ending 31 Mar) was also removed. TWO THINGS THAT LOOK WRONG AND ARE NOT: the magnitude, because only ~8.2m shares are outstanding (six-year series runs 100.57, -248.34, 117.72, 203.81, 103.07, -60.14); and the composition, because 87.80 of FY2025's 100.57 is DISCONTINUED operations from the Energy Business disposal while continuing-operations EPS actually fell from 38.07 to 12.77. The headline is not repeatable earnings."
     }
   },
   "_unverifiable": {

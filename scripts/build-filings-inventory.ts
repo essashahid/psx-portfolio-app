@@ -176,20 +176,39 @@ async function processTicker(ticker: string): Promise<Entry> {
     // "Transmission of Quarterly Report" filed the same day, and its content
     // is three pages of compliance boilerplate with no income statement at
     // all. Exclude anything with "shariah" in the title outright.
+    //
+    // The same trap has a second mouth: announcements ABOUT the accounts also
+    // match on period wording. AABS's "Advertisement regarding Credit of
+    // Interim Dividend for the half year ended March 31, 2026" matched via
+    // "half year", was newer than the real "Transmission of Quarterly Report"
+    // filed three weeks earlier, and so won the interim slot — leaving a
+    // one-page newspaper dividend notice standing in for a set of financial
+    // statements. Anything that is a notice, advertisement, intimation,
+    // briefing or board-meeting note is excluded regardless of period wording.
     const isReport = (f: { title: string }) =>
-      /transmission|quarterly report|half[\s-]?year|annual report|annual account|condensed interim/i.test(f.title) &&
-      !/revoked|withdrawn|cancell?ed|shariah/i.test(f.title);
+      /transmission|quarterly report|half[\s-]?year|annual report|annual account|annual financial statement|condensed interim/i.test(f.title) &&
+      !/revoked|withdrawn|cancell?ed|shariah/i.test(f.title) &&
+      !/advertisement|intimation|notice|credit of|board meeting|video recording|presentation|briefing|unclaim|un-?paid/i.test(f.title);
+
+    // "Annual Financial Statements" is a THIRD spelling of the same document
+    // and was missing here. ENGROH files under it, so the matcher fell through
+    // to the FY2024 report and the manifest looked like the FY2025 annual did
+    // not exist — when it had been filed on 7 April 2026. A stale-by-a-year
+    // annual is far more dangerous than a missing one: it reconciles against
+    // nothing but looks like perfectly good data.
+    const isAnnual = (f: { title: string }) => /annual report|annual account|annual financial statement/i.test(f.title);
+
     let all = (await getCompanyFilings(ticker, 40)).filter(isReport);
     // Operationally newsy companies push the annual report past the most
     // recent 40 announcements (director disclosures, notices). Widen only
-    // when nothing carrying "annual report/account" turns up, so quiet
+    // when nothing carrying an annual-report spelling turns up, so quiet
     // companies still pay the cheap 40-item fetch. Same escalation
     // extractFinancials() already uses.
-    if (!all.some((f) => /annual report|annual account/i.test(f.title))) {
+    if (!all.some(isAnnual)) {
       all = (await getCompanyFilings(ticker, 200)).filter(isReport);
     }
-    const annualFiling = all.find((f) => /annual report|annual account/i.test(f.title));
-    const interimFiling = all.find((f) => !/annual report|annual account/i.test(f.title));
+    const annualFiling = all.find(isAnnual);
+    const interimFiling = all.find((f) => !isAnnual(f));
 
     const entry: Entry = { ticker, interim: null, annual: null, checkedAt: new Date().toISOString() };
     const errors: string[] = [];

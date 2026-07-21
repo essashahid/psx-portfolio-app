@@ -1,6 +1,6 @@
 {
   "_note": "Filing inventory for the extraction cache. 'interim'/'annual' point at the latest report of each kind that was found and downloaded to .cache/filings/. A null value means none was found on PSX's public feed as of checkedAt — re-run with --refresh TICKER to re-check.",
-  "_asOf": "2026-07-21T17:16:03.838Z",
+  "_asOf": "2026-07-21T17:34:34.660Z",
   "summary": {
     "total": 7,
     "bothFilings": 6,
@@ -37,22 +37,22 @@
         "bytes": 7476607
       },
       "annual": {
-        "title": "Transmission of Annual Report for the Year Ended 2024-09-30",
-        "date": "Dec 23, 2024",
-        "url": "https://dps.psx.com.pk/download/document/244806.pdf",
+        "title": "Transmission of Annual Financial Statements for the Year Ended 09/30/2025",
+        "date": "Dec 23, 2025",
+        "url": "https://dps.psx.com.pk/download/document/267636.pdf",
         "path": ".cache/filings/SIEM/annual.pdf",
-        "bytes": 2818055
+        "bytes": 2649315
       },
-      "checkedAt": "2026-07-20T20:41:41.079Z"
+      "checkedAt": "2026-07-21T17:34:23.644Z"
     },
     "AABS": {
       "ticker": "AABS",
       "interim": {
-        "title": "Advertisement regarding Credit of Interim Dividend for the half year ended March 31, 2026",
-        "date": "Jun 15, 2026",
-        "url": "https://dps.psx.com.pk/download/document/278575.pdf",
+        "title": "Transmission of Quarterly Report for the period Ended March 31, 2026",
+        "date": "May 22, 2026",
+        "url": "https://dps.psx.com.pk/download/document/277677.pdf",
         "path": ".cache/filings/AABS/interim.pdf",
-        "bytes": 1940087
+        "bytes": 1677976
       },
       "annual": {
         "title": "Transmission of Annual Report for the Year Ended September 30, 2025",
@@ -61,7 +61,7 @@
         "path": ".cache/filings/AABS/annual.pdf",
         "bytes": 15200932
       },
-      "checkedAt": "2026-07-21T17:12:22.137Z"
+      "checkedAt": "2026-07-21T17:34:22.696Z"
     },
     "AGP": {
       "ticker": "AGP",
@@ -91,13 +91,13 @@
         "bytes": 6802511
       },
       "annual": {
-        "title": "Transmission of Annual Report for the year ended December 31, 2024 - Engro Holdings Limited",
-        "date": "Apr 4, 2025",
-        "url": "https://dps.psx.com.pk/download/document/250529.pdf",
+        "title": "Transmission of Annual Financial Statements for the Year Ended December 31, 2025",
+        "date": "Apr 7, 2026",
+        "url": "https://dps.psx.com.pk/download/document/273640.pdf",
         "path": ".cache/filings/ENGROH/annual.pdf",
-        "bytes": 10099893
+        "bytes": 14328892
       },
-      "checkedAt": "2026-07-21T17:14:12.728Z"
+      "checkedAt": "2026-07-21T17:34:22.510Z"
     },
     "EPCL": {
       "ticker": "EPCL",
