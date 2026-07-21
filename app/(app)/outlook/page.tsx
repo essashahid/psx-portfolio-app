@@ -1,7 +1,8 @@
 import { createClient } from "@/lib/supabase/server";
 import { PageHeader } from "@/components/page-header";
-import { OutlookCoverageView } from "@/components/outlook/outlook-coverage-view";
+import { OutlookView } from "@/components/outlook/outlook-view";
 import { buildOutlookCoverage } from "@/lib/engine/outlook/coverage";
+import { buildOutlookViewModel } from "@/lib/engine/outlook/presentation";
 
 export const dynamic = "force-dynamic";
 
@@ -9,23 +10,23 @@ export const dynamic = "force-dynamic";
  * PSX Market Outlook, Phase 1.
  *
  * The finished feature will carry probability-based scenarios. Today it carries
- * only the data audit that decides whether those scenarios can be built at all,
- * and over which horizons. Gated by the enabled_features flag rather than
- * is_admin, so nothing here can be mistaken for a market call until a model
- * exists and has been validated, but access does not require admin rights.
+ * the historical record those scenarios would have to beat. The report is built
+ * server-side and trimmed to a view model before crossing to the client, so the
+ * fifteen-series coverage detail stays on the data page where it is used.
  */
 export default async function OutlookPage() {
   const supabase = await createClient();
   const report = await buildOutlookCoverage(supabase);
+  const model = buildOutlookViewModel(report);
 
   return (
     <div className="space-y-4">
       <PageHeader
         eyebrow="Research"
         title="PSX Market Outlook"
-        description="An early-warning and forecasting system for the PSX, built in phases. This is the data foundation: what history exists, how reliable it is, and how the market has behaved in the past."
+        description="How the Pakistani market has behaved over the past five years, and how reliable that record is. The foundation for an early-warning system being built in phases."
       />
-      <OutlookCoverageView report={report} />
+      <OutlookView model={model} />
     </div>
   );
 }

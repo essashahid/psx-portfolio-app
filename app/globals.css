@@ -23,6 +23,23 @@
   --brand-soft: #eef1fb;
   /* Soft layered shadow used by cards & raised surfaces. */
   --shadow-card: 0 1px 2px rgba(13, 18, 15, 0.035), 0 14px 30px -20px rgba(13, 18, 15, 0.18);
+  /* Third text tier, below muted-foreground: axis ticks, footnotes, range ends. */
+  --muted-foreground-soft: color-mix(in oklab, var(--muted-foreground) 68%, transparent);
+  /* Interaction timing. --dur-fast for hover and selection state, --dur-base
+     for value transitions that carry meaning (bar widths, bar heights, range
+     position), so a changed number is seen moving rather than teleporting. */
+  --dur-fast: 150ms;
+  --dur-base: 300ms;
+  --ease-ui: cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* Collapsing the duration tokens is enough to disable every transition built
+   on them, so individual components need no reduced-motion branch of their own. */
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --dur-fast: 0ms;
+    --dur-base: 0ms;
+  }
 }
 
 @theme inline {
