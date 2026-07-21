@@ -90,7 +90,7 @@
       "basis": "unconsolidated",
       "source": "filing",
       "date": "2026-07-05",
-      "note": "holding-co; both bases stored; PSX vendor P/E was wrong, ours is right"
+      "note": "holding-co; both bases stored; PSX vendor P/E was wrong, ours is right P/B was found to have been silently basis-mixed (an accidental tie-break picked the consolidated balance sheet against unconsolidated EPS, giving 1.48) -- now correctly basis-consistent at 3.19, which diverges further from Sarmaaya's 1.77 because Sarmaaya's P/B reference is on the consolidated basis, same reason our unconsolidated P/E doesn't match PSX vendor P/E either. Not investigated further; the EPS/P-E claim this entry certifies is unaffected."
     },
     "CCM": {
       "throughPeriod": "2026 9M",
@@ -356,7 +356,7 @@
       "basis": "consolidated",
       "source": "agent+Sarmaaya",
       "date": "2026-07-21",
-      "note": "bank; Sarmaaya quotes the group figure. Agent-read filing gave FY2025 29.19 (p177), Q1 2025 9.65 (p58), Q1 2026 6.54 (p58), all consolidated, rebuilding to TTM 26.08 exact to Sarmaaya. Ratio engine gained a per-company basis preference (CONSOLIDATED_BASIS_TICKERS in lib/engine/ratios.ts) to serve this — confirmed via getRatioCard (the actual API path), P/E now eps=26.08 exactly, P/B 1.22 vs Sarmaaya 1.21 as an independent second check. Zero regressions across the other 49 verified companies on re-check."
+      "note": "bank; Sarmaaya quotes the group figure. Agent-read filing gave FY2025 29.19 (p177), Q1 2025 9.65 (p58), Q1 2026 6.54 (p58), all consolidated, rebuilding to TTM 26.08 exact to Sarmaaya. Ratio engine gained a per-company basis preference (CONSOLIDATED_BASIS_TICKERS in lib/engine/ratios.ts) to serve this — confirmed via getRatioCard (the actual API path), P/E now eps=26.08 exactly, P/B 1.22 vs Sarmaaya 1.21 as an independent second check. Zero regressions across the other 49 verified companies on re-check. Confirmed via getRatioCard (the actual API path), P/E now eps=26.08 exactly. P/B is currently unavailable (not wrong): the balance-sheet selection was later made basis-aware too, and no consolidated balance sheet has been captured for BAHL yet, so the engine correctly declines to pair the consolidated EPS with an unconsolidated book value rather than silently mixing bases. Zero regressions across the other verified companies on re-check."
     },
     "FCCL": {
       "throughPeriod": "2026 9M",
@@ -370,14 +370,21 @@
       "basis": "consolidated",
       "source": "hand+Sarmaaya",
       "date": "2026-07-21",
-      "note": "steel; Sarmaaya quotes the group figure. My inventory builder had grabbed the wrong interim document (a Shariah-disclosure resubmission with no P&L, title-matched on 'half yearly accounts') -- fixed the filter, re-fetched the real quarterly report, and read both filings by hand (agent's earlier passes never produced a complete chain). Consolidated FY2025 EPS 2.50 (annual report p153), 9M 2026 5.10 and 9M 2025 comparative 1.23 (interim Directors' Review p3). Rebuilt TTM = 2.50+5.10-1.23 = 6.37, exact to Sarmaaya. Unconsolidated TTM (7.24, all figures independently confirmed on the interim's own P&L p6) does not reconcile -- this is a genuine basis difference, not a data error; our unconsolidated figures were correct all along. P/B 0.89 vs Sarmaaya 0.91 as an independent second check, after fixing a units bug in my own insert (profit_after_tax entered in full rupees instead of the schema's PKR-thousands convention, which inflated the implied share count ~1000x and briefly broke P/B to 885 before being caught)."
+      "note": "steel; Sarmaaya quotes the group figure. My inventory builder had grabbed the wrong interim document (a Shariah-disclosure resubmission with no P&L, title-matched on 'half yearly accounts') -- fixed the filter, re-fetched the real quarterly report, and read both filings by hand (agent's earlier passes never produced a complete chain). Consolidated FY2025 EPS 2.50 (annual report p153), 9M 2026 5.10 and 9M 2025 comparative 1.23 (interim Directors' Review p3). Rebuilt TTM = 2.50+5.10-1.23 = 6.37, exact to Sarmaaya. Unconsolidated TTM (7.24, all figures independently confirmed on the interim's own P&L p6) does not reconcile -- this is a genuine basis difference, not a data error; our unconsolidated figures were correct all along. P/B is currently unavailable (not wrong): no consolidated balance sheet has been captured for MUGHAL, so the engine correctly declines to pair the consolidated EPS with an unconsolidated book value. (An earlier version of this note cited P/B 0.89 vs Sarmaaya 0.91 -- that number came from an unconsolidated balance sheet paired with a consolidated EPS, a basis mix the engine no longer allows once balance-sheet selection was made basis-aware too.)"
     },
     "SEARL": {
       "throughPeriod": "2026 9M",
       "basis": "consolidated",
       "source": "hand+Sarmaaya",
       "date": "2026-07-21",
-      "note": "pharma; Sarmaaya quotes the group figure. FY2025 was a genuine consolidated LOSS per share of -2.73 (annual report p217), driven by a Rs 2.18bn discontinued-operations loss on divesting subsidiary Searle Pakistan Ltd -- not a data error, an actual one-off event. That figure predates a 15% bonus issued during 9M FY2026 and was never restated; the interim's own comparatives ARE restated per IAS 33, so combined them at face value would double-count the dilution on one side only. Restated FY2025 to the post-bonus share base (511,494,424 -> 588,218,587, both from the filings' own share-capital notes): -2.73 * (511494424/588218587) = -2.37. TTM = -2.37 + 3.89(9M 2026, p24) - (-0.55)(9M 2025 comparative, p28) = 2.07, within 1.5% of Sarmaaya's 2.04. P/B 1.66 vs Sarmaaya 1.57 as an independent second check -- both track consistently with Sarmaaya's own price/EPS ratio, no red flags."
+      "note": "pharma; Sarmaaya quotes the group figure. FY2025 was a genuine consolidated LOSS per share of -2.73 (annual report p217), driven by a Rs 2.18bn discontinued-operations loss on divesting subsidiary Searle Pakistan Ltd -- not a data error, an actual one-off event. That figure predates a 15% bonus issued during 9M FY2026 and was never restated; the interim's own comparatives ARE restated per IAS 33, so combined them at face value would double-count the dilution on one side only. Restated FY2025 to the post-bonus share base (511,494,424 -> 588,218,587, both from the filings' own share-capital notes): -2.73 * (511494424/588218587) = -2.37. TTM = -2.37 + 3.89(9M 2026, p24) - (-0.55)(9M 2025 comparative, p28) = 2.07, within 1.5% of Sarmaaya's 2.04. P/B is currently unavailable (not wrong): no consolidated balance sheet has been captured for SEARL, so the engine correctly declines to pair the consolidated EPS with an unconsolidated book value."
+    },
+    "GAL": {
+      "throughPeriod": "2026 9M",
+      "basis": "consolidated",
+      "source": "hand+Sarmaaya",
+      "date": "2026-07-21",
+      "note": "auto assembler; both filings exceeded the vision provider's combined payload limit (26.7MB annual + 1.8MB interim, HTTP 413), so read by hand instead of forcing a degraded chunked read. Sarmaaya quotes the group (99.9%-owned subsidiary Ghandhara DF). Consolidated FY2025 EPS 71.85 (annual report p133), 9M 2026 EPS 85.28 and 9M 2025 comparative 39.89 (interim p5/p23-24). TTM = 71.85+85.28-39.89 = 117.24, exact to Sarmaaya. No share-count restatement needed (unchanged 57,002,500 shares, no bonus/rights issue). P/E confirmed via getRatioCard: eps=117.24 exactly. Also found and fixed a real bug this surfaced: GAL's consolidated balance sheet (equity 19,165,213) was stored with reporting_basis 'unlabelled' and review_status 'needs_review', so the ratio engine's un-basis-aware balance-sheet selection silently picked the unconsolidated equity instead, giving P/B 2.55 against Sarmaaya's 1.7. Relabeled+published the row and extended the engine's balance/cash-flow selection to respect CONSOLIDATED_BASIS_TICKERS (previously only the income-statement side was basis-aware) -- P/B now 1.70, exact."
     }
   },
   "_unverifiable": {
@@ -387,7 +394,6 @@
   },
   "_needsRecheck": {
     "_note": "Was verified, or was changed by an automated pass, but the trailing figure no longer stands. Re-read the filing before restoring or granting the mark.",
-    "GAL": "Backfill produced trailing 69.76 against Sarmaaya 117.24 (-40%).",
     "PSEL": "Backfill produced trailing 21.06 against Sarmaaya 5.58 (+277%). Also holds contradictory FY rows (2022 FY at -10.99 and 18.73; 2023 FY at -6.71 and -52.35).",
     "AVN": "Backfill produced trailing 0.14 against Sarmaaya 1.02 (-86%). Filing 277710 yielded three 2025 FY rows: consolidated 1.51, unconsolidated 0.14, unlabelled 1.54. The 0.14 the engine selected is almost certainly a misread.",
     "HUMNL": "Backfill produced trailing 1.20 against Sarmaaya 0.10.",
