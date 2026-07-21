@@ -1,6 +1,7 @@
 import type { AlignedInputs } from "@/lib/engine/outlook/inputs";
 import type { ForecastDataset, WfHorizon } from "@/lib/engine/outlook/walkforward";
 import type { ExperimentalOutlook } from "@/lib/engine/outlook/experimental-outlook";
+import { buildDrivers, type OutlookDriver } from "@/lib/engine/outlook/drivers";
 
 /**
  * The customer-facing outlook.
@@ -27,14 +28,6 @@ export interface CustomerLevel {
   distancePct: number;
   /** Chance the path reaches it over two weeks, from the validated distribution. */
   reachProb: number | null;
-}
-
-export interface CustomerDriver {
-  name: string;
-  /** Whether this reading feeds a validated model or is background only. */
-  basis: "model" | "context";
-  effect: "positive" | "risk" | "mixed";
-  detail: string;
 }
 
 /**
@@ -89,7 +82,7 @@ export interface CustomerOutlook {
   evidenceQuality: { level: "Low" | "Moderate" | "High"; note: string };
   horizons: CustomerHorizon[];
   levels: { supports: CustomerLevel[]; resistances: CustomerLevel[]; aboveNote: string; belowNote: string };
-  drivers: CustomerDriver[];
+  drivers: OutlookDriver[];
   sectors: { beneficiaries: SectorCall[]; atRisk: SectorCall[]; basis: string };
   whatCouldChange: { strengthen: string; weaken: string };
   /** Factors that are genuinely absent from the calculation, named explicitly. */
@@ -112,12 +105,6 @@ const HORIZON_LABEL: Record<WfHorizon, string> = { 5: "1 week", 10: "2 weeks", 2
 const fmtIndex = (v: number) => Math.round(v).toLocaleString("en-US");
 const pctText = (v: number, d = 0) => `${(v * 100).toFixed(d)}%`;
 
-/** Latest non-null value of a series. */
-function latest(series: (number | null)[]): number | null {
-  for (let i = series.length - 1; i >= 0; i--) if (series[i] !== null) return series[i];
-  return null;
-}
-
 /** Percentile of the latest value within its own history, 0-1. */
 function percentileOfLatest(series: (number | null)[]): number | null {
   const present = series.filter((v): v is number => v !== null);
@@ -134,13 +121,6 @@ function changeOver(series: (number | null)[], lookback: number): number | null 
   const now = present[present.length - 1];
   const then = present[present.length - 1 - lookback];
   return then > 0 ? now / then - 1 : null;
-}
-
-function trendWord(change: number | null, flatBand = 0.01): "rising" | "easing" | "steady" {
-  if (change === null) return "steady";
-  if (change > flatBand) return "rising";
-  if (change < -flatBand) return "easing";
-  return "steady";
 }
 
 // --- Sector calls ---------------------------------------------------------------
@@ -404,130 +384,15 @@ export function buildCustomerOutlook(
     };
   });
 
-  // --- Drivers, all current readings ---
+  // Readings the sector conditions depend on. The drivers module computes its
+  // own values; these three are the ones that decide which factors are active.
   const advPct = percentileOfLatest(dataset.adv10);
-  const upvolPct = percentileOfLatest(dataset.upvol10);
-  const pkrChange = changeOver(inputs.usdPkr, 63);
   const brentChange = changeOver(inputs.brent, 63);
-  const goldChange = changeOver(inputs.goldUsd, 63);
   const spyChange = changeOver(inputs.spy, 63);
-  const eemChange = changeOver(inputs.eem, 63);
-  const policy = latest(inputs.policyRate.map((v) => v));
-  const cpi = latest(inputs.cpiYoY);
-  const fipiRecent = inputs.fipiNet.slice(-21).filter((v): v is number => v !== null);
-  const fipiSum = fipiRecent.length >= 10 ? fipiRecent.reduce((a, b) => a + b, 0) : null;
 
-  const drivers: CustomerDriver[] = [
-    {
-      name: "Market participation",
-      basis: "model",
-      effect: advPct === null ? "mixed" : advPct >= 0.55 ? "positive" : advPct <= 0.35 ? "risk" : "mixed",
-      detail:
-        advPct === null
-          ? "Participation data is still building."
-          : advPct >= 0.55
-            ? "A healthy share of stocks is taking part in the move, which has historically supported gains."
-            : advPct <= 0.35
-              ? "Fewer stocks are participating than usual, which has historically preceded weaker stretches."
-              : "Participation is around its typical level.",
-    },
-    {
-      name: "Market volatility",
-      basis: "model",
-      effect: volPct === null ? "mixed" : volPct >= 2 / 3 ? "risk" : volPct <= 1 / 3 ? "positive" : "mixed",
-      detail:
-        volPct === null
-          ? "Volatility reading unavailable."
-          : volPct >= 2 / 3
-            ? "Recent swings are larger than usual. This is the single most reliable warning signal we found, and it raises the chance of a sharp dip."
-            : volPct <= 1 / 3
-              ? "The market has been unusually calm, which has historically meant a lower chance of a sharp dip."
-              : "Swings are around their typical size.",
-    },
-    {
-      name: "Trading volume behind the move",
-      basis: "model",
-      effect: upvolPct === null ? "mixed" : upvolPct >= 0.55 ? "positive" : upvolPct <= 0.35 ? "risk" : "mixed",
-      detail:
-        upvolPct === null
-          ? "Volume split unavailable."
-          : upvolPct >= 0.55
-            ? "More volume is going through rising stocks than falling ones."
-            : upvolPct <= 0.35
-              ? "Volume is concentrated in falling stocks."
-              : "Volume is evenly split between rising and falling stocks.",
-    },
-    {
-      name: "Rupee against the dollar",
-      basis: "context",
-      effect: pkrChange === null ? "mixed" : pkrChange > 0.02 ? "risk" : pkrChange < -0.01 ? "positive" : "mixed",
-      detail:
-        pkrChange === null
-          ? "Currency data unavailable."
-          : `${
-              pkrChange > 0.01
-                ? `The rupee has weakened ${pctText(pkrChange, 1)} against the dollar over three months`
-                : pkrChange < -0.01
-                  ? `The rupee has strengthened ${pctText(Math.abs(pkrChange), 1)} against the dollar over three months`
-                  : "The rupee is broadly stable against the dollar over three months"
-            }. Currency pressure raises import costs and inflation.`,
-    },
-    {
-      name: "Brent crude oil",
-      basis: "context",
-      effect: brentChange === null ? "mixed" : brentChange > 0.05 ? "risk" : brentChange < -0.05 ? "positive" : "mixed",
-      detail:
-        brentChange === null
-          ? "Oil data unavailable."
-          : `${
-              brentChange > 0.05
-                ? `Oil is up ${pctText(brentChange, 1)} over three months`
-                : brentChange < -0.05
-                  ? `Oil is down ${pctText(Math.abs(brentChange), 1)} over three months`
-                  : "Oil is broadly flat over three months"
-            }. Pakistan imports its energy, so higher oil pressures the import bill, inflation and the rupee.`,
-    },
-    {
-      name: "Interest rates and inflation",
-      basis: "context",
-      effect: policy !== null && cpi !== null && policy - cpi > 3 ? "positive" : "mixed",
-      detail:
-        policy === null
-          ? "Policy rate unavailable."
-          : `The policy rate is ${policy.toFixed(1)}%${cpi !== null ? ` against inflation near ${cpi.toFixed(1)}%` : ""}. ${policy !== null && cpi !== null && policy - cpi > 3 ? "Real rates remain positive, which supports the rupee but weighs on borrowing." : "Rate and inflation conditions are mixed for equities."}`,
-    },
-    {
-      name: "Foreign investor flows",
-      basis: "context",
-      effect: fipiSum === null ? "mixed" : fipiSum > 0 ? "positive" : "risk",
-      detail:
-        fipiSum === null
-          ? "Flow data unavailable for the recent period."
-          : `Foreign investors have been net ${fipiSum > 0 ? "buyers" : "sellers"} over the past month (${fipiSum > 0 ? "+" : ""}$${fipiSum.toFixed(1)}m). Flows move with the market rather than ahead of it, so we treat this as background.`,
-    },
-    {
-      name: "Global markets",
-      basis: "context",
-      effect: spyChange === null ? "mixed" : spyChange > 0.02 && (eemChange ?? 0) > 0 ? "positive" : spyChange < -0.03 ? "risk" : "mixed",
-      detail:
-        spyChange === null
-          ? "Global market data unavailable."
-          : `Global shares are ${trendWord(spyChange, 0.02)} over three months${eemChange !== null ? `, with emerging markets ${trendWord(eemChange, 0.02)}` : ""}. Sharp global risk-off periods have historically hurt several PSX sectors.`,
-    },
-    {
-      name: "Gold",
-      basis: "context",
-      effect: "mixed",
-      detail:
-        goldChange === null
-          ? "Gold data unavailable."
-          : goldChange > 0.05
-            ? `Gold is up ${pctText(goldChange, 1)} over three months. Sustained strength often signals caution in the wider market.`
-            : goldChange < -0.05
-              ? `Gold is down ${pctText(Math.abs(goldChange), 1)} over three months, which usually accompanies a steadier risk appetite.`
-              : "Gold is broadly flat over three months, offering no strong signal either way.",
-    },
-  ];
+  // Driver readings live in their own module: each carries the plain-language
+  // meaning, a compact line of real numbers, and evidence hidden until asked for.
+  const drivers = buildDrivers(inputs, dataset, sectors);
 
   // --- Sectors, from validated relationships under current conditions ---
   const sectorCalls = buildSectorCalls(sectors, {
