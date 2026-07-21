@@ -168,6 +168,32 @@ const CONSOLIDATED_BASIS_TICKERS = new Set<string>([
   // matches the printed -3.45, while owners' 1,920,742,169 gives -3.42 and does
   // not. Stored profit and equity both use the total-incl-NCI basis to match.
   "TPLP",
+  // --- Holding companies flipped to consolidated on 2026-07-22 -------------
+  // These five were previously served UNCONSOLIDATED and drifted from the
+  // reference. Re-reading every filing proved neither side was wrong: each
+  // chain reproduces to the paisa on BOTH bases, and the gap was purely
+  // standalone vs group. The basis was then chosen deliberately, because
+  // standalone accounts hide subsidiary and associate earnings that are most
+  // of the business:
+  //   MCB     44.88 -> 48.00   LUCK  28.99 -> 56.88   FFC  54.50 -> 59.83
+  //   HUBC    18.84 -> 34.65   FATIMA 12.66 -> 17.58
+  // HUBC is the starkest: standalone profit 19.1bn against group owners' 46.1bn,
+  // with 41.3bn of associate/JV income reaching standalone only as dividends.
+  // FATIMA carved its Multan Plant into a subsidiary effective 1 Jan 2025, so
+  // its standalone series no longer describes the listed business at all.
+  //
+  // NOTE this SUPERSEDES the earlier comment above claiming LUCK/FFC/HUBC are
+  // "correctly unconsolidated" because PSX quotes standalone. That was a real
+  // observation — PSX does quote standalone — but the platform now serves the
+  // group basis for holding structures, consistently, rather than matching
+  // PSX's convention. All consolidated EPS here is struck on profit
+  // attributable to OWNERS, each verified by division rather than by note
+  // wording (FATIMA excepted: wholly owned subsidiaries, so no NCI exists).
+  "MCB",
+  "LUCK",
+  "FFC",
+  "HUBC",
+  "FATIMA",
 ]);
 
 function preferredBasis(ticker: string): "consolidated" | "unconsolidated" {

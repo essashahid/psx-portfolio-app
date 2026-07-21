@@ -1,10 +1,10 @@
 {
   "_note": "Filing inventory for the extraction cache. 'interim'/'annual' point at the latest report of each kind that was found and downloaded to .cache/filings/. A null value means none was found on PSX's public feed as of checkedAt — re-run with --refresh TICKER to re-check.",
-  "_asOf": "2026-07-21T18:45:00.573Z",
+  "_asOf": "2026-07-21T20:00:10.868Z",
   "summary": {
-    "total": 37,
-    "bothFilings": 32,
-    "interimOnly": 4,
+    "total": 43,
+    "bothFilings": 37,
+    "interimOnly": 5,
     "annualOnly": 0,
     "neither": 1
   },
@@ -641,6 +641,109 @@
       "annual": null,
       "checkedAt": "2026-07-21T18:44:46.335Z",
       "error": "annual: truncated PDF: 24.6MB with no %%EOF trailer — download incomplete, not caching"
+    },
+    "HBL": {
+      "ticker": "HBL",
+      "interim": {
+        "title": "Transmission of Quarterly Report for the Period Ended March 31, 2026",
+        "date": "Apr 28, 2026",
+        "url": "https://dps.psx.com.pk/download/document/275409.pdf",
+        "path": ".cache/filings/HBL/interim.pdf",
+        "bytes": 2372793
+      },
+      "annual": null,
+      "checkedAt": "2026-07-21T19:59:53.667Z",
+      "error": "annual: response is not a PDF (got <!DOCTYPE html><html)"
+    },
+    "FATIMA": {
+      "ticker": "FATIMA",
+      "interim": {
+        "title": "Transmission of Quarterly Report for the Period Ended March 31, 2026",
+        "date": "Apr 30, 2026",
+        "url": "https://dps.psx.com.pk/download/document/275979.pdf",
+        "path": ".cache/filings/FATIMA/interim.pdf",
+        "bytes": 1011930
+      },
+      "annual": {
+        "title": "Transmission of Annual Report for the Year Ended December 31, 2025",
+        "date": "Mar 27, 2026",
+        "url": "https://dps.psx.com.pk/download/document/273129.pdf",
+        "path": ".cache/filings/FATIMA/annual.pdf",
+        "bytes": 6356406
+      },
+      "checkedAt": "2026-07-21T19:59:52.587Z"
+    },
+    "HUBC": {
+      "ticker": "HUBC",
+      "interim": {
+        "title": "Transmission of Quarterly Report for the Period Ended March 31, 2026",
+        "date": "Apr 27, 2026",
+        "url": "https://dps.psx.com.pk/download/document/275244.pdf",
+        "path": ".cache/filings/HUBC/interim.pdf",
+        "bytes": 2877849
+      },
+      "annual": {
+        "title": "Transmission of Annual Report for the Year Ended June 30, 2025",
+        "date": "Sep 19, 2025",
+        "url": "https://dps.psx.com.pk/download/document/259628.pdf",
+        "path": ".cache/filings/HUBC/annual.pdf",
+        "bytes": 16388826
+      },
+      "checkedAt": "2026-07-21T19:59:53.723Z"
+    },
+    "LUCK": {
+      "ticker": "LUCK",
+      "interim": {
+        "title": "Transmission of Quarterly Report for the period ended - Marach 31, 2026",
+        "date": "Apr 30, 2026",
+        "url": "https://dps.psx.com.pk/download/document/276255.pdf",
+        "path": ".cache/filings/LUCK/interim.pdf",
+        "bytes": 6493967
+      },
+      "annual": {
+        "title": "Transmission of Annual Report for the Year Ended -June 30, 2025 - Lucky Cement Limited",
+        "date": "Sep 5, 2025",
+        "url": "https://dps.psx.com.pk/download/document/258917.pdf",
+        "path": ".cache/filings/LUCK/annual.pdf",
+        "bytes": 14125213
+      },
+      "checkedAt": "2026-07-21T19:59:52.853Z"
+    },
+    "MCB": {
+      "ticker": "MCB",
+      "interim": {
+        "title": "Transmission of Quarterly Report for the Period Ended March 31, 2026",
+        "date": "Apr 30, 2026",
+        "url": "https://dps.psx.com.pk/download/document/275982.pdf",
+        "path": ".cache/filings/MCB/interim.pdf",
+        "bytes": 6747342
+      },
+      "annual": {
+        "title": "Transmission of Annual Report for the year ended December 31, 2025 - MCB Bank Limited",
+        "date": "Mar 6, 2026",
+        "url": "https://dps.psx.com.pk/download/document/272127.pdf",
+        "path": ".cache/filings/MCB/annual.pdf",
+        "bytes": 14687307
+      },
+      "checkedAt": "2026-07-21T19:59:52.665Z"
+    },
+    "FFC": {
+      "ticker": "FFC",
+      "interim": {
+        "title": "Transmission of Quarterly Report for the Period Ended 31 Mar 2026",
+        "date": "Apr 30, 2026",
+        "url": "https://dps.psx.com.pk/download/document/276333.pdf",
+        "path": ".cache/filings/FFC/interim.pdf",
+        "bytes": 2894011
+      },
+      "annual": {
+        "title": "Transmission of Annual Report for the Year Ended 31 December 2025",
+        "date": "Feb 23, 2026",
+        "url": "https://dps.psx.com.pk/download/document/270829.pdf",
+        "path": ".cache/filings/FFC/annual.pdf",
+        "bytes": 16632058
+      },
+      "checkedAt": "2026-07-21T19:59:53.473Z"
     }
   }
 }
