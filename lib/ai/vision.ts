@@ -83,7 +83,27 @@ export async function visionPdf(pdf: Buffer | NamedPdf[], system: string, user: 
   if (files.length === 0) return { error: "no PDF provided" };
 
   const orKey = openRouterKey();
-  if (orKey) return openRouterPdf(orKey, files, system, user, maxTokens);
+  if (orKey) {
+    const result = await openRouterPdf(orKey, files, system, user, maxTokens);
+    // Previously this returned unconditionally, which made the Claude fallback
+    // below dead code whenever an OpenRouter key was present — including when
+    // OpenRouter was out of credits. A whole extraction run failed on HTTP 402
+    // with a perfectly good second provider configured and never tried.
+    // Fall through only on provider-level failures that a different provider
+    // could plausibly survive: 402 (credits), 429 (rate limit), 5xx (outage),
+    // 413 (payload limit — Claude's differs, and oversized filings are exactly
+    // the case that needs a second option). NOT on 400/401/404, which mean the
+    // request itself is wrong and would fail identically anywhere.
+    if (!("error" in result)) return result;
+    const failover = /HTTP (402|413|429|5\d\d)\b/.test(result.error) || /fetch failed|ECONNRESET|ETIMEDOUT|socket hang up/i.test(result.error);
+    if (!failover || !claudeConfigured()) return result;
+    const viaClaude = await claudePdf(files, system, user, maxTokens);
+    // If the fallback also fails, surface BOTH reasons — otherwise the
+    // original cause (e.g. "insufficient credits") is silently replaced by
+    // whatever the second provider said, and the real problem is invisible.
+    if ("error" in viaClaude) return { error: `openrouter: ${result.error} | claude fallback: ${viaClaude.error}` };
+    return viaClaude;
+  }
   if (claudeConfigured()) return claudePdf(files, system, user, maxTokens);
   return { error: "no vision provider configured (set OPENROUTER_API_KEY / VISION_API_KEY, or CLAUDE_API_KEY)" };
 }
