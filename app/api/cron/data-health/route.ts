@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { runDataHealth } from "@/lib/engine/data-health";
+import { checkRegistryHealth, summariseRegistryHealth } from "@/lib/engine/registry-health";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 300;
@@ -54,6 +55,18 @@ export async function GET(request: Request) {
         () => undefined
       );
 
+    // Health of the verified REGISTRY, as distinct from the data it points at.
+    // The registry tells users a figure was independently checked, and that
+    // claim decays two ways: it can start disagreeing with the reference
+    // (drift, usually because a later extraction changed which rows the
+    // trailing chain selects), or it can still agree while a newer filing has
+    // landed (staleness, which a drift check never catches). Both were
+    // previously invisible until someone looked by hand.
+    //
+    // Best-effort: a registry problem must not fail the data-health audit,
+    // which is useful on its own.
+    const registry = await checkRegistryHealth(db).catch(() => null);
+
     return NextResponse.json({
       checked: health.checked,
       cleanCompanies: health.cleanCompanies,
@@ -62,6 +75,20 @@ export async function GET(request: Request) {
       summary: health.summary,
       findings: url.searchParams.get("detail")
         ? health.findings.sort((a, b) => b.marketCap - a.marketCap).slice(0, 200)
+        : undefined,
+      registry: registry
+        ? {
+            summary: summariseRegistryHealth(registry),
+            entries: registry.entries,
+            agreeing: registry.agreeing,
+            drifted: registry.drifted.length,
+            stale: registry.stale.length,
+            missingData: registry.missingData.length,
+            // Always include the offenders. These lists are small by
+            // construction, and a count with no names cannot be acted on.
+            driftedDetail: registry.drifted,
+            staleDetail: registry.stale,
+          }
         : undefined,
       durationMs: Date.now() - started,
     });
