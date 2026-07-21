@@ -889,6 +889,48 @@
       "source": "agent-read (reference stale)",
       "date": "2026-07-21",
       "note": "Adam Sugar Mills, 30 September fiscal year end so the March interim is a HALF YEAR. No subsidiaries, so unconsolidated is the only basis. P/B 0.23 vs 0.23. Highly seasonal: the 127-day crushing season (15 Nov to 21 Mar) falls almost entirely inside H1, so H1 is NOT half a year and annualising it would be wrong. THE REFERENCE DISAGREES AND WE ARE THE ONES WHO ARE RIGHT. Our chain gives 8.78 against Sarmaaya's 9.29. The 0.51 gap is EXACTLY the restatement the company made: H1 FY2025 EPS was restated from -2.54 as previously reported to -2.03, correcting a deferred-tax rate error (interim note 24; the annual makes the matching FY2024 correction, 3.14 to 4.23). Chaining the SUPERSEDED comparative gives 2.67 + 4.08 + 2.54 = 9.29, reproducing Sarmaaya exactly, which is how the disagreement was identified rather than merely tolerated. We use the corrected figure as IAS 8 requires. Recorded at a lower confidence tier because the independent check does not agree, though the discrepancy is fully explained. Also note the interim's auditor review report in this copy is an unsigned DRAFT watermark with blank date and UDIN."
+    },
+    "STCL": {
+      "throughPeriod": "2026 9M",
+      "basis": "unconsolidated",
+      "source": "agent-read+Sarmaaya",
+      "date": "2026-07-21",
+      "note": "Shabbir Tiles and Ceramics, 30 June fiscal year end so the March interim is the NINE MONTH period. No subsidiary, so unconsolidated is the only basis. -4.03 exact, P/B 1.53 vs 1.54. Both PDFs are scans with no text layer over the statements; all figures read from page images. Deteriorating sharply: the 9M FY2026 loss of 906,275k is nearly 7x the prior year's 133,987k, equity fell from 2,648,775k to 1,742,500k in nine months, and unappropriated profit flipped to an accumulated loss of 381,315k. The annual's printed folio is unreliable (PDF p46/47/48 all carry the header 'PAGE 14'), so PDF page numbers are the citation."
+    },
+    "AWTX": {
+      "throughPeriod": "2026 9M",
+      "basis": "unconsolidated",
+      "source": "agent-read+Sarmaaya",
+      "date": "2026-07-21",
+      "note": "Allawasaya Textile and Finishing Mills, 30 June fiscal year end so the March interim is the NINE MONTH period. 9.84 exact, P/B 1.00 vs 0.99. Only 800,000 shares outstanding, so per-share figures run in the tens and hundreds; that is the share base, not a scaling error. The interim's cumulative and quarter-only columns carry OPPOSITE signs (9M FY2025 -124.81 against Q3 FY2025 +73.79), so picking the wrong column would yield a plausible but wrong figure. FY2024 and FY2023 comparatives are labelled '(Restated)' but NO restatement note explains why -- the reading agent checked notes 3, 4, 45, 46 and 47 and declined to infer a cause. The restatement did not touch the share base. Equity excludes the separate 'Loan from directors 192,500,000' line the balance sheet adds below equity to reach 1,477,718,500."
+    },
+    "GATI": {
+      "throughPeriod": "2026 9M",
+      "basis": "consolidated",
+      "source": "agent-read+Sarmaaya",
+      "date": "2026-07-21",
+      "note": "Gatron Industries, 30 June fiscal year end so the March interim is the NINE MONTH period. Consolidated -10.66 vs -10.67 and P/B 0.78 vs 0.78; unconsolidated -8.72 does not reconcile. All three subsidiaries are WHOLLY owned so there is no NCI and consolidated profit is entirely attributable to owners. The consolidated loss exceeds the unconsolidated loss in every period, so the two are not interchangeable. Both PDFs are pure scans; all figures read from page images. WATCH: a Scheme of Arrangement with Nova Frontiers and Ghani & Tayub was board-resolved 28 Jan 2026 and would cancel a 29.33% and a 2.98% holding and issue new shares at a swap ratio not yet determined. Share count is unchanged at 31 Mar 2026 but this will move the base once effective and will break this chain. Note also the FY2024 comparative sits on a pre-rights time-apportioned base of 86,718,699 against FY2025's 108,728,960, so year-over-year EPS across that boundary is not like-for-like."
+    },
+    "FCEL": {
+      "throughPeriod": "2026 9M",
+      "basis": "unconsolidated",
+      "source": "agent-read+Sarmaaya",
+      "date": "2026-07-21",
+      "note": "First Capital Equities, 30 June fiscal year end so the March interim is the NINE MONTH period. 0.965 vs 0.97, P/B 1.34 vs 1.35. Itself a 73.23%-owned subsidiary of FCSC and holds no subsidiaries, so it files unconsolidated only. EPS IS SPLIT continuing vs discontinued and the TOTAL is stored (FY2025 1.207 = continuing 1.210 + discontinued -0.003); storing the continuing line instead would repeat exactly the error found in SIEM's stored data. The discontinued operation is the brokerage business, wound down since the 2019 decision to surrender the PSX Trading Right Entitlement Certificate and convert to real estate. Carries a QUALIFIED audit opinion and a going-concern material uncertainty. Interim cumulative and quarter-only columns have opposite signs (9M +0.060 against Q3 -0.6614). Both PDFs are scans; all figures read from page images."
+    },
+    "AKDHL": {
+      "throughPeriod": "2026 9M",
+      "basis": "unconsolidated",
+      "source": "agent-read+Sarmaaya",
+      "date": "2026-07-21",
+      "note": "AKD Hospitality, 30 June fiscal year end so the March interim is the NINE MONTH period. 0.76 vs 0.75. Despite the ticker it is NOT a holding company and files no consolidated accounts. EFFECTIVELY DORMANT: revenue is a flat 6,000k a year of retainer income billed to a single related party (AKD REIT Management), and the auditors note operations 'at reasonable scale in its principal line of business are at halt since long'. Carries a going-concern material uncertainty. FY2024's higher EPS came from a 7,700,833 reversal of an expected credit loss allowance, not trading. Sarmaaya's P/B of 16.18 follows from a tiny 37,891k equity base and is not a data fault; our P/B did not compute. The annual's Directors' Report prints FY2024 EPS as 3.43 against the audited 3.33 (it used profit BEFORE tax); the audited figure is correct. The interim balance sheet's comparative column is mis-headed 'Audited 30 June 2026' for what is 30 June 2025."
+    },
+    "FCSC": {
+      "throughPeriod": "2026 9M",
+      "basis": "consolidated",
+      "source": "agent-read+Sarmaaya",
+      "date": "2026-07-21",
+      "note": "First Capital Securities, 30 June fiscal year end so the March interim is the NINE MONTH period. Parent of FCEL (also verified this batch); the two reconcile independently. Consolidated 3.243 vs 3.24; unconsolidated 4.90 does not reconcile. EPS struck on the OWNERS' portion (FY2025 owners 767,331k of 868,873k group, 101,542k to NCI). THE CONSOLIDATED INTERIM PRINTS NO TOTAL EPS LINE, only continued and discontinued rows, so the 9M totals are DERIVED as owners' profit over the 316,610,112 share base (0.2057 and -0.6140) rather than read off a page; using the face's rounded 0.21 would give 0.2086 and drift the chain, and the exact reconciliation to 3.24 is what validates the derivation. Discontinued operations are subsidiary FCEL's broking business. COMPARABILITY CAVEAT: the group acquired 56.86% of Pace Supermall during the period (previously 0.07%), so consolidated revenue and cost comparatives are not like-for-like; the share base is unaffected so the EPS chain holds. Both PDFs are scans. The interim carries several stale headers from the half-year filing ('Half year ended 31 December' over nine-month columns); figures tie across statements and govern."
     }
   },
   "_unverifiable": {
