@@ -66,6 +66,18 @@ const CONSOLIDATED_BASIS_TICKERS = new Set<string>([
   // EPS figures — 5.43 FY2025, 5.76 and 1.35 for the 9M legs, all directly
   // confirmed on the interim's own P&L page 6) does not reconcile.
   "MUGHAL",
+  // SEARL: FY2025 consolidated LOSS per share -2.73 (annual report p217,
+  // driven by a Rs 2.18bn discontinued-operations loss on divesting
+  // subsidiary Searle Pakistan Ltd). Published before a 15% bonus issued
+  // during 9M FY2026, so restated to the post-bonus share base
+  // (511,494,424 -> 588,218,587, both from the filings' own share-capital
+  // notes) to -2.37 before combining with the interim's OWN comparative,
+  // which is already restated per IAS 33: 9M 2026 consolidated EPS 3.89,
+  // 9M 2025 consolidated EPS -0.55 (interim p24, p28). TTM = -2.37 + 3.89
+  // - (-0.55) = 2.07, within 1.5% of Sarmaaya's 2.04. Unconsolidated TTM
+  // (4.32) is not a basis difference alone -- it also carries the same
+  // un-restated FY2025 annual EPS problem, compounding the gap.
+  "SEARL",
 ]);
 
 function preferredBasis(ticker: string): "consolidated" | "unconsolidated" {
