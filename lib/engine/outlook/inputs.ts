@@ -47,6 +47,8 @@ export interface AlignedInputs {
   goldUsd: (number | null)[];
   spy: (number | null)[];
   eem: (number | null)[];
+  /** Brent crude proxy (BNO ETF, USD), lagged one day. */
+  brent: (number | null)[];
   /** Policy rate (%) in effect on the date. Real-time, no lag. */
   policyRate: number[];
   /** CPI year-on-year (%) with publication lag, null before coverage. */
@@ -179,11 +181,12 @@ export async function loadAlignedInputs(supabase: SupabaseClient): Promise<Align
     .filter((r) => r.fipi_net !== null && Number.isFinite(Number(r.fipi_net)))
     .map((r) => ({ date: r.flow_date, value: Number(r.fipi_net) }));
 
-  const [usdPkrRaw, goldRaw, spyRaw, eemRaw] = await Promise.all([
+  const [usdPkrRaw, goldRaw, spyRaw, eemRaw, brentRaw] = await Promise.all([
     macroSeries(supabase, "USDPKR"),
     macroSeries(supabase, "GOLD"),
     macroSeries(supabase, "SPY"),
     macroSeries(supabase, "EEM"),
+    macroSeries(supabase, "BNO"),
   ]);
 
   const numOrNull = (v: number | null | undefined): number | null =>
@@ -219,6 +222,7 @@ export async function loadAlignedInputs(supabase: SupabaseClient): Promise<Align
     goldUsd: laggedLookup(goldRaw, dates),
     spy: laggedLookup(spyRaw, dates),
     eem: laggedLookup(eemRaw, dates),
+    brent: laggedLookup(brentRaw, dates),
     policyRate: dates.map((d) => tbillYieldOn(d)),
     cpiYoY: dates.map((d) => cpiYoYWithLag(d)),
   };

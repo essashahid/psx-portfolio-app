@@ -56,6 +56,7 @@ function syntheticInputs(sessions: number, seed = 7): AlignedInputs {
     goldUsd: dates.map((_, i) => (i === 0 ? null : 2000 + i * 0.1 + rand() * 10)),
     spy: dates.map((_, i) => (i === 0 ? null : 500 + i * 0.05 + rand() * 5)),
     eem: dates.map((_, i) => (i === 0 ? null : 60 + rand())),
+    brent: dates.map((_, i) => (i === 0 ? null : 70 + rand() * 5)),
     policyRate: dates.map((_, i) => (i < sessions / 2 ? 22 : 11)),
     cpiYoY: dates.map((_, i) => (i < 300 ? null : 10 + rand() * 20)),
   };
@@ -82,6 +83,7 @@ function truncate(inputs: AlignedInputs, k: number): AlignedInputs {
     goldUsd: cut(inputs.goldUsd),
     spy: cut(inputs.spy),
     eem: cut(inputs.eem),
+    brent: cut(inputs.brent),
     policyRate: cut(inputs.policyRate),
     cpiYoY: cut(inputs.cpiYoY),
   };

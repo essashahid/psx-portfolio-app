@@ -1,0 +1,401 @@
+{
+  "generatedAt": "2026-07-21T13:30:35.181Z",
+  "asOf": "2026-07-21",
+  "close": 176133.56,
+  "approved": false,
+  "label": "experimental",
+  "riskLevel": "elevated",
+  "context": {
+    "trend": "up",
+    "rsi14": 35.09742486911246,
+    "volumeConfirmation": null,
+    "note": "Posture, not prediction: where price sits against its own averages and recent participation."
+  },
+  "horizons": [
+    {
+      "sessions": 5,
+      "label": "Next week",
+      "direction": {
+        "status": "withheld",
+        "reason": "logit-vol: balanced accuracy 0.337 does not beat always-up (0.333) by 0.02; logit-vol-breadth: balanced accuracy 0.320 does not beat always-up (0.333) by 0.02; analog: balanced accuracy 0.319 does not beat always-up (0.333) by 0.02; robust-plus-momentum: balanced accuracy 0.332 does not beat always-up (0.333) by 0.02",
+        "band": 0.01
+      },
+      "expectedReturn": {
+        "status": "withheld",
+        "reason": "ridge-vol-breadth: MAE 2.35% not 2% under best naive 2.29%; analog-median: MAE 2.29% not 2% under best naive 2.29%"
+      },
+      "closingRange": {
+        "status": "withheld",
+        "reason": "vol-scaled: interval score 11.62% does not beat the unconditional range (11.26%); quantile-reg: interval score 11.35% does not beat the unconditional range (11.26%)"
+      },
+      "tradingRange": {
+        "status": "ok",
+        "loPct": -0.0463284613425409,
+        "hiPct": 0.05507585712857864,
+        "loIndex": 167974,
+        "hiIndex": 185834
+      },
+      "drawdownRisk": [
+        {
+          "threshold": -0.03,
+          "status": "ok",
+          "p": 0.18571428571428572,
+          "model": "vol-scaled-cdf"
+        },
+        {
+          "threshold": -0.05,
+          "status": "withheld",
+          "reason": "vol-scaled-cdf: Brier skill -0.028 below the material floor of 0.02; logit-vol: Brier skill -0.025 below the material floor of 0.02; logit-vol-breadth: Brier skill -0.054 below the material floor of 0.02; stumps: Brier skill 0.003 below the material floor of 0.02"
+        }
+      ],
+      "scenarios": {
+        "status": "withheld",
+        "reason": "scenarios derive from the closing range, which is withheld"
+      },
+      "keyLevels": {
+        "supports": [
+          {
+            "price": 173579,
+            "distancePct": -0.014505100561187922,
+            "breakProb": 0.37142857142857144
+          },
+          {
+            "price": 168430,
+            "distancePct": -0.043735901323972426,
+            "breakProb": 0.11428571428571428
+          },
+          {
+            "price": 162534,
+            "distancePct": -0.07721099072014825,
+            "breakProb": 0.02
+          }
+        ],
+        "resistances": [
+          {
+            "price": 177693,
+            "distancePct": 0.008853281566556737,
+            "breakProb": 0.6333059885151764
+          },
+          {
+            "price": 181731,
+            "distancePct": 0.031778876590393246,
+            "breakProb": 0.27973748974569324
+          },
+          {
+            "price": 187713,
+            "distancePct": 0.06574469207723199,
+            "breakProb": 0.0680885972108285
+          }
+        ]
+      }
+    },
+    {
+      "sessions": 10,
+      "label": "Next two weeks",
+      "direction": {
+        "status": "ok",
+        "probs": {
+          "fall": 0.22857331618786775,
+          "sideways": 0.29727148423727673,
+          "rise": 0.47415519957485547
+        },
+        "band": 0.015,
+        "model": "logit-vol-breadth"
+      },
+      "expectedReturn": {
+        "status": "withheld",
+        "reason": "ridge-vol-breadth: MAE 3.20% not 2% under best naive 3.25%; analog-median: MAE 3.27% not 2% under best naive 3.25%"
+      },
+      "closingRange": {
+        "status": "withheld",
+        "reason": "vol-scaled: interval score 17.58% does not beat the unconditional range (15.55%); quantile-reg: interval score 16.25% does not beat the unconditional range (15.55%)"
+      },
+      "tradingRange": {
+        "status": "ok",
+        "loPct": -0.06987687094896326,
+        "hiPct": 0.09809887783906085,
+        "loIndex": 163826,
+        "hiIndex": 193412
+      },
+      "drawdownRisk": [
+        {
+          "threshold": -0.03,
+          "status": "withheld",
+          "reason": "vol-scaled-cdf: skill disappears when the largest episode is removed; logit-vol: skill disappears when the largest episode is removed; logit-vol-breadth: no skill in the first half; stumps: Brier skill 0.014 below the material floor of 0.02"
+        },
+        {
+          "threshold": -0.05,
+          "status": "withheld",
+          "reason": "vol-scaled-cdf: Brier skill -0.004 below the material floor of 0.02; logit-vol: Brier skill -0.009 below the material floor of 0.02; logit-vol-breadth: Brier skill -0.033 below the material floor of 0.02; stumps: Brier skill 0.013 below the material floor of 0.02"
+        }
+      ],
+      "scenarios": {
+        "status": "withheld",
+        "reason": "scenarios derive from the closing range, which is withheld"
+      },
+      "keyLevels": {
+        "supports": [
+          {
+            "price": 173579,
+            "distancePct": -0.014505100561187922,
+            "breakProb": 0.49282296650717705
+          },
+          {
+            "price": 168430,
+            "distancePct": -0.043735901323972426,
+            "breakProb": 0.19712918660287082
+          },
+          {
+            "price": 162534,
+            "distancePct": -0.07721099072014825,
+            "breakProb": 0.07751196172248803
+          }
+        ],
+        "resistances": [
+          {
+            "price": 177693,
+            "distancePct": 0.008853281566556737,
+            "breakProb": 0.7454695222405272
+          },
+          {
+            "price": 181731,
+            "distancePct": 0.031778876590393246,
+            "breakProb": 0.4612850082372323
+          },
+          {
+            "price": 187713,
+            "distancePct": 0.06574469207723199,
+            "breakProb": 0.1976935749588138
+          }
+        ]
+      }
+    },
+    {
+      "sessions": 20,
+      "label": "Next month",
+      "direction": {
+        "status": "withheld",
+        "reason": "logit-vol: balanced accuracy 0.350 does not beat always-up (0.333) by 0.02; logit-vol-breadth: loses to always-up in the second half; analog: balanced accuracy 0.318 does not beat always-up (0.333) by 0.02; robust-plus-momentum: loses to always-up in the second half",
+        "band": 0.025
+      },
+      "expectedReturn": {
+        "status": "withheld",
+        "reason": "ridge-vol-breadth: MAE 4.90% not 2% under best naive 4.91%; analog-median: MAE 4.84% not 2% under best naive 4.91%"
+      },
+      "closingRange": {
+        "status": "withheld",
+        "reason": "vol-scaled: interval score 28.53% does not beat the unconditional range (22.28%); quantile-reg: close coverage 0.717 in the second half outside the 72-90% calibration band (target 80%)"
+      },
+      "tradingRange": {
+        "status": "ok",
+        "loPct": -0.09183846788547631,
+        "hiPct": 0.16354970907575897,
+        "loIndex": 159958,
+        "hiIndex": 204940
+      },
+      "drawdownRisk": [
+        {
+          "threshold": -0.03,
+          "status": "withheld",
+          "reason": "vol-scaled-cdf: detected 0 of 7 episodes; a warning that never warns is not shippable; logit-vol: no skill in the second half; logit-vol-breadth: calibration gap 0.392 exceeds 0.15; stumps: calibration gap 0.275 exceeds 0.15"
+        },
+        {
+          "threshold": -0.05,
+          "status": "withheld",
+          "reason": "vol-scaled-cdf: Brier skill -0.062 below the material floor of 0.02; logit-vol: Brier skill 0.001 below the material floor of 0.02; logit-vol-breadth: Brier skill -0.019 below the material floor of 0.02; stumps: Brier skill 0.011 below the material floor of 0.02"
+        }
+      ],
+      "scenarios": {
+        "status": "withheld",
+        "reason": "scenarios derive from the closing range, which is withheld"
+      },
+      "keyLevels": {
+        "supports": [
+          {
+            "price": 173579,
+            "distancePct": -0.014505100561187922,
+            "breakProb": 0.5710144927536231
+          },
+          {
+            "price": 168430,
+            "distancePct": -0.043735901323972426,
+            "breakProb": 0.3140096618357488
+          },
+          {
+            "price": 162534,
+            "distancePct": -0.07721099072014825,
+            "breakProb": 0.14396135265700483
+          }
+        ],
+        "resistances": [
+          {
+            "price": 177693,
+            "distancePct": 0.008853281566556737,
+            "breakProb": 0.8205980066445182
+          },
+          {
+            "price": 181731,
+            "distancePct": 0.031778876590393246,
+            "breakProb": 0.6262458471760797
+          },
+          {
+            "price": 187713,
+            "distancePct": 0.06574469207723199,
+            "breakProb": 0.38372093023255816
+          }
+        ]
+      }
+    }
+  ],
+  "technicals": {
+    "asOf": "2026-07-21",
+    "close": 176133.56,
+    "ma50": 174615.3282,
+    "ma200": 169627.91800000003,
+    "trend": "up",
+    "rsi14": 35.09742486911246,
+    "momentum21": -0.029022612736917308,
+    "channel": {
+      "high": 187454.69,
+      "low": 161805.02
+    },
+    "ewmaVolAnnual": 0.22764640508528078,
+    "expectedMove": [
+      {
+        "sessions": 5,
+        "fraction": 0.03206605463857941
+      },
+      {
+        "sessions": 10,
+        "fraction": 0.0453482493616757
+      },
+      {
+        "sessions": 20,
+        "fraction": 0.06413210927715882
+      }
+    ],
+    "supports": [
+      {
+        "price": 173578.72499999998,
+        "kind": "support",
+        "source": "swing-cluster",
+        "touches": 4,
+        "lastTouch": "2026-07-14",
+        "distance": -0.014505100561187922
+      },
+      {
+        "price": 168430.2,
+        "kind": "support",
+        "source": "swing-cluster",
+        "touches": 3,
+        "lastTouch": "2026-06-08",
+        "distance": -0.043735901323972426
+      },
+      {
+        "price": 162534.1133333333,
+        "kind": "support",
+        "source": "swing-cluster",
+        "touches": 3,
+        "lastTouch": "2026-05-18",
+        "distance": -0.07721099072014825
+      }
+    ],
+    "resistances": [
+      {
+        "price": 177692.92,
+        "kind": "resistance",
+        "source": "swing-cluster",
+        "touches": 1,
+        "lastTouch": "2026-06-23",
+        "distance": 0.008853281566556737
+      },
+      {
+        "price": 181730.88666666663,
+        "kind": "resistance",
+        "source": "swing-cluster",
+        "touches": 3,
+        "lastTouch": "2026-06-18",
+        "distance": 0.031778876590393246
+      },
+      {
+        "price": 187713.40666666665,
+        "kind": "resistance",
+        "source": "swing-cluster",
+        "touches": 3,
+        "lastTouch": "2026-07-06",
+        "distance": 0.06574469207723199
+      }
+    ],
+    "volumeConfirmation": null,
+    "high52w": 189166.82,
+    "low52w": 137964.81
+  },
+  "drivers": [
+    {
+      "group": "technical",
+      "name": "Realised volatility (21 sessions)",
+      "direction": "rising",
+      "strength": 0.5389610389610389,
+      "effect": "pressuring",
+      "horizons": [
+        5,
+        10,
+        20
+      ],
+      "freshness": "same session",
+      "inModel": true,
+      "reliability": "strong"
+    },
+    {
+      "group": "breadth",
+      "name": "Advance share (10-session mean)",
+      "direction": "falling",
+      "strength": 0.4614147909967846,
+      "effect": "pressuring",
+      "horizons": [
+        5,
+        10,
+        20
+      ],
+      "freshness": "same session",
+      "inModel": true,
+      "reliability": "moderate"
+    },
+    {
+      "group": "breadth",
+      "name": "Up-volume share (10-session mean)",
+      "direction": "falling",
+      "strength": 0.0337620578778135,
+      "effect": "neutral",
+      "horizons": [
+        5,
+        10,
+        20
+      ],
+      "freshness": "same session",
+      "inModel": true,
+      "reliability": "moderate"
+    },
+    {
+      "group": "technical",
+      "name": "Trend against the 200-day average",
+      "direction": "rising",
+      "strength": 0.5,
+      "effect": "supportive",
+      "horizons": [
+        5,
+        10,
+        20
+      ],
+      "freshness": "same session",
+      "inModel": false,
+      "reliability": "weak (Phase 2); shown as context"
+    }
+  ],
+  "notes": [
+    "Experimental output. Not production-approved, not shown to customers, and not financial advice.",
+    "Every figure is produced by the deterministic constructions validated in the walk-forward; no LLM contributed any number or level.",
+    "Withheld outputs failed their walk-forward gate against a naive baseline and are absent by design, not omitted by accident.",
+    "Contextual drivers (currency, rates, oil, global markets) are shown for orientation only where their Phase 2 evidence was weak; they do not feed any model output."
+  ]
+}
