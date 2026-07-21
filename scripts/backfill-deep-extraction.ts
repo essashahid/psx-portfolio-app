@@ -14,6 +14,16 @@ import { loadEnvLocal } from "./load-env";
  * de-duped by source_url inside extractFinancials, so no PDF is parsed twice.
  *
  *   npx tsx scripts/backfill-deep-extraction.ts [--limit N] [--concurrency N]
+ *   npx tsx scripts/backfill-deep-extraction.ts --tickers AAA,BBB
+ *   npx tsx scripts/backfill-deep-extraction.ts --from-file data/queue.txt
+ *
+ * --tickers / --from-file override the default "missing balance sheet" queue.
+ * The reconciliation work needs a different queue: companies whose INCOME
+ * chain is too sparse to build a trailing figure, which is a separate
+ * condition from lacking a balance sheet (a company can have one and not the
+ * other). Explicit targeting also makes the run auditable — the exact input
+ * list is a file you can diff, rather than a query whose result moves as the
+ * database changes underneath it.
  *
  * Outcomes are bucketed so you can see WHY a company got nothing:
  *   saved        — statements extracted and stored
@@ -55,23 +65,48 @@ async function main() {
 
   const db = createAdminClient();
 
-  const companies = await activeUniverseTickers(db, "companies");
-  // Which already have a balance sheet? Those are done.
-  const hasBalance = new Set<string>();
-  for (let i = 0; i < companies.length; i += 400) {
-    const { data } = await db
-      .from("company_financials")
-      .select("ticker")
-      .eq("statement_type", "balance_sheet")
-      .eq("review_status", "published")
-      .in("ticker", companies.slice(i, i + 400));
-    for (const r of data ?? []) hasBalance.add((r.ticker as string).toUpperCase());
+  const tickArg = args.indexOf("--tickers");
+  const fileArg = args.indexOf("--from-file");
+  const explicit: string[] = [];
+  if (tickArg >= 0) explicit.push(...(args[tickArg + 1] ?? "").split(",").map((s) => s.trim().toUpperCase()).filter(Boolean));
+  if (fileArg >= 0) {
+    const { readFileSync } = await import("node:fs");
+    explicit.push(
+      ...readFileSync(args[fileArg + 1], "utf8")
+        .split(/[\s,]+/)
+        .map((s) => s.trim().toUpperCase())
+        .filter(Boolean)
+    );
   }
-  const queue = companies.filter((t) => !hasBalance.has(t)).slice(0, Number.isFinite(limit) ? limit : undefined);
 
-  console.log(`Live companies: ${companies.length}`);
-  console.log(`Already have balance sheet: ${hasBalance.size}`);
-  console.log(`Queue (missing balance sheet): ${queue.length}${Number.isFinite(limit) ? ` (capped at ${limit})` : ""}`);
+  const companies = await activeUniverseTickers(db, "companies");
+  let queue: string[];
+
+  if (explicit.length) {
+    // Intersect with the live universe: extracting a delisted or suspended
+    // counter burns a model call on a company that will never be served.
+    const liveSet = new Set(companies);
+    const unknown = explicit.filter((t) => !liveSet.has(t));
+    queue = explicit.filter((t) => liveSet.has(t)).slice(0, Number.isFinite(limit) ? limit : undefined);
+    console.log(`Live companies: ${companies.length}`);
+    console.log(`Explicit queue: ${queue.length} of ${explicit.length} requested${unknown.length ? ` (${unknown.length} not in live universe: ${unknown.slice(0, 10).join(", ")})` : ""}`);
+  } else {
+    // Which already have a balance sheet? Those are done.
+    const hasBalance = new Set<string>();
+    for (let i = 0; i < companies.length; i += 400) {
+      const { data } = await db
+        .from("company_financials")
+        .select("ticker")
+        .eq("statement_type", "balance_sheet")
+        .eq("review_status", "published")
+        .in("ticker", companies.slice(i, i + 400));
+      for (const r of data ?? []) hasBalance.add((r.ticker as string).toUpperCase());
+    }
+    queue = companies.filter((t) => !hasBalance.has(t)).slice(0, Number.isFinite(limit) ? limit : undefined);
+    console.log(`Live companies: ${companies.length}`);
+    console.log(`Already have balance sheet: ${hasBalance.size}`);
+    console.log(`Queue (missing balance sheet): ${queue.length}${Number.isFinite(limit) ? ` (capped at ${limit})` : ""}`);
+  }
   console.log(`Concurrency: ${concurrency}\n`);
 
   const buckets: Buckets = { saved: [], scannedOnly: [], noFilings: [], otherError: [] };

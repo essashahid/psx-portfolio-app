@@ -50,8 +50,15 @@ import { loadEnvLocal } from "./load-env";
 import { readFileSync, writeFileSync } from "node:fs";
 
 loadEnvLocal();
-process.env.VISION_DISABLED = "false";
-process.env.AI_DISABLED = "false";
+// This script used to force VISION_DISABLED=false and AI_DISABLED=false here,
+// which silently defeated the kill switches for anyone who had set them: runs
+// billed vision calls while .env.local said AI was off. If you want to run
+// against a disabled config, say so at the call site where it is visible:
+//
+//   AI_DISABLED=false VISION_DISABLED=false npx tsx scripts/agent-reconcile.ts ...
+//
+// loadEnvLocal() never overwrites an already-set variable, so a command-line
+// prefix wins over .env.local without editing anything.
 
 const arg = (n: string): string | null => {
   const i = process.argv.indexOf(`--${n}`);

@@ -20,8 +20,11 @@ import { readFileSync, writeFileSync } from "node:fs";
 
 loadEnvLocal();
 
-process.env.VISION_DISABLED = "false";
-process.env.AI_DISABLED = "false";
+// Kill-switch bypass removed: this used to force VISION_DISABLED/AI_DISABLED
+// to "false" here, silently billing AI calls for anyone who had set those
+// switches on. Pass them at the call site instead, where they are visible:
+//   AI_DISABLED=false VISION_DISABLED=false npx tsx <this script>
+// loadEnvLocal() never overwrites an already-set variable, so the prefix wins.
 
 const DRY = process.argv.includes("--dry");
 // Already re-extracted individually while diagnosing the multi-basis bug.
