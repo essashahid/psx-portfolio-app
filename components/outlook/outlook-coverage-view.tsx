@@ -2,6 +2,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { StatCard } from "@/components/stat-card";
 import { Badge } from "@/components/ui/badge";
 import { confidenceFor, MAIN_VIEW_HORIZONS } from "@/lib/engine/outlook/presentation";
+import { MIN_EPISODES_TO_QUOTE } from "@/lib/engine/outlook/breadth-signal";
 import type { OutlookCoverageReport, SeriesCoverage, SeriesQuality } from "@/lib/engine/outlook/coverage";
 
 /**
@@ -209,6 +210,70 @@ export function OutlookCoverageView({ report }: { report: OutlookCoverageReport 
                 </tbody>
               </table>
             </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {report.breadthSignal && report.breadthSignal.quadrants.length > 0 && (
+        <Card className="rise rise-2">
+          <CardContent className="p-4">
+            <SectionHeading
+              title="Breadth as a candidate signal (Phase 2 research note)"
+              blurb="Whether a market being carried by fewer stocks has preceded declines, and more importantly whether that says anything volatility does not already say. Both groups below are calm periods, so any difference is information the volatility probe misses. Not shown on the main tab: read the episode column before trusting any ratio here."
+            />
+            <div className="-mx-4 overflow-x-auto px-4">
+              <table className="w-full min-w-[44rem] text-xs">
+                <thead>
+                  <tr className="border-b border-border text-left text-[11px] uppercase tracking-wide text-muted-foreground">
+                    <th className="pb-2 pr-3 font-medium">Window</th>
+                    <th className="pb-2 pr-3 text-right font-medium">Drop</th>
+                    <th className="pb-2 pr-3 text-right font-medium">Calm + broad</th>
+                    <th className="pb-2 pr-3 text-right font-medium">Calm + narrow</th>
+                    <th className="pb-2 pr-3 text-right font-medium">Ratio</th>
+                    <th className="pb-2 text-right font-medium">Distinct episodes</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {report.breadthSignal.quadrants.map((q) => {
+                    const h = report.horizons.find((x) => x.key === q.horizonKey);
+                    return (
+                      <tr key={`${q.horizonKey}-${q.threshold}`} className="border-b border-border/60 last:border-0">
+                        <td className="py-2 pr-3 text-foreground">{h?.label ?? q.horizonKey}</td>
+                        <td className="py-2 pr-3 text-right tabular-nums text-muted-foreground">
+                          {Math.abs(q.threshold * 100).toFixed(0)}%
+                        </td>
+                        <td className="py-2 pr-3 text-right tabular-nums text-muted-foreground">
+                          {pct(q.calmBroad.rate)}
+                        </td>
+                        <td className="py-2 pr-3 text-right tabular-nums text-muted-foreground">
+                          {pct(q.calmNarrow.rate)}
+                        </td>
+                        <td
+                          className={`py-2 pr-3 text-right tabular-nums ${q.quotable ? "font-medium text-foreground" : "text-muted-foreground/50"}`}
+                        >
+                          {q.quotable && Number.isFinite(q.narrowLiftWithinCalm)
+                            ? `${q.narrowLiftWithinCalm.toFixed(2)}x`
+                            : "too thin"}
+                        </td>
+                        <td className="py-2 text-right tabular-nums text-muted-foreground">
+                          {q.calmNarrowEpisodes}
+                          {q.calmNarrowHits > 0 && (
+                            <span className="ml-1 text-[10px] text-muted-foreground/70">({q.calmNarrowHits} windows)</span>
+                          )}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+            <p className="mt-3 text-[11px] leading-relaxed text-muted-foreground">
+              Ratios are withheld below {MIN_EPISODES_TO_QUOTE} distinct episodes. Several of the largest figures here
+              rest on one or two market episodes seen through overlapping windows, which describes those episodes rather
+              than a pattern. Measured over {report.breadthSignal.usableSessions} sessions from{" "}
+              {report.breadthSignal.firstDate} to {report.breadthSignal.lastDate}; the window starts later than the price
+              history because a 200-day average needs 200 sessions before it means anything.
+            </p>
           </CardContent>
         </Card>
       )}
