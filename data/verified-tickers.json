@@ -931,6 +931,48 @@
       "source": "agent-read+Sarmaaya",
       "date": "2026-07-21",
       "note": "First Capital Securities, 30 June fiscal year end so the March interim is the NINE MONTH period. Parent of FCEL (also verified this batch); the two reconcile independently. Consolidated 3.243 vs 3.24; unconsolidated 4.90 does not reconcile. EPS struck on the OWNERS' portion (FY2025 owners 767,331k of 868,873k group, 101,542k to NCI). THE CONSOLIDATED INTERIM PRINTS NO TOTAL EPS LINE, only continued and discontinued rows, so the 9M totals are DERIVED as owners' profit over the 316,610,112 share base (0.2057 and -0.6140) rather than read off a page; using the face's rounded 0.21 would give 0.2086 and drift the chain, and the exact reconciliation to 3.24 is what validates the derivation. Discontinued operations are subsidiary FCEL's broking business. COMPARABILITY CAVEAT: the group acquired 56.86% of Pace Supermall during the period (previously 0.07%), so consolidated revenue and cost comparatives are not like-for-like; the share base is unaffected so the EPS chain holds. Both PDFs are scans. The interim carries several stale headers from the half-year filing ('Half year ended 31 December' over nine-month columns); figures tie across statements and govern."
+    },
+    "ELCM": {
+      "throughPeriod": "2026 9M",
+      "basis": "unconsolidated",
+      "source": "agent-read+Sarmaaya",
+      "date": "2026-07-21",
+      "note": "Elahi Cotton Mills, 30 June fiscal year end so the March interim is the NINE MONTH period. -24.15 exact, P/B 4.34 vs 4.52. No subsidiaries. Only 1,300,000 shares outstanding, so per-share figures run in the tens of rupees; that is the share base, not a scaling error. Both PDFs are pure image scans with zero text layer; all figures read from page images. GOING-CONCERN MATERIAL UNCERTAINTY: at 30 Jun 2025 current liabilities exceeded current assets by 49.4m and accumulated losses exceeded paid-up capital by 45.7m. Note the interim P&L puts a 'Minimum tax' line ABOVE profit before income tax, so the 9M FY2026 pre-tax loss of -15,820,614 becomes -24,847,976 after a 9,027,362 minimum tax charge; the pre-tax figure is not the EPS numerator. The agent also flagged that the Q3 FY2025 column does not foot internally on its face (1,001,306 less 293,507 gives 707,799, not the printed 1,294,813) but the printed quarter EPS of 1.00 corresponds to the printed figure; reproduced as printed, not corrected."
+    },
+    "JLICL": {
+      "throughPeriod": "2026 Q1",
+      "basis": "unconsolidated",
+      "source": "agent-read+Sarmaaya",
+      "date": "2026-07-21",
+      "note": "Jubilee Life Insurance. 24.05 exact, P/B 1.00 vs 1.02. LIFE ASSURER, so the same structural caveat as EFUL: EPS sits on the AGGREGATE profit or loss account, which the company's own note beneath the statement defines as shareholders'-fund profit before tax PLUS surplus transferred from the statutory funds (2,370m in FY2025) PLUS undistributed statutory-fund surplus including solvency margins. A shareholders'-fund-only profit after tax is NOT printed anywhere, so the aggregate is the only available basis and is the one the company strikes EPS on, confirmed by division (2,495,503/100,354 = 24.87). Seven statutory funds, three of them Family Takaful, all inside the primary statements; the separately annexed Window Takaful Operations set is supplementary and unaudited, not a second basis. No consolidated statements: the only investment of that type is an associate carried at equity. Subsidiary of Aga Khan Fund for Economic Development (57.87%)."
+    },
+    "JSML": {
+      "throughPeriod": "2026 H1",
+      "basis": "unconsolidated",
+      "source": "agent-read+Sarmaaya",
+      "date": "2026-07-21",
+      "note": "Jauharabad Sugar Mills (formerly Kohinoor Sugar). 30 SEPTEMBER fiscal year end so the March interim is a HALF YEAR. 5.90 vs 5.89. Profitable in every period read, against the batch expectation for sugar. SCALE TRAP: the annual is printed in WHOLE RUPEES and the interim in THOUSANDS; the reading agent flagged this explicitly and both are normalised to thousands here. Mixing the two would leave EPS untouched while moving the implied share count by 1000x. No subsidiaries -- Cane Processing (Pvt) Ltd is its HOLDING company at 63.66%, not a subsidiary. P/B 0.20 vs 0.23 (13.4% apart): 'Loan from sponsors' of 1,345,636k is presented WITHIN the equity block by the filing, so total equity as printed includes it, which plausibly explains the gap. EPS is the verified dimension here, not P/B."
+    },
+    "DADX": {
+      "throughPeriod": "2026 9M",
+      "basis": "unconsolidated",
+      "source": "agent-read+Sarmaaya",
+      "date": "2026-07-21",
+      "note": "Dadex Eternit, 30 June fiscal year end so the March interim is the NINE MONTH period. -30.00 vs -30.29, P/B 3.71 vs 3.97. Itself a 63.18% subsidiary of Sikander (Private) Limited and holds no subsidiaries, so unconsolidated is the only basis. Small share base (10.76m shares), which is why per-share losses run to double digits. The annual is an image scan with a 63-character text layer; all annual figures read from page images. GOING-CONCERN MATERIAL UNCERTAINTY: Manghopir factory closed since March 2021, accumulated losses 1,495.8m, current liabilities exceed current assets by 135.8m, head office building under contract for sale with 1,745,000k received as advance. Do not read across interim columns: gross profit is -24,562 for the nine months but +11,077 for the quarter alone."
+    },
+    "TPLP": {
+      "throughPeriod": "2026 9M",
+      "basis": "consolidated",
+      "source": "agent-read+Sarmaaya",
+      "date": "2026-07-21",
+      "note": "TPL Properties, 30 June fiscal year end so the March interim is the NINE MONTH period. Consolidated -8.32 vs -8.27; unconsolidated -7.54 does not reconcile. UNUSUAL AND IMPORTANT: its consolidated EPS is struck on TOTAL group loss INCLUDING NCI, the opposite of PKGS, JSCL, BAFL and most of this registry. The reading agent established this BY DIVISION rather than by trusting a note: 1,934,269,169/561,086,879 = 3.4473 matches the printed -3.45, while the owners' 1,920,742,169 would give -3.42 and does not. Same result on both interim legs. profit_after_tax and equity are therefore both stored on the total-including-NCI basis so numerator and denominator stay consistent. P/B 2.53 vs 2.30 (10% apart), unsurprising given NCI is negative on both dates. Losses are driven by unrealised marks on the TPL REIT Fund I investment (-639m FY2025, -4,102m 9M FY2026), not operations. Note the annual's own six-year summary and ratio table disagree with each other for FY23/FY22/FY21; FY2025 and FY2024 agree across both and with the audited statements."
+    },
+    "MSOT": {
+      "throughPeriod": "2026 9M",
+      "basis": "unconsolidated",
+      "source": "agent-read+Sarmaaya",
+      "date": "2026-07-21",
+      "note": "Masood Textile Mills, 30 June fiscal year end so the March interim is the NINE MONTH period. EPS 15.05 vs 15.06 exact. EPS IS STRUCK AFTER DEDUCTING THE CUMULATIVE PREFERENCE DIVIDEND: the company has 67,500,000 ordinary shares AND 27,500,000 cumulative non-voting preference shares, and the annual's note 36 prints the arithmetic (FY2025 profit 131,279 less preference dividend 50,003 = 81,276, the EPS numerator). FY2025's numerator is a READ figure; the interim prints no EPS note so its numerators are DERIVED as EPS x 67,500k ordinary shares, because storing the face profit of 603,462 against an EPS of 8.54 would imply 70,663k shares rather than the true 67,500k. P/B IS NOT VERIFIED: ours reads 0.73 against Sarmaaya's 0.53, and unlike EPCL, excluding preference capital does not close the gap, so something else differs in the equity definition. EPS is the verified dimension. SOURCE FILE IS TRUNCATED: the cached annual.pdf arrives byte-truncated and null-padded with no PDF trailer, and re-fetching REPRODUCES it, so PSX is serving a broken document rather than this being a transient fault. The agent recovered 119 pages via PyMuPDF and every figure reconciles, but a stricter parser will fail on that file. Also note OCR misread the prior-year 9M EPS as -8.31; the rendered image and the directors' report both say -5.31."
     }
   },
   "_unverifiable": {
