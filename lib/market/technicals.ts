@@ -182,27 +182,72 @@ function isoWeekKey(d: Date): string {
   return `${t.getUTCFullYear()}-W${String(week).padStart(2, "0")}`;
 }
 
+/** Floor and ceiling for the auto-scaled swing threshold, in percent. */
+const SWING_THRESHOLD_MIN_PCT = 8;
+const SWING_THRESHOLD_MAX_PCT = 25;
+/** Horizon, in trading days, over which a move should stand out to count as a swing. */
+const SWING_HORIZON_DAYS = 10;
+
+/**
+ * Swing threshold scaled to the stock's own volatility.
+ *
+ * A fixed 8% threshold means very different things across the PSX. On a calm
+ * large cap an 8% move is a genuine turning point; on a small cap running at
+ * 77% annualized volatility it is an ordinary fortnight, which is why a flat
+ * threshold produced 173 "swings" in five years for QTECH. Scaling by realized
+ * volatility keeps the count comparable across the universe.
+ */
+export function swingThresholdFor(candles: Candle[]): number {
+  const closes = candles.slice(-252).map((c) => c.close).filter((v) => Number.isFinite(v) && v > 0);
+  if (closes.length < 30) return SWING_THRESHOLD_MIN_PCT;
+
+  const rets: number[] = [];
+  for (let i = 1; i < closes.length; i++) rets.push(Math.log(closes[i] / closes[i - 1]));
+  const mean = rets.reduce((a, b) => a + b, 0) / rets.length;
+  const variance = rets.reduce((a, b) => a + (b - mean) ** 2, 0) / rets.length;
+  const daily = Math.sqrt(variance);
+
+  // 1.5 sigma over the swing horizon: big enough to ignore routine drift.
+  const pct = 1.5 * daily * Math.sqrt(SWING_HORIZON_DAYS) * 100;
+  if (!Number.isFinite(pct)) return SWING_THRESHOLD_MIN_PCT;
+  return Math.min(SWING_THRESHOLD_MAX_PCT, Math.max(SWING_THRESHOLD_MIN_PCT, pct));
+}
+
 /**
  * Zigzag swing detection on close, used for the larger-trend pullback zone and
- * for momentum-divergence pivots. Threshold defaults high (8%) so we track the
- * major long-term swings, not short-term noise.
+ * for momentum-divergence pivots. When `thresholdPct` is omitted the threshold
+ * is scaled to the stock's realized volatility so we track major long-term
+ * swings rather than noise.
  */
-export function findSwings(candles: Candle[], thresholdPct = 8): Swing[] {
+export function findSwings(candles: Candle[], thresholdPct?: number): Swing[] {
   if (candles.length < 3) return [];
   const swings: Swing[] = [];
-  const thr = thresholdPct / 100;
+  const thr = (thresholdPct ?? swingThresholdFor(candles)) / 100;
   let dir: "up" | "down" | null = null;
   let extremeIdx = 0;
+  // Before a direction is established, track the running high and low
+  // separately. Whichever breaks the threshold first sets the direction, and
+  // the opposite extreme becomes the first pivot.
+  let minIdx = 0;
+  let maxIdx = 0;
 
   for (let i = 1; i < candles.length; i++) {
     const price = candles[i].close;
     const extreme = candles[extremeIdx].close;
     if (dir === null) {
-      const change = (price - candles[0].close) / candles[0].close;
-      if (change >= thr) { dir = "up"; extremeIdx = i; }
-      else if (change <= -thr) { dir = "down"; extremeIdx = i; }
-      else if (price > extreme) extremeIdx = i;
-      else if (price < candles[extremeIdx].close) extremeIdx = i;
+      if (price > candles[maxIdx].close) maxIdx = i;
+      if (price < candles[minIdx].close) minIdx = i;
+      const upFromMin = (price - candles[minIdx].close) / candles[minIdx].close;
+      const downFromMax = (price - candles[maxIdx].close) / candles[maxIdx].close;
+      if (upFromMin >= thr) {
+        swings.push({ index: minIdx, date: candles[minIdx].date, price: candles[minIdx].close, kind: "low" });
+        dir = "up";
+        extremeIdx = i;
+      } else if (downFromMax <= -thr) {
+        swings.push({ index: maxIdx, date: candles[maxIdx].date, price: candles[maxIdx].close, kind: "high" });
+        dir = "down";
+        extremeIdx = i;
+      }
       continue;
     }
     if (dir === "up") {
@@ -423,7 +468,7 @@ export function computeSignals(candles: Candle[]): TechnicalSignals {
 
   const rsi = rsiSeries(closes, 14);
   const rsiVal = rsi[rsi.length - 1] ?? null;
-  const swings = findSwings(clean, 8);
+  const swings = findSwings(clean);
   const divergences: Divergence[] = [];
   const rsiDiv = detectDivergence(swings, rsi);
   if (rsiDiv) divergences.push(rsiDiv);
@@ -464,63 +509,118 @@ export interface SupportResistanceZone {
   method: string;
 }
 
-export function detectSupportResistanceZones(candles: Candle[], swings: Swing[], currentPrice: number): SupportResistanceZone[] {
-  if (swings.length < 3) return [];
-  const zones: SupportResistanceZone[] = [];
-  const tolerance = currentPrice * 0.02; // 2% cluster tolerance
+/** Bounds on the zone half-width, as a percentage of the level itself. */
+const SR_TOLERANCE_MIN_PCT = 2;
+const SR_TOLERANCE_MAX_PCT = 5;
+/** A cluster may not span more than this multiple of its own tolerance. */
+const SR_MAX_SPAN_MULTIPLE = 2.4;
+/** Zones untested for longer than this (trading days back from the last bar) are dropped. */
+const SR_MAX_AGE_DAYS = 504; // ~2 years
+/** Zones further than this from the current price are not actionable. */
+const SR_MAX_DISTANCE_PCT = 35;
+/** Most zones we will ever return. */
+const SR_MAX_ZONES = 8;
 
-  // Group nearby swings
-  const clusters: { kind: "support"| "resistance"; prices: number[]; dates: string[] }[] = [];
-  
+/**
+ * Support and resistance zones, clustered from swing pivots.
+ *
+ * Three rules keep the output actionable rather than exhaustive:
+ *
+ *  - Tolerance is relative to each price level, not an absolute rupee amount
+ *    derived from today's price. The previous absolute tolerance let a cluster
+ *    drift as its mean moved, which is how QTECH ended up with a single "High
+ *    confidence" zone spanning 0.85 to 4.33 while the stock traded at 50.
+ *  - Zones are aged out and distance-filtered. A level last tested in 2023, or
+ *    sitting 12x away from the current price, tells a long-term investor
+ *    nothing about where to accumulate.
+ *  - Kind is assigned by where the level sits relative to the current price,
+ *    not by the kind of pivot that formed it. Broken resistance becomes
+ *    support, which is how these levels actually behave.
+ */
+export function detectSupportResistanceZones(candles: Candle[], swings: Swing[], currentPrice: number): SupportResistanceZone[] {
+  if (swings.length < 2 || !(currentPrice > 0) || candles.length === 0) return [];
+
+  // Age is measured against the last bar we hold, not wall-clock time, so the
+  // result is deterministic and still sensible on a stale cache.
+  const cutoffIdx = Math.max(0, candles.length - 1 - SR_MAX_AGE_DAYS);
+  const cutoffDate = candles[cutoffIdx].date;
+
+  // A zone on a stock that routinely moves 20% has to be wider than one on a
+  // stock that moves 5%, or nothing ever clusters and every level reads as a
+  // one-off touch. Derive it from the same volatility the swing threshold uses.
+  const tolerancePct = Math.min(
+    SR_TOLERANCE_MAX_PCT,
+    Math.max(SR_TOLERANCE_MIN_PCT, swingThresholdFor(candles) * 0.35)
+  );
+
+  // Cluster on price proximity alone. Highs and lows are deliberately mixed:
+  // a level that capped a rally and later floored a selloff is the same level,
+  // and merging them is what makes the touch count meaningful.
+  const clusters: { prices: number[]; dates: string[] }[] = [];
   for (const s of swings) {
-    const sKind = s.kind === "high" ? "resistance" : "support";
-    let found = false;
+    if (!(s.price > 0) || s.date < cutoffDate) continue;
+    let placed = false;
     for (const c of clusters) {
-      if (c.kind === sKind) {
-        const avg = c.prices.reduce((a, b) => a + b, 0) / c.prices.length;
-        if (Math.abs(s.price - avg) <= tolerance) {
-          c.prices.push(s.price);
-          c.dates.push(s.date);
-          found = true;
-          break;
-        }
-      }
+      const centre = c.prices.reduce((a, b) => a + b, 0) / c.prices.length;
+      const within = Math.abs(s.price - centre) <= centre * (tolerancePct / 100);
+      if (!within) continue;
+      // Reject the merge if it would stretch the cluster past its max span.
+      const lo = Math.min(s.price, ...c.prices);
+      const hi = Math.max(s.price, ...c.prices);
+      if ((hi - lo) / ((hi + lo) / 2) > (tolerancePct * SR_MAX_SPAN_MULTIPLE) / 100) continue;
+      c.prices.push(s.price);
+      c.dates.push(s.date);
+      placed = true;
+      break;
     }
-    if (!found) {
-      clusters.push({ kind: sKind, prices: [s.price], dates: [s.date] });
-    }
+    if (!placed) clusters.push({ prices: [s.price], dates: [s.date] });
   }
 
-  // Score clusters
-  let idCounter = 1;
+  const scored: (SupportResistanceZone & { score: number })[] = [];
   for (const c of clusters) {
-    if (c.prices.length < 2) continue; // Need at least 2 touches
-    
-    const max = Math.max(...c.prices);
-    const min = Math.min(...c.prices);
-    
-    // Sort dates to find last tested
-    c.dates.sort();
-    const lastTested = c.dates[c.dates.length - 1];
-    
+    if (c.prices.length < 2) continue;
+
+    const centre = c.prices.reduce((a, b) => a + b, 0) / c.prices.length;
+    const distancePct = Math.abs((centre - currentPrice) / currentPrice) * 100;
+    if (distancePct > SR_MAX_DISTANCE_PCT) continue;
+
+    const pad = centre * (tolerancePct / 100) / 2;
+    const lastTested = c.dates.slice().sort().at(-1)!;
+
     let confidence: "High" | "Medium" | "Low" = "Low";
     if (c.prices.length >= 4) confidence = "High";
     else if (c.prices.length === 3) confidence = "Medium";
 
-    zones.push({
-      id: `sr_zone_${idCounter++}`,
-      kind: c.kind,
-      low: min - tolerance/2,
-      high: max + tolerance/2,
+    // Recency as a 0..1 weight over the age window.
+    const testedIdx = candles.findIndex((b) => b.date >= lastTested);
+    const barsAgo = testedIdx < 0 ? SR_MAX_AGE_DAYS : candles.length - 1 - testedIdx;
+    const recency = Math.max(0, 1 - barsAgo / SR_MAX_AGE_DAYS);
+    const nearness = Math.max(0, 1 - distancePct / SR_MAX_DISTANCE_PCT);
+
+    scored.push({
+      id: "",
+      kind: centre < currentPrice ? "support" : "resistance",
+      low: Math.min(...c.prices) - pad,
+      high: Math.max(...c.prices) + pad,
       timeframe: "daily",
       confidence,
       touches: c.prices.length,
       lastTested,
-      method: "Swing cluster detection"
+      method: "Swing cluster detection",
+      score: c.prices.length * (0.5 + recency) * (0.5 + nearness),
     });
   }
 
-  return zones;
+  const top = scored.sort((a, b) => b.score - a.score).slice(0, SR_MAX_ZONES);
+  top.sort((a, b) => b.high - a.high); // present top-down, resistance first
+  return top.map((z, i) => {
+    const zone: SupportResistanceZone = {
+      id: `sr_zone_${i + 1}`,
+      kind: z.kind, low: z.low, high: z.high, timeframe: z.timeframe,
+      confidence: z.confidence, touches: z.touches, lastTested: z.lastTested, method: z.method,
+    };
+    return zone;
+  });
 }
 
 // ---------------------------------------------------------------------------

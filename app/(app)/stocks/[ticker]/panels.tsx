@@ -897,7 +897,7 @@ export async function TechnicalsPanel({ ticker }: { ticker: string }) {
     );
   }
 
-  const swings = findSwings(technicals.history, 8);
+  const swings = findSwings(technicals.history);
   const zones = detectSupportResistanceZones(technicals.history, swings, signals.lastClose ?? 0);
   const ohlcvData = toCanonicalOHLCV(ticker, technicals.history);
 
