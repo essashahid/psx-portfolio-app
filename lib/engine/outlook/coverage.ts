@@ -176,18 +176,6 @@ function summarise(
  */
 export const MISSING_SOURCES: MissingSource[] = [
   {
-    key: "breadth-history",
-    label: "Historical market breadth (advance/decline)",
-    why: "market_snapshots only accumulates forward from deploy, and PSX publishes no historical breadth endpoint to backfill from. The ALLSHR index is cached as a partial substitute.",
-    obtainable: "accrues-forward",
-  },
-  {
-    key: "flows-history",
-    label: "Multi-year FIPI/LIPI investor flows",
-    why: "NCCPL has no public API and SCSTrade serves recent sessions only, so flow history accrues forward rather than backfilling.",
-    obtainable: "accrues-forward",
-  },
-  {
     key: "news-archive",
     label: "Historical news and sentiment archive",
     why: "RSS and GDELT expose recent windows only. Sentiment cannot be reconstructed for past regimes, so news can inform the present read but not historical training.",
@@ -213,9 +201,15 @@ export const MISSING_SOURCES: MissingSource[] = [
   },
   {
     key: "index-pre-2021",
-    label: "KSE-100 history before 2021",
-    why: "The PSX portal serves a rolling five-year window. Older index history needs a paid vendor or manual archive import.",
+    label: "Any PSX history before 2021",
+    why: "The PSX portal serves a rolling five-year window for every symbol, indices and constituents alike. This is the single binding limit on the whole feature. Yahoo's KSE series is dead (last tick 2019) and stooq is behind a bot challenge, so going deeper needs a paid vendor or a manual archive import.",
     obtainable: "paid-plan",
+  },
+  {
+    key: "intraday-breadth",
+    label: "Intraday breadth and value traded before capture began",
+    why: "Reconstructed breadth is built from daily closes, so it recovers advance/decline counts but not value traded, most-active names or anything intraday. Those exist only from when live snapshot capture started.",
+    obtainable: "accrues-forward",
   },
 ];
 
@@ -310,10 +304,22 @@ export async function buildOutlookCoverage(
       "Market breadth (advancers/decliners)",
       "breadth",
       "daily",
+      await datesOf(supabase, "market_breadth_history", "trade_date"),
+      asOf,
+      5,
+      "Reconstructed by counting constituent EOD moves, so it reaches back as far as the price panel rather than as far as our own capture history."
+    )
+  );
+  series.push(
+    summarise(
+      "SNAPSHOTS",
+      "Live market snapshots (movers, value traded)",
+      "breadth",
+      "daily",
       await datesOf(supabase, "market_snapshots", "snapshot_date"),
       asOf,
       5,
-      "Accrues forward from deploy only. Informs the present read; too short to train on."
+      "The as-observed daily capture. Carries fields that cannot be recomputed later, such as most-active ticker and value traded, and only accrues forward."
     )
   );
   series.push(
@@ -325,7 +331,7 @@ export async function buildOutlookCoverage(
       await datesOf(supabase, "foreign_flow_days", "flow_date"),
       asOf,
       10,
-      "Best-effort daily capture from SCSTrade. Sparse; no reliable multi-year backfill exists."
+      "Backfilled session by session from SCSTrade, whose endpoints accept an arbitrary date. Source figures are attributed to NCCPL."
     )
   );
   series.push(

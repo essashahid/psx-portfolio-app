@@ -34,6 +34,14 @@ export type HorizonKey = (typeof HORIZONS)[number]["key"];
 /** Drawdown thresholds tested at each horizon, as negative fractions. */
 export const DRAWDOWN_THRESHOLDS = [-0.03, -0.05, -0.07, -0.1] as const;
 
+/**
+ * Rally thresholds, mirroring the drawdown ones. Measured the same way, as the
+ * best point reached inside the window rather than where it closed, so the two
+ * directions are directly comparable instead of one being a peak and the other
+ * an endpoint.
+ */
+export const RALLY_THRESHOLDS = [0.03, 0.05, 0.07, 0.1] as const;
+
 export interface ThresholdStat {
   /** Threshold as a negative fraction, e.g. -0.05 for a 5% decline. */
   threshold: number;
@@ -58,8 +66,12 @@ export interface HorizonStat {
   returnPercentiles: { p10: number; p25: number; median: number; p75: number; p90: number };
   /** Worst intra-window decline from the entry close, as fractions. */
   drawdownPercentiles: { p10: number; median: number; worst: number };
+  /** Best intra-window advance from the entry close, as fractions. */
+  runupPercentiles: { p90: number; median: number; best: number };
   /** Frequency of reaching each drawdown threshold. */
   thresholds: ThresholdStat[];
+  /** Frequency of reaching each rally threshold, the upside mirror. */
+  rallyThresholds: ThresholdStat[];
 }
 
 function percentile(sorted: number[], p: number): number {
@@ -74,34 +86,46 @@ function percentile(sorted: number[], p: number): number {
 
 /**
  * Forward outcomes from each entry point: the close-to-close return at the
- * horizon, and the worst decline reached at any point inside the window. The
- * second is the early-warning target; an index can finish a month flat having
- * fallen 8% midway, and a holder experiences that fall.
+ * horizon, and the worst and best points reached anywhere inside the window.
+ *
+ * The three answer different questions and a reader needs all of them. An index
+ * can finish a month flat having fallen 8% midway and later recovered; the
+ * holder lived through both the fall and the rally, and a close-to-close figure
+ * alone hides each. Reporting only the drawdown, meanwhile, describes a market
+ * that in this history rose more often than it fell.
  */
-function forwardOutcomes(closes: number[], sessions: number): { returns: number[]; drawdowns: number[] } {
+function forwardOutcomes(
+  closes: number[],
+  sessions: number
+): { returns: number[]; drawdowns: number[]; runups: number[] } {
   const returns: number[] = [];
   const drawdowns: number[] = [];
+  const runups: number[] = [];
   for (let i = 0; i + sessions < closes.length; i++) {
     const entry = closes[i];
     if (!(entry > 0)) continue;
     returns.push(closes[i + sessions] / entry - 1);
     let worst = 0;
+    let best = 0;
     for (let j = i + 1; j <= i + sessions; j++) {
-      const dd = closes[j] / entry - 1;
-      if (dd < worst) worst = dd;
+      const move = closes[j] / entry - 1;
+      if (move < worst) worst = move;
+      if (move > best) best = move;
     }
     drawdowns.push(worst);
+    runups.push(best);
   }
-  return { returns, drawdowns };
+  return { returns, drawdowns, runups };
 }
 
 /** Per-horizon descriptive statistics over the full supplied history. */
 export function horizonStats(points: ClosePoint[]): HorizonStat[] {
   const closes = points.map((p) => p.close).filter((c) => Number.isFinite(c) && c > 0);
   return HORIZONS.map((h) => {
-    const { returns, drawdowns } = forwardOutcomes(closes, h.sessions);
+    const { returns, drawdowns, runups } = forwardOutcomes(closes, h.sessions);
     const sortedR = [...returns].sort((a, b) => a - b);
     const sortedD = [...drawdowns].sort((a, b) => a - b);
+    const sortedU = [...runups].sort((a, b) => a - b);
     return {
       key: h.key,
       label: h.label,
@@ -122,9 +146,18 @@ export function horizonStats(points: ClosePoint[]): HorizonStat[] {
         median: percentile(sortedD, 0.5),
         worst: sortedD.length ? sortedD[0] : NaN,
       },
+      runupPercentiles: {
+        p90: percentile(sortedU, 0.9),
+        median: percentile(sortedU, 0.5),
+        best: sortedU.length ? sortedU[sortedU.length - 1] : NaN,
+      },
       thresholds: DRAWDOWN_THRESHOLDS.map((threshold) => {
         const hits = drawdowns.filter((d) => d <= threshold).length;
         return { threshold, hits, frequency: drawdowns.length ? hits / drawdowns.length : NaN };
+      }),
+      rallyThresholds: RALLY_THRESHOLDS.map((threshold) => {
+        const hits = runups.filter((u) => u >= threshold).length;
+        return { threshold, hits, frequency: runups.length ? hits / runups.length : NaN };
       }),
     };
   });
