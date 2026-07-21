@@ -3,9 +3,9 @@
   "_asOf": "2026-07-21",
   "results": [
     {
-      "ticker": "MUGHAL",
+      "ticker": "AVN",
       "verdict": "read_failed",
-      "diagnosis": "vision provider HTTP 413: \n<html><head>\n<meta http-equiv=\"content-type\" content=\"text/html;charset=utf-8\">\n<title>413 Request Entity Too Large</title>\n</head>\n<body text=#000000 bgcolor=#ffffff>\n<h1>Error: Request Entity Too Large</h1>\n<h2>Your client issued a request that was too large.\n</h2>\n<h2></h2>\n<script>(function(){f"
+      "diagnosis": "vision extraction disabled (VISION_DISABLED)"
     }
   ]
 }
