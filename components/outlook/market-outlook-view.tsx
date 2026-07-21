@@ -2,13 +2,15 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { ArrowRight } from "lucide-react";
+import { ArrowRight, ChevronDown } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { SegmentedControl } from "@/components/ui/segmented-control";
 import { Disclosure } from "@/components/outlook/outlook-primitives";
 import { cn } from "@/lib/utils";
-import type { CustomerOutlook, CustomerDriver, CustomerLevel, SectorBasis, Tone } from "@/lib/engine/outlook/customer-outlook";
+import { Sparkline } from "@/components/market/sparkline";
+import type { CustomerOutlook, CustomerLevel, SectorBasis, Tone } from "@/lib/engine/outlook/customer-outlook";
+import type { OutlookDriver } from "@/lib/engine/outlook/drivers";
 import type { WfHorizon } from "@/lib/engine/outlook/walkforward";
 
 /**
@@ -46,7 +48,7 @@ function RangeBar({ lo, hi, current }: { lo: number; hi: number; current: number
   const position = Math.min(Math.max((current - lo) / span, 0), 1);
   return (
     <div>
-      <div className="relative h-2 rounded-full bg-gradient-to-r from-amber-300 via-brand-soft to-emerald-300">
+      <div className="relative h-2 rounded-full bg-linear-to-r from-amber-300 via-brand-soft to-emerald-300">
         <span
           aria-hidden
           className="absolute -top-1 h-4 w-4 -translate-x-2 rounded-full border-2 border-card bg-foreground shadow-sm transition-[left] duration-(--dur-base) ease-(--ease-ui)"
@@ -87,11 +89,114 @@ const BASIS_LABEL: Record<SectorBasis, string> = {
   "rule-based": "Assumption, not yet tested",
 };
 
-const EFFECT_LABEL: Record<CustomerDriver["effect"], { text: string; dot: string; className: string }> = {
+const EFFECT_LABEL: Record<OutlookDriver["effect"], { text: string; dot: string; className: string }> = {
   positive: { text: "Supportive", dot: "bg-emerald-500", className: "text-emerald-700" },
   risk: { text: "Risk", dot: "bg-red-500", className: "text-red-600" },
   mixed: { text: "Mixed", dot: "bg-amber-400", className: "text-amber-700" },
 };
+
+/**
+ * One driver: meaning first, then the numbers behind it, then the evidence on
+ * demand. A reading that could not be computed says so rather than vanishing,
+ * so a gap in the data never looks like a neutral result.
+ */
+function DriverRow({ driver }: { driver: OutlookDriver }) {
+  const [open, setOpen] = useState(false);
+  const style = EFFECT_LABEL[driver.effect];
+  const panelId = `driver-${driver.key}`;
+
+  return (
+    <div className="rounded-lg bg-muted p-3">
+      <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1">
+        <span className="flex items-center gap-2 text-xs font-medium text-foreground">
+          <span aria-hidden className={cn("h-1.5 w-1.5 rounded-full", style.dot)} />
+          {driver.name}
+          <span className="text-[10px] font-normal text-muted-foreground">
+            {driver.basis === "model" ? "Used by the model" : "Context only"}
+          </span>
+        </span>
+        <span className={cn("text-[11px] font-medium", style.className)}>{style.text}</span>
+      </div>
+
+      <p className="mt-1 text-[11px] leading-relaxed text-muted-foreground">{driver.explanation}</p>
+
+      {/* The numbers behind the label, one compact line. */}
+      <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-0.5">
+        {driver.metrics.map((m) => (
+          <span key={m.label} className="text-[11px] text-muted-foreground">
+            {m.label}:{" "}
+            {m.value === null ? (
+              <span className="italic text-muted-foreground/70">Data unavailable</span>
+            ) : (
+              <span className="font-medium tabular-nums text-foreground">{m.value}</span>
+            )}
+          </span>
+        ))}
+      </div>
+
+      {driver.evidence.staleNote && (
+        <p className="mt-1.5 text-[11px] leading-relaxed text-amber-700">{driver.evidence.staleNote}</p>
+      )}
+
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        aria-expanded={open}
+        aria-controls={panelId}
+        className={cn(
+          "mt-2 inline-flex items-center gap-1 text-[11px] text-muted-foreground",
+          "transition-colors duration-(--dur-fast) ease-(--ease-ui) hover:text-foreground",
+          "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2 focus-visible:ring-offset-muted"
+        )}
+      >
+        {open ? "Hide detail" : "Why this reading"}
+        <ChevronDown aria-hidden className={cn("h-3 w-3 transition-transform duration-(--dur-fast) ease-(--ease-ui)", open && "rotate-180")} />
+      </button>
+
+      <div
+        id={panelId}
+        className="grid transition-[grid-template-rows] duration-(--dur-base) ease-(--ease-ui)"
+        style={{ gridTemplateRows: open ? "1fr" : "0fr" }}
+      >
+        <div className="overflow-hidden">
+          <div className="mt-2 rounded-md border border-border bg-card p-3">
+            {driver.evidence.trend && (
+              <div className="mb-2">
+                <Sparkline data={driver.evidence.trend} width={140} height={28} />
+                <p className="mt-0.5 text-[10px] text-muted-foreground">Recent trend</p>
+              </div>
+            )}
+            <p className="text-[11px] leading-relaxed text-foreground">{driver.evidence.whyStatus}</p>
+            <dl className="mt-2 space-y-1 text-[11px]">
+              {driver.evidence.previous && (
+                <div className="flex justify-between gap-3">
+                  <dt className="text-muted-foreground">Previous reading</dt>
+                  <dd className="tabular-nums text-foreground">{driver.evidence.previous}</dd>
+                </div>
+              )}
+              {driver.evidence.lastUpdated && (
+                <div className="flex justify-between gap-3">
+                  <dt className="text-muted-foreground">Last updated</dt>
+                  <dd className="tabular-nums text-foreground">{driver.evidence.lastUpdated}</dd>
+                </div>
+              )}
+              <div className="flex justify-between gap-3">
+                <dt className="shrink-0 text-muted-foreground">Source</dt>
+                <dd className="text-right text-muted-foreground">{driver.evidence.source}</dd>
+              </div>
+              {driver.evidence.sectorsAffected.length > 0 && (
+                <div className="flex justify-between gap-3">
+                  <dt className="shrink-0 text-muted-foreground">Sectors most affected</dt>
+                  <dd className="text-right text-muted-foreground">{driver.evidence.sectorsAffected.join(", ")}</dd>
+                </div>
+              )}
+            </dl>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 export function MarketOutlookView({ outlook, isAdmin = false }: { outlook: CustomerOutlook; isAdmin?: boolean }) {
   const [horizonKey, setHorizonKey] = useState<WfHorizon>(10);
@@ -283,22 +388,9 @@ export function MarketOutlookView({ outlook, isAdmin = false }: { outlook: Custo
           </div>
 
           <div className="space-y-2">
-            {outlook.drivers.map((d) => {
-              const style = EFFECT_LABEL[d.effect];
-              return (
-                <div key={d.name} className="rounded-lg bg-muted p-3">
-                  <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1">
-                    <span className="flex items-center gap-2 text-xs font-medium text-foreground">
-                      <span aria-hidden className={cn("h-1.5 w-1.5 rounded-full", style.dot)} />
-                      {d.name}
-                      {d.basis === "model" && <span className="text-[10px] font-normal text-muted-foreground">used by the model</span>}
-                    </span>
-                    <span className={cn("text-[11px] font-medium", style.className)}>{style.text}</span>
-                  </div>
-                  <p className="mt-1 text-[11px] leading-relaxed text-muted-foreground">{d.detail}</p>
-                </div>
-              );
-            })}
+            {outlook.drivers.map((d) => (
+              <DriverRow key={d.key} driver={d} />
+            ))}
           </div>
 
           <div className="mt-3 rounded-lg border border-border p-3">
