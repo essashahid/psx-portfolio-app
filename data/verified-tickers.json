@@ -791,6 +791,13 @@
       "source": "auto+Sarmaaya",
       "date": "2026-07-21",
       "note": "consolidated basis found by sweeping stored data, NOT a filing read. FY2025 1.37 + Q1'26 0.10 - Q1'25 -0.10 = TTM 1.57 vs Sarmaaya 1.60 (1.9%); P/B 0.66 vs 0.65 as an independent second check. Chain uses the latest interim held and the same period we serve. Added to CONSOLIDATED_BASIS_TICKERS."
+    },
+    "JSBL": {
+      "throughPeriod": "2026 Q1",
+      "basis": "consolidated",
+      "source": "agent-read+Sarmaaya",
+      "date": "2026-07-21",
+      "note": "bank; Sarmaaya quotes the group. Read off the cached PDFs by a subagent using the Read tool, which was the ONLY route available: the filings are scanned/image-only so the DeepSeek text-layer extractor could not touch them, and both vision API providers (OpenRouter, Anthropic) were out of credits. Consolidated FY2025 2.84 (annual printed p183) + Q1'26 0.44 - Q1'25 1.18 (both interim printed p51) = TTM 2.10, exact to Sarmaaya's 2.1. Unconsolidated (1.36 + 0.51 - 0.63 = 1.24) does not reconcile. P/B 0.41 vs Sarmaaya 0.42 as an independent second check, using equity ATTRIBUTABLE TO OWNERS (66,531,130k, interim p50) not total equity including NCI (78,803,779k) -- consolidated EPS is struck on owners' profit, so total equity would mismatch numerator and denominator. Same reason profit_after_tax is stored as 5,826,980k (owners) not 7,539,228k (total incl. 1,712,248k NCI). The automated pass this morning had the two FY figures but not the Q1 comparatives, so it could not build a chain and reported 'neither basis matches' -- the gap was missing data, not bad reasoning."
     }
   },
   "_unverifiable": {
