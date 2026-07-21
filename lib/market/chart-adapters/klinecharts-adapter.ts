@@ -8,14 +8,144 @@ const PERIODS: Record<string, Period> = {
   "1M": { type: "month", span: 1 },
 };
 
+/**
+ * Indicators that belong ON the price pane rather than in their own pane
+ * below. Without this routing, adding a moving average opened a brand new
+ * pane, which is never what anyone means by "add MA".
+ */
+const PRICE_PANE_INDICATORS = new Set(["MA", "EMA", "SMA", "BOLL", "SAR", "BBI"]);
+
+/**
+ * Defaults for the parameters that matter to us. KLineCharts' own defaults
+ * lean short-term (MA 5/10/30/60, RSI 6/12/24); the platform's language
+ * everywhere else is MA 20/50/200 and RSI 14, so the chart should agree with
+ * the rest of the app. VOL gets no params at all: its default 5/10/20 moving
+ * averages drew three lines over a 90px pane of bars, which is where most of
+ * the volume-pane clutter came from.
+ */
+const INDICATOR_PARAMS: Record<string, number[]> = {
+  MA: [20, 50, 200],
+  EMA: [21, 55],
+  SMA: [20, 2],
+  RSI: [14],
+  VOL: [],
+};
+
+/** App palette: emerald price ink on a near-invisible slate scaffold. */
+const COLOR = {
+  line: "#059669",
+  areaTop: "rgba(5, 150, 105, 0.14)",
+  areaBottom: "rgba(5, 150, 105, 0.01)",
+  up: "#059669",
+  down: "#dc2626",
+  noChange: "#64748b",
+  text: "#64748b",
+  grid: "rgba(100, 116, 139, 0.10)",
+  axisLine: "rgba(100, 116, 139, 0.22)",
+  crosshair: "#94a3b8",
+};
+
 export class KLineChartsAdapter implements ChartEngineAdapter {
   private chart: Chart | null = null;
   private currentSymbol: string = "";
   private currentResolution: string = "1D";
   private _bars: import("klinecharts").KLineData[] = [];
+  private activeIndicators: string[] = [];
+  private closeOnly = false;
 
   initializeChart(container: HTMLElement, options?: any): void {
     this.chart = init(container, options);
+    this.applyBaseStyles();
+  }
+
+  /**
+   * Restyle the default KLineCharts look (bright blue on loud grid) to match
+   * the app: emerald ink, whisper-quiet grid, muted slate text. The canvas'
+   * own "{ticker} · {period}" title is turned off because the workstation
+   * header above the chart already says exactly that.
+   */
+  private applyBaseStyles(): void {
+    if (!this.chart) return;
+    this.chart.setStyles({
+      grid: {
+        horizontal: { color: COLOR.grid },
+        vertical: { show: false },
+      },
+      candle: {
+        bar: { upColor: COLOR.up, downColor: COLOR.down, noChangeColor: COLOR.noChange,
+               upBorderColor: COLOR.up, downBorderColor: COLOR.down, noChangeBorderColor: COLOR.noChange,
+               upWickColor: COLOR.up, downWickColor: COLOR.down, noChangeWickColor: COLOR.noChange },
+        area: {
+          lineColor: COLOR.line,
+          lineSize: 2,
+          smooth: true,
+          backgroundColor: [
+            { offset: 0, color: COLOR.areaBottom },
+            { offset: 1, color: COLOR.areaTop },
+          ],
+          point: { color: COLOR.line },
+        },
+        priceMark: {
+          last: { upColor: COLOR.up, downColor: COLOR.down, noChangeColor: COLOR.noChange },
+        },
+        tooltip: {
+          title: { show: false },
+          legend: { color: COLOR.text },
+        },
+      },
+      indicator: {
+        tooltip: { legend: { color: COLOR.text } },
+      },
+      xAxis: {
+        axisLine: { color: COLOR.axisLine },
+        tickText: { color: COLOR.text },
+        tickLine: { show: false },
+      },
+      yAxis: {
+        axisLine: { show: false },
+        tickText: { color: COLOR.text },
+        tickLine: { show: false },
+      },
+      separator: { color: COLOR.axisLine },
+      crosshair: {
+        horizontal: { line: { color: COLOR.crosshair }, text: { backgroundColor: "#334155" } },
+        vertical: { line: { color: COLOR.crosshair }, text: { backgroundColor: "#334155" } },
+      },
+    });
+  }
+
+  /**
+   * Close-only mode. PSX EOD data fakes open/high/low as the close, so the
+   * default tooltip prints the same number four times and the high/low price
+   * marks pin meaningless ticks to the plot. Collapse the tooltip to what is
+   * actually known (date, price, volume) and hide the fake extremes.
+   */
+  setDataQuality(quality: string): void {
+    this.closeOnly = quality === "close-only";
+    if (!this.chart) return;
+    this.chart.setStyles({
+      candle: {
+        priceMark: { high: { show: !this.closeOnly }, low: { show: !this.closeOnly } },
+        tooltip: {
+          legend: {
+            template: this.closeOnly
+              ? [
+                  { title: "time", value: "{time}" },
+                  { title: "Price: ", value: "{close}" },
+                  { title: "volume", value: "{volume}" },
+                ]
+              : [
+                  { title: "time", value: "{time}" },
+                  { title: "open", value: "{open}" },
+                  { title: "high", value: "{high}" },
+                  { title: "low", value: "{low}" },
+                  { title: "close", value: "{close}" },
+                  { title: "volume", value: "{volume}" },
+                ],
+          },
+        },
+      },
+    });
   }
 
   destroyChart(): void {
@@ -151,17 +281,23 @@ export class KLineChartsAdapter implements ChartEngineAdapter {
 
   addIndicator(name: string, options?: any): string {
     if (!this.chart) return "";
-    // KLineCharts has built-in indicators like MA, EMA, SMA, VOL, MACD, RSI, etc.
-    const paneId = options?.paneId || "candle_pane"; // Use 'candle_pane' for main chart overlay, or create a new pane
-    const isMain = options?.isMain ?? false;
-    
-    const indicatorOptions: IndicatorCreate = {
+    if (this.activeIndicators.includes(name)) return name; // already on — one instance each
+
+    const onPricePane = options?.isMain ?? PRICE_PANE_INDICATORS.has(name);
+    const create: IndicatorCreate = {
       name,
-      calcParams: options?.calcParams,
-      shortName: options?.shortName
+      calcParams: options?.calcParams ?? INDICATOR_PARAMS[name],
+      shortName: options?.shortName,
     };
-    
-    return this.chart.createIndicator(indicatorOptions, { pane: options?.paneOptions }) ?? "";
+    const created = this.chart.createIndicator(create, {
+      isStack: onPricePane,
+      pane: onPricePane
+        ? { id: "candle_pane" }
+        : { id: `pane_${name}`, height: name === "VOL" ? 90 : 120 },
+    });
+    if (created === null) return "";
+    this.activeIndicators.push(name);
+    return name;
   }
 
   updateIndicator(id: string, options: any): void {
@@ -169,9 +305,43 @@ export class KLineChartsAdapter implements ChartEngineAdapter {
     this.chart.overrideIndicator({ name: id, ...options });
   }
 
-  removeIndicator(id: string): void {
+  removeIndicator(name: string): void {
     if (!this.chart) return;
-    this.chart.removeIndicator({ id });
+    this.chart.removeIndicator({ name });
+    this.activeIndicators = this.activeIndicators.filter((n) => n !== name);
+  }
+
+  /** Adds the indicator if absent, removes it if present. Returns the new state. */
+  toggleIndicator(name: string): boolean {
+    if (this.activeIndicators.includes(name)) {
+      this.removeIndicator(name);
+      return false;
+    }
+    return this.addIndicator(name) !== "";
+  }
+
+  /**
+   * Start an interactive drawing. The user places the points by clicking on
+   * the chart; KLineCharts runs the whole gesture once the overlay exists.
+   * Valid names include "segment", "rayLine", "horizontalStraightLine",
+   * "priceLine" and "fibonacciLine" — all registered built-ins.
+   */
+  startDrawing(name: string): void {
+    if (!this.chart) return;
+    this.chart.createOverlay({
+      name,
+      styles: {
+        line: { color: COLOR.line },
+        text: { color: COLOR.line, backgroundColor: "transparent" },
+        point: { color: COLOR.line, borderColor: COLOR.areaTop },
+      },
+    });
+  }
+
+  /** Remove every user drawing. Indicators are not overlays, so they survive. */
+  clearDrawings(): void {
+    if (!this.chart) return;
+    this.chart.removeOverlay();
   }
 
   addDrawing(drawing: ChartDrawing): void {
@@ -228,15 +398,18 @@ export class KLineChartsAdapter implements ChartEngineAdapter {
   setEventVisibility(type: string, visible: boolean): void {}
 
   saveLayoutState(): string {
-    // Needs complex serialization of drawings, indicators, styles
-    return JSON.stringify({});
+    return JSON.stringify({ indicators: this.activeIndicators });
   }
 
   loadLayoutState(state: string): void {
     if (!this.chart) return;
     try {
-      const parsed = JSON.parse(state);
-      // apply parsed state
+      const parsed = JSON.parse(state) as { indicators?: string[] };
+      if (!Array.isArray(parsed.indicators)) return;
+      for (const name of [...this.activeIndicators]) {
+        if (!parsed.indicators.includes(name)) this.removeIndicator(name);
+      }
+      for (const name of parsed.indicators) this.addIndicator(name);
     } catch {}
   }
 
@@ -263,7 +436,7 @@ export class KLineChartsAdapter implements ChartEngineAdapter {
     return { from: 0, to: 0 };
   }
 
-  getActiveIndicators(): any[] { return []; }
+  getActiveIndicators(): string[] { return [...this.activeIndicators]; }
 
   getActiveDrawings(): ChartDrawing[] { return []; }
 }

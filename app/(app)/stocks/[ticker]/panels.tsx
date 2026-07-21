@@ -902,11 +902,13 @@ export async function TechnicalsPanel({ ticker }: { ticker: string }) {
   const ohlcvData = toCanonicalOHLCV(ticker, technicals.history);
 
   return (
-    <TechnicalWorkstation 
+    <TechnicalWorkstation
       ticker={ticker}
       ohlcvData={ohlcvData}
       signals={signals}
       supportResistanceZones={zones}
+      changePct={technicals.dayChangePct}
+      volatility={technicals.volatility}
     />
   );
 }

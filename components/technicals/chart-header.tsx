@@ -11,6 +11,7 @@ interface ChartHeaderProps {
   resolution: string;
   onResolutionChange: (res: string) => void;
   chartType: string;
+  candlesDisabled?: boolean;
   onChartTypeChange: (type: "candlestick" | "line" | "area") => void;
   onFullscreenToggle: () => void;
   isFullscreen: boolean;
@@ -20,7 +21,7 @@ interface ChartHeaderProps {
 }
 
 export function ChartHeader({
-  ticker, price, changePct, resolution, onResolutionChange, chartType, onChartTypeChange, onFullscreenToggle, isFullscreen, onOpenIndicators, onOpenDrawings, onOpenLayouts
+  ticker, price, changePct, resolution, onResolutionChange, chartType, candlesDisabled, onChartTypeChange, onFullscreenToggle, isFullscreen, onOpenIndicators, onOpenDrawings, onOpenLayouts
 }: ChartHeaderProps) {
   return (
     <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border bg-card p-3">
@@ -49,7 +50,14 @@ export function ChartHeader({
 
         <div className="mx-1 h-4 w-px bg-border" />
 
-        <Button variant="outline" size="sm" className="h-8 gap-1.5 px-2 text-xs" onClick={() => onChartTypeChange(chartType === "candlestick" ? "line" : "candlestick")}>
+        <Button
+          variant="outline"
+          size="sm"
+          className="h-8 gap-1.5 px-2 text-xs"
+          disabled={candlesDisabled}
+          title={candlesDisabled ? "Candles need open, high and low data, which PSX does not publish" : undefined}
+          onClick={() => onChartTypeChange(chartType === "candlestick" ? "line" : "candlestick")}
+        >
           <BarChart2 className="h-3.5 w-3.5" />
           <span className="hidden sm:inline">{chartType === "candlestick" ? "Candles" : "Line"}</span>
         </Button>
