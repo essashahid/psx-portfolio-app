@@ -2,6 +2,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { PBS_NATIONAL_CPI, latestCpiMonth } from "@/lib/market-data/pbs-cpi";
 import { policyRateContext } from "@/lib/market-data/macro-assets";
 import { findGaps, horizonStats, volConditionalStats, type ClosePoint, type HorizonStat, type VolConditionalStat } from "@/lib/engine/outlook/history-stats";
+import { buildBreadthSignal, type BreadthPoint, type BreadthSignalReport } from "@/lib/engine/outlook/breadth-signal";
 
 /**
  * Phase 1 data-coverage report for the PSX Market Outlook.
@@ -58,6 +59,7 @@ export interface OutlookCoverageReport {
   } | null;
   horizons: HorizonStat[];
   volConditional: VolConditionalStat[];
+  breadthSignal: BreadthSignalReport | null;
 }
 
 const DAY_MS = 86_400_000;
@@ -102,6 +104,30 @@ async function datesOf(
     for (const r of rows) {
       const v = r[column];
       if (v) out.push(String(v).slice(0, 10));
+    }
+    if (rows.length < PAGE) break;
+  }
+  return out;
+}
+
+/** Reconstructed daily breadth, oldest first. */
+export async function readBreadthHistory(supabase: SupabaseClient): Promise<BreadthPoint[]> {
+  const PAGE = 1000;
+  const out: BreadthPoint[] = [];
+  for (let from = 0; ; from += PAGE) {
+    const { data, error } = await supabase
+      .from("market_breadth_history")
+      .select("trade_date, pct_above_ma200")
+      .order("trade_date", { ascending: true })
+      .range(from, from + PAGE - 1);
+    if (error) break;
+    const rows = data ?? [];
+    for (const r of rows) {
+      const v = r.pct_above_ma200;
+      out.push({
+        date: r.trade_date as string,
+        pctAboveMa200: v === null ? null : Number(v),
+      });
     }
     if (rows.length < PAGE) break;
   }
@@ -221,6 +247,7 @@ export async function buildOutlookCoverage(
 
   // --- Index series --------------------------------------------------------
   const indexPoints = await readIndexHistory(supabase, OUTLOOK_INDEX);
+  const breadthPoints = await readBreadthHistory(supabase);
   const indexDates = indexPoints.map((p) => p.date);
   series.push(
     summarise(
@@ -370,5 +397,6 @@ export async function buildOutlookCoverage(
       : null,
     horizons: indexPoints.length ? horizonStats(indexPoints) : [],
     volConditional: indexPoints.length ? volConditionalStats(indexPoints) : [],
+    breadthSignal: indexPoints.length && breadthPoints.length ? buildBreadthSignal(indexPoints, breadthPoints) : null,
   };
 }

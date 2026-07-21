@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-07-21T10:53:20.841Z",
+  "generatedAt": "2026-07-21T11:01:12.152Z",
   "bindingConstraint": {
     "series": "PSX All-Share index",
     "firstDate": "2021-07-23",
@@ -845,5 +845,694 @@
       "lowVolWindows": 390,
       "highVolWindows": 390
     }
-  ]
+  ],
+  "breadthSignal": {
+    "usableSessions": 1054,
+    "firstDate": "2022-04-12",
+    "lastDate": "2026-07-20",
+    "conditional": [
+      {
+        "horizonKey": "5d",
+        "threshold": -0.03,
+        "baseRate": 0.14489990467111535,
+        "narrowRate": 0.13714285714285715,
+        "broadRate": 0.14,
+        "lift": 0.9464661654135338,
+        "narrowWindows": 350,
+        "broadWindows": 350
+      },
+      {
+        "horizonKey": "5d",
+        "threshold": -0.05,
+        "baseRate": 0.04194470924690181,
+        "narrowRate": 0.04285714285714286,
+        "broadRate": 0.03142857142857143,
+        "lift": 1.0217532467532469,
+        "narrowWindows": 350,
+        "broadWindows": 350
+      },
+      {
+        "horizonKey": "5d",
+        "threshold": -0.07,
+        "baseRate": 0.015252621544327931,
+        "narrowRate": 0.005714285714285714,
+        "broadRate": 0.011428571428571429,
+        "lift": 0.37464285714285717,
+        "narrowWindows": 350,
+        "broadWindows": 350
+      },
+      {
+        "horizonKey": "5d",
+        "threshold": -0.1,
+        "baseRate": 0.0009532888465204957,
+        "narrowRate": 0,
+        "broadRate": 0,
+        "lift": 0,
+        "narrowWindows": 350,
+        "broadWindows": 350
+      },
+      {
+        "horizonKey": "10d",
+        "threshold": -0.03,
+        "baseRate": 0.24329501915708812,
+        "narrowRate": 0.27298850574712646,
+        "broadRate": 0.23275862068965517,
+        "lift": 1.1220472440944884,
+        "narrowWindows": 348,
+        "broadWindows": 348
+      },
+      {
+        "horizonKey": "10d",
+        "threshold": -0.05,
+        "baseRate": 0.10632183908045977,
+        "narrowRate": 0.09195402298850575,
+        "broadRate": 0.07758620689655173,
+        "lift": 0.8648648648648649,
+        "narrowWindows": 348,
+        "broadWindows": 348
+      },
+      {
+        "horizonKey": "10d",
+        "threshold": -0.07,
+        "baseRate": 0.038314176245210725,
+        "narrowRate": 0.008620689655172414,
+        "broadRate": 0.031609195402298854,
+        "lift": 0.225,
+        "narrowWindows": 348,
+        "broadWindows": 348
+      },
+      {
+        "horizonKey": "10d",
+        "threshold": -0.1,
+        "baseRate": 0.01532567049808429,
+        "narrowRate": 0,
+        "broadRate": 0.008620689655172414,
+        "lift": 0,
+        "narrowWindows": 348,
+        "broadWindows": 348
+      },
+      {
+        "horizonKey": "20d",
+        "threshold": -0.03,
+        "baseRate": 0.3733075435203095,
+        "narrowRate": 0.4666666666666667,
+        "broadRate": 0.34202898550724636,
+        "lift": 1.2500863557858377,
+        "narrowWindows": 345,
+        "broadWindows": 345
+      },
+      {
+        "horizonKey": "20d",
+        "threshold": -0.05,
+        "baseRate": 0.18085106382978725,
+        "narrowRate": 0.17971014492753623,
+        "broadRate": 0.1565217391304348,
+        "lift": 0.9936913895993179,
+        "narrowWindows": 345,
+        "broadWindows": 345
+      },
+      {
+        "horizonKey": "20d",
+        "threshold": -0.07,
+        "baseRate": 0.08800773694390715,
+        "narrowRate": 0.06666666666666667,
+        "broadRate": 0.07536231884057971,
+        "lift": 0.7575091575091576,
+        "narrowWindows": 345,
+        "broadWindows": 345
+      },
+      {
+        "horizonKey": "20d",
+        "threshold": -0.1,
+        "baseRate": 0.0367504835589942,
+        "narrowRate": 0,
+        "broadRate": 0.028985507246376812,
+        "lift": 0,
+        "narrowWindows": 345,
+        "broadWindows": 345
+      },
+      {
+        "horizonKey": "1m",
+        "threshold": -0.03,
+        "baseRate": 0.3765730880929332,
+        "narrowRate": 0.4666666666666667,
+        "broadRate": 0.3507246376811594,
+        "lift": 1.2392459297343617,
+        "narrowWindows": 345,
+        "broadWindows": 345
+      },
+      {
+        "horizonKey": "1m",
+        "threshold": -0.05,
+        "baseRate": 0.19264278799612777,
+        "narrowRate": 0.19710144927536233,
+        "broadRate": 0.16521739130434782,
+        "lift": 1.023144709052509,
+        "narrowWindows": 345,
+        "broadWindows": 345
+      },
+      {
+        "horizonKey": "1m",
+        "threshold": -0.07,
+        "baseRate": 0.08906098741529525,
+        "narrowRate": 0.06666666666666667,
+        "broadRate": 0.07536231884057971,
+        "lift": 0.7485507246376812,
+        "narrowWindows": 345,
+        "broadWindows": 345
+      },
+      {
+        "horizonKey": "1m",
+        "threshold": -0.1,
+        "baseRate": 0.03969022265246854,
+        "narrowRate": 0,
+        "broadRate": 0.034782608695652174,
+        "lift": 0,
+        "narrowWindows": 345,
+        "broadWindows": 345
+      },
+      {
+        "horizonKey": "3m",
+        "threshold": -0.03,
+        "baseRate": 0.5196770938446014,
+        "narrowRate": 0.6948640483383686,
+        "broadRate": 0.4984894259818731,
+        "lift": 1.337107324084123,
+        "narrowWindows": 331,
+        "broadWindows": 331
+      },
+      {
+        "horizonKey": "3m",
+        "threshold": -0.05,
+        "baseRate": 0.33804238143289606,
+        "narrowRate": 0.38972809667673713,
+        "broadRate": 0.34441087613293053,
+        "lift": 1.152897145691482,
+        "narrowWindows": 331,
+        "broadWindows": 331
+      },
+      {
+        "horizonKey": "3m",
+        "threshold": -0.07,
+        "baseRate": 0.21796165489404642,
+        "narrowRate": 0.20241691842900303,
+        "broadRate": 0.229607250755287,
+        "lift": 0.928681324829361,
+        "narrowWindows": 331,
+        "broadWindows": 331
+      },
+      {
+        "horizonKey": "3m",
+        "threshold": -0.1,
+        "baseRate": 0.11301715438950555,
+        "narrowRate": 0.07854984894259819,
+        "broadRate": 0.12386706948640483,
+        "lift": 0.6950258955545965,
+        "narrowWindows": 331,
+        "broadWindows": 331
+      }
+    ],
+    "quadrants": [
+      {
+        "horizonKey": "5d",
+        "threshold": -0.03,
+        "calmBroad": {
+          "rate": 0.02912621359223301,
+          "windows": 103
+        },
+        "calmNarrow": {
+          "rate": 0.06474820143884892,
+          "windows": 139
+        },
+        "turbulentBroad": {
+          "rate": 0.15748031496062992,
+          "windows": 127
+        },
+        "turbulentNarrow": {
+          "rate": 0.24770642201834864,
+          "windows": 109
+        },
+        "narrowLiftWithinCalm": 2.223021582733813,
+        "calmNarrowHits": 9,
+        "calmNarrowEpisodes": 3,
+        "quotable": true
+      },
+      {
+        "horizonKey": "5d",
+        "threshold": -0.05,
+        "calmBroad": {
+          "rate": 0.009708737864077669,
+          "windows": 103
+        },
+        "calmNarrow": {
+          "rate": 0.007194244604316547,
+          "windows": 139
+        },
+        "turbulentBroad": {
+          "rate": 0.05511811023622047,
+          "windows": 127
+        },
+        "turbulentNarrow": {
+          "rate": 0.10091743119266056,
+          "windows": 109
+        },
+        "narrowLiftWithinCalm": 0.7410071942446044,
+        "calmNarrowHits": 1,
+        "calmNarrowEpisodes": 1,
+        "quotable": false
+      },
+      {
+        "horizonKey": "5d",
+        "threshold": -0.07,
+        "calmBroad": {
+          "rate": 0,
+          "windows": 103
+        },
+        "calmNarrow": {
+          "rate": 0,
+          "windows": 139
+        },
+        "turbulentBroad": {
+          "rate": 0.023622047244094488,
+          "windows": 127
+        },
+        "turbulentNarrow": {
+          "rate": 0.01834862385321101,
+          "windows": 109
+        },
+        "narrowLiftWithinCalm": null,
+        "calmNarrowHits": 0,
+        "calmNarrowEpisodes": 0,
+        "quotable": false
+      },
+      {
+        "horizonKey": "5d",
+        "threshold": -0.1,
+        "calmBroad": {
+          "rate": 0,
+          "windows": 103
+        },
+        "calmNarrow": {
+          "rate": 0,
+          "windows": 139
+        },
+        "turbulentBroad": {
+          "rate": 0,
+          "windows": 127
+        },
+        "turbulentNarrow": {
+          "rate": 0,
+          "windows": 109
+        },
+        "narrowLiftWithinCalm": null,
+        "calmNarrowHits": 0,
+        "calmNarrowEpisodes": 0,
+        "quotable": false
+      },
+      {
+        "horizonKey": "10d",
+        "threshold": -0.03,
+        "calmBroad": {
+          "rate": 0.10891089108910891,
+          "windows": 101
+        },
+        "calmNarrow": {
+          "rate": 0.2158273381294964,
+          "windows": 139
+        },
+        "turbulentBroad": {
+          "rate": 0.2698412698412698,
+          "windows": 126
+        },
+        "turbulentNarrow": {
+          "rate": 0.3577981651376147,
+          "windows": 109
+        },
+        "narrowLiftWithinCalm": 1.9816873773708306,
+        "calmNarrowHits": 30,
+        "calmNarrowEpisodes": 5,
+        "quotable": true
+      },
+      {
+        "horizonKey": "10d",
+        "threshold": -0.05,
+        "calmBroad": {
+          "rate": 0.0297029702970297,
+          "windows": 101
+        },
+        "calmNarrow": {
+          "rate": 0.04316546762589928,
+          "windows": 139
+        },
+        "turbulentBroad": {
+          "rate": 0.0873015873015873,
+          "windows": 126
+        },
+        "turbulentNarrow": {
+          "rate": 0.13761467889908258,
+          "windows": 109
+        },
+        "narrowLiftWithinCalm": 1.4532374100719425,
+        "calmNarrowHits": 6,
+        "calmNarrowEpisodes": 1,
+        "quotable": false
+      },
+      {
+        "horizonKey": "10d",
+        "threshold": -0.07,
+        "calmBroad": {
+          "rate": 0,
+          "windows": 101
+        },
+        "calmNarrow": {
+          "rate": 0,
+          "windows": 139
+        },
+        "turbulentBroad": {
+          "rate": 0.023809523809523808,
+          "windows": 126
+        },
+        "turbulentNarrow": {
+          "rate": 0.027522935779816515,
+          "windows": 109
+        },
+        "narrowLiftWithinCalm": null,
+        "calmNarrowHits": 0,
+        "calmNarrowEpisodes": 0,
+        "quotable": false
+      },
+      {
+        "horizonKey": "10d",
+        "threshold": -0.1,
+        "calmBroad": {
+          "rate": 0,
+          "windows": 101
+        },
+        "calmNarrow": {
+          "rate": 0,
+          "windows": 139
+        },
+        "turbulentBroad": {
+          "rate": 0,
+          "windows": 126
+        },
+        "turbulentNarrow": {
+          "rate": 0,
+          "windows": 109
+        },
+        "narrowLiftWithinCalm": null,
+        "calmNarrowHits": 0,
+        "calmNarrowEpisodes": 0,
+        "quotable": false
+      },
+      {
+        "horizonKey": "20d",
+        "threshold": -0.03,
+        "calmBroad": {
+          "rate": 0.12244897959183673,
+          "windows": 98
+        },
+        "calmNarrow": {
+          "rate": 0.35251798561151076,
+          "windows": 139
+        },
+        "turbulentBroad": {
+          "rate": 0.4435483870967742,
+          "windows": 124
+        },
+        "turbulentNarrow": {
+          "rate": 0.5046728971962616,
+          "windows": 107
+        },
+        "narrowLiftWithinCalm": 2.8788968824940047,
+        "calmNarrowHits": 49,
+        "calmNarrowEpisodes": 6,
+        "quotable": true
+      },
+      {
+        "horizonKey": "20d",
+        "threshold": -0.05,
+        "calmBroad": {
+          "rate": 0.030612244897959183,
+          "windows": 98
+        },
+        "calmNarrow": {
+          "rate": 0.14388489208633093,
+          "windows": 139
+        },
+        "turbulentBroad": {
+          "rate": 0.1774193548387097,
+          "windows": 124
+        },
+        "turbulentNarrow": {
+          "rate": 0.21495327102803738,
+          "windows": 107
+        },
+        "narrowLiftWithinCalm": 4.700239808153477,
+        "calmNarrowHits": 20,
+        "calmNarrowEpisodes": 2,
+        "quotable": false
+      },
+      {
+        "horizonKey": "20d",
+        "threshold": -0.07,
+        "calmBroad": {
+          "rate": 0.01020408163265306,
+          "windows": 98
+        },
+        "calmNarrow": {
+          "rate": 0.050359712230215826,
+          "windows": 139
+        },
+        "turbulentBroad": {
+          "rate": 0.04032258064516129,
+          "windows": 124
+        },
+        "turbulentNarrow": {
+          "rate": 0.14018691588785046,
+          "windows": 107
+        },
+        "narrowLiftWithinCalm": 4.9352517985611515,
+        "calmNarrowHits": 7,
+        "calmNarrowEpisodes": 1,
+        "quotable": false
+      },
+      {
+        "horizonKey": "20d",
+        "threshold": -0.1,
+        "calmBroad": {
+          "rate": 0,
+          "windows": 98
+        },
+        "calmNarrow": {
+          "rate": 0,
+          "windows": 139
+        },
+        "turbulentBroad": {
+          "rate": 0,
+          "windows": 124
+        },
+        "turbulentNarrow": {
+          "rate": 0,
+          "windows": 107
+        },
+        "narrowLiftWithinCalm": null,
+        "calmNarrowHits": 0,
+        "calmNarrowEpisodes": 0,
+        "quotable": false
+      },
+      {
+        "horizonKey": "1m",
+        "threshold": -0.03,
+        "calmBroad": {
+          "rate": 0.12244897959183673,
+          "windows": 98
+        },
+        "calmNarrow": {
+          "rate": 0.35251798561151076,
+          "windows": 139
+        },
+        "turbulentBroad": {
+          "rate": 0.4596774193548387,
+          "windows": 124
+        },
+        "turbulentNarrow": {
+          "rate": 0.5,
+          "windows": 108
+        },
+        "narrowLiftWithinCalm": 2.8788968824940047,
+        "calmNarrowHits": 49,
+        "calmNarrowEpisodes": 6,
+        "quotable": true
+      },
+      {
+        "horizonKey": "1m",
+        "threshold": -0.05,
+        "calmBroad": {
+          "rate": 0.04081632653061224,
+          "windows": 98
+        },
+        "calmNarrow": {
+          "rate": 0.15827338129496402,
+          "windows": 139
+        },
+        "turbulentBroad": {
+          "rate": 0.1935483870967742,
+          "windows": 124
+        },
+        "turbulentNarrow": {
+          "rate": 0.2222222222222222,
+          "windows": 108
+        },
+        "narrowLiftWithinCalm": 3.8776978417266186,
+        "calmNarrowHits": 22,
+        "calmNarrowEpisodes": 2,
+        "quotable": false
+      },
+      {
+        "horizonKey": "1m",
+        "threshold": -0.07,
+        "calmBroad": {
+          "rate": 0.01020408163265306,
+          "windows": 98
+        },
+        "calmNarrow": {
+          "rate": 0.050359712230215826,
+          "windows": 139
+        },
+        "turbulentBroad": {
+          "rate": 0.04032258064516129,
+          "windows": 124
+        },
+        "turbulentNarrow": {
+          "rate": 0.1388888888888889,
+          "windows": 108
+        },
+        "narrowLiftWithinCalm": 4.9352517985611515,
+        "calmNarrowHits": 7,
+        "calmNarrowEpisodes": 1,
+        "quotable": false
+      },
+      {
+        "horizonKey": "1m",
+        "threshold": -0.1,
+        "calmBroad": {
+          "rate": 0,
+          "windows": 98
+        },
+        "calmNarrow": {
+          "rate": 0,
+          "windows": 139
+        },
+        "turbulentBroad": {
+          "rate": 0.008064516129032258,
+          "windows": 124
+        },
+        "turbulentNarrow": {
+          "rate": 0,
+          "windows": 108
+        },
+        "narrowLiftWithinCalm": null,
+        "calmNarrowHits": 0,
+        "calmNarrowEpisodes": 0,
+        "quotable": false
+      },
+      {
+        "horizonKey": "3m",
+        "threshold": -0.03,
+        "calmBroad": {
+          "rate": 0.35294117647058826,
+          "windows": 85
+        },
+        "calmNarrow": {
+          "rate": 0.7028985507246377,
+          "windows": 138
+        },
+        "turbulentBroad": {
+          "rate": 0.4609375,
+          "windows": 128
+        },
+        "turbulentNarrow": {
+          "rate": 0.6310679611650486,
+          "windows": 103
+        },
+        "narrowLiftWithinCalm": 1.9915458937198067,
+        "calmNarrowHits": 97,
+        "calmNarrowEpisodes": 2,
+        "quotable": false
+      },
+      {
+        "horizonKey": "3m",
+        "threshold": -0.05,
+        "calmBroad": {
+          "rate": 0.29411764705882354,
+          "windows": 85
+        },
+        "calmNarrow": {
+          "rate": 0.427536231884058,
+          "windows": 138
+        },
+        "turbulentBroad": {
+          "rate": 0.265625,
+          "windows": 128
+        },
+        "turbulentNarrow": {
+          "rate": 0.30097087378640774,
+          "windows": 103
+        },
+        "narrowLiftWithinCalm": 1.453623188405797,
+        "calmNarrowHits": 59,
+        "calmNarrowEpisodes": 2,
+        "quotable": false
+      },
+      {
+        "horizonKey": "3m",
+        "threshold": -0.07,
+        "calmBroad": {
+          "rate": 0.25882352941176473,
+          "windows": 85
+        },
+        "calmNarrow": {
+          "rate": 0.2826086956521739,
+          "windows": 138
+        },
+        "turbulentBroad": {
+          "rate": 0.078125,
+          "windows": 128
+        },
+        "turbulentNarrow": {
+          "rate": 0.20388349514563106,
+          "windows": 103
+        },
+        "narrowLiftWithinCalm": 1.0918972332015808,
+        "calmNarrowHits": 39,
+        "calmNarrowEpisodes": 1,
+        "quotable": false
+      },
+      {
+        "horizonKey": "3m",
+        "threshold": -0.1,
+        "calmBroad": {
+          "rate": 0.24705882352941178,
+          "windows": 85
+        },
+        "calmNarrow": {
+          "rate": 0.08695652173913043,
+          "windows": 138
+        },
+        "turbulentBroad": {
+          "rate": 0,
+          "windows": 128
+        },
+        "turbulentNarrow": {
+          "rate": 0.13592233009708737,
+          "windows": 103
+        },
+        "narrowLiftWithinCalm": 0.3519668737060041,
+        "calmNarrowHits": 12,
+        "calmNarrowEpisodes": 1,
+        "quotable": false
+      }
+    ]
+  }
 }

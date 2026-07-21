@@ -181,7 +181,7 @@ export interface VolConditionalStat {
 }
 
 /** Annualised standard deviation of the trailing `window` daily log returns. */
-function trailingVol(closes: number[], end: number, window: number): number | null {
+export function trailingVol(closes: number[], end: number, window: number): number | null {
   if (end - window < 0) return null;
   const rets: number[] = [];
   for (let i = end - window + 1; i <= end; i++) {
