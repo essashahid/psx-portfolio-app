@@ -43,33 +43,12 @@
       "date": "2026-07-06",
       "note": "100% bonus; share-count override 399.03M; P/E 16.44 vs Sarmaaya 16.41"
     },
-    "FFC": {
-      "throughPeriod": "2026 Q1",
-      "basis": "unconsolidated",
-      "source": "PSX",
-      "date": "2026-07-06",
-      "note": "Dec year-end; P/E 10.58 = PSX exact. Sarmaaya reports consolidated"
-    },
     "AIRLINK": {
       "throughPeriod": "2026 9M",
       "basis": "unconsolidated",
       "source": "PSX",
       "date": "2026-07-05",
       "note": "P/E 17.54 vs PSX 16.47"
-    },
-    "HUBC": {
-      "throughPeriod": "2026 9M",
-      "basis": "unconsolidated",
-      "source": "filing",
-      "date": "2026-07-06",
-      "note": "holding-co: unconsolidated revenue ~nil (dividend income); Sarmaaya reports consolidated"
-    },
-    "ASTL": {
-      "throughPeriod": "2026 9M",
-      "basis": "unconsolidated",
-      "source": "filing",
-      "date": "2026-07-05",
-      "note": "loss-making turnaround; negative TTM legitimate"
     },
     "ANL": {
       "throughPeriod": "2026 9M",
@@ -84,20 +63,6 @@
       "source": "filing",
       "date": "2026-07-05",
       "note": "distressed micro-cap; zero revenue"
-    },
-    "LUCK": {
-      "throughPeriod": "2026 9M",
-      "basis": "unconsolidated",
-      "source": "filing",
-      "date": "2026-07-05",
-      "note": "holding-co; both bases stored; PSX vendor P/E was wrong, ours is right P/B was found to have been silently basis-mixed (an accidental tie-break picked the consolidated balance sheet against unconsolidated EPS, giving 1.48) -- now correctly basis-consistent at 3.19, which diverges further from Sarmaaya's 1.77 because Sarmaaya's P/B reference is on the consolidated basis, same reason our unconsolidated P/E doesn't match PSX vendor P/E either. Not investigated further; the EPS/P-E claim this entry certifies is unaffected."
-    },
-    "CCM": {
-      "throughPeriod": "2026 9M",
-      "basis": "unconsolidated",
-      "source": "filing",
-      "date": "2026-07-06",
-      "note": "micro-cap, earnings cross zero; TTM 0.85 rigorous, P/E unreliable on any basis"
     },
     "IDYM": {
       "throughPeriod": "2026 9M",
@@ -141,13 +106,6 @@
       "date": "2026-07-07",
       "note": "P/E 5.70 vs 5.84, dividend yield 16.09 = Sarmaaya EXACT match"
     },
-    "HBL": {
-      "throughPeriod": "2026 Q1",
-      "basis": "unconsolidated",
-      "source": "Sarmaaya",
-      "date": "2026-07-07",
-      "note": "P/E 7.15 vs 7.04, EPS 42.81 vs 45.16 — bank, within normal TTM variance"
-    },
     "PAKT": {
       "throughPeriod": "2026 Q1",
       "basis": "unconsolidated",
@@ -161,13 +119,6 @@
       "source": "Sarmaaya",
       "date": "2026-07-07",
       "note": "P/E 19.55 vs 19.53, EPS 393.75 vs 393.76, P/B 12.99 vs 12.97, div yield 7.23 vs 7.24 — near-exact on every metric"
-    },
-    "MCB": {
-      "throughPeriod": "2026 Q1",
-      "basis": "unconsolidated",
-      "source": "Sarmaaya",
-      "date": "2026-07-07",
-      "note": "bank; P/E 9.52 vs 9.01, P/B 1.71 vs 1.62 after TTM-basis fix"
     },
     "ABL": {
       "throughPeriod": "2026 Q1",
@@ -239,13 +190,6 @@
       "date": "2026-07-07",
       "note": "cement; forward P/E 9.87 vs 9.98 — match"
     },
-    "CHCC": {
-      "throughPeriod": "2026 9M",
-      "basis": "unconsolidated",
-      "source": "Sarmaaya",
-      "date": "2026-07-07",
-      "note": "cement; forward P/E 8.98 vs 8.97 — near-exact"
-    },
     "PIOC": {
       "throughPeriod": "2026 9M",
       "basis": "unconsolidated",
@@ -259,13 +203,6 @@
       "source": "Sarmaaya",
       "date": "2026-07-07",
       "note": "cement; was stale FY2025, extracted via OpenRouter → P/E 36.23 vs 36.70 match"
-    },
-    "DGKC": {
-      "throughPeriod": "2026 9M",
-      "basis": "unconsolidated",
-      "source": "filing+Sarmaaya",
-      "date": "2026-07-07",
-      "note": "cement; hand-read fixed corrupt 9M FY2025 comparative (real EPS 12.60 not composed 17.92). TTM 26.27, P/E 8.91 vs 8.47, net margin 14.88 vs 14.23"
     },
     "MLCF": {
       "throughPeriod": "2026 9M",
@@ -295,13 +232,6 @@
       "date": "2026-07-19",
       "note": "cement; 9M FY2025 was absent and the FY2025 quarterly rows had been copied from FY2026. Real 9M FY2025 EPS 0.07, not the 1.47 those duplicates implied. TTM 2.28 vs Sarmaaya 2.24"
     },
-    "FECTC": {
-      "throughPeriod": "2026 9M",
-      "basis": "unconsolidated",
-      "source": "filing+Sarmaaya",
-      "date": "2026-07-19",
-      "note": "cement; no 9M FY2026 row existed (H1 plus a stray Q3) and 9M FY2025 was missing. TTM 14.77 vs Sarmaaya 14.00 — residual 5.5% is the FY2025 annual restatement, which we still hold at the original 12.14"
-    },
     "DCL": {
       "throughPeriod": "2026 9M",
       "basis": "unconsolidated",
@@ -316,26 +246,12 @@
       "date": "2026-07-19",
       "note": "cement; loss-making micro-cap. Added the missing 9M FY2025 comparative (EPS -0.31). TTM -0.39 = Sarmaaya EXACT. P/E not meaningful on a loss"
     },
-    "THCCL": {
-      "throughPeriod": "2026 9M",
-      "basis": "unconsolidated",
-      "source": "filing+Sarmaaya",
-      "date": "2026-07-19",
-      "note": "cement; 5:1 split (Rs 10 -> Rs 2 par) — FY2025 EPS restated 30.18 -> 6.04, Q3 6.61 -> 1.32, and the missing 9M FY2025 comparative added at 3.98. TTM 6.54. Sarmaaya's 7.24 is consolidated (group 9M EPS 5.17 vs our 4.48)"
-    },
     "SMCPL": {
       "throughPeriod": "2026 9M",
       "basis": "unconsolidated",
       "source": "filing",
       "date": "2026-07-19",
       "note": "cement; filed in full rupees, converted to thousands. Added the missing 9M FY2025 comparative (EPS 2.12) and quarantined a duplicated Q1. TTM 6.01. No Sarmaaya ratios published, but EPS 4.02 ties exactly to PAT 100,479,745 / 25M shares"
-    },
-    "FATIMA": {
-      "throughPeriod": "2026 Q1",
-      "basis": "unconsolidated",
-      "source": "filing+Sarmaaya",
-      "date": "2026-07-19",
-      "note": "fertilizer; Dec year-end. Filing states both bases: standalone Q1-2026 EPS 1.99 on PAT 4,189m and Q1-2025 restated 3.84 (Multan Plant carveout to Pakarab, effective 1 Jan 2025) — both match our rows exactly. TTM 12.66 is correct unconsolidated; Sarmaaya's 17.58 is the group (consolidated Q1-2026 EPS 1.54). P/B 2.07 vs Sarmaaya 2.01"
     },
     "EFERT": {
       "throughPeriod": "2026 Q1",
@@ -1014,7 +930,19 @@
     "AVN": "Backfill produced trailing 0.14 against Sarmaaya 1.02 (-86%). Filing 277710 yielded three 2025 FY rows: consolidated 1.51, unconsolidated 0.14, unlabelled 1.54. The 0.14 the engine selected is almost certainly a misread.",
     "HUMNL": "Backfill produced trailing 1.20 against Sarmaaya 0.10.",
     "SIEM": "REJECTED a tempting exact match. A consolidated/unconsolidated sweep found FY2025 12.77 + H1'26 1.53 - H1'25 -17.07 = 31.37, exactly Sarmaaya's 31.37 — but that chain is a TTM through H1 2026 while we serve TTM through 9M 2026, so it agrees with a STALE reference rather than proving us right. Worse, the latest real interim we hold is H1 2026, yet the engine serves a 9M built from a 2026 Q3 row that is byte-identical to Q2 — the same duplicate-label shape as FCCL's swapped H1/Q2. Needs the Q3 2026 filing read to establish the true 9M before anything here can be trusted.",
-    "SFL": "consolidated chain FY2025 1640.1 + H1'26 67.89 - H1'25 68.31 = 1639.68 vs Sarmaaya 1680 (2.4%), but it matches on H1 while we serve 9M, and no consolidated 9M exists. Same stale-period ambiguity as SIEM: cannot tell whether the reference is a quarter behind or our 9M is wrong. Needs the filing."
+    "SFL": "consolidated chain FY2025 1640.1 + H1'26 67.89 - H1'25 68.31 = 1639.68 vs Sarmaaya 1680 (2.4%), but it matches on H1 while we serve 9M, and no consolidated 9M exists. Same stale-period ambiguity as SIEM: cannot tell whether the reference is a quarter behind or our 9M is wrong. Needs the filing.",
+    "FFC": "DEMOTED 2026-07-22 by scripts/check-verified-drift.ts. Served 54.50 vs reference 59.83 (8.9%). Verified against PSX, not Sarmaaya, so the reference may not be the right yardstick; needs a basis determination before restoring. Previous entry: source=PSX basis=unconsolidated through=2026 Q1 date=2026-07-06.",
+    "HUBC": "DEMOTED 2026-07-22 by scripts/check-verified-drift.ts. Served 18.84 vs reference 34.65 (45.6%). Verified against the filing only. A ~1.8x gap on a large holding company is the classic consolidated-vs-unconsolidated signature; we hold no consolidated rows. Previous entry: source=filing basis=unconsolidated through=2026 9M date=2026-07-06.",
+    "ASTL": "DEMOTED 2026-07-22 by scripts/check-verified-drift.ts. Served -0.49 vs reference -0.16 (206.3%). Verified against the filing only. Small absolute numbers make the percentage misleading, but the sign and magnitude both need re-reading. Previous entry: source=filing basis=unconsolidated through=2026 9M date=2026-07-05.",
+    "LUCK": "DEMOTED 2026-07-22 by scripts/check-verified-drift.ts. Served 28.99 vs reference 56.88 (49.0%). Verified against the filing only. The engine's own comment records LUCK as correctly unconsolidated and matching PSX's quoted P/E, while the reference appears to quote the group; the ~2x gap is consistent with that. Likely an EXPECTED_DIVERGENCE case rather than an error, but it must be evidenced before being suppressed. Previous entry: source=filing basis=unconsolidated through=2026 9M date=2026-07-05.",
+    "CCM": "DEMOTED 2026-07-22 by scripts/check-verified-drift.ts. Served 0.85 vs reference 2.96 (71.3%). Verified against the filing only. Needs a re-read. Previous entry: source=filing basis=unconsolidated through=2026 9M date=2026-07-06.",
+    "HBL": "DEMOTED 2026-07-22 by scripts/check-verified-drift.ts. Served 42.81 vs reference 45.16 (5.2%). Verified WITH the reference on 2026-07-07 and the reference has NOT moved (45.16 then and now), so our stored chain changed after verification. Chain is self-consistent (FY2025 42.6 + Q1'26 10.51 - Q1'25 10.30 = 42.81) but we hold no consolidated rows for a large banking group. Previous entry: source=Sarmaaya basis=unconsolidated through=2026 Q1 date=2026-07-07.",
+    "MCB": "DEMOTED 2026-07-22 by scripts/check-verified-drift.ts. Served 44.88 vs reference 47.99 (6.5%). Same pattern as HBL: verified with the reference, reference unmoved, our chain self-consistent (45.73 + 10.80 - 11.65 = 44.88) but no consolidated rows held. Previous entry: source=Sarmaaya basis=unconsolidated through=2026 Q1 date=2026-07-07.",
+    "CHCC": "DEMOTED 2026-07-22 by scripts/check-verified-drift.ts. Served 43.25 vs reference 37.91 (14.1%). Verified with the reference; ours is now HIGHER than the reference, the opposite direction to the consolidated-basis cases, so this needs its own diagnosis. Previous entry: source=Sarmaaya basis=unconsolidated through=2026 9M date=2026-07-07.",
+    "DGKC": "DEMOTED 2026-07-22 by scripts/check-verified-drift.ts. Served 26.27 vs reference 27.64 (5.0%). Verified with the reference; drifted after. Previous entry: source=filing+Sarmaaya basis=unconsolidated through=2026 9M date=2026-07-07.",
+    "FECTC": "DEMOTED 2026-07-22 by scripts/check-verified-drift.ts. Served 14.77 vs reference 14.0 (5.5%). Verified with the reference; ours is now higher. Previous entry: source=filing+Sarmaaya basis=unconsolidated through=2026 9M date=2026-07-19.",
+    "THCCL": "DEMOTED 2026-07-22 by scripts/check-verified-drift.ts. Served 6.54 vs reference 7.24 (9.7%). Verified with the reference; drifted after. Previous entry: source=filing+Sarmaaya basis=unconsolidated through=2026 9M date=2026-07-19.",
+    "FATIMA": "DEMOTED 2026-07-22 by scripts/check-verified-drift.ts. Served 12.66 vs reference 17.58 (28.0%). Verified with the reference on 2026-07-19. Chain self-consistent (FY2025 14.51 + Q1'26 1.99 - Q1'25 3.84 = 12.66) but all rows are psx-portal unlabelled; a fertiliser group of this size very likely needs consolidated figures. Previous entry: source=filing+Sarmaaya basis=unconsolidated through=2026 Q1 date=2026-07-19."
   },
   "_pendingConsolidatedBasis": {
     "_note": "The ratio engine computes unconsolidated only (its TTM builder explicitly excludes consolidated rows, the guard that fixed the PPL mixed-basis bug). These are companies where the CONSOLIDATED figure is what the reference (Sarmaaya) actually quotes and matches, the consolidated data has been captured and page-cited, but the platform's served P/E still reflects unconsolidated. Not verified, because that would assert something the API does not deliver. Promotable once the engine gains a per-company basis preference. Companies like LUCK/FFC/HUBC are NOT here: for those, unconsolidated IS the correct served figure (matches PSX), Sarmaaya's consolidated number is simply a different convention, and they are already verified under 'verified'.",
