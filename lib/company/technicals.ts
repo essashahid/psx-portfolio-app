@@ -1,6 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { fetchPsxEod } from "@/lib/market-data/psx-dps";
+import { fetchPsxEod, fetchPsxEodDetailed, type SeriesFailure } from "@/lib/market-data/psx-dps";
 import { freshnessFor, isStaleOrMissing, TTL_MINUTES } from "@/lib/company/freshness";
 import type { Candle, Quote, Technicals, TechnicalFlag } from "@/lib/company/types";
 import { computeSignals } from "@/lib/market/technicals";
@@ -206,12 +206,23 @@ export async function getTechnicals(supabase: SupabaseClient, ticker: string): P
 
 /** Forces a recompute from PSX (used by the section refresh route). */
 export async function refreshTechnicals(ticker: string): Promise<Technicals> {
+  return (await refreshTechnicalsDetailed(ticker)).technicals;
+}
+
+/**
+ * As `refreshTechnicals`, but reports why nothing came back. Bulk callers need
+ * this to tell a blocked run apart from a symbol the portal does not carry —
+ * without it a fully throttled backfill looks identical to a clean one.
+ */
+export async function refreshTechnicalsDetailed(
+  ticker: string
+): Promise<{ technicals: Technicals; failure: SeriesFailure | null }> {
   const t = ticker.toUpperCase();
-  const candles = await fetchPsxEod(t);
-  if (candles.length === 0) return emptyTechnicals(t);
+  const { candles, failure } = await fetchPsxEodDetailed(t);
+  if (candles.length === 0) return { technicals: emptyTechnicals(t), failure: failure ?? "empty" };
   const computed = computeTechnicals(t, candles);
   await cacheTechnicals(t, computed);
-  return finalize(computed, "psx-dps", new Date().toISOString(), "fresh");
+  return { technicals: finalize(computed, "psx-dps", new Date().toISOString(), "fresh"), failure: null };
 }
 
 function finalize(

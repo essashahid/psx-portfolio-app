@@ -26,20 +26,82 @@ const BROWSER_HEADERS = {
 
 type SeriesRow = [number, number, ...number[]]; // [unixSec, price, ...]
 
-async function fetchSeries(kind: "int" | "eod", ticker: string): Promise<SeriesRow[] | null> {
-  try {
-    const res = await fetch(`${DPS_BASE}/${kind}/${encodeURIComponent(ticker)}`, {
-      headers: BROWSER_HEADERS,
-      signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
-      cache: "no-store",
-    });
-    if (!res.ok) return null;
-    const json = (await res.json()) as { status?: number; data?: SeriesRow[] };
-    if (json.status !== 1 || !Array.isArray(json.data) || json.data.length === 0) return null;
-    return json.data;
-  } catch {
-    return null;
+/**
+ * Minimum spacing between portal requests, process-wide.
+ *
+ * The portal is a courtesy source behind a WAF, and it treats an unpaced burst
+ * from one address very differently from a browser. A backfill run from Vercel
+ * was getting ~25% of requests rejected within milliseconds while the identical
+ * queue from a residential connection succeeded 99% of the time, which is the
+ * signature of edge throttling rather than missing symbols. Serialising with a
+ * small gap costs little and keeps us inside what the portal tolerates.
+ */
+const MIN_REQUEST_SPACING_MS = 120;
+const MAX_ATTEMPTS = 3;
+
+let nextSlot = 0;
+/** Reserves the next spaced request slot and waits for it. */
+async function takeSlot(): Promise<void> {
+  const now = Date.now();
+  const slot = Math.max(now, nextSlot);
+  nextSlot = slot + MIN_REQUEST_SPACING_MS;
+  if (slot > now) await new Promise((r) => setTimeout(r, slot - now));
+}
+
+/** Why a portal read produced nothing. Distinguishes "blocked" from "no such series". */
+export type SeriesFailure = "blocked" | "unavailable" | "empty";
+
+export interface SeriesResult {
+  rows: SeriesRow[] | null;
+  failure: SeriesFailure | null;
+  attempts: number;
+}
+
+async function fetchSeriesDetailed(kind: "int" | "eod", ticker: string): Promise<SeriesResult> {
+  let failure: SeriesFailure = "unavailable";
+
+  for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
+    await takeSlot();
+    try {
+      const res = await fetch(`${DPS_BASE}/${kind}/${encodeURIComponent(ticker)}`, {
+        headers: BROWSER_HEADERS,
+        signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
+        cache: "no-store",
+      });
+
+      if (res.status === 403 || res.status === 429 || res.status >= 500) {
+        // Throttled or blocked — worth retrying, and worth reporting distinctly
+        // from a symbol the portal simply does not carry.
+        failure = "blocked";
+        if (attempt < MAX_ATTEMPTS) {
+          await new Promise((r) => setTimeout(r, 400 * 2 ** (attempt - 1)));
+          continue;
+        }
+        return { rows: null, failure, attempts: attempt };
+      }
+
+      if (!res.ok) return { rows: null, failure: "unavailable", attempts: attempt };
+
+      const json = (await res.json()) as { status?: number; data?: SeriesRow[] };
+      if (json.status !== 1 || !Array.isArray(json.data) || json.data.length === 0) {
+        return { rows: null, failure: "empty", attempts: attempt };
+      }
+      return { rows: json.data, failure: null, attempts: attempt };
+    } catch {
+      // Timeout or transport error. A connection reset under load looks like
+      // this too, so retry before giving up.
+      failure = "blocked";
+      if (attempt < MAX_ATTEMPTS) {
+        await new Promise((r) => setTimeout(r, 400 * 2 ** (attempt - 1)));
+        continue;
+      }
+    }
   }
+  return { rows: null, failure, attempts: MAX_ATTEMPTS };
+}
+
+async function fetchSeries(kind: "int" | "eod", ticker: string): Promise<SeriesRow[] | null> {
+  return (await fetchSeriesDetailed(kind, ticker)).rows;
 }
 
 /** Trade date in Pakistan time for a unix-seconds timestamp. */
@@ -124,9 +186,21 @@ export interface EodCandle {
  * charts. Returns [] when the portal has nothing for the symbol.
  */
 export async function fetchPsxEod(ticker: string): Promise<EodCandle[]> {
-  const rows = await fetchSeries("eod", ticker.toUpperCase());
-  if (!rows) return [];
-  return rows
+  return (await fetchPsxEodDetailed(ticker)).candles;
+}
+
+/**
+ * As `fetchPsxEod`, but reports why an empty result was empty. Callers running
+ * in bulk should prefer this: a run that returns nothing because the portal
+ * blocked it needs a retry, while one that returns nothing because the symbol
+ * is a TFC or a rights letter never will.
+ */
+export async function fetchPsxEodDetailed(
+  ticker: string
+): Promise<{ candles: EodCandle[]; failure: SeriesFailure | null }> {
+  const { rows, failure } = await fetchSeriesDetailed("eod", ticker.toUpperCase());
+  if (!rows) return { candles: [], failure };
+  const candles = rows
     .filter((r) => Number.isFinite(r[1]) && r[1] > 0)
     .map((r) => ({
       date: pktDate(r[0]),
@@ -134,6 +208,7 @@ export async function fetchPsxEod(ticker: string): Promise<EodCandle[]> {
       volume: Number.isFinite(r[2]) ? r[2] : 0,
     }))
     .sort((a, b) => (a.date < b.date ? -1 : 1)); // oldest first
+  return { candles, failure: candles.length ? null : "empty" };
 }
 
 // --- Official symbol directory --------------------------------------------
