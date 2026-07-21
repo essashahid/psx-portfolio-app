@@ -3,7 +3,10 @@ import { ArrowLeft } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { PageHeader } from "@/components/page-header";
 import { OutlookCoverageView } from "@/components/outlook/outlook-coverage-view";
+import { SignalEvidenceView } from "@/components/outlook/signal-evidence-view";
 import { buildOutlookCoverage } from "@/lib/engine/outlook/coverage";
+import { loadAlignedInputs } from "@/lib/engine/outlook/inputs";
+import { buildSignalEvidence } from "@/lib/engine/outlook/evaluate";
 
 export const dynamic = "force-dynamic";
 
@@ -13,7 +16,8 @@ export const dynamic = "force-dynamic";
  */
 export default async function OutlookDataPage() {
   const supabase = await createClient();
-  const report = await buildOutlookCoverage(supabase);
+  const [report, inputs] = await Promise.all([buildOutlookCoverage(supabase), loadAlignedInputs(supabase)]);
+  const evidence = buildSignalEvidence(inputs);
 
   return (
     <div className="space-y-4">
@@ -31,6 +35,7 @@ export default async function OutlookDataPage() {
           </Link>
         }
       />
+      <SignalEvidenceView report={evidence} />
       <OutlookCoverageView report={report} />
     </div>
   );

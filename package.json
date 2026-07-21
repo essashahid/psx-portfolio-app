@@ -10,6 +10,7 @@
     "eval:chat": "tsx scripts/eval-chat.ts",
     "eval:chat:live": "tsx scripts/eval-chat-live.ts",
     "audit:outlook": "tsx scripts/audit-outlook-data.ts",
+    "eval:signals": "tsx scripts/eval-signals.ts",
     "backfill:index": "tsx scripts/backfill-index-history.ts"
   },
   "dependencies": {

@@ -103,7 +103,7 @@ const rateOf = (rows: { worst: number }[], threshold: number): number =>
  * horizon are therefore treated as a single episode, which is the number a
  * reader should judge the evidence on.
  */
-function countEpisodes(dates: string[], sessions: number): number {
+export function countEpisodes(dates: string[], sessions: number): number {
   if (dates.length === 0) return 0;
   const sorted = [...dates].sort();
   let episodes = 1;

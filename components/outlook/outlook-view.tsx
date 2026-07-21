@@ -22,10 +22,12 @@ export function OutlookView({ model }: { model: OutlookViewModel }) {
     <div className="space-y-4">
       <Card className="rise border-l-[3px] border-l-brand">
         <CardContent className="p-4">
-          <p className="eyebrow mb-1.5">Phase 1 of 6 &middot; Data foundation</p>
+          <p className="eyebrow mb-1.5">Phase 2 of 6 &middot; Signal research</p>
           <p className="text-sm leading-relaxed text-foreground">
-            This tab does not forecast anything yet. Everything below describes what the market has already done. Once a
-            model has been built and tested against periods it has never seen, this page will carry a genuine outlook.
+            This tab does not forecast anything yet. Everything below describes what the market has already done.
+            Candidate warning signals are currently being evaluated against this history; the evidence lives on the data
+            page. Once a model has been built and tested against periods it has never seen, this page will carry a
+            genuine outlook.
           </p>
         </CardContent>
       </Card>
