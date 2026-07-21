@@ -15,7 +15,7 @@ import { normalizeEnabledFeatures } from "@/lib/features";
 import { ArrowLeft, Search } from "lucide-react";
 import {
   OverviewPanel, FinancialsPanel, EarningsPanel, RatiosPanel,
-  DividendsPanel, NewsFilingsPanel, AiAnalysisPanel,
+  DividendsPanel, NewsFilingsPanel, AiAnalysisPanel, TechnicalsPanel,
 } from "./panels";
 
 export const dynamic = "force-dynamic";
@@ -107,8 +107,10 @@ export default async function StockCockpitPage({ params }: { params: Promise<{ t
       ? [{ id: "ratios", label: "Ratios", content: <Suspense fallback={<TableSkeleton />}><RatiosPanel ticker={ticker} readOnly={isDemo} /></Suspense> }]
       : []),
     { id: "dividends", label: "Dividends", content: <Suspense fallback={<TableSkeleton />}><DividendsPanel ticker={ticker} /></Suspense> },
+    // Placed after the fundamental tabs on purpose: the chart is for timing an
+    // accumulation, not for forming the view.
+    { id: "technicals", label: "Technicals", content: <Suspense fallback={<CardSkeleton lines={10} />}><TechnicalsPanel ticker={ticker} /></Suspense> },
     { id: "news", label: "News & Filings", content: <Suspense fallback={<CardSkeleton lines={8} />}><NewsFilingsPanel ticker={ticker} /></Suspense> },
-
   ];
 
   return (
