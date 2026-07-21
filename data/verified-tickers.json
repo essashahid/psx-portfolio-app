@@ -385,6 +385,265 @@
       "source": "hand+Sarmaaya",
       "date": "2026-07-21",
       "note": "auto assembler; both filings exceeded the vision provider's combined payload limit (26.7MB annual + 1.8MB interim, HTTP 413), so read by hand instead of forcing a degraded chunked read. Sarmaaya quotes the group (99.9%-owned subsidiary Ghandhara DF). Consolidated FY2025 EPS 71.85 (annual report p133), 9M 2026 EPS 85.28 and 9M 2025 comparative 39.89 (interim p5/p23-24). TTM = 71.85+85.28-39.89 = 117.24, exact to Sarmaaya. No share-count restatement needed (unchanged 57,002,500 shares, no bonus/rights issue). P/E confirmed via getRatioCard: eps=117.24 exactly. Also found and fixed a real bug this surfaced: GAL's consolidated balance sheet (equity 19,165,213) was stored with reporting_basis 'unlabelled' and review_status 'needs_review', so the ratio engine's un-basis-aware balance-sheet selection silently picked the unconsolidated equity instead, giving P/B 2.55 against Sarmaaya's 1.7. Relabeled+published the row and extended the engine's balance/cash-flow selection to respect CONSOLIDATED_BASIS_TICKERS (previously only the income-statement side was basis-aware) -- P/B now 1.70, exact."
+    },
+    "ABOT": {
+      "throughPeriod": "TTM to 2026 Q1",
+      "basis": "unconsolidated",
+      "source": "auto+Sarmaaya",
+      "date": "2026-07-21",
+      "note": "bulk-promoted on independent agreement, NOT a filing read. Our engine-computed trailing EPS 84.85 vs Sarmaaya 84.85 (0.0%), and P/B 2.72 vs 2.76 (1.5%) — two ratios off different statements agreeing independently. No one opened the filing, so an un-restated bonus/rights issue or a basis subtlety could still be hiding underneath (the failure modes that caught SEARL, MUGHAL and GAL). Weaker tier than the \"filing+Sarmaaya\"/\"hand+Sarmaaya\" entries; re-verify by hand before relying on it for anything load-bearing."
+    },
+    "APL": {
+      "throughPeriod": "TTM to 2026 9M",
+      "basis": "unconsolidated",
+      "source": "auto+Sarmaaya",
+      "date": "2026-07-21",
+      "note": "bulk-promoted on independent agreement, NOT a filing read. Our engine-computed trailing EPS 140.32 vs Sarmaaya 140.32 (0.0%), and P/B 0.92 vs 0.92 (0.4%) — two ratios off different statements agreeing independently. No one opened the filing, so an un-restated bonus/rights issue or a basis subtlety could still be hiding underneath (the failure modes that caught SEARL, MUGHAL and GAL). Weaker tier than the \"filing+Sarmaaya\"/\"hand+Sarmaaya\" entries; re-verify by hand before relying on it for anything load-bearing."
+    },
+    "ATLH": {
+      "throughPeriod": "2026 FY",
+      "basis": "unconsolidated",
+      "source": "auto+Sarmaaya",
+      "date": "2026-07-21",
+      "note": "bulk-promoted on independent agreement, NOT a filing read. Our engine-computed trailing EPS 170.21 vs Sarmaaya 170.21 (0.0%), and P/B 4.39 vs 4.4 (0.1%) — two ratios off different statements agreeing independently. No one opened the filing, so an un-restated bonus/rights issue or a basis subtlety could still be hiding underneath (the failure modes that caught SEARL, MUGHAL and GAL). Weaker tier than the \"filing+Sarmaaya\"/\"hand+Sarmaaya\" entries; re-verify by hand before relying on it for anything load-bearing."
+    },
+    "GLAXO": {
+      "throughPeriod": "TTM to 2026 Q1",
+      "basis": "unconsolidated",
+      "source": "auto+Sarmaaya",
+      "date": "2026-07-21",
+      "note": "bulk-promoted on independent agreement, NOT a filing read. Our engine-computed trailing EPS 33.00 vs Sarmaaya 33 (0.0%), and P/B 3.40 vs 3.14 (8.2%) — two ratios off different statements agreeing independently. No one opened the filing, so an un-restated bonus/rights issue or a basis subtlety could still be hiding underneath (the failure modes that caught SEARL, MUGHAL and GAL). Weaker tier than the \"filing+Sarmaaya\"/\"hand+Sarmaaya\" entries; re-verify by hand before relying on it for anything load-bearing."
+    },
+    "HCAR": {
+      "throughPeriod": "2026 FY",
+      "basis": "unconsolidated",
+      "source": "auto+Sarmaaya",
+      "date": "2026-07-21",
+      "note": "bulk-promoted on independent agreement, NOT a filing read. Our engine-computed trailing EPS 22.64 vs Sarmaaya 22.64 (0.0%), and P/B 1.34 vs 1.34 (0.0%) — two ratios off different statements agreeing independently. No one opened the filing, so an un-restated bonus/rights issue or a basis subtlety could still be hiding underneath (the failure modes that caught SEARL, MUGHAL and GAL). Weaker tier than the \"filing+Sarmaaya\"/\"hand+Sarmaaya\" entries; re-verify by hand before relying on it for anything load-bearing."
+    },
+    "HINO": {
+      "throughPeriod": "2026 FY",
+      "basis": "unconsolidated",
+      "source": "auto+Sarmaaya",
+      "date": "2026-07-21",
+      "note": "bulk-promoted on independent agreement, NOT a filing read. Our engine-computed trailing EPS 21.82 vs Sarmaaya 21.82 (0.0%), and P/B 1.86 vs 1.76 (5.9%) — two ratios off different statements agreeing independently. No one opened the filing, so an un-restated bonus/rights issue or a basis subtlety could still be hiding underneath (the failure modes that caught SEARL, MUGHAL and GAL). Weaker tier than the \"filing+Sarmaaya\"/\"hand+Sarmaaya\" entries; re-verify by hand before relying on it for anything load-bearing."
+    },
+    "PABC": {
+      "throughPeriod": "TTM to 2026 Q1",
+      "basis": "unconsolidated",
+      "source": "auto+Sarmaaya",
+      "date": "2026-07-21",
+      "note": "bulk-promoted on independent agreement, NOT a filing read. Our engine-computed trailing EPS 14.75 vs Sarmaaya 14.75 (0.0%), and P/B 1.72 vs 1.62 (6.2%) — two ratios off different statements agreeing independently. No one opened the filing, so an un-restated bonus/rights issue or a basis subtlety could still be hiding underneath (the failure modes that caught SEARL, MUGHAL and GAL). Weaker tier than the \"filing+Sarmaaya\"/\"hand+Sarmaaya\" entries; re-verify by hand before relying on it for anything load-bearing."
+    },
+    "COLG": {
+      "throughPeriod": "TTM to 2026 9M",
+      "basis": "unconsolidated",
+      "source": "auto+Sarmaaya",
+      "date": "2026-07-21",
+      "note": "bulk-promoted on independent agreement, NOT a filing read. Our engine-computed trailing EPS 73.22 vs Sarmaaya 73.22 (0.0%), and P/B 8.21 vs 8.44 (2.7%) — two ratios off different statements agreeing independently. No one opened the filing, so an un-restated bonus/rights issue or a basis subtlety could still be hiding underneath (the failure modes that caught SEARL, MUGHAL and GAL). Weaker tier than the \"filing+Sarmaaya\"/\"hand+Sarmaaya\" entries; re-verify by hand before relying on it for anything load-bearing."
+    },
+    "PSYL": {
+      "throughPeriod": "TTM to 2026 9M",
+      "basis": "unconsolidated",
+      "source": "auto+Sarmaaya",
+      "date": "2026-07-21",
+      "note": "bulk-promoted on independent agreement, NOT a filing read. Our engine-computed trailing EPS 3.38 vs Sarmaaya 3.38 (0.0%), and P/B 4.28 vs 4.27 (0.2%) — two ratios off different statements agreeing independently. No one opened the filing, so an un-restated bonus/rights issue or a basis subtlety could still be hiding underneath (the failure modes that caught SEARL, MUGHAL and GAL). Weaker tier than the \"filing+Sarmaaya\"/\"hand+Sarmaaya\" entries; re-verify by hand before relying on it for anything load-bearing."
+    },
+    "CEPB": {
+      "throughPeriod": "TTM to 2026 9M",
+      "basis": "unconsolidated",
+      "source": "auto+Sarmaaya",
+      "date": "2026-07-21",
+      "note": "bulk-promoted on independent agreement, NOT a filing read. Our engine-computed trailing EPS -1.87 vs Sarmaaya -1.87 (0.0%), and P/B 0.88 vs 0.88 (0.4%) — two ratios off different statements agreeing independently. No one opened the filing, so an un-restated bonus/rights issue or a basis subtlety could still be hiding underneath (the failure modes that caught SEARL, MUGHAL and GAL). Weaker tier than the \"filing+Sarmaaya\"/\"hand+Sarmaaya\" entries; re-verify by hand before relying on it for anything load-bearing."
+    },
+    "EPQL": {
+      "throughPeriod": "TTM to 2026 Q1",
+      "basis": "unconsolidated",
+      "source": "auto+Sarmaaya",
+      "date": "2026-07-21",
+      "note": "bulk-promoted on independent agreement, NOT a filing read. Our engine-computed trailing EPS 1.86 vs Sarmaaya 1.86 (0.0%), and P/B 0.73 vs 0.73 (0.5%) — two ratios off different statements agreeing independently. No one opened the filing, so an un-restated bonus/rights issue or a basis subtlety could still be hiding underneath (the failure modes that caught SEARL, MUGHAL and GAL). Weaker tier than the \"filing+Sarmaaya\"/\"hand+Sarmaaya\" entries; re-verify by hand before relying on it for anything load-bearing."
+    },
+    "HABSM": {
+      "throughPeriod": "TTM to 2026 H1",
+      "basis": "unconsolidated",
+      "source": "auto+Sarmaaya",
+      "date": "2026-07-21",
+      "note": "bulk-promoted on independent agreement, NOT a filing read. Our engine-computed trailing EPS 13.42 vs Sarmaaya 13.42 (0.0%), and P/B 0.67 vs 0.67 (0.0%) — two ratios off different statements agreeing independently. No one opened the filing, so an un-restated bonus/rights issue or a basis subtlety could still be hiding underneath (the failure modes that caught SEARL, MUGHAL and GAL). Weaker tier than the \"filing+Sarmaaya\"/\"hand+Sarmaaya\" entries; re-verify by hand before relying on it for anything load-bearing."
+    },
+    "GHNI": {
+      "throughPeriod": "TTM to 2026 9M",
+      "basis": "unconsolidated",
+      "source": "auto+Sarmaaya",
+      "date": "2026-07-21",
+      "note": "bulk-promoted on independent agreement, NOT a filing read. Our engine-computed trailing EPS 162.33 vs Sarmaaya 162.33 (0.0%), and P/B 2.62 vs 2.62 (0.2%) — two ratios off different statements agreeing independently. No one opened the filing, so an un-restated bonus/rights issue or a basis subtlety could still be hiding underneath (the failure modes that caught SEARL, MUGHAL and GAL). Weaker tier than the \"filing+Sarmaaya\"/\"hand+Sarmaaya\" entries; re-verify by hand before relying on it for anything load-bearing."
+    },
+    "ISL": {
+      "throughPeriod": "TTM to 2026 9M",
+      "basis": "unconsolidated",
+      "source": "auto+Sarmaaya",
+      "date": "2026-07-21",
+      "note": "bulk-promoted on independent agreement, NOT a filing read. Our engine-computed trailing EPS 6.93 vs Sarmaaya 6.93 (0.0%), and P/B 1.42 vs 1.42 (0.2%) — two ratios off different statements agreeing independently. No one opened the filing, so an un-restated bonus/rights issue or a basis subtlety could still be hiding underneath (the failure modes that caught SEARL, MUGHAL and GAL). Weaker tier than the \"filing+Sarmaaya\"/\"hand+Sarmaaya\" entries; re-verify by hand before relying on it for anything load-bearing."
+    },
+    "RMPL": {
+      "throughPeriod": "TTM to 2026 Q1",
+      "basis": "unconsolidated",
+      "source": "auto+Sarmaaya",
+      "date": "2026-07-21",
+      "note": "bulk-promoted on independent agreement, NOT a filing read. Our engine-computed trailing EPS 715.93 vs Sarmaaya 715.93 (0.0%), and P/B 2.83 vs 2.74 (3.2%) — two ratios off different statements agreeing independently. No one opened the filing, so an un-restated bonus/rights issue or a basis subtlety could still be hiding underneath (the failure modes that caught SEARL, MUGHAL and GAL). Weaker tier than the \"filing+Sarmaaya\"/\"hand+Sarmaaya\" entries; re-verify by hand before relying on it for anything load-bearing."
+    },
+    "SPWL": {
+      "throughPeriod": "TTM to 2026 Q1",
+      "basis": "unconsolidated",
+      "source": "auto+Sarmaaya",
+      "date": "2026-07-21",
+      "note": "bulk-promoted on independent agreement, NOT a filing read. Our engine-computed trailing EPS -0.04 vs Sarmaaya -0.04 (0.0%), and P/B 0.35 vs 0.35 (1.2%) — two ratios off different statements agreeing independently. No one opened the filing, so an un-restated bonus/rights issue or a basis subtlety could still be hiding underneath (the failure modes that caught SEARL, MUGHAL and GAL). Weaker tier than the \"filing+Sarmaaya\"/\"hand+Sarmaaya\" entries; re-verify by hand before relying on it for anything load-bearing."
+    },
+    "SAZEW": {
+      "throughPeriod": "TTM to 2026 9M",
+      "basis": "unconsolidated",
+      "source": "auto+Sarmaaya",
+      "date": "2026-07-21",
+      "note": "bulk-promoted on independent agreement, NOT a filing read. Our engine-computed trailing EPS 303.74 vs Sarmaaya 303.75 (0.0%), and P/B 3.36 vs 3.37 (0.4%) — two ratios off different statements agreeing independently. No one opened the filing, so an un-restated bonus/rights issue or a basis subtlety could still be hiding underneath (the failure modes that caught SEARL, MUGHAL and GAL). Weaker tier than the \"filing+Sarmaaya\"/\"hand+Sarmaaya\" entries; re-verify by hand before relying on it for anything load-bearing."
+    },
+    "BATA": {
+      "throughPeriod": "TTM to 2026 Q1",
+      "basis": "unconsolidated",
+      "source": "auto+Sarmaaya",
+      "date": "2026-07-21",
+      "note": "bulk-promoted on independent agreement, NOT a filing read. Our engine-computed trailing EPS -368.04 vs Sarmaaya -368 (0.0%), and P/B 2.50 vs 2.4 (4.2%) — two ratios off different statements agreeing independently. No one opened the filing, so an un-restated bonus/rights issue or a basis subtlety could still be hiding underneath (the failure modes that caught SEARL, MUGHAL and GAL). Weaker tier than the \"filing+Sarmaaya\"/\"hand+Sarmaaya\" entries; re-verify by hand before relying on it for anything load-bearing."
+    },
+    "MUREB": {
+      "throughPeriod": "TTM to 2026 9M",
+      "basis": "unconsolidated",
+      "source": "auto+Sarmaaya",
+      "date": "2026-07-21",
+      "note": "bulk-promoted on independent agreement, NOT a filing read. Our engine-computed trailing EPS 126.10 vs Sarmaaya 126.08 (0.0%), and P/B 1.31 vs 1.32 (0.4%) — two ratios off different statements agreeing independently. No one opened the filing, so an un-restated bonus/rights issue or a basis subtlety could still be hiding underneath (the failure modes that caught SEARL, MUGHAL and GAL). Weaker tier than the \"filing+Sarmaaya\"/\"hand+Sarmaaya\" entries; re-verify by hand before relying on it for anything load-bearing."
+    },
+    "HALEON": {
+      "throughPeriod": "TTM to 2026 Q1",
+      "basis": "unconsolidated",
+      "source": "auto+Sarmaaya",
+      "date": "2026-07-21",
+      "note": "bulk-promoted on independent agreement, NOT a filing read. Our engine-computed trailing EPS 55.97 vs Sarmaaya 55.96 (0.0%), and P/B 6.88 vs 6.1 (12.9%) — two ratios off different statements agreeing independently. No one opened the filing, so an un-restated bonus/rights issue or a basis subtlety could still be hiding underneath (the failure modes that caught SEARL, MUGHAL and GAL). Weaker tier than the \"filing+Sarmaaya\"/\"hand+Sarmaaya\" entries; re-verify by hand before relying on it for anything load-bearing."
+    },
+    "PAKOXY": {
+      "throughPeriod": "TTM to 2026 Q1",
+      "basis": "unconsolidated",
+      "source": "auto+Sarmaaya",
+      "date": "2026-07-21",
+      "note": "bulk-promoted on independent agreement, NOT a filing read. Our engine-computed trailing EPS 22.59 vs Sarmaaya 22.58 (0.0%), and P/B 2.10 vs 2.01 (4.6%) — two ratios off different statements agreeing independently. No one opened the filing, so an un-restated bonus/rights issue or a basis subtlety could still be hiding underneath (the failure modes that caught SEARL, MUGHAL and GAL). Weaker tier than the \"filing+Sarmaaya\"/\"hand+Sarmaaya\" entries; re-verify by hand before relying on it for anything load-bearing."
+    },
+    "EXIDE": {
+      "throughPeriod": "2026 FY",
+      "basis": "unconsolidated",
+      "source": "auto+Sarmaaya",
+      "date": "2026-07-21",
+      "note": "bulk-promoted on independent agreement, NOT a filing read. Our engine-computed trailing EPS 55.57 vs Sarmaaya 55.53 (0.1%), and P/B 0.58 vs 0.54 (7.3%) — two ratios off different statements agreeing independently. No one opened the filing, so an un-restated bonus/rights issue or a basis subtlety could still be hiding underneath (the failure modes that caught SEARL, MUGHAL and GAL). Weaker tier than the \"filing+Sarmaaya\"/\"hand+Sarmaaya\" entries; re-verify by hand before relying on it for anything load-bearing."
+    },
+    "AICL": {
+      "throughPeriod": "2025 FY",
+      "basis": "unconsolidated",
+      "source": "auto+Sarmaaya",
+      "date": "2026-07-21",
+      "note": "bulk-promoted on independent agreement, NOT a filing read. Our engine-computed trailing EPS 14.70 vs Sarmaaya 14.72 (0.1%), and P/B 0.55 vs 0.54 (1.9%) — two ratios off different statements agreeing independently. No one opened the filing, so an un-restated bonus/rights issue or a basis subtlety could still be hiding underneath (the failure modes that caught SEARL, MUGHAL and GAL). Weaker tier than the \"filing+Sarmaaya\"/\"hand+Sarmaaya\" entries; re-verify by hand before relying on it for anything load-bearing."
+    },
+    "KSBP": {
+      "throughPeriod": "TTM to 2026 Q1",
+      "basis": "unconsolidated",
+      "source": "auto+Sarmaaya",
+      "date": "2026-07-21",
+      "note": "bulk-promoted on independent agreement, NOT a filing read. Our engine-computed trailing EPS 7.13 vs Sarmaaya 7.14 (0.1%), and P/B 1.61 vs 1.76 (8.7%) — two ratios off different statements agreeing independently. No one opened the filing, so an un-restated bonus/rights issue or a basis subtlety could still be hiding underneath (the failure modes that caught SEARL, MUGHAL and GAL). Weaker tier than the \"filing+Sarmaaya\"/\"hand+Sarmaaya\" entries; re-verify by hand before relying on it for anything load-bearing."
+    },
+    "NICL": {
+      "throughPeriod": "2025 FY",
+      "basis": "unconsolidated",
+      "source": "auto+Sarmaaya",
+      "date": "2026-07-21",
+      "note": "bulk-promoted on independent agreement, NOT a filing read. Our engine-computed trailing EPS 18.29 vs Sarmaaya 18.26 (0.2%), and P/B 2.30 vs 2.3 (0.0%) — two ratios off different statements agreeing independently. No one opened the filing, so an un-restated bonus/rights issue or a basis subtlety could still be hiding underneath (the failure modes that caught SEARL, MUGHAL and GAL). Weaker tier than the \"filing+Sarmaaya\"/\"hand+Sarmaaya\" entries; re-verify by hand before relying on it for anything load-bearing."
+    },
+    "FCEPL": {
+      "throughPeriod": "TTM to 2026 Q1",
+      "basis": "unconsolidated",
+      "source": "auto+Sarmaaya",
+      "date": "2026-07-21",
+      "note": "bulk-promoted on independent agreement, NOT a filing read. Our engine-computed trailing EPS 4.50 vs Sarmaaya 4.51 (0.2%), and P/B 4.76 vs 4.17 (14.2%) — two ratios off different statements agreeing independently. No one opened the filing, so an un-restated bonus/rights issue or a basis subtlety could still be hiding underneath (the failure modes that caught SEARL, MUGHAL and GAL). Weaker tier than the \"filing+Sarmaaya\"/\"hand+Sarmaaya\" entries; re-verify by hand before relying on it for anything load-bearing."
+    },
+    "PAEL": {
+      "throughPeriod": "TTM to 2026 Q1",
+      "basis": "unconsolidated",
+      "source": "auto+Sarmaaya",
+      "date": "2026-07-21",
+      "note": "bulk-promoted on independent agreement, NOT a filing read. Our engine-computed trailing EPS 4.47 vs Sarmaaya 4.46 (0.2%), and P/B 0.75 vs 0.77 (2.0%) — two ratios off different statements agreeing independently. No one opened the filing, so an un-restated bonus/rights issue or a basis subtlety could still be hiding underneath (the failure modes that caught SEARL, MUGHAL and GAL). Weaker tier than the \"filing+Sarmaaya\"/\"hand+Sarmaaya\" entries; re-verify by hand before relying on it for anything load-bearing."
+    },
+    "JSIL": {
+      "throughPeriod": "TTM to 2026 Q1",
+      "basis": "unconsolidated",
+      "source": "auto+Sarmaaya",
+      "date": "2026-07-21",
+      "note": "bulk-promoted on independent agreement, NOT a filing read. Our engine-computed trailing EPS 7.18 vs Sarmaaya 7.2 (0.3%), and P/B 1.09 vs 1.03 (5.4%) — two ratios off different statements agreeing independently. No one opened the filing, so an un-restated bonus/rights issue or a basis subtlety could still be hiding underneath (the failure modes that caught SEARL, MUGHAL and GAL). Weaker tier than the \"filing+Sarmaaya\"/\"hand+Sarmaaya\" entries; re-verify by hand before relying on it for anything load-bearing."
+    },
+    "LOTCHEM": {
+      "throughPeriod": "TTM to 2026 H1",
+      "basis": "unconsolidated",
+      "source": "auto+Sarmaaya",
+      "date": "2026-07-21",
+      "note": "bulk-promoted on independent agreement, NOT a filing read. Our engine-computed trailing EPS 3.10 vs Sarmaaya 3.09 (0.3%), and P/B 2.21 vs 2.53 (12.8%) — two ratios off different statements agreeing independently. No one opened the filing, so an un-restated bonus/rights issue or a basis subtlety could still be hiding underneath (the failure modes that caught SEARL, MUGHAL and GAL). Weaker tier than the \"filing+Sarmaaya\"/\"hand+Sarmaaya\" entries; re-verify by hand before relying on it for anything load-bearing."
+    },
+    "PSX": {
+      "throughPeriod": "TTM to 2026 9M",
+      "basis": "unconsolidated",
+      "source": "auto+Sarmaaya",
+      "date": "2026-07-21",
+      "note": "bulk-promoted on independent agreement, NOT a filing read. Our engine-computed trailing EPS 2.50 vs Sarmaaya 2.49 (0.4%), and P/B 3.36 vs 3.37 (0.3%) — two ratios off different statements agreeing independently. No one opened the filing, so an un-restated bonus/rights issue or a basis subtlety could still be hiding underneath (the failure modes that caught SEARL, MUGHAL and GAL). Weaker tier than the \"filing+Sarmaaya\"/\"hand+Sarmaaya\" entries; re-verify by hand before relying on it for anything load-bearing."
+    },
+    "IBLHL": {
+      "throughPeriod": "2025 FY",
+      "basis": "unconsolidated",
+      "source": "auto+Sarmaaya",
+      "date": "2026-07-21",
+      "note": "bulk-promoted on independent agreement, NOT a filing read. Our engine-computed trailing EPS 2.43 vs Sarmaaya 2.44 (0.4%), and P/B 1.78 vs 2.04 (13.0%) — two ratios off different statements agreeing independently. No one opened the filing, so an un-restated bonus/rights issue or a basis subtlety could still be hiding underneath (the failure modes that caught SEARL, MUGHAL and GAL). Weaker tier than the \"filing+Sarmaaya\"/\"hand+Sarmaaya\" entries; re-verify by hand before relying on it for anything load-bearing."
+    },
+    "PSO": {
+      "throughPeriod": "TTM to 2026 9M",
+      "basis": "unconsolidated",
+      "source": "auto+Sarmaaya",
+      "date": "2026-07-21",
+      "note": "bulk-promoted on independent agreement, NOT a filing read. Our engine-computed trailing EPS 93.21 vs Sarmaaya 92.73 (0.5%), and P/B 0.63 vs 0.56 (12.7%) — two ratios off different statements agreeing independently. No one opened the filing, so an un-restated bonus/rights issue or a basis subtlety could still be hiding underneath (the failure modes that caught SEARL, MUGHAL and GAL). Weaker tier than the \"filing+Sarmaaya\"/\"hand+Sarmaaya\" entries; re-verify by hand before relying on it for anything load-bearing."
+    },
+    "HPL": {
+      "throughPeriod": "TTM to 2026 Q1",
+      "basis": "unconsolidated",
+      "source": "auto+Sarmaaya",
+      "date": "2026-07-21",
+      "note": "bulk-promoted on independent agreement, NOT a filing read. Our engine-computed trailing EPS 318.98 vs Sarmaaya 317.04 (0.6%), and P/B 4.33 vs 4.35 (0.4%) — two ratios off different statements agreeing independently. No one opened the filing, so an un-restated bonus/rights issue or a basis subtlety could still be hiding underneath (the failure modes that caught SEARL, MUGHAL and GAL). Weaker tier than the \"filing+Sarmaaya\"/\"hand+Sarmaaya\" entries; re-verify by hand before relying on it for anything load-bearing."
+    },
+    "IBFL": {
+      "throughPeriod": "TTM to 2026 Q1",
+      "basis": "unconsolidated",
+      "source": "auto+Sarmaaya",
+      "date": "2026-07-21",
+      "note": "bulk-promoted on independent agreement, NOT a filing read. Our engine-computed trailing EPS -1.50 vs Sarmaaya -1.49 (0.7%), and P/B 1.47 vs 1.62 (9.6%) — two ratios off different statements agreeing independently. No one opened the filing, so an un-restated bonus/rights issue or a basis subtlety could still be hiding underneath (the failure modes that caught SEARL, MUGHAL and GAL). Weaker tier than the \"filing+Sarmaaya\"/\"hand+Sarmaaya\" entries; re-verify by hand before relying on it for anything load-bearing."
+    },
+    "AHL": {
+      "throughPeriod": "TTM to 2026 9M",
+      "basis": "unconsolidated",
+      "source": "auto+Sarmaaya",
+      "date": "2026-07-21",
+      "note": "bulk-promoted on independent agreement, NOT a filing read. Our engine-computed trailing EPS 15.21 vs Sarmaaya 15.32 (0.7%), and P/B 4.01 vs 3.92 (2.3%) — two ratios off different statements agreeing independently. No one opened the filing, so an un-restated bonus/rights issue or a basis subtlety could still be hiding underneath (the failure modes that caught SEARL, MUGHAL and GAL). Weaker tier than the \"filing+Sarmaaya\"/\"hand+Sarmaaya\" entries; re-verify by hand before relying on it for anything load-bearing."
+    },
+    "SPEL": {
+      "throughPeriod": "TTM to 2026 9M",
+      "basis": "unconsolidated",
+      "source": "auto+Sarmaaya",
+      "date": "2026-07-21",
+      "note": "bulk-promoted on independent agreement, NOT a filing read. Our engine-computed trailing EPS 6.44 vs Sarmaaya 6.37 (1.1%), and P/B 1.55 vs 1.45 (6.9%) — two ratios off different statements agreeing independently. No one opened the filing, so an un-restated bonus/rights issue or a basis subtlety could still be hiding underneath (the failure modes that caught SEARL, MUGHAL and GAL). Weaker tier than the \"filing+Sarmaaya\"/\"hand+Sarmaaya\" entries; re-verify by hand before relying on it for anything load-bearing."
+    },
+    "TICL": {
+      "throughPeriod": "TTM to 2026 9M",
+      "basis": "unconsolidated",
+      "source": "auto+Sarmaaya",
+      "date": "2026-07-21",
+      "note": "bulk-promoted on independent agreement, NOT a filing read. Our engine-computed trailing EPS 185.28 vs Sarmaaya 182.06 (1.8%), and P/B 1.20 vs 1.2 (0.4%) — two ratios off different statements agreeing independently. No one opened the filing, so an un-restated bonus/rights issue or a basis subtlety could still be hiding underneath (the failure modes that caught SEARL, MUGHAL and GAL). Weaker tier than the \"filing+Sarmaaya\"/\"hand+Sarmaaya\" entries; re-verify by hand before relying on it for anything load-bearing."
     }
   },
   "_unverifiable": {
