@@ -37,15 +37,27 @@ function SectionHeading({ title, blurb }: { title: string; blurb: string }) {
   );
 }
 
-export function SignalEvidenceView({ report }: { report: SignalEvidenceReport }) {
+/**
+ * Sections drop their card chrome when rendered inside a disclosure panel,
+ * which already supplies a surface. Cards nested inside cards read as clutter.
+ */
+function Section({ bare, className, children }: { bare: boolean; className?: string; children: React.ReactNode }) {
+  if (bare) return <div className="border-b border-border/60 pb-4 last:border-0 last:pb-0">{children}</div>;
+  return (
+    <Card className={className}>
+      <CardContent className="p-4">{children}</CardContent>
+    </Card>
+  );
+}
+
+export function SignalEvidenceView({ report, bare = false }: { report: SignalEvidenceReport; bare?: boolean }) {
   const order: SignalClass[] = ["strong", "moderate", "redundant", "unstable", "weak", "insufficient"];
   const sorted = [...report.signals].sort((a, b) => order.indexOf(a.verdict) - order.indexOf(b.verdict));
   const pairCellsWithEvidence = report.pairs.flatMap((p) => p.cells).filter((c) => c.quotable);
 
   return (
     <div className="space-y-6">
-      <Card className="rise">
-        <CardContent className="p-4">
+      <Section bare={bare} className="rise">
           <SectionHeading
             title="Phase 2 signal evidence"
             blurb={`Every candidate signal tested against 3% and 5% drawdowns over 5, 10 and 20 sessions (1 month measured but never decisive), with states assigned from each signal's own expanding history so a date is only ever judged by cut-offs that existed on that date. Verdicts weigh distinct market episodes, stability across sample halves, and whether the signal adds anything beyond volatility. Descriptive and in-sample; no model has been fitted.`}
@@ -95,11 +107,9 @@ export function SignalEvidenceView({ report }: { report: SignalEvidenceReport })
               </tbody>
             </table>
           </div>
-        </CardContent>
-      </Card>
+      </Section>
 
-      <Card className="rise rise-1">
-        <CardContent className="p-4">
+      <Section bare={bare} className="rise rise-1">
           <SectionHeading
             title="The Phase 1 breadth lead did not survive point-in-time testing"
             blurb="Phase 1 found that narrow participation during calm markets looked informative. That analysis defined narrow using cut-offs computed over the whole sample, which quietly used knowledge of where breadth would later sit. Re-run with cut-offs a date could actually have known, the calm-and-narrow combination never occurred at all: every point-in-time narrow reading fell inside a single turbulent stretch. Negative results like this are the reason the stricter method exists, and the pair remains worth re-testing as more history accrues."
@@ -128,11 +138,9 @@ export function SignalEvidenceView({ report }: { report: SignalEvidenceReport })
                 ))}
             </ul>
           )}
-        </CardContent>
-      </Card>
+      </Section>
 
-      <Card className="rise rise-2">
-        <CardContent className="p-4">
+      <Section bare={bare} className="rise rise-2">
           <SectionHeading
             title="Market regimes, descriptively"
             blurb="Trend against the 200-day average crossed with the volatility tercile, with the share of history spent in each state and the drawdown rates that followed. Read alongside the episode counts: the downtrend states are rare in this sample, so their rates rest on a handful of events."
@@ -166,11 +174,9 @@ export function SignalEvidenceView({ report }: { report: SignalEvidenceReport })
               </tbody>
             </table>
           </div>
-        </CardContent>
-      </Card>
+      </Section>
 
-      <Card className="rise rise-3">
-        <CardContent className="p-4">
+      <Section bare={bare} className="rise rise-3">
           <SectionHeading title="Method" blurb="The rules this evidence was produced under, in full." />
           <ul className="list-disc space-y-1.5 pl-4 text-xs leading-relaxed text-muted-foreground">
             {report.method.map((note, i) => (
@@ -181,8 +187,7 @@ export function SignalEvidenceView({ report }: { report: SignalEvidenceReport })
             Window: {report.window.firstDate} to {report.window.lastDate}, {report.window.sessions.toLocaleString()} sessions.
             Generated {new Date(report.generatedAt).toLocaleDateString("en-CA", { timeZone: "Asia/Karachi" })}.
           </p>
-        </CardContent>
-      </Card>
+      </Section>
     </div>
   );
 }

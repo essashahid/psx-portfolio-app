@@ -42,6 +42,19 @@ function SectionHeading({ title, blurb }: { title: string; blurb: string }) {
   );
 }
 
+/**
+ * Sections drop their card chrome when rendered inside a disclosure panel,
+ * which already supplies a surface. Cards nested inside cards read as clutter.
+ */
+function Section({ bare, className, children }: { bare: boolean; className?: string; children: React.ReactNode }) {
+  if (bare) return <div className="border-b border-border/60 pb-4 last:border-0 last:pb-0">{children}</div>;
+  return (
+    <Card className={className}>
+      <CardContent className="p-4">{children}</CardContent>
+    </Card>
+  );
+}
+
 function CoverageRow({ s }: { s: SeriesCoverage }) {
   return (
     <tr className="border-b border-border/60 last:border-0">
@@ -66,7 +79,7 @@ function CoverageRow({ s }: { s: SeriesCoverage }) {
   );
 }
 
-export function OutlookCoverageView({ report }: { report: OutlookCoverageReport }) {
+export function OutlookCoverageView({ report, bare = false }: { report: OutlookCoverageReport; bare?: boolean }) {
   const staleSeries = report.series.filter((s) => s.quality === "stale");
   const trainable = report.series.filter((s) => s.modelReady);
   const shown = new Set<string>(MAIN_VIEW_HORIZONS);
@@ -95,18 +108,15 @@ export function OutlookCoverageView({ report }: { report: OutlookCoverageReport 
       </div>
 
       {report.bindingConstraint && (
-        <Card className="rise rise-1">
-          <CardContent className="p-4">
+        <Section bare={bare} className="rise rise-1">
             <SectionHeading
               title="What bounds the work"
               blurb={`Any model can only be trained over a period where all its inputs exist. The shortest trainable daily series is ${report.bindingConstraint.series}, starting ${report.bindingConstraint.firstDate}, which gives about ${report.bindingConstraint.years.toFixed(1)} years. Deeper history for other inputs does not extend that limit.`}
             />
-          </CardContent>
-        </Card>
+        </Section>
       )}
 
-      <Card className="rise rise-1">
-        <CardContent className="p-4">
+      <Section bare={bare} className="rise rise-1">
           <SectionHeading
             title="Every horizon measured"
             blurb="Including the two the main view leaves out. The 20-session window is within a rounding error of the 21-session one, so showing both would imply a distinction that does not exist. The three-month window is excluded because its sample is too thin to judge and the turbulence signal disappears there entirely."
@@ -164,12 +174,10 @@ export function OutlookCoverageView({ report }: { report: OutlookCoverageReport 
             Sample counts non-overlapping windows. Overlapping windows reuse the same market episodes, so quoting them
             would make a five-year record look like several thousand independent observations.
           </p>
-        </CardContent>
-      </Card>
+      </Section>
 
       {report.volConditional.length > 0 && (
-        <Card className="rise rise-2">
-          <CardContent className="p-4">
+        <Section bare={bare} className="rise rise-2">
             <SectionHeading
               title="Turbulence signal at every horizon"
               blurb="Drawdown rates after calm and turbulent stretches, split by trailing volatility terciles. A ratio above one means turbulent periods were followed by more declines than the overall rate. Measured in-sample, so this indicates whether a model is worth building rather than proving one would work."
@@ -210,13 +218,11 @@ export function OutlookCoverageView({ report }: { report: OutlookCoverageReport 
                 </tbody>
               </table>
             </div>
-          </CardContent>
-        </Card>
+        </Section>
       )}
 
       {report.breadthSignal && report.breadthSignal.quadrants.length > 0 && (
-        <Card className="rise rise-2">
-          <CardContent className="p-4">
+        <Section bare={bare} className="rise rise-2">
             <SectionHeading
               title="Breadth as a candidate signal (Phase 2 research note)"
               blurb="Whether a market being carried by fewer stocks has preceded declines, and more importantly whether that says anything volatility does not already say. Both groups below are calm periods, so any difference is information the volatility probe misses. Not shown on the main tab: read the episode column before trusting any ratio here."
@@ -274,12 +280,10 @@ export function OutlookCoverageView({ report }: { report: OutlookCoverageReport 
               {report.breadthSignal.firstDate} to {report.breadthSignal.lastDate}; the window starts later than the price
               history because a 200-day average needs 200 sessions before it means anything.
             </p>
-          </CardContent>
-        </Card>
+        </Section>
       )}
 
-      <Card className="rise rise-3">
-        <CardContent className="p-4">
+      <Section bare={bare} className="rise rise-3">
           <SectionHeading
             title="Data coverage"
             blurb="Every series the outlook would draw on, with its actual range and freshness. Trainable means the series has enough regular history to fit a model on. Series marked no can still describe current conditions, but cannot teach a model what past conditions led to."
@@ -304,11 +308,9 @@ export function OutlookCoverageView({ report }: { report: OutlookCoverageReport 
               </tbody>
             </table>
           </div>
-        </CardContent>
-      </Card>
+      </Section>
 
-      <Card className="rise rise-4">
-        <CardContent className="p-4">
+      <Section bare={bare} className="rise rise-4">
           <SectionHeading
             title="What we do not have"
             blurb="Gaps matter as much as coverage, and an absent source is invisible in any report that only lists what exists. These are the sources that would improve a forecast and the reason each one is unavailable."
@@ -321,8 +323,7 @@ export function OutlookCoverageView({ report }: { report: OutlookCoverageReport 
               </li>
             ))}
           </ul>
-        </CardContent>
-      </Card>
+      </Section>
 
       {report.index && (
         <p className="text-[11px] leading-relaxed text-muted-foreground">
