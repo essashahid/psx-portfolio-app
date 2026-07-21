@@ -25,11 +25,18 @@ function horizon(over: Partial<HorizonStat> & Pick<HorizonStat, "key">): Horizon
     positiveRate: 0.6,
     returnPercentiles: { p10: -0.04, p25: -0.01, median: 0.02, p75: 0.05, p90: 0.1 },
     drawdownPercentiles: { p10: -0.08, median: -0.02, worst: -0.2 },
+    runupPercentiles: { p90: 0.12, median: 0.03, best: 0.3 },
     thresholds: [
       { threshold: -0.03, hits: 400, frequency: 0.4 },
       { threshold: -0.05, hits: 200, frequency: 0.2 },
       { threshold: -0.07, hits: 90, frequency: 0.09 },
       { threshold: -0.1, hits: 30, frequency: 0.03 },
+    ],
+    rallyThresholds: [
+      { threshold: 0.03, hits: 500, frequency: 0.5 },
+      { threshold: 0.05, hits: 300, frequency: 0.3 },
+      { threshold: 0.07, hits: 150, frequency: 0.15 },
+      { threshold: 0.1, hits: 60, frequency: 0.06 },
     ],
     ...over,
   } as HorizonStat;
@@ -115,6 +122,33 @@ describe("buildOutlookViewModel", () => {
     expect(shown).toEqual([-0.03, -0.05, -0.07]);
     expect(shown).not.toContain(-0.1);
     expect(model.horizons[0].thresholds.every((t) => t.hits >= MIN_EVENTS_TO_QUOTE)).toBe(true);
+  });
+
+  it("carries both directions, so the view cannot describe only declines", () => {
+    const model = buildOutlookViewModel(report({ horizons: [horizon({ key: "1m" })] }));
+    const h = model.horizons[0];
+    expect(h.headlineFrequency).not.toBeNull();
+    expect(h.headlineRallyFrequency).not.toBeNull();
+    expect(h.rallyThresholds.length).toBeGreaterThan(0);
+    expect(h.rallyThresholds.every((t) => t.threshold > 0)).toBe(true);
+    expect(h.bestRunup).toBeGreaterThan(0);
+  });
+
+  it("applies the same evidence floor to rallies as to declines", () => {
+    const model = buildOutlookViewModel(
+      report({
+        horizons: [
+          horizon({
+            key: "5d",
+            rallyThresholds: [
+              { threshold: 0.03, hits: 200, frequency: 0.16 },
+              { threshold: 0.1, hits: 2, frequency: 0.002 },
+            ],
+          }),
+        ],
+      })
+    );
+    expect(model.horizons[0].rallyThresholds.map((t) => t.threshold)).toEqual([0.03]);
   });
 
   it("reports no headline figure when the 5% threshold is itself too thin", () => {

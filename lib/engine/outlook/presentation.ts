@@ -30,8 +30,9 @@ export const MAIN_VIEW_HORIZONS: HorizonKey[] = ["5d", "10d", "1m"];
  */
 export const MIN_EVENTS_TO_QUOTE = 5;
 
-/** Threshold used for the headline number. Available at every offered horizon. */
+/** Threshold used for the headline numbers. Available at every offered horizon. */
 export const HEADLINE_THRESHOLD = -0.05;
+export const HEADLINE_RALLY_THRESHOLD = 0.05;
 
 export type ConfidenceLevel = "strong" | "moderate" | "limited";
 
@@ -83,10 +84,15 @@ export interface HorizonView {
   independentWindows: number;
   /** Thresholds with enough occurrences to quote, deepest decline last. */
   thresholds: ThresholdView[];
+  /** The upside mirror of `thresholds`. */
+  rallyThresholds: ThresholdView[];
   /** Chance of the headline decline, 0-1. Null when too thin to quote. */
   headlineFrequency: number | null;
+  /** Chance of the headline rally, 0-1. Null when too thin to quote. */
+  headlineRallyFrequency: number | null;
   positiveRate: number;
   worstDrawdown: number;
+  bestRunup: number;
   returnPercentiles: HorizonStat["returnPercentiles"];
 }
 
@@ -121,9 +127,13 @@ function classifyLift(lift: number): TurbulenceView["verdict"] {
   return "little-difference";
 }
 
-function toHorizonView(stat: HorizonStat): HorizonView {
-  const copy = HORIZON_COPY[stat.key] ?? { short: stat.label, forward: `over ${stat.label}` };
-  const thresholds: ThresholdView[] = stat.thresholds
+/**
+ * Tolerates a missing list. Reports are persisted to disk and to the database,
+ * so a payload written before a threshold family existed will lack it; that
+ * should degrade to showing nothing rather than throwing on read.
+ */
+function quotable(stats: HorizonStat["thresholds"] | undefined): ThresholdView[] {
+  return (stats ?? [])
     .filter((t) => t.hits >= MIN_EVENTS_TO_QUOTE)
     .map((t) => ({
       threshold: t.threshold,
@@ -131,7 +141,14 @@ function toHorizonView(stat: HorizonStat): HorizonView {
       frequency: t.frequency,
       hits: t.hits,
     }));
+}
+
+function toHorizonView(stat: HorizonStat): HorizonView {
+  const copy = HORIZON_COPY[stat.key] ?? { short: stat.label, forward: `over ${stat.label}` };
+  const thresholds = quotable(stat.thresholds);
+  const rallyThresholds = quotable(stat.rallyThresholds);
   const headline = thresholds.find((t) => t.threshold === HEADLINE_THRESHOLD) ?? null;
+  const headlineRally = rallyThresholds.find((t) => t.threshold === HEADLINE_RALLY_THRESHOLD) ?? null;
 
   return {
     key: stat.key,
@@ -141,9 +158,12 @@ function toHorizonView(stat: HorizonStat): HorizonView {
     confidence: confidenceFor(stat.independentWindows),
     independentWindows: stat.independentWindows,
     thresholds,
+    rallyThresholds,
     headlineFrequency: headline ? headline.frequency : null,
+    headlineRallyFrequency: headlineRally ? headlineRally.frequency : null,
     positiveRate: stat.positiveRate,
     worstDrawdown: stat.drawdownPercentiles.worst,
+    bestRunup: stat.runupPercentiles?.best ?? NaN,
     returnPercentiles: stat.returnPercentiles,
   };
 }

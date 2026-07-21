@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-07-20T21:58:50.576Z",
+  "generatedAt": "2026-07-21T10:53:20.841Z",
   "bindingConstraint": {
     "series": "PSX All-Share index",
     "firstDate": "2021-07-23",
@@ -15,7 +15,7 @@
       "firstDate": "2021-06-28",
       "lastDate": "2026-07-20",
       "years": 5.059548254620124,
-      "ageDays": 0,
+      "ageDays": 1,
       "quality": "good",
       "modelReady": true,
       "note": "Primary modelling series. Depth is capped by the PSX portal's rolling five-year window."
@@ -29,7 +29,7 @@
       "firstDate": "2021-07-23",
       "lastDate": "2026-07-20",
       "years": 4.991101984941821,
-      "ageDays": 0,
+      "ageDays": 1,
       "quality": "good",
       "modelReady": true,
       "note": "Broad-market index. Its spread against KSE-100 is a breadth proxy with real history, unlike stored breadth."
@@ -43,7 +43,7 @@
       "firstDate": "2021-07-23",
       "lastDate": "2026-07-20",
       "years": 4.991101984941821,
-      "ageDays": 0,
+      "ageDays": 1,
       "quality": "good",
       "modelReady": true,
       "note": "Large-cap subset, useful as a size-tilt cross-check."
@@ -57,7 +57,7 @@
       "firstDate": "2021-07-23",
       "lastDate": "2026-07-20",
       "years": 4.991101984941821,
-      "ageDays": 0,
+      "ageDays": 1,
       "quality": "good",
       "modelReady": true,
       "note": "Shariah-screened subset; differs in sector mix from KSE-100."
@@ -71,7 +71,7 @@
       "firstDate": "2007-07-27",
       "lastDate": "2026-07-21",
       "years": 18.98425735797399,
-      "ageDays": -1,
+      "ageDays": 0,
       "quality": "good",
       "modelReady": true,
       "note": "Currency stress input. Deep history from Twelve Data."
@@ -85,7 +85,7 @@
       "firstDate": "2007-10-17",
       "lastDate": "2026-07-21",
       "years": 18.759753593429156,
-      "ageDays": -1,
+      "ageDays": 0,
       "quality": "good",
       "modelReady": true,
       "note": "Local store-of-value alternative and risk hedge."
@@ -99,7 +99,7 @@
       "firstDate": "2014-09-17",
       "lastDate": "2026-07-20",
       "years": 11.838466803559205,
-      "ageDays": 0,
+      "ageDays": 1,
       "quality": "good",
       "modelReady": true,
       "note": "Speculative risk-appetite proxy."
@@ -113,7 +113,7 @@
       "firstDate": "2006-08-31",
       "lastDate": "2026-07-20",
       "years": 19.88501026694045,
-      "ageDays": 0,
+      "ageDays": 1,
       "quality": "good",
       "modelReady": true,
       "note": "Developed-market risk appetite. Kept in USD so currency moves do not contaminate the signal."
@@ -127,7 +127,7 @@
       "firstDate": "2012-09-19",
       "lastDate": "2026-07-20",
       "years": 13.831622176591376,
-      "ageDays": 0,
+      "ageDays": 1,
       "quality": "good",
       "modelReady": true,
       "note": "Emerging-market risk appetite, the closer global read for PSX."
@@ -141,7 +141,7 @@
       "firstDate": "2021-01-01",
       "lastDate": "2026-07-21",
       "years": 5.549623545516769,
-      "ageDays": -1,
+      "ageDays": 0,
       "quality": "good",
       "modelReady": false,
       "note": "Hand-maintained step series of SBP policy decisions, not a live feed."
@@ -155,7 +155,7 @@
       "firstDate": "2023-01-01",
       "lastDate": "2026-05-28",
       "years": 3.403148528405202,
-      "ageDays": 53,
+      "ageDays": 54,
       "quality": "limited",
       "modelReady": false,
       "note": "Hardcoded in lib/market-data/pbs-cpi.ts. Extending it is manual data entry from PBS releases; missing months are never interpolated."
@@ -169,7 +169,7 @@
       "firstDate": null,
       "lastDate": "2026-04-27",
       "years": 0,
-      "ageDays": 84,
+      "ageDays": 85,
       "quality": "good",
       "modelReady": false,
       "note": "Currently 11.5% since 2026-04-27 (rising, peak 22%). Hardcoded step series in lib/market-data/macro-assets.ts; a missed MPC decision goes unnoticed without this check."
@@ -179,38 +179,52 @@
       "label": "Market breadth (advancers/decliners)",
       "group": "breadth",
       "granularity": "daily",
+      "rows": 1252,
+      "firstDate": "2021-06-29",
+      "lastDate": "2026-07-20",
+      "years": 5.0568104038329915,
+      "ageDays": 1,
+      "quality": "good",
+      "modelReady": true,
+      "note": "Reconstructed by counting constituent EOD moves, so it reaches back as far as the price panel rather than as far as our own capture history."
+    },
+    {
+      "key": "SNAPSHOTS",
+      "label": "Live market snapshots (movers, value traded)",
+      "group": "breadth",
+      "granularity": "daily",
       "rows": 28,
       "firstDate": "2026-06-11",
       "lastDate": "2026-07-20",
       "years": 0.10677618069815195,
-      "ageDays": 0,
+      "ageDays": 1,
       "quality": "limited",
       "modelReady": false,
-      "note": "Accrues forward from deploy only. Informs the present read; too short to train on."
+      "note": "The as-observed daily capture. Carries fields that cannot be recomputed later, such as most-active ticker and value traded, and only accrues forward."
     },
     {
       "key": "FLOWS",
       "label": "Foreign / local investor flows (FIPI, LIPI)",
       "group": "flows",
       "granularity": "daily",
-      "rows": 21,
-      "firstDate": "2026-03-02",
-      "lastDate": "2026-07-17",
-      "years": 0.3750855578370979,
-      "ageDays": 3,
-      "quality": "limited",
-      "modelReady": false,
-      "note": "Best-effort daily capture from SCSTrade. Sparse; no reliable multi-year backfill exists."
+      "rows": 1232,
+      "firstDate": "2021-07-23",
+      "lastDate": "2026-07-20",
+      "years": 4.991101984941821,
+      "ageDays": 1,
+      "quality": "good",
+      "modelReady": true,
+      "note": "Backfilled session by session from SCSTrade, whose endpoints accept an arbitrary date. Source figures are attributed to NCCPL."
     },
     {
       "key": "NEWS",
       "label": "Global news articles with sentiment",
       "group": "news",
       "granularity": "event",
-      "rows": 1641,
+      "rows": 1729,
       "firstDate": "2017-08-11",
-      "lastDate": "2026-07-20",
-      "years": 8.93908281998631,
+      "lastDate": "2026-07-21",
+      "years": 8.941820670773442,
       "ageDays": 0,
       "quality": "good",
       "modelReady": false,
@@ -218,18 +232,6 @@
     }
   ],
   "missing": [
-    {
-      "key": "breadth-history",
-      "label": "Historical market breadth (advance/decline)",
-      "why": "market_snapshots only accumulates forward from deploy, and PSX publishes no historical breadth endpoint to backfill from. The ALLSHR index is cached as a partial substitute.",
-      "obtainable": "accrues-forward"
-    },
-    {
-      "key": "flows-history",
-      "label": "Multi-year FIPI/LIPI investor flows",
-      "why": "NCCPL has no public API and SCSTrade serves recent sessions only, so flow history accrues forward rather than backfilling.",
-      "obtainable": "accrues-forward"
-    },
     {
       "key": "news-archive",
       "label": "Historical news and sentiment archive",
@@ -256,9 +258,15 @@
     },
     {
       "key": "index-pre-2021",
-      "label": "KSE-100 history before 2021",
-      "why": "The PSX portal serves a rolling five-year window. Older index history needs a paid vendor or manual archive import.",
+      "label": "Any PSX history before 2021",
+      "why": "The PSX portal serves a rolling five-year window for every symbol, indices and constituents alike. This is the single binding limit on the whole feature. Yahoo's KSE series is dead (last tick 2019) and stooq is behind a bot challenge, so going deeper needs a paid vendor or a manual archive import.",
       "obtainable": "paid-plan"
+    },
+    {
+      "key": "intraday-breadth",
+      "label": "Intraday breadth and value traded before capture began",
+      "why": "Reconstructed breadth is built from daily closes, so it recovers advance/decline counts but not value traded, most-active names or anything intraday. Those exist only from when live snapshot capture started.",
+      "obtainable": "accrues-forward"
     }
   ],
   "index": {
@@ -305,6 +313,11 @@
         "median": -0.005969207790022857,
         "worst": -0.10018225731924602
       },
+      "runupPercentiles": {
+        "p90": 0.04267956512544292,
+        "median": 0.011472866338996468,
+        "best": 0.15875211454887883
+      },
       "thresholds": [
         {
           "threshold": -0.03,
@@ -325,6 +338,28 @@
           "threshold": -0.1,
           "hits": 1,
           "frequency": 0.0008012820512820513
+        }
+      ],
+      "rallyThresholds": [
+        {
+          "threshold": 0.03,
+          "hits": 235,
+          "frequency": 0.18830128205128205
+        },
+        {
+          "threshold": 0.05,
+          "hits": 86,
+          "frequency": 0.06891025641025642
+        },
+        {
+          "threshold": 0.07,
+          "hits": 23,
+          "frequency": 0.01842948717948718
+        },
+        {
+          "threshold": 0.1,
+          "hits": 6,
+          "frequency": 0.004807692307692308
         }
       ]
     },
@@ -348,6 +383,11 @@
         "median": -0.011405599320108872,
         "worst": -0.15029150460861485
       },
+      "runupPercentiles": {
+        "p90": 0.06548511372072706,
+        "median": 0.02126913071342873,
+        "best": 0.1627952074858503
+      },
       "thresholds": [
         {
           "threshold": -0.03,
@@ -368,6 +408,28 @@
           "threshold": -0.1,
           "hits": 16,
           "frequency": 0.012872083668543845
+        }
+      ],
+      "rallyThresholds": [
+        {
+          "threshold": 0.03,
+          "hits": 473,
+          "frequency": 0.3805309734513274
+        },
+        {
+          "threshold": 0.05,
+          "hits": 243,
+          "frequency": 0.19549477071600965
+        },
+        {
+          "threshold": 0.07,
+          "hits": 101,
+          "frequency": 0.08125502815768303
+        },
+        {
+          "threshold": 0.1,
+          "hits": 29,
+          "frequency": 0.02333065164923572
         }
       ]
     },
@@ -391,6 +453,11 @@
         "median": -0.018144945221203246,
         "worst": -0.1997798413327957
       },
+      "runupPercentiles": {
+        "p90": 0.10450996350563695,
+        "median": 0.037036244735788815,
+        "best": 0.22834196994189537
+      },
       "thresholds": [
         {
           "threshold": -0.03,
@@ -411,6 +478,28 @@
           "threshold": -0.1,
           "hits": 38,
           "frequency": 0.030819140308191405
+        }
+      ],
+      "rallyThresholds": [
+        {
+          "threshold": 0.03,
+          "hits": 682,
+          "frequency": 0.5531224655312247
+        },
+        {
+          "threshold": 0.05,
+          "hits": 479,
+          "frequency": 0.3884833738848337
+        },
+        {
+          "threshold": 0.07,
+          "hits": 329,
+          "frequency": 0.26682887266828875
+        },
+        {
+          "threshold": 0.1,
+          "hits": 147,
+          "frequency": 0.1192214111922141
         }
       ]
     },
@@ -434,6 +523,11 @@
         "median": -0.01880425118571577,
         "worst": -0.20447252418649942
       },
+      "runupPercentiles": {
+        "p90": 0.10758658944565594,
+        "median": 0.03838014625289177,
+        "best": 0.22834196994189537
+      },
       "thresholds": [
         {
           "threshold": -0.03,
@@ -454,6 +548,28 @@
           "threshold": -0.1,
           "hits": 41,
           "frequency": 0.033279220779220776
+        }
+      ],
+      "rallyThresholds": [
+        {
+          "threshold": 0.03,
+          "hits": 696,
+          "frequency": 0.564935064935065
+        },
+        {
+          "threshold": 0.05,
+          "hits": 499,
+          "frequency": 0.4050324675324675
+        },
+        {
+          "threshold": 0.07,
+          "hits": 349,
+          "frequency": 0.2832792207792208
+        },
+        {
+          "threshold": 0.1,
+          "hits": 164,
+          "frequency": 0.1331168831168831
         }
       ]
     },
@@ -477,6 +593,11 @@
         "median": -0.0387500852066715,
         "worst": -0.22565627523896625
       },
+      "runupPercentiles": {
+        "p90": 0.26837694046477606,
+        "median": 0.08490077224267023,
+        "best": 0.45966007586732904
+      },
       "thresholds": [
         {
           "threshold": -0.03,
@@ -497,6 +618,28 @@
           "threshold": -0.1,
           "hits": 114,
           "frequency": 0.0957983193277311
+        }
+      ],
+      "rallyThresholds": [
+        {
+          "threshold": 0.03,
+          "hits": 917,
+          "frequency": 0.7705882352941177
+        },
+        {
+          "threshold": 0.05,
+          "hits": 770,
+          "frequency": 0.6470588235294118
+        },
+        {
+          "threshold": 0.07,
+          "hits": 658,
+          "frequency": 0.5529411764705883
+        },
+        {
+          "threshold": 0.1,
+          "hits": 532,
+          "frequency": 0.4470588235294118
         }
       ]
     }

@@ -298,7 +298,16 @@ const FLOW_HEADERS = {
   Referer: SCSTRADE_FLOWS_URL,
 };
 
-async function fetchScsTradeFlows(): Promise<FlowIngestPayload | null> {
+/** "2023-03-15" -> "03/15/2023", the form SCSTrade's endpoints expect. */
+export function toScsDate(isoDate: string): string | null {
+  const m = isoDate.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (!m) return null;
+  const [, year, month, day] = m;
+  return `${month}/${day}/${year}`;
+}
+
+/** The latest session SCSTrade is currently publishing, as YYYY-MM-DD. */
+export async function fetchScsLatestFlowDate(): Promise<string | null> {
   try {
     const page = await fetch(SCSTRADE_FLOWS_URL, {
       headers: { "User-Agent": FLOW_HEADERS["User-Agent"], Accept: "text/html" },
@@ -306,8 +315,38 @@ async function fetchScsTradeFlows(): Promise<FlowIngestPayload | null> {
       cache: "no-store",
     });
     if (!page.ok) return null;
-    const html = await page.text();
-    const mmddyyyy = extractScsLatestDate(html);
+    const mmddyyyy = extractScsLatestDate(await page.text());
+    return mmddyyyy ? toIsoDate(mmddyyyy) : null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * One session's flows from SCSTrade.
+ *
+ * The endpoints accept an arbitrary date range rather than only serving the
+ * latest session, so passing `isoDate` reaches back through the archive. That
+ * is what makes a historical backfill possible; asking for a single day (date1
+ * equal to date2) returns that day's figures rather than a running total.
+ *
+ * Omitting the date falls back to whichever session the page currently shows,
+ * which is what the daily cron wants.
+ */
+export async function fetchScsTradeFlows(isoDate?: string): Promise<FlowIngestPayload | null> {
+  try {
+    let mmddyyyy: string | null;
+    if (isoDate) {
+      mmddyyyy = toScsDate(isoDate);
+    } else {
+      const page = await fetch(SCSTRADE_FLOWS_URL, {
+        headers: { "User-Agent": FLOW_HEADERS["User-Agent"], Accept: "text/html" },
+        signal: AbortSignal.timeout(SCSTRADE_TIMEOUT_MS),
+        cache: "no-store",
+      });
+      if (!page.ok) return null;
+      mmddyyyy = extractScsLatestDate(await page.text());
+    }
     if (!mmddyyyy) return null;
     const date = toIsoDate(mmddyyyy);
     if (!date) return null;
