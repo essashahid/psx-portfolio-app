@@ -112,6 +112,14 @@ async function downloadPdf(url: string, path: string): Promise<number> {
   const res = await fetch(url, { headers: { "User-Agent": "Mozilla/5.0", Referer: "https://dps.psx.com.pk/" } });
   if (!res.ok) throw new Error(`HTTP ${res.status}`);
   const buf = Buffer.from(await res.arrayBuffer());
+  // The URL can 200 with an HTML error/landing page instead of the document
+  // (a broken or expired PSX document link). Writing that blindly produces a
+  // cache file that LOOKS present but silently sends garbage to vision later
+  // — HUMNL's "annual.pdf" was PSX's homepage HTML, and vision correctly
+  // returned nothing usable, but nothing here said why.
+  if (buf.subarray(0, 5).toString("latin1") !== "%PDF-") {
+    throw new Error(`response is not a PDF (got ${buf.subarray(0, 20).toString("latin1").replace(/[^\x20-\x7e]/g, "?")})`);
+  }
   writeFileSync(path, buf);
   return buf.length;
 }
@@ -122,9 +130,17 @@ async function processTicker(ticker: string): Promise<Entry> {
   mkdirSync(dir, { recursive: true });
 
   try {
+    // "Shariah disclosure" filings often contain "half yearly accounts" or
+    // similar in their own title (they are literally about the accounts,
+    // just not primary ones) and can share a filing date with the real
+    // report — MUGHAL's "Submission of revised Shariah disclosure (Half
+    // yearly accounts - December 31, 2025)" out-competed the actual
+    // "Transmission of Quarterly Report" filed the same day, and its content
+    // is three pages of compliance boilerplate with no income statement at
+    // all. Exclude anything with "shariah" in the title outright.
     const isReport = (f: { title: string }) =>
       /transmission|quarterly report|half[\s-]?year|annual report|annual account|condensed interim/i.test(f.title) &&
-      !/revoked|withdrawn|cancell?ed/i.test(f.title);
+      !/revoked|withdrawn|cancell?ed|shariah/i.test(f.title);
     let all = (await getCompanyFilings(ticker, 40)).filter(isReport);
     // Operationally newsy companies push the annual report past the most
     // recent 40 announcements (director disclosures, notices). Widen only
@@ -138,17 +154,32 @@ async function processTicker(ticker: string): Promise<Entry> {
     const interimFiling = all.find((f) => !/annual report|annual account/i.test(f.title));
 
     const entry: Entry = { ticker, interim: null, annual: null, checkedAt: new Date().toISOString() };
+    const errors: string[] = [];
 
+    // Each file downloaded independently: a broken annual-report link must
+    // not discard an interim that downloaded fine. The original version
+    // wrapped both in one try/catch, so a bad URL for either file threw the
+    // whole ticker back to `catch` below, which built a FRESH entry with
+    // both fields null — silently erasing a file that had already succeeded.
     if (interimFiling) {
-      const path = join(dir, "interim.pdf");
-      const bytes = await downloadPdf(interimFiling.url, path);
-      entry.interim = { title: interimFiling.title, date: interimFiling.date, url: interimFiling.url, path, bytes };
+      try {
+        const path = join(dir, "interim.pdf");
+        const bytes = await downloadPdf(interimFiling.url, path);
+        entry.interim = { title: interimFiling.title, date: interimFiling.date, url: interimFiling.url, path, bytes };
+      } catch (e) {
+        errors.push(`interim: ${(e as Error).message.slice(0, 100)}`);
+      }
     }
     if (annualFiling) {
-      const path = join(dir, "annual.pdf");
-      const bytes = await downloadPdf(annualFiling.url, path);
-      entry.annual = { title: annualFiling.title, date: annualFiling.date, url: annualFiling.url, path, bytes };
+      try {
+        const path = join(dir, "annual.pdf");
+        const bytes = await downloadPdf(annualFiling.url, path);
+        entry.annual = { title: annualFiling.title, date: annualFiling.date, url: annualFiling.url, path, bytes };
+      } catch (e) {
+        errors.push(`annual: ${(e as Error).message.slice(0, 100)}`);
+      }
     }
+    if (errors.length) entry.error = errors.join("; ");
     return entry;
   } catch (e) {
     return { ticker, interim: null, annual: null, checkedAt: new Date().toISOString(), error: (e as Error).message.slice(0, 150) };

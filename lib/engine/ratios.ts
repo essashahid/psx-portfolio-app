@@ -58,6 +58,14 @@ const CONSOLIDATED_BASIS_TICKERS = new Set<string>([
   // (FY2025 29.19 + Q1 2026 6.54 - Q1 2025 9.65 = 26.08) is exact to
   // Sarmaaya's 26.08; unconsolidated (24.76) is not within tolerance.
   "BAHL",
+  // MUGHAL: read directly from the primary documents (not agent-proposed).
+  // Consolidated FY2025 EPS 2.50 (annual report p153); consolidated 9M 2026
+  // EPS 5.10 and 9M 2025 comparative EPS 1.23 (interim filing, Directors'
+  // Review p3). TTM = 2.50 + 5.10 - 1.23 = 6.37, exact to Sarmaaya's 6.37.
+  // Unconsolidated TTM (7.24, using the filing's own printed unconsolidated
+  // EPS figures — 5.43 FY2025, 5.76 and 1.35 for the 9M legs, all directly
+  // confirmed on the interim's own P&L page 6) does not reconcile.
+  "MUGHAL",
 ]);
 
 function preferredBasis(ticker: string): "consolidated" | "unconsolidated" {

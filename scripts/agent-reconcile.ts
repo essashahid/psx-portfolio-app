@@ -204,7 +204,7 @@ async function main() {
       cachedPaths = { interim: cacheEntry.interim?.path, annual: cacheEntry.annual?.path };
     } else {
       const allFilings = (await getCompanyFilings(t, 40)).filter(
-        (f) => /transmission|quarterly report|half[\s-]?year|annual report|condensed interim/i.test(f.title) && !/revoked|withdrawn/i.test(f.title)
+        (f) => /transmission|quarterly report|half[\s-]?year|annual report|condensed interim/i.test(f.title) && !/revoked|withdrawn|shariah/i.test(f.title)
       );
       if (!allFilings.length) {
         results.push({ ticker: t, verdict: "no_filing", diagnosis: "no readable report filing found" });
