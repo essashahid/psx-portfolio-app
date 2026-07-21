@@ -150,6 +150,17 @@ const CONSOLIDATED_BASIS_TICKERS = new Set<string>([
   // MAJORITY of group losses (57% of 9M FY2026). Owners' equity is NEGATIVE,
   // which is why the reference P/B is negative too.
   "TPL",
+  // GATI: Gatron Industries, June FY. Consolidated -10.66 vs -10.67;
+  // unconsolidated -8.72 does not reconcile. All subsidiaries wholly owned so
+  // there is no NCI. WATCH: a Scheme of Arrangement resolved 28 Jan 2026 will
+  // change the share base once effective and will break this chain.
+  "GATI",
+  // FCSC: First Capital Securities, June FY. Consolidated 3.243 vs 3.24;
+  // unconsolidated 4.90 does not reconcile. EPS struck on the owners' portion
+  // (767,331k of 868,873k group). Its consolidated interim prints NO total EPS
+  // line, only continued and discontinued, so the 9M totals are derived from
+  // owners' profit over the share base; the exact reconciliation validates it.
+  "FCSC",
 ]);
 
 function preferredBasis(ticker: string): "consolidated" | "unconsolidated" {
