@@ -24,7 +24,14 @@ import { claudeConfigured, getClaude } from "@/lib/ai/claude";
 const OPENROUTER_BASE = "https://openrouter.ai/api/v1";
 const DEFAULT_OPENROUTER_MODEL = "google/gemini-2.5-flash";
 const DEFAULT_CLAUDE_MODEL = "claude-haiku-4-5";
-const REQUEST_TIMEOUT_MS = 240_000; // multi-page scanned PDFs are slow to read
+// Multi-page scanned PDFs are slow to read. Overridable via env rather than
+// just raised here, because the default has to stay safely under the
+// tightest Vercel route that calls this (app/api/stocks/[ticker]/refresh at
+// maxDuration=120s — that route is already killed before 240s regardless, so
+// raising the shared default carries no production risk, but a standalone
+// script reading two large PDFs together (a 26MB annual + interim) benefits
+// from more room than any of the routes need or should wait for.
+const REQUEST_TIMEOUT_MS = Number(process.env.VISION_TIMEOUT_MS) || 240_000;
 
 export function visionDisabled(): boolean {
   const v = (process.env.VISION_DISABLED ?? process.env.FILINGS_OCR_DISABLED ?? "").toLowerCase();

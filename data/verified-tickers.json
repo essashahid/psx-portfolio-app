@@ -364,6 +364,13 @@
       "source": "agent+Sarmaaya",
       "date": "2026-07-21",
       "note": "cement; agent read the annual report's quarterly-breakdown table (page 210, FY2025: Q1 1.32, Q2 1.64, Q3 0.87, Q4 1.59). Found our stored FY2025 H1 and Q2 were swapped (H1 held 1.64 which is actually Q2 alone; Q2 held 2.96 which is actually Q1+Q2) and Q1 2025 was missing entirely. Corrected via the quarter-sum fallback (no direct 9M row needed): 9M FY2025 = 1.32+1.64+0.87 = 3.83. Rebuilt TTM = 5.43 + 4.39 - 3.83 = 5.99, exact to Sarmaaya's 5.99. P/E and P/B both track ~8% low vs the Sarmaaya snapshot, fully explained by price movement between the snapshot date and our live quote (57.65 -> 53.74), not an EPS issue."
+    },
+    "MUGHAL": {
+      "throughPeriod": "2026 9M",
+      "basis": "consolidated",
+      "source": "hand+Sarmaaya",
+      "date": "2026-07-21",
+      "note": "steel; Sarmaaya quotes the group figure. My inventory builder had grabbed the wrong interim document (a Shariah-disclosure resubmission with no P&L, title-matched on 'half yearly accounts') -- fixed the filter, re-fetched the real quarterly report, and read both filings by hand (agent's earlier passes never produced a complete chain). Consolidated FY2025 EPS 2.50 (annual report p153), 9M 2026 5.10 and 9M 2025 comparative 1.23 (interim Directors' Review p3). Rebuilt TTM = 2.50+5.10-1.23 = 6.37, exact to Sarmaaya. Unconsolidated TTM (7.24, all figures independently confirmed on the interim's own P&L p6) does not reconcile -- this is a genuine basis difference, not a data error; our unconsolidated figures were correct all along. P/B 0.89 vs Sarmaaya 0.91 as an independent second check, after fixing a units bug in my own insert (profit_after_tax entered in full rupees instead of the schema's PKR-thousands convention, which inflated the implied share count ~1000x and briefly broke P/B to 885 before being caught)."
     }
   },
   "_unverifiable": {
@@ -373,7 +380,6 @@
   },
   "_needsRecheck": {
     "_note": "Was verified, or was changed by an automated pass, but the trailing figure no longer stands. Re-read the filing before restoring or granting the mark.",
-    "MUGHAL": "Trailing TTM moved to 7.24 against Sarmaaya 6.37 (13.7%). Our 9M FY2025 of 1.35 implies Sarmaaya is working from 2.22. Needs the 9M FY2025 comparative confirmed from the filing.",
     "SEARL": "Backfill produced trailing 4.32 against Sarmaaya 2.04 (+112%). Multi-basis rows from one filing; needs the correct standalone column identified.",
     "GAL": "Backfill produced trailing 69.76 against Sarmaaya 117.24 (-40%).",
     "PSEL": "Backfill produced trailing 21.06 against Sarmaaya 5.58 (+277%). Also holds contradictory FY rows (2022 FY at -10.99 and 18.73; 2023 FY at -6.71 and -52.35).",
