@@ -883,6 +883,14 @@ export async function extractFinancials(ticker: string, maxFilings = 2, force = 
   const isReport = (title: string): boolean => {
     const x = title.toLowerCase();
     if (/shariah|video|briefing|presentation|clarification|notice of|proxy|agm|egm|book closure|circular|postal ballot|auditor|pattern of shareholding/.test(x)) return false;
+    // Announcements ABOUT the accounts match on period wording and can be
+    // newer than the accounts themselves, so they win a "latest filing" race.
+    // AABS's "Advertisement regarding Credit of Interim Dividend for the half
+    // year ended March 31, 2026" matched via "half year" and beat the real
+    // "Transmission of Quarterly Report" filed three weeks earlier — a
+    // one-page newspaper dividend notice standing in for a set of financial
+    // statements. None of these words appear in a real transmission title.
+    if (/advertisement|intimation|credit of|unclaim|un-?paid dividend/.test(x)) return false;
     // Withdrawn filings. PSX marks a superseded submission REVOKED and the
     // company refiles, so the revoked document holds figures the company has
     // itself retracted. NATF revoked its 31 Mar 2026 quarterly on 30 April and
@@ -897,8 +905,18 @@ export async function extractFinancials(ticker: string, maxFilings = 2, force = 
   // announcements. Widen the search only when nothing carrying "annual
   // report/account" turns up in that window, so quiet companies still pay the
   // cheap 40-item fetch.
+  // "Annual Financial Statements" is a third spelling of the same document and
+  // was missing from this test, so companies that file under it (ENGROH, SIEM)
+  // looked as though they had no annual report at all. The filing still passed
+  // isReport via the generic "financial statement" branch, so it was silently
+  // RANKED AS AN INTERIM below — and the annual slot fell through to whatever
+  // older report did say "annual report", i.e. the PRIOR YEAR's. A stale-by-a-
+  // year annual is far more dangerous than a missing one: nothing errors, and
+  // the figures look entirely reasonable until they are reconciled.
+  const isAnnualTitle = (title: string) => /annual report|annual account|annual financial statement/i.test(title);
+
   let filings = await getCompanyFilings(t, 40);
-  if (!filings.some((f) => isReport(f.title) && /annual report|annual account/i.test(f.title))) {
+  if (!filings.some((f) => isReport(f.title) && isAnnualTitle(f.title))) {
     filings = await getCompanyFilings(t, 200);
   }
   // Annual reports first: they carry the full balance sheet AND cash flow, and
@@ -907,7 +925,7 @@ export async function extractFinancials(ticker: string, maxFilings = 2, force = 
   // brief "Financial Results" notices — which are usually just the P&L — last.
   const rank = (title: string): number => {
     const x = title.toLowerCase();
-    if (/annual report|annual account/.test(x)) return 0;
+    if (isAnnualTitle(x)) return 0;
     if (/transmission|quarterly report|half[\s-]?year|condensed interim/.test(x)) return 1;
     return 2;
   };

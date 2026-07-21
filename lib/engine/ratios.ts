@@ -92,11 +92,21 @@ const CONSOLIDATED_BASIS_TICKERS = new Set<string>([
   // Unlike BAHL/MUGHAL/SEARL/GAL these were NOT confirmed against the filing
   // itself, so they carry the weaker "auto+Sarmaaya" tier in the registry.
   //
-  // SIEM and SFL also matched on a stored basis but are deliberately excluded:
-  // both matched a chain built from an OLDER interim than the one we serve, so
-  // the agreement is with a stale reference rather than evidence we are right.
-  // SIEM's case is worse — it serves a 9M built from a Q3 row byte-identical to
-  // its Q2, so the 9M itself is suspect (same duplicate-label shape as FCCL).
+  // SFL also matched on a stored basis but is deliberately excluded: it matched
+  // a chain built from an OLDER interim than the one we serve, so the agreement
+  // is with a stale reference rather than evidence we are right.
+  //
+  // SIEM was excluded here for the same reason and has since been RESOLVED, but
+  // NOT by adding it to this set — it turned out to need no basis change at
+  // all. It is 93% owned by Siemens AG, has no subsidiaries of its own, and
+  // files a single set of statements, so there is nothing to consolidate. The
+  // real defects were in its stored data: the extractor had captured
+  // CONTINUING-operations EPS as though it were the total for a company whose
+  // result is dominated by discontinued operations (FY2025 stored as 12.77
+  // against a true 100.57), plus a quarter mislabelled Q3 that cannot exist for
+  // a 30 September fiscal year. Cleared and re-read from the filings, its
+  // unconsolidated chain reconciles exactly. A basis flip would have been the
+  // wrong fix for a data-quality problem.
   "ALTN",
   "UNITY",
   // JSBL: bank; Sarmaaya quotes the group. Read from the filings by a subagent
@@ -121,6 +131,13 @@ const CONSOLIDATED_BASIS_TICKERS = new Set<string>([
   // convertible preference shares stop being antidilutive and the two series
   // diverge; Sarmaaya reconciles against basic.
   "EPCL",
+  // ENGROH: holding company. Consolidated 46.20 + Q1'26 8.50 - Q1'25 restated
+  // 1.52 = 53.18, exact to Sarmaaya. Unconsolidated (0.21) is not merely a
+  // different basis, it is not an earnings measure at all: post-Scheme the
+  // company holds only its ECL investment, so standalone profit is dividend
+  // income, which fell from 6,666,606k to 536,620k. NCI is ~48% of group
+  // profit, so EPS is struck on the owners' share.
+  "ENGROH",
 ]);
 
 function preferredBasis(ticker: string): "consolidated" | "unconsolidated" {
