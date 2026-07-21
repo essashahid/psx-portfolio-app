@@ -37,11 +37,20 @@ export interface CustomerDriver {
   detail: string;
 }
 
+/**
+ * How much weight a sector statement carries.
+ *
+ * "validated" means the relationship driving it cleared historical testing.
+ * "rule-based" means it rests on a documented economic assumption that has not
+ * been validated on this history, and must never be presented as a model
+ * output. "contextual" is a descriptive observation with no claim attached.
+ */
+export type SectorBasis = "validated" | "contextual" | "rule-based";
+
 export interface SectorCall {
   sector: string;
   reason: string;
-  /** True when the driving relationship cleared historical validation. */
-  validated: boolean;
+  basis: SectorBasis;
 }
 
 export interface CustomerHorizon {
@@ -50,6 +59,8 @@ export interface CustomerHorizon {
   /** Plain-language current view for this window. */
   view: string;
   range: { loIndex: number; hiIndex: number } | null;
+  /** Why the range is the width it is, so it is not read as a target. */
+  rangeNote: string;
   keyLevel: { price: number; kind: "support" | "resistance" } | null;
   takeaway: string;
   risk: { label: string; note: string };
@@ -57,19 +68,32 @@ export interface CustomerHorizon {
   direction: { rise: number; sideways: number; fall: number } | null;
   /** Only present where the drawdown model passed. */
   dipRisk: { thresholdPct: number; probability: number } | null;
+  /** The one horizon with a validated direction model. */
+  bestSupported: boolean;
+  /** Stated whenever direction is unsupported here, so the gap is explicit. */
+  directionNote: string | null;
 }
 
 export interface CustomerOutlook {
   asOf: string;
   close: number;
-  stance: { label: string; tone: Tone; sub: string };
-  confidence: { pct: number | null; label: string; note: string };
+  /** Headline read, plus one sentence reconciling direction against risk. */
+  stance: { label: string; tone: Tone; sub: string; explanation: string };
+  /** The three outcome probabilities from the validated direction model. */
+  scenarios: { rise: number; sideways: number; fall: number; horizonLabel: string } | null;
+  /**
+   * How much validation stands behind the feature as a whole. Derived from how
+   * many outputs cleared their walk-forward gate, never from how confident a
+   * single probability happens to look.
+   */
+  evidenceQuality: { level: "Low" | "Moderate" | "High"; note: string };
   horizons: CustomerHorizon[];
   levels: { supports: CustomerLevel[]; resistances: CustomerLevel[]; aboveNote: string; belowNote: string };
   drivers: CustomerDriver[];
   sectors: { beneficiaries: SectorCall[]; atRisk: SectorCall[]; basis: string };
   whatCouldChange: { strengthen: string; weaken: string };
-  notTracked: string;
+  /** Factors that are genuinely absent from the calculation, named explicitly. */
+  notIncluded: { items: string[]; note: string };
 }
 
 export interface SectorFactorRow {
@@ -178,20 +202,27 @@ function buildSectorCalls(
       return {
         sector: s.sector,
         score,
-        upsideReason: best?.helps ?? "moves broadly in line with the market",
-        downsideReason: worst?.hurts ?? "tends to lag when the market rises",
+        // Every contribution above is built from a spread that already passed
+        // validation (spreadOf returns 0 otherwise), so a reason drawn from one
+        // is validated. The fallbacks are not, and are tagged accordingly.
+        upside: best
+          ? { reason: best.helps, basis: "validated" as SectorBasis }
+          : { reason: "moves broadly in line with the market", basis: "contextual" as SectorBasis },
+        downside: worst
+          ? { reason: worst.hurts, basis: "validated" as SectorBasis }
+          : { reason: "tends to lag when the market rises", basis: "contextual" as SectorBasis },
       };
     });
 
   const sorted = [...scored].sort((a, b) => b.score - a.score);
   return {
-    beneficiaries: sorted.slice(0, 3).map((s) => ({ sector: s.sector, reason: s.upsideReason, validated: true })),
+    beneficiaries: sorted.slice(0, 3).map((s) => ({ sector: s.sector, reason: s.upside.reason, basis: s.upside.basis })),
     atRisk: sorted
       .slice(-3)
       .reverse()
-      .map((s) => ({ sector: s.sector, reason: s.downsideReason, validated: true })),
+      .map((s) => ({ sector: s.sector, reason: s.downside.reason, basis: s.downside.basis })),
     basis:
-      "Based on how each sector actually behaved in similar conditions over the past five years, using only relationships that held up under testing.",
+      "Sector calls come from how each sector actually behaved in similar conditions over the past five years. Statements marked as tested rest on relationships that held up under validation; the rest are descriptive and carry no forecast.",
   };
 }
 
@@ -217,28 +248,72 @@ export function buildCustomerOutlook(
   const volPct = percentileOfLatest(dataset.ewmaSigma);
   const volatile = volPct !== null && volPct >= 2 / 3;
 
-  const stance: CustomerOutlook["stance"] =
-    lean === null
-      ? { label: "Not enough confidence", tone: "neutral", sub: "No directional view meets our evidence bar right now" }
-      : lean > 0.15
-        ? { label: volatile ? "Positive but volatile" : "Positive", tone: "positive", sub: volatile ? "Upward lean with wider than usual swings" : "Upward lean" }
-        : lean > 0.05
-          ? { label: "Neutral to positive", tone: "positive", sub: "Slight upward lean" }
-          : lean > -0.05
-            ? { label: "Neutral", tone: "neutral", sub: "No clear lean either way" }
-            : lean > -0.15
-              ? { label: "Neutral to negative", tone: "negative", sub: "Slight downward lean" }
-              : { label: "Negative", tone: "negative", sub: "Downward lean" };
+  // Participation and volatility are the two model drivers that speak to risk.
+  // When either is unfavourable the headline says so rather than letting a
+  // positive lean stand alone, because the two readings genuinely disagree.
+  const advPctEarly = percentileOfLatest(dataset.adv10);
+  const participationWeak = advPctEarly !== null && advPctEarly <= 0.35;
+  const cautionary = volatile || participationWeak;
 
-  const leading = dir ? Math.max(dir.rise, dir.sideways, dir.fall) : null;
-  const confidence: CustomerOutlook["confidence"] = {
-    pct: leading,
-    label: leading === null ? "Unavailable" : leading >= 0.55 ? "Higher confidence" : leading >= 0.4 ? "Moderate confidence" : "Low confidence",
-    note:
-      leading === null
-        ? "A directional view is only shown when it beats a simple benchmark on unseen history."
-        : "Chance of the most likely of three outcomes: up, broadly flat, or down.",
-  };
+  const stance: CustomerOutlook["stance"] = (() => {
+    if (lean === null) {
+      return {
+        label: "Not enough evidence",
+        tone: "neutral" as Tone,
+        sub: "No directional view currently meets our evidence bar",
+        explanation:
+          "A direction is only shown when it beats a simple benchmark on history the model had never seen. None does at present, so we show the range the market has typically moved through instead.",
+      };
+    }
+    const cautionSentence = (() => {
+      const flags: string[] = [];
+      if (volatile) flags.push("swings are wider than usual");
+      if (participationWeak) flags.push("fewer stocks are taking part in the move");
+      if (flags.length === 0) return "Risk readings are around their normal levels.";
+      return `Direction leans ${lean > 0 ? "upward" : "downward"}, but ${flags.join(" and ")}, which argues for caution.`;
+    })();
+
+    if (lean > 0.15) {
+      return cautionary
+        ? { label: "Cautiously positive", tone: "positive" as Tone, sub: "Upward bias, elevated risk", explanation: cautionSentence }
+        : { label: "Positive", tone: "positive" as Tone, sub: "Upward lean", explanation: cautionSentence };
+    }
+    if (lean > 0.05) {
+      return {
+        label: cautionary ? "Cautiously positive" : "Neutral to positive",
+        tone: "positive" as Tone,
+        sub: cautionary ? "Slight upward bias, elevated risk" : "Slight upward lean",
+        explanation: cautionSentence,
+      };
+    }
+    if (lean > -0.05) {
+      return { label: "Neutral", tone: "neutral" as Tone, sub: "No clear lean either way", explanation: cautionSentence };
+    }
+    if (lean > -0.15) {
+      return { label: "Neutral to negative", tone: "negative" as Tone, sub: "Slight downward lean", explanation: cautionSentence };
+    }
+    return { label: "Negative", tone: "negative" as Tone, sub: "Downward lean", explanation: cautionSentence };
+  })();
+
+  const scenarios = dir ? { rise: dir.rise, sideways: dir.sideways, fall: dir.fall, horizonLabel: HORIZON_LABEL[10] } : null;
+
+  // Evidence quality reflects how much of the feature cleared validation, not
+  // how large a single probability happens to be. A 47% class probability is
+  // not confidence; three passing outputs out of many is the real signal.
+  const directionPasses = experimental.horizons.filter((h) => h.direction.status === "ok").length;
+  const rangePasses = experimental.horizons.filter((h) => h.tradingRange.status === "ok").length;
+  const evidenceQuality: CustomerOutlook["evidenceQuality"] =
+    directionPasses >= 2 && rangePasses >= 2
+      ? { level: "High", note: "Direction and range models both hold up across several time windows." }
+      : directionPasses >= 1 && rangePasses >= 2
+        ? {
+            level: "Moderate",
+            note: "Movement ranges hold up across all windows, but direction only clears the bar over two weeks, and by a modest margin. Treat the directional lean as a tilt, not a call.",
+          }
+        : {
+            level: "Low",
+            note: "Little of the forecast currently clears its validation bar, so most outputs are withheld.",
+          };
 
   // Levels, shared across horizons; reach probabilities from the two-week path.
   const twoWeekLevels = twoWeek?.keyLevels;
@@ -277,15 +352,25 @@ export function buildCustomerOutlook(
     const viewParts: string[] = [];
     if (hDir) {
       viewParts.push(
-        `Over the next ${HORIZON_LABEL[h.sessions].toLowerCase()}, the balance of past evidence leans ${hDir.rise > hDir.fall ? "slightly higher" : "slightly lower"}.`
+        `Over the next two weeks, the balance of past evidence leans ${hDir.rise > hDir.fall ? "slightly higher" : "slightly lower"}. This is the only window where a direction model passed validation.`
       );
     } else {
       viewParts.push(
-        `We do not have a confident direction for this window, so we show the range the market has typically moved through instead.`
+        `Direction is not currently supported over this window. We show how far the market has typically travelled instead.`
       );
     }
-    if (volatile) viewParts.push("Recent swings have been wider than usual, so the range is broad.");
     if (dip?.p !== undefined) viewParts.push(`There is roughly a ${pctText(dip.p)} chance of a dip of ${Math.abs((dip.threshold ?? 0) * 100).toFixed(0)}% or more along the way.`);
+
+    const directionNote = hDir
+      ? null
+      : "Only the two-week window has a direction model that passed validation. Direction over one week and one month did not clear the bar, so none is shown here.";
+
+    // The range is a spread of plausible paths, not a target, and it widens
+    // mechanically with volatility. Saying so prevents the wide intervals from
+    // being read as precision.
+    const rangeNote = volatile
+      ? "This range is wide because recent swings have been larger than usual. It shows the span the market could plausibly travel through, not a target or a prediction of where it will finish."
+      : "This shows the span the market could plausibly travel through, not a target or a prediction of where it will finish.";
 
     const takeawayParts: string[] = [];
     if (nearestSup) takeawayParts.push(`holding above ${fmtIndex(nearestSup.price)}`);
@@ -302,8 +387,11 @@ export function buildCustomerOutlook(
       label: HORIZON_LABEL[h.sessions],
       view: viewParts.join(" "),
       range,
+      rangeNote,
       keyLevel,
       takeaway,
+      bestSupported: hDir !== null,
+      directionNote,
       risk: {
         label: riskLabel,
         note:
@@ -456,7 +544,8 @@ export function buildCustomerOutlook(
     asOf: dataset.dates[last],
     close,
     stance,
-    confidence,
+    scenarios,
+    evidenceQuality,
     horizons,
     levels: {
       supports,
@@ -474,7 +563,16 @@ export function buildCustomerOutlook(
       strengthen: `Improving participation, calmer trading, ${nearestRes ? `a decisive move above ${fmtIndex(nearestRes.price)}` : "a break above resistance"}, a steadier rupee or softer oil would all strengthen this view.`,
       weaken: `Narrowing participation, a jump in volatility, ${nearestSup ? `a break below ${fmtIndex(nearestSup.price)}` : "a break below support"}, renewed rupee pressure, an oil spike or a global risk-off move would weaken it.`,
     },
-    notTracked:
-      "This outlook reads market and economic data only. It does not yet track news, IMF milestones, reserves, the current account, or political and security events, any of which can move the market quickly.",
+    notIncluded: {
+      items: [
+        "IMF programme milestones",
+        "Foreign-exchange reserves",
+        "Current account balance",
+        "Remittances",
+        "Political and security events",
+        "News and market commentary",
+      ],
+      note: "None of these feed the calculation above. They are listed so their absence is clear rather than assumed, and any of them can move the market quickly.",
+    },
   };
 }

@@ -1,5 +1,7 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
+import { getAdminContext } from "@/lib/admin/guard";
 import { createClient } from "@/lib/supabase/server";
 import { PageHeader } from "@/components/page-header";
 import { Phase3Review, type Phase3Evaluation } from "@/components/outlook/phase3-review";
@@ -21,6 +23,12 @@ export const dynamic = "force-dynamic";
  * computed live from the database as before.
  */
 export default async function OutlookResearchPage() {
+  // Internal review surface: model evaluation, failed candidates and the
+  // experimental preview. Kept off the customer path entirely, not merely
+  // unlinked, so it cannot be reached by typing the URL.
+  const { isAdmin } = await getAdminContext();
+  if (!isAdmin) redirect("/outlook");
+
   const supabase = await createClient();
   const [coverage, inputs] = await Promise.all([buildOutlookCoverage(supabase), loadAlignedInputs(supabase)]);
   const evidence = buildSignalEvidence(inputs);

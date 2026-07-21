@@ -8,7 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { SegmentedControl } from "@/components/ui/segmented-control";
 import { Disclosure } from "@/components/outlook/outlook-primitives";
 import { cn } from "@/lib/utils";
-import type { CustomerOutlook, CustomerDriver, CustomerLevel, Tone } from "@/lib/engine/outlook/customer-outlook";
+import type { CustomerOutlook, CustomerDriver, CustomerLevel, SectorBasis, Tone } from "@/lib/engine/outlook/customer-outlook";
 import type { WfHorizon } from "@/lib/engine/outlook/walkforward";
 
 /**
@@ -77,13 +77,23 @@ function LevelRow({ level, kind }: { level: CustomerLevel; kind: "support" | "re
   );
 }
 
+/**
+ * Says what stands behind each sector line. A rule-based relationship must
+ * never look like a model output, so the basis is always on screen.
+ */
+const BASIS_LABEL: Record<SectorBasis, string> = {
+  validated: "Tested on history",
+  contextual: "Descriptive, not a forecast",
+  "rule-based": "Assumption, not yet tested",
+};
+
 const EFFECT_LABEL: Record<CustomerDriver["effect"], { text: string; dot: string; className: string }> = {
   positive: { text: "Supportive", dot: "bg-emerald-500", className: "text-emerald-700" },
   risk: { text: "Risk", dot: "bg-red-500", className: "text-red-600" },
   mixed: { text: "Mixed", dot: "bg-amber-400", className: "text-amber-700" },
 };
 
-export function MarketOutlookView({ outlook }: { outlook: CustomerOutlook }) {
+export function MarketOutlookView({ outlook, isAdmin = false }: { outlook: CustomerOutlook; isAdmin?: boolean }) {
   const [horizonKey, setHorizonKey] = useState<WfHorizon>(10);
   const horizon = outlook.horizons.find((h) => h.key === horizonKey) ?? outlook.horizons[0];
 
@@ -93,12 +103,52 @@ export function MarketOutlookView({ outlook }: { outlook: CustomerOutlook }) {
       <div className="rise grid gap-3 sm:grid-cols-3">
         <Stat label="KSE-100" value={fmt(outlook.close)} sub={`Close, ${outlook.asOf}`} />
         <Stat label="Market outlook" value={outlook.stance.label} sub={outlook.stance.sub} tone={outlook.stance.tone} />
-        <Stat
-          label="Outlook confidence"
-          value={outlook.confidence.pct !== null ? pct(outlook.confidence.pct) : "—"}
-          sub={outlook.confidence.label}
-        />
+        <Stat label="Evidence quality" value={outlook.evidenceQuality.level} sub="How much of this has been validated" />
       </div>
+
+      {/* The headline reconciled against the risk readings, in one sentence. */}
+      <Card className="rise rise-1">
+        <CardContent className="p-4">
+          <p className="text-sm leading-relaxed text-foreground">{outlook.stance.explanation}</p>
+          <p className="mt-2 text-[11px] leading-relaxed text-muted-foreground">{outlook.evidenceQuality.note}</p>
+        </CardContent>
+      </Card>
+
+      {/* The three outcomes, which is what a probability actually says. */}
+      {outlook.scenarios && (
+        <Card className="rise rise-1">
+          <CardContent className="p-4">
+            <h2 className="text-sm font-semibold tracking-editorial text-foreground">
+              How the next {outlook.scenarios.horizonLabel.toLowerCase()} could go
+            </h2>
+            <p className="mt-1 text-xs text-muted-foreground">
+              Three possible outcomes, from the one direction model that passed validation.
+            </p>
+            <div className="mt-3 grid gap-3 sm:grid-cols-3">
+              {(
+                [
+                  { label: "Rise", value: outlook.scenarios.rise, bar: "bg-emerald-500", text: "text-emerald-700" },
+                  { label: "Broadly sideways", value: outlook.scenarios.sideways, bar: "bg-muted-foreground/40", text: "text-foreground" },
+                  { label: "Fall", value: outlook.scenarios.fall, bar: "bg-red-500", text: "text-red-600" },
+                ] as const
+              ).map((s) => (
+                <div key={s.label} className="rounded-lg bg-muted p-3">
+                  <div className="flex items-baseline justify-between">
+                    <span className="text-xs text-muted-foreground">{s.label}</span>
+                    <span className={cn("text-lg font-semibold tabular-nums", s.text)}>{pct(s.value)}</span>
+                  </div>
+                  <div className="mt-2 h-1.5 rounded-full bg-card">
+                    <div
+                      className={cn("h-1.5 rounded-full transition-[width] duration-(--dur-base) ease-(--ease-ui)", s.bar)}
+                      style={{ width: `${Math.max(s.value * 100, 2)}%` }}
+                    />
+                  </div>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* The horizon view. */}
       <Card className="rise rise-1">
@@ -113,21 +163,31 @@ export function MarketOutlookView({ outlook }: { outlook: CustomerOutlook }) {
               value={String(horizonKey)}
               onChange={(v) => setHorizonKey(Number(v) as WfHorizon)}
               className="sm:w-auto sm:min-w-[16rem]"
-              options={outlook.horizons.map((h) => ({ value: String(h.key), label: h.label }))}
+              options={outlook.horizons.map((h) => ({
+                value: String(h.key),
+                label: h.label,
+                hint: h.bestSupported ? `${h.label}, the best-supported window` : `${h.label}, direction not supported`,
+              }))}
             />
           </div>
 
           {horizon && (
             <>
               <div className="rounded-lg bg-muted p-4">
-                <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">Our current view</p>
+                <div className="flex flex-wrap items-center gap-2">
+                  <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">Our current view</p>
+                  {horizon.bestSupported && <Badge variant="green">Best-supported window</Badge>}
+                </div>
                 <p className="mt-1.5 text-sm leading-relaxed text-foreground">{horizon.view}</p>
+                {horizon.directionNote && (
+                  <p className="mt-2 text-[11px] leading-relaxed text-muted-foreground">{horizon.directionNote}</p>
+                )}
 
                 {(horizon.range || horizon.keyLevel) && (
                   <div className="mt-4 grid gap-4 sm:grid-cols-2">
                     {horizon.range && (
                       <div>
-                        <p className="text-xs text-muted-foreground">Likely trading range</p>
+                        <p className="text-xs text-muted-foreground">Estimated full movement range</p>
                         <p className="mt-0.5 text-lg font-semibold tabular-nums text-foreground">
                           {fmt(horizon.range.loIndex)}&ndash;{fmt(horizon.range.hiIndex)}
                         </p>
@@ -145,6 +205,7 @@ export function MarketOutlookView({ outlook }: { outlook: CustomerOutlook }) {
                 {horizon.range && (
                   <div className="mt-4">
                     <RangeBar lo={horizon.range.loIndex} hi={horizon.range.hiIndex} current={outlook.close} />
+                    <p className="mt-2.5 text-[11px] leading-relaxed text-muted-foreground">{horizon.rangeNote}</p>
                   </div>
                 )}
               </div>
@@ -240,7 +301,17 @@ export function MarketOutlookView({ outlook }: { outlook: CustomerOutlook }) {
             })}
           </div>
 
-          <p className="mt-3 text-[11px] leading-relaxed text-muted-foreground">{outlook.notTracked}</p>
+          <div className="mt-3 rounded-lg border border-border p-3">
+            <p className="text-xs font-medium text-foreground">Not included in this outlook</p>
+            <p className="mt-1 text-[11px] leading-relaxed text-muted-foreground">{outlook.notIncluded.note}</p>
+            <ul className="mt-2 flex flex-wrap gap-x-4 gap-y-1">
+              {outlook.notIncluded.items.map((item) => (
+                <li key={item} className="text-[11px] text-muted-foreground">
+                  {item}
+                </li>
+              ))}
+            </ul>
+          </div>
         </CardContent>
       </Card>
 
@@ -266,6 +337,7 @@ export function MarketOutlookView({ outlook }: { outlook: CustomerOutlook }) {
                   <div key={s.sector} className="rounded-md border border-border bg-card p-3">
                     <p className="text-xs font-medium text-foreground">{s.sector}</p>
                     <p className="mt-0.5 text-[11px] leading-snug text-muted-foreground">{s.reason}</p>
+                    <p className="mt-1 text-[10px] uppercase tracking-wide text-muted-foreground/70">{BASIS_LABEL[s.basis]}</p>
                   </div>
                 ))}
               </div>
@@ -281,6 +353,7 @@ export function MarketOutlookView({ outlook }: { outlook: CustomerOutlook }) {
                   <div key={s.sector} className="rounded-md border border-border bg-card p-3">
                     <p className="text-xs font-medium text-foreground">{s.sector}</p>
                     <p className="mt-0.5 text-[11px] leading-snug text-muted-foreground">{s.reason}</p>
+                    <p className="mt-1 text-[10px] uppercase tracking-wide text-muted-foreground/70">{BASIS_LABEL[s.basis]}</p>
                   </div>
                 ))}
               </div>
@@ -320,13 +393,17 @@ export function MarketOutlookView({ outlook }: { outlook: CustomerOutlook }) {
                 Sector calls use relationships that held up in historical testing over the past five years. No language
                 model produces any number, level or probability anywhere in this feature.
               </p>
-              <Link
-                href="/outlook/research"
-                className="inline-flex min-h-9 items-center gap-1.5 rounded-md border border-border px-3 text-[13px] font-medium text-foreground transition-colors duration-(--dur-fast) ease-(--ease-ui) hover:bg-card focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2 focus-visible:ring-offset-muted"
-              >
-                Full research and evaluation
-                <ArrowRight aria-hidden className="h-3.5 w-3.5" />
-              </Link>
+              {/* Internal surface: the link only appears for admins, and the
+                  route guards itself independently. */}
+              {isAdmin && (
+                <Link
+                  href="/outlook/research"
+                  className="inline-flex min-h-9 items-center gap-1.5 rounded-md border border-border px-3 text-[13px] font-medium text-foreground transition-colors duration-(--dur-fast) ease-(--ease-ui) hover:bg-card focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2 focus-visible:ring-offset-muted"
+                >
+                  Full research and evaluation
+                  <ArrowRight aria-hidden className="h-3.5 w-3.5" />
+                </Link>
+              )}
             </div>
           </Disclosure>
         </CardContent>
