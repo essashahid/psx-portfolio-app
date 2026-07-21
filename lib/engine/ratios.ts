@@ -138,6 +138,18 @@ const CONSOLIDATED_BASIS_TICKERS = new Set<string>([
   // income, which fell from 6,666,606k to 536,620k. NCI is ~48% of group
   // profit, so EPS is struck on the owners' share.
   "ENGROH",
+  // PKGS: Packages. Consolidated -9.43 exact. Standalone revenue is dividend
+  // and rental income only (5.87bn vs group 193.2bn), so unconsolidated 28.80
+  // is dividend-upstreaming. Note the group made a PROFIT of 260,587k yet
+  // reports a LOSS per share, because all of it and more went to NCI.
+  "PKGS",
+  // JSCL: investment holding co. Consolidated 6.02 exact; unconsolidated 0.34
+  // is essentially dividend income (group profit is ~32x standalone).
+  "JSCL",
+  // TPL: holding co, June FY. Consolidated -10.61 exact. NCI absorbs the
+  // MAJORITY of group losses (57% of 9M FY2026). Owners' equity is NEGATIVE,
+  // which is why the reference P/B is negative too.
+  "TPL",
 ]);
 
 function preferredBasis(ticker: string): "consolidated" | "unconsolidated" {
