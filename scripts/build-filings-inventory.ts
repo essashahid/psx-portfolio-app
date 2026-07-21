@@ -158,6 +158,17 @@ async function downloadPdf(url: string, path: string): Promise<number> {
   if (buf.subarray(0, 5).toString("latin1") !== "%PDF-") {
     throw new Error(`response is not a PDF (got ${buf.subarray(0, 20).toString("latin1").replace(/[^\x20-\x7e]/g, "?")})`);
   }
+  // Checking only the HEADER lets a TRUNCATED download through: the first
+  // bytes are a valid %PDF- signature, so the file looks fine, but the tail
+  // is missing or null-padded and there is no trailer. MSOT's 24.6MB
+  // annual.pdf arrived exactly this way — lenient readers coped, a stricter
+  // parser would simply fail, and nothing in the manifest said anything was
+  // wrong. A PDF must end with %%EOF (allowing for trailing whitespace), so
+  // check the tail too and fail loudly rather than caching a broken file.
+  const tail = buf.subarray(Math.max(0, buf.length - 2048)).toString("latin1");
+  if (!tail.includes("%%EOF")) {
+    throw new Error(`truncated PDF: ${(buf.length / 1e6).toFixed(1)}MB with no %%EOF trailer — download incomplete, not caching`);
+  }
   writeFileSync(path, buf);
   return buf.length;
 }

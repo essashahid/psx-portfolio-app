@@ -161,6 +161,13 @@ const CONSOLIDATED_BASIS_TICKERS = new Set<string>([
   // line, only continued and discontinued, so the 9M totals are derived from
   // owners' profit over the share base; the exact reconciliation validates it.
   "FCSC",
+  // TPLP: TPL Properties, June FY. Consolidated -8.32 vs -8.27; unconsolidated
+  // -7.54 does not reconcile. UNUSUAL: its consolidated EPS is struck on TOTAL
+  // group loss INCLUDING NCI, the opposite of PKGS/JSCL/BAFL. Established by
+  // division, not by trusting the note: 1,934,269,169/561,086,879 = 3.4473
+  // matches the printed -3.45, while owners' 1,920,742,169 gives -3.42 and does
+  // not. Stored profit and equity both use the total-incl-NCI basis to match.
+  "TPLP",
 ]);
 
 function preferredBasis(ticker: string): "consolidated" | "unconsolidated" {

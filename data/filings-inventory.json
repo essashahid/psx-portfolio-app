@@ -1,10 +1,10 @@
 {
   "_note": "Filing inventory for the extraction cache. 'interim'/'annual' point at the latest report of each kind that was found and downloaded to .cache/filings/. A null value means none was found on PSX's public feed as of checkedAt — re-run with --refresh TICKER to re-check.",
-  "_asOf": "2026-07-21T18:00:32.252Z",
+  "_asOf": "2026-07-21T18:45:00.573Z",
   "summary": {
     "total": 37,
-    "bothFilings": 33,
-    "interimOnly": 3,
+    "bothFilings": 32,
+    "interimOnly": 4,
     "annualOnly": 0,
     "neither": 1
   },
@@ -638,14 +638,9 @@
         "path": ".cache/filings/MSOT/interim.pdf",
         "bytes": 6121653
       },
-      "annual": {
-        "title": "Transmission of Annual Report for the Year Ended 06-30-2025",
-        "date": "Oct 7, 2025",
-        "url": "https://dps.psx.com.pk/download/document/261699.pdf",
-        "path": ".cache/filings/MSOT/annual.pdf",
-        "bytes": 24571904
-      },
-      "checkedAt": "2026-07-21T18:00:11.254Z"
+      "annual": null,
+      "checkedAt": "2026-07-21T18:44:46.335Z",
+      "error": "annual: truncated PDF: 24.6MB with no %%EOF trailer — download incomplete, not caching"
     }
   }
 }
