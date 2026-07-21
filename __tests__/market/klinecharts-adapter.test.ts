@@ -15,7 +15,13 @@ const chart = {
   removeIndicator: jest.fn(),
   createOverlay: jest.fn(() => "ov_1"),
   removeOverlay: jest.fn(),
+  setOffsetRightDistance: jest.fn(),
+  setBarSpace: jest.fn(),
+  scrollToRealTime: jest.fn(),
 };
+
+/** A container wide enough for the fit maths to be meaningful. */
+const CONTAINER = { clientWidth: 1200 } as HTMLElement;
 
 jest.mock("klinecharts", () => ({
   init: jest.fn(() => chart),
@@ -62,7 +68,7 @@ describe("KLineChartsAdapter", () => {
 
   function mounted(bars = 30) {
     const a = new KLineChartsAdapter();
-    a.initializeChart({} as HTMLElement);
+    a.initializeChart(CONTAINER);
     a.setSymbol("MEBL");
     a.setOHLCVData(ohlcv(bars));
     return a;
@@ -102,7 +108,7 @@ describe("KLineChartsAdapter", () => {
 
   test("does nothing until both a symbol and bars exist", () => {
     const a = new KLineChartsAdapter();
-    a.initializeChart({} as HTMLElement);
+    a.initializeChart(CONTAINER);
     a.setSymbol("MEBL"); // no data yet
     expect(chart.setPeriod).not.toHaveBeenCalled();
   });
@@ -190,6 +196,55 @@ describe("KLineChartsAdapter", () => {
       );
       a.clearDrawings();
       expect(chart.removeOverlay).toHaveBeenCalledWith();
+    });
+  });
+
+  describe("viewport", () => {
+    test("keeps the right margin under a bar so the axis cannot label the future", () => {
+      mounted();
+      // The library default is 80px, which at monthly scale is several months
+      // of extrapolated ticks past the end of the data.
+      const margin = chart.setOffsetRightDistance.mock.calls.at(-1)![0] as number;
+      expect(margin).toBeLessThan(20);
+    });
+
+    test("widens bars so a short series fills the canvas", () => {
+      // ~1,200 daily bars is five calendar years, so roughly 57 monthly bars —
+      // far too few to fill the canvas at the default 10px width.
+      const a = mounted(1200);
+      expect(chart.setBarSpace.mock.calls.at(-1)![0]).toBe(10); // daily stays dense
+
+      a.setResolution("1M");
+      const space = chart.setBarSpace.mock.calls.at(-1)![0] as number;
+      const monthlyBars = loadedBars().length;
+      expect(monthlyBars).toBeGreaterThanOrEqual(36);
+      expect(space).toBeGreaterThan(15);
+      // The series should now span most of the ~1,118px of usable width.
+      expect(space * monthlyBars).toBeGreaterThan(800);
+    });
+
+    test("never shrinks bars below the library default on a dense series", () => {
+      mounted(1200); // five years of daily bars
+      const space = chart.setBarSpace.mock.calls.at(-1)![0] as number;
+      expect(space).toBe(10);
+    });
+  });
+
+  describe("aggregated timestamps", () => {
+    test("monthly bars land on the first of the month", () => {
+      const a = mounted(200);
+      a.setResolution("1M");
+      for (const bar of loadedBars()) {
+        expect(new Date(bar.timestamp).getUTCDate()).toBe(1);
+      }
+    });
+
+    test("weekly bars land on a Monday", () => {
+      const a = mounted(200);
+      a.setResolution("1W");
+      for (const bar of loadedBars()) {
+        expect(new Date(bar.timestamp).getUTCDay()).toBe(1);
+      }
     });
   });
 
