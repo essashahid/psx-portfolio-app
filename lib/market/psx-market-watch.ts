@@ -45,6 +45,20 @@ export interface IndexQuote {
   changePercent: number | null;
 }
 
+/**
+ * Symbol from the market-watch symbol cell.
+ *
+ * The cell carries the ticker plus, for some rows, a status badge in a nested
+ * element: NC (non-compliant), XD (ex-dividend), XB (ex-bonus), WU. Stripping
+ * tags leaves that badge glued to the symbol, producing "HASCOL NC", which
+ * matches nothing at the timeseries endpoint. That silently cost 47 companies
+ * their price history, so keep only the leading token — PSX symbols never
+ * contain whitespace.
+ */
+export function parseSymbol(cell: string): string {
+  return stripTags(cell).toUpperCase().split(/\s+/)[0] ?? "";
+}
+
 function stripTags(s: string): string {
   return s
     .replace(/<[^>]+>/g, " ")
@@ -92,7 +106,7 @@ export async function fetchMarketWatch(): Promise<MarketWatchRow[]> {
     const tds = [...rowHtml.matchAll(/<td[^>]*>([\s\S]*?)<\/td>/g)].map((m) => m[1]);
     if (tds.length < 11) continue; // header row / malformed
     const symbolCell = tds[0];
-    const ticker = stripTags(symbolCell).toUpperCase();
+    const ticker = parseSymbol(symbolCell);
     if (!ticker) continue;
     const titleMatch = symbolCell.match(/data-title="([^"]+)"/);
     rows.push({

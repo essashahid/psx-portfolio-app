@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { refreshTechnicals } from "@/lib/company/technicals";
+import { refreshTechnicalsDetailed } from "@/lib/company/technicals";
 import { populateCheapFundamentals, populateDeepFundamentals } from "@/lib/engine/fundamentals";
 import { activeUniverseTickers, COMPANY_TYPES } from "@/lib/engine/universe";
 
@@ -10,6 +10,13 @@ export const maxDuration = 300;
 /**
  * Universe-wide data backfill — the job responsible for keeping high-quality
  * data on EVERY stock the screener shows.
+ *
+ * TIMING MATTERS. This runs at 12:05 UTC (17:05 PKT), which is after both the
+ * 16:30 PKT close and the market-snapshot job at 11:40 UTC. Both orderings are
+ * load-bearing: running before the close means the portal has no EOD bar for
+ * today and every row lands a day stale, and running before the snapshot means
+ * the working set below is yesterday's. It previously ran at 10:20 UTC, during
+ * the session, and could never capture the same day's close.
  *
  * The working set is the union of today's traded stocks (latest market
  * snapshot) plus holdings and watchlists. Each run processes a rotating batch,
@@ -35,7 +42,11 @@ export async function GET(request: Request) {
 
   const db = createAdminClient();
   const task = url.searchParams.get("task") ?? "technicals";
-  const limit = Math.max(1, Math.min(300, Number(url.searchParams.get("limit") ?? 200)));
+  // The working set is ~500 symbols. The fetch layer paces itself now, so a
+  // full sweep costs roughly a minute of wall clock and fits inside
+  // maxDuration comfortably — there is no reason to leave the tail unrefreshed
+  // for four days waiting on a rotating batch.
+  const limit = Math.max(1, Math.min(700, Number(url.searchParams.get("limit") ?? 600)));
   const finLimit = Math.max(0, Math.min(60, Number(url.searchParams.get("finlimit") ?? 12)));
   const deepLimit = Math.max(0, Math.min(40, Number(url.searchParams.get("deeplimit") ?? 8)));
   const concurrency = Math.max(1, Math.min(10, Number(url.searchParams.get("concurrency") ?? 6)));
@@ -52,15 +63,22 @@ export async function GET(request: Request) {
     const queue = await staleFirst(db, universe, "company_technicals", limit);
     let ok = 0;
     let withData = 0;
+    // Counted by reason. "blocked" means the portal turned us away and the
+    // ticker deserves another run; "empty" means it carries no EOD series at
+    // all (TFCs, rights letters, some ETFs) and will never succeed. Collapsing
+    // the two is what let a run that lost three quarters of its queue keep
+    // reporting as a success.
+    const failures: Record<string, number> = {};
     await runPool(queue, concurrency, async (ticker) => {
       try {
-        const t = await refreshTechnicals(ticker);
+        const { technicals: t, failure } = await refreshTechnicalsDetailed(ticker);
         if (t.asOfDate) { ok++; if (t.history.length) withData++; }
+        if (failure) failures[failure] = (failures[failure] ?? 0) + 1;
       } catch {
-        /* skip — provider gap; picked up on a later run */
+        failures.threw = (failures.threw ?? 0) + 1;
       }
     });
-    report.technicals = { attempted: queue.length, refreshed: ok, withHistory: withData };
+    report.technicals = { attempted: queue.length, refreshed: ok, withHistory: withData, failures };
   }
 
   // Cheap fundamentals (PSX page + payouts + ratios, no LLM) — run broadly so
