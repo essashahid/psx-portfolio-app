@@ -87,6 +87,11 @@ export interface CustomerOutlook {
   whatCouldChange: { strengthen: string; weaken: string };
   /** Factors that are genuinely absent from the calculation, named explicitly. */
   notIncluded: { items: string[]; note: string };
+  /**
+   * Set when an input the models depend on has stopped updating. The page must
+   * say so rather than presenting a frozen reading as the current market.
+   */
+  staleWarning: string | null;
 }
 
 export interface SectorFactorRow {
@@ -405,6 +410,21 @@ export function buildCustomerOutlook(
   const nearestSup = supports[0];
   const nearestRes = resistances[0];
 
+  // Breadth is computed from constituent closes by a scheduled job. If that job
+  // stops, the participation and volume readings freeze while still looking
+  // current, which is the most damaging silent failure this page has.
+  const breadthLastDate = (() => {
+    for (let i = inputs.breadth.advanceShare.length - 1; i >= 0; i--) {
+      if (inputs.breadth.advanceShare[i] !== null) return dataset.dates[i];
+    }
+    return null;
+  })();
+  const sessionsBehind = breadthLastDate ? dataset.dates.filter((d) => d > breadthLastDate).length : null;
+  const staleWarning =
+    sessionsBehind !== null && sessionsBehind > 3
+      ? `Market participation data has not updated for ${sessionsBehind} trading sessions (latest ${breadthLastDate}). The readings below may not reflect the current market.`
+      : null;
+
   return {
     asOf: dataset.dates[last],
     close,
@@ -439,5 +459,6 @@ export function buildCustomerOutlook(
       ],
       note: "None of these feed the calculation above. They are listed so their absence is clear rather than assumed, and any of them can move the market quickly.",
     },
+    staleWarning,
   };
 }

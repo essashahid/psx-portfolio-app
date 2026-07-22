@@ -204,6 +204,16 @@ export function MarketOutlookView({ outlook, isAdmin = false }: { outlook: Custo
 
   return (
     <div className="space-y-4">
+      {/* A frozen input is worse than a missing one, so it leads the page. */}
+      {outlook.staleWarning && (
+        <Card className="rise border-l-[3px] border-l-amber-500">
+          <CardContent className="p-4">
+            <p className="text-xs font-medium text-amber-700">Data may be out of date</p>
+            <p className="mt-1 text-xs leading-relaxed text-foreground">{outlook.staleWarning}</p>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Where we are, and which way it leans. */}
       <div className="rise grid gap-3 sm:grid-cols-3">
         <Stat label="KSE-100" value={fmt(outlook.close)} sub={`Close, ${outlook.asOf}`} />
