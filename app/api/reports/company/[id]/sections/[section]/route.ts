@@ -1,10 +1,10 @@
 import { NextResponse } from "next/server";
-import { requireUser, errorResponse } from "@/lib/api-helpers";
+import { requireUser, errorResponse } from "@/lib/shared/api";
 import { buildReportMarkdown } from "@/lib/company/report/markdown";
 import { refreshReportSectionData } from "@/lib/company/report/sections";
 import type { CompanyReportPayload } from "@/lib/company/report";
-import { accountHasFeature } from "@/lib/features";
-import { rejectDemoWrite } from "@/lib/demo-mode";
+import { accountHasFeature } from "@/lib/config/features";
+import { rejectDemoWrite } from "@/lib/demo/mode";
 
 export const maxDuration = 120;
 

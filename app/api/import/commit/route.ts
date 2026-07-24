@@ -1,12 +1,12 @@
 import { NextResponse } from "next/server";
-import { requireUser, errorResponse } from "@/lib/api-helpers";
-import { accountHasFeature } from "@/lib/features";
+import { requireUser, errorResponse } from "@/lib/shared/api";
+import { accountHasFeature } from "@/lib/config/features";
 import { commitBatch } from "@/lib/import/commit";
-import { refreshAlerts } from "@/lib/alerts";
-import { takeSnapshot } from "@/lib/portfolio";
-import { enrichHoldingsMetadata } from "@/lib/holdings/enrichment";
-import { rejectDemoWrite } from "@/lib/demo-mode";
-import type { NormalizedRow, StatementType } from "@/lib/types";
+import { refreshAlerts } from "@/lib/alerts/refresh";
+import { takeSnapshot } from "@/lib/portfolio/positions";
+import { enrichHoldingsMetadata } from "@/lib/portfolio/enrichment";
+import { rejectDemoWrite } from "@/lib/demo/mode";
+import type { NormalizedRow, StatementType } from "@/lib/shared/types";
 
 export const maxDuration = 120;
 

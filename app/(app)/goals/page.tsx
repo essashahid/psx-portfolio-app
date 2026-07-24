@@ -1,11 +1,11 @@
 import Link from "next/link";
 import { createClient, getUser } from "@/lib/supabase/server";
-import { getPortfolio } from "@/lib/portfolio";
-import { PageHeader } from "@/components/page-header";
-import { GoalsEditor } from "@/components/goals-editor";
-import { EmptyState } from "@/components/empty-state";
+import { getPortfolio } from "@/lib/portfolio/positions";
+import { PageHeader } from "@/components/ui/page-header";
+import { GoalsEditor } from "@/components/features/goals/goals-editor";
+import { EmptyState } from "@/components/ui/empty-state";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { TargetVsActualBar } from "@/components/charts-lazy";
+import { TargetVsActualBar } from "@/components/shared/charts-lazy";
 import { Button } from "@/components/ui/button";
 import { Target } from "lucide-react";
 

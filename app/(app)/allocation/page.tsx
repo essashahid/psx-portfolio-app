@@ -1,8 +1,8 @@
 import { redirect } from "next/navigation";
 import { createClient, getUser } from "@/lib/supabase/server";
 import { getAdminContext } from "@/lib/admin/guard";
-import { PageHeader } from "@/components/page-header";
-import { AllocationView } from "@/components/allocation/allocation-view";
+import { PageHeader } from "@/components/ui/page-header";
+import { AllocationView } from "@/components/features/allocation/allocation-view";
 import type { AllocationForecast } from "@/lib/engine/allocation";
 
 export const dynamic = "force-dynamic";

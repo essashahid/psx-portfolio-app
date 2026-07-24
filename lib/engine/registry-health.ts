@@ -1,6 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
-import snapshots from "@/data/sarmaaya-snapshots.json";
-import registryJson from "@/data/verified-tickers.json";
+import snapshots from "@/data/reference/sarmaaya-snapshots.json";
+import registryJson from "@/data/reference/verified-tickers.json";
 import { latestPeriodLabel, verificationStatus } from "@/lib/engine/verified";
 
 /**
@@ -24,7 +24,7 @@ import { latestPeriodLabel, verificationStatus } from "@/lib/engine/verified";
  * property of a company when it is really a snapshot of one row selection at
  * one moment, which quarterly filings age automatically.
  *
- * Run from scripts/check-verified-drift.ts, scripts/check-verified-freshness.ts
+ * Run from scripts/verification/check-verified-drift.ts, scripts/verification/check-verified-freshness.ts
  * and the scheduled data-health audit, so all three agree by construction
  * rather than by three copies of the same arithmetic staying in step.
  */

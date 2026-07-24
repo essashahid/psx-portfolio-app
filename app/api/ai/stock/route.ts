@@ -1,8 +1,8 @@
 import { NextResponse } from "next/server";
-import { requireUser, errorResponse, logAgentRun } from "@/lib/api-helpers";
+import { requireUser, errorResponse, logAgentRun } from "@/lib/shared/api";
 import { chatMarkdown, aiAvailable } from "@/lib/ai/openai";
-import { getPortfolio } from "@/lib/portfolio";
-import { rejectDemoWrite } from "@/lib/demo-mode";
+import { getPortfolio } from "@/lib/portfolio/positions";
+import { rejectDemoWrite } from "@/lib/demo/mode";
 import { getUserNewsFeed } from "@/lib/news/global-store";
 
 export const maxDuration = 120;

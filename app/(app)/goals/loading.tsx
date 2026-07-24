@@ -1,4 +1,4 @@
-import { HeaderSkeleton, TableSkeleton } from "@/components/page-skeleton";
+import { HeaderSkeleton, TableSkeleton } from "@/components/ui/page-skeleton";
 
 export default function GoalsLoading() {
   return (

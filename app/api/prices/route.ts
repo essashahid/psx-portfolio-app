@@ -1,13 +1,13 @@
 import { NextResponse } from "next/server";
 import Papa from "papaparse";
-import { requireUser, errorResponse } from "@/lib/api-helpers";
-import { refreshAlerts } from "@/lib/alerts";
-import { takeSnapshot } from "@/lib/portfolio";
+import { requireUser, errorResponse } from "@/lib/shared/api";
+import { refreshAlerts } from "@/lib/alerts/refresh";
+import { takeSnapshot } from "@/lib/portfolio/positions";
 import { refreshBenchmarkForUser } from "@/lib/engine/benchmark-rebuild";
 import { getMarketDataProvider } from "@/lib/market-data/adapter";
 import { needsRefresh, PSX_PRICE_SOURCE } from "@/lib/market-data/psx-dps";
-import { parseNumberLoose, parseDateLoose } from "@/lib/utils";
-import { rejectDemoWrite } from "@/lib/demo-mode";
+import { parseNumberLoose, parseDateLoose } from "@/lib/shared/format";
+import { rejectDemoWrite } from "@/lib/demo/mode";
 
 export const maxDuration = 60;
 

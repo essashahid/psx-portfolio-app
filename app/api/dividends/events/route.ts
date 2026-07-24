@@ -1,9 +1,9 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { requireUser, errorResponse } from "@/lib/api-helpers";
+import { requireUser, errorResponse } from "@/lib/shared/api";
 import { reconcile, round2 } from "@/lib/dividends/engine";
-import { takeSnapshot } from "@/lib/portfolio";
-import { rejectDemoWrite } from "@/lib/demo-mode";
+import { takeSnapshot } from "@/lib/portfolio/positions";
+import { rejectDemoWrite } from "@/lib/demo/mode";
 
 const date = z.string().regex(/^\d{4}-\d{2}-\d{2}$/);
 

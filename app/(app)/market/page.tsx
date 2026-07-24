@@ -3,11 +3,11 @@ import { createClient, getUser } from "@/lib/supabase/server";
 import { getMarketDashboard } from "@/lib/market/read";
 import { getForeignFlowHistory, getForeignFlowSnapshot, getPortfolioFlowExposure } from "@/lib/market/foreign-flows";
 import { fmtCompact, fmtInt, fmtPct, tone } from "@/lib/market/format";
-import { EmptyState } from "@/components/empty-state";
-import { ActionButton } from "@/components/action-button";
-import { MarketPulseWorkspace } from "@/components/market/market-pulse-workspace";
+import { EmptyState } from "@/components/ui/empty-state";
+import { ActionButton } from "@/components/ui/action-button";
+import { MarketPulseWorkspace } from "@/components/features/market/market-pulse-workspace";
 import { Activity, ArrowDownRight, ArrowUpRight, Gauge, RefreshCw } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { cn } from "@/lib/shared/format";
 
 export const dynamic = "force-dynamic";
 

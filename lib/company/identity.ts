@@ -1,6 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { fetchPsxSymbols, type PsxSymbolInfo } from "@/lib/market-data/psx-dps";
-import { getStockMasterMap } from "@/lib/stock-master";
+import { getStockMasterMap } from "@/lib/company/stock-master";
 
 export interface CompanyIdentity {
   companyName: string | null;

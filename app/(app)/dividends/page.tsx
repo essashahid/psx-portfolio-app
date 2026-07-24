@@ -1,12 +1,12 @@
 import { createClient, getUser } from "@/lib/supabase/server";
-import { getPortfolio } from "@/lib/portfolio";
-import { getDividends } from "@/lib/dividends";
+import { getPortfolio } from "@/lib/portfolio/positions";
+import { getDividends } from "@/lib/dividends/summary";
 import { getTaxSettings } from "@/lib/dividends/tax";
 import { normalizeEvent, isOverdue, type DividendEvent } from "@/lib/dividends/engine";
-import { DividendManager } from "@/components/dividend-form";
-import { DividendIncomeWorkspace } from "@/components/dividend-income-workspace";
-import { DividendTrajectory, DividendYieldTable, TaxYearStatement, AwaitingPayment } from "@/components/dividend-analytics";
-import { ActionButton } from "@/components/action-button";
+import { DividendManager } from "@/components/features/dividends/dividend-form";
+import { DividendIncomeWorkspace } from "@/components/features/dividends/dividend-income-workspace";
+import { DividendTrajectory, DividendYieldTable, TaxYearStatement, AwaitingPayment } from "@/components/features/dividends/dividend-analytics";
+import { ActionButton } from "@/components/ui/action-button";
 import { ChevronDown, Download, RefreshCw, TrendingUp } from "lucide-react";
 
 export const dynamic = "force-dynamic";

@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
-import { requireUser, errorResponse } from "@/lib/api-helpers";
+import { requireUser, errorResponse } from "@/lib/shared/api";
 import { getReportPreview } from "@/lib/company/report";
-import { accountHasFeature } from "@/lib/features";
+import { accountHasFeature } from "@/lib/config/features";
 
 export async function GET(request: Request) {
   const { supabase, user, error } = await requireUser();

@@ -2,12 +2,12 @@ import Link from "next/link";
 import { createClient, getUser } from "@/lib/supabase/server";
 import { getCompanyHeader } from "@/lib/company/service";
 import { computeRatios, type RatioRow } from "@/lib/engine/ratios";
-import { getPortfolio } from "@/lib/portfolio";
-import { PageHeader } from "@/components/page-header";
+import { getPortfolio } from "@/lib/portfolio/positions";
+import { PageHeader } from "@/components/ui/page-header";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { AskCopilotLink } from "@/components/ask-copilot-link";
-import { formatNumber } from "@/lib/utils";
+import { AskCopilotLink } from "@/components/shared/ask-copilot-link";
+import { formatNumber } from "@/lib/shared/format";
 import { ArrowLeft } from "lucide-react";
 
 export const dynamic = "force-dynamic";

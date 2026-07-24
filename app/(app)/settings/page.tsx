@@ -1,7 +1,7 @@
 import { createClient, getUser } from "@/lib/supabase/server";
-import { getPortfolio } from "@/lib/portfolio";
-import { PageHeader } from "@/components/page-header";
-import { ActionButton } from "@/components/action-button";
+import { getPortfolio } from "@/lib/portfolio/positions";
+import { PageHeader } from "@/components/ui/page-header";
+import { ActionButton } from "@/components/ui/action-button";
 import {
   ProfileForm,
   PreferencesForm,
@@ -10,22 +10,22 @@ import {
   BrokerAccounts,
   SavedMappings,
   StatementsList,
-} from "@/components/settings-forms";
+} from "@/components/features/settings/settings-forms";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Download, Sparkles, Trash2, RefreshCw } from "lucide-react";
 import { aiConfigured } from "@/lib/ai/openai";
-import { tavilyConfigured } from "@/lib/tavily";
+import { tavilyConfigured } from "@/lib/providers/tavily";
 import { gdeltConfigured } from "@/lib/news/gdelt";
 import { psxAnnouncementsConfigured } from "@/lib/news/psx-announcements";
 import { marketNewsConfigured } from "@/lib/news/feeds";
 import { twelveDataConfigured } from "@/lib/market-data/twelve-data";
 import { getTaxSettings } from "@/lib/dividends/tax";
-import { TaxProfileForm } from "@/components/tax-profile-form";
-import { ForeignFlowsForm } from "@/components/foreign-flows-form";
+import { TaxProfileForm } from "@/components/features/settings/tax-profile-form";
+import { ForeignFlowsForm } from "@/components/features/settings/foreign-flows-form";
 import { foreignFlowsAutoConfigured } from "@/lib/market/foreign-flows-ingest";
-import type { Profile } from "@/lib/types";
+import type { Profile } from "@/lib/shared/types";
 
 export const dynamic = "force-dynamic";
 

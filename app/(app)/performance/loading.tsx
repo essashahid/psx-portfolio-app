@@ -1,4 +1,4 @@
-import { HeaderSkeleton, StatCardSkeleton, TableSkeleton, CardSkeleton } from "@/components/page-skeleton";
+import { HeaderSkeleton, StatCardSkeleton, TableSkeleton, CardSkeleton } from "@/components/ui/page-skeleton";
 
 export default function PerformanceLoading() {
   return (

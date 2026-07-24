@@ -1,13 +1,13 @@
 import Link from "next/link";
 import { createClient, getUser } from "@/lib/supabase/server";
-import { PageHeader } from "@/components/page-header";
-import { JournalForm } from "@/components/journal-form";
+import { PageHeader } from "@/components/ui/page-header";
+import { JournalForm } from "@/components/features/journal/journal-form";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Markdown } from "@/components/markdown";
+import { Markdown } from "@/components/ui/markdown";
 import { Button } from "@/components/ui/button";
 import { Download } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { cn } from "@/lib/shared/format";
 
 export const dynamic = "force-dynamic";
 

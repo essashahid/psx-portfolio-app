@@ -1,46 +1,82 @@
 # PortfolioOS PK
 
-A private, AI-powered **PSX portfolio command center**. Import AKD/CDC statements (CSV / Excel / PDF), track holdings and targets, write investment theses, monitor news with Tavily, generate AI briefings with OpenAI, keep an investment journal, and get rule-based alerts — all behind your own Supabase project with Row Level Security.
+A private, AI-assisted **PSX portfolio and research workspace**. Import AKD/CDC
+statements (CSV / Excel / PDF), track holdings, dividends and performance
+against a KSE-100 benchmark, research companies from their own filings, follow
+market news, and ask a research copilot questions about your actual portfolio,
+all behind your own Supabase project with Row Level Security.
 
-> **This platform is for personal portfolio tracking and research support only. It is not financial advice.**
+> **For personal portfolio tracking and research support only. It is not financial advice.**
 > It never asks for AKD, CDC, bank or brokerage credentials, and it never places orders.
 
 ---
 
 ## Stack
 
-Next.js (App Router) · TypeScript · Tailwind CSS · Supabase (Postgres, Auth, Storage, RLS) · OpenAI · Tavily · Recharts · TanStack Table · Zod · Papaparse · XLSX · pdf-parse · date-fns
+Next.js 16 (App Router) · React 19 · TypeScript · Tailwind CSS v4 ·
+Supabase (Postgres, Auth, Storage, RLS) · Jest · Recharts, Vega-Lite and
+KLineCharts · TanStack Table · Zod · Papaparse · XLSX · pdf-parse ·
+Anthropic and OpenAI-compatible model APIs · Serwist (PWA)
 
-## Quick start
+## Prerequisites
 
-### 1. Create a Supabase project
+- Node.js 20 or newer (`@types/node` is pinned to 20)
+- npm
+- A Supabase project, or the Supabase CLI for a local one
 
-1. Create a project at [supabase.com](https://supabase.com).
-2. Open the **SQL Editor** and run, in order:
-   - `supabase/migrations/0001_init.sql` — all tables, RLS policies, the `statements` storage bucket, and the signup trigger.
-   - `supabase/seed.sql` — PSX ticker/sector reference data (used to enrich imports).
-3. (Optional, recommended for local testing) In **Authentication → Providers → Email**, disable "Confirm email" so signup logs you in immediately.
+## Setup
 
-Alternatively, with the Supabase CLI: `supabase db push` against this repo's `supabase/` folder, then run the seed.
+### 1. Supabase
 
-### 2. Configure environment
+Create a project at [supabase.com](https://supabase.com), then apply the schema
+in order:
+
+- `supabase/migrations/*.sql`, numbered and append-only. `0001_init.sql` creates
+  the tables, RLS policies, the `statements` storage bucket, and the signup
+  trigger; later files build on it.
+- `supabase/seed.sql`, PSX ticker and sector reference data used to enrich imports.
+
+With the CLI: `supabase db push`, then run the seed.
+
+For local testing, disabling "Confirm email" under **Authentication → Providers
+→ Email** makes signup log you straight in.
+
+### 2. Environment
 
 ```bash
 cp .env.example .env.local
 ```
 
-| Variable | Required | Purpose |
-|---|---|---|
-| `NEXT_PUBLIC_SUPABASE_URL` / `NEXT_PUBLIC_SUPABASE_ANON_KEY` | yes | Supabase project (Settings → API) |
-| `SUPABASE_SERVICE_ROLE_KEY` | yes | server-side admin tasks (never sent to the browser) |
-| `GEMINI_API_KEY` (+ optional `GEMINI_MODEL`) | for AI features | briefings, thesis checks, news analysis, journal analysis, metadata enrichment |
-| `TAVILY_API_KEY` | for primary news discovery | Tavily-powered News Center refresh |
-| `NEWS_ENABLE_GDELT`, `GDELT_REQUEST_DELAY_MS` | no | secondary free GDELT discovery; defaults to enabled with a polite request delay |
-| `NEWS_ENABLE_PSX_ANNOUNCEMENTS` | no | official PSX company-announcement discovery; defaults to enabled |
-| `MARKET_DATA_PROVIDER` | no | `psx` (default), `twelve-data`, or `manual` |
-| `TWELVE_DATA_API_KEY`, `MARKET_DATA_API_KEY`, `APP_BASE_URL` | no | Twelve Data key / fallback provider key / deployment URL |
+Required:
 
-The app **degrades gracefully**: with no Gemini/Tavily/Twelve Data keys, manual prices, PSX announcements, and GDELT discovery can still work where reachable.
+| Variable | Purpose |
+|---|---|
+| `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Supabase project (Settings → API) |
+| `SUPABASE_SERVICE_ROLE_KEY` | Server-side admin work. Bypasses RLS, never sent to the browser |
+
+Optional, each enabling a specific surface:
+
+| Variable | Enables |
+|---|---|
+| `CLAUDE_API_KEY` | Claude models in the Research Copilot and the news Analyst Brief |
+| `TASKS_API_KEY` / `DEEP_SEEK_API_KEY` / `DEEPSEEK_API_KEY` | The DeepSeek model path, filing extraction, background AI tasks |
+| `VISION_API_KEY`, `VISION_MODEL`, `VISION_BASE_URL` | Vision extraction from scanned filing PDFs |
+| `OPENROUTER_API_KEY` | OpenRouter-hosted models |
+| `TAVILY_API_KEY`, `NEWS_ENABLE_TAVILY` | Per-holding deep news search |
+| `NEWS_ENABLE_MARKET`, `NEWS_ENABLE_GDELT`, `NEWS_ENABLE_PSX_ANNOUNCEMENTS`, `GDELT_REQUEST_DELAY_MS` | The three no-key news lanes: Pakistani business wires, GDELT, official PSX announcements |
+| `MARKET_DATA_PROVIDER` (`psx`, `twelve-data`, `manual`), `TWELVE_DATA_API_KEY`, `MARKET_DATA_API_KEY` | Price provider selection |
+| `FOREIGN_FLOWS_PROVIDER`, `NCCPL_FLOWS_URL` | FIPI/LIPI foreign-flow ingestion |
+| `PSX_TERMINAL_ENABLED`, `PSX_TERMINAL_BASE_URL` | The PSX terminal data source |
+| `CRON_SECRET` | Authenticates the scheduled `/api/cron/*` handlers |
+| `DEMO_ACCOUNT_EMAIL`, `DEMO_ACCOUNT_PASSWORD` | The read-only demo login |
+| `AKD_LEDGER_PDF_PATH` | Overrides the local AKD statement the performance page falls back to |
+| `AI_DISABLED`, `CHAT_DISABLED`, `TASKS_DISABLED`, `VISION_DISABLED`, `FILINGS_OCR_DISABLED`, `CHAT_DEADLINE_MS` | Kill switches and timeouts |
+
+The app degrades gracefully: with no model or Tavily keys, manual prices, PSX
+announcements, and GDELT discovery still work where reachable.
+
+`.env.example` still lists `GEMINI_API_KEY` and `GEMINI_MODEL`. Nothing in
+`app/` or `lib/` reads them any more.
 
 ### 3. Run
 
@@ -49,74 +85,113 @@ npm install
 npm run dev
 ```
 
-Open http://localhost:3000, sign up, and either click **Load demo data** or import `samples/sample_holdings_akd.csv`.
+Open http://localhost:3000, sign up, then either click **Load demo data** or
+import `samples/sample-holdings-akd.csv`.
 
-## The core loop
+## Commands
 
-1. **Sign in** → empty-state dashboard.
-2. **Import Center** → upload an AKD/CDC statement (CSV/XLSX/PDF) → the engine detects the statement type (holdings snapshot / trade history / dividends-cash / generic), normalizes headers via synonyms, validates rows with Zod, and stages everything.
-3. **Preview** → fix column mapping if needed, exclude rows, see exactly what will change → **Confirm**.
-4. Dashboard, Holdings, Goals populate. Set **target price / allocation / review level** per holding, write a **thesis** (why bought, expectations, risks, sell/add conditions, confidence, status, review date).
-5. **News Center → Refresh** pulls official PSX company announcements, Tavily results, and GDELT secondary coverage, then Gemini scores generic articles for sentiment, relevance, and thesis impact.
-6. **AI Briefings** — daily / weekly / risk / news-only / dividend / thesis review, generated from your actual data, stored permanently.
-7. **Journal** decisions; run **pattern analysis** over your own entries.
-8. **Alerts** recompute on every import/price/news change: missing thesis, review due, allocation drift (±5pp), price above target / below review level, concentration (>25% stock, >40% sector), negative news, dividend/result announcements, import issues.
+| Command | What it does |
+|---|---|
+| `npm run dev` | Development server |
+| `npm run build` | Production build |
+| `npm start` | Serve the production build |
+| `npm run lint` | ESLint (`eslint-config-next`) |
+| `npm run typecheck` | `tsc --noEmit` |
+| `npm test` | Jest suite in `__tests__/` |
+| `npm run validate` | lint, typecheck, and tests |
+| `npm run check:registry` | Verified-ticker drift and freshness gates |
+| `npm run eval:chat`, `eval:chat:live`, `eval:signals`, `eval:forecast` | Model and engine evaluations |
+| `npm run audit:outlook` | Outlook data audit |
+| `npm run backfill:index` | Backfill KSE-100 index history |
 
-## Import semantics (important)
-
-- **Holdings snapshot** → positions are set to the statement's quantity/avg-cost (`source: statement_snapshot`). No fake trade history is invented. Market prices on the statement are captured into the prices table.
-- **Trade history** → transactions stored, holdings rebuilt with **weighted-average cost**; realized P/L computed on sells; dividends inside trade files are also recorded.
-- **Dividend/cash** → dividends linked to tickers where possible; other rows become cash movements.
-- **Duplicate protection** → SHA-256 file hash + per-row hash. Re-importing the same file or overlapping statements never double-counts.
-- **Uncertain rows** are never silently applied — they are flagged with warnings, can be excluded, and rejected rows stay stored for review.
-- Original files are kept in a **private** Supabase Storage bucket scoped to your user id.
-
-## Prices without a market-data API
-
-`lib/market-data/adapter.ts` defines `getLatestPrice / getHistoricalPrices / refreshPortfolioPrices`. The default `manual` provider reads the `prices` table, which is fed by:
-
-- manual edits in **Settings → Latest prices**,
-- bulk CSV upload (`ticker,price[,date]` — see `samples/sample_prices.csv`),
-- market prices found on imported statements.
-
-To add a real provider later, implement the interface in the adapter and set `MARKET_DATA_PROVIDER` — nothing else in the app changes.
-
-## Security & privacy model
-
-- Every user-owned table has `user_id` + **RLS policies** (`auth.uid() = user_id`) for select/insert/update/delete; storage objects are path-scoped per user.
-- The service-role key is server-only; all user reads/writes go through the RLS-enforced client.
-- No brokerage credentials, no order placement, no trading integrations — by design.
-- AI is guard-railed: it never says buy/sell/hold as a recommendation, cites news URLs, states missing data, and every briefing ends with a research-support disclaimer.
+Operational scripts beyond these live in `scripts/` and are documented in
+[scripts/README.md](scripts/README.md).
 
 ## Project map
 
 ```
-supabase/migrations/0001_init.sql   schema + RLS + storage bucket
-supabase/seed.sql                   PSX ticker reference data
-lib/import/                         parse (csv/xlsx/pdf) → normalize → validate → commit
-lib/portfolio.ts                    valuation, weighted-average rebuild, snapshots
-lib/market-data/adapter.ts          pluggable price provider interface
-lib/alerts.ts                       alert rule engine
-lib/ai/                             OpenAI guardrails, news analysis, briefing generators
-lib/tavily.ts                       news search
-lib/demo.ts                         demo dataset load/clear
-app/api/                            import, news, ai, prices, alerts, demo, export, reset
-app/(app)/                          dashboard, import, holdings, stocks/[ticker], news,
-                                    briefings, goals, journal, alerts, settings
-samples/                            test statements + price CSV
-scripts/test-import.ts              import-engine sanity tests (npx tsx scripts/test-import.ts)
+app/               routes, layouts, and API handlers (URLs come from directory names)
+  (app)/           dashboard, holdings, dividends, performance, stocks, market,
+                   news, chat, outlook, allocation, goals, journal, alerts,
+                   import, research, settings, coverage, bulls-bears
+  api/             route handlers, including api/cron/* scheduled by vercel.json
+components/
+  ui/              presentation primitives
+  shared/          cross-feature components (sidebar, charts, command palette)
+  features/        UI owned by one feature, one directory per domain
+lib/
+  <domain>/        domain logic: portfolio, dividends, company, market, news,
+                   chat, import, alerts, demo, dashboard, user
+  engine/          financials, ratios, performance, benchmarks, outlook, allocation
+  ai/              model definitions and provider calls
+  market-data/     price and macro data adapters
+  providers/       external service adapters
+  supabase/        browser, server, and admin clients
+  config/          navigation and feature flags
+  shared/          shared types, formatting, sector colours, route helpers
+__tests__/         Jest suites, mirroring lib/ by domain
+scripts/           operator-run scripts, by category, see scripts/README.md
+data/              reference, external, queue, generated, private data, see data/README.md
+samples/           sanitised import fixtures, see samples/README.md
+supabase/          migrations/ (append-only) and seed.sql
+docs/              architecture, development, operations, research, design
+proxy.ts           request proxy: auth and per-account feature gating
 ```
 
-## Sample files
+Full detail, including layer boundaries and where a new file belongs:
+[docs/architecture/repository-structure.md](docs/architecture/repository-structure.md).
 
-- `samples/sample_holdings_akd.csv` — holdings snapshot (with a title line, like real exports)
-- `samples/sample_trades_akd.csv` — buys + one sell (exercises weighted-average + realized P/L)
-- `samples/sample_dividends_cdc.csv` — dividends, a fee, and a deposit
-- `samples/sample_prices.csv` — bulk price upload format
+## Import semantics
 
-## Notes & limitations
+- **Holdings snapshot** sets positions to the statement's quantity and average
+  cost. No trade history is invented. Prices on the statement are captured into
+  the prices table.
+- **Trade history** stores transactions and rebuilds holdings with
+  **weighted-average cost**, computing realised P/L on sells.
+- **Dividend and cash** rows link dividends to tickers where possible; the rest
+  become cash movements.
+- **Duplicate protection** uses a SHA-256 file hash plus a per-row hash, so
+  re-importing the same file or an overlapping statement never double-counts.
+- **Uncertain rows are never silently applied.** They are flagged, can be
+  excluded in the preview step, and rejected rows stay stored for review.
+- Original files go to a private Supabase Storage bucket scoped to your user id.
 
-- PDF parsing is best-effort (text-layer tables). For scanned PDFs, export CSV/XLSX from the broker portal instead; the preview step always shows what was understood before anything is committed.
+## Prices without a market-data API
+
+`lib/market-data/adapter.ts` defines the price provider interface. The `manual`
+provider reads the `prices` table, which is fed by edits in **Settings → Latest
+prices**, bulk CSV upload (`ticker,price[,date]`, see
+`samples/sample-prices.csv`), and prices found on imported statements. To add a
+provider, implement the interface and set `MARKET_DATA_PROVIDER`. Nothing else
+in the app changes.
+
+## Security and privacy
+
+- Every user-owned table has `user_id` and RLS policies (`auth.uid() = user_id`),
+  and storage objects are path-scoped per user.
+- The service-role key is server-only. All user reads and writes go through the
+  RLS-enforced client.
+- No brokerage credentials, no order placement, no trading integrations.
+- **`data/private/` holds real personal financial documents** and is tracked in
+  Git. See [data/README.md](data/README.md). Keep this repository private.
+- Do not commit API keys. `.env*` is git-ignored, and `.env.example` should hold
+  placeholders only.
+
+## Documentation
+
+- [docs/architecture/repository-structure.md](docs/architecture/repository-structure.md) — layout, boundaries, where new files go
+- [CONTRIBUTING.md](CONTRIBUTING.md) — naming rules and required checks
+- [scripts/README.md](scripts/README.md) — every operational script, and whether it writes
+- [data/README.md](data/README.md) — data provenance and lifecycle
+- [docs/operations/launch-disabled-features.md](docs/operations/launch-disabled-features.md) — surfaces hidden for launch and how to restore them
+- [docs/development/](docs/development/) — a sample of the generated company-report PDF
+- [docs/research/](docs/research/) — product notes not yet built
+- [docs/design/](docs/design/) — design references
+
+## Notes and limitations
+
+- PDF parsing is best-effort against the text layer. For scanned statements,
+  export CSV or XLSX from the broker portal instead. The preview step always
+  shows what was understood before anything is committed.
 - Demo prices are illustrative, not live quotes.
-- One news refresh covers up to 12 holdings per run to keep Tavily/GDELT/PSX usage sane.
-- Do not commit real API keys: `.env*` is git-ignored, but `.env.example` should only ever contain placeholders.
+- News refresh is bounded per run to keep provider usage sane.

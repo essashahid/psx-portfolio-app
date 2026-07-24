@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { cn } from "@/lib/utils";
+import { cn } from "@/lib/shared/format";
 
 export interface TabDef {
   id: string;

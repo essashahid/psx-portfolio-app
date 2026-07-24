@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
-import { requireUser, errorResponse } from "@/lib/api-helpers";
-import { accountHasFeature } from "@/lib/features";
+import { requireUser, errorResponse } from "@/lib/shared/api";
+import { accountHasFeature } from "@/lib/config/features";
 import { parseFile } from "@/lib/import/parse";
 import {
   suggestMapping,
@@ -9,7 +9,7 @@ import {
   validateRow,
   hashFile,
 } from "@/lib/import/normalize";
-import { rejectDemoWrite } from "@/lib/demo-mode";
+import { rejectDemoWrite } from "@/lib/demo/mode";
 
 export const maxDuration = 60;
 

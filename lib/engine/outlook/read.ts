@@ -4,7 +4,7 @@ import { loadAlignedInputs } from "@/lib/engine/outlook/inputs";
 import { buildForecastDataset } from "@/lib/engine/outlook/walkforward";
 import { buildExperimentalOutlook, type GateDecision } from "@/lib/engine/outlook/experimental-outlook";
 import { buildCustomerOutlook, type CustomerOutlook, type SectorRow } from "@/lib/engine/outlook/customer-outlook";
-import evaluation from "@/data/outlook-phase3-evaluation.json";
+import evaluation from "@/data/reference/outlook-phase3-evaluation.json";
 
 /**
  * Cached read model for the Market Outlook page.

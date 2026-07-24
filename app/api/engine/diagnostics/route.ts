@@ -1,8 +1,8 @@
 import { NextResponse } from "next/server";
-import { requireUser, errorResponse } from "@/lib/api-helpers";
+import { requireUser, errorResponse } from "@/lib/shared/api";
 import { providerConfigs } from "@/lib/providers/env";
 import { testProviderCoverage } from "@/lib/engine/market-data";
-import { rejectDemoWrite } from "@/lib/demo-mode";
+import { rejectDemoWrite } from "@/lib/demo/mode";
 
 export const maxDuration = 60;
 

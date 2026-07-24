@@ -3,7 +3,7 @@ import { checkUpcomingDividends } from "@/lib/dividends/detect";
 import { generateDividendForecasts } from "@/lib/dividends/forecast";
 import { reconcileAndDedupe } from "@/lib/dividends/dedup";
 import { getMarketDataProvider } from "@/lib/market-data/adapter";
-import { takeSnapshot } from "@/lib/portfolio";
+import { takeSnapshot } from "@/lib/portfolio/positions";
 import { refreshNewsForUser } from "@/lib/news/refresh";
 import { refreshBenchmarkForUser } from "@/lib/engine/benchmark-rebuild";
 

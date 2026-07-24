@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { requireUser, errorResponse } from "@/lib/api-helpers";
-import { rejectDemoWrite } from "@/lib/demo-mode";
+import { requireUser, errorResponse } from "@/lib/shared/api";
+import { rejectDemoWrite } from "@/lib/demo/mode";
 
 const schema = z.object({
   taxpayer_status: z.enum(["filer", "non-filer"]),

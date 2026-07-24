@@ -1,9 +1,9 @@
 import { NextResponse } from "next/server";
-import { requireUser, errorResponse, logAgentRun } from "@/lib/api-helpers";
+import { requireUser, errorResponse, logAgentRun } from "@/lib/shared/api";
 import { generateBriefing } from "@/lib/ai/briefings";
 import { aiAvailable } from "@/lib/ai/openai";
-import { rejectDemoWrite } from "@/lib/demo-mode";
-import type { BriefingType } from "@/lib/types";
+import { rejectDemoWrite } from "@/lib/demo/mode";
+import type { BriefingType } from "@/lib/shared/types";
 
 export const maxDuration = 120;
 

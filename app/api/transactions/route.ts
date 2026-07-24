@@ -1,8 +1,8 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { requireUser, errorResponse } from "@/lib/api-helpers";
-import { recomputeAll } from "@/lib/holdings/recompute-cascade";
-import { rejectDemoWrite } from "@/lib/demo-mode";
+import { requireUser, errorResponse } from "@/lib/shared/api";
+import { recomputeAll } from "@/lib/portfolio/recompute-cascade";
+import { rejectDemoWrite } from "@/lib/demo/mode";
 
 export const maxDuration = 60;
 

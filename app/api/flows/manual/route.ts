@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { requireUser, errorResponse } from "@/lib/api-helpers";
+import { requireUser, errorResponse } from "@/lib/shared/api";
 import { createAdminClient } from "@/lib/supabase/admin";
 import {
   ingestForeignFlows,
@@ -8,7 +8,7 @@ import {
   parseAmount,
   type FlowIngestPayload,
 } from "@/lib/market/foreign-flows-ingest";
-import { rejectDemoWrite } from "@/lib/demo-mode";
+import { rejectDemoWrite } from "@/lib/demo/mode";
 
 export const dynamic = "force-dynamic";
 

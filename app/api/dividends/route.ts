@@ -1,9 +1,9 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { requireUser, errorResponse } from "@/lib/api-helpers";
-import { refreshAlerts } from "@/lib/alerts";
-import { takeSnapshot } from "@/lib/portfolio";
-import { rejectDemoWrite } from "@/lib/demo-mode";
+import { requireUser, errorResponse } from "@/lib/shared/api";
+import { refreshAlerts } from "@/lib/alerts/refresh";
+import { takeSnapshot } from "@/lib/portfolio/positions";
+import { rejectDemoWrite } from "@/lib/demo/mode";
 
 export const maxDuration = 60;
 

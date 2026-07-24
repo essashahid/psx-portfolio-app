@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
-import { requireUser, errorResponse } from "@/lib/api-helpers";
-import { loadDemoData, clearDemoData } from "@/lib/demo";
+import { requireUser, errorResponse } from "@/lib/shared/api";
+import { loadDemoData, clearDemoData } from "@/lib/demo/seed";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 export const maxDuration = 120;

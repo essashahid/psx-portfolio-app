@@ -7,14 +7,14 @@ import type { ScoredStock } from "@/lib/market/score";
 import { BUCKET_META, type SectorBucket } from "@/lib/market/sectors";
 import type { CallReview, Direction, MacroIndicator, WatchItem } from "@/lib/market/weekly-brief";
 import { fmtInt, fmtPct, tone } from "@/lib/market/format";
-import { cn } from "@/lib/utils";
-import { PageHeader } from "@/components/page-header";
+import { cn } from "@/lib/shared/format";
+import { PageHeader } from "@/components/ui/page-header";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { EmptyState } from "@/components/empty-state";
-import { ScoreBoard } from "@/components/market/score-board";
-import { PortfolioStrategyChart, RegimeRotationChart, ScoreMomentumMap, SetupRiskRewardChart } from "@/components/market/bulls-bears-visuals";
-import { ForeignFlows } from "@/components/market/foreign-flows";
+import { EmptyState } from "@/components/ui/empty-state";
+import { ScoreBoard } from "@/components/features/market/score-board";
+import { PortfolioStrategyChart, RegimeRotationChart, ScoreMomentumMap, SetupRiskRewardChart } from "@/components/features/market/bulls-bears-visuals";
+import { ForeignFlows } from "@/components/features/market/foreign-flows";
 import {
   Activity,
   AlertTriangle,

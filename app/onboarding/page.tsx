@@ -1,8 +1,8 @@
 import { redirect } from "next/navigation";
 import { createClient, getUser } from "@/lib/supabase/server";
-import { OnboardingWizard, OnboardingBrand } from "@/components/onboarding-wizard";
-import { DISCLAIMER } from "@/lib/utils";
-import type { ExperienceLevel } from "@/lib/types";
+import { OnboardingWizard, OnboardingBrand } from "@/components/features/onboarding/onboarding-wizard";
+import { DISCLAIMER } from "@/lib/shared/format";
+import type { ExperienceLevel } from "@/lib/shared/types";
 
 export const dynamic = "force-dynamic";
 

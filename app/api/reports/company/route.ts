@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { after } from "next/server";
-import { requireUser, errorResponse, logAgentRun } from "@/lib/api-helpers";
+import { requireUser, errorResponse, logAgentRun } from "@/lib/shared/api";
 import { aiAvailable } from "@/lib/ai/openai";
 import {
   generateCompanyReport,
@@ -10,8 +10,8 @@ import {
   type CompanyReportOptions,
 } from "@/lib/company/report";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { accountHasFeature } from "@/lib/features";
-import { rejectDemoWrite } from "@/lib/demo-mode";
+import { accountHasFeature } from "@/lib/config/features";
+import { rejectDemoWrite } from "@/lib/demo/mode";
 
 export const maxDuration = 300;
 

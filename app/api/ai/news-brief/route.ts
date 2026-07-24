@@ -1,10 +1,10 @@
 import { NextResponse } from "next/server";
-import { requireUser, errorResponse } from "@/lib/api-helpers";
+import { requireUser, errorResponse } from "@/lib/shared/api";
 import { aiAvailable } from "@/lib/ai/openai";
 import { taskText } from "@/lib/ai/tasks";
 import { getClaude, claudeConfigured, buildClaudeParams } from "@/lib/ai/claude";
 import { getModelDef } from "@/lib/ai/models";
-import { rejectDemoWrite } from "@/lib/demo-mode";
+import { rejectDemoWrite } from "@/lib/demo/mode";
 import { getUserNewsFeed } from "@/lib/news/global-store";
 
 export const maxDuration = 120;

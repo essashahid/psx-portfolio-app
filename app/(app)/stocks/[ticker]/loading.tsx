@@ -1,4 +1,4 @@
-import { HeaderSkeleton, StatCardSkeleton, CardSkeleton } from "@/components/page-skeleton";
+import { HeaderSkeleton, StatCardSkeleton, CardSkeleton } from "@/components/ui/page-skeleton";
 
 export default function StockLoading() {
   return (

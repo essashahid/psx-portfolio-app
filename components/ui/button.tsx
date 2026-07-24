@@ -1,5 +1,5 @@
 import * as React from "react";
-import { cn } from "@/lib/utils";
+import { cn } from "@/lib/shared/format";
 
 type Variant = "default" | "outline" | "ghost" | "destructive" | "secondary";
 type Size = "default" | "sm" | "lg" | "icon";

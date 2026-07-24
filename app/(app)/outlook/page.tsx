@@ -1,5 +1,5 @@
-import { PageHeader } from "@/components/page-header";
-import { MarketOutlookView } from "@/components/outlook/market-outlook-view";
+import { PageHeader } from "@/components/ui/page-header";
+import { MarketOutlookView } from "@/components/features/outlook/market-outlook-view";
 import { getMarketOutlook } from "@/lib/engine/outlook/read";
 import { getAdminContext } from "@/lib/admin/guard";
 

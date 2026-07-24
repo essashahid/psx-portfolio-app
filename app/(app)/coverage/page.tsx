@@ -2,13 +2,13 @@ import { redirect } from "next/navigation";
 import { createClient, getUser } from "@/lib/supabase/server";
 import { getAdminContext } from "@/lib/admin/guard";
 import { providerConfigs } from "@/lib/providers/env";
-import { PageHeader } from "@/components/page-header";
+import { PageHeader } from "@/components/ui/page-header";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Table, THead, TBody, TR, TH, TD } from "@/components/ui/table";
-import { ActionButton } from "@/components/action-button";
-import { CoverageProbe } from "@/components/coverage-probe";
-import { cn } from "@/lib/utils";
+import { ActionButton } from "@/components/ui/action-button";
+import { CoverageProbe } from "@/components/features/coverage/coverage-probe";
+import { cn } from "@/lib/shared/format";
 import { Database, Server, RefreshCw, Activity } from "lucide-react";
 
 export const dynamic = "force-dynamic";

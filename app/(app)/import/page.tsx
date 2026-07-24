@@ -1,6 +1,6 @@
 import { createClient, getUser } from "@/lib/supabase/server";
-import { PageHeader } from "@/components/page-header";
-import { ImportWizard } from "@/components/import-wizard";
+import { PageHeader } from "@/components/ui/page-header";
+import { ImportWizard } from "@/components/features/import/import-wizard";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Table, THead, TBody, TR, TH, TD } from "@/components/ui/table";

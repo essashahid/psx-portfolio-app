@@ -1,5 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { tavilySearch, holdingQueries, tavilyConfigured } from "@/lib/tavily";
+import { tavilySearch, holdingQueries, tavilyConfigured } from "@/lib/providers/tavily";
 import { analyzeArticles, aiAvailable } from "@/lib/ai/openai";
 import { gdeltConfigured, gdeltSearchHoldings } from "@/lib/news/gdelt";
 import { matchesHoldingText } from "@/lib/news/matching";

@@ -1,14 +1,14 @@
 import Link from "next/link";
 import { createClient, getUser } from "@/lib/supabase/server";
-import { getPortfolio } from "@/lib/portfolio";
+import { getPortfolio } from "@/lib/portfolio/positions";
 import { getDailyHoldingPerformance } from "@/lib/portfolio/daily-performance";
-import { HoldingsTable } from "@/components/holdings-table";
-import { AddTransactionDialog } from "@/components/add-transaction-dialog";
-import { EmptyState } from "@/components/empty-state";
-import { AsOf } from "@/components/as-of";
-import { ActionButton } from "@/components/action-button";
-import { formatMoney, formatNumber, formatSignedPct } from "@/lib/utils";
-import { normalizeEnabledFeatures } from "@/lib/features";
+import { HoldingsTable } from "@/components/features/holdings/holdings-table";
+import { AddTransactionDialog } from "@/components/features/holdings/add-transaction-dialog";
+import { EmptyState } from "@/components/ui/empty-state";
+import { AsOf } from "@/components/shared/as-of";
+import { ActionButton } from "@/components/ui/action-button";
+import { formatMoney, formatNumber, formatSignedPct } from "@/lib/shared/format";
+import { normalizeEnabledFeatures } from "@/lib/config/features";
 import { Briefcase, ChevronDown, Download, Eye, RefreshCw, Sparkles } from "lucide-react";
 
 export const dynamic = "force-dynamic";

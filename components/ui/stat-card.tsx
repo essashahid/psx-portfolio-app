@@ -1,0 +1,35 @@
+import { Card, CardContent } from "@/components/ui/card";
+import { cn } from "@/lib/shared/format";
+
+export function StatCard({
+  label,
+  value,
+  sub,
+  tone,
+}: {
+  label: string;
+  value: string;
+  sub?: string;
+  tone?: "positive" | "negative" | "neutral";
+}) {
+  return (
+    <Card className={cn(
+      tone === "positive" && "border-l-[3px] border-l-emerald-500",
+      tone === "negative" && "border-l-[3px] border-l-red-400",
+    )}>
+      <CardContent className="p-4">
+        <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">{label}</p>
+        <p
+          className={cn(
+            "mt-1 text-lg font-semibold tabular-nums",
+            tone === "positive" && "text-emerald-600",
+            tone === "negative" && "text-red-600"
+          )}
+        >
+          {value}
+        </p>
+        {sub && <p className="mt-0.5 text-xs text-muted-foreground">{sub}</p>}
+      </CardContent>
+    </Card>
+  );
+}

@@ -1,6 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { getStockMasterMap } from "@/lib/stock-master";
+import { getStockMasterMap } from "@/lib/company/stock-master";
 
 /**
  * Market-wide dividend / payout history from the official PSX payouts feed

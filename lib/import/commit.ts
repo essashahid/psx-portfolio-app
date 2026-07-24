@@ -1,6 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
-import type { NormalizedRow, StatementType } from "@/lib/types";
-import { recomputeHoldingsFromTransactions } from "@/lib/portfolio";
+import type { NormalizedRow, StatementType } from "@/lib/shared/types";
+import { recomputeHoldingsFromTransactions } from "@/lib/portfolio/positions";
 
 export interface CommitResult {
   committed: number;

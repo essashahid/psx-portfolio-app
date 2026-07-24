@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
-import { requireUser, errorResponse } from "@/lib/api-helpers";
-import { getPortfolio } from "@/lib/portfolio";
-import { toCsv } from "@/lib/utils";
+import { requireUser, errorResponse } from "@/lib/shared/api";
+import { getPortfolio } from "@/lib/portfolio/positions";
+import { toCsv } from "@/lib/shared/format";
 import { taxYearOf } from "@/lib/dividends/tax-year";
 
 export async function GET(

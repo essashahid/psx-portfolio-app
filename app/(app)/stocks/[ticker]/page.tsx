@@ -6,12 +6,12 @@ import { computeRatios } from "@/lib/engine/ratios";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tabs } from "@/components/ui/tabs";
-import { WatchlistButton } from "@/components/stock/watchlist-button";
-import { GenerateReportDialog } from "@/components/stock/generate-report-dialog";
-import { AskCopilotLink } from "@/components/ask-copilot-link";
-import { CardSkeleton, TableSkeleton } from "@/components/page-skeleton";
-import { formatNumber, formatSignedPct, formatFinancialPeriod, cn } from "@/lib/utils";
-import { normalizeEnabledFeatures } from "@/lib/features";
+import { WatchlistButton } from "@/components/features/stocks/watchlist-button";
+import { GenerateReportDialog } from "@/components/features/stocks/generate-report-dialog";
+import { AskCopilotLink } from "@/components/shared/ask-copilot-link";
+import { CardSkeleton, TableSkeleton } from "@/components/ui/page-skeleton";
+import { formatNumber, formatSignedPct, formatFinancialPeriod, cn } from "@/lib/shared/format";
+import { normalizeEnabledFeatures } from "@/lib/config/features";
 import { ArrowLeft, Search } from "lucide-react";
 import {
   OverviewPanel, FinancialsPanel, EarningsPanel, RatiosPanel,

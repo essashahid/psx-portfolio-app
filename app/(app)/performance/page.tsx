@@ -3,16 +3,16 @@ import Link from "next/link";
 import { createClient, getUser } from "@/lib/supabase/server";
 import { getPerformanceAnalytics } from "@/lib/engine/performance";
 import { buildLedgerRows, type LedgerCashInput, type LedgerTxnInput } from "@/lib/engine/ledger-view";
-import { getPortfolio } from "@/lib/portfolio";
-import { EmptyState } from "@/components/empty-state";
-import { ActionButton } from "@/components/action-button";
-import { LedgerTable } from "@/components/ledger-table";
+import { getPortfolio } from "@/lib/portfolio/positions";
+import { EmptyState } from "@/components/ui/empty-state";
+import { ActionButton } from "@/components/ui/action-button";
+import { LedgerTable } from "@/components/features/performance/ledger-table";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs } from "@/components/ui/tabs";
-import { CostFrictionBars, PerformanceTimeline, PerformanceWaterfall } from "@/components/charts-lazy";
-import { BenchmarkGrowthChart } from "@/components/benchmark-growth-chart";
-import { cn, formatMoney, formatNumber, formatSignedPct } from "@/lib/utils";
+import { CostFrictionBars, PerformanceTimeline, PerformanceWaterfall } from "@/components/shared/charts-lazy";
+import { BenchmarkGrowthChart } from "@/components/features/performance/benchmark-growth-chart";
+import { cn, formatMoney, formatNumber, formatSignedPct } from "@/lib/shared/format";
 import {
   AlertTriangle,
   CheckCircle2,

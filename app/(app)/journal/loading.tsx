@@ -1,4 +1,4 @@
-import { HeaderSkeleton, CardSkeleton, FilterChipsSkeleton } from "@/components/page-skeleton";
+import { HeaderSkeleton, CardSkeleton, FilterChipsSkeleton } from "@/components/ui/page-skeleton";
 
 export default function JournalLoading() {
   return (

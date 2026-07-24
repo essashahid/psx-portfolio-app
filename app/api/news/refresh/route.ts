@@ -1,8 +1,8 @@
 import { NextResponse } from "next/server";
-import { requireUser, errorResponse, logAgentRun } from "@/lib/api-helpers";
+import { requireUser, errorResponse, logAgentRun } from "@/lib/shared/api";
 import { refreshNewsForUser } from "@/lib/news/refresh";
-import { refreshAlerts } from "@/lib/alerts";
-import { rejectDemoWrite } from "@/lib/demo-mode";
+import { refreshAlerts } from "@/lib/alerts/refresh";
+import { rejectDemoWrite } from "@/lib/demo/mode";
 import { newsWriteClient, syncNewsClusters } from "@/lib/news/global-store";
 
 export const maxDuration = 300;

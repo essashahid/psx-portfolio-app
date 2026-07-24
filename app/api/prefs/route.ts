@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
-import { requireUser, errorResponse } from "@/lib/api-helpers";
-import { rejectDemoWrite } from "@/lib/demo-mode";
-import { getPrefs, setPrefs, type UserPrefs } from "@/lib/prefs";
+import { requireUser, errorResponse } from "@/lib/shared/api";
+import { rejectDemoWrite } from "@/lib/demo/mode";
+import { getPrefs, setPrefs, type UserPrefs } from "@/lib/user/preferences";
 
 const ALLOWED_KEYS = new Set<keyof UserPrefs>([
   "news_last_seen_at",

@@ -1,5 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { getStockMasterMap } from "@/lib/stock-master";
+import { getStockMasterMap } from "@/lib/company/stock-master";
 import { getCompanyAnnouncements, type PsxAnnouncement } from "@/lib/news/psx-announcements";
 import { getTaxSettings } from "@/lib/dividends/tax";
 import { extractDividendDetailsFromPdf, type PdfDividendDetails } from "@/lib/dividends/pdf-extract";

@@ -1,5 +1,5 @@
 import type { ResolvedMessage } from "@/lib/chat/resolver";
-import { tavilySearch, tavilyConfigured } from "@/lib/tavily";
+import { tavilySearch, tavilyConfigured } from "@/lib/providers/tavily";
 
 /**
  * Server-side web search for models that can't call tools themselves

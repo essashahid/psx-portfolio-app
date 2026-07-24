@@ -1,12 +1,12 @@
 import { NextResponse } from "next/server";
-import { requireUser, errorResponse } from "@/lib/api-helpers";
+import { requireUser, errorResponse } from "@/lib/shared/api";
 import { refreshTechnicals } from "@/lib/company/technicals";
 import { saveCompanyDescription } from "@/lib/company/metadata";
 import { fetchPsxCompanyProfile } from "@/lib/company/psx-profile";
 import { refreshQuote, refreshHistory, testProviderCoverage } from "@/lib/engine/market-data";
 import { populateAllFundamentals } from "@/lib/engine/fundamentals";
 import { refreshRatios } from "@/lib/engine/ratios";
-import { rejectDemoWrite } from "@/lib/demo-mode";
+import { rejectDemoWrite } from "@/lib/demo/mode";
 
 export const maxDuration = 120;
 

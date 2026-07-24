@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
-import { requireUser, errorResponse, logAgentRun } from "@/lib/api-helpers";
+import { requireUser, errorResponse, logAgentRun } from "@/lib/shared/api";
 import { runDailyUpdate, type DailyUpdateSummary } from "@/lib/dividends/daily";
-import { rejectDemoWrite } from "@/lib/demo-mode";
+import { rejectDemoWrite } from "@/lib/demo/mode";
 
 export const maxDuration = 300;
 

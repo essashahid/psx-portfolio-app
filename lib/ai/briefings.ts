@@ -1,10 +1,10 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { getPortfolio } from "@/lib/portfolio";
+import { getPortfolio } from "@/lib/portfolio/positions";
 import { chatMarkdown } from "@/lib/ai/openai";
-import { getDividends, summarizeDividends } from "@/lib/dividends";
+import { getDividends, summarizeDividends } from "@/lib/dividends/summary";
 import { getTaxSettings } from "@/lib/dividends/tax";
 import { normalizeEvent } from "@/lib/dividends/engine";
-import type { BriefingType } from "@/lib/types";
+import type { BriefingType } from "@/lib/shared/types";
 import { getUserNewsFeed } from "@/lib/news/global-store";
 
 /** Assembles a factual, compact context block the model can rely on. */

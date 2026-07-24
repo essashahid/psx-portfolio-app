@@ -1,6 +1,6 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
-import { featureAllowed, featureForPath } from "@/lib/features";
+import { featureAllowed, featureForPath } from "@/lib/config/features";
 
 const IMPERSONATE_COOKIE = "x_admin_impersonate";
 

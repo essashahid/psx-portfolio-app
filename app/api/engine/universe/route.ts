@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { requireUser, errorResponse } from "@/lib/api-helpers";
-import { rejectDemoWrite } from "@/lib/demo-mode";
+import { requireUser, errorResponse } from "@/lib/shared/api";
+import { rejectDemoWrite } from "@/lib/demo/mode";
 import { syncUniverseDirectory, reconcileListingStatus } from "@/lib/engine/universe";
 
 export const maxDuration = 120;

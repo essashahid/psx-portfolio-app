@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { requireAdmin } from "@/lib/admin/guard";
-import { errorResponse } from "@/lib/api-helpers";
+import { errorResponse } from "@/lib/shared/api";
 
 export type AdminWaitlistRow = {
   id: string;

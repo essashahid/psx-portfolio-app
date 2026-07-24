@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { errorResponse, requireUser } from "@/lib/api-helpers";
+import { errorResponse, requireUser } from "@/lib/shared/api";
 
 const FeedbackSchema = z.object({
   visitor_id: z.string().trim().min(8, "Feedback session could not be identified. Please refresh and try again.").max(120),

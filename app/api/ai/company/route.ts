@@ -1,14 +1,14 @@
 import { NextResponse } from "next/server";
-import { requireUser, errorResponse, logAgentRun } from "@/lib/api-helpers";
+import { requireUser, errorResponse, logAgentRun } from "@/lib/shared/api";
 import { chatMarkdown, aiAvailable } from "@/lib/ai/openai";
 import { getCompanyMetadata } from "@/lib/company/metadata";
 import { getTechnicals } from "@/lib/company/technicals";
 import { getCompanyFilings } from "@/lib/company/filings";
 import { getCompanyDividends } from "@/lib/company/dividends";
-import { getPortfolio } from "@/lib/portfolio";
-import { formatNumber } from "@/lib/utils";
-import { accountHasFeature } from "@/lib/features";
-import { rejectDemoWrite } from "@/lib/demo-mode";
+import { getPortfolio } from "@/lib/portfolio/positions";
+import { formatNumber } from "@/lib/shared/format";
+import { accountHasFeature } from "@/lib/config/features";
+import { rejectDemoWrite } from "@/lib/demo/mode";
 
 export const maxDuration = 120;
 

@@ -2,9 +2,9 @@ import { NextResponse } from "next/server";
 import { track } from "@vercel/analytics/server";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { loadDemoData, DEMO_THREAD_COUNT } from "@/lib/demo";
-import { LAUNCH_DEFAULT_FEATURES } from "@/lib/features";
-import { errorResponse } from "@/lib/api-helpers";
+import { loadDemoData, DEMO_THREAD_COUNT } from "@/lib/demo/seed";
+import { LAUNCH_DEFAULT_FEATURES } from "@/lib/config/features";
+import { errorResponse } from "@/lib/shared/api";
 
 export const maxDuration = 120;
 

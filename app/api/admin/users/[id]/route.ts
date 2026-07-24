@@ -1,8 +1,8 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { requireAdmin } from "@/lib/admin/guard";
-import { errorResponse } from "@/lib/api-helpers";
-import { ALL_ACCOUNT_FEATURES, CHAT_PROVIDERS } from "@/lib/features";
+import { errorResponse } from "@/lib/shared/api";
+import { ALL_ACCOUNT_FEATURES, CHAT_PROVIDERS } from "@/lib/config/features";
 
 export const maxDuration = 60;
 

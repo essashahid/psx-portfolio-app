@@ -11,14 +11,14 @@ import { Badge } from "@/components/ui/badge";
 import { Select } from "@/components/ui/select";
 import { Dialog } from "@/components/ui/dialog";
 import { Card } from "@/components/ui/card";
-import { NAV } from "@/lib/nav";
+import { NAV } from "@/lib/config/navigation";
 import {
   ACCOUNT_CAPABILITIES,
   ALL_ACCOUNT_FEATURES,
   CHAT_PROVIDERS,
   LAUNCH_DEFAULT_FEATURES,
   type ChatProvider,
-} from "@/lib/features";
+} from "@/lib/config/features";
 
 type Detail = {
   auth: {

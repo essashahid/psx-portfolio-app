@@ -1,9 +1,9 @@
 import { NextResponse } from "next/server";
-import { requireUser, errorResponse } from "@/lib/api-helpers";
-import { accountHasFeature } from "@/lib/features";
+import { requireUser, errorResponse } from "@/lib/shared/api";
+import { accountHasFeature } from "@/lib/config/features";
 import { normalizeRow, validateRow, type CanonicalField } from "@/lib/import/normalize";
-import { rejectDemoWrite } from "@/lib/demo-mode";
-import type { StatementType } from "@/lib/types";
+import { rejectDemoWrite } from "@/lib/demo/mode";
+import type { StatementType } from "@/lib/shared/types";
 
 export const maxDuration = 60;
 

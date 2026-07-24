@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
-import { requireUser, errorResponse } from "@/lib/api-helpers";
-import { accountHasFeature } from "@/lib/features";
-import { rejectDemoWrite } from "@/lib/demo-mode";
+import { requireUser, errorResponse } from "@/lib/shared/api";
+import { accountHasFeature } from "@/lib/config/features";
+import { rejectDemoWrite } from "@/lib/demo/mode";
 
 /** Deletes one uploaded statement file + its import batches/rows. Committed portfolio data stays. */
 export async function DELETE(

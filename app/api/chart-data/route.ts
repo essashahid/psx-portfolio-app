@@ -7,7 +7,7 @@
  * the chart can draw overlays without embedding sensitive data in the model's
  * output.
  */
-import { requireUser } from "@/lib/api-helpers";
+import { requireUser } from "@/lib/shared/api";
 import { getDailyCandles } from "@/lib/chat/data";
 import { fetchPsxEod } from "@/lib/market-data/psx-dps";
 import type { Candle } from "@/lib/market/technicals";

@@ -1,14 +1,14 @@
 import { createClient, getUser } from "@/lib/supabase/server";
 import { getScreenerData } from "@/lib/market/screener";
 import { fmtPct, fmtInt, tone } from "@/lib/market/format";
-import { PageHeader } from "@/components/page-header";
-import { StockSearch } from "@/components/stock-search";
-import { StockScreener } from "@/components/market/stock-screener";
+import { PageHeader } from "@/components/ui/page-header";
+import { StockSearch } from "@/components/features/stocks/stock-search";
+import { StockScreener } from "@/components/features/market/stock-screener";
 import { Card, CardContent } from "@/components/ui/card";
-import { EmptyState } from "@/components/empty-state";
-import { ActionButton } from "@/components/action-button";
-import { cn } from "@/lib/utils";
-import { normalizeEnabledFeatures } from "@/lib/features";
+import { EmptyState } from "@/components/ui/empty-state";
+import { ActionButton } from "@/components/ui/action-button";
+import { cn } from "@/lib/shared/format";
+import { normalizeEnabledFeatures } from "@/lib/config/features";
 import { Activity, RefreshCw, DatabaseZap, Layers } from "lucide-react";
 
 export const dynamic = "force-dynamic";

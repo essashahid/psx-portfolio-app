@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
-import { requireUser } from "@/lib/api-helpers";
-import { accountHasFeature } from "@/lib/features";
-import { isDemoAccount } from "@/lib/demo-mode";
+import { requireUser } from "@/lib/shared/api";
+import { accountHasFeature } from "@/lib/config/features";
+import { isDemoAccount } from "@/lib/demo/mode";
 import { getCachedSuggestions, refreshSuggestions } from "@/lib/chat/suggest";
 
 export const maxDuration = 60;

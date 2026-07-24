@@ -1,6 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Candle, TechnicalSignals } from "@/lib/market/technicals";
-import { getPortfolio } from "@/lib/portfolio";
+import { getPortfolio } from "@/lib/portfolio/positions";
 import { verificationStatus } from "@/lib/engine/verified";
 import { getUserNewsFeed } from "@/lib/news/global-store";
 

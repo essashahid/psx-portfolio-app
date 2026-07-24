@@ -1,10 +1,10 @@
 import { NextResponse } from "next/server";
-import { requireUser, errorResponse, logAgentRun } from "@/lib/api-helpers";
-import { enrichHoldingsMetadata } from "@/lib/holdings/enrichment";
-import { refreshAlerts } from "@/lib/alerts";
-import { takeSnapshot } from "@/lib/portfolio";
-import { accountHasFeature } from "@/lib/features";
-import { rejectDemoWrite } from "@/lib/demo-mode";
+import { requireUser, errorResponse, logAgentRun } from "@/lib/shared/api";
+import { enrichHoldingsMetadata } from "@/lib/portfolio/enrichment";
+import { refreshAlerts } from "@/lib/alerts/refresh";
+import { takeSnapshot } from "@/lib/portfolio/positions";
+import { accountHasFeature } from "@/lib/config/features";
+import { rejectDemoWrite } from "@/lib/demo/mode";
 
 export const maxDuration = 120;
 

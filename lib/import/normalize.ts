@@ -1,7 +1,7 @@
 import { createHash } from "crypto";
 import { z } from "zod";
-import { parseDateLoose, parseNumberLoose } from "@/lib/utils";
-import type { NormalizedRow, StatementType, TxnType } from "@/lib/types";
+import { parseDateLoose, parseNumberLoose } from "@/lib/shared/format";
+import type { NormalizedRow, StatementType, TxnType } from "@/lib/shared/types";
 
 // ---------------------------------------------------------------------------
 // Canonical fields and header synonyms (AKD / CDC / generic broker exports)

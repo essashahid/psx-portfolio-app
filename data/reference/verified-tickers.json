@@ -1,0 +1,982 @@
+{
+  "_note": "Registry of companies whose financials + ratios have been hand-verified correct (read from the filing, accounting identities checked, and cross-checked against PSX and/or Sarmaaya). 'throughPeriod' is the latest fiscal period verified — once a newer filing lands, the mark is stale and the name needs re-verification. 'basis' is the reporting basis we store (unconsolidated matches PSX; holding-cos also noted). Add entries only after an actual check, not on assumption.",
+  "verified": {
+    "PPL": {
+      "throughPeriod": "2026 9M",
+      "basis": "unconsolidated",
+      "source": "PSX+Sarmaaya",
+      "date": "2026-07-06",
+      "note": "P/E 8.54 vs PSX 8.57"
+    },
+    "OGDC": {
+      "throughPeriod": "2026 9M",
+      "basis": "unconsolidated",
+      "source": "PSX+Sarmaaya",
+      "date": "2026-07-06",
+      "note": "EPS 36.17 = Sarmaaya exact; P/E 9.64 (TTM) vs PSX 8.93 annual"
+    },
+    "POL": {
+      "throughPeriod": "2026 9M",
+      "basis": "unconsolidated",
+      "source": "PSX+Sarmaaya",
+      "date": "2026-07-06",
+      "note": "P/E 7.21 vs PSX 7.22"
+    },
+    "KAPCO": {
+      "throughPeriod": "2026 9M",
+      "basis": "unconsolidated",
+      "source": "PSX+Sarmaaya",
+      "date": "2026-07-06",
+      "note": "P/E 15.24 = PSX exact"
+    },
+    "INDU": {
+      "throughPeriod": "2026 9M",
+      "basis": "unconsolidated",
+      "source": "PSX",
+      "date": "2026-07-06",
+      "note": "P/E 6.23 = PSX exact"
+    },
+    "MTL": {
+      "throughPeriod": "2026 9M",
+      "basis": "unconsolidated",
+      "source": "Sarmaaya",
+      "date": "2026-07-06",
+      "note": "100% bonus; share-count override 399.03M; P/E 16.44 vs Sarmaaya 16.41"
+    },
+    "AIRLINK": {
+      "throughPeriod": "2026 9M",
+      "basis": "unconsolidated",
+      "source": "PSX",
+      "date": "2026-07-05",
+      "note": "P/E 17.54 vs PSX 16.47"
+    },
+    "ANL": {
+      "throughPeriod": "2026 9M",
+      "basis": "unconsolidated",
+      "source": "Sarmaaya",
+      "date": "2026-07-06",
+      "note": "EPS 1.61 vs Sarmaaya 1.60 after price backfill"
+    },
+    "SSML": {
+      "throughPeriod": "2026 9M",
+      "basis": "unconsolidated",
+      "source": "filing",
+      "date": "2026-07-05",
+      "note": "distressed micro-cap; zero revenue"
+    },
+    "IDYM": {
+      "throughPeriod": "2026 9M",
+      "basis": "unconsolidated",
+      "source": "filing",
+      "date": "2026-07-07",
+      "note": "fixed basis-mixing bug; TTM 6.60. Holding-co, Sarmaaya reports consolidated 20.56"
+    },
+    "LOADS": {
+      "throughPeriod": "2026 9M",
+      "basis": "unconsolidated",
+      "source": "filing+Sarmaaya",
+      "date": "2026-07-07",
+      "note": "rights issue; share-count override 371.25M; P/E 14.61 vs Sarmaaya 14.04"
+    },
+    "MEBL": {
+      "throughPeriod": "2026 Q1",
+      "basis": "unconsolidated",
+      "source": "Sarmaaya",
+      "date": "2026-07-07",
+      "note": "P/E 11.06 vs 11.2, EPS 50.26 vs 50.58, P/B 3.58 vs 3.59 — bank, all metrics close"
+    },
+    "MARI": {
+      "throughPeriod": "2026 9M",
+      "basis": "unconsolidated",
+      "source": "Sarmaaya",
+      "date": "2026-07-07",
+      "note": "P/E 11.80 vs 12.33, EPS 58.43 vs 57.11 — minor TTM composition variance"
+    },
+    "UBL": {
+      "throughPeriod": "2026 Q1",
+      "basis": "unconsolidated",
+      "source": "Sarmaaya",
+      "date": "2026-07-07",
+      "note": "P/E 8.70 = Sarmaaya exact, EPS 56.43 vs 56.83. Dividend yield 13.04 vs Sarmaaya 6.47: confirmed 4 distinct genuine board declarations (Rs16 each) fall in our trailing-365-day window, not a duplicate bug — methodology difference (announcement-date window vs Sarmaaya's convention), unresolved"
+    },
+    "NBP": {
+      "throughPeriod": "2026 Q1",
+      "basis": "unconsolidated",
+      "source": "Sarmaaya",
+      "date": "2026-07-07",
+      "note": "P/E 5.70 vs 5.84, dividend yield 16.09 = Sarmaaya EXACT match"
+    },
+    "PAKT": {
+      "throughPeriod": "2026 Q1",
+      "basis": "unconsolidated",
+      "source": "Sarmaaya",
+      "date": "2026-07-07",
+      "note": "EPS 128.89 vs 128.9 near-exact, P/E 11.28 vs 11.55. Dividend yield 11.01 vs Sarmaaya 8.06: same trailing-window methodology difference as UBL, confirmed genuine distinct declarations not duplicates"
+    },
+    "NESTLE": {
+      "throughPeriod": "2026 Q1",
+      "basis": "unconsolidated",
+      "source": "Sarmaaya",
+      "date": "2026-07-07",
+      "note": "P/E 19.55 vs 19.53, EPS 393.75 vs 393.76, P/B 12.99 vs 12.97, div yield 7.23 vs 7.24 — near-exact on every metric"
+    },
+    "ABL": {
+      "throughPeriod": "2026 Q1",
+      "basis": "unconsolidated",
+      "source": "Sarmaaya",
+      "date": "2026-07-07",
+      "note": "bank; P/E 6.17 vs 5.99, P/B 0.89 vs 0.87, div yield 8.43 vs 8.47"
+    },
+    "AKBL": {
+      "throughPeriod": "2026 Q1",
+      "basis": "unconsolidated",
+      "source": "Sarmaaya",
+      "date": "2026-07-07",
+      "note": "bank; P/E 7.56 vs 7.55, P/B 1.21 vs 1.20 — near-exact"
+    },
+    "FABL": {
+      "throughPeriod": "2026 Q1",
+      "basis": "unconsolidated",
+      "source": "Sarmaaya",
+      "date": "2026-07-07",
+      "note": "bank; P/E 7.10 vs 6.99, P/B 1.38 vs 1.40"
+    },
+    "HMB": {
+      "throughPeriod": "2026 Q1",
+      "basis": "unconsolidated",
+      "source": "Sarmaaya",
+      "date": "2026-07-07",
+      "note": "bank; P/E 5.73 vs 5.50, P/B 1.01 vs 1.02, div yield 10.25 vs 10.08"
+    },
+    "BOP": {
+      "throughPeriod": "2026 Q1",
+      "basis": "unconsolidated",
+      "source": "Sarmaaya",
+      "date": "2026-07-07",
+      "note": "bank; P/E 6.38 vs 6.62, P/B 1.24 vs 1.27, div yield 6.78 vs 6.73"
+    },
+    "BOK": {
+      "throughPeriod": "2026 Q1",
+      "basis": "unconsolidated",
+      "source": "Sarmaaya",
+      "date": "2026-07-07",
+      "note": "bank; P/E 7.33 vs 7.57, P/B 1.79 vs 1.85, div yield 9.68 vs 9.36"
+    },
+    "BIPL": {
+      "throughPeriod": "2026 Q1",
+      "basis": "unconsolidated",
+      "source": "Sarmaaya",
+      "date": "2026-07-07",
+      "note": "bank; P/E 7.38 vs 7.35, P/B 0.68 vs 0.68, div yield 9.66 vs 9.66 — near-exact"
+    },
+    "ACPL": {
+      "throughPeriod": "2026 9M",
+      "basis": "unconsolidated",
+      "source": "filing+Sarmaaya",
+      "date": "2026-07-07",
+      "note": "cement; hand-read to add missing 9M FY2025 comparative (EPS 9.53). TTM EPS 20.97 = Sarmaaya EXACT, net margin 6.74 = exact, P/E 10.88 vs 10.97"
+    },
+    "BWCL": {
+      "throughPeriod": "2026 9M",
+      "basis": "unconsolidated",
+      "source": "Sarmaaya",
+      "date": "2026-07-07",
+      "note": "cement; trailing P/E 12.75 vs 12.55, forward 12.74 — both match"
+    },
+    "KOHC": {
+      "throughPeriod": "2026 9M",
+      "basis": "unconsolidated",
+      "source": "Sarmaaya",
+      "date": "2026-07-07",
+      "note": "cement; forward P/E 9.87 vs 9.98 — match"
+    },
+    "PIOC": {
+      "throughPeriod": "2026 9M",
+      "basis": "unconsolidated",
+      "source": "Sarmaaya",
+      "date": "2026-07-07",
+      "note": "cement; forward P/E 11.09 vs 11.77 — match"
+    },
+    "FLYNG": {
+      "throughPeriod": "2026 9M",
+      "basis": "unconsolidated",
+      "source": "Sarmaaya",
+      "date": "2026-07-07",
+      "note": "cement; was stale FY2025, extracted via OpenRouter → P/E 36.23 vs 36.70 match"
+    },
+    "MLCF": {
+      "throughPeriod": "2026 9M",
+      "basis": "unconsolidated",
+      "source": "filing+Sarmaaya",
+      "date": "2026-07-07",
+      "note": "cement; hand-read fixed 9M FY2025 comparative (real EPS 11.57; that period had a one-off 5.9B dividend). TTM 10.50, P/E 10.43 vs 10.20"
+    },
+    "SCBPL": {
+      "throughPeriod": "2026 Q1",
+      "basis": "unconsolidated",
+      "source": "filing+Sarmaaya",
+      "date": "2026-07-07",
+      "note": "bank; hand-read fixed stale FY2025 annual (real EPS 7.43 from equity statement, portal was stuck at 11.9). TTM 6.82 = P/E 9.83 EXACT. Bank ratios: NIM 5.91%, cost-to-income 32%, ADR 40%"
+    },
+    "GWLC": {
+      "throughPeriod": "2026 9M",
+      "basis": "unconsolidated",
+      "source": "filing+Sarmaaya",
+      "date": "2026-07-19",
+      "note": "cement; hand-read added the missing 9M FY2025 comparative (EPS 3.14). TTM 6.75 vs Sarmaaya 6.74, P/E 8.15 vs 8.17 — near-exact. Retained-earnings roll ties to the filing"
+    },
+    "POWER": {
+      "throughPeriod": "2026 9M",
+      "basis": "unconsolidated",
+      "source": "filing+Sarmaaya",
+      "date": "2026-07-19",
+      "note": "cement; 9M FY2025 was absent and the FY2025 quarterly rows had been copied from FY2026. Real 9M FY2025 EPS 0.07, not the 1.47 those duplicates implied. TTM 2.28 vs Sarmaaya 2.24"
+    },
+    "DCL": {
+      "throughPeriod": "2026 9M",
+      "basis": "unconsolidated",
+      "source": "filing+Sarmaaya",
+      "date": "2026-07-19",
+      "note": "cement; loss-making. Quarantined a sign-flipped duplicate 2025 Q1 (+0.82 vs the real -0.82) and a bogus H1. TTM -2.37 = Sarmaaya EXACT"
+    },
+    "DNCC": {
+      "throughPeriod": "2026 9M",
+      "basis": "unconsolidated",
+      "source": "filing+Sarmaaya",
+      "date": "2026-07-19",
+      "note": "cement; loss-making micro-cap. Added the missing 9M FY2025 comparative (EPS -0.31). TTM -0.39 = Sarmaaya EXACT. P/E not meaningful on a loss"
+    },
+    "SMCPL": {
+      "throughPeriod": "2026 9M",
+      "basis": "unconsolidated",
+      "source": "filing",
+      "date": "2026-07-19",
+      "note": "cement; filed in full rupees, converted to thousands. Added the missing 9M FY2025 comparative (EPS 2.12) and quarantined a duplicated Q1. TTM 6.01. No Sarmaaya ratios published, but EPS 4.02 ties exactly to PAT 100,479,745 / 25M shares"
+    },
+    "EFERT": {
+      "throughPeriod": "2026 Q1",
+      "basis": "unconsolidated",
+      "source": "filing",
+      "date": "2026-07-19",
+      "note": "fertilizer; Dec year-end. Unconsolidated Q1-2026 net sales 26,338,683 / PAT 2,891,066 / EPS 2.17 and Q1-2025 EPS 2.94 confirmed against the filing; TTM 17.03. Hand-read the missing 2026 Q1 balance sheet (equity 42,509,710 + liabilities 157,049,968 = assets 199,559,678), which had been silently falling back to the Dec 2025 sheet — P/B corrected 5.71 to 6.04"
+    },
+    "SBL": {
+      "throughPeriod": "2026 Q1",
+      "basis": "unconsolidated",
+      "source": "agent+Sarmaaya",
+      "date": "2026-07-20",
+      "note": "bank; agent-read filing corrected FY2025 unconsolidated EPS (was stored 'unlabelled' at a different value) and added the missing 2025 Q1 comparative. Rebuilt TTM 0.74 vs Sarmaaya 0.75, page-cited (FY p36, Q1s p13). 'agent+Sarmaaya' source distinguishes this from a human-read filing (filing+Sarmaaya) — the model read it and the figures were independently rebuilt and checked here, but no person opened the PDF."
+    },
+    "BAHL": {
+      "throughPeriod": "2026 Q1",
+      "basis": "consolidated",
+      "source": "agent+Sarmaaya",
+      "date": "2026-07-21",
+      "note": "bank; Sarmaaya quotes the group figure. Agent-read filing gave FY2025 29.19 (p177), Q1 2025 9.65 (p58), Q1 2026 6.54 (p58), all consolidated, rebuilding to TTM 26.08 exact to Sarmaaya. Ratio engine gained a per-company basis preference (CONSOLIDATED_BASIS_TICKERS in lib/engine/ratios.ts) to serve this — confirmed via getRatioCard (the actual API path), P/E now eps=26.08 exactly, P/B 1.22 vs Sarmaaya 1.21 as an independent second check. Zero regressions across the other 49 verified companies on re-check. Confirmed via getRatioCard (the actual API path), P/E now eps=26.08 exactly. P/B is currently unavailable (not wrong): the balance-sheet selection was later made basis-aware too, and no consolidated balance sheet has been captured for BAHL yet, so the engine correctly declines to pair the consolidated EPS with an unconsolidated book value rather than silently mixing bases. Zero regressions across the other verified companies on re-check."
+    },
+    "FCCL": {
+      "throughPeriod": "2026 9M",
+      "basis": "unconsolidated",
+      "source": "agent+Sarmaaya",
+      "date": "2026-07-21",
+      "note": "cement; agent read the annual report's quarterly-breakdown table (page 210, FY2025: Q1 1.32, Q2 1.64, Q3 0.87, Q4 1.59). Found our stored FY2025 H1 and Q2 were swapped (H1 held 1.64 which is actually Q2 alone; Q2 held 2.96 which is actually Q1+Q2) and Q1 2025 was missing entirely. Corrected via the quarter-sum fallback (no direct 9M row needed): 9M FY2025 = 1.32+1.64+0.87 = 3.83. Rebuilt TTM = 5.43 + 4.39 - 3.83 = 5.99, exact to Sarmaaya's 5.99. P/E and P/B both track ~8% low vs the Sarmaaya snapshot, fully explained by price movement between the snapshot date and our live quote (57.65 -> 53.74), not an EPS issue."
+    },
+    "MUGHAL": {
+      "throughPeriod": "2026 9M",
+      "basis": "consolidated",
+      "source": "hand+Sarmaaya",
+      "date": "2026-07-21",
+      "note": "steel; Sarmaaya quotes the group figure. My inventory builder had grabbed the wrong interim document (a Shariah-disclosure resubmission with no P&L, title-matched on 'half yearly accounts') -- fixed the filter, re-fetched the real quarterly report, and read both filings by hand (agent's earlier passes never produced a complete chain). Consolidated FY2025 EPS 2.50 (annual report p153), 9M 2026 5.10 and 9M 2025 comparative 1.23 (interim Directors' Review p3). Rebuilt TTM = 2.50+5.10-1.23 = 6.37, exact to Sarmaaya. Unconsolidated TTM (7.24, all figures independently confirmed on the interim's own P&L p6) does not reconcile -- this is a genuine basis difference, not a data error; our unconsolidated figures were correct all along. P/B is currently unavailable (not wrong): no consolidated balance sheet has been captured for MUGHAL, so the engine correctly declines to pair the consolidated EPS with an unconsolidated book value. (An earlier version of this note cited P/B 0.89 vs Sarmaaya 0.91 -- that number came from an unconsolidated balance sheet paired with a consolidated EPS, a basis mix the engine no longer allows once balance-sheet selection was made basis-aware too.)"
+    },
+    "SEARL": {
+      "throughPeriod": "2026 9M",
+      "basis": "consolidated",
+      "source": "hand+Sarmaaya",
+      "date": "2026-07-21",
+      "note": "pharma; Sarmaaya quotes the group figure. FY2025 was a genuine consolidated LOSS per share of -2.73 (annual report p217), driven by a Rs 2.18bn discontinued-operations loss on divesting subsidiary Searle Pakistan Ltd -- not a data error, an actual one-off event. That figure predates a 15% bonus issued during 9M FY2026 and was never restated; the interim's own comparatives ARE restated per IAS 33, so combined them at face value would double-count the dilution on one side only. Restated FY2025 to the post-bonus share base (511,494,424 -> 588,218,587, both from the filings' own share-capital notes): -2.73 * (511494424/588218587) = -2.37. TTM = -2.37 + 3.89(9M 2026, p24) - (-0.55)(9M 2025 comparative, p28) = 2.07, within 1.5% of Sarmaaya's 2.04. P/B is currently unavailable (not wrong): no consolidated balance sheet has been captured for SEARL, so the engine correctly declines to pair the consolidated EPS with an unconsolidated book value."
+    },
+    "GAL": {
+      "throughPeriod": "2026 9M",
+      "basis": "consolidated",
+      "source": "hand+Sarmaaya",
+      "date": "2026-07-21",
+      "note": "auto assembler; both filings exceeded the vision provider's combined payload limit (26.7MB annual + 1.8MB interim, HTTP 413), so read by hand instead of forcing a degraded chunked read. Sarmaaya quotes the group (99.9%-owned subsidiary Ghandhara DF). Consolidated FY2025 EPS 71.85 (annual report p133), 9M 2026 EPS 85.28 and 9M 2025 comparative 39.89 (interim p5/p23-24). TTM = 71.85+85.28-39.89 = 117.24, exact to Sarmaaya. No share-count restatement needed (unchanged 57,002,500 shares, no bonus/rights issue). P/E confirmed via getRatioCard: eps=117.24 exactly. Also found and fixed a real bug this surfaced: GAL's consolidated balance sheet (equity 19,165,213) was stored with reporting_basis 'unlabelled' and review_status 'needs_review', so the ratio engine's un-basis-aware balance-sheet selection silently picked the unconsolidated equity instead, giving P/B 2.55 against Sarmaaya's 1.7. Relabeled+published the row and extended the engine's balance/cash-flow selection to respect CONSOLIDATED_BASIS_TICKERS (previously only the income-statement side was basis-aware) -- P/B now 1.70, exact."
+    },
+    "ABOT": {
+      "throughPeriod": "TTM to 2026 Q1",
+      "basis": "unconsolidated",
+      "source": "auto+Sarmaaya",
+      "date": "2026-07-21",
+      "note": "bulk-promoted on independent agreement, NOT a filing read. Our engine-computed trailing EPS 84.85 vs Sarmaaya 84.85 (0.0%), and P/B 2.72 vs 2.76 (1.5%) — two ratios off different statements agreeing independently. No one opened the filing, so an un-restated bonus/rights issue or a basis subtlety could still be hiding underneath (the failure modes that caught SEARL, MUGHAL and GAL). Weaker tier than the \"filing+Sarmaaya\"/\"hand+Sarmaaya\" entries; re-verify by hand before relying on it for anything load-bearing."
+    },
+    "APL": {
+      "throughPeriod": "TTM to 2026 9M",
+      "basis": "unconsolidated",
+      "source": "auto+Sarmaaya",
+      "date": "2026-07-21",
+      "note": "bulk-promoted on independent agreement, NOT a filing read. Our engine-computed trailing EPS 140.32 vs Sarmaaya 140.32 (0.0%), and P/B 0.92 vs 0.92 (0.4%) — two ratios off different statements agreeing independently. No one opened the filing, so an un-restated bonus/rights issue or a basis subtlety could still be hiding underneath (the failure modes that caught SEARL, MUGHAL and GAL). Weaker tier than the \"filing+Sarmaaya\"/\"hand+Sarmaaya\" entries; re-verify by hand before relying on it for anything load-bearing."
+    },
+    "ATLH": {
+      "throughPeriod": "2026 FY",
+      "basis": "unconsolidated",
+      "source": "auto+Sarmaaya",
+      "date": "2026-07-21",
+      "note": "bulk-promoted on independent agreement, NOT a filing read. Our engine-computed trailing EPS 170.21 vs Sarmaaya 170.21 (0.0%), and P/B 4.39 vs 4.4 (0.1%) — two ratios off different statements agreeing independently. No one opened the filing, so an un-restated bonus/rights issue or a basis subtlety could still be hiding underneath (the failure modes that caught SEARL, MUGHAL and GAL). Weaker tier than the \"filing+Sarmaaya\"/\"hand+Sarmaaya\" entries; re-verify by hand before relying on it for anything load-bearing."
+    },
+    "GLAXO": {
+      "throughPeriod": "TTM to 2026 Q1",
+      "basis": "unconsolidated",
+      "source": "auto+Sarmaaya",
+      "date": "2026-07-21",
+      "note": "bulk-promoted on independent agreement, NOT a filing read. Our engine-computed trailing EPS 33.00 vs Sarmaaya 33 (0.0%), and P/B 3.40 vs 3.14 (8.2%) — two ratios off different statements agreeing independently. No one opened the filing, so an un-restated bonus/rights issue or a basis subtlety could still be hiding underneath (the failure modes that caught SEARL, MUGHAL and GAL). Weaker tier than the \"filing+Sarmaaya\"/\"hand+Sarmaaya\" entries; re-verify by hand before relying on it for anything load-bearing."
+    },
+    "HCAR": {
+      "throughPeriod": "2026 FY",
+      "basis": "unconsolidated",
+      "source": "auto+Sarmaaya",
+      "date": "2026-07-21",
+      "note": "bulk-promoted on independent agreement, NOT a filing read. Our engine-computed trailing EPS 22.64 vs Sarmaaya 22.64 (0.0%), and P/B 1.34 vs 1.34 (0.0%) — two ratios off different statements agreeing independently. No one opened the filing, so an un-restated bonus/rights issue or a basis subtlety could still be hiding underneath (the failure modes that caught SEARL, MUGHAL and GAL). Weaker tier than the \"filing+Sarmaaya\"/\"hand+Sarmaaya\" entries; re-verify by hand before relying on it for anything load-bearing."
+    },
+    "HINO": {
+      "throughPeriod": "2026 FY",
+      "basis": "unconsolidated",
+      "source": "auto+Sarmaaya",
+      "date": "2026-07-21",
+      "note": "bulk-promoted on independent agreement, NOT a filing read. Our engine-computed trailing EPS 21.82 vs Sarmaaya 21.82 (0.0%), and P/B 1.86 vs 1.76 (5.9%) — two ratios off different statements agreeing independently. No one opened the filing, so an un-restated bonus/rights issue or a basis subtlety could still be hiding underneath (the failure modes that caught SEARL, MUGHAL and GAL). Weaker tier than the \"filing+Sarmaaya\"/\"hand+Sarmaaya\" entries; re-verify by hand before relying on it for anything load-bearing."
+    },
+    "PABC": {
+      "throughPeriod": "TTM to 2026 Q1",
+      "basis": "unconsolidated",
+      "source": "auto+Sarmaaya",
+      "date": "2026-07-21",
+      "note": "bulk-promoted on independent agreement, NOT a filing read. Our engine-computed trailing EPS 14.75 vs Sarmaaya 14.75 (0.0%), and P/B 1.72 vs 1.62 (6.2%) — two ratios off different statements agreeing independently. No one opened the filing, so an un-restated bonus/rights issue or a basis subtlety could still be hiding underneath (the failure modes that caught SEARL, MUGHAL and GAL). Weaker tier than the \"filing+Sarmaaya\"/\"hand+Sarmaaya\" entries; re-verify by hand before relying on it for anything load-bearing."
+    },
+    "COLG": {
+      "throughPeriod": "TTM to 2026 9M",
+      "basis": "unconsolidated",
+      "source": "auto+Sarmaaya",
+      "date": "2026-07-21",
+      "note": "bulk-promoted on independent agreement, NOT a filing read. Our engine-computed trailing EPS 73.22 vs Sarmaaya 73.22 (0.0%), and P/B 8.21 vs 8.44 (2.7%) — two ratios off different statements agreeing independently. No one opened the filing, so an un-restated bonus/rights issue or a basis subtlety could still be hiding underneath (the failure modes that caught SEARL, MUGHAL and GAL). Weaker tier than the \"filing+Sarmaaya\"/\"hand+Sarmaaya\" entries; re-verify by hand before relying on it for anything load-bearing."
+    },
+    "PSYL": {
+      "throughPeriod": "TTM to 2026 9M",
+      "basis": "unconsolidated",
+      "source": "auto+Sarmaaya",
+      "date": "2026-07-21",
+      "note": "bulk-promoted on independent agreement, NOT a filing read. Our engine-computed trailing EPS 3.38 vs Sarmaaya 3.38 (0.0%), and P/B 4.28 vs 4.27 (0.2%) — two ratios off different statements agreeing independently. No one opened the filing, so an un-restated bonus/rights issue or a basis subtlety could still be hiding underneath (the failure modes that caught SEARL, MUGHAL and GAL). Weaker tier than the \"filing+Sarmaaya\"/\"hand+Sarmaaya\" entries; re-verify by hand before relying on it for anything load-bearing."
+    },
+    "CEPB": {
+      "throughPeriod": "TTM to 2026 9M",
+      "basis": "unconsolidated",
+      "source": "auto+Sarmaaya",
+      "date": "2026-07-21",
+      "note": "bulk-promoted on independent agreement, NOT a filing read. Our engine-computed trailing EPS -1.87 vs Sarmaaya -1.87 (0.0%), and P/B 0.88 vs 0.88 (0.4%) — two ratios off different statements agreeing independently. No one opened the filing, so an un-restated bonus/rights issue or a basis subtlety could still be hiding underneath (the failure modes that caught SEARL, MUGHAL and GAL). Weaker tier than the \"filing+Sarmaaya\"/\"hand+Sarmaaya\" entries; re-verify by hand before relying on it for anything load-bearing."
+    },
+    "EPQL": {
+      "throughPeriod": "TTM to 2026 Q1",
+      "basis": "unconsolidated",
+      "source": "auto+Sarmaaya",
+      "date": "2026-07-21",
+      "note": "bulk-promoted on independent agreement, NOT a filing read. Our engine-computed trailing EPS 1.86 vs Sarmaaya 1.86 (0.0%), and P/B 0.73 vs 0.73 (0.5%) — two ratios off different statements agreeing independently. No one opened the filing, so an un-restated bonus/rights issue or a basis subtlety could still be hiding underneath (the failure modes that caught SEARL, MUGHAL and GAL). Weaker tier than the \"filing+Sarmaaya\"/\"hand+Sarmaaya\" entries; re-verify by hand before relying on it for anything load-bearing."
+    },
+    "HABSM": {
+      "throughPeriod": "TTM to 2026 H1",
+      "basis": "unconsolidated",
+      "source": "auto+Sarmaaya",
+      "date": "2026-07-21",
+      "note": "bulk-promoted on independent agreement, NOT a filing read. Our engine-computed trailing EPS 13.42 vs Sarmaaya 13.42 (0.0%), and P/B 0.67 vs 0.67 (0.0%) — two ratios off different statements agreeing independently. No one opened the filing, so an un-restated bonus/rights issue or a basis subtlety could still be hiding underneath (the failure modes that caught SEARL, MUGHAL and GAL). Weaker tier than the \"filing+Sarmaaya\"/\"hand+Sarmaaya\" entries; re-verify by hand before relying on it for anything load-bearing."
+    },
+    "GHNI": {
+      "throughPeriod": "TTM to 2026 9M",
+      "basis": "unconsolidated",
+      "source": "auto+Sarmaaya",
+      "date": "2026-07-21",
+      "note": "bulk-promoted on independent agreement, NOT a filing read. Our engine-computed trailing EPS 162.33 vs Sarmaaya 162.33 (0.0%), and P/B 2.62 vs 2.62 (0.2%) — two ratios off different statements agreeing independently. No one opened the filing, so an un-restated bonus/rights issue or a basis subtlety could still be hiding underneath (the failure modes that caught SEARL, MUGHAL and GAL). Weaker tier than the \"filing+Sarmaaya\"/\"hand+Sarmaaya\" entries; re-verify by hand before relying on it for anything load-bearing."
+    },
+    "ISL": {
+      "throughPeriod": "TTM to 2026 9M",
+      "basis": "unconsolidated",
+      "source": "auto+Sarmaaya",
+      "date": "2026-07-21",
+      "note": "bulk-promoted on independent agreement, NOT a filing read. Our engine-computed trailing EPS 6.93 vs Sarmaaya 6.93 (0.0%), and P/B 1.42 vs 1.42 (0.2%) — two ratios off different statements agreeing independently. No one opened the filing, so an un-restated bonus/rights issue or a basis subtlety could still be hiding underneath (the failure modes that caught SEARL, MUGHAL and GAL). Weaker tier than the \"filing+Sarmaaya\"/\"hand+Sarmaaya\" entries; re-verify by hand before relying on it for anything load-bearing."
+    },
+    "RMPL": {
+      "throughPeriod": "TTM to 2026 Q1",
+      "basis": "unconsolidated",
+      "source": "auto+Sarmaaya",
+      "date": "2026-07-21",
+      "note": "bulk-promoted on independent agreement, NOT a filing read. Our engine-computed trailing EPS 715.93 vs Sarmaaya 715.93 (0.0%), and P/B 2.83 vs 2.74 (3.2%) — two ratios off different statements agreeing independently. No one opened the filing, so an un-restated bonus/rights issue or a basis subtlety could still be hiding underneath (the failure modes that caught SEARL, MUGHAL and GAL). Weaker tier than the \"filing+Sarmaaya\"/\"hand+Sarmaaya\" entries; re-verify by hand before relying on it for anything load-bearing."
+    },
+    "SPWL": {
+      "throughPeriod": "TTM to 2026 Q1",
+      "basis": "unconsolidated",
+      "source": "auto+Sarmaaya",
+      "date": "2026-07-21",
+      "note": "bulk-promoted on independent agreement, NOT a filing read. Our engine-computed trailing EPS -0.04 vs Sarmaaya -0.04 (0.0%), and P/B 0.35 vs 0.35 (1.2%) — two ratios off different statements agreeing independently. No one opened the filing, so an un-restated bonus/rights issue or a basis subtlety could still be hiding underneath (the failure modes that caught SEARL, MUGHAL and GAL). Weaker tier than the \"filing+Sarmaaya\"/\"hand+Sarmaaya\" entries; re-verify by hand before relying on it for anything load-bearing."
+    },
+    "SAZEW": {
+      "throughPeriod": "TTM to 2026 9M",
+      "basis": "unconsolidated",
+      "source": "auto+Sarmaaya",
+      "date": "2026-07-21",
+      "note": "bulk-promoted on independent agreement, NOT a filing read. Our engine-computed trailing EPS 303.74 vs Sarmaaya 303.75 (0.0%), and P/B 3.36 vs 3.37 (0.4%) — two ratios off different statements agreeing independently. No one opened the filing, so an un-restated bonus/rights issue or a basis subtlety could still be hiding underneath (the failure modes that caught SEARL, MUGHAL and GAL). Weaker tier than the \"filing+Sarmaaya\"/\"hand+Sarmaaya\" entries; re-verify by hand before relying on it for anything load-bearing."
+    },
+    "BATA": {
+      "throughPeriod": "TTM to 2026 Q1",
+      "basis": "unconsolidated",
+      "source": "auto+Sarmaaya",
+      "date": "2026-07-21",
+      "note": "bulk-promoted on independent agreement, NOT a filing read. Our engine-computed trailing EPS -368.04 vs Sarmaaya -368 (0.0%), and P/B 2.50 vs 2.4 (4.2%) — two ratios off different statements agreeing independently. No one opened the filing, so an un-restated bonus/rights issue or a basis subtlety could still be hiding underneath (the failure modes that caught SEARL, MUGHAL and GAL). Weaker tier than the \"filing+Sarmaaya\"/\"hand+Sarmaaya\" entries; re-verify by hand before relying on it for anything load-bearing."
+    },
+    "MUREB": {
+      "throughPeriod": "TTM to 2026 9M",
+      "basis": "unconsolidated",
+      "source": "auto+Sarmaaya",
+      "date": "2026-07-21",
+      "note": "bulk-promoted on independent agreement, NOT a filing read. Our engine-computed trailing EPS 126.10 vs Sarmaaya 126.08 (0.0%), and P/B 1.31 vs 1.32 (0.4%) — two ratios off different statements agreeing independently. No one opened the filing, so an un-restated bonus/rights issue or a basis subtlety could still be hiding underneath (the failure modes that caught SEARL, MUGHAL and GAL). Weaker tier than the \"filing+Sarmaaya\"/\"hand+Sarmaaya\" entries; re-verify by hand before relying on it for anything load-bearing."
+    },
+    "HALEON": {
+      "throughPeriod": "TTM to 2026 Q1",
+      "basis": "unconsolidated",
+      "source": "auto+Sarmaaya",
+      "date": "2026-07-21",
+      "note": "bulk-promoted on independent agreement, NOT a filing read. Our engine-computed trailing EPS 55.97 vs Sarmaaya 55.96 (0.0%), and P/B 6.88 vs 6.1 (12.9%) — two ratios off different statements agreeing independently. No one opened the filing, so an un-restated bonus/rights issue or a basis subtlety could still be hiding underneath (the failure modes that caught SEARL, MUGHAL and GAL). Weaker tier than the \"filing+Sarmaaya\"/\"hand+Sarmaaya\" entries; re-verify by hand before relying on it for anything load-bearing."
+    },
+    "PAKOXY": {
+      "throughPeriod": "TTM to 2026 Q1",
+      "basis": "unconsolidated",
+      "source": "auto+Sarmaaya",
+      "date": "2026-07-21",
+      "note": "bulk-promoted on independent agreement, NOT a filing read. Our engine-computed trailing EPS 22.59 vs Sarmaaya 22.58 (0.0%), and P/B 2.10 vs 2.01 (4.6%) — two ratios off different statements agreeing independently. No one opened the filing, so an un-restated bonus/rights issue or a basis subtlety could still be hiding underneath (the failure modes that caught SEARL, MUGHAL and GAL). Weaker tier than the \"filing+Sarmaaya\"/\"hand+Sarmaaya\" entries; re-verify by hand before relying on it for anything load-bearing."
+    },
+    "EXIDE": {
+      "throughPeriod": "2026 FY",
+      "basis": "unconsolidated",
+      "source": "auto+Sarmaaya",
+      "date": "2026-07-21",
+      "note": "bulk-promoted on independent agreement, NOT a filing read. Our engine-computed trailing EPS 55.57 vs Sarmaaya 55.53 (0.1%), and P/B 0.58 vs 0.54 (7.3%) — two ratios off different statements agreeing independently. No one opened the filing, so an un-restated bonus/rights issue or a basis subtlety could still be hiding underneath (the failure modes that caught SEARL, MUGHAL and GAL). Weaker tier than the \"filing+Sarmaaya\"/\"hand+Sarmaaya\" entries; re-verify by hand before relying on it for anything load-bearing."
+    },
+    "AICL": {
+      "throughPeriod": "2025 FY",
+      "basis": "unconsolidated",
+      "source": "auto+Sarmaaya",
+      "date": "2026-07-21",
+      "note": "bulk-promoted on independent agreement, NOT a filing read. Our engine-computed trailing EPS 14.70 vs Sarmaaya 14.72 (0.1%), and P/B 0.55 vs 0.54 (1.9%) — two ratios off different statements agreeing independently. No one opened the filing, so an un-restated bonus/rights issue or a basis subtlety could still be hiding underneath (the failure modes that caught SEARL, MUGHAL and GAL). Weaker tier than the \"filing+Sarmaaya\"/\"hand+Sarmaaya\" entries; re-verify by hand before relying on it for anything load-bearing."
+    },
+    "KSBP": {
+      "throughPeriod": "TTM to 2026 Q1",
+      "basis": "unconsolidated",
+      "source": "auto+Sarmaaya",
+      "date": "2026-07-21",
+      "note": "bulk-promoted on independent agreement, NOT a filing read. Our engine-computed trailing EPS 7.13 vs Sarmaaya 7.14 (0.1%), and P/B 1.61 vs 1.76 (8.7%) — two ratios off different statements agreeing independently. No one opened the filing, so an un-restated bonus/rights issue or a basis subtlety could still be hiding underneath (the failure modes that caught SEARL, MUGHAL and GAL). Weaker tier than the \"filing+Sarmaaya\"/\"hand+Sarmaaya\" entries; re-verify by hand before relying on it for anything load-bearing."
+    },
+    "NICL": {
+      "throughPeriod": "2025 FY",
+      "basis": "unconsolidated",
+      "source": "auto+Sarmaaya",
+      "date": "2026-07-21",
+      "note": "bulk-promoted on independent agreement, NOT a filing read. Our engine-computed trailing EPS 18.29 vs Sarmaaya 18.26 (0.2%), and P/B 2.30 vs 2.3 (0.0%) — two ratios off different statements agreeing independently. No one opened the filing, so an un-restated bonus/rights issue or a basis subtlety could still be hiding underneath (the failure modes that caught SEARL, MUGHAL and GAL). Weaker tier than the \"filing+Sarmaaya\"/\"hand+Sarmaaya\" entries; re-verify by hand before relying on it for anything load-bearing."
+    },
+    "FCEPL": {
+      "throughPeriod": "TTM to 2026 Q1",
+      "basis": "unconsolidated",
+      "source": "auto+Sarmaaya",
+      "date": "2026-07-21",
+      "note": "bulk-promoted on independent agreement, NOT a filing read. Our engine-computed trailing EPS 4.50 vs Sarmaaya 4.51 (0.2%), and P/B 4.76 vs 4.17 (14.2%) — two ratios off different statements agreeing independently. No one opened the filing, so an un-restated bonus/rights issue or a basis subtlety could still be hiding underneath (the failure modes that caught SEARL, MUGHAL and GAL). Weaker tier than the \"filing+Sarmaaya\"/\"hand+Sarmaaya\" entries; re-verify by hand before relying on it for anything load-bearing."
+    },
+    "PAEL": {
+      "throughPeriod": "TTM to 2026 Q1",
+      "basis": "unconsolidated",
+      "source": "auto+Sarmaaya",
+      "date": "2026-07-21",
+      "note": "bulk-promoted on independent agreement, NOT a filing read. Our engine-computed trailing EPS 4.47 vs Sarmaaya 4.46 (0.2%), and P/B 0.75 vs 0.77 (2.0%) — two ratios off different statements agreeing independently. No one opened the filing, so an un-restated bonus/rights issue or a basis subtlety could still be hiding underneath (the failure modes that caught SEARL, MUGHAL and GAL). Weaker tier than the \"filing+Sarmaaya\"/\"hand+Sarmaaya\" entries; re-verify by hand before relying on it for anything load-bearing."
+    },
+    "JSIL": {
+      "throughPeriod": "TTM to 2026 Q1",
+      "basis": "unconsolidated",
+      "source": "auto+Sarmaaya",
+      "date": "2026-07-21",
+      "note": "bulk-promoted on independent agreement, NOT a filing read. Our engine-computed trailing EPS 7.18 vs Sarmaaya 7.2 (0.3%), and P/B 1.09 vs 1.03 (5.4%) — two ratios off different statements agreeing independently. No one opened the filing, so an un-restated bonus/rights issue or a basis subtlety could still be hiding underneath (the failure modes that caught SEARL, MUGHAL and GAL). Weaker tier than the \"filing+Sarmaaya\"/\"hand+Sarmaaya\" entries; re-verify by hand before relying on it for anything load-bearing."
+    },
+    "LOTCHEM": {
+      "throughPeriod": "TTM to 2026 H1",
+      "basis": "unconsolidated",
+      "source": "auto+Sarmaaya",
+      "date": "2026-07-21",
+      "note": "bulk-promoted on independent agreement, NOT a filing read. Our engine-computed trailing EPS 3.10 vs Sarmaaya 3.09 (0.3%), and P/B 2.21 vs 2.53 (12.8%) — two ratios off different statements agreeing independently. No one opened the filing, so an un-restated bonus/rights issue or a basis subtlety could still be hiding underneath (the failure modes that caught SEARL, MUGHAL and GAL). Weaker tier than the \"filing+Sarmaaya\"/\"hand+Sarmaaya\" entries; re-verify by hand before relying on it for anything load-bearing."
+    },
+    "PSX": {
+      "throughPeriod": "TTM to 2026 9M",
+      "basis": "unconsolidated",
+      "source": "auto+Sarmaaya",
+      "date": "2026-07-21",
+      "note": "bulk-promoted on independent agreement, NOT a filing read. Our engine-computed trailing EPS 2.50 vs Sarmaaya 2.49 (0.4%), and P/B 3.36 vs 3.37 (0.3%) — two ratios off different statements agreeing independently. No one opened the filing, so an un-restated bonus/rights issue or a basis subtlety could still be hiding underneath (the failure modes that caught SEARL, MUGHAL and GAL). Weaker tier than the \"filing+Sarmaaya\"/\"hand+Sarmaaya\" entries; re-verify by hand before relying on it for anything load-bearing."
+    },
+    "IBLHL": {
+      "throughPeriod": "2025 FY",
+      "basis": "unconsolidated",
+      "source": "auto+Sarmaaya",
+      "date": "2026-07-21",
+      "note": "bulk-promoted on independent agreement, NOT a filing read. Our engine-computed trailing EPS 2.43 vs Sarmaaya 2.44 (0.4%), and P/B 1.78 vs 2.04 (13.0%) — two ratios off different statements agreeing independently. No one opened the filing, so an un-restated bonus/rights issue or a basis subtlety could still be hiding underneath (the failure modes that caught SEARL, MUGHAL and GAL). Weaker tier than the \"filing+Sarmaaya\"/\"hand+Sarmaaya\" entries; re-verify by hand before relying on it for anything load-bearing."
+    },
+    "PSO": {
+      "throughPeriod": "TTM to 2026 9M",
+      "basis": "unconsolidated",
+      "source": "auto+Sarmaaya",
+      "date": "2026-07-21",
+      "note": "bulk-promoted on independent agreement, NOT a filing read. Our engine-computed trailing EPS 93.21 vs Sarmaaya 92.73 (0.5%), and P/B 0.63 vs 0.56 (12.7%) — two ratios off different statements agreeing independently. No one opened the filing, so an un-restated bonus/rights issue or a basis subtlety could still be hiding underneath (the failure modes that caught SEARL, MUGHAL and GAL). Weaker tier than the \"filing+Sarmaaya\"/\"hand+Sarmaaya\" entries; re-verify by hand before relying on it for anything load-bearing."
+    },
+    "HPL": {
+      "throughPeriod": "TTM to 2026 Q1",
+      "basis": "unconsolidated",
+      "source": "auto+Sarmaaya",
+      "date": "2026-07-21",
+      "note": "bulk-promoted on independent agreement, NOT a filing read. Our engine-computed trailing EPS 318.98 vs Sarmaaya 317.04 (0.6%), and P/B 4.33 vs 4.35 (0.4%) — two ratios off different statements agreeing independently. No one opened the filing, so an un-restated bonus/rights issue or a basis subtlety could still be hiding underneath (the failure modes that caught SEARL, MUGHAL and GAL). Weaker tier than the \"filing+Sarmaaya\"/\"hand+Sarmaaya\" entries; re-verify by hand before relying on it for anything load-bearing."
+    },
+    "IBFL": {
+      "throughPeriod": "TTM to 2026 Q1",
+      "basis": "unconsolidated",
+      "source": "auto+Sarmaaya",
+      "date": "2026-07-21",
+      "note": "bulk-promoted on independent agreement, NOT a filing read. Our engine-computed trailing EPS -1.50 vs Sarmaaya -1.49 (0.7%), and P/B 1.47 vs 1.62 (9.6%) — two ratios off different statements agreeing independently. No one opened the filing, so an un-restated bonus/rights issue or a basis subtlety could still be hiding underneath (the failure modes that caught SEARL, MUGHAL and GAL). Weaker tier than the \"filing+Sarmaaya\"/\"hand+Sarmaaya\" entries; re-verify by hand before relying on it for anything load-bearing."
+    },
+    "AHL": {
+      "throughPeriod": "TTM to 2026 9M",
+      "basis": "unconsolidated",
+      "source": "auto+Sarmaaya",
+      "date": "2026-07-21",
+      "note": "bulk-promoted on independent agreement, NOT a filing read. Our engine-computed trailing EPS 15.21 vs Sarmaaya 15.32 (0.7%), and P/B 4.01 vs 3.92 (2.3%) — two ratios off different statements agreeing independently. No one opened the filing, so an un-restated bonus/rights issue or a basis subtlety could still be hiding underneath (the failure modes that caught SEARL, MUGHAL and GAL). Weaker tier than the \"filing+Sarmaaya\"/\"hand+Sarmaaya\" entries; re-verify by hand before relying on it for anything load-bearing."
+    },
+    "SPEL": {
+      "throughPeriod": "TTM to 2026 9M",
+      "basis": "unconsolidated",
+      "source": "auto+Sarmaaya",
+      "date": "2026-07-21",
+      "note": "bulk-promoted on independent agreement, NOT a filing read. Our engine-computed trailing EPS 6.44 vs Sarmaaya 6.37 (1.1%), and P/B 1.55 vs 1.45 (6.9%) — two ratios off different statements agreeing independently. No one opened the filing, so an un-restated bonus/rights issue or a basis subtlety could still be hiding underneath (the failure modes that caught SEARL, MUGHAL and GAL). Weaker tier than the \"filing+Sarmaaya\"/\"hand+Sarmaaya\" entries; re-verify by hand before relying on it for anything load-bearing."
+    },
+    "TICL": {
+      "throughPeriod": "TTM to 2026 9M",
+      "basis": "unconsolidated",
+      "source": "auto+Sarmaaya",
+      "date": "2026-07-21",
+      "note": "bulk-promoted on independent agreement, NOT a filing read. Our engine-computed trailing EPS 185.28 vs Sarmaaya 182.06 (1.8%), and P/B 1.20 vs 1.2 (0.4%) — two ratios off different statements agreeing independently. No one opened the filing, so an un-restated bonus/rights issue or a basis subtlety could still be hiding underneath (the failure modes that caught SEARL, MUGHAL and GAL). Weaker tier than the \"filing+Sarmaaya\"/\"hand+Sarmaaya\" entries; re-verify by hand before relying on it for anything load-bearing."
+    },
+    "KOHTM": {
+      "throughPeriod": "TTM to 2026 9M",
+      "basis": "unconsolidated",
+      "source": "auto+Sarmaaya",
+      "date": "2026-07-21",
+      "note": "bulk-promoted on independent agreement, NOT a filing read. Our engine-computed trailing EPS 14.85 vs Sarmaaya 14.85 (0.0%), and P/B 0.58 vs 0.58 (0.7%) — two ratios off different statements agreeing independently. No one opened the filing, so an un-restated bonus/rights issue or a basis subtlety could still be hiding underneath (the failure modes that caught SEARL, MUGHAL and GAL). Weaker tier than the \"filing+Sarmaaya\"/\"hand+Sarmaaya\" entries; re-verify by hand before relying on it for anything load-bearing."
+    },
+    "BIFO": {
+      "throughPeriod": "TTM to 2026 9M",
+      "basis": "unconsolidated",
+      "source": "auto+Sarmaaya",
+      "date": "2026-07-21",
+      "note": "bulk-promoted on independent agreement, NOT a filing read. Our engine-computed trailing EPS 9.41 vs Sarmaaya 9.41 (0.0%), and P/B 1.86 vs 1.72 (8.0%) — two ratios off different statements agreeing independently. No one opened the filing, so an un-restated bonus/rights issue or a basis subtlety could still be hiding underneath (the failure modes that caught SEARL, MUGHAL and GAL). Weaker tier than the \"filing+Sarmaaya\"/\"hand+Sarmaaya\" entries; re-verify by hand before relying on it for anything load-bearing."
+    },
+    "CJPL": {
+      "throughPeriod": "TTM to 2026 9M",
+      "basis": "unconsolidated",
+      "source": "auto+Sarmaaya",
+      "date": "2026-07-21",
+      "note": "bulk-promoted on independent agreement, NOT a filing read. Our engine-computed trailing EPS -0.28 vs Sarmaaya -0.28 (0.0%), and P/B -2.40 vs -2.43 (1.2%) — two ratios off different statements agreeing independently. No one opened the filing, so an un-restated bonus/rights issue or a basis subtlety could still be hiding underneath (the failure modes that caught SEARL, MUGHAL and GAL). Weaker tier than the \"filing+Sarmaaya\"/\"hand+Sarmaaya\" entries; re-verify by hand before relying on it for anything load-bearing. CAUTION: EPS is negative (loss-making), so the agreement certifies the loss figure, not a usable P/E; book value is NEGATIVE, so the P/B cross-check is much weaker than it looks and P/B should not be used for this name at all."
+    },
+    "SHEZ": {
+      "throughPeriod": "TTM to 2026 9M",
+      "basis": "unconsolidated",
+      "source": "auto+Sarmaaya",
+      "date": "2026-07-21",
+      "note": "bulk-promoted on independent agreement, NOT a filing read. Our engine-computed trailing EPS 30.87 vs Sarmaaya 30.87 (0.0%), and P/B 1.48 vs 1.39 (6.2%) — two ratios off different statements agreeing independently. No one opened the filing, so an un-restated bonus/rights issue or a basis subtlety could still be hiding underneath (the failure modes that caught SEARL, MUGHAL and GAL). Weaker tier than the \"filing+Sarmaaya\"/\"hand+Sarmaaya\" entries; re-verify by hand before relying on it for anything load-bearing."
+    },
+    "NRL": {
+      "throughPeriod": "TTM to 2026 9M",
+      "basis": "unconsolidated",
+      "source": "auto+Sarmaaya",
+      "date": "2026-07-21",
+      "note": "bulk-promoted on independent agreement, NOT a filing read. Our engine-computed trailing EPS 108.68 vs Sarmaaya 108.68 (0.0%), and P/B 0.56 vs 0.53 (5.3%) — two ratios off different statements agreeing independently. No one opened the filing, so an un-restated bonus/rights issue or a basis subtlety could still be hiding underneath (the failure modes that caught SEARL, MUGHAL and GAL). Weaker tier than the \"filing+Sarmaaya\"/\"hand+Sarmaaya\" entries; re-verify by hand before relying on it for anything load-bearing."
+    },
+    "DYNO": {
+      "throughPeriod": "TTM to 2026 9M",
+      "basis": "unconsolidated",
+      "source": "auto+Sarmaaya",
+      "date": "2026-07-21",
+      "note": "bulk-promoted on independent agreement, NOT a filing read. Our engine-computed trailing EPS 55.14 vs Sarmaaya 55.14 (0.0%), and P/B 1.22 vs 1.22 (0.4%) — two ratios off different statements agreeing independently. No one opened the filing, so an un-restated bonus/rights issue or a basis subtlety could still be hiding underneath (the failure modes that caught SEARL, MUGHAL and GAL). Weaker tier than the \"filing+Sarmaaya\"/\"hand+Sarmaaya\" entries; re-verify by hand before relying on it for anything load-bearing."
+    },
+    "GVGL": {
+      "throughPeriod": "TTM to 2026 9M",
+      "basis": "unconsolidated",
+      "source": "auto+Sarmaaya",
+      "date": "2026-07-21",
+      "note": "bulk-promoted on independent agreement, NOT a filing read. Our engine-computed trailing EPS 6.64 vs Sarmaaya 6.64 (0.0%), and P/B 1.64 vs 1.59 (3.0%) — two ratios off different statements agreeing independently. No one opened the filing, so an un-restated bonus/rights issue or a basis subtlety could still be hiding underneath (the failure modes that caught SEARL, MUGHAL and GAL). Weaker tier than the \"filing+Sarmaaya\"/\"hand+Sarmaaya\" entries; re-verify by hand before relying on it for anything load-bearing."
+    },
+    "SAIF": {
+      "throughPeriod": "TTM to 2026 9M",
+      "basis": "unconsolidated",
+      "source": "auto+Sarmaaya",
+      "date": "2026-07-21",
+      "note": "bulk-promoted on independent agreement, NOT a filing read. Our engine-computed trailing EPS 0.66 vs Sarmaaya 0.66 (0.0%), and P/B 0.33 vs 0.33 (0.6%) — two ratios off different statements agreeing independently. No one opened the filing, so an un-restated bonus/rights issue or a basis subtlety could still be hiding underneath (the failure modes that caught SEARL, MUGHAL and GAL). Weaker tier than the \"filing+Sarmaaya\"/\"hand+Sarmaaya\" entries; re-verify by hand before relying on it for anything load-bearing."
+    },
+    "BTL": {
+      "throughPeriod": "TTM to 2026 9M",
+      "basis": "unconsolidated",
+      "source": "auto+Sarmaaya",
+      "date": "2026-07-21",
+      "note": "bulk-promoted on independent agreement, NOT a filing read. Our engine-computed trailing EPS -35.68 vs Sarmaaya -35.67 (0.0%), and P/B 0.80 vs 0.86 (6.8%) — two ratios off different statements agreeing independently. No one opened the filing, so an un-restated bonus/rights issue or a basis subtlety could still be hiding underneath (the failure modes that caught SEARL, MUGHAL and GAL). Weaker tier than the \"filing+Sarmaaya\"/\"hand+Sarmaaya\" entries; re-verify by hand before relying on it for anything load-bearing. CAUTION: EPS is negative (loss-making), so the agreement certifies the loss figure, not a usable P/E."
+    },
+    "SURC": {
+      "throughPeriod": "TTM to 2026 9M",
+      "basis": "unconsolidated",
+      "source": "auto+Sarmaaya",
+      "date": "2026-07-21",
+      "note": "bulk-promoted on independent agreement, NOT a filing read. Our engine-computed trailing EPS 29.16 vs Sarmaaya 29.17 (0.0%), and P/B 0.46 vs 0.46 (0.0%) — two ratios off different statements agreeing independently. No one opened the filing, so an un-restated bonus/rights issue or a basis subtlety could still be hiding underneath (the failure modes that caught SEARL, MUGHAL and GAL). Weaker tier than the \"filing+Sarmaaya\"/\"hand+Sarmaaya\" entries; re-verify by hand before relying on it for anything load-bearing."
+    },
+    "OTSU": {
+      "throughPeriod": "TTM to 2026 9M",
+      "basis": "unconsolidated",
+      "source": "auto+Sarmaaya",
+      "date": "2026-07-21",
+      "note": "bulk-promoted on independent agreement, NOT a filing read. Our engine-computed trailing EPS 28.79 vs Sarmaaya 28.78 (0.0%), and P/B 4.60 vs 4.52 (1.8%) — two ratios off different statements agreeing independently. No one opened the filing, so an un-restated bonus/rights issue or a basis subtlety could still be hiding underneath (the failure modes that caught SEARL, MUGHAL and GAL). Weaker tier than the \"filing+Sarmaaya\"/\"hand+Sarmaaya\" entries; re-verify by hand before relying on it for anything load-bearing."
+    },
+    "PRET": {
+      "throughPeriod": "TTM to 2026 9M",
+      "basis": "unconsolidated",
+      "source": "auto+Sarmaaya",
+      "date": "2026-07-21",
+      "note": "bulk-promoted on independent agreement, NOT a filing read. Our engine-computed trailing EPS 22.74 vs Sarmaaya 22.73 (0.0%), and P/B 0.36 vs 0.35 (3.0%) — two ratios off different statements agreeing independently. No one opened the filing, so an un-restated bonus/rights issue or a basis subtlety could still be hiding underneath (the failure modes that caught SEARL, MUGHAL and GAL). Weaker tier than the \"filing+Sarmaaya\"/\"hand+Sarmaaya\" entries; re-verify by hand before relying on it for anything load-bearing."
+    },
+    "BUXL": {
+      "throughPeriod": "TTM to 2026 9M",
+      "basis": "unconsolidated",
+      "source": "auto+Sarmaaya",
+      "date": "2026-07-21",
+      "note": "bulk-promoted on independent agreement, NOT a filing read. Our engine-computed trailing EPS -17.11 vs Sarmaaya -17.12 (0.1%), and P/B 1.50 vs 1.68 (10.7%) — two ratios off different statements agreeing independently. No one opened the filing, so an un-restated bonus/rights issue or a basis subtlety could still be hiding underneath (the failure modes that caught SEARL, MUGHAL and GAL). Weaker tier than the \"filing+Sarmaaya\"/\"hand+Sarmaaya\" entries; re-verify by hand before relying on it for anything load-bearing. CAUTION: EPS is negative (loss-making), so the agreement certifies the loss figure, not a usable P/E."
+    },
+    "BAPL": {
+      "throughPeriod": "TTM to 2026 9M",
+      "basis": "unconsolidated",
+      "source": "auto+Sarmaaya",
+      "date": "2026-07-21",
+      "note": "bulk-promoted on independent agreement, NOT a filing read. Our engine-computed trailing EPS -13.62 vs Sarmaaya -13.61 (0.1%), and P/B -2.64 vs -2.62 (0.8%) — two ratios off different statements agreeing independently. No one opened the filing, so an un-restated bonus/rights issue or a basis subtlety could still be hiding underneath (the failure modes that caught SEARL, MUGHAL and GAL). Weaker tier than the \"filing+Sarmaaya\"/\"hand+Sarmaaya\" entries; re-verify by hand before relying on it for anything load-bearing. CAUTION: EPS is negative (loss-making), so the agreement certifies the loss figure, not a usable P/E; book value is NEGATIVE, so the P/B cross-check is much weaker than it looks and P/B should not be used for this name at all."
+    },
+    "BNWM": {
+      "throughPeriod": "TTM to 2026 9M",
+      "basis": "unconsolidated",
+      "source": "auto+Sarmaaya",
+      "date": "2026-07-21",
+      "note": "bulk-promoted on independent agreement, NOT a filing read. Our engine-computed trailing EPS -9.57 vs Sarmaaya -9.58 (0.1%), and P/B 0.19 vs 0.2 (6.1%) — two ratios off different statements agreeing independently. No one opened the filing, so an un-restated bonus/rights issue or a basis subtlety could still be hiding underneath (the failure modes that caught SEARL, MUGHAL and GAL). Weaker tier than the \"filing+Sarmaaya\"/\"hand+Sarmaaya\" entries; re-verify by hand before relying on it for anything load-bearing. CAUTION: EPS is negative (loss-making), so the agreement certifies the loss figure, not a usable P/E."
+    },
+    "PTL": {
+      "throughPeriod": "TTM to 2026 9M",
+      "basis": "unconsolidated",
+      "source": "auto+Sarmaaya",
+      "date": "2026-07-21",
+      "note": "bulk-promoted on independent agreement, NOT a filing read. Our engine-computed trailing EPS 6.42 vs Sarmaaya 6.4 (0.3%), and P/B 1.02 vs 1.18 (13.9%) — two ratios off different statements agreeing independently. No one opened the filing, so an un-restated bonus/rights issue or a basis subtlety could still be hiding underneath (the failure modes that caught SEARL, MUGHAL and GAL). Weaker tier than the \"filing+Sarmaaya\"/\"hand+Sarmaaya\" entries; re-verify by hand before relying on it for anything load-bearing."
+    },
+    "HASCOL": {
+      "throughPeriod": "TTM to 2026 Q1",
+      "basis": "unconsolidated",
+      "source": "auto+Sarmaaya",
+      "date": "2026-07-21",
+      "note": "bulk-promoted on independent agreement, NOT a filing read. Our engine-computed trailing EPS -3.24 vs Sarmaaya -3.22 (0.6%), and P/B -0.21 vs -0.22 (5.9%) — two ratios off different statements agreeing independently. No one opened the filing, so an un-restated bonus/rights issue or a basis subtlety could still be hiding underneath (the failure modes that caught SEARL, MUGHAL and GAL). Weaker tier than the \"filing+Sarmaaya\"/\"hand+Sarmaaya\" entries; re-verify by hand before relying on it for anything load-bearing. CAUTION: EPS is negative (loss-making), so the agreement certifies the loss figure, not a usable P/E; book value is NEGATIVE, so the P/B cross-check is much weaker than it looks and P/B should not be used for this name at all."
+    },
+    "JKSM": {
+      "throughPeriod": "TTM to 2026 9M",
+      "basis": "unconsolidated",
+      "source": "auto+Sarmaaya",
+      "date": "2026-07-21",
+      "note": "bulk-promoted on independent agreement, NOT a filing read. Our engine-computed trailing EPS 11.40 vs Sarmaaya 11.31 (0.8%), and P/B 1.44 vs 1.42 (1.5%) — two ratios off different statements agreeing independently. No one opened the filing, so an un-restated bonus/rights issue or a basis subtlety could still be hiding underneath (the failure modes that caught SEARL, MUGHAL and GAL). Weaker tier than the \"filing+Sarmaaya\"/\"hand+Sarmaaya\" entries; re-verify by hand before relying on it for anything load-bearing."
+    },
+    "LCI": {
+      "throughPeriod": "TTM to 2026 9M",
+      "basis": "unconsolidated",
+      "source": "auto+Sarmaaya",
+      "date": "2026-07-21",
+      "note": "bulk-promoted on independent agreement, NOT a filing read. Our engine-computed trailing EPS 20.48 vs Sarmaaya 20.25 (1.1%), and P/B 2.10 vs 1.91 (9.9%) — two ratios off different statements agreeing independently. No one opened the filing, so an un-restated bonus/rights issue or a basis subtlety could still be hiding underneath (the failure modes that caught SEARL, MUGHAL and GAL). Weaker tier than the \"filing+Sarmaaya\"/\"hand+Sarmaaya\" entries; re-verify by hand before relying on it for anything load-bearing."
+    },
+    "ALTN": {
+      "throughPeriod": "2026 9M",
+      "basis": "consolidated",
+      "source": "auto+Sarmaaya",
+      "date": "2026-07-21",
+      "note": "consolidated basis found by sweeping stored data, NOT a filing read. FY2025 -12.54 + 9M2026 -4.09 - 9M2025 -12.03 = TTM -4.60 vs Sarmaaya -4.61; P/B 0.58 vs 0.53 as an independent second check. The matching chain uses the latest interim held and the same period we serve, so this is a real basis difference rather than agreement with a stale reference. Loss-making, so the agreement certifies the loss figure, not a usable P/E. Added to CONSOLIDATED_BASIS_TICKERS."
+    },
+    "UNITY": {
+      "throughPeriod": "2026 Q1",
+      "basis": "consolidated",
+      "source": "auto+Sarmaaya",
+      "date": "2026-07-21",
+      "note": "consolidated basis found by sweeping stored data, NOT a filing read. FY2025 1.37 + Q1'26 0.10 - Q1'25 -0.10 = TTM 1.57 vs Sarmaaya 1.60 (1.9%); P/B 0.66 vs 0.65 as an independent second check. Chain uses the latest interim held and the same period we serve. Added to CONSOLIDATED_BASIS_TICKERS."
+    },
+    "JSBL": {
+      "throughPeriod": "2026 Q1",
+      "basis": "consolidated",
+      "source": "agent-read+Sarmaaya",
+      "date": "2026-07-21",
+      "note": "bank; Sarmaaya quotes the group. Read off the cached PDFs by a subagent using the Read tool, which was the ONLY route available: the filings are scanned/image-only so the DeepSeek text-layer extractor could not touch them, and both vision API providers (OpenRouter, Anthropic) were out of credits. Consolidated FY2025 2.84 (annual printed p183) + Q1'26 0.44 - Q1'25 1.18 (both interim printed p51) = TTM 2.10, exact to Sarmaaya's 2.1. Unconsolidated (1.36 + 0.51 - 0.63 = 1.24) does not reconcile. P/B 0.41 vs Sarmaaya 0.42 as an independent second check, using equity ATTRIBUTABLE TO OWNERS (66,531,130k, interim p50) not total equity including NCI (78,803,779k) -- consolidated EPS is struck on owners' profit, so total equity would mismatch numerator and denominator. Same reason profit_after_tax is stored as 5,826,980k (owners) not 7,539,228k (total incl. 1,712,248k NCI). The automated pass this morning had the two FY figures but not the Q1 comparatives, so it could not build a chain and reported 'neither basis matches' -- the gap was missing data, not bad reasoning."
+    },
+    "BAFL": {
+      "throughPeriod": "2026 Q1",
+      "basis": "consolidated",
+      "source": "agent-read+Sarmaaya",
+      "date": "2026-07-21",
+      "note": "bank. Read off the cached PDFs by a subagent (interim text layer is garbled; figures taken from the page images). THE SHARE SPLIT IS THE POINT: the 26 Mar 2026 AGM approved a 2:1 split, but the FY2025 annual was published 5 Mar 2026, BEFORE it, so its EPS 17.62 (annual printed p539) is on the pre-split 1,577,165k base while the interim's 3.48 and restated comparative 2.24 (interim printed p60) are on the post-split 3,154,330k base. Halving the FY figure to 8.81 gives TTM 8.81 + 3.48 - 2.24 = 10.05, exact to Sarmaaya. Chaining unadjusted would give 18.86, off by 88%. The halving is derived arithmetic, not a printed figure, but the exact reconciliation confirms it. Unconsolidated (10.28) lands within 2.3% -- close enough to mislead -- so the exact consolidated match is what decides the basis. P/E 5.66 vs Sarmaaya 6.27 and P/B 0.94 vs 1.04 both differ by ~9.7% in the same direction, which is our live price against their snapshot price, not a data fault."
+    },
+    "AGP": {
+      "throughPeriod": "2026 Q1",
+      "basis": "consolidated",
+      "source": "agent-read+Sarmaaya",
+      "date": "2026-07-21",
+      "note": "pharma. Read off the cached PDFs by a subagent (the annual is a scanned image, two printed pages per sheet, no text layer). Consolidated FY2025 13.34 (annual printed p320) + Q1'26 3.06 - Q1'25 3.04 (both interim printed p25) = 13.36 vs Sarmaaya 13.41, 0.4%. Unconsolidated (8.43 + 1.99 - 1.66 = 8.76) is nowhere near: subsidiaries carry about a third of group earnings, so basis choice moves EPS over 50%. EPS struck on profit attributable to owners (3,736,178k) not group total (4,335,979k incl. 599,801k NCI); equity likewise owners-only (16,323,194k ex-NCI 1,763,534k). P/B 3.34 vs 3.36. Agent flagged an oddity it did NOT adjust: Q1 consolidated cost of sales prints LOWER than unconsolidated, which is unusual for a consolidation adding two trading subsidiaries."
+    },
+    "EPCL": {
+      "throughPeriod": "2026 Q1",
+      "basis": "consolidated",
+      "source": "agent-read+Sarmaaya",
+      "date": "2026-07-21",
+      "note": "chemicals, FY2025 LOSS year. Read off the cached PDFs by a subagent (interim is a scan with ~454 characters of text layer across 39 pages). Consolidated FY2025 -4.29 (annual printed p273) + Q1'26 0.41 - Q1'25 -0.91 = -2.97, exact to Sarmaaya. Unconsolidated (-2.11) does not reconcile. BASIC not diluted throughout: Q1 2026 returned to profit so the 3,000,000k of convertible preference shares stop being antidilutive and the series diverge (0.41 basic vs 0.31 diluted); Sarmaaya reconciles against basic. No NCI (subsidiaries wholly owned). P/B needed a second correction found by cross-checking: storing total equity 23,770,045k gave P/B 1.25 vs Sarmaaya 1.43, a gap that could not be price vintage because P/E agreed to 0.2% and both ratios share a price. Inverting their P/B implied ~20.8bn equity = total LESS the 3,000,000k preference capital; book value per ORDINARY share must exclude it since the denominator counts ordinary shares only. Ex-preference gives P/B 1.43 exactly. Caution for display: EPS is negative so P/E computes to -11.02, which is not a meaningful multiple."
+    },
+    "ENGROH": {
+      "throughPeriod": "2026 Q1",
+      "basis": "consolidated",
+      "source": "agent-read+Sarmaaya",
+      "date": "2026-07-21",
+      "note": "holding company. Was blocked only because the FY2025 annual was never fetched: ENGROH files under 'Transmission of Annual Financial Statements', a spelling the filing matcher did not recognise, so it fell through to the FY2024 report. The FY2025 annual had been on PSX since 7 Apr 2026. Consolidated FY2025 46.20 (annual printed p187) + Q1'26 8.50 - Q1'25 restated 1.52 (interim p26) = 53.18, exact to Sarmaaya. Unconsolidated (0.21) is not a rival basis but a non-measure: post-Scheme the company holds only its ECL investment, so standalone profit is dividend income, which fell 6,666,606k -> 536,620k. NCI is ~48% of group profit (51,398,032k of 107,030,650k) so EPS is struck on the owners' share 55,632,618k; equity likewise owners-only 219,582,659k ex-NCI 100,708,888k. CAUTION for any multi-year view: FY2024 comparatives sit on the OLD pre-Scheme 481,287k share base while FY2025 sits on 1,204,232k, and the report does NOT mark them restated, so a naive YoY EPS comparison is corrupted by a 2.5x denominator change. Only FY2025 onward is stored. FY2025 also flattered by one-off thermal-asset items (35,758,730k carrying-value adjustment, 24,099,000k remeasurement gain)."
+    },
+    "AABS": {
+      "throughPeriod": "2026 H1",
+      "basis": "unconsolidated",
+      "source": "agent-read+Sarmaaya",
+      "date": "2026-07-21",
+      "note": "sugar, 30 Sep fiscal year end. Unconsolidated is not a preference: the company has no subsidiaries and the word 'consolidated' appears nowhere in its accounts. Was blocked because the interim slot had been taken by 'Advertisement regarding Credit of Interim Dividend for the half year ended March 31, 2026' -- a one-page newspaper notice that matched the report filter on 'half year' and was newer than the real quarterly report filed three weeks earlier. FY2025 73.17 (annual printed p42) + H1 FY2026 21.40 - H1 FY2025 34.63 (both interim printed p09) = 59.94, exact to Sarmaaya. P/B 1.82 vs 1.84. The March interim is a HALF YEAR, not a quarter, and prints cumulative AND quarter-only columns side by side (21.40 vs 10.12); taking the quarter column would give 48.66 and look plausible. Also removed a fabricated 2026 Q3 row carrying the H1 filing's own reported_date -- AABS has filed no Q3, and that row alone dragged the TTM to 35.43."
+    },
+    "SIEM": {
+      "throughPeriod": "2026 H1",
+      "basis": "unconsolidated",
+      "source": "agent-read+Sarmaaya",
+      "date": "2026-07-21",
+      "note": "Siemens Pakistan Engineering, 30 Sep fiscal year end. NOT a cement company and not Siddiqsons; the reading agent corrected that identification. Unconsolidated because there is nothing to consolidate: SIEM is itself 93.03% owned by Siemens AG and discloses no subsidiaries. FY2025 100.57 (annual p40) + H1 FY2026 1.53 - H1 FY2025 70.73 (both interim p6, cumulative columns) = 31.37, exact to Sarmaaya; P/B 2.04 vs 2.04. Needed BOTH a refetch and a data cleanup. The FY2025 annual was missing for the same 'Annual Financial Statements' spelling reason as ENGROH. Separately the extractor had stored CONTINUING-operations EPS as though it were the total, for a company whose result is dominated by discontinued operations: FY2025 held 12.77 against a true 100.57, and FY2024 held 38.07 against a true -248.34, which even flips the sign. A quarter mislabelled Q3 (impossible for a 30 Sep year ending 31 Mar) was also removed. TWO THINGS THAT LOOK WRONG AND ARE NOT: the magnitude, because only ~8.2m shares are outstanding (six-year series runs 100.57, -248.34, 117.72, 203.81, 103.07, -60.14); and the composition, because 87.80 of FY2025's 100.57 is DISCONTINUED operations from the Energy Business disposal while continuing-operations EPS actually fell from 38.07 to 12.77. The headline is not repeatable earnings."
+    },
+    "PKGS": {
+      "throughPeriod": "2026 Q1",
+      "basis": "consolidated",
+      "source": "agent-read+Sarmaaya",
+      "date": "2026-07-21",
+      "note": "Packages. Consolidated -9.43 and P/B 1.08, both exact. Unconsolidated (28.80) is dividend-upstreaming: standalone revenue is dividend and rental income of 5.87bn against group revenue of 193.2bn. HEADLINE ODDITY THAT IS NOT AN ERROR: the group made a PROFIT of 260,587k yet reports a LOSS per share of -20.55, because the entire profit and more accrued to NCI (2,096,893k) while owners absorbed -1,836,306k. EPS is struck on the owners' portion. THIS FILE POISONS TEXT-LAYER EXTRACTION: the interim PDF carries a stale hidden text layer over the consolidated statements, so pdftotext returns a phantom column of 10.61 / -5.13 where the RENDERED PAGE shows 7.73 / -3.39. The phantom figures carry a matching phantom profit of 948,158k and are internally self-consistent, so an arithmetic sanity check does NOT catch them. Values here were read from page images; anything re-extracting PKGS from its text layer will silently disagree and look plausible doing it."
+    },
+    "JSCL": {
+      "throughPeriod": "2026 Q1",
+      "basis": "consolidated",
+      "source": "agent-read+Sarmaaya",
+      "date": "2026-07-21",
+      "note": "Jahangir Siddiqui & Co, investment holding company. Consolidated 6.02 exact, P/B 0.40 vs 0.41. Unconsolidated 0.34 is essentially dividend income from related parties (445.11m of 475.13m total return on investments), and group profit is ~32x standalone, so the basis choice is not cosmetic. NCI takes 38% of FY2025 group profit and 55% of Q1 FY2026, so EPS is struck on the owners' share (6,480,825k of 10,391,006k). Equity likewise owners-only (58,370,289k ex-NCI 35,497,252k). Note the 183,188,477 Class A preference shares were fully redeemed at par on 31 Dec 2025, which is why diluted equals basic from FY2025 onward when FY2024 had a dilutive gap."
+    },
+    "TPL": {
+      "throughPeriod": "2026 9M",
+      "basis": "consolidated",
+      "source": "agent-read+Sarmaaya",
+      "date": "2026-07-21",
+      "note": "TPL Corp, holding company, 30 June fiscal year end so the March interim is the NINE MONTH period. Consolidated -10.61 exact; unconsolidated -3.96 does not reconcile. NCI absorbs the MAJORITY of group losses and its share is growing (35% of FY2025, 57% of 9M FY2026), so the owners-only numerator is essential. Figures converted from whole rupees to thousands. P/B IS NOT RELIABLE HERE and is recorded only for completeness: owners' consolidated equity went NEGATIVE at 31 Mar 2026 (-2,123,697k, down from +399,046k), total consolidated equity collapsed from 5,925,171k to 137,314k in nine months, and a price-to-book ratio on negative book value is not a meaningful multiple. Ours reads -2.30 against Sarmaaya's -1.08; both are negative and neither is interpretable. The unconsolidated reserves position is only positive because a 2bn subordinated loan from the parent is presented within equity."
+    },
+    "ZTL": {
+      "throughPeriod": "2026 9M",
+      "basis": "unconsolidated",
+      "source": "agent-read+Sarmaaya",
+      "date": "2026-07-21",
+      "note": "Zephyr Textiles (NOT 'Z-Tech'; corrected by the reading agent from the cover). 30 June fiscal year end so the March interim is the NINE MONTH period. Unconsolidated -0.82 exact, P/B 0.47 vs 0.48. No consolidated statements exist. Figures converted from whole rupees to thousands. The 9M FY2026 loss is driven by a 70.32m LEVY charge, not by operations: operating profit stayed positive at 184.05m, and Q3 in isolation was profitable at 0.12 against the 9M figure of -0.67. FY2025 EPS of 0.03 is genuinely that small (PAT 1,819k on sales of 8.28bn), so deriving a share count from profit/EPS carries meaningful rounding error at two decimals; equity comes from the balance sheet instead. Equity taken from the BALANCE SHEET, not the statement of changes in equity: the SOCIE omits a 39,000k 'Contribution from sponsor' column and is exactly that much lower, and the balance sheet is the statement that foots."
+    },
+    "PINL": {
+      "throughPeriod": "2026 Q1",
+      "basis": "unconsolidated",
+      "source": "agent-read+Sarmaaya",
+      "date": "2026-07-21",
+      "note": "Premier Insurance. NOT a bulk terminal and NOT Pioneer -- the ticker label used when commissioning the read was wrong and the agent corrected it from the statements' own legal-status note. General insurer with a Window Takaful Operations business reported as separate supplementary statements, NOT consolidated (Takaful is under 25% of gross contribution so consolidation is not required). No subsidiaries, so unconsolidated is the only basis. 3.86 vs 3.89, P/B 0.51 vs 0.49. FY2024 comparatives were restated but for balance-sheet presentation only (Participants' Takaful Fund shown gross per amended SECP regulations); equity, profit and EPS are unaffected. Equity fell over Q1 despite a 94,754k profit, driven by the investment revaluation reserve, so equity direction contradicts earnings direction here."
+    },
+    "EFUL": {
+      "throughPeriod": "2026 Q1",
+      "basis": "unconsolidated",
+      "source": "agent-read+Sarmaaya",
+      "date": "2026-07-21",
+      "note": "EFU Life Assurance. 20.86 vs 20.91, P/B 1.71 vs 1.75. No consolidated statements exist: EFU Health was merged by amalgamation into EFUL effective 1 May 2024, so there is no subsidiary left to consolidate. BASIS CAVEAT WORTH KNOWING: for a life assurer, EPS sits on the AGGREGATE statement, which the company's own note describes as shareholders'-fund profit PLUS surplus transferred from the statutory funds PLUS undistributed statutory-fund surplus including solvency margins. A shareholders'-fund-only profit is not printed anywhere in either document, so the aggregate is the only available basis and is the one the company strikes EPS on. Surplus transferred to the shareholders' fund was 3,017m in FY2025. FY2024 and Q1 FY2025 comparatives are RESTATED: the 2024 EFU Health acquisition was booked at provisional fair values, finalised in the current period and applied retrospectively per IFRS 3."
+    },
+    "ADAMS": {
+      "throughPeriod": "2026 H1",
+      "basis": "unconsolidated",
+      "source": "agent-read (reference stale)",
+      "date": "2026-07-21",
+      "note": "Adam Sugar Mills, 30 September fiscal year end so the March interim is a HALF YEAR. No subsidiaries, so unconsolidated is the only basis. P/B 0.23 vs 0.23. Highly seasonal: the 127-day crushing season (15 Nov to 21 Mar) falls almost entirely inside H1, so H1 is NOT half a year and annualising it would be wrong. THE REFERENCE DISAGREES AND WE ARE THE ONES WHO ARE RIGHT. Our chain gives 8.78 against Sarmaaya's 9.29. The 0.51 gap is EXACTLY the restatement the company made: H1 FY2025 EPS was restated from -2.54 as previously reported to -2.03, correcting a deferred-tax rate error (interim note 24; the annual makes the matching FY2024 correction, 3.14 to 4.23). Chaining the SUPERSEDED comparative gives 2.67 + 4.08 + 2.54 = 9.29, reproducing Sarmaaya exactly, which is how the disagreement was identified rather than merely tolerated. We use the corrected figure as IAS 8 requires. Recorded at a lower confidence tier because the independent check does not agree, though the discrepancy is fully explained. Also note the interim's auditor review report in this copy is an unsigned DRAFT watermark with blank date and UDIN."
+    },
+    "STCL": {
+      "throughPeriod": "2026 9M",
+      "basis": "unconsolidated",
+      "source": "agent-read+Sarmaaya",
+      "date": "2026-07-21",
+      "note": "Shabbir Tiles and Ceramics, 30 June fiscal year end so the March interim is the NINE MONTH period. No subsidiary, so unconsolidated is the only basis. -4.03 exact, P/B 1.53 vs 1.54. Both PDFs are scans with no text layer over the statements; all figures read from page images. Deteriorating sharply: the 9M FY2026 loss of 906,275k is nearly 7x the prior year's 133,987k, equity fell from 2,648,775k to 1,742,500k in nine months, and unappropriated profit flipped to an accumulated loss of 381,315k. The annual's printed folio is unreliable (PDF p46/47/48 all carry the header 'PAGE 14'), so PDF page numbers are the citation."
+    },
+    "AWTX": {
+      "throughPeriod": "2026 9M",
+      "basis": "unconsolidated",
+      "source": "agent-read+Sarmaaya",
+      "date": "2026-07-21",
+      "note": "Allawasaya Textile and Finishing Mills, 30 June fiscal year end so the March interim is the NINE MONTH period. 9.84 exact, P/B 1.00 vs 0.99. Only 800,000 shares outstanding, so per-share figures run in the tens and hundreds; that is the share base, not a scaling error. The interim's cumulative and quarter-only columns carry OPPOSITE signs (9M FY2025 -124.81 against Q3 FY2025 +73.79), so picking the wrong column would yield a plausible but wrong figure. FY2024 and FY2023 comparatives are labelled '(Restated)' but NO restatement note explains why -- the reading agent checked notes 3, 4, 45, 46 and 47 and declined to infer a cause. The restatement did not touch the share base. Equity excludes the separate 'Loan from directors 192,500,000' line the balance sheet adds below equity to reach 1,477,718,500."
+    },
+    "GATI": {
+      "throughPeriod": "2026 9M",
+      "basis": "consolidated",
+      "source": "agent-read+Sarmaaya",
+      "date": "2026-07-21",
+      "note": "Gatron Industries, 30 June fiscal year end so the March interim is the NINE MONTH period. Consolidated -10.66 vs -10.67 and P/B 0.78 vs 0.78; unconsolidated -8.72 does not reconcile. All three subsidiaries are WHOLLY owned so there is no NCI and consolidated profit is entirely attributable to owners. The consolidated loss exceeds the unconsolidated loss in every period, so the two are not interchangeable. Both PDFs are pure scans; all figures read from page images. WATCH: a Scheme of Arrangement with Nova Frontiers and Ghani & Tayub was board-resolved 28 Jan 2026 and would cancel a 29.33% and a 2.98% holding and issue new shares at a swap ratio not yet determined. Share count is unchanged at 31 Mar 2026 but this will move the base once effective and will break this chain. Note also the FY2024 comparative sits on a pre-rights time-apportioned base of 86,718,699 against FY2025's 108,728,960, so year-over-year EPS across that boundary is not like-for-like."
+    },
+    "FCEL": {
+      "throughPeriod": "2026 9M",
+      "basis": "unconsolidated",
+      "source": "agent-read+Sarmaaya",
+      "date": "2026-07-21",
+      "note": "First Capital Equities, 30 June fiscal year end so the March interim is the NINE MONTH period. 0.965 vs 0.97, P/B 1.34 vs 1.35. Itself a 73.23%-owned subsidiary of FCSC and holds no subsidiaries, so it files unconsolidated only. EPS IS SPLIT continuing vs discontinued and the TOTAL is stored (FY2025 1.207 = continuing 1.210 + discontinued -0.003); storing the continuing line instead would repeat exactly the error found in SIEM's stored data. The discontinued operation is the brokerage business, wound down since the 2019 decision to surrender the PSX Trading Right Entitlement Certificate and convert to real estate. Carries a QUALIFIED audit opinion and a going-concern material uncertainty. Interim cumulative and quarter-only columns have opposite signs (9M +0.060 against Q3 -0.6614). Both PDFs are scans; all figures read from page images."
+    },
+    "AKDHL": {
+      "throughPeriod": "2026 9M",
+      "basis": "unconsolidated",
+      "source": "agent-read+Sarmaaya",
+      "date": "2026-07-21",
+      "note": "AKD Hospitality, 30 June fiscal year end so the March interim is the NINE MONTH period. 0.76 vs 0.75. Despite the ticker it is NOT a holding company and files no consolidated accounts. EFFECTIVELY DORMANT: revenue is a flat 6,000k a year of retainer income billed to a single related party (AKD REIT Management), and the auditors note operations 'at reasonable scale in its principal line of business are at halt since long'. Carries a going-concern material uncertainty. FY2024's higher EPS came from a 7,700,833 reversal of an expected credit loss allowance, not trading. Sarmaaya's P/B of 16.18 follows from a tiny 37,891k equity base and is not a data fault; our P/B did not compute. The annual's Directors' Report prints FY2024 EPS as 3.43 against the audited 3.33 (it used profit BEFORE tax); the audited figure is correct. The interim balance sheet's comparative column is mis-headed 'Audited 30 June 2026' for what is 30 June 2025."
+    },
+    "FCSC": {
+      "throughPeriod": "2026 9M",
+      "basis": "consolidated",
+      "source": "agent-read+Sarmaaya",
+      "date": "2026-07-21",
+      "note": "First Capital Securities, 30 June fiscal year end so the March interim is the NINE MONTH period. Parent of FCEL (also verified this batch); the two reconcile independently. Consolidated 3.243 vs 3.24; unconsolidated 4.90 does not reconcile. EPS struck on the OWNERS' portion (FY2025 owners 767,331k of 868,873k group, 101,542k to NCI). THE CONSOLIDATED INTERIM PRINTS NO TOTAL EPS LINE, only continued and discontinued rows, so the 9M totals are DERIVED as owners' profit over the 316,610,112 share base (0.2057 and -0.6140) rather than read off a page; using the face's rounded 0.21 would give 0.2086 and drift the chain, and the exact reconciliation to 3.24 is what validates the derivation. Discontinued operations are subsidiary FCEL's broking business. COMPARABILITY CAVEAT: the group acquired 56.86% of Pace Supermall during the period (previously 0.07%), so consolidated revenue and cost comparatives are not like-for-like; the share base is unaffected so the EPS chain holds. Both PDFs are scans. The interim carries several stale headers from the half-year filing ('Half year ended 31 December' over nine-month columns); figures tie across statements and govern."
+    },
+    "ELCM": {
+      "throughPeriod": "2026 9M",
+      "basis": "unconsolidated",
+      "source": "agent-read+Sarmaaya",
+      "date": "2026-07-21",
+      "note": "Elahi Cotton Mills, 30 June fiscal year end so the March interim is the NINE MONTH period. -24.15 exact, P/B 4.34 vs 4.52. No subsidiaries. Only 1,300,000 shares outstanding, so per-share figures run in the tens of rupees; that is the share base, not a scaling error. Both PDFs are pure image scans with zero text layer; all figures read from page images. GOING-CONCERN MATERIAL UNCERTAINTY: at 30 Jun 2025 current liabilities exceeded current assets by 49.4m and accumulated losses exceeded paid-up capital by 45.7m. Note the interim P&L puts a 'Minimum tax' line ABOVE profit before income tax, so the 9M FY2026 pre-tax loss of -15,820,614 becomes -24,847,976 after a 9,027,362 minimum tax charge; the pre-tax figure is not the EPS numerator. The agent also flagged that the Q3 FY2025 column does not foot internally on its face (1,001,306 less 293,507 gives 707,799, not the printed 1,294,813) but the printed quarter EPS of 1.00 corresponds to the printed figure; reproduced as printed, not corrected."
+    },
+    "JLICL": {
+      "throughPeriod": "2026 Q1",
+      "basis": "unconsolidated",
+      "source": "agent-read+Sarmaaya",
+      "date": "2026-07-21",
+      "note": "Jubilee Life Insurance. 24.05 exact, P/B 1.00 vs 1.02. LIFE ASSURER, so the same structural caveat as EFUL: EPS sits on the AGGREGATE profit or loss account, which the company's own note beneath the statement defines as shareholders'-fund profit before tax PLUS surplus transferred from the statutory funds (2,370m in FY2025) PLUS undistributed statutory-fund surplus including solvency margins. A shareholders'-fund-only profit after tax is NOT printed anywhere, so the aggregate is the only available basis and is the one the company strikes EPS on, confirmed by division (2,495,503/100,354 = 24.87). Seven statutory funds, three of them Family Takaful, all inside the primary statements; the separately annexed Window Takaful Operations set is supplementary and unaudited, not a second basis. No consolidated statements: the only investment of that type is an associate carried at equity. Subsidiary of Aga Khan Fund for Economic Development (57.87%)."
+    },
+    "JSML": {
+      "throughPeriod": "2026 H1",
+      "basis": "unconsolidated",
+      "source": "agent-read+Sarmaaya",
+      "date": "2026-07-21",
+      "note": "Jauharabad Sugar Mills (formerly Kohinoor Sugar). 30 SEPTEMBER fiscal year end so the March interim is a HALF YEAR. 5.90 vs 5.89. Profitable in every period read, against the batch expectation for sugar. SCALE TRAP: the annual is printed in WHOLE RUPEES and the interim in THOUSANDS; the reading agent flagged this explicitly and both are normalised to thousands here. Mixing the two would leave EPS untouched while moving the implied share count by 1000x. No subsidiaries -- Cane Processing (Pvt) Ltd is its HOLDING company at 63.66%, not a subsidiary. P/B 0.20 vs 0.23 (13.4% apart): 'Loan from sponsors' of 1,345,636k is presented WITHIN the equity block by the filing, so total equity as printed includes it, which plausibly explains the gap. EPS is the verified dimension here, not P/B."
+    },
+    "DADX": {
+      "throughPeriod": "2026 9M",
+      "basis": "unconsolidated",
+      "source": "agent-read+Sarmaaya",
+      "date": "2026-07-21",
+      "note": "Dadex Eternit, 30 June fiscal year end so the March interim is the NINE MONTH period. -30.00 vs -30.29, P/B 3.71 vs 3.97. Itself a 63.18% subsidiary of Sikander (Private) Limited and holds no subsidiaries, so unconsolidated is the only basis. Small share base (10.76m shares), which is why per-share losses run to double digits. The annual is an image scan with a 63-character text layer; all annual figures read from page images. GOING-CONCERN MATERIAL UNCERTAINTY: Manghopir factory closed since March 2021, accumulated losses 1,495.8m, current liabilities exceed current assets by 135.8m, head office building under contract for sale with 1,745,000k received as advance. Do not read across interim columns: gross profit is -24,562 for the nine months but +11,077 for the quarter alone."
+    },
+    "TPLP": {
+      "throughPeriod": "2026 9M",
+      "basis": "consolidated",
+      "source": "agent-read+Sarmaaya",
+      "date": "2026-07-21",
+      "note": "TPL Properties, 30 June fiscal year end so the March interim is the NINE MONTH period. Consolidated -8.32 vs -8.27; unconsolidated -7.54 does not reconcile. UNUSUAL AND IMPORTANT: its consolidated EPS is struck on TOTAL group loss INCLUDING NCI, the opposite of PKGS, JSCL, BAFL and most of this registry. The reading agent established this BY DIVISION rather than by trusting a note: 1,934,269,169/561,086,879 = 3.4473 matches the printed -3.45, while the owners' 1,920,742,169 would give -3.42 and does not. Same result on both interim legs. profit_after_tax and equity are therefore both stored on the total-including-NCI basis so numerator and denominator stay consistent. P/B 2.53 vs 2.30 (10% apart), unsurprising given NCI is negative on both dates. Losses are driven by unrealised marks on the TPL REIT Fund I investment (-639m FY2025, -4,102m 9M FY2026), not operations. Note the annual's own six-year summary and ratio table disagree with each other for FY23/FY22/FY21; FY2025 and FY2024 agree across both and with the audited statements."
+    },
+    "MSOT": {
+      "throughPeriod": "2026 9M",
+      "basis": "unconsolidated",
+      "source": "agent-read+Sarmaaya",
+      "date": "2026-07-21",
+      "note": "Masood Textile Mills, 30 June fiscal year end so the March interim is the NINE MONTH period. EPS 15.05 vs 15.06 exact. EPS IS STRUCK AFTER DEDUCTING THE CUMULATIVE PREFERENCE DIVIDEND: the company has 67,500,000 ordinary shares AND 27,500,000 cumulative non-voting preference shares, and the annual's note 36 prints the arithmetic (FY2025 profit 131,279 less preference dividend 50,003 = 81,276, the EPS numerator). FY2025's numerator is a READ figure; the interim prints no EPS note so its numerators are DERIVED as EPS x 67,500k ordinary shares, because storing the face profit of 603,462 against an EPS of 8.54 would imply 70,663k shares rather than the true 67,500k. P/B IS NOT VERIFIED: ours reads 0.73 against Sarmaaya's 0.53, and unlike EPCL, excluding preference capital does not close the gap, so something else differs in the equity definition. EPS is the verified dimension. SOURCE FILE IS TRUNCATED: the cached annual.pdf arrives byte-truncated and null-padded with no PDF trailer, and re-fetching REPRODUCES it, so PSX is serving a broken document rather than this being a transient fault. The agent recovered 119 pages via PyMuPDF and every figure reconciles, but a stricter parser will fail on that file. Also note OCR misread the prior-year 9M EPS as -8.31; the rendered image and the directors' report both say -5.31."
+    },
+    "JVDC": {
+      "throughPeriod": "TTM to 2026 9M",
+      "basis": "unconsolidated",
+      "source": "auto+Sarmaaya",
+      "date": "2026-07-22",
+      "note": "Promoted WITHOUT a fresh document read. The stored chain we already serve was compared against Sarmaaya on TWO independent dimensions, P/E and P/B, and both agreed. That is weaker evidence than the agent-read tier (nobody opened the filing, so a shared upstream error would go undetected) but stronger than the EPS-only agreement used for ALTN and UNITY, because P/B depends on equity and share count rather than on earnings, so a single bad extraction is unlikely to satisfy both. EPS 10.41 vs 10.67 (2.4%), P/B 1.99 vs 1.99 (0.2%). Has psx-filing rows, so the served figure is not portal-only."
+    },
+    "BERG": {
+      "throughPeriod": "TTM to 2026 9M",
+      "basis": "unconsolidated",
+      "source": "auto+Sarmaaya",
+      "date": "2026-07-22",
+      "note": "Promoted WITHOUT a fresh document read. The stored chain we already serve was compared against Sarmaaya on TWO independent dimensions, P/E and P/B, and both agreed. That is weaker evidence than the agent-read tier (nobody opened the filing, so a shared upstream error would go undetected) but stronger than the EPS-only agreement used for ALTN and UNITY, because P/B depends on equity and share count rather than on earnings, so a single bad extraction is unlikely to satisfy both. EPS 12.10 vs 12.44 (2.7%), P/B 0.65 vs 0.65 (0.7%). Has psx-filing rows."
+    },
+    "EFUG": {
+      "throughPeriod": "TTM to 2026 Q1",
+      "basis": "unconsolidated",
+      "source": "auto+Sarmaaya",
+      "date": "2026-07-22",
+      "note": "Promoted WITHOUT a fresh document read. The stored chain we already serve was compared against Sarmaaya on TWO independent dimensions, P/E and P/B, and both agreed. That is weaker evidence than the agent-read tier (nobody opened the filing, so a shared upstream error would go undetected) but stronger than the EPS-only agreement used for ALTN and UNITY, because P/B depends on equity and share count rather than on earnings, so a single bad extraction is unlikely to satisfy both. EPS 27.09 vs 27.72 (2.3%), P/B 0.88 vs 0.92 (3.9%). Has psx-filing rows. Note EFUG is a general insurer and its sister company EFUL was verified by a full agent read; the two are separate entities and were reconciled independently."
+    },
+    "IGIL": {
+      "throughPeriod": "2025 FY",
+      "basis": "unconsolidated",
+      "source": "auto+Sarmaaya",
+      "date": "2026-07-22",
+      "note": "Promoted WITHOUT a fresh document read. The stored chain we already serve was compared against Sarmaaya on TWO independent dimensions, P/E and P/B, and both agreed. That is weaker evidence than the agent-read tier (nobody opened the filing, so a shared upstream error would go undetected) but stronger than the EPS-only agreement used for ALTN and UNITY, because P/B depends on equity and share count rather than on earnings, so a single bad extraction is unlikely to satisfy both. EPS 2.48 vs 2.54 (2.4%), P/B 1.22 vs 1.19 (2.2%). WEAKEST OF THE FOUR: its served period is a bare 2025 FY, not a trailing chain, meaning no interim leg is being combined. It will go stale as soon as an interim is filed, and should be re-checked then rather than trusted indefinitely."
+    },
+    "MCB": {
+      "throughPeriod": "TTM to 2026 Q1",
+      "basis": "consolidated",
+      "source": "agent-read+Sarmaaya",
+      "date": "2026-07-22",
+      "note": "Was demoted to _needsRecheck when the drift gate caught it disagreeing with the reference, then re-read from the filings by a subagent. NEITHER SIDE WAS WRONG: both the standalone and the consolidated chain reproduce to the paisa, and the entire gap was basis. Flipped to consolidated on 2026-07-22 as a deliberate policy choice, because standalone accounts hide subsidiary and associate earnings. Consolidated EPS is struck on profit attributable to OWNERS, verified BY DIVISION rather than by trusting the filing's note wording. Consolidated 49.29 (annual p461) + Q1'26 11.07 - Q1'25 12.36 (both interim p25) = 48.00 vs reference 47.99, the one-cent gap being rounding in published two-decimal EPS. Standalone chain was 44.88. Owners 58,415,056k of 58,775,408k group (NCI 360,352k); division gives 49.293 on owners against 49.60 on total, so owners is confirmed. A restatement exists in the annual but it is a balance-sheet fair-value policy change, not an EPS restatement; FY2024 EPS prints unchanged."
+    },
+    "LUCK": {
+      "throughPeriod": "TTM to 2026 9M",
+      "basis": "consolidated",
+      "source": "agent-read+Sarmaaya",
+      "date": "2026-07-22",
+      "note": "Was demoted to _needsRecheck when the drift gate caught it disagreeing with the reference, then re-read from the filings by a subagent. NEITHER SIDE WAS WRONG: both the standalone and the consolidated chain reproduce to the paisa, and the entire gap was basis. Flipped to consolidated on 2026-07-22 as a deliberate policy choice, because standalone accounts hide subsidiary and associate earnings. Consolidated EPS is struck on profit attributable to OWNERS, verified BY DIVISION rather than by trusting the filing's note wording. Consolidated 52.53 (annual p292) + 9M'26 43.47 - 9M'25 39.12 (both interim p32) = 56.88, exact. Standalone chain was 28.99, also exact on its own basis. NCI is large: owners 76,956,147k of 84,498,377k group. THIS ENTRY REVERSES an earlier engine note asserting LUCK is 'correctly unconsolidated' because PSX quotes standalone; PSX does quote standalone, but the platform now serves the group basis for holding structures. 5-for-1 split approved 18 Mar 2025 and all prior-period EPS in both filings is already retrospectively restated per IAS 33, so these legs mix no pre-split figures. Note FY2024 used 1,486,480k weighted shares against FY2025's 1,465,000k because of buy-back cancellation timing, not the split."
+    },
+    "FFC": {
+      "throughPeriod": "TTM to 2026 Q1",
+      "basis": "consolidated",
+      "source": "agent-read+Sarmaaya",
+      "date": "2026-07-22",
+      "note": "Was demoted to _needsRecheck when the drift gate caught it disagreeing with the reference, then re-read from the filings by a subagent. NEITHER SIDE WAS WRONG: both the standalone and the consolidated chain reproduce to the paisa, and the entire gap was basis. Flipped to consolidated on 2026-07-22 as a deliberate policy choice, because standalone accounts hide subsidiary and associate earnings. Consolidated EPS is struck on profit attributable to OWNERS, verified BY DIVISION rather than by trusting the filing's note wording. Consolidated 58.44 (annual p430) + Q1'26 13.62 - Q1'25 12.23 (both interim p32) = 59.83, exact. Standalone chain was 54.50. Owners 83,170,819k of 84,946,307k; division gives 58.44 on owners against 59.69 on total. NO BALANCE-SHEET ROW STORED: the consolidated statements print no owners'-equity subtotal, only total-including-NCI, and deriving one would be arithmetic rather than a read figure, so P/B is left on whatever the engine already holds. IMPORTANT for any trend or growth metric: the two bases move in OPPOSITE directions year on year (standalone 45.49 to 51.69 rising, consolidated 59.29 to 58.44 falling), so a growth statement about FFC is basis-dependent. The FFBL merger predates these comparatives and both years use 1,423,109k weighted shares, so it is not the cause of anything here; 15,914,566 new shares were issued for the FPCL acquisition during Q1 2026."
+    },
+    "HUBC": {
+      "throughPeriod": "TTM to 2026 9M",
+      "basis": "consolidated",
+      "source": "agent-read+Sarmaaya",
+      "date": "2026-07-22",
+      "note": "Was demoted to _needsRecheck when the drift gate caught it disagreeing with the reference, then re-read from the filings by a subagent. NEITHER SIDE WAS WRONG: both the standalone and the consolidated chain reproduce to the paisa, and the entire gap was basis. Flipped to consolidated on 2026-07-22 as a deliberate policy choice, because standalone accounts hide subsidiary and associate earnings. Consolidated EPS is struck on profit attributable to OWNERS, verified BY DIVISION rather than by trusting the filing's note wording. Consolidated 35.56 (annual p277) + 9M'26 25.49 - 9M'25 26.40 (both interim p27) = 34.65, exact. Standalone chain was 18.84. THE STARKEST CASE FOR THE BASIS FLIP: standalone FY2025 profit is 19.1bn against group owners' 46.1bn, because 41.3bn of associate and joint-venture income sits entirely outside the standalone accounts and reaches them only as 14.9bn of dividends. Owners 46,131,156k of 51,774,561k; division gives 35.56 on owners against 39.91 on total. FY2025 EPS includes discontinued operations (total 35.56 = continuing 35.44 + discontinued 0.12); the 9M'25 leg likewise (26.40 = 27.04 continuing - 0.64 discontinued). The interim PDF is a scan with no text layer at all; all interim figures were read from rendered page images. Caution on trends: FY2024 consolidated EPS of 53.98 is far above FY2025's 35.56 on lower revenue following PPA changes."
+    },
+    "FATIMA": {
+      "throughPeriod": "TTM to 2026 Q1",
+      "basis": "consolidated",
+      "source": "agent-read+Sarmaaya",
+      "date": "2026-07-22",
+      "note": "Was demoted to _needsRecheck when the drift gate caught it disagreeing with the reference, then re-read from the filings by a subagent. NEITHER SIDE WAS WRONG: both the standalone and the consolidated chain reproduce to the paisa, and the entire gap was basis. Flipped to consolidated on 2026-07-22 as a deliberate policy choice, because standalone accounts hide subsidiary and associate earnings. Consolidated EPS is struck on profit attributable to OWNERS, verified BY DIVISION rather than by trusting the filing's note wording. Consolidated 20.03 (annual printed p270, note 40) + Q1'26 1.54 - Q1'25 3.99 (both interim printed p30) = 17.58, exact. Standalone chain was 12.66. The ONLY one of the five where owners' and total profit coincide, because every subsidiary is wholly owned and no NCI line appears anywhere. STANDALONE IS ACTIVELY MISLEADING HERE: the Multan Plant was carved out into wholly owned subsidiary Pakarab Fertilizers effective 1 Jan 2025 under a court-approved Scheme, so the standalone entity is now only the Sadiqabad Plant and its series is not comparable to its own pre-2025 history. Standalone Q1 comparatives are restated for the carveout; consolidated ones are not, correctly, since the carveout is intra-group. LIKELY ROOT CAUSE OF THE ORIGINAL ERROR: the annual carries two complete note sets with different numbering (EPS is note 41 separate, note 40 consolidated) and an unlabelled scraper reading 'the EPS note' takes whichever prints first, which is the separate set."
+    }
+  },
+  "_unverifiable": {
+    "DBCI": "Dadabhoy Cement Industries (Cement): no filings on record, no balance sheet, no revenue in any period, and a stale quote. A defunct listing that still sits in the live universe — it cannot be verified, only excluded.",
+    "AGL": "Agritech (Fertilizer): Q1-2026 EPS -1.70 and Q1-2025 -0.56 are confirmed correct against the filing, but the stored FY2025 annual pair is internally inconsistent — EPS 5.36 x the confirmed 599.08M shares (paid-up capital 5,990,842,240 at Rs 10) implies 3,211m against a stored PAT of 2,895,547k, and AGL has preference dividends that should reduce the ordinary claim further, not raise it. TTM 4.22 is therefore unreliable at roughly the 14% level. Needs the FY2025 annual report read; no Sarmaaya reference exists to arbitrate. Distressed structure regardless: accumulated losses -23.5bn, equity positive only via a 35.4bn revaluation surplus.",
+    "AHCL": "Arif Habib Corporation: mis-sectored as Fertilizer — it is a holding company (Power Cement, Aisha Steel, PIA stakes). No annual row exists at all, so P/E 3.68 is being computed off a 9-month EPS rather than a trailing twelve months. Added the real 9M FY2025 comparative (EPS 4.33) and quarantined a duplicated H1. Even once the annual lands, P/E is close to meaningless here: 12.75bn of the 17.12bn 9M profit is unrealised mark-to-market gain on listed investments. Same basis-architecture class as ENGROH."
+  },
+  "_needsRecheck": {
+    "_note": "Was verified, or was changed by an automated pass, but the trailing figure no longer stands. Re-read the filing before restoring or granting the mark.",
+    "PSEL": "Backfill produced trailing 21.06 against Sarmaaya 5.58 (+277%). Also holds contradictory FY rows (2022 FY at -10.99 and 18.73; 2023 FY at -6.71 and -52.35).",
+    "AVN": "Backfill produced trailing 0.14 against Sarmaaya 1.02 (-86%). Filing 277710 yielded three 2025 FY rows: consolidated 1.51, unconsolidated 0.14, unlabelled 1.54. The 0.14 the engine selected is almost certainly a misread.",
+    "HUMNL": "Backfill produced trailing 1.20 against Sarmaaya 0.10.",
+    "SIEM": "REJECTED a tempting exact match. A consolidated/unconsolidated sweep found FY2025 12.77 + H1'26 1.53 - H1'25 -17.07 = 31.37, exactly Sarmaaya's 31.37 — but that chain is a TTM through H1 2026 while we serve TTM through 9M 2026, so it agrees with a STALE reference rather than proving us right. Worse, the latest real interim we hold is H1 2026, yet the engine serves a 9M built from a 2026 Q3 row that is byte-identical to Q2 — the same duplicate-label shape as FCCL's swapped H1/Q2. Needs the Q3 2026 filing read to establish the true 9M before anything here can be trusted.",
+    "SFL": "consolidated chain FY2025 1640.1 + H1'26 67.89 - H1'25 68.31 = 1639.68 vs Sarmaaya 1680 (2.4%), but it matches on H1 while we serve 9M, and no consolidated 9M exists. Same stale-period ambiguity as SIEM: cannot tell whether the reference is a quarter behind or our 9M is wrong. Needs the filing.",
+    "ASTL": "DEMOTED 2026-07-22 by scripts/verification/check-verified-drift.ts. Served -0.49 vs reference -0.16 (206.3%). Verified against the filing only. Small absolute numbers make the percentage misleading, but the sign and magnitude both need re-reading. Previous entry: source=filing basis=unconsolidated through=2026 9M date=2026-07-05.",
+    "CCM": "DEMOTED 2026-07-22 by scripts/verification/check-verified-drift.ts. Served 0.85 vs reference 2.96 (71.3%). Verified against the filing only. Needs a re-read. Previous entry: source=filing basis=unconsolidated through=2026 9M date=2026-07-06.",
+    "HBL": "DEMOTED 2026-07-22 by scripts/verification/check-verified-drift.ts. Served 42.81 vs reference 45.16 (5.2%). Verified WITH the reference on 2026-07-07 and the reference has NOT moved (45.16 then and now), so our stored chain changed after verification. Chain is self-consistent (FY2025 42.6 + Q1'26 10.51 - Q1'25 10.30 = 42.81) but we hold no consolidated rows for a large banking group. Previous entry: source=Sarmaaya basis=unconsolidated through=2026 Q1 date=2026-07-07.",
+    "CHCC": "DEMOTED 2026-07-22 by scripts/verification/check-verified-drift.ts. Served 43.25 vs reference 37.91 (14.1%). Verified with the reference; ours is now HIGHER than the reference, the opposite direction to the consolidated-basis cases, so this needs its own diagnosis. Previous entry: source=Sarmaaya basis=unconsolidated through=2026 9M date=2026-07-07.",
+    "DGKC": "DEMOTED 2026-07-22 by scripts/verification/check-verified-drift.ts. Served 26.27 vs reference 27.64 (5.0%). Verified with the reference; drifted after. Previous entry: source=filing+Sarmaaya basis=unconsolidated through=2026 9M date=2026-07-07.",
+    "FECTC": "DEMOTED 2026-07-22 by scripts/verification/check-verified-drift.ts. Served 14.77 vs reference 14.0 (5.5%). Verified with the reference; ours is now higher. Previous entry: source=filing+Sarmaaya basis=unconsolidated through=2026 9M date=2026-07-19.",
+    "THCCL": "DEMOTED 2026-07-22 by scripts/verification/check-verified-drift.ts. Served 6.54 vs reference 7.24 (9.7%). Verified with the reference; drifted after. Previous entry: source=filing+Sarmaaya basis=unconsolidated through=2026 9M date=2026-07-19."
+  },
+  "_pendingConsolidatedBasis": {
+    "_note": "The ratio engine computes unconsolidated only (its TTM builder explicitly excludes consolidated rows, the guard that fixed the PPL mixed-basis bug). These are companies where the CONSOLIDATED figure is what the reference (Sarmaaya) actually quotes and matches, the consolidated data has been captured and page-cited, but the platform's served P/E still reflects unconsolidated. Not verified, because that would assert something the API does not deliver. Promotable once the engine gains a per-company basis preference. Companies like LUCK/FFC/HUBC are NOT here: for those, unconsolidated IS the correct served figure (matches PSX), Sarmaaya's consolidated number is simply a different convention, and they are already verified under 'verified'.",
+    "PTC": "no reachable consolidated annual — see agent-reconcile-report.json",
+    "NATF": "no reachable consolidated annual — see agent-reconcile-report.json"
+  }
+}

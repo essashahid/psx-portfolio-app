@@ -2,10 +2,10 @@ import { createClient, getUser } from "@/lib/supabase/server";
 import { claudeConfigured } from "@/lib/ai/claude";
 import { deepseekChatConfigured } from "@/lib/ai/deepseek-chat";
 import { getDataFreshness } from "@/lib/market/read";
-import { getPortfolio } from "@/lib/portfolio";
-import { Chat, type ChatThread } from "@/components/chat/chat";
+import { getPortfolio } from "@/lib/portfolio/positions";
+import { Chat, type ChatThread } from "@/components/features/chat/chat";
 import type { PromptContext } from "@/lib/chat/prompt-suggestions";
-import { normalizeAllowedChatProviders } from "@/lib/features";
+import { normalizeAllowedChatProviders } from "@/lib/config/features";
 
 export const dynamic = "force-dynamic";
 

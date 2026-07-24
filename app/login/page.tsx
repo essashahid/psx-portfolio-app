@@ -7,7 +7,7 @@ import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { DISCLAIMER } from "@/lib/utils";
+import { DISCLAIMER } from "@/lib/shared/format";
 import { CandlestickChart, Loader2, Eye, EyeOff, ShieldCheck, LineChart, Sparkles } from "lucide-react";
 
 const VALUE_POINTS = [

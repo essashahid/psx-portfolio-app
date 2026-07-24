@@ -1,9 +1,9 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { requireUser, errorResponse } from "@/lib/api-helpers";
-import { rebuildHoldings, recomputeHoldingsFromTransactions } from "@/lib/portfolio";
-import { rejectDemoWrite } from "@/lib/demo-mode";
-import type { TxnType } from "@/lib/types";
+import { requireUser, errorResponse } from "@/lib/shared/api";
+import { rebuildHoldings, recomputeHoldingsFromTransactions } from "@/lib/portfolio/positions";
+import { rejectDemoWrite } from "@/lib/demo/mode";
+import type { TxnType } from "@/lib/shared/types";
 
 export const maxDuration = 60;
 

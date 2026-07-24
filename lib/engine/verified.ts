@@ -1,4 +1,4 @@
-import registry from "@/data/verified-tickers.json";
+import registry from "@/data/reference/verified-tickers.json";
 
 export interface Verification {
   ticker: string;
@@ -65,7 +65,7 @@ export function verificationStatus(
 /**
  * The newest period among stored financial rows, as a label periodRank can
  * read ("2026 9M"). Ranking lives here rather than at each call site so the
- * UI and scripts/check-verified-freshness.ts cannot drift apart on what
+ * UI and scripts/verification/check-verified-freshness.ts cannot drift apart on what
  * counts as "newer".
  *
  * Pass INCOME STATEMENT rows only. A balance sheet alone does not move the

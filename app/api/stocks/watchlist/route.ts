@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
-import { requireUser, errorResponse } from "@/lib/api-helpers";
-import { rejectDemoWrite } from "@/lib/demo-mode";
+import { requireUser, errorResponse } from "@/lib/shared/api";
+import { rejectDemoWrite } from "@/lib/demo/mode";
 
 export const maxDuration = 15;
 

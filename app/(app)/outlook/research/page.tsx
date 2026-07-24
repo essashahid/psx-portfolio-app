@@ -3,18 +3,18 @@ import { redirect } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
 import { getAdminContext } from "@/lib/admin/guard";
 import { createClient } from "@/lib/supabase/server";
-import { PageHeader } from "@/components/page-header";
-import { Phase3Review, type Phase3Evaluation } from "@/components/outlook/phase3-review";
-import { LiveScorecardView } from "@/components/outlook/live-scorecard-view";
+import { PageHeader } from "@/components/ui/page-header";
+import { Phase3Review, type Phase3Evaluation } from "@/components/features/outlook/phase3-review";
+import { LiveScorecardView } from "@/components/features/outlook/live-scorecard-view";
 import { readLiveScorecard } from "@/lib/engine/outlook/scorecard";
-import { DataDashboardView } from "@/components/outlook/data-dashboard-view";
+import { DataDashboardView } from "@/components/features/outlook/data-dashboard-view";
 import { buildOutlookCoverage } from "@/lib/engine/outlook/coverage";
 import { loadAlignedInputs } from "@/lib/engine/outlook/inputs";
 import { buildSignalEvidence } from "@/lib/engine/outlook/evaluate";
 import { buildDataDashboard } from "@/lib/engine/outlook/data-dashboard";
 import type { ExperimentalOutlook } from "@/lib/engine/outlook/experimental-outlook";
-import phase3Evaluation from "@/data/outlook-phase3-evaluation.json";
-import experimentalOutlook from "@/data/outlook-experimental.json";
+import phase3Evaluation from "@/data/reference/outlook-phase3-evaluation.json";
+import experimentalOutlook from "@/data/reference/outlook-experimental.json";
 
 export const dynamic = "force-dynamic";
 

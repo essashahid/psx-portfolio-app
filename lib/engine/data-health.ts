@@ -62,7 +62,7 @@ type SarmaayaSnap = { eps?: number; basis?: string; priceClose?: number; shares?
 
 function sarmaayaStore(): Record<string, SarmaayaSnap> {
   try {
-    const raw = readFileSync(join(process.cwd(), "data/sarmaaya-snapshots.json"), "utf8");
+    const raw = readFileSync(join(process.cwd(), "data/reference/sarmaaya-snapshots.json"), "utf8");
     return (JSON.parse(raw) as { snapshots: Record<string, SarmaayaSnap> }).snapshots ?? {};
   } catch {
     return {};

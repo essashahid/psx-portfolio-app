@@ -340,7 +340,7 @@ async function getPdfAnalytics(
 async function getLocalPdfAnalytics(): Promise<LedgerAnalytics | null> {
   const candidates = [
     process.env.AKD_LEDGER_PDF_PATH,
-    path.join(process.cwd(), "COAF5632.PDF"),
+    path.join(process.cwd(), "data/private/akd-account-statement-COAF5632.PDF"),
   ].filter((p): p is string => !!p);
 
   for (const candidate of candidates) {

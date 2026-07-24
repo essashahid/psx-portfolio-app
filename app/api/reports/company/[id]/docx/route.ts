@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { requireUser, errorResponse } from "@/lib/api-helpers";
+import { requireUser, errorResponse } from "@/lib/shared/api";
 import { renderCompanyReportDocx } from "@/lib/company/report-docx";
 import type { CompanyReportPayload } from "@/lib/company/report";
 

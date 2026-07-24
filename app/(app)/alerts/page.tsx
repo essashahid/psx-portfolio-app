@@ -1,13 +1,13 @@
 import Link from "next/link";
 import { createClient, getUser } from "@/lib/supabase/server";
-import { PageHeader } from "@/components/page-header";
-import { ActionButton } from "@/components/action-button";
-import { DismissAlertButton } from "@/components/alert-actions";
-import { EmptyState } from "@/components/empty-state";
+import { PageHeader } from "@/components/ui/page-header";
+import { ActionButton } from "@/components/ui/action-button";
+import { DismissAlertButton } from "@/components/features/alerts/alert-actions";
+import { EmptyState } from "@/components/ui/empty-state";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge, severityVariant } from "@/components/ui/badge";
 import { Bell, RefreshCw } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { cn } from "@/lib/shared/format";
 
 export const dynamic = "force-dynamic";
 

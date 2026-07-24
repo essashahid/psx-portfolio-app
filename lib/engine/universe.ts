@@ -1,6 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { fetchPsxSymbols, classifyInstrument } from "@/lib/market-data/psx-dps";
-import { invalidateStockMaster } from "@/lib/stock-master";
+import { invalidateStockMaster } from "@/lib/company/stock-master";
 
 /**
  * Universe hygiene: one sync path shared by the manual route and the daily

@@ -1,13 +1,13 @@
 import { NextResponse } from "next/server";
 import { revalidateTag } from "next/cache";
-import { requireUser, errorResponse } from "@/lib/api-helpers";
+import { requireUser, errorResponse } from "@/lib/shared/api";
 import { buildMarketSnapshot } from "@/lib/market/snapshot";
 import { refreshMarketEvents } from "@/lib/market/events";
 import { generateMarketBrief } from "@/lib/market/brief";
 import { MARKET_SNAPSHOT_TAG } from "@/lib/market/read";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { fetchAndIngestForeignFlows, foreignFlowsAutoConfigured } from "@/lib/market/foreign-flows-ingest";
-import { rejectDemoWrite } from "@/lib/demo-mode";
+import { rejectDemoWrite } from "@/lib/demo/mode";
 
 export const maxDuration = 120;
 

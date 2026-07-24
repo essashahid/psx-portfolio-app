@@ -6,8 +6,8 @@ import {
   getPositionHistoryCard,
 } from "@/lib/chat/data";
 import { getForeignFlowCard } from "@/lib/market/foreign-flows";
-import { getPortfolio } from "@/lib/portfolio";
-import { tavilySearch, tavilyConfigured } from "@/lib/tavily";
+import { getPortfolio } from "@/lib/portfolio/positions";
+import { tavilySearch, tavilyConfigured } from "@/lib/providers/tavily";
 import { emaSeries, smaSeries, rsiSeries, toWeekly, type Candle } from "@/lib/market/technicals";
 import { fetchPsxEod } from "@/lib/market-data/psx-dps";
 

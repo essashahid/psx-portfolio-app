@@ -6,7 +6,7 @@ import { loadAlignedInputs } from "@/lib/engine/outlook/inputs";
 import { buildForecastDataset } from "@/lib/engine/outlook/walkforward";
 import { buildExperimentalOutlook, type GateDecision } from "@/lib/engine/outlook/experimental-outlook";
 import { predictionsFrom, recordPredictions, scoreMaturedPredictions } from "@/lib/engine/outlook/scorecard";
-import evaluation from "@/data/outlook-phase3-evaluation.json";
+import evaluation from "@/data/reference/outlook-phase3-evaluation.json";
 
 /**
  * Daily refresh for the Market Outlook.

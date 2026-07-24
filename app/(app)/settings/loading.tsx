@@ -1,4 +1,4 @@
-import { HeaderSkeleton, CardSkeleton } from "@/components/page-skeleton";
+import { HeaderSkeleton, CardSkeleton } from "@/components/ui/page-skeleton";
 
 export default function SettingsLoading() {
   return (

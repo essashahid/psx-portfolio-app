@@ -1,9 +1,9 @@
 import { NextResponse } from "next/server";
-import { requireUser, errorResponse, logAgentRun } from "@/lib/api-helpers";
+import { requireUser, errorResponse, logAgentRun } from "@/lib/shared/api";
 import { gatherForecastInputs } from "@/lib/engine/allocation/load";
 import { buildForecast } from "@/lib/engine/allocation";
 import { narrateForecast } from "@/lib/engine/allocation/narrate";
-import { rejectDemoWrite } from "@/lib/demo-mode";
+import { rejectDemoWrite } from "@/lib/demo/mode";
 
 export const maxDuration = 120;
 

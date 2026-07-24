@@ -2,7 +2,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { FEED_SOURCES, QUERY_SOURCES } from "@/lib/news/sources";
 import type { DiscoveredNewsArticle, NewsSourceQuality } from "@/lib/news/types";
-import type { NewsArticle } from "@/lib/types";
+import type { NewsArticle } from "@/lib/shared/types";
 
 type Db = SupabaseClient;
 

@@ -1,14 +1,14 @@
 import { redirect } from "next/navigation";
 import { createClient, getEffectiveUser } from "@/lib/supabase/server";
-import { MobileBottomNav, MobileTopBar, Sidebar } from "@/components/sidebar";
-import { AutoRefreshPrices } from "@/components/auto-refresh-prices";
-import { NavProgress } from "@/components/nav-progress";
-import { ImpersonationBanner } from "@/components/impersonation-banner";
-import { FeedbackWidget } from "@/components/feedback-widget";
-import { CommandPalette } from "@/components/command-palette";
-import { DISCLAIMER } from "@/lib/utils";
-import { NAV, resolveVisibleHrefs } from "@/lib/nav";
-import type { ExperienceLevel } from "@/lib/types";
+import { MobileBottomNav, MobileTopBar, Sidebar } from "@/components/shared/sidebar";
+import { AutoRefreshPrices } from "@/components/shared/auto-refresh-prices";
+import { NavProgress } from "@/components/shared/nav-progress";
+import { ImpersonationBanner } from "@/components/shared/impersonation-banner";
+import { FeedbackWidget } from "@/components/shared/feedback-widget";
+import { CommandPalette } from "@/components/shared/command-palette";
+import { DISCLAIMER } from "@/lib/shared/format";
+import { NAV, resolveVisibleHrefs } from "@/lib/config/navigation";
+import type { ExperienceLevel } from "@/lib/shared/types";
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   const supabase = await createClient();

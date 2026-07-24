@@ -1,4 +1,4 @@
-import { CardSkeleton } from "@/components/page-skeleton";
+import { CardSkeleton } from "@/components/ui/page-skeleton";
 import { Skeleton } from "@/components/ui/skeleton";
 
 export default function NewsLoading() {

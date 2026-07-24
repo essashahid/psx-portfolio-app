@@ -1,10 +1,10 @@
 import Link from "next/link";
 import { createClient, getUser } from "@/lib/supabase/server";
-import { PageHeader } from "@/components/page-header";
+import { PageHeader } from "@/components/ui/page-header";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { CompanyReportViewer } from "@/components/stock/company-report-viewer";
-import { RefreshReportButton } from "@/components/stock/refresh-report-button";
+import { CompanyReportViewer } from "@/components/features/stocks/company-report-viewer";
+import { RefreshReportButton } from "@/components/features/stocks/refresh-report-button";
 import { FileText } from "lucide-react";
 import type { CompanyReportPayload } from "@/lib/company/report";
 

@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { errorResponse } from "@/lib/api-helpers";
+import { errorResponse } from "@/lib/shared/api";
 
 const WaitlistSchema = z
   .object({

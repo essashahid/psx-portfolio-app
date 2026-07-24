@@ -1,6 +1,6 @@
-import { requireUser } from "@/lib/api-helpers";
-import { accountHasFeature, normalizeAllowedChatProviders } from "@/lib/features";
-import { rejectDemoWrite } from "@/lib/demo-mode";
+import { requireUser } from "@/lib/shared/api";
+import { accountHasFeature, normalizeAllowedChatProviders } from "@/lib/config/features";
+import { rejectDemoWrite } from "@/lib/demo/mode";
 import { resolveMessage } from "@/lib/chat/resolver";
 import { gatherCards, type Card } from "@/lib/chat/context";
 import { getLatestSessionDate } from "@/lib/chat/data";

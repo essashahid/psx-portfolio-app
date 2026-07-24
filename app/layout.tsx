@@ -31,7 +31,7 @@ export const viewport: Viewport = {
 };
 
 import { Analytics } from "@vercel/analytics/next";
-import { PwaUpdater } from "@/components/pwa-updater";
+import { PwaUpdater } from "@/components/shared/pwa-updater";
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (

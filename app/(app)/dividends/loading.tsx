@@ -1,4 +1,4 @@
-import { HeaderSkeleton, StatCardSkeleton, TableSkeleton } from "@/components/page-skeleton";
+import { HeaderSkeleton, StatCardSkeleton, TableSkeleton } from "@/components/ui/page-skeleton";
 
 export default function DividendsLoading() {
   return (

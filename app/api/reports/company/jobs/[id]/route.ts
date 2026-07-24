@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { requireUser, errorResponse } from "@/lib/api-helpers";
+import { requireUser, errorResponse } from "@/lib/shared/api";
 import { getReportJob } from "@/lib/company/report/jobs";
 
 export async function GET(

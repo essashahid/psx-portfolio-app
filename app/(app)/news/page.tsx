@@ -1,18 +1,18 @@
 import Link from "next/link";
 import { createClient, getUser } from "@/lib/supabase/server";
-import { NewsBriefWidget } from "@/components/news-brief-widget";
-import { NewsEventCard, NewsEventRow, type TickerMoves } from "@/components/news-event-card";
-import { NewsRefreshButton } from "@/components/news-refresh-button";
-import { SectorChip, SectorDot } from "@/components/sector-chip";
-import { EmptyState } from "@/components/empty-state";
+import { NewsBriefWidget } from "@/components/features/news/news-brief-widget";
+import { NewsEventCard, NewsEventRow, type TickerMoves } from "@/components/features/news/news-event-card";
+import { NewsRefreshButton } from "@/components/features/news/news-refresh-button";
+import { SectorChip, SectorDot } from "@/components/shared/sector-chip";
+import { EmptyState } from "@/components/ui/empty-state";
 import { Button } from "@/components/ui/button";
 import { CalendarDays, LayoutGrid, List, Newspaper, Search } from "lucide-react";
-import { cn, formatSignedPct } from "@/lib/utils";
+import { cn, formatSignedPct } from "@/lib/shared/format";
 import { getUserNewsFeed, type FeedNewsArticle } from "@/lib/news/global-store";
-import { getPrefs, type UserPrefs } from "@/lib/prefs";
-import { MarkSeen } from "@/components/mark-seen";
+import { getPrefs, type UserPrefs } from "@/lib/user/preferences";
+import { MarkSeen } from "@/components/shared/mark-seen";
 import { buildNewsEvents, eventMatchesSearch, type NewsEvent } from "@/lib/news/events";
-import { getPortfolio } from "@/lib/portfolio";
+import { getPortfolio } from "@/lib/portfolio/positions";
 import { getDailyHoldingPerformance } from "@/lib/portfolio/daily-performance";
 import { getCachedMarketGlobal } from "@/lib/market/read";
 
