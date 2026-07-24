@@ -5,6 +5,8 @@ import { getAdminContext } from "@/lib/admin/guard";
 import { createClient } from "@/lib/supabase/server";
 import { PageHeader } from "@/components/page-header";
 import { Phase3Review, type Phase3Evaluation } from "@/components/outlook/phase3-review";
+import { LiveScorecardView } from "@/components/outlook/live-scorecard-view";
+import { readLiveScorecard } from "@/lib/engine/outlook/scorecard";
 import { DataDashboardView } from "@/components/outlook/data-dashboard-view";
 import { buildOutlookCoverage } from "@/lib/engine/outlook/coverage";
 import { loadAlignedInputs } from "@/lib/engine/outlook/inputs";
@@ -30,7 +32,11 @@ export default async function OutlookResearchPage() {
   if (!isAdmin) redirect("/outlook");
 
   const supabase = await createClient();
-  const [coverage, inputs] = await Promise.all([buildOutlookCoverage(supabase), loadAlignedInputs(supabase)]);
+  const [coverage, inputs, scorecard] = await Promise.all([
+    buildOutlookCoverage(supabase),
+    loadAlignedInputs(supabase),
+    readLiveScorecard(supabase),
+  ]);
   const evidence = buildSignalEvidence(inputs);
   const dashboard = buildDataDashboard(coverage, evidence);
 
@@ -50,6 +56,7 @@ export default async function OutlookResearchPage() {
           </Link>
         }
       />
+      <LiveScorecardView scorecard={scorecard} />
       <Phase3Review
         evaluation={phase3Evaluation as unknown as Phase3Evaluation}
         outlook={experimentalOutlook as unknown as ExperimentalOutlook}

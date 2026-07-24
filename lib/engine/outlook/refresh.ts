@@ -2,6 +2,11 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { fetchMarketWatch } from "@/lib/market/psx-market-watch";
 import { PSX_PRICE_SOURCE } from "@/lib/market-data/psx-dps";
 import { computeBreadth, type PricePanel } from "@/lib/engine/outlook/breadth";
+import { loadAlignedInputs } from "@/lib/engine/outlook/inputs";
+import { buildForecastDataset } from "@/lib/engine/outlook/walkforward";
+import { buildExperimentalOutlook, type GateDecision } from "@/lib/engine/outlook/experimental-outlook";
+import { predictionsFrom, recordPredictions, scoreMaturedPredictions } from "@/lib/engine/outlook/scorecard";
+import evaluation from "@/data/outlook-phase3-evaluation.json";
 
 /**
  * Daily refresh for the Market Outlook.
@@ -31,6 +36,9 @@ export interface OutlookRefreshResult {
   pricesWritten: number;
   breadthDaysWritten: number;
   skipped: string | null;
+  predictionsRecorded: number;
+  predictionsScored: number;
+  predictionsPending: number;
 }
 
 /** Latest trade date already stored for the index. */
@@ -177,5 +185,25 @@ export async function refreshOutlookData(admin: SupabaseClient, opts: { force?: 
   }
 
   const breadthDaysWritten = await refreshRecentBreadth(admin);
-  return { tradeDate: indexDate, pricesWritten, breadthDaysWritten, skipped };
+
+  // Record what the models say today, and score anything that has matured.
+  // This runs after breadth so the predictions use the session's own data, and
+  // it is the only way the live track record accumulates.
+  const inputs = await loadAlignedInputs(admin);
+  const dataset = buildForecastDataset(inputs);
+  const gates = (evaluation as { gates: GateDecision[] }).gates;
+  const outlook = buildExperimentalOutlook(dataset, gates);
+
+  const predictionsRecorded = await recordPredictions(admin, predictionsFrom(outlook));
+  const { scored, pending } = await scoreMaturedPredictions(admin, dataset);
+
+  return {
+    tradeDate: indexDate,
+    pricesWritten,
+    breadthDaysWritten,
+    skipped,
+    predictionsRecorded,
+    predictionsScored: scored,
+    predictionsPending: pending,
+  };
 }
