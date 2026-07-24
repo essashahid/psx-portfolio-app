@@ -5,7 +5,39 @@ import Link from "next/link";
 import { Bookmark, EyeOff, ExternalLink, X } from "lucide-react";
 import type { NewsEvent } from "@/lib/news/events";
 import { SectorChip } from "@/components/shared/sector-chip";
+import { categoryStyle } from "@/lib/news/category-colors";
 import { cn, formatSignedPct } from "@/lib/shared/format";
+
+/** Colored, uppercase section eyebrow — e.g. Bloomberg's "Technology" kicker. */
+function CategoryEyebrow({ category }: { category: string }) {
+  const style = categoryStyle(category);
+  return (
+    <span
+      className="inline-flex shrink-0 items-center rounded px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide"
+      style={{ color: style.color, backgroundColor: style.background }}
+    >
+      {style.label}
+    </span>
+  );
+}
+
+function Thumbnail({ src, alt, size = "sm" }: { src: string; alt: string; size?: "sm" | "lg" }) {
+  return (
+    // eslint-disable-next-line @next/next/no-img-element -- external, unregistered domains; a plain <img> avoids per-source next/image config
+    <img
+      src={src}
+      alt={alt}
+      loading="lazy"
+      className={cn(
+        "shrink-0 rounded-md border border-border object-cover",
+        size === "lg" ? "aspect-video w-full" : "h-20 w-20 sm:h-24 sm:w-28"
+      )}
+      onError={(e) => {
+        e.currentTarget.closest("[data-thumb-wrap]")?.remove();
+      }}
+    />
+  );
+}
 
 /** Day-change percentages per ticker, used to annotate holding chips. */
 export type TickerMoves = Record<string, number | null>;
@@ -135,28 +167,48 @@ export function NewsEventCard({
           state.hidden && "opacity-45"
         )}
       >
+        {featured && event.imageUrl && (
+          <div data-thumb-wrap className="mb-4 overflow-hidden rounded-md">
+            <Thumbnail src={event.imageUrl} alt="" size="lg" />
+          </div>
+        )}
         <div className="flex items-start justify-between gap-4">
           <div className="min-w-0 flex-1">
             <button type="button" onClick={state.openDrawer} className="block w-full text-left">
               <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-[11px] text-muted-foreground">
-                <span className="font-medium text-foreground/75">{event.suggested ? "Suggested for you" : event.verification}</span>
+                <CategoryEyebrow category={event.category} />
                 <span aria-hidden>·</span>
-                <span>{event.eventType}</span>
+                <span className="font-medium text-foreground/75">{event.suggested ? "Suggested for you" : event.verification}</span>
                 <span aria-hidden>·</span>
                 <span>{event.timeLabel}</span>
               </div>
-              <h2
-                className={cn(
-                  "mt-2 font-semibold leading-snug tracking-editorial transition-colors",
-                  featured ? "text-xl sm:text-2xl" : "text-base",
-                  state.read ? "text-foreground/60" : "text-foreground"
+              <div className={cn("mt-2 flex gap-3", !featured && event.imageUrl && "items-start")}>
+                <div className="min-w-0 flex-1">
+                  <h2
+                    className={cn(
+                      "font-semibold leading-snug tracking-editorial transition-colors",
+                      featured ? "text-xl sm:text-2xl" : "text-base",
+                      state.read ? "text-foreground/60" : "text-foreground"
+                    )}
+                  >
+                    {event.title}
+                  </h2>
+                  {event.summary && (
+                    <p className={cn("mt-2 leading-relaxed text-muted-foreground", featured ? "text-sm" : "line-clamp-2 text-sm")}>
+                      {event.summary}
+                    </p>
+                  )}
+                </div>
+                {!featured && event.imageUrl && (
+                  <div data-thumb-wrap>
+                    <Thumbnail src={event.imageUrl} alt="" />
+                  </div>
                 )}
-              >
-                {event.title}
-              </h2>
-              {event.summary && (
-                <p className={cn("mt-2 leading-relaxed text-muted-foreground", featured ? "text-sm" : "line-clamp-2 text-sm")}>
-                  {event.summary}
+              </div>
+              {event.whySuggested && (
+                <p className="mt-3 text-sm leading-relaxed text-foreground/85">
+                  <span className="font-medium">Why suggested: </span>
+                  {event.whySuggested}
                 </p>
               )}
               {event.whySuggested && (
@@ -226,6 +278,11 @@ export function NewsEventRow({ event, moves }: { event: NewsEvent; moves?: Ticke
         )}
       >
         <span className="w-14 shrink-0 text-[11px] tabular-nums text-muted-foreground">{event.timeLabel}</span>
+        <span
+          className="h-1.5 w-1.5 shrink-0 rounded-full"
+          style={{ backgroundColor: categoryStyle(event.category).color }}
+          title={categoryStyle(event.category).label}
+        />
         <button
           type="button"
           onClick={state.openDrawer}
@@ -299,7 +356,10 @@ function EventDetailDrawer({
       >
         <div className="sticky top-0 z-10 flex items-center justify-between border-b border-border bg-card px-5 py-4">
           <div className="min-w-0">
-            <p className="text-[11px] text-muted-foreground">{event.verification} · {event.importance} importance</p>
+            <div className="flex items-center gap-2 text-[11px] text-muted-foreground">
+              <CategoryEyebrow category={event.category} />
+              <span>{event.verification} · {event.importance} importance</span>
+            </div>
             <h2 className="mt-1 line-clamp-2 text-base font-semibold">{event.title}</h2>
           </div>
           <button onClick={onClose} className="ml-4 flex h-8 w-8 shrink-0 items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground" aria-label="Close">
@@ -308,6 +368,11 @@ function EventDetailDrawer({
         </div>
 
         <div className="space-y-6 px-5 py-5">
+          {event.imageUrl && (
+            <div data-thumb-wrap className="overflow-hidden rounded-md">
+              <Thumbnail src={event.imageUrl} alt="" size="lg" />
+            </div>
+          )}
           <DetailSection title="What happened">
             <p>{event.summary ?? event.title}</p>
           </DetailSection>

@@ -14,6 +14,7 @@ type GlobalNewsRow = {
   source_key: string | null;
   published_at: string | null;
   snippet: string | null;
+  image_url: string | null;
   provider: string | null;
   scope: "portfolio" | "market";
   category: string | null;
@@ -130,6 +131,7 @@ export async function saveGlobalArticle(
         source_key: article.source_key ?? null,
         published_at: article.published_at,
         snippet: article.snippet,
+        image_url: article.image_url ?? null,
         provider: article.provider,
         scope: article.scope,
         category: patch.category ?? article.category ?? "general",
@@ -273,6 +275,7 @@ function composeGlobalArticle(global: GlobalNewsRow, rel: RelevanceRow | null): 
     source: global.source,
     published_at: global.published_at,
     snippet: global.snippet,
+    image_url: global.image_url,
     ai_summary: rel?.ai_summary ?? global.ai_summary,
     sentiment: rel?.sentiment ?? global.sentiment,
     relevance_score: rel?.relevance_score ?? global.relevance_score,

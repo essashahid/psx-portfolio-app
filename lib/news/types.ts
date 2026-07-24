@@ -58,4 +58,6 @@ export interface DiscoveredNewsArticle {
   source_quality?: NewsSourceQuality;
   link_reason?: string;
   low_confidence?: boolean;
+  /** Thumbnail, when the source publishes one. Most Google News query results have none. */
+  image_url?: string | null;
 }

@@ -87,6 +87,7 @@ function feedToArticle(item: RssItem, feed: FeedSource): DiscoveredNewsArticle {
     category: feed.category,
     source_quality: feed.tier === "aggregator" ? "medium" : "high",
     low_confidence: false,
+    image_url: item.image,
   };
 }
 
@@ -112,6 +113,7 @@ function googleNewsToArticle(item: RssItem, q: QuerySource): DiscoveredNewsArtic
     category: q.category,
     source_quality: "medium",
     low_confidence: false,
+    image_url: item.image,
   };
 }
 

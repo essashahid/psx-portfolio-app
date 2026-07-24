@@ -1,6 +1,5 @@
 import Link from "next/link";
 import { createClient, getUser } from "@/lib/supabase/server";
-import { NewsBriefWidget } from "@/components/features/news/news-brief-widget";
 import { NewsEventCard, NewsEventRow, type TickerMoves } from "@/components/features/news/news-event-card";
 import { NewsRefreshButton } from "@/components/features/news/news-refresh-button";
 import { SectorChip, SectorDot } from "@/components/shared/sector-chip";
@@ -105,17 +104,9 @@ export default async function NewsPage({ searchParams }: { searchParams: Promise
   const view: "cards" | "compact" = sp.view === "compact" ? "compact" : "cards";
   const todayKey = pktDateKey(new Date());
 
-  const [portfolio, articles, briefRes, watchlistRes, sourceRes, dividendEventsRes, marketEventsRes, dailyPerformance, marketGlobal, prefs] = await Promise.all([
+  const [portfolio, articles, watchlistRes, sourceRes, dividendEventsRes, marketEventsRes, dailyPerformance, marketGlobal, prefs] = await Promise.all([
     getPortfolio(supabase, user.id),
     getUserNewsFeed(supabase, user.id, 260),
-    supabase
-      .from("ai_briefings")
-      .select("id, content, model, created_at")
-      .eq("user_id", user.id)
-      .eq("briefing_type", "news_brief")
-      .order("created_at", { ascending: false })
-      .limit(1)
-      .maybeSingle(),
     supabase.from("stock_watchlist").select("ticker").eq("user_id", user.id).order("created_at", { ascending: false }),
     supabase.from("news_sources").select("enabled, health_status, last_success_at, updated_at"),
     supabase
@@ -150,9 +141,6 @@ export default async function NewsPage({ searchParams }: { searchParams: Promise
   const newSinceLastVisit = lastSeenMs
     ? events.filter((event) => !event.ignored && event.timestamp > lastSeenMs).length
     : 0;
-  const latestBrief = briefRes.data
-    ? { content: briefRes.data.content as string, model: (briefRes.data.model as string) ?? "", createdAt: briefRes.data.created_at as string }
-    : null;
 
   const cutoff = windowCutoff(windowId);
   const inWindow = (event: NewsEvent) => !cutoff || event.timestamp >= cutoff;
@@ -402,8 +390,6 @@ export default async function NewsPage({ searchParams }: { searchParams: Promise
 
       <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_320px]">
         <main className="min-w-0 space-y-6">
-          <NewsBriefWidget hasNews={events.length > 0} initialBrief={latestBrief} />
-
           {tab === "suggested" && (
             <section className="space-y-4">
               <div className="flex items-center justify-between gap-3">

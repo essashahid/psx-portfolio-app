@@ -10,6 +10,7 @@ export type NewsEvent = {
   storage: "global" | "legacy";
   title: string;
   summary: string | null;
+  imageUrl: string | null;
   url: string;
   source: string;
   category: string;
@@ -153,6 +154,7 @@ function buildEvent(rows: FeedNewsArticle[], context: NewsEventContext): NewsEve
 
   const title = cleanTitle(primary.title);
   const summary = cleanNewsText(primary.ai_summary) ?? cleanNewsText(primary.snippet);
+  const imageUrl = sorted.find((row) => row.image_url)?.image_url ?? null;
   const source = cleanSource(primary.source, primary.url);
   const category = primary.category ?? "general";
   const eventType = CATEGORY_LABEL[category] ?? "Reported event";
@@ -172,6 +174,7 @@ function buildEvent(rows: FeedNewsArticle[], context: NewsEventContext): NewsEve
     storage: primary.storage,
     title,
     summary,
+    imageUrl,
     url: primary.url,
     source,
     category,

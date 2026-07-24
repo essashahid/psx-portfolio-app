@@ -19,6 +19,8 @@ export interface RssItem {
   pubDate: string | null;
   /** From <source> (Google News) or the feed's own title — best-effort outlet name. */
   source: string | null;
+  /** Best-effort thumbnail from media:content/media:thumbnail/enclosure. Most Google News items have none. */
+  image: string | null;
 }
 
 export async function fetchRssFeed(url: string): Promise<RssItem[]> {
@@ -48,9 +50,19 @@ export function parseRss(xml: string): RssItem[] {
         description,
         pubDate: normalizeDate(pubDate),
         source,
+        image: pickImage(block),
       } satisfies RssItem;
     })
     .filter((item): item is RssItem => !!item);
+}
+
+/** media:content / media:thumbnail / an image enclosure — whichever a feed happens to publish. */
+function pickImage(block: string): string | null {
+  const media = block.match(/<media:(?:content|thumbnail)[^>]*\burl="([^"]+)"/i);
+  if (media) return media[1];
+  const enclosure = block.match(/<enclosure[^>]*\burl="([^"]+)"[^>]*\btype="image\/[^"]+"/i);
+  if (enclosure) return enclosure[1];
+  return null;
 }
 
 function pick(block: string, tag: string): string {

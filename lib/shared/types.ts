@@ -184,6 +184,7 @@ export interface NewsArticle {
   source: string | null;
   published_at: string | null;
   snippet: string | null;
+  image_url: string | null;
   ai_summary: string | null;
   sentiment: "positive" | "neutral" | "negative" | null;
   relevance_score: number | null;
