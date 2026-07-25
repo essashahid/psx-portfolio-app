@@ -17,11 +17,13 @@ export function Band({
   tone = "paper",
   rule = "bottom",
   className,
+  style,
   children,
 }: {
   tone?: "paper" | "indigo" | "saffron" | "clay" | "ink";
   rule?: "bottom" | "none";
   className?: string;
+  style?: React.CSSProperties;
   children: ReactNode;
 }) {
   return (
@@ -32,6 +34,7 @@ export function Band({
         rule === "bottom" && "border-b border-rule",
         className
       )}
+      style={style}
     >
       {children}
     </section>

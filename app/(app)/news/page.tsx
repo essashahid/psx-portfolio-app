@@ -222,7 +222,7 @@ export default async function NewsPage({ searchParams }: { searchParams: Promise
 
   return (
     <div className="mx-auto max-w-[1240px] space-y-5">
-      <header className="border-b border-rule pb-6">
+      <header className="-mx-3 border-b border-rule px-3 pb-6 pt-6 sm:-mx-4 sm:px-4 md:-mx-8 md:px-8" style={{ background: "color-mix(in oklab, var(--sp-cyan) 9%, var(--surface-page))" }}>
         <div className="flex flex-wrap items-end justify-between gap-6">
           <div className="max-w-3xl">
             <span className="mb-3.5 block h-0.75 w-11 bg-(--sp-cyan)" />

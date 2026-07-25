@@ -33,7 +33,7 @@ export default async function DividendsPage() {
 
   return (
     <div className="-mx-3 sm:-mx-4 md:-mx-(--gutter-page)">
-      <Band tone="paper" className="px-3 sm:px-4 md:px-(--gutter-page)">
+      <Band tone="paper" className="px-3 sm:px-4 md:px-(--gutter-page)" style={{ background: "color-mix(in oklab, var(--saffron-4) 40%, var(--surface-page))" }}>
         <div className="flex flex-wrap items-end justify-between gap-6">
           <div>
             <span className="mb-3.5 block h-0.75 w-11 bg-saffron" />

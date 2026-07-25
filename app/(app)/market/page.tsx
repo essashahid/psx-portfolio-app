@@ -85,7 +85,7 @@ export default async function MarketPulsePage() {
 
   return (
     <div className="-mx-3 sm:-mx-4 md:-mx-(--gutter-page)">
-      <Band tone="paper" className="px-3 sm:px-4 md:px-(--gutter-page)">
+      <Band tone="paper" className="px-3 sm:px-4 md:px-(--gutter-page)" style={{ background: "color-mix(in oklab, var(--sp-plum) 15%, var(--surface-page))" }}>
         <div className="flex flex-wrap items-end justify-between gap-7">
           <div>
             <span className="mb-3.5 block h-0.75 w-11 bg-(--sp-plum)" />
@@ -156,15 +156,25 @@ export default async function MarketPulsePage() {
         </div>
       </Band>
 
-      {participantRows.length > 0 && (
-        <Band tone="paper" className="px-3 sm:px-4 md:px-(--gutter-page)">
-          <div className="mb-6">
+      <Band tone="paper" className="px-3 sm:px-4 md:px-(--gutter-page)">
+        <div className="mb-6 flex flex-wrap items-end justify-between gap-4">
+          <div>
             <p className="eyebrow">Participation</p>
             <h2 className="mt-1.5 font-display text-(length:--text-h1) font-normal tracking-editorial text-text-strong">Whose money changed hands</h2>
           </div>
+          {foreignFlow?.day.date && <span className="figure text-(length:--text-2xs) text-text-faint">flow data {foreignFlow.day.date}</span>}
+        </div>
+        {participantRows.length > 0 ? (
           <ParticipantFlowBar rows={participantRows} unit={foreignFlow ? `${foreignFlow.day.currency} mn` : "mn"} />
-        </Band>
-      )}
+        ) : (
+          <div className="flex flex-wrap items-center justify-between gap-4 py-4">
+            <p className="max-w-(--measure) text-sm text-text-muted">
+              No investor-flow data is stored for the recent window. NCCPL participant flows load with the flows refresh; the strip fills in as soon as a flow day lands.
+            </p>
+            {!isDemo && <ActionButton endpoint="/api/flows/refresh" label={<><RefreshCw className="h-3.5 w-3.5" /> Refresh flows</>} variant="outline" size="sm" />}
+          </div>
+        )}
+      </Band>
 
       <div className="px-3 py-6 sm:px-4 md:px-(--gutter-page)">
         <p className="text-center text-[10px] text-muted-foreground">Source: official PSX market-watch and index feeds via {snapshot.source_provider} · snapshot {snapshot.snapshot_date} · traded value is volume × price where applicable.</p>

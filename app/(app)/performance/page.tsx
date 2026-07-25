@@ -144,8 +144,9 @@ export default async function PerformancePage() {
   const sourceReconciled = analytics.source.status === "reconciled";
 
   return (
-    <div className="space-y-8 pb-6">
-      <header className="border-b border-border pb-5">
+    <div className="pb-6">
+      <div className="-mx-3 border-b border-rule px-3 pb-7 pt-1 sm:-mx-4 sm:px-4 md:-mx-8 md:px-8" style={{ background: "color-mix(in oklab, var(--indigo-4) 58%, var(--surface-sunken))" }}>
+      <header className="pb-5">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
             <span className="mb-3.5 block h-0.75 w-11 bg-indigo" />
@@ -204,7 +205,7 @@ export default async function PerformancePage() {
 
       {/* Design hero: XIRR as the page's display numeral, flanked by net gain
           and net worth. The prose verdict follows with the full reasoning. */}
-      <section className="flex flex-wrap items-end gap-12 border-b border-rule pb-7">
+      <section className="flex flex-wrap items-end gap-12 border-t border-rule pt-6">
         <div>
           <p className="text-(length:--text-3xs) font-bold uppercase tracking-(--tracking-caps) text-text-faint">Money-weighted return · XIRR</p>
           <p className="figure mt-2 text-(length:--text-display) font-semibold leading-none tracking-editorial text-text-strong">
@@ -229,18 +230,19 @@ export default async function PerformancePage() {
           </div>
         </div>
       </section>
+      </div>
 
-      <VerdictBlock
-        xirrPct={returns.xirrPct}
-        startDate={returns.startDate}
-        endDate={returns.endDate}
-        netGain={netGain}
-        totalDeposited={returns.totalDeposited}
-        benchmark={analytics.benchmark}
-      />
+      <div className="space-y-8 pt-8">
 
-
-      <LedgerTable rows={ledger.rows} transactions={transactions} cashMovements={cashMovements} />
+      {analytics.benchmark && analytics.benchmark.series.length >= 2 && (
+        <section>
+          <p className="eyebrow">Growth of invested capital</p>
+          <h2 className="mt-1.5 font-display text-(length:--text-h1) font-normal tracking-editorial text-text-strong">Your contribution schedule, four ways</h2>
+          <div className="mt-5">
+            <BenchmarkGrowthChart data={analytics.benchmark.series} />
+          </div>
+        </section>
+      )}
 
       <section className="border-t border-border pt-5">
         <div className="flex flex-wrap items-start justify-between gap-4">
@@ -293,101 +295,31 @@ export default async function PerformancePage() {
       </section>
 
       <section className="border-t border-border pt-5">
-        <div className="flex flex-wrap items-start justify-between gap-3">
-          <div>
-            <p className="eyebrow">Growth of invested capital</p>
-            <h2 className="mt-1.5 font-display text-(length:--text-h1) font-normal tracking-editorial text-text-strong">Capital and net-worth timeline</h2>
-            <p className="mt-1 max-w-3xl text-xs text-muted-foreground">
-              Dated ledger cash flows, purchases, sales and charges. Portfolio market-value history is shown only at the supported endpoint.
-            </p>
-          </div>
-          <div className="grid grid-cols-3 gap-4 text-right text-xs">
-            <Mini label="Avg deposit-to-buy" value={analytics.deployment.avgDaysDepositToBuy !== null ? `${analytics.deployment.avgDaysDepositToBuy} days` : "—"} />
-            <Mini label="Within 24h" value={analytics.deployment.pctDeployedWithin24h !== null ? `${analytics.deployment.pctDeployedWithin24h}%` : "—"} />
-            <Mini label="Cash share" value={analytics.deployment.pctCapitalCurrentlyCash !== null ? `${analytics.deployment.pctCapitalCurrentlyCash}%` : "—"} />
-          </div>
-        </div>
-        <div className="mt-4">
-          <PerformanceTimeline data={analytics.timeline} />
-        </div>
-      </section>
-
-      <section className="border-t border-border pt-5">
         <p className="eyebrow">Performance against benchmarks</p>
         <h2 className="mt-1.5 font-display text-(length:--text-h1) font-normal tracking-editorial text-text-strong">How each comparison is built</h2>
-        <p className="mt-1 max-w-3xl text-xs text-muted-foreground">
-          {analytics.benchmark
-            ? `Your contribution schedule valued against the KSE-100 (total return) and PBS inflation through ${analytics.benchmark.asOf}.`
-            : "Benchmark and inflation comparisons populate once the portfolio series has been built. Use Rebuild to fetch KSE-100 and PSX price history."}
-        </p>
-        <div className="mt-4 grid gap-4 lg:grid-cols-3">
-          <StatusBlock
-            title="Portfolio vs KSE-100"
-            available={analytics.benchmarkStatus.kse100.available}
-            reason={analytics.benchmarkStatus.kse100.reason}
-            methodology={analytics.benchmarkStatus.kse100.methodology}
-          />
-          <StatusBlock
-            title="Purchasing-power performance"
-            available={analytics.benchmarkStatus.inflation.available}
-            reason={analytics.benchmarkStatus.inflation.reason}
-            methodology={analytics.benchmarkStatus.inflation.methodology}
-          />
-          <StatusBlock
-            title="Portfolio drawdown"
-            available={analytics.benchmarkStatus.drawdown.available}
-            reason={analytics.benchmarkStatus.drawdown.reason}
-            methodology="Drawdown will use a complete daily or monthly portfolio-value series when available."
-          />
-        </div>
-        <div className="mt-4 grid gap-4 border-y border-border py-4 sm:grid-cols-3">
-          <Metric label="Nominal gain" value={formatMoney(netGain)} sub="Current net worth less external capital" tone={netGain >= 0 ? "positive" : "negative"} />
-          <Metric
-            label="Inflation-adjusted capital"
-            value={analytics.benchmark ? formatMoney(analytics.benchmark.inflationEquivalent) : "Unavailable"}
-            sub={
-              analytics.benchmark
-                ? `Real value of contributions kept at PBS CPI · ${formatSignedPct(analytics.benchmark.inflationEquivalent ? (analytics.benchmark.excessVsInflation / analytics.benchmark.inflationEquivalent) * 100 : null)} purchasing power`
-                : "Requires Pakistan CPI history"
-            }
-            tone={analytics.benchmark ? (analytics.benchmark.excessVsInflation >= 0 ? "positive" : "negative") : undefined}
-          />
-          <Metric
-            label="Excess return vs KSE-100"
-            value={analytics.benchmark ? formatMoney(analytics.benchmark.excessVsKse100) : "Unavailable"}
-            sub={
-              analytics.benchmark
-                ? `Portfolio less KSE-100 total-return equivalent (${formatMoney(analytics.benchmark.kse100Equivalent)})`
-                : "Requires cash-flow-matched total-return index"
-            }
-            tone={analytics.benchmark ? (analytics.benchmark.excessVsKse100 >= 0 ? "positive" : "negative") : undefined}
-          />
-        </div>
-        {analytics.benchmark && analytics.benchmark.maxDrawdownPct !== null && (
-          <div className="mt-4 grid gap-4 sm:grid-cols-3">
-            <Metric
-              label="Max drawdown"
-              value={`${analytics.benchmark.maxDrawdownPct}%`}
-              sub={`${formatMoney(analytics.benchmark.maxDrawdownValue ?? 0)} peak-to-trough`}
-              tone="negative"
-            />
-            <Metric
-              label="Drawdown peak"
-              value={analytics.benchmark.drawdownPeakDate ?? "—"}
-              sub="Highest portfolio NAV before the decline"
-            />
-            <Metric
-              label="Drawdown trough"
-              value={analytics.benchmark.drawdownTroughDate ?? "—"}
-              sub="Lowest point reached after the peak"
-            />
+        <div className="mt-6 grid gap-y-8 sm:grid-cols-3 sm:gap-y-0">
+          <div className="border-l-[3px] border-up pl-5 sm:pr-7">
+            <p className="text-sm font-semibold text-text-strong">Against the KSE-100</p>
+            <p className={cn("figure mt-2.5 text-(length:--text-h1) font-semibold", analytics.benchmark && analytics.benchmark.excessVsKse100 < 0 ? "text-down" : "text-up")}>
+              {analytics.benchmark ? `${analytics.benchmark.excessVsKse100 < 0 ? "−" : "+"}${formatNumber(Math.abs(analytics.benchmark.excessVsKse100), 0)}` : "—"}
+            </p>
+            <p className="mt-2 text-xs text-text-muted">{analytics.benchmark ? `The same contributions tracked to the index would be worth ${formatMoney(analytics.benchmark.kse100Equivalent)}.` : analytics.benchmarkStatus.kse100.reason ?? "Requires the benchmark series."}</p>
           </div>
-        )}
-        {analytics.benchmark && analytics.benchmark.series.length >= 2 && (
-          <div className="mt-4">
-            <BenchmarkGrowthChart data={analytics.benchmark.series} />
+          <div className="border-l-[3px] border-saffron pl-5 sm:pr-7">
+            <p className="text-sm font-semibold text-text-strong">Against inflation</p>
+            <p className={cn("figure mt-2.5 text-(length:--text-h1) font-semibold", analytics.benchmark && analytics.benchmark.excessVsInflation < 0 ? "text-down" : "text-up")}>
+              {analytics.benchmark ? `${analytics.benchmark.excessVsInflation < 0 ? "−" : "+"}${formatNumber(Math.abs(analytics.benchmark.excessVsInflation), 0)}` : "—"}
+            </p>
+            <p className="mt-2 text-xs text-text-muted">{analytics.benchmark ? `Contributions kept at PBS CPI would be worth ${formatMoney(analytics.benchmark.inflationEquivalent)}.` : analytics.benchmarkStatus.inflation.reason ?? "Requires Pakistan CPI history."}</p>
           </div>
-        )}
+          <div className="border-l-[3px] border-down pl-5">
+            <p className="text-sm font-semibold text-text-strong">Worst drawdown</p>
+            <p className="figure mt-2.5 text-(length:--text-h1) font-semibold text-down">
+              {analytics.benchmark?.maxDrawdownPct !== null && analytics.benchmark?.maxDrawdownPct !== undefined ? `${analytics.benchmark.maxDrawdownPct}%` : "—"}
+            </p>
+            <p className="mt-2 text-xs text-text-muted">{analytics.benchmark?.maxDrawdownPct != null ? `${formatMoney(analytics.benchmark.maxDrawdownValue ?? 0)} peak to trough, ${analytics.benchmark.drawdownPeakDate ?? "—"} to ${analytics.benchmark.drawdownTroughDate ?? "—"}.` : analytics.benchmarkStatus.drawdown.reason ?? "Requires a complete value series."}</p>
+          </div>
+        </div>
       </section>
 
       <Tabs
@@ -502,61 +434,10 @@ export default async function PerformancePage() {
           </table>
         </div>
       </details>
-    </div>
-  );
-}
 
-/**
- * Plain-language verdict, first thing on the page. A long-term investor's core
- * question is "am I beating the market after inflation?" — answered here in
- * sentences before any chart, using the same numbers the tables below expand on.
- */
-function VerdictBlock({
-  xirrPct,
-  startDate,
-  endDate,
-  netGain,
-  totalDeposited,
-  benchmark,
-}: {
-  xirrPct: number | null;
-  startDate: string | null;
-  endDate: string | null;
-  netGain: number;
-  totalDeposited: number;
-  benchmark: NonNullable<Awaited<ReturnType<typeof getPerformanceAnalytics>>>["benchmark"];
-}) {
-  const returnPct = totalDeposited > 0 ? (netGain / totalDeposited) * 100 : null;
-  const period = startDate && endDate ? `${startDate} to ${endDate}` : null;
-
-  const sentences: React.ReactNode[] = [];
-  if (xirrPct !== null) {
-    sentences.push(
-      <>Your money-weighted return (XIRR) is <strong className={cn("tabular-nums", xirrPct >= 0 ? "text-up" : "text-down")}>{xirrPct}%</strong> a year{period ? ` over ${period}` : ""}, turning {formatMoney(totalDeposited)} of invested capital into a net gain of <strong className={cn("tabular-nums", netGain >= 0 ? "text-up" : "text-down")}>{formatMoney(netGain)}</strong>{returnPct !== null ? ` (${formatSignedPct(returnPct)})` : ""}.</>
-    );
-  } else {
-    sentences.push(<>Your net investment gain is <strong className={cn("tabular-nums", netGain >= 0 ? "text-up" : "text-down")}>{formatMoney(netGain)}</strong>{returnPct !== null ? ` (${formatSignedPct(returnPct)})` : ""} on {formatMoney(totalDeposited)} of invested capital. A money-weighted return needs a complete cash-flow history to compute.</>);
-  }
-
-  if (benchmark) {
-    const beatKse = benchmark.excessVsKse100 >= 0;
-    sentences.push(
-      <>Against the KSE-100, the same contributions tracked to the index would be worth {formatMoney(benchmark.kse100Equivalent)}, so you are <strong className={cn("tabular-nums", beatKse ? "text-up" : "text-down")}>{beatKse ? "ahead of" : "behind"} the market by {formatMoney(Math.abs(benchmark.excessVsKse100))}</strong>.</>
-    );
-    const keptAhead = benchmark.excessVsInflation >= 0;
-    sentences.push(
-      <>After inflation, your capital {keptAhead ? "kept its purchasing power and then some" : "lost ground to rising prices"}: real value {keptAhead ? "grew by" : "fell short by"} <strong className={cn("tabular-nums", keptAhead ? "text-up" : "text-down")}>{formatMoney(Math.abs(benchmark.excessVsInflation))}</strong> versus what the same money kept at CPI would be worth.</>
-    );
-  }
-
-  return (
-    <section className="rounded-xl border border-border bg-card p-5">
-      <p className="eyebrow">The verdict</p>
-      <div className="mt-2 space-y-2 text-sm leading-relaxed text-foreground">
-        {sentences.map((s, i) => <p key={i}>{s}</p>)}
+      <LedgerTable rows={ledger.rows} transactions={transactions} cashMovements={cashMovements} />
       </div>
-      {!benchmark && <p className="mt-2 text-xs text-muted-foreground">Benchmark and inflation comparison populate once the portfolio series has been built. Use Rebuild to fetch KSE-100 and PSX price history.</p>}
-    </section>
+    </div>
   );
 }
 
