@@ -7,6 +7,7 @@ import type { DividendEvent } from "@/lib/dividends/engine";
 import { DividendReceivables } from "@/components/features/dividends/dividend-receivables";
 import { DividendManager } from "@/components/features/dividends/dividend-form";
 import { formatMoney, cn } from "@/lib/shared/format";
+import { sectorColor } from "@/lib/shared/sector-colors";
 
 type Period = "ytd" | "previous" | "twelve_months" | "all" | "custom";
 type Granularity = "monthly" | "quarterly" | "annual";
@@ -117,44 +118,140 @@ export function DividendIncomeWorkspace({
   }, [received]);
   const maxHolding = Math.max(...byHolding.map((row) => row.net), 1);
 
+  const effectiveRate = gross > 0 ? ((tax / gross) * 100).toFixed(1) : null;
+  const nextUpcoming = upcoming
+    .filter((event) => event.ex_date)
+    .sort((a, b) => (a.ex_date! < b.ex_date! ? -1 : 1))[0];
+
   return (
-    <div className="space-y-7">
-      <section className="border-y border-border py-4">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <div><p className="text-xs font-semibold uppercase tracking-[0.1em] text-muted-foreground">Period: {range.label}</p><p className="mt-1 text-xs text-muted-foreground">{range.start === "0000-01-01" ? "All recorded history" : `${range.start} – ${range.end}`}</p></div>
-          <div className="flex flex-wrap gap-1 rounded-md bg-muted p-0.5">{PERIODS.map((item) => <button key={item.key} onClick={() => setPeriod(item.key)} className={cn("rounded px-2.5 py-1.5 text-xs font-medium", item.key === period ? "bg-card text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground")}>{item.label}</button>)}</div>
+    <div>
+      {/* ── Period pills + the Gross − Tax = Net equation (hero band) ── */}
+      <div className="flex flex-wrap items-center gap-4">
+        <div role="radiogroup" aria-label="Period" className="inline-flex items-center gap-0.5 rounded-full border border-rule bg-surface-inset p-[3px]">
+          {PERIODS.map((item) => (
+            <button
+              key={item.key}
+              type="button"
+              role="radio"
+              aria-checked={item.key === period}
+              onClick={() => setPeriod(item.key)}
+              className={cn(
+                "whitespace-nowrap rounded-full px-[15px] py-1.5 text-xs font-semibold transition-colors",
+                item.key === period
+                  ? "bg-surface-raised text-text-strong shadow-[0_1px_2px_rgba(13,18,15,0.08)]"
+                  : "text-text-muted hover:text-text-strong"
+              )}
+            >
+              {item.label}
+            </button>
+          ))}
         </div>
-        {period === "custom" && <div className="mt-3 flex flex-wrap gap-2"><label className="text-xs text-muted-foreground">From <input className="ml-1 rounded border border-border bg-card px-2 py-1.5 text-foreground" type="date" value={customStart} onChange={(event) => setCustomStart(event.target.value)} /></label><label className="text-xs text-muted-foreground">To <input className="ml-1 rounded border border-border bg-card px-2 py-1.5 text-foreground" type="date" value={customEnd} onChange={(event) => setCustomEnd(event.target.value)} /></label></div>}
-      </section>
+        <span className="figure text-(length:--text-2xs) text-text-faint">{range.start === "0000-01-01" ? "All recorded history" : `${range.start} – ${range.end}`}</span>
+      </div>
+      {period === "custom" && <div className="mt-3 flex flex-wrap gap-2"><label className="text-xs text-text-muted">From <input className="ml-1 rounded border border-rule bg-card px-2 py-1.5 text-foreground" type="date" value={customStart} onChange={(event) => setCustomStart(event.target.value)} /></label><label className="text-xs text-text-muted">To <input className="ml-1 rounded border border-rule bg-card px-2 py-1.5 text-foreground" type="date" value={customEnd} onChange={(event) => setCustomEnd(event.target.value)} /></label></div>}
 
-      <section>
-        <div className="grid border-y border-border sm:grid-cols-2 lg:grid-cols-4">
-          <Metric label="Net income received" value={formatMoney(net)} sub={`${received.length} received record${received.length === 1 ? "" : "s"}`} />
-          <Metric label="Gross dividend income" value={formatMoney(gross)} sub="Selected period" />
-          <Metric label="Tax withheld" value={formatMoney(tax)} sub={gross > 0 ? `Effective: ${((tax / gross) * 100).toFixed(1)}%` : "No received income"} />
-          <Metric label="Upcoming confirmed" value={formatMoney(upcomingNet)} sub={upcoming.length ? `${upcoming.length} confirmed record${upcoming.length === 1 ? "" : "s"}` : "No announcements"} />
+      <div className="flex flex-wrap items-end gap-11 pt-6">
+        <div className="flex flex-wrap items-end gap-5">
+          <div>
+            <p className="text-(length:--text-3xs) font-bold uppercase tracking-(--tracking-caps) text-text-faint">Gross</p>
+            <p className="figure mt-1 text-(length:--text-h2) font-medium text-text-muted">{formatMoney(gross)}</p>
+          </div>
+          <p className="mb-1.5 text-(length:--text-h3) text-text-faint">−</p>
+          <div>
+            <p className="text-(length:--text-3xs) font-bold uppercase tracking-(--tracking-caps) text-text-faint">Tax withheld{effectiveRate ? ` · ${effectiveRate}%` : ""}</p>
+            <p className="figure mt-1 text-(length:--text-h2) font-medium text-[var(--clay-1)]">{formatMoney(tax)}</p>
+          </div>
+          <p className="mb-1.5 text-(length:--text-h3) text-text-faint">=</p>
+          <div className="border-l-[3px] border-saffron pl-5">
+            <p className="text-(length:--text-3xs) font-bold uppercase tracking-(--tracking-caps) text-text-muted">Net received · {received.length} record{received.length === 1 ? "" : "s"}</p>
+            <p className="figure mt-1 text-(length:--text-display) font-semibold leading-none tracking-editorial text-text-strong">{formatMoney(net)}</p>
+          </div>
         </div>
-        {(reviews.length > 0 || manualIssues > 0) && <p className="mt-3 text-xs text-amber-800"><strong>{reviews.length + manualIssues} record{reviews.length + manualIssues === 1 ? "" : "s"} need review.</strong> Includes unmatched, overdue, duplicate, tax-review, or inconsistent payment records.</p>}
-      </section>
+        <div className="ml-auto text-right">
+          <p className="text-(length:--text-3xs) font-bold uppercase tracking-(--tracking-caps) text-text-faint">Upcoming confirmed</p>
+          <p className="figure mt-1 text-(length:--text-h2) font-semibold text-up">{formatMoney(upcomingNet)}</p>
+          <p className="mt-0.5 text-(length:--text-2xs) text-text-muted">
+            {upcoming.length ? `${upcoming.length} record${upcoming.length === 1 ? "" : "s"}${nextUpcoming ? ` · next ${nextUpcoming.ticker}, ${nextUpcoming.ex_date}` : ""}` : "No announcements"}
+          </p>
+        </div>
+      </div>
+      {(reviews.length > 0 || manualIssues > 0) && <p className="mt-4 text-xs text-amber-800"><strong>{reviews.length + manualIssues} record{reviews.length + manualIssues === 1 ? "" : "s"} need review.</strong> Includes unmatched, overdue, duplicate, tax-review, or inconsistent payment records.</p>}
 
-      <div className="grid gap-7 xl:grid-cols-[minmax(0,1.35fr)_minmax(21rem,0.65fr)]">
-        <section className="border-t border-border pt-4"><div className="flex flex-wrap items-center justify-between gap-3"><div><h2 className="text-base font-semibold">Dividend income over time</h2><p className="mt-1 text-xs text-muted-foreground">Recorded gross income, tax withheld and net income.</p></div><div className="flex gap-1 rounded-md bg-muted p-0.5">{(["monthly", "quarterly", "annual"] as Granularity[]).map((item) => <button key={item} onClick={() => setGranularity(item)} className={cn("rounded px-2 py-1 text-[11px] capitalize", item === granularity && "bg-card shadow-sm")}>{item}</button>)}</div></div>{timeline.length ? <div className="mt-4 h-72"><ResponsiveContainer width="100%" height="100%"><BarChart data={timeline} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}><CartesianGrid vertical={false} stroke="#dedfda" strokeDasharray="3 3" /><XAxis dataKey="label" tick={{ fontSize: 10, fill: "#6c6e68" }} axisLine={false} tickLine={false} /><YAxis tick={{ fontSize: 10, fill: "#6c6e68" }} tickFormatter={(value) => `PKR ${(value / 1000).toFixed(0)}k`} axisLine={false} tickLine={false} width={55} /><Tooltip content={<IncomeTooltip />} /><Bar dataKey="gross" name="Gross income" fill="#9ca3af" radius={[3, 3, 0, 0]} /><Bar dataKey="tax" name="Tax withheld" fill="#c46d57" radius={[3, 3, 0, 0]} /><Bar dataKey="net" name="Net income" fill="#3450c8" radius={[3, 3, 0, 0]} /></BarChart></ResponsiveContainer></div> : <p className="py-16 text-center text-sm text-muted-foreground">No received dividend income in the selected period.</p>}</section>
-        <section className="border-t border-border pt-4"><h2 className="text-base font-semibold">Net income by holding</h2><p className="mt-1 text-xs text-muted-foreground">Received income by holding in the selected period.</p><div className="mt-5 space-y-4">{byHolding.length ? byHolding.map((row) => <div key={row.ticker}><div className="mb-1 flex items-baseline justify-between gap-3 text-xs"><span className="font-semibold">{row.ticker}</span><span className="tabular-nums text-muted-foreground">{formatMoney(row.net)} · {net > 0 ? ((row.net / net) * 100).toFixed(1) : "0.0"}% · {row.payments} payment{row.payments === 1 ? "" : "s"}</span></div><div className="h-2 overflow-hidden rounded-full bg-muted"><div className="h-full rounded-full bg-brand" style={{ width: `${(row.net / maxHolding) * 100}%` }} /></div></div>) : <p className="py-10 text-center text-sm text-muted-foreground">No holding income to display.</p>}</div></section>
+      {/* ── Income over time + who paid (second band) ── */}
+      <div className="mt-8 grid gap-12 border-t border-rule pt-7 xl:grid-cols-[minmax(0,1.25fr)_minmax(0,1fr)]">
+        <section>
+          <div className="flex flex-wrap items-end justify-between gap-4">
+            <div>
+              <p className="eyebrow">Income over time</p>
+              <h2 className="mt-1.5 font-display text-(length:--text-h1) font-normal tracking-editorial text-text-strong">Gross, tax and net</h2>
+            </div>
+            <div className="flex gap-4 pb-1">
+              {(["monthly", "quarterly", "annual"] as Granularity[]).map((item) => (
+                <button
+                  key={item}
+                  onClick={() => setGranularity(item)}
+                  className={cn(
+                    "border-b-2 pb-1.5 text-sm capitalize transition-colors",
+                    item === granularity ? "border-indigo font-semibold text-text-strong" : "border-transparent font-medium text-text-muted hover:text-text-strong"
+                  )}
+                >
+                  {item}
+                </button>
+              ))}
+            </div>
+          </div>
+          {timeline.length ? <div className="mt-4 h-72"><ResponsiveContainer width="100%" height="100%"><BarChart data={timeline} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}><CartesianGrid vertical={false} stroke="var(--chart-grid, #e6e6df)" strokeDasharray="3 3" /><XAxis dataKey="label" tick={{ fontSize: 10, fill: "#82827a" }} axisLine={false} tickLine={false} /><YAxis tick={{ fontSize: 10, fill: "#82827a" }} tickFormatter={(value) => `PKR ${(value / 1000).toFixed(0)}k`} axisLine={false} tickLine={false} width={55} /><Tooltip content={<IncomeTooltip />} cursor={{ fill: "var(--surface-sunken)", opacity: 0.5 }} /><Bar dataKey="gross" name="Gross" fill="var(--paper-4)" /><Bar dataKey="tax" name="Tax withheld" fill="var(--clay-3)" /><Bar dataKey="net" name="Net" fill="var(--saffron-2)" /></BarChart></ResponsiveContainer></div> : <p className="py-16 text-center text-sm text-text-muted">No received dividend income in the selected period.</p>}
+        </section>
+        <section>
+          <p className="eyebrow">Net income by holding</p>
+          <h2 className="mt-1.5 mb-4 font-display text-(length:--text-h1) font-normal tracking-editorial text-text-strong">Who paid, and how often</h2>
+          <div className="ledger">
+            {byHolding.length ? byHolding.map((row) => {
+              const sector = holdings.find((h) => h.ticker === row.ticker)?.sector ?? null;
+              const colour = row.ticker === "Other" ? "var(--flat-2)" : sectorColor(sector);
+              return (
+                <div key={row.ticker} className="ledger-row flex flex-col gap-1.5">
+                  <span className="flex items-baseline gap-2.5">
+                    <span className="inline-flex w-21 items-center gap-2 text-sm font-semibold text-text-strong">
+                      <span className="h-2 w-2 shrink-0 rounded-full" style={{ background: colour }} />
+                      {row.ticker}
+                    </span>
+                    <span className="figure flex-1 text-right text-sm font-semibold text-text-strong">{formatMoney(row.net)}</span>
+                    <span className="figure w-13 text-right text-xs text-text-muted">{net > 0 ? ((row.net / net) * 100).toFixed(1) : "0.0"}%</span>
+                    <span className="w-23 text-right text-(length:--text-2xs) text-text-faint">{row.payments} payment{row.payments === 1 ? "" : "s"}</span>
+                  </span>
+                  <span className="block h-1.5 bg-surface-inset"><span className="block h-1.5" style={{ width: `${(row.net / maxHolding) * 100}%`, background: colour }} /></span>
+                </div>
+              );
+            }) : <p className="py-10 text-center text-sm text-text-muted">No holding income to display.</p>}
+          </div>
+        </section>
       </div>
 
-      <DividendReceivables events={periodEvents} received={received} showLowConfidence={false} readOnly={readOnly} />
+      {/* ── Records (third band) ── */}
+      <div className="mt-8 border-t border-rule pt-7">
+        <DividendReceivables events={periodEvents} received={received} showLowConfidence={false} readOnly={readOnly} />
+      </div>
 
-      {!readOnly && <details className="border-t border-border pt-4"><summary className="cursor-pointer text-sm font-semibold">Manage recorded dividends</summary><p className="mt-1 text-xs text-muted-foreground">Add, edit or remove manual and imported dividend records.</p><div className="mt-4"><DividendManager dividends={received} holdings={holdings} /></div></details>}
+      {!readOnly && <details className="mt-8 border-t border-rule pt-5"><summary className="cursor-pointer text-sm font-semibold text-text-strong">Manage recorded dividends</summary><p className="mt-1 text-xs text-text-muted">Add, edit or remove manual and imported dividend records.</p><div className="mt-4"><DividendManager dividends={received} holdings={holdings} /></div></details>}
     </div>
   );
-}
-
-function Metric({ label, value, sub }: { label: string; value: string; sub: string }) {
-  return <div className="border-b border-border py-4 last:border-b-0 sm:border-b-0 sm:px-4 sm:first:pl-0 sm:border-r sm:last:border-r-0"><p className="text-xs font-medium text-muted-foreground">{label}</p><p className="mt-1 text-lg font-semibold tabular-nums">{value}</p><p className="mt-0.5 text-xs text-muted-foreground">{sub}</p></div>;
 }
 
 function IncomeTooltip({ active, payload, label }: { active?: boolean; payload?: { name: string; value: number; color: string; payload?: { payments: number } }[]; label?: string }) {
   if (!active || !payload?.length) return null;
   const payments = payload[0]?.payload?.payments ?? 0;
-  return <div className="chart-tooltip"><p className="chart-tooltip-label">{label}</p>{payload.map((item) => <p key={item.name} className="flex justify-between gap-5 text-xs"><span style={{ color: item.color }}>{item.name}</span><span className="font-medium tabular-nums">{formatMoney(item.value)}</span></p>)}<p className="mt-1 text-[11px] text-muted-foreground">{payments} payment{payments === 1 ? "" : "s"}</p></div>;
+  return (
+    <div className="rounded-(--radius-sm) bg-surface-nav px-2.5 py-2 text-[var(--text-on-dark)] shadow-[0_6px_18px_-12px_rgba(13,18,15,0.5)]">
+      <p className="mb-1.5 text-(length:--text-3xs) font-bold uppercase tracking-(--tracking-caps) text-[var(--text-on-dark-muted)]">{label}</p>
+      {payload.map((item) => (
+        <p key={item.name} className="flex items-center gap-2 whitespace-nowrap text-(length:--text-2xs) leading-relaxed">
+          <span className="h-[5px] w-[5px] rounded-full" style={{ background: item.color }} />
+          <span className="text-[var(--text-on-dark-muted)]">{item.name}</span>
+          <span className="figure ml-auto pl-4 font-semibold">{formatMoney(item.value)}</span>
+        </p>
+      ))}
+      <p className="mt-1 text-(length:--text-3xs) text-[var(--text-on-dark-muted)]">{payments} payment{payments === 1 ? "" : "s"}</p>
+    </div>
+  );
 }

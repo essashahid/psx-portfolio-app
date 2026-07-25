@@ -99,18 +99,25 @@ export function DividendReceivables({
 
   return (
     <div className="space-y-3">
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <div className="flex gap-1">
+      <div className="flex flex-wrap items-end justify-between gap-4">
+        <div>
+          <p className="eyebrow">Records</p>
+          <h2 className="mt-1.5 font-display text-(length:--text-h1) font-normal tracking-editorial text-text-strong">
+            {tabs.find((t) => t.key === tab)?.label ?? "Records"}
+          </h2>
+        </div>
+        <div className="flex gap-5 pb-1">
           {tabs.map((t) => (
             <button
               key={t.key}
               onClick={() => setTab(t.key)}
               className={cn(
-                "rounded-md px-3 py-1.5 text-xs font-medium",
-                tab === t.key ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground hover:text-foreground"
+                "whitespace-nowrap border-b-2 pb-1.5 text-sm transition-colors",
+                tab === t.key ? "border-indigo font-semibold text-text-strong" : "border-transparent font-medium text-text-muted hover:text-text-strong"
               )}
             >
-              {t.label} ({t.count})
+              {t.label}
+              <span className="figure ml-1.5 text-(length:--text-2xs) text-text-faint">{t.count}</span>
             </button>
           ))}
         </div>

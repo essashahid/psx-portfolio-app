@@ -58,10 +58,10 @@ export function DividendTrajectory({ dividends, events }: { dividends: Dividend[
             <XAxis dataKey="year" tick={{ fontSize: 11, fill: INK.neutral }} axisLine={false} tickLine={false} />
             <YAxis tick={{ fontSize: 10, fill: INK.neutral }} tickFormatter={(v) => `PKR ${(v / 1000).toFixed(0)}k`} axisLine={false} tickLine={false} width={55} />
             <Tooltip content={<TrajectoryTooltip />} />
-            <Bar dataKey="received" name="Received (net)" stackId="a" fill={INK.line} radius={[0, 0, 0, 0]} />
-            <Bar dataKey="forecast" name="Forecast / confirmed" stackId="a" fill={INK.line} radius={[3, 3, 0, 0]}>
+            <Bar dataKey="received" name="Received (net)" stackId="a" fill="var(--saffron-1)" radius={[0, 0, 0, 0]} />
+            <Bar dataKey="forecast" name="Forecast / confirmed" stackId="a" fill="var(--saffron-3)" radius={[3, 3, 0, 0]}>
               {data.map((row) => (
-                <Cell key={row.year} fillOpacity={0.35} />
+                <Cell key={row.year} />
               ))}
             </Bar>
           </BarChart>

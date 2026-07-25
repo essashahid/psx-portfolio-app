@@ -222,22 +222,34 @@ export default async function NewsPage({ searchParams }: { searchParams: Promise
 
   return (
     <div className="mx-auto max-w-[1240px] space-y-5">
-      <header className="flex flex-wrap items-end justify-between gap-4">
-        <div className="max-w-3xl">
-          <span className="mb-3.5 block h-0.75 w-11 bg-indigo" />
-          <p className="eyebrow">PSX intelligence</p>
-          <h1 className="font-display text-(length:--text-title) font-normal tracking-editorial text-text-strong sm:text-3xl">News & Events</h1>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Important developments suggested for you based on your holdings, watchlist, sectors, and the wider market.
-          </p>
-          <p className="mt-2 text-xs text-muted-foreground">
-            {sourceHealth}
-            {newSinceLastVisit > 0 && (
-              <span className="ml-1 text-foreground">· {newSinceLastVisit} new since your last visit</span>
-            )}
-          </p>
+      <header className="border-b border-rule pb-6">
+        <div className="flex flex-wrap items-end justify-between gap-6">
+          <div className="max-w-3xl">
+            <span className="mb-3.5 block h-0.75 w-11 bg-(--sp-cyan)" />
+            <h1 className="font-display text-(length:--text-title) font-normal tracking-editorial text-text-strong">News Center</h1>
+            <p className="mt-2 text-xs text-text-muted">
+              {sourceHealth}
+              {newSinceLastVisit > 0 && (
+                <span className="ml-1 text-foreground">· {newSinceLastVisit} new since your last visit</span>
+              )}
+            </p>
+          </div>
+          <div className="flex flex-wrap items-end gap-9">
+            <div>
+              <p className="text-(length:--text-3xs) font-bold uppercase tracking-(--tracking-caps) text-text-faint">Stories today</p>
+              <p className="figure mt-1 text-(length:--text-h1) font-semibold text-text-strong">{newToday}</p>
+            </div>
+            <div>
+              <p className="text-(length:--text-3xs) font-bold uppercase tracking-(--tracking-caps) text-text-faint">Reports clustered</p>
+              <p className="figure mt-1 text-(length:--text-h1) font-medium text-text-muted">{events.reduce((n, e) => n + e.relatedCount, 0)}</p>
+            </div>
+            <div className="border-l-[3px] border-(--sp-cyan) pl-5">
+              <p className="text-(length:--text-3xs) font-bold uppercase tracking-(--tracking-caps) text-text-faint">Touching your holdings</p>
+              <p className="figure mt-1 text-(length:--text-h1) font-semibold text-(--sp-cyan)">{events.filter((e) => e.affectedHoldings.length > 0).length}</p>
+            </div>
+            <NewsRefreshButton />
+          </div>
         </div>
-        <NewsRefreshButton />
       </header>
       <MarkSeen surface="news" />
 

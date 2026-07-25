@@ -58,6 +58,32 @@ export function sectorColor(sector?: string | null): string {
   return RING[h % RING.length];
 }
 
+/**
+ * Compact sector labels for space-constrained surfaces: treemap tiles, table
+ * group headers, stacked-bar legends. Anything unmapped keeps its full name.
+ */
+const SHORT_SECTOR: Record<string, string> = {
+  "Oil & Gas Marketing Companies": "OMC",
+  "Oil & Gas Exploration Companies": "E&P",
+  "Technology & Communication": "Tech",
+  "Commercial Banks": "Banks",
+  "Pharmaceuticals": "Pharma",
+  "Fertilizer": "Fertiliser",
+  "Insurance & Takaful": "Insurance",
+  "Engineering & Steel": "Engineering",
+  "Transport & Logistics": "Transport",
+  "Power & Energy": "Power",
+  "Food & Personal Care": "Food",
+  "Glass & Ceramics": "Glass",
+  "Paper & Board": "Paper",
+  "Automobile Assemblers": "Autos",
+};
+
+export function shortSector(sector?: string | null): string {
+  if (!sector || !sector.trim()) return "Unclassified";
+  return SHORT_SECTOR[sector] ?? sector;
+}
+
 /** Hex + alpha (0–1) → 8-digit hex, for faint tinted backgrounds. */
 export function withAlpha(hex: string, alpha: number): string {
   const a = Math.round(Math.max(0, Math.min(1, alpha)) * 255)

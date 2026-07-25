@@ -512,7 +512,7 @@ export function Chat({
             autoFocus
             className="h-9 min-w-0 flex-1 rounded-md border border-border bg-background px-2 text-[13px] outline-none focus:ring-2 focus:ring-ring"
           />
-          <button type="submit" aria-label="Save chat name" className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-emerald-600 text-white">
+          <button type="submit" aria-label="Save chat name" className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-ink-1 text-white">
             <Check className="h-3.5 w-3.5" />
           </button>
           <button type="button" onClick={() => setRenamingId(null)} aria-label="Cancel rename" className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md border border-border text-muted-foreground">
@@ -580,7 +580,7 @@ export function Chat({
   ) : (
     <form
       onSubmit={(e) => { e.preventDefault(); send(input); }}
-      className="rounded-2xl border border-border/90 bg-card shadow-[0_8px_28px_-24px_rgba(15,23,42,0.5)] transition focus-within:border-emerald-300 focus-within:ring-4 focus-within:ring-emerald-500/10"
+      className="rounded-2xl border border-rule bg-card shadow-[0_8px_28px_-24px_rgba(15,23,42,0.5)] transition focus-within:border-indigo-3 focus-within:ring-4 focus-within:ring-indigo/10"
     >
       <textarea
         ref={inputRef}
@@ -591,7 +591,7 @@ export function Chat({
         rows={1}
         enterKeyHint="send"
         aria-label="Message Research Copilot"
-        className="max-h-32 w-full resize-none overflow-y-auto bg-transparent px-4 pt-3 text-base leading-6 outline-none md:text-[15px]"
+        className="max-h-32 w-full resize-none overflow-y-auto bg-transparent px-4 pt-3 font-display text-lg leading-6 tracking-editorial text-text-strong outline-none md:text-[17px]"
       />
       <div className="flex items-center gap-1.5 px-2 pb-2">
         <select
@@ -629,7 +629,7 @@ export function Chat({
           type="submit"
           disabled={busy || !input.trim()}
           aria-label="Send message"
-          className="ml-auto flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-emerald-600 text-white shadow-[0_8px_20px_-10px_rgba(5,150,105,0.8)] transition hover:bg-emerald-700 disabled:opacity-40"
+          className="ml-auto flex h-9 shrink-0 items-center justify-center gap-1.5 rounded-(--radius-sm) bg-ink-1 px-4 text-sm font-semibold text-white transition hover:bg-ink-2 disabled:opacity-40"
         >
           {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
         </button>
@@ -1133,22 +1133,22 @@ function ResearchActivity({
     : `${lookupCount > 0 ? `${lookupCount} lookup${lookupCount === 1 ? "" : "s"} · ` : ""}${steps.find((s) => s.id === "write")?.detail ?? "answer synthesized"}`;
 
   return (
-    <div className="overflow-hidden rounded-2xl border border-emerald-950/10 bg-[linear-gradient(135deg,rgba(236,253,245,0.85),rgba(255,255,255,0.9))] shadow-[0_14px_40px_-30px_rgba(5,150,105,0.55)]">
+    <div className="overflow-hidden rounded-2xl border border-rule bg-[linear-gradient(135deg,rgba(238,241,251,0.85),rgba(255,255,255,0.9))] shadow-[0_14px_40px_-30px_rgba(52,80,200,0.4)]">
       <button
         type="button"
         onClick={() => setOpen((value) => !value)}
         className="flex min-h-12 w-full items-center gap-3 px-4 py-2.5 text-left"
         aria-expanded={expanded}
       >
-        <span className="relative flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-emerald-200/80 bg-white text-up shadow-sm">
+        <span className="relative flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-indigo-3/60 bg-white text-brand shadow-sm">
           {active ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
-          {active && <span className="absolute -right-1 -top-1 h-2.5 w-2.5 animate-pulse rounded-full border-2 border-white bg-emerald-500" />}
+          {active && <span className="absolute -right-1 -top-1 h-2.5 w-2.5 animate-pulse rounded-full border-2 border-white bg-indigo" />}
         </span>
         <span className="min-w-0 flex-1">
           <span className="flex items-center gap-2 text-xs font-semibold tracking-[-0.01em] text-foreground">
             {active ? "Research in progress" : "Research complete"}
             {active && (
-              <span className="rounded-full border border-emerald-200 bg-emerald-50 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-[0.12em] text-up">
+              <span className="rounded-full border border-indigo-3/60 bg-brand-soft px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-[0.12em] text-brand">
                 Live
               </span>
             )}
@@ -1158,17 +1158,17 @@ function ResearchActivity({
         <ChevronDown className={cn("h-4 w-4 text-muted-foreground transition-transform", expanded && "rotate-180")} />
       </button>
       {expanded && (
-        <div className="border-t border-emerald-950/10 bg-white/55 px-4 py-3">
+        <div className="border-t border-rule bg-white/55 px-4 py-3">
           <div className="relative space-y-0">
             {steps.map((step, index) => {
               const isRunning = active && !step.done;
               const Icon = activityIcon(step.label);
               return (
                 <div key={step.id} className="relative flex min-h-9 items-start gap-3 pb-2 last:min-h-0 last:pb-0">
-                  {index < steps.length - 1 && <span className="absolute left-2.75 top-6 h-[calc(100%-0.25rem)] w-px bg-emerald-200" />}
+                  {index < steps.length - 1 && <span className="absolute left-2.75 top-6 h-[calc(100%-0.25rem)] w-px bg-indigo-3/50" />}
                   <span className={cn(
                     "relative z-10 flex h-6 w-6 shrink-0 items-center justify-center rounded-full border bg-white",
-                    isRunning ? "border-emerald-400 text-up shadow-[0_0_0_3px_rgba(16,185,129,0.10)]" : "border-emerald-200 text-up"
+                    isRunning ? "border-indigo-3 text-brand shadow-[0_0_0_3px_rgba(52,80,200,0.10)]" : "border-indigo-3/60 text-brand"
                   )}>
                     {isRunning ? <Loader2 className="h-3 w-3 animate-spin" /> : <Icon className="h-3 w-3" />}
                   </span>
@@ -1180,7 +1180,7 @@ function ResearchActivity({
               );
             })}
             {complete && !active && (
-              <div className="mt-2 flex items-center gap-2 border-t border-emerald-950/10 pt-2 text-[10px] font-medium text-up">
+              <div className="mt-2 flex items-center gap-2 border-t border-rule pt-2 text-[10px] font-medium text-brand">
                 <Check className="h-3 w-3" /> Sources reviewed and answer synthesized
               </div>
             )}

@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { Fragment, useMemo, useState } from "react";
 import type { ReactNode } from "react";
 import Link from "next/link";
 import {
@@ -16,6 +16,7 @@ import type { EnrichedHolding, PortfolioSummary } from "@/lib/shared/types";
 import { formatMoney, formatNumber, formatSignedPct, cn } from "@/lib/shared/format";
 import { Badge } from "@/components/ui/badge";
 import { SectorChip } from "@/components/shared/sector-chip";
+import { sectorColor, shortSector } from "@/lib/shared/sector-colors";
 import { ActionButton } from "@/components/ui/action-button";
 import { AddTransactionDialog } from "@/components/features/holdings/add-transaction-dialog";
 import { GenerateReportDialog } from "@/components/features/stocks/generate-report-dialog";
@@ -264,6 +265,8 @@ export function HoldingsTable({
   const [sorting, setSorting] = useState<SortingState>([{ id: "weight", desc: true }]);
   const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({});
   const [density, setDensity] = useState<"compact" | "comfortable">("comfortable");
+  const [grouping, setGrouping] = useState<"flat" | "sector">("flat");
+  const [collapsed, setCollapsed] = useState<Set<string>>(new Set());
 
   const dailyByTicker = useMemo(() => new Map(dailyRows.map((row) => [row.ticker, row])), [dailyRows]);
 
@@ -550,8 +553,38 @@ export function HoldingsTable({
   });
 
   const tableRows = table.getRowModel().rows;
+
+  // Sector grouping. Rows keep the order the active sort produced; the group a
+  // sector gets is decided by where its first row lands, so grouping never
+  // fights the column sort.
+  const groupedRows = useMemo(() => {
+    if (grouping !== "sector") return null;
+    const order: string[] = [];
+    const bySector = new Map<string, typeof tableRows>();
+    for (const row of tableRows) {
+      const sector = row.original.sector?.trim() || "Unclassified";
+      if (!bySector.has(sector)) {
+        bySector.set(sector, []);
+        order.push(sector);
+      }
+      bySector.get(sector)!.push(row);
+    }
+    return order.map((sector) => {
+      const rows = bySector.get(sector)!;
+      return {
+        sector,
+        rows,
+        value: rows.reduce((n, r) => n + (r.original.market_value ?? 0), 0),
+        pl: rows.reduce((n, r) => n + (r.original.unrealized_pl ?? 0), 0),
+      };
+    });
+  }, [grouping, tableRows]);
+
   const activeFilterCount = activeFilters.size + Number(!!sectorFilter) + Number(!!search);
   const selectedPerformance = PERFORMANCE_FILTERS.find((item) => activeFilters.has(item.key))?.key ?? "";
+  const footerPl = tableRows.reduce((n, r) => n + (r.original.unrealized_pl ?? 0), 0);
+  const footerCost = tableRows.reduce((n, r) => n + (r.original.total_cost ?? 0), 0);
+  const footerPlPct = footerCost > 0 ? (footerPl / footerCost) * 100 : null;
 
   function selectPerformance(value: string) {
     setActiveFilters((previous) => {
@@ -626,6 +659,7 @@ export function HoldingsTable({
           </div>
           <div className="flex items-center gap-2 text-[11px] text-muted-foreground sm:ml-auto">
             {latestPriceDate && <span>Prices as of {latestPriceDate}</span>}
+            <select value={grouping} onChange={(event) => setGrouping(event.target.value as "flat" | "sector")} className="hidden rounded border border-border bg-card px-1.5 py-1 text-[11px] text-foreground md:block" aria-label="Grouping"><option value="flat">All positions</option><option value="sector">By sector</option></select>
             <select value={density} onChange={(event) => setDensity(event.target.value as "compact" | "comfortable")} className="rounded border border-border bg-card px-1.5 py-1 text-[11px] text-foreground"><option value="comfortable">Comfortable</option><option value="compact">Compact</option></select>
             <details className="relative hidden md:block">
               <summary className="cursor-pointer list-none rounded border border-border bg-card px-1.5 py-1 text-[11px] text-foreground">Columns</summary>
@@ -678,7 +712,7 @@ export function HoldingsTable({
               ))}
             </thead>
             <tbody>
-              {table.getRowModel().rows.length === 0 ? (
+              {tableRows.length === 0 ? (
                 <tr>
                   <td
                     colSpan={columns.length}
@@ -687,6 +721,57 @@ export function HoldingsTable({
                     No holdings match the current filters.
                   </td>
                 </tr>
+              ) : groupedRows ? (
+                groupedRows.map((group) => {
+                  const open = !collapsed.has(group.sector);
+                  const colour = sectorColor(group.sector);
+                  return (
+                    <Fragment key={group.sector}>
+                      <tr
+                        onClick={() =>
+                          setCollapsed((prev) => {
+                            const next = new Set(prev);
+                            if (next.has(group.sector)) next.delete(group.sector);
+                            else next.add(group.sector);
+                            return next;
+                          })
+                        }
+                        className="cursor-pointer border-b border-rule"
+                        style={{ background: `color-mix(in oklab, ${colour} 9%, var(--surface-page))` }}
+                      >
+                        <td
+                          colSpan={Math.max(1, table.getVisibleLeafColumns().length - 2)}
+                          className="px-3 py-2.5 text-left"
+                          style={{ borderLeft: `3px solid ${colour}` }}
+                        >
+                          <span className="inline-flex items-center gap-2.5">
+                            <span className="text-sm font-bold text-text-strong">{shortSector(group.sector)}</span>
+                            <span className="text-(length:--text-2xs) text-text-muted">
+                              {group.rows.length} position{group.rows.length === 1 ? "" : "s"}
+                            </span>
+                            <span className="text-(length:--text-2xs) text-text-faint">{open ? "▾" : "▸"}</span>
+                          </span>
+                        </td>
+                        <td className="figure px-3 py-2.5 text-right font-semibold text-text-strong">
+                          {formatMoney(group.value)}
+                        </td>
+                        <td className={cn("figure px-3 py-2.5 text-right font-semibold", group.pl >= 0 ? "text-up" : "text-down")}>
+                          {formatMoney(group.pl)}
+                        </td>
+                      </tr>
+                      {open &&
+                        group.rows.map((row) => (
+                          <tr key={row.id} className="border-b border-border last:border-0 transition-colors hover:bg-muted/40">
+                            {row.getVisibleCells().map((cell) => (
+                              <td key={cell.id} className={cn("whitespace-nowrap px-3 align-middle", density === "compact" ? "py-1.5" : "py-2.5", cell.column.id === "ticker" ? "sticky left-0 z-10 bg-card text-left group-hover:bg-muted/40" : ["sector", "actions"].includes(cell.column.id) ? "text-left" : "text-right")}>
+                                {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                              </td>
+                            ))}
+                          </tr>
+                        ))}
+                    </Fragment>
+                  );
+                })
               ) : (
                 tableRows.map((row) => (
                   <tr
@@ -702,6 +787,22 @@ export function HoldingsTable({
                 ))
               )}
             </tbody>
+            {tableRows.length > 0 && (
+              <tfoot>
+                <tr className="border-t-2 border-rule-strong">
+                  <td colSpan={Math.max(1, table.getVisibleLeafColumns().length - 2)} className="px-3 py-2.5 text-left text-sm font-bold text-text-strong">
+                    Total · {tableRows.length} position{tableRows.length === 1 ? "" : "s"}
+                  </td>
+                  <td className="figure px-3 py-2.5 text-right text-sm font-bold text-text-strong">
+                    {formatMoney(tableRows.reduce((n, r) => n + (r.original.market_value ?? 0), 0))}
+                  </td>
+                  <td className={cn("figure px-3 py-2.5 text-right text-sm font-bold", footerPl >= 0 ? "text-up" : "text-down")}>
+                    {formatMoney(footerPl)}
+                    <span className="figure block text-(length:--text-2xs) font-semibold">{formatSignedPct(footerPlPct)}</span>
+                  </td>
+                </tr>
+              </tfoot>
+            )}
           </table>
         </div>
 

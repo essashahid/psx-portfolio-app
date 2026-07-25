@@ -202,6 +202,34 @@ export default async function PerformancePage() {
         )}
       </header>
 
+      {/* Design hero: XIRR as the page's display numeral, flanked by net gain
+          and net worth. The prose verdict follows with the full reasoning. */}
+      <section className="flex flex-wrap items-end gap-12 border-b border-rule pb-7">
+        <div>
+          <p className="text-(length:--text-3xs) font-bold uppercase tracking-(--tracking-caps) text-text-faint">Money-weighted return · XIRR</p>
+          <p className="figure mt-2 text-(length:--text-display) font-semibold leading-none tracking-editorial text-text-strong">
+            {returns.xirrPct !== null ? `${returns.xirrPct >= 0 ? "+" : ""}${returns.xirrPct}%` : "—"}
+          </p>
+          <p className="mt-2.5 text-(length:--text-2xs) text-text-faint">
+            a year{returns.startDate && returns.endDate ? ` over ${returns.startDate} to ${returns.endDate}` : ""}
+          </p>
+        </div>
+        <div className="flex flex-wrap gap-11 pb-1">
+          <div className={cn("border-l-[3px] pl-5", netGain >= 0 ? "border-up" : "border-down")}>
+            <p className="text-(length:--text-3xs) font-bold uppercase tracking-(--tracking-caps) text-text-faint">Net investment gain</p>
+            <p className={cn("figure mt-1.5 text-(length:--text-h1) font-semibold", netGain >= 0 ? "text-up" : "text-down")}>{formatMoney(netGain)}</p>
+            <p className="figure mt-1 text-(length:--text-2xs) text-text-faint">
+              {formatSignedPct(returns.totalDeposited ? (netGain / returns.totalDeposited) * 100 : null)} on {formatMoney(returns.totalDeposited)} of capital
+            </p>
+          </div>
+          <div>
+            <p className="text-(length:--text-3xs) font-bold uppercase tracking-(--tracking-caps) text-text-faint">Current net worth</p>
+            <p className="figure mt-1.5 text-(length:--text-h1) font-medium text-text-strong">{formatMoney(currentWorth)}</p>
+            <p className="mt-1 text-(length:--text-2xs) text-text-faint">holdings plus broker cash</p>
+          </div>
+        </div>
+      </section>
+
       <VerdictBlock
         xirrPct={returns.xirrPct}
         startDate={returns.startDate}
@@ -249,7 +277,8 @@ export default async function PerformancePage() {
       <section className="border-t border-border pt-5">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
-            <h2 className="text-lg font-semibold">Wealth creation bridge</h2>
+            <p className="eyebrow">Wealth creation bridge</p>
+            <h2 className="mt-1.5 font-display text-(length:--text-h1) font-normal tracking-editorial text-text-strong">From capital in to net worth</h2>
             <p className="mt-1 max-w-3xl text-xs text-muted-foreground">
               Trade commission, SST and CDC are already embedded in realised/unrealised P/L. Account charges and CGT are deducted separately.
             </p>
@@ -298,7 +327,8 @@ export default async function PerformancePage() {
       <section className="border-t border-border pt-5">
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
-            <h2 className="text-lg font-semibold">Capital and net-worth timeline</h2>
+            <p className="eyebrow">Growth of invested capital</p>
+            <h2 className="mt-1.5 font-display text-(length:--text-h1) font-normal tracking-editorial text-text-strong">Capital and net-worth timeline</h2>
             <p className="mt-1 max-w-3xl text-xs text-muted-foreground">
               Dated ledger cash flows, purchases, sales and charges. Portfolio market-value history is shown only at the supported endpoint.
             </p>
@@ -315,7 +345,8 @@ export default async function PerformancePage() {
       </section>
 
       <section className="border-t border-border pt-5">
-        <h2 className="text-lg font-semibold">Performance versus benchmarks</h2>
+        <p className="eyebrow">Performance against benchmarks</p>
+        <h2 className="mt-1.5 font-display text-(length:--text-h1) font-normal tracking-editorial text-text-strong">How each comparison is built</h2>
         <p className="mt-1 max-w-3xl text-xs text-muted-foreground">
           {analytics.benchmark
             ? `Your contribution schedule valued against the KSE-100 (total return) and PBS inflation through ${analytics.benchmark.asOf}.`
@@ -433,7 +464,7 @@ export default async function PerformancePage() {
           <div className="flex items-center gap-2">
             <ChevronDown className="h-4 w-4 text-muted-foreground transition-transform group-open:rotate-180" />
             <div>
-              <h2 className="text-lg font-semibold">Data quality and reconciliation</h2>
+              <h2 className="font-display text-(length:--text-h1) font-normal tracking-editorial text-text-strong">Data quality and reconciliation</h2>
               <p className="mt-0.5 text-xs text-muted-foreground">
                 {platformDifferences.length === 0
                   ? "Ledger reconciled: every holding's quantity matches the imported statement."
@@ -640,7 +671,7 @@ function Count({
 function RealisedTable({ sales }: { sales: NonNullable<Awaited<ReturnType<typeof getPerformanceAnalytics>>>["sales"] }) {
   return (
     <section className="border-t border-border pt-5">
-      <h2 className="text-lg font-semibold">Realised performance</h2>
+      <h2 className="font-display text-(length:--text-h1) font-normal tracking-editorial text-text-strong">Realised performance</h2>
       <p className="mt-1 text-xs text-muted-foreground">
         Weighted-average cost allocated to each sale line. PPL remains partially realised because shares remain.
       </p>
@@ -694,7 +725,7 @@ function RealisedTable({ sales }: { sales: NonNullable<Awaited<ReturnType<typeof
 function YearTable({ rows }: { rows: NonNullable<Awaited<ReturnType<typeof getPerformanceAnalytics>>>["byYear"] }) {
   return (
     <section className="border-t border-border pt-5">
-      <h2 className="text-lg font-semibold">Performance by year</h2>
+      <h2 className="font-display text-(length:--text-h1) font-normal tracking-editorial text-text-strong">Performance by year</h2>
       <p className="mt-1 text-xs text-muted-foreground">Gross purchases are separate from external contributions. Benchmark and real-return columns stay unavailable until their series exist.</p>
       <div className="mt-4 overflow-x-auto">
         <table className="w-full min-w-[1260px] text-xs">
@@ -759,7 +790,7 @@ function YearTable({ rows }: { rows: NonNullable<Awaited<ReturnType<typeof getPe
 function PositionTable({ rows }: { rows: NonNullable<Awaited<ReturnType<typeof getPerformanceAnalytics>>>["positionBuild"] }) {
   return (
     <section className="border-t border-border pt-5">
-      <h2 className="text-lg font-semibold">Position build-up analysis</h2>
+      <h2 className="font-display text-(length:--text-h1) font-normal tracking-editorial text-text-strong">Position build-up analysis</h2>
       <p className="mt-1 text-xs text-muted-foreground">Current holdings are aggregated under weighted-average accounting; purchase lots are not shown as separate holdings. Per-holding XIRR is the money-weighted annual return of each position&apos;s own buys, sells and current value; it excludes dividends.</p>
       <div className="mt-4 overflow-x-auto">
         <table className="w-full min-w-[1280px] text-xs">
@@ -814,7 +845,7 @@ function PositionTable({ rows }: { rows: NonNullable<Awaited<ReturnType<typeof g
 function CostWorkspace({ friction }: { friction: NonNullable<Awaited<ReturnType<typeof getPerformanceAnalytics>>>["friction"] }) {
   return (
     <section className="border-t border-border pt-5">
-      <h2 className="text-lg font-semibold">Cost and friction analysis</h2>
+      <h2 className="font-display text-(length:--text-h1) font-normal tracking-editorial text-text-strong">Cost and friction analysis</h2>
       <p className="mt-1 text-xs text-muted-foreground">Unknown manual-trade fees are labelled unavailable, not treated as zero.</p>
       <div className="mt-4 grid gap-6 xl:grid-cols-[1fr_1fr]">
         <CostFrictionBars data={friction.byCategory} />
@@ -878,7 +909,7 @@ function AuditWorkspace({
 }) {
   return (
     <section className="border-t border-border pt-5">
-      <h2 className="text-lg font-semibold">Audit and XIRR inputs</h2>
+      <h2 className="font-display text-(length:--text-h1) font-normal tracking-editorial text-text-strong">Audit and XIRR inputs</h2>
       <details className="mt-3 border-l border-border pl-3">
         <summary className="cursor-pointer text-sm font-medium">View XIRR cash flows</summary>
         <div className="mt-3 overflow-x-auto">

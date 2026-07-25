@@ -9,9 +9,21 @@ import { AsOf } from "@/components/shared/as-of";
 import { ActionButton } from "@/components/ui/action-button";
 import { formatMoney, formatNumber, formatSignedPct } from "@/lib/shared/format";
 import { normalizeEnabledFeatures } from "@/lib/config/features";
+import { Band } from "@/components/ui/band";
+import { PanelHeader } from "@/components/ui/panel-header";
+import { SectorWeightBar, SectorTreemap, BelowCostPlot } from "@/components/features/holdings/holdings-visuals";
 import { Briefcase, ChevronDown, Download, Eye, RefreshCw, Sparkles } from "lucide-react";
 
 export const dynamic = "force-dynamic";
+
+const COUNT_WORDS = ["No", "One", "Two", "Three", "Four", "Five", "Six", "Seven", "Eight", "Nine", "Ten", "Eleven", "Twelve"];
+
+/** "Nine positions, seven sectors" — the design's editorial headline. */
+function positionsHeadline(positions: number, sectors: number): string {
+  const p = COUNT_WORDS[positions] ?? String(positions);
+  const s = (COUNT_WORDS[sectors] ?? String(sectors)).toLowerCase();
+  return `${p} position${positions === 1 ? "" : "s"}, ${s} sector${sectors === 1 ? "" : "s"}`;
+}
 
 export default async function HoldingsPage() {
   const supabase = await createClient();
@@ -34,83 +46,121 @@ export default async function HoldingsPage() {
   const missingCompany = summary.holdings.filter((holding) => !holding.company_name?.trim()).length;
   const unclassified = summary.holdings.filter((holding) => !holding.sector?.trim()).length;
 
+  const dayPnl = dailyPerformance.totalDayPnl;
+  const belowCostRows = summary.holdings
+    .filter((h) => h.latest_price !== null && h.avg_cost !== null && h.latest_price < h.avg_cost)
+    .map((h) => ({ ticker: h.ticker, last: h.latest_price as number, avg: h.avg_cost as number }))
+    .sort((a, b) => a.last / a.avg - b.last / b.avg);
+
   return (
-    <div className="space-y-5">
-      <header className="flex flex-wrap items-start justify-between gap-4 border-b border-rule pb-5">
-        <div>
-          <span className="mb-3.5 block h-0.75 w-11 bg-indigo" />
-          <p className="eyebrow">Portfolio</p>
-          <h1 className="mt-1.5 font-display text-(length:--text-title) font-normal tracking-editorial text-text-strong">Holdings</h1>
-          <p className="mt-1.5 flex flex-wrap items-center gap-x-1.5 text-xs text-text-muted">
-            <span>{formatNumber(summary.holdingsCount, 0)} positions ·</span>
-            <AsOf date={latestPriceDate} label="Prices" />
-            <span>· {summary.pricedHoldings} of {summary.holdingsCount} priced{unpriced ? ` · ${unpriced} valued at cost` : ""}</span>
-          </p>
+    <div className="-mx-3 sm:-mx-4 md:-mx-(--gutter-page)">
+      <Band tone="paper" className="px-3 sm:px-4 md:px-(--gutter-page)">
+        <div className="flex flex-wrap items-end justify-between gap-6 border-b border-rule pb-5">
+          <div>
+            <span className="mb-3.5 block h-0.75 w-11 bg-clay" />
+            <p className="eyebrow">Portfolio</p>
+            <h1 className="mt-1.5 font-display text-(length:--text-title) font-normal tracking-editorial text-text-strong">
+              {positionsHeadline(summary.holdingsCount, summary.sectorWeights.length)}
+            </h1>
+            <p className="mt-1.5 flex flex-wrap items-center gap-x-1.5 text-xs text-text-muted">
+              <AsOf date={latestPriceDate} label="Prices" />
+              <span>· {summary.pricedHoldings} of {summary.holdingsCount} priced{unpriced ? ` · ${unpriced} valued at cost` : ""}</span>
+            </p>
+          </div>
+          <div className="flex flex-wrap items-start gap-2">
+            {!isDemo && <AddTransactionDialog variant="default" />}
+            {!isDemo && <ActionButton endpoint="/api/prices" body={{ refresh: true }} label={<><RefreshCw className="h-3.5 w-3.5" /> Refresh prices</>} variant="outline" size="sm" />}
+            <details className="relative">
+              <summary className="inline-flex h-10 cursor-pointer list-none items-center justify-center gap-1.5 rounded-md border border-rule bg-card px-3 text-xs font-medium transition-colors hover:bg-accent md:h-8"><span>More</span><ChevronDown className="h-3.5 w-3.5" /></summary>
+              <div className="absolute right-0 z-10 mt-1 flex w-52 flex-col gap-1 rounded-md border border-rule bg-card p-1.5 shadow-card">
+                <Link href="/dividends" className="rounded px-2.5 py-2 text-xs hover:bg-muted">Record dividend</Link>
+                {companyEnrichmentEnabled && !isDemo && (
+                  <ActionButton endpoint="/api/holdings/enrich" label={<><Sparkles className="h-3.5 w-3.5" /> Update company details</>} variant="ghost" size="sm" className="w-full justify-start px-2.5" />
+                )}
+                {/* eslint-disable-next-line @next/next/no-html-link-for-pages -- CSV download, not a page navigation */}
+                <a href="/api/export/holdings" className="rounded px-2.5 py-2 text-xs hover:bg-muted"><Download className="mr-1.5 inline h-3.5 w-3.5" /> Export CSV</a>
+              </div>
+            </details>
+          </div>
         </div>
-        <div className="flex flex-wrap items-start gap-2">
-          {!isDemo && <AddTransactionDialog variant="default" />}
-          {!isDemo && <ActionButton endpoint="/api/prices" body={{ refresh: true }} label={<><RefreshCw className="h-3.5 w-3.5" /> Refresh prices</>} variant="outline" size="sm" />}
-          <details className="relative">
-            <summary className="inline-flex h-10 cursor-pointer list-none items-center justify-center gap-1.5 rounded-md border border-border bg-card px-3 text-xs font-medium transition-colors hover:bg-accent md:h-8"><span>More</span><ChevronDown className="h-3.5 w-3.5" /></summary>
-            <div className="absolute right-0 z-10 mt-1 flex w-52 flex-col gap-1 rounded-md border border-border bg-card p-1.5 shadow-[var(--shadow-card)]">
-              <Link href="/dividends" className="rounded px-2.5 py-2 text-xs hover:bg-muted">Record dividend</Link>
-              {companyEnrichmentEnabled && !isDemo && (
-                <ActionButton endpoint="/api/holdings/enrich" label={<><Sparkles className="h-3.5 w-3.5" /> Update company details</>} variant="ghost" size="sm" className="w-full justify-start px-2.5" />
-              )}
-              {/* eslint-disable-next-line @next/next/no-html-link-for-pages -- CSV download, not a page navigation */}
-              <a href="/api/export/holdings" className="rounded px-2.5 py-2 text-xs hover:bg-muted"><Download className="mr-1.5 inline h-3.5 w-3.5" /> Export CSV</a>
-            </div>
-          </details>
-        </div>
-      </header>
+
+        {summary.holdings.length > 0 && (
+          <>
+            <p className="mt-5 max-w-(--measure) text-(length:--text-h3) leading-relaxed text-text-muted">
+              Market value <strong className="figure font-semibold text-text-strong">{formatMoney(summary.totalValue)}</strong> against a cost basis of{" "}
+              <strong className="figure font-semibold text-text-strong">{formatMoney(summary.totalCost)}</strong>. Unrealised{" "}
+              <strong className={`figure font-semibold ${summary.unrealizedPl >= 0 ? "text-up" : "text-down"}`}>{formatMoney(summary.unrealizedPl)}</strong>
+              {dayPnl !== null && <>, with <strong className={`figure font-semibold ${dayPnl >= 0 ? "text-up" : "text-down"}`}>{formatMoney(dayPnl)}</strong> of it today</>}.
+            </p>
+            <SectorWeightBar slices={summary.sectorWeights} total={summary.totalValue} />
+          </>
+        )}
+      </Band>
+
       {summary.holdings.length === 0 ? (
         summary.hiddenHoldings.length > 0 ? null : (
-        <EmptyState
-          icon={Briefcase}
-          title="No holdings yet"
-          description="Add a manual buy transaction to start tracking positions and prices."
-          action={isDemo ? undefined : <AddTransactionDialog label="Add transaction" variant="default" />}
-        />
+          <Band tone="paper" rule="none" className="px-3 sm:px-4 md:px-(--gutter-page)">
+            <EmptyState
+              icon={Briefcase}
+              title="No holdings yet"
+              description="Add a manual buy transaction to start tracking positions and prices."
+              action={isDemo ? undefined : <AddTransactionDialog label="Add transaction" variant="default" />}
+            />
+          </Band>
         )
       ) : (
         <>
-          <section>
+          <Band tone="paper" className="px-3 sm:px-4 md:px-(--gutter-page)">
             <div className="grid border-t border-rule sm:grid-cols-2 lg:grid-cols-4">
               <Metric label="Market value" value={formatMoney(summary.totalValue)} sub={`${summary.pricedHoldings} priced positions`} />
               <Metric label="Cost basis" value={formatMoney(summary.totalCost)} />
               <Metric label="Unrealised P/L" value={formatMoney(summary.unrealizedPl)} sub={formatSignedPct(summary.unrealizedPlPct)} tone={summary.unrealizedPl > 0 ? "positive" : summary.unrealizedPl < 0 ? "negative" : "flat"} />
               <Metric label="Dividend income" value={formatMoney(summary.dividendIncome)} />
             </div>
-            <p className="mt-2 text-xs text-muted-foreground">{summary.holdingsCount} holdings · Largest position: {summary.largestHolding ? `${summary.largestHolding.ticker} ${summary.largestHolding.weight?.toFixed(1)}%` : "—"} · {belowCost} position{belowCost === 1 ? "" : "s"} below cost</p>
-          </section>
-          {(missingCompany > 0 || unclassified > 0 || unpriced > 0) && <div className="flex flex-wrap items-center justify-between gap-2 rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-900"><span><strong>Portfolio data</strong> · {[missingCompany && `${missingCompany} holding${missingCompany === 1 ? "" : "s"} missing company information`, unclassified && `${unclassified} unclassified sector${unclassified === 1 ? "" : "s"}`, unpriced && `${unpriced} unpriced position${unpriced === 1 ? "" : "s"}`].filter(Boolean).join(" · ")}</span>{companyEnrichmentEnabled && !isDemo && <ActionButton endpoint="/api/holdings/enrich" label={<>Review issues</>} variant="outline" size="sm" />}</div>}
-          <HoldingsTable holdings={summary.holdings} summary={summary} dailyRows={dailyPerformance.rows.map((row) => ({ ticker: row.ticker, dayChangePct: row.dayChangePct, dayPnl: row.dayPnl }))} companyReportsEnabled={companyReportsEnabled && !isDemo} companyEnrichmentEnabled={companyEnrichmentEnabled && !isDemo} readOnly={isDemo} />
+            <p className="mt-3 text-xs text-text-faint">{summary.holdingsCount} holdings · Largest position: {summary.largestHolding ? `${summary.largestHolding.ticker} ${summary.largestHolding.weight?.toFixed(1)}%` : "—"} · {belowCost} position{belowCost === 1 ? "" : "s"} below cost</p>
+            {(missingCompany > 0 || unclassified > 0 || unpriced > 0) && <div className="mt-4 flex flex-wrap items-center justify-between gap-2 rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-900"><span><strong>Portfolio data</strong> · {[missingCompany && `${missingCompany} holding${missingCompany === 1 ? "" : "s"} missing company information`, unclassified && `${unclassified} unclassified sector${unclassified === 1 ? "" : "s"}`, unpriced && `${unpriced} unpriced position${unpriced === 1 ? "" : "s"}`].filter(Boolean).join(" · ")}</span>{companyEnrichmentEnabled && !isDemo && <ActionButton endpoint="/api/holdings/enrich" label={<>Review issues</>} variant="outline" size="sm" />}</div>}
+            <div className="mt-6">
+              <HoldingsTable holdings={summary.holdings} summary={summary} dailyRows={dailyPerformance.rows.map((row) => ({ ticker: row.ticker, dayChangePct: row.dayChangePct, dayPnl: row.dayPnl }))} companyReportsEnabled={companyReportsEnabled && !isDemo} companyEnrichmentEnabled={companyEnrichmentEnabled && !isDemo} readOnly={isDemo} />
+            </div>
+          </Band>
+
+          <Band tone="paper" className="px-3 sm:px-4 md:px-(--gutter-page)">
+            <div className="grid gap-12 lg:grid-cols-[minmax(0,1.25fr)_minmax(0,1fr)]">
+              <div>
+                <PanelHeader eyebrow="Concentration" title="Weight by sector" />
+                <SectorTreemap slices={summary.sectorWeights} total={summary.totalValue} />
+              </div>
+              <div>
+                <PanelHeader eyebrow="Underwater" title="Cost against last price" />
+                <BelowCostPlot rows={belowCostRows} />
+              </div>
+            </div>
+          </Band>
         </>
       )}
       {summary.hiddenHoldings.length > 0 && (
-        <section className="rounded-lg border border-border bg-card">
-          <div className="flex items-center justify-between border-b border-border px-4 py-3">
-            <div>
-              <h2 className="text-sm font-semibold">Hidden holdings</h2>
-              <p className="mt-0.5 text-xs text-muted-foreground">Kept in your ledger but excluded from totals, performance, dividends and Copilot.</p>
-            </div>
-            <span className="text-xs tabular-nums text-muted-foreground">{summary.hiddenHoldings.length}</span>
-          </div>
-          <ul>
+        <Band tone="paper" rule="none" className="px-3 sm:px-4 md:px-(--gutter-page)">
+          <PanelHeader
+            eyebrow="Excluded"
+            title="Hidden holdings"
+            aside={<span className="figure text-xs text-text-muted">{summary.hiddenHoldings.length}</span>}
+          />
+          <p className="mt-2 text-xs text-text-muted">Kept in your ledger but excluded from totals, performance, dividends and Copilot.</p>
+          <div className="ledger mt-3">
             {summary.hiddenHoldings.map((h) => (
-              <li key={h.ticker} className="flex flex-wrap items-center justify-between gap-2 border-b border-border px-4 py-2.5 last:border-b-0">
+              <div key={h.ticker} className="ledger-row flex flex-wrap items-center justify-between gap-2">
                 <div className="flex items-baseline gap-2">
-                  <span className="text-sm font-medium">{h.ticker}</span>
-                  {h.company_name && <span className="text-xs text-muted-foreground">{h.company_name}</span>}
+                  <span className="text-sm font-medium text-text-strong">{h.ticker}</span>
+                  {h.company_name && <span className="text-xs text-text-muted">{h.company_name}</span>}
                 </div>
                 <div className="flex items-center gap-3">
-                  <span className="text-xs tabular-nums text-muted-foreground">{formatNumber(h.quantity, 0)} shares · cost {formatMoney(h.total_cost)}</span>
+                  <span className="figure text-xs text-text-muted">{formatNumber(h.quantity, 0)} shares · cost {formatMoney(h.total_cost)}</span>
                   {!isDemo && <ActionButton endpoint={`/api/holdings/${h.ticker}`} method="PATCH" body={{ hidden: false }} label={<><Eye className="h-3.5 w-3.5" /> Unhide</>} variant="outline" size="sm" />}
                 </div>
-              </li>
+              </div>
             ))}
-          </ul>
-        </section>
+          </div>
+        </Band>
       )}
     </div>
   );
