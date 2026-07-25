@@ -17,8 +17,8 @@ import {
 } from "lucide-react";
 import { NAV, NAV_SECTIONS } from "@/lib/config/navigation";
 
-/** The mockup's 7 inline primary tabs. Everything else lives in "Research ∨". */
-const PRIMARY_HREFS = ["/dashboard", "/holdings", "/dividends", "/performance", "/market", "/news", "/chat"];
+/** The design's 4 inline primary tabs. Everything else lives in "Research ∨". */
+const PRIMARY_HREFS = ["/dashboard", "/holdings", "/dividends", "/performance"];
 
 function primaryTabs(visibleHrefs: string[]) {
   const allowed = new Set(visibleHrefs);
@@ -84,6 +84,9 @@ export function TopNav({
 
   const tabs = primaryTabs(visibleHrefs);
   const overflowSections = visibleSections(visibleHrefs, PRIMARY_HREFS);
+  const activeOverflow = overflowSections
+    .flatMap((s) => s.items)
+    .find((item) => pathname === item.href || pathname.startsWith(item.href + "/"));
   const menuActive = overflowSections.some((section) =>
     section.items.some((item) => pathname === item.href || pathname.startsWith(item.href + "/"))
   ) || (isAdmin && (pathname === "/admin" || pathname.startsWith("/admin/")));
@@ -145,7 +148,7 @@ export function TopNav({
                   menuActive || menuOpen ? "font-semibold text-text-strong" : "font-medium text-text-muted hover:text-text-strong"
                 )}
               >
-                Research
+                {activeOverflow?.label ?? "Research"}
                 <ChevronDown className={cn("h-3.5 w-3.5 transition-transform", menuOpen && "rotate-180")} />
               </button>
               {menuOpen && (
@@ -162,10 +165,11 @@ export function TopNav({
                             onClick={() => setMenuOpen(false)}
                             title={item.hint}
                             className={cn(
-                              "rounded-md px-1.5 py-1.5 text-[13px] transition-colors",
-                              active ? "bg-brand-soft font-semibold text-brand" : "font-medium text-text-muted hover:bg-surface-sunken hover:text-text-strong"
+                              "flex items-center gap-2.5 rounded-md px-2 py-2 text-[13px] transition-colors",
+                              active ? "bg-surface-sunken font-semibold text-text-strong" : "font-medium text-text-muted hover:bg-surface-sunken hover:text-text-strong"
                             )}
                           >
+                            <item.icon className="h-3.5 w-3.5 shrink-0" />
                             {item.label}
                           </Link>
                         );

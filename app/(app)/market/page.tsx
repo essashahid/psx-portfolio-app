@@ -1,12 +1,10 @@
-import Link from "next/link";
 import { createClient, getUser } from "@/lib/supabase/server";
 import { getMarketDashboard } from "@/lib/market/read";
-import { getForeignFlowHistory, getForeignFlowSnapshot, getPortfolioFlowExposure } from "@/lib/market/foreign-flows";
+import { getForeignFlowSnapshot } from "@/lib/market/foreign-flows";
 import { fmtCompact, fmtInt, fmtPct, tone } from "@/lib/market/format";
 import { EmptyState } from "@/components/ui/empty-state";
 import { ActionButton } from "@/components/ui/action-button";
 import { Band } from "@/components/ui/band";
-import { MarketPulseWorkspace } from "@/components/features/market/market-pulse-workspace";
 import {
   BreadthStrip,
   FiftyTwoWeekStrip,
@@ -44,10 +42,8 @@ export default async function MarketPulsePage() {
   if (!user) return null;
   const supabase = await createClient();
   const foreignFlow = await getForeignFlowSnapshot(supabase, 90);
-  const [market, flowHistory, flowExposure, profileRes, yearRange] = await Promise.all([
+  const [market, profileRes, yearRange] = await Promise.all([
     getMarketDashboard(supabase, user.id),
-    getForeignFlowHistory(supabase, 90),
-    getPortfolioFlowExposure(supabase, user.id, foreignFlow),
     supabase.from("profiles").select("demo_mode").eq("id", user.id).maybeSingle(),
     getIndexYearRange(supabase),
   ]);
@@ -170,18 +166,8 @@ export default async function MarketPulsePage() {
         </Band>
       )}
 
-      <div className="space-y-7 px-3 pt-7 sm:px-4 md:px-(--gutter-page)">
-
-      {market.owned.length > 0 && <section className="border-t border-border pt-5"><div className="flex items-baseline justify-between"><div><h2 className="text-lg font-semibold">My Portfolio Today</h2><p className="mt-1 text-xs text-muted-foreground">Relative performance compares each holding&apos;s daily move with its sector average.</p></div><span className="text-xs text-muted-foreground">{market.owned.length} priced holdings</span></div><div className="mt-5 grid gap-7 xl:grid-cols-[1fr_1fr]">
-        <div><div className="flex gap-6 border-b border-border pb-3 text-sm"><span><strong className="tabular-nums text-up">{market.owned.filter((holding) => (holding.vsSector ?? 0) > 0).length}</strong> outperformed sectors</span><span><strong className="tabular-nums text-down">{market.owned.filter((holding) => (holding.vsSector ?? 0) < 0).length}</strong> lagged sectors</span></div><RelativeList title="Strongest relative performance" rows={[...market.owned].filter((holding) => holding.vsSector !== null && holding.vsSector > 0).sort((a, b) => (b.vsSector ?? 0) - (a.vsSector ?? 0)).slice(0, 3)} /><RelativeList title="Largest relative lag" rows={[...market.owned].filter((holding) => holding.vsSector !== null && holding.vsSector < 0).sort((a, b) => (a.vsSector ?? 0) - (b.vsSector ?? 0)).slice(0, 3)} /></div>
-        <div className="grid gap-5 sm:grid-cols-2"><PortfolioFlows rows={flowExposure} flowDate={foreignFlow?.day.date ?? null} unit={foreignFlow ? `${foreignFlow.day.currency} mn` : ""} /><RelevantEvents events={relevantEvents} /></div>
-      </div></section>}
-
-      <section className="border-t border-border pt-5"><h2 className="text-lg font-semibold">Market Summary</h2><div className="mt-3 space-y-1 text-sm text-muted-foreground"><p>{snapshot.index_name ?? "KSE-100"} {snapshot.index_value !== null ? `closed at ${snapshot.index_value.toLocaleString("en-PK", { maximumFractionDigits: 2 })}` : "level is unavailable"}{snapshot.index_change_percent !== null ? `, ${fmtPct(snapshot.index_change_percent)}.` : "."}</p><p>{snapshot.total_advancers} of {breadthTotal} traded stocks advanced, while {snapshot.total_decliners} declined.</p>{strongest && <p>{strongest.sector} was the strongest sector at {fmtPct(strongest.average_return)}.</p>}{weakest && <p>{weakest.sector} was the weakest sector at {fmtPct(weakest.average_return)}.</p>}{foreignFlow && <p>Foreign investors recorded net {foreignFlow.day.fipiNet !== null && foreignFlow.day.fipiNet >= 0 ? "buying" : "selling"} of {foreignFlow.day.currency} {Math.abs(foreignFlow.day.fipiNet ?? 0).toFixed(1)}M based on the latest flow data for {foreignFlow.day.date}.</p>}</div></section>
-
-      <MarketPulseWorkspace sectors={market.sectors} heatmap={market.heatmap} movers={market.movers} events={market.events} owned={[...market.ownedTickers]} watched={[...market.watchTickers]} foreignFlow={foreignFlow} flowHistory={flowHistory} />
-
-      <p className="text-center text-[10px] text-muted-foreground">Source: official PSX market-watch and index feeds via {snapshot.source_provider} · snapshot {snapshot.snapshot_date} · traded value is volume × price where applicable.</p>
+      <div className="px-3 py-6 sm:px-4 md:px-(--gutter-page)">
+        <p className="text-center text-[10px] text-muted-foreground">Source: official PSX market-watch and index feeds via {snapshot.source_provider} · snapshot {snapshot.snapshot_date} · traded value is volume × price where applicable.</p>
       </div>
     </div>
   );
@@ -189,8 +175,5 @@ export default async function MarketPulsePage() {
 
 function MarketStat({ label, value, tone: statTone }: { label: string; value: string; tone?: "positive" | "negative" }) { return <div><p className={cn("text-sm font-semibold tabular-nums", statTone === "positive" ? "text-up" : statTone === "negative" ? "text-down" : "text-foreground")}>{value}</p><p className="mt-0.5 text-[10px] uppercase tracking-wide text-muted-foreground">{label}</p></div>; }
 
-function RelativeList({ title, rows }: { title: string; rows: { ticker: string; change_percent: number | null; sector: string | null; vsSector: number | null }[] }) { return <div className="mt-5"><p className="text-xs font-semibold">{title}</p>{rows.length ? <div className="mt-2 divide-y divide-border">{rows.map((row) => <Link key={row.ticker} href={`/stocks/${row.ticker}`} className="grid grid-cols-[4rem_1fr_auto] gap-2 py-2 text-xs hover:bg-muted/30"><span className="font-semibold">{row.ticker}</span><span className="text-muted-foreground">{fmtPct(row.change_percent)} · {row.sector ?? "Unclassified"}</span><span className={cn("font-medium tabular-nums", (row.vsSector ?? 0) > 0 ? "text-up" : "text-down")}>{fmtPct(row.vsSector)} vs sector</span></Link>)}</div> : <p className="mt-2 text-xs text-muted-foreground">No comparable sector data.</p>}</div>; }
 
-function PortfolioFlows({ rows, flowDate, unit }: { rows: { sector: string; flowNet: number | null; portfolioWeight: number; tickers: string[] }[]; flowDate: string | null; unit: string }) { return <div><h3 className="text-sm font-semibold">Foreign Flows in My Portfolio Sectors</h3><p className="mt-1 text-[11px] text-muted-foreground">Sector-level investor-flow data; it does not indicate trading in individual holdings.</p><div className="mt-3 divide-y divide-border">{rows.length ? rows.slice(0, 4).map((row) => <div key={row.sector} className="py-2 text-xs"><div className="flex justify-between gap-3"><span className="font-medium">{row.sector}</span><span className={cn("tabular-nums font-medium", (row.flowNet ?? 0) > 0 ? "text-up" : (row.flowNet ?? 0) < 0 ? "text-down" : "")}>{row.flowNet !== null ? `${row.flowNet > 0 ? "+" : ""}${row.flowNet.toFixed(1)} ${unit}` : "—"}</span></div><p className="mt-0.5 truncate text-[11px] text-muted-foreground">{row.tickers.join(", ")} · {row.portfolioWeight.toFixed(1)}%</p></div>) : <p className="py-4 text-xs text-muted-foreground">No matching sector flow data.</p>}</div>{flowDate && <p className="mt-2 text-[10px] text-muted-foreground">Flow reporting date: {flowDate}</p>}</div>; }
 
-function RelevantEvents({ events }: { events: { ticker: string; title: string; event_type: string; event_date: string }[] }) { return <div><h3 className="text-sm font-semibold">Relevant filings</h3><p className="mt-1 text-[11px] text-muted-foreground">Official filings for your holdings today.</p><div className="mt-3 divide-y divide-border">{events.length ? events.slice(0, 4).map((event) => <div key={`${event.ticker}-${event.title}`} className="py-2 text-xs"><p className="font-medium">{event.ticker} · {event.event_type.replace(/_/g, " ")}</p><p className="mt-0.5 line-clamp-2 text-muted-foreground">{event.title}</p></div>) : <p className="py-4 text-xs text-muted-foreground">No held-stock filings in this snapshot.</p>}</div></div>; }

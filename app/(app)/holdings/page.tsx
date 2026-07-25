@@ -111,17 +111,8 @@ export default async function HoldingsPage() {
       ) : (
         <>
           <Band tone="paper" className="px-3 sm:px-4 md:px-(--gutter-page)">
-            <div className="grid border-t border-rule sm:grid-cols-2 lg:grid-cols-4">
-              <Metric label="Market value" value={formatMoney(summary.totalValue)} sub={`${summary.pricedHoldings} priced positions`} />
-              <Metric label="Cost basis" value={formatMoney(summary.totalCost)} />
-              <Metric label="Unrealised P/L" value={formatMoney(summary.unrealizedPl)} sub={formatSignedPct(summary.unrealizedPlPct)} tone={summary.unrealizedPl > 0 ? "positive" : summary.unrealizedPl < 0 ? "negative" : "flat"} />
-              <Metric label="Dividend income" value={formatMoney(summary.dividendIncome)} />
-            </div>
-            <p className="mt-3 text-xs text-text-faint">{summary.holdingsCount} holdings · Largest position: {summary.largestHolding ? `${summary.largestHolding.ticker} ${summary.largestHolding.weight?.toFixed(1)}%` : "—"} · {belowCost} position{belowCost === 1 ? "" : "s"} below cost</p>
-            {(missingCompany > 0 || unclassified > 0 || unpriced > 0) && <div className="mt-4 flex flex-wrap items-center justify-between gap-2 rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-900"><span><strong>Portfolio data</strong> · {[missingCompany && `${missingCompany} holding${missingCompany === 1 ? "" : "s"} missing company information`, unclassified && `${unclassified} unclassified sector${unclassified === 1 ? "" : "s"}`, unpriced && `${unpriced} unpriced position${unpriced === 1 ? "" : "s"}`].filter(Boolean).join(" · ")}</span>{companyEnrichmentEnabled && !isDemo && <ActionButton endpoint="/api/holdings/enrich" label={<>Review issues</>} variant="outline" size="sm" />}</div>}
-            <div className="mt-6">
-              <HoldingsTable holdings={summary.holdings} summary={summary} dailyRows={dailyPerformance.rows.map((row) => ({ ticker: row.ticker, dayChangePct: row.dayChangePct, dayPnl: row.dayPnl }))} companyReportsEnabled={companyReportsEnabled && !isDemo} companyEnrichmentEnabled={companyEnrichmentEnabled && !isDemo} readOnly={isDemo} />
-            </div>
+            {(missingCompany > 0 || unclassified > 0 || unpriced > 0) && <div className="mb-5 flex flex-wrap items-center justify-between gap-2 rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-900"><span><strong>Portfolio data</strong> · {[missingCompany && `${missingCompany} holding${missingCompany === 1 ? "" : "s"} missing company information`, unclassified && `${unclassified} unclassified sector${unclassified === 1 ? "" : "s"}`, unpriced && `${unpriced} unpriced position${unpriced === 1 ? "" : "s"}`].filter(Boolean).join(" · ")}</span>{companyEnrichmentEnabled && !isDemo && <ActionButton endpoint="/api/holdings/enrich" label={<>Review issues</>} variant="outline" size="sm" />}</div>}
+            <HoldingsTable holdings={summary.holdings} summary={summary} dailyRows={dailyPerformance.rows.map((row) => ({ ticker: row.ticker, dayChangePct: row.dayChangePct, dayPnl: row.dayPnl }))} companyReportsEnabled={companyReportsEnabled && !isDemo} companyEnrichmentEnabled={companyEnrichmentEnabled && !isDemo} readOnly={isDemo} />
           </Band>
 
           <Band tone="paper" className="px-3 sm:px-4 md:px-(--gutter-page)">
@@ -166,12 +157,3 @@ export default async function HoldingsPage() {
   );
 }
 
-function Metric({ label, value, sub, tone }: { label: string; value: string; sub?: string; tone?: "positive" | "negative" | "flat" }) {
-  return (
-    <div className="border-t border-rule py-4 first:border-t-0 sm:border-t-0 sm:border-l sm:px-5 sm:py-0 sm:first:border-l-0 sm:first:pl-0">
-      <p className="text-(length:--text-2xs) font-bold uppercase tracking-(--tracking-caps) text-text-faint">{label}</p>
-      <p className={`figure mt-1.5 text-(length:--text-h1) font-semibold ${tone === "positive" ? "text-up" : tone === "negative" ? "text-down" : "text-text-strong"}`}>{value}</p>
-      {sub && <p className="figure mt-0.5 text-xs text-text-muted">{sub}</p>}
-    </div>
-  );
-}

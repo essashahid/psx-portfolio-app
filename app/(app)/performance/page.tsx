@@ -239,38 +239,6 @@ export default async function PerformancePage() {
         benchmark={analytics.benchmark}
       />
 
-      <section className="border-y border-border py-4">
-        <div className="grid gap-x-8 gap-y-4 sm:grid-cols-2 lg:grid-cols-4">
-          <Metric label="Current net worth" value={formatMoney(currentWorth)} sub={currentWorthSource} />
-          <Metric
-            label="Net investment gain"
-            value={formatMoney(netGain)}
-            sub={formatSignedPct(returns.totalDeposited ? (netGain / returns.totalDeposited) * 100 : null)}
-            tone={netGain >= 0 ? "positive" : "negative"}
-          />
-          <Metric
-            label="XIRR"
-            value={returns.xirrPct !== null ? `${returns.xirrPct}%` : "Unavailable"}
-            sub={`${returns.externalCashFlowEvents} external flows · ${returns.startDate ?? "—"} to ${returns.endDate ?? "—"}`}
-            tone={returns.xirrPct !== null && returns.xirrPct > 0 ? "positive" : undefined}
-          />
-          <Metric label="External capital" value={formatMoney(returns.totalDeposited)} sub="Deposits plus external acquisitions" />
-          <Metric
-            label="Realised P/L"
-            value={formatMoney(returns.realizedPl)}
-            sub={`${checkpoints.brokerSellLinesImported} sell lines · ${checkpoints.brokerSellOrdersImported} sell orders`}
-            tone={returns.realizedPl >= 0 ? "positive" : "negative"}
-          />
-          <Metric
-            label="Unrealised P/L"
-            value={formatMoney(currentUnrealized)}
-            sub="Weighted-average adjusted cost basis"
-            tone={currentUnrealized >= 0 ? "positive" : "negative"}
-          />
-          <Metric label="Net dividends" value={formatMoney(portfolio.dividendIncome)} sub="Dividend Income module; not double-counted in bridge" />
-          <Metric label="Recorded deductions" value={formatMoney(friction.total)} sub={`${friction.pctOfDeposits}% of external capital`} tone="negative" />
-        </div>
-      </section>
 
       <LedgerTable rows={ledger.rows} transactions={transactions} cashMovements={cashMovements} />
 

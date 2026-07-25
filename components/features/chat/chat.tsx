@@ -33,7 +33,7 @@ import {
   Pencil,
   Plus,
   RefreshCw,
-  Send,
+
   SlidersHorizontal,
   Sparkles,
   Trash2,
@@ -580,7 +580,7 @@ export function Chat({
   ) : (
     <form
       onSubmit={(e) => { e.preventDefault(); send(input); }}
-      className="rounded-2xl border border-rule bg-card shadow-[0_8px_28px_-24px_rgba(15,23,42,0.5)] transition focus-within:border-indigo-3 focus-within:ring-4 focus-within:ring-indigo/10"
+      className="border-b-2 border-ink-1 bg-transparent transition focus-within:border-indigo"
     >
       <textarea
         ref={inputRef}
@@ -591,7 +591,7 @@ export function Chat({
         rows={1}
         enterKeyHint="send"
         aria-label="Message Research Copilot"
-        className="max-h-32 w-full resize-none overflow-y-auto bg-transparent px-4 pt-3 font-display text-lg leading-6 tracking-editorial text-text-strong outline-none md:text-[17px]"
+        className="max-h-32 w-full resize-none overflow-y-auto bg-transparent px-1 pt-3 font-display text-lg leading-6 tracking-editorial text-text-strong outline-none placeholder:text-text-faint md:text-[18px]"
       />
       <div className="flex items-center gap-1.5 px-2 pb-2">
         <select
@@ -629,9 +629,9 @@ export function Chat({
           type="submit"
           disabled={busy || !input.trim()}
           aria-label="Send message"
-          className="ml-auto flex h-9 shrink-0 items-center justify-center gap-1.5 rounded-(--radius-sm) bg-ink-1 px-4 text-sm font-semibold text-white transition hover:bg-ink-2 disabled:opacity-40"
+          className="ml-auto flex h-9 shrink-0 items-center justify-center gap-1.5 rounded-(--radius-sm) bg-ink-1 px-5 text-sm font-semibold text-white transition hover:bg-ink-2 disabled:opacity-40"
         >
-          {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+          {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : "Ask"}
         </button>
       </div>
     </form>
@@ -654,11 +654,11 @@ export function Chat({
           <MessageSquareText className="h-4 w-4" />
         </button>
         <div className="min-w-0 flex-1">
-          <p className="truncate text-[15px] font-semibold tracking-[-0.015em]">
-            {activeThread?.title ?? "Research Copilot"}
+          <p className="truncate font-display text-[17px] font-normal tracking-editorial text-text-strong">
+            {activeThread?.title ?? "Copilot"}
           </p>
-          <p className="truncate text-[11px] text-muted-foreground">
-            {readOnly ? "Read-only demo research library" : currentThreadId ? "Saved research" : "Portfolio-aware research workspace"}
+          <p className="truncate text-[11px] text-text-faint">
+            {readOnly ? "Read-only demo research library" : dataUpdated ? `Grounded in your portfolio · data as of ${dataUpdated}` : "Grounded in your portfolio"}
           </p>
         </div>
         {busy && (

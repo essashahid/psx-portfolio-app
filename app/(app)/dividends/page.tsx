@@ -2,10 +2,10 @@ import { createClient, getUser } from "@/lib/supabase/server";
 import { getPortfolio } from "@/lib/portfolio/positions";
 import { getDividends } from "@/lib/dividends/summary";
 import { getTaxSettings } from "@/lib/dividends/tax";
-import { normalizeEvent, isOverdue, type DividendEvent } from "@/lib/dividends/engine";
+import { normalizeEvent, type DividendEvent } from "@/lib/dividends/engine";
 import { DividendManager } from "@/components/features/dividends/dividend-form";
 import { DividendIncomeWorkspace } from "@/components/features/dividends/dividend-income-workspace";
-import { DividendTrajectory, DividendYieldTable, TaxYearStatement, AwaitingPayment } from "@/components/features/dividends/dividend-analytics";
+import { DividendTrajectory, DividendYieldTable, TaxYearStatement } from "@/components/features/dividends/dividend-analytics";
 import { ActionButton } from "@/components/ui/action-button";
 import { Band } from "@/components/ui/band";
 import { ChevronDown, Download, RefreshCw, TrendingUp } from "lucide-react";
@@ -30,17 +30,6 @@ export default async function DividendsPage() {
   const events: DividendEvent[] = (eventsRes.data ?? []).map((row) => normalizeEvent(row as Record<string, unknown>));
   const taxRate = taxSettings.dividend_tax_rate !== null ? `${(taxSettings.dividend_tax_rate * 100).toFixed(0)}%` : "Not configured";
 
-  // Announced/expected payouts whose payment window has already passed. Silence
-  // otherwise looks the same as "nothing due", so surface these for follow-up.
-  const awaiting = events
-    .filter((event) => isOverdue(event, asOf) && !event.is_possible_duplicate)
-    .map((event) => {
-      const dueDate = event.payment_date ?? event.estimated_payment_end;
-      const daysOverdue = dueDate ? Math.max(0, Math.round((new Date(asOf).getTime() - new Date(dueDate).getTime()) / 86400_000)) : 0;
-      return { ticker: event.ticker, company_name: event.company_name, net_expected: event.net_expected, dueDate, daysOverdue };
-    })
-    .sort((a, b) => b.daysOverdue - a.daysOverdue)
-    .slice(0, 12);
 
   return (
     <div className="-mx-3 sm:-mx-4 md:-mx-(--gutter-page)">
@@ -73,8 +62,6 @@ export default async function DividendsPage() {
       </Band>
 
       <Band tone="paper" rule="none" className="px-3 sm:px-4 md:px-(--gutter-page)">
-        <AwaitingPayment events={awaiting} />
-
         <div className="mt-2 grid gap-12 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.3fr)]">
           <section>
             <p className="eyebrow">Income trajectory</p>
