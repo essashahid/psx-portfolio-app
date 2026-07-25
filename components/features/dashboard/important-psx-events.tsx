@@ -1,6 +1,3 @@
-import { Badge } from "@/components/ui/badge";
-import { FileText } from "lucide-react";
-
 export interface PsxEventRow {
   id: string;
   ticker: string | null;
@@ -10,55 +7,65 @@ export interface PsxEventRow {
   published_at: string | null;
   /** Number of articles clustered under this event; only shown when above 1. */
   articleCount?: number;
+  /** Primary source label when available. */
+  source?: string | null;
 }
 
-const CATEGORY_LABEL: Record<string, { label: string; variant: "green" | "blue" | "amber" | "secondary" }> = {
-  dividend: { label: "Dividend", variant: "green" },
-  result: { label: "Result", variant: "blue" },
-  corporate_announcement: { label: "Corporate action", variant: "amber" },
+const CATEGORY: Record<string, { label: string; color: string }> = {
+  dividend: { label: "Dividend", color: "var(--up-1)" },
+  result: { label: "Result", color: "var(--indigo-1)" },
+  corporate_announcement: { label: "Corporate action", color: "var(--clay-1)" },
+  policy: { label: "Policy", color: "var(--saffron-1)" },
 };
 
-/** Official PSX filings that matter: dividends, results, corporate actions, material info. */
+/**
+ * Important PSX events — the design's four-column ledger: coloured tag,
+ * headline, source meta, date.
+ */
 export function ImportantPsxEvents({ events }: { events: PsxEventRow[] }) {
   return (
-    <section className="border-t border-border pt-4">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <FileText className="h-4 w-4 text-muted-foreground" />
-          <h2 className="text-base font-semibold">Important PSX Events</h2>
-        </div>
+    <section>
+      <div className="border-b border-rule pb-2.5">
+        <h2 className="font-display text-(length:--text-h2) font-normal tracking-editorial text-text-strong">Important PSX events</h2>
       </div>
-      <div className="mt-4 space-y-2">
-        {events.length === 0 ? (
-          <p className="py-4 text-center text-xs text-muted-foreground">
-            No recent PSX filings stored.
-          </p>
-        ) : (
-          events.map((e) => {
-            const cat = CATEGORY_LABEL[e.category ?? ""] ?? { label: "Filing", variant: "secondary" as const };
+      {events.length === 0 ? (
+        <p className="py-6 text-center text-xs text-text-muted">No recent PSX filings stored.</p>
+      ) : (
+        <div className="ledger">
+          {events.map((e) => {
+            const cat = CATEGORY[e.category ?? ""] ?? { label: "Filing", color: "var(--text-faint)" };
             const cleanTitle = e.title.replace(/\s*-\s*PSX Company Announcement$/i, "");
+            const meta = [e.source, e.articleCount && e.articleCount > 1 ? `${e.articleCount} reports` : null]
+              .filter(Boolean)
+              .join(" · ");
             return (
-              <div key={e.id} className="flex items-start gap-2 border-b border-border pb-2 last:border-0 last:pb-0">
-                <Badge variant={cat.variant}>{cat.label}</Badge>
+              <div
+                key={e.id}
+                className="ledger-row grid items-baseline gap-3 sm:gap-5"
+                style={{ gridTemplateColumns: "110px minmax(0,1fr) minmax(0,180px) 88px" }}
+              >
+                <span
+                  className="text-(length:--text-3xs) font-bold uppercase tracking-(--tracking-caps)"
+                  style={{ color: cat.color }}
+                >
+                  {cat.label}
+                </span>
                 <a
                   href={e.url}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="min-w-0 text-xs leading-snug hover:underline"
+                  className="min-w-0 truncate text-sm leading-snug text-text-strong hover:underline"
+                  title={cleanTitle}
                 >
-                  <span className="font-medium">{e.ticker ?? "—"}</span> · {cleanTitle}
-                  {e.published_at && (
-                    <span className="ml-1 text-muted-foreground">({e.published_at.slice(0, 10)})</span>
-                  )}
-                  {e.articleCount && e.articleCount > 1 && (
-                    <span className="ml-1 text-muted-foreground">· {e.articleCount} reports</span>
-                  )}
+                  {e.ticker ? `${e.ticker} · ` : ""}{cleanTitle}
                 </a>
+                <span className="hidden truncate text-(length:--text-3xs) text-text-faint sm:block">{meta || "PSX announcements"}</span>
+                <span className="figure text-right text-(length:--text-2xs) text-text-muted">{e.published_at?.slice(0, 10) ?? "—"}</span>
               </div>
             );
-          })
-        )}
-      </div>
+          })}
+        </div>
+      )}
     </section>
   );
 }

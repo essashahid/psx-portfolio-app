@@ -1,25 +1,30 @@
 import Link from "next/link";
-import { Suspense, type ReactNode } from "react";
+import { Suspense } from "react";
 import { createClient, getUser } from "@/lib/supabase/server";
 import { getPortfolio } from "@/lib/portfolio/positions";
 import { getDailyHoldingPerformance } from "@/lib/portfolio/daily-performance";
+import { getCachedMarketGlobal } from "@/lib/market/read";
 import { cn, formatNumber, formatSignedPct } from "@/lib/shared/format";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Skeleton } from "@/components/ui/skeleton";
 import { AnimatedMoney } from "@/components/ui/animated-money";
-import { ActionButton } from "@/components/ui/action-button";
 import { Band } from "@/components/ui/band";
+import { PanelHeader } from "@/components/ui/panel-header";
 import { AddTransactionDialog } from "@/components/features/holdings/add-transaction-dialog";
 import { ImportantPsxEvents, type PsxEventRow } from "@/components/features/dashboard/important-psx-events";
+import { GrowthChart, type GrowthPoint } from "@/components/features/dashboard/growth-chart";
+import { ContributionLedger } from "@/components/features/dashboard/dashboard-bands";
+import { AllocationPanel, type ActiveWeightRow } from "@/components/features/dashboard/dashboard-bands";
+import { PositionsTable, type PositionRow } from "@/components/features/dashboard/positions-table";
 import { getClustersForTickers } from "@/lib/news/global-store";
 import { getPrefs, type UserPrefs } from "@/lib/user/preferences";
 import { AsOf } from "@/components/shared/as-of";
 import { MarkSeen } from "@/components/shared/mark-seen";
+import { Sparkline } from "@/components/shared/sparkline";
 import { DismissCheckButton } from "@/components/features/dashboard/dashboard-checks";
+import { shortSector } from "@/lib/shared/sector-colors";
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { DashboardAllocation, DashboardPerformance, PortfolioContribution } from "@/components/features/dashboard/dashboard-visuals";
-import { BenchmarkGrowthChart, type BenchmarkPointRow } from "@/components/features/performance/benchmark-growth-chart";
-import { Briefcase, CircleAlert, RefreshCw } from "lucide-react";
+import { Briefcase } from "lucide-react";
 
 export const dynamic = "force-dynamic";
 
@@ -30,7 +35,8 @@ const CHECK_THRESHOLDS = {
   dailyMove: 5,
 } as const;
 
-/** Dismissed check ids whose dismissal has not aged out (14 days). */
+const GUTTER = "px-3 sm:px-4 md:px-(--gutter-page)";
+
 function dismissedCheckIds(map: Record<string, string> | undefined): Set<string> {
   const out = new Set<string>();
   if (!map) return out;
@@ -41,46 +47,82 @@ function dismissedCheckIds(map: Record<string, string> | undefined): Set<string>
   return out;
 }
 
-/** One quiet line summarising what changed since the previous dashboard visit. */
-async function buildSinceLastVisit(
-  supabase: SupabaseClient,
-  userId: string,
-  lastSeen: string | null,
-  liveValue: number
-): Promise<string | null> {
-  if (!lastSeen) return null;
-  const seenMs = new Date(lastSeen).getTime();
-  if (Number.isNaN(seenMs) || Date.now() - seenMs < 20 * 3_600_000) return null; // less than ~a day: stay quiet
+/** SVG area path for the hero's faint portfolio motif, viewBox 1000×220. */
+function motifPath(values: number[]): string | null {
+  if (values.length < 2) return null;
+  const min = Math.min(...values) * 0.98;
+  const max = Math.max(...values) * 1.01 || 1;
+  const x = (i: number) => (i / (values.length - 1)) * 1000;
+  const y = (v: number) => 210 - ((v - min) / (max - min || 1)) * 190;
+  const line = values.map((v, i) => `${i ? "L" : "M"}${x(i).toFixed(1)} ${y(v).toFixed(1)}`).join(" ");
+  return `${line} L 1000 220 L 0 220 Z`;
+}
 
-  const seenDate = new Date(lastSeen).toISOString().slice(0, 10);
-  const [snapRes, divRes] = await Promise.all([
+/** Benchmark growth series with the same live "today" splice the old chart used. */
+async function getBenchmarkSeries(supabase: SupabaseClient, userId: string, liveValue: number) {
+  const [benchmarkRes, marketSnapRes] = await Promise.all([
     supabase
-      .from("portfolio_snapshots")
-      .select("total_value, snapshot_date")
+      .from("benchmark_series")
+      .select("point_date, contributed, portfolio, kse100")
       .eq("user_id", userId)
-      .lte("snapshot_date", seenDate)
+      .order("point_date", { ascending: true }),
+    supabase
+      .from("market_snapshots")
+      .select("snapshot_date, index_value")
+      .eq("market", "PSX")
       .order("snapshot_date", { ascending: false })
       .limit(1)
       .maybeSingle(),
-    supabase
-      .from("dividends")
-      .select("net_amount, amount")
-      .eq("user_id", userId)
-      .eq("status", "received")
-      .gte("payment_date", seenDate),
   ]);
-
-  const parts: string[] = [];
-  const priorValue = snapRes.data?.total_value ? Number(snapRes.data.total_value) : null;
-  if (priorValue && priorValue > 0) {
-    const delta = liveValue - priorValue;
-    parts.push(`portfolio value ${delta >= 0 ? "up" : "down"} ${formatNumber(Math.abs(delta), 0)} PKR`);
+  let series = (benchmarkRes.data ?? []).map((p) => ({
+    date: p.point_date as string,
+    contributed: Number(p.contributed),
+    portfolio: Number(p.portfolio),
+    kse100: Number(p.kse100),
+  }));
+  const today = new Date().toLocaleDateString("en-CA", { timeZone: "Asia/Karachi" });
+  const anchor = series.filter((p) => p.date <= today).at(-1);
+  if (anchor && liveValue > 0) {
+    let kse100 = anchor.kse100;
+    const liveIndex = marketSnapRes.data?.index_value ? Number(marketSnapRes.data.index_value) : null;
+    if (liveIndex && marketSnapRes.data!.snapshot_date > anchor.date) {
+      const { data: kseRow } = await supabase
+        .from("company_price_history")
+        .select("close")
+        .eq("ticker", "KSE100")
+        .lte("price_date", anchor.date)
+        .order("price_date", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      const baseClose = Number(kseRow?.close ?? 0);
+      if (baseClose > 0) kse100 = Math.round(anchor.kse100 * (liveIndex / baseClose) * 100) / 100;
+    }
+    series = [
+      ...series.filter((p) => p.date < today),
+      { date: today, contributed: anchor.contributed, portfolio: liveValue, kse100 },
+    ];
   }
-  const dividendsSince = (divRes.data ?? []).reduce((s, d) => s + Number(d.net_amount ?? d.amount ?? 0), 0);
-  if (dividendsSince > 0) parts.push(`${formatNumber(dividendsSince, 0)} PKR in dividends received`);
+  return series;
+}
 
-  if (parts.length === 0) return null;
-  return `Since your last visit: ${parts.join(", ")}.`;
+/** Last-two-weeks closes per held ticker for the 7d sparklines. */
+async function getSparks(supabase: SupabaseClient, tickers: string[]): Promise<Map<string, number[]>> {
+  const out = new Map<string, number[]>();
+  if (tickers.length === 0) return out;
+  const since = new Date(Date.now() - 14 * 86_400_000).toISOString().slice(0, 10);
+  const { data } = await supabase
+    .from("company_price_history")
+    .select("ticker, close, price_date")
+    .in("ticker", tickers)
+    .gte("price_date", since)
+    .order("price_date", { ascending: true });
+  for (const row of data ?? []) {
+    const t = String(row.ticker);
+    if (!out.has(t)) out.set(t, []);
+    out.get(t)!.push(Number(row.close));
+  }
+  for (const [t, vals] of out) out.set(t, vals.slice(-7));
+  return out;
 }
 
 export default async function DashboardPage() {
@@ -88,14 +130,12 @@ export default async function DashboardPage() {
   const user = await getUser();
   if (!user) return null;
 
-  // Critical path: only the data the hero, summary and allocations need to
-  // paint. The charts and PSX events fetch their own slices and stream in
-  // behind Suspense, so the page shell and headline numbers render immediately.
-  const [summary, dailyPerformance, profileRes, prefs] = await Promise.all([
+  const [summary, dailyPerformance, profileRes, prefs, marketGlobal] = await Promise.all([
     getPortfolio(supabase, user.id),
     getDailyHoldingPerformance(supabase, user.id),
     supabase.from("profiles").select("demo_mode, full_name").eq("id", user.id).maybeSingle(),
     getPrefs(supabase, user.id).catch(() => ({}) as UserPrefs),
+    getCachedMarketGlobal().catch(() => null),
   ]);
 
   if (summary.holdingsCount === 0) {
@@ -113,28 +153,106 @@ export default async function DashboardPage() {
     );
   }
 
-  const tickers = summary.holdings.map((holding) => holding.ticker);
-  const firstName = (profileRes.data?.full_name ?? "").trim().split(/\s+/)[0] || null;
   const isDemo = Boolean(profileRes.data?.demo_mode);
+  const tickers = summary.holdings.map((h) => h.ticker);
+  const liveValue = summary.totalValue + summary.cashBalance;
+
+  const [series, sparks] = await Promise.all([
+    getBenchmarkSeries(supabase, user.id, liveValue),
+    getSparks(supabase, tickers),
+  ]);
+
   const dayPnl = dailyPerformance.totalDayPnl;
-  const dayTone = dayPnl !== null && dayPnl > 0 ? "positive" : dayPnl !== null && dayPnl < 0 ? "negative" : "flat";
-  const sectorAllocations = summary.sectorWeights.map((sector) => ({
-    label: sector.sector,
-    value: sector.value,
-    weight: sector.weight,
-    holdings: summary.holdings.filter((holding) => (holding.sector || "Uncategorized") === sector.sector).length,
-  }));
-  const holdingAllocations = summary.holdings
-    .map((holding) => ({
-      label: holding.ticker,
-      value: holding.market_value ?? holding.total_cost,
-      weight: holding.weight ?? 0,
-      holdings: 1,
-    }))
-    .sort((a, b) => b.value - a.value);
-  // Each check carries a stable id keyed on the fact it reports, so a dismissal
-  // sticks until the same fact reappears. Only checks not currently dismissed
-  // surface, so a check the user has acknowledged stops nagging.
+  const latestMarketDate = dailyPerformance.asOf ?? null;
+  const dailyByTicker = new Map(dailyPerformance.rows.map((r) => [r.ticker, r]));
+
+  // ── Hero: benchmark comparison + motif + 12-month sparkline ─────────────
+  const lastB = series.at(-1);
+  const bench = lastB && lastB.contributed > 0
+    ? {
+        portfolioPct: (lastB.portfolio / lastB.contributed - 1) * 100,
+        ksePct: (lastB.kse100 / lastB.contributed - 1) * 100,
+        gain: lastB.portfolio - lastB.contributed,
+      }
+    : null;
+  const benchDelta = bench ? bench.portfolioPct - bench.ksePct : null;
+  const yearAgo = new Date(Date.now() - 365 * 86_400_000).toISOString().slice(0, 10);
+  const heroSpark = series.filter((p) => p.date >= yearAgo).map((p) => p.portfolio);
+  const motif = motifPath(series.map((p) => p.portfolio));
+
+  // ── Positions, contribution, allocation ─────────────────────────────────
+  const positionRows: PositionRow[] = [...summary.holdings]
+    .sort((a, b) => (b.market_value ?? 0) - (a.market_value ?? 0))
+    .map((h) => ({
+      ticker: h.ticker,
+      name: h.company_name ?? null,
+      sector: h.sector ?? null,
+      qty: h.quantity ?? 0,
+      avg: h.avg_cost ?? null,
+      price: h.latest_price,
+      dayPct: dailyByTicker.get(h.ticker)?.dayChangePct ?? null,
+      value: h.market_value,
+      weight: h.weight,
+      spark: sparks.get(h.ticker) ?? null,
+    }));
+
+  const sectorByTicker = new Map(summary.holdings.map((h) => [h.ticker, h.sector ?? null]));
+  const contributionRows = dailyPerformance.rows
+    .filter((r) => r.dayPnl !== null)
+    .map((r) => ({
+      ticker: r.ticker,
+      sector: sectorByTicker.get(r.ticker) ?? null,
+      contrib: r.dayPnl as number,
+      pricePct: r.dayChangePct,
+      weight: r.weight,
+    }));
+
+  const holdingCounts = new Map<string, number>();
+  for (const h of summary.holdings) {
+    const s = h.sector || "Unclassified";
+    holdingCounts.set(s, (holdingCounts.get(s) ?? 0) + 1);
+  }
+  const sectorSlices = [...summary.sectorWeights]
+    .sort((a, b) => b.value - a.value)
+    .map((s) => ({
+      label: shortSector(s.sector),
+      fullLabel: s.sector,
+      sector: s.sector,
+      value: s.value,
+      weight: s.weight,
+      meta: `${holdingCounts.get(s.sector) ?? 0} holding${(holdingCounts.get(s.sector) ?? 0) === 1 ? "" : "s"}`,
+    }));
+  const holdingSlices = [...summary.holdings]
+    .sort((a, b) => (b.market_value ?? 0) - (a.market_value ?? 0))
+    .map((h) => ({
+      label: h.ticker,
+      fullLabel: `${h.company_name ?? h.ticker} · ${h.sector ?? "Unclassified"}`,
+      sector: h.sector ?? null,
+      value: h.market_value ?? h.total_cost ?? 0,
+      weight: h.weight ?? 0,
+      meta: shortSector(h.sector),
+    }));
+
+  // Index sector weights, proxied from the snapshot's market-cap coverage.
+  const activeWeights: ActiveWeightRow[] = (() => {
+    const heatmap = marketGlobal?.heatmap ?? [];
+    const capBySector = new Map<string, number>();
+    let capTotal = 0;
+    for (const item of heatmap) {
+      const cap = Number(item.market_cap ?? 0);
+      if (!item.sector || cap <= 0) continue;
+      capBySector.set(item.sector, (capBySector.get(item.sector) ?? 0) + cap);
+      capTotal += cap;
+    }
+    if (capTotal <= 0) return [];
+    return summary.sectorWeights.map((s) => ({
+      sector: s.sector,
+      mineW: s.weight,
+      idxW: ((capBySector.get(s.sector) ?? 0) / capTotal) * 100,
+    }));
+  })();
+
+  // ── Checks (dismissible; kept from the product, styled quietly) ─────────
   const allChecks = [
     ...(summary.largestHolding && (summary.largestHolding.weight ?? 0) >= CHECK_THRESHOLDS.holdingWeight
       ? [{ id: `holding:${summary.largestHolding.ticker}`, title: "Large holding", detail: `${summary.largestHolding.ticker} represents ${summary.largestHolding.weight!.toFixed(1)}% of portfolio value.`, href: `/stocks/${summary.largestHolding.ticker}` }]
@@ -143,227 +261,192 @@ export default async function DashboardPage() {
       ? [{ id: `sector:${summary.largestSector.sector}`, title: "Sector concentration", detail: `${summary.largestSector.sector} represents ${summary.largestSector.weight.toFixed(1)}% of portfolio value.`, href: "/holdings" }]
       : []),
     ...summary.holdings
-      .filter((holding) => (holding.unrealized_pl_pct ?? 0) <= CHECK_THRESHOLDS.belowCost)
+      .filter((h) => (h.unrealized_pl_pct ?? 0) <= CHECK_THRESHOLDS.belowCost)
       .slice(0, 2)
-      .map((holding) => ({ id: `belowcost:${holding.ticker}`, title: "Below cost", detail: `${holding.ticker} is ${formatSignedPct(holding.unrealized_pl_pct)} below its average cost.`, href: `/stocks/${holding.ticker}` })),
+      .map((h) => ({ id: `belowcost:${h.ticker}`, title: "Below cost", detail: `${h.ticker} is ${formatSignedPct(h.unrealized_pl_pct)} below its average cost.`, href: `/stocks/${h.ticker}` })),
     ...dailyPerformance.rows
-      .filter((row) => Math.abs(row.dayChangePct ?? 0) >= CHECK_THRESHOLDS.dailyMove)
+      .filter((r) => Math.abs(r.dayChangePct ?? 0) >= CHECK_THRESHOLDS.dailyMove)
       .slice(0, 2)
-      .map((row) => ({ id: `move:${row.ticker}:${dailyPerformance.asOf ?? "today"}`, title: "Large daily move", detail: `${row.ticker} moved ${formatSignedPct(row.dayChangePct)} today.`, href: `/stocks/${row.ticker}` })),
+      .map((r) => ({ id: `move:${r.ticker}:${dailyPerformance.asOf ?? "today"}`, title: "Large daily move", detail: `${r.ticker} moved ${formatSignedPct(r.dayChangePct)} today.`, href: `/stocks/${r.ticker}` })),
   ];
   const dismissed = dismissedCheckIds(prefs.dismissed_checks);
   const checks = allChecks.filter((c) => !dismissed.has(c.id)).slice(0, 4);
 
-  const latestMarketDate = dailyPerformance.asOf ?? null;
-
-  // Nearest upcoming dividend for a held ticker (from the reconciled events).
-  const { data: nextDivRow } = await supabase
-    .from("dividend_events")
-    .select("ticker, company_name, ex_date, payment_date, estimated_payment_start, net_expected")
-    .eq("user_id", user.id)
-    .in("status", ["announced", "expected"])
-    .gte("ex_date", latestMarketDate ?? new Date().toISOString().slice(0, 10))
-    .order("ex_date", { ascending: true })
-    .limit(1)
-    .maybeSingle();
-  const nextDividend = nextDivRow
-    ? `Next dividend: ${nextDivRow.ticker} ex-date ${nextDivRow.ex_date}${nextDivRow.net_expected ? `, about ${formatNumber(nextDivRow.net_expected, 0)} PKR net` : ""}`
-    : null;
-
-  // "Since your last visit": value change and dividends landed since the prior
-  // dashboard visit. Only when the gap is more than a day, so a same-day revisit
-  // stays quiet.
-  const sinceLastVisit = await buildSinceLastVisit(supabase, user.id, prefs.dashboard_last_seen_at ?? null, summary.totalValue + summary.cashBalance);
-
-  // Link a mover to a likely cause: a recent news cluster for a holding that
-  // moved beyond the daily-move threshold.
-  const moverTickers = dailyPerformance.rows
-    .filter((row) => Math.abs(row.dayChangePct ?? 0) >= CHECK_THRESHOLDS.dailyMove)
-    .map((row) => row.ticker);
-  const moverClusters = moverTickers.length ? await getClustersForTickers(supabase, moverTickers, { limit: 12 }) : [];
-  const causes: Record<string, { url: string; title: string }> = {};
-  for (const cluster of moverClusters) {
-    if (cluster.ticker && cluster.url && !causes[cluster.ticker]) {
-      causes[cluster.ticker] = { url: cluster.url, title: cluster.title };
-    }
-  }
+  const dayTone = dayPnl !== null && dayPnl > 0 ? "text-up" : dayPnl !== null && dayPnl < 0 ? "text-down" : "text-text-strong";
 
   return (
     <div className="-mx-3 sm:-mx-4 md:-mx-(--gutter-page)">
-      <Band tone="paper" className="px-3 sm:px-4 md:px-(--gutter-page)">
-        <div className="flex flex-wrap items-start justify-between gap-6">
+      {/* ── Hero: tinted band, motif, sparkline, KSE rail, metric strip ── */}
+      <Band
+        tone="paper"
+        className={cn("relative overflow-hidden pb-0", GUTTER)}
+      >
+        <div className="absolute inset-0" style={{ background: "color-mix(in oklab, var(--indigo-4) 45%, var(--surface-page))" }} />
+        {motif && (
+          <svg viewBox="0 0 1000 220" preserveAspectRatio="none" aria-hidden className="pointer-events-none absolute inset-x-0 bottom-0 h-50 w-full opacity-[0.07]">
+            <path d={motif} fill="var(--indigo-2)" />
+          </svg>
+        )}
+
+        <div className="relative z-2 flex flex-wrap items-start justify-between gap-6">
           <div>
             <span className="mb-3.5 block h-0.75 w-11 bg-indigo" />
-            <p className="eyebrow">{firstName ? `${firstName}'s portfolio` : "Portfolio overview"}{profileRes.data?.demo_mode ? " · demo mode" : ""}</p>
-            <div className="mt-2 flex flex-wrap items-end gap-3">
-              <h1 className="font-display text-[2.25rem] font-semibold leading-none tracking-editorial text-text-strong sm:text-(length:--text-display)">
-                <span className="mr-2 align-[0.48em] text-[0.36em] font-semibold tracking-[0.08em] text-text-faint">PKR</span>
-                <AnimatedMoney value={summary.totalValue} duration={1300} />
+            <div className="flex flex-wrap items-end gap-5">
+              <h1 className="text-[2.25rem] font-semibold leading-none tracking-editorial text-text-strong sm:text-(length:--text-display)">
+                <span className="mr-3 align-[0.48em] text-[0.36em] font-semibold tracking-(--tracking-caps) text-text-faint">PKR</span>
+                <span className="figure font-semibold"><AnimatedMoney value={summary.totalValue} duration={1300} /></span>
               </h1>
+              {heroSpark.length >= 2 && (
+                <span className="inline-flex items-center gap-2.5 pb-2">
+                  <Sparkline data={heroSpark} width={96} height={30} />
+                  <span className="flex flex-col gap-px text-(length:--text-3xs) leading-snug text-text-faint">
+                    <span className="uppercase tracking-(--tracking-caps)">Portfolio value</span>
+                    <span>Last 12 months</span>
+                  </span>
+                </span>
+              )}
             </div>
             <div className="mt-3.5 flex flex-wrap gap-x-7 gap-y-2 text-sm text-text-muted">
-              <MetricInline label="Today" value={<AnimatedMoney value={dayPnl} signed delay={100} duration={900} />} sub={formatSignedPct(dailyPerformance.weightedDayChangePct)} tone={dayTone} />
-              <MetricInline label="Overall return" value={<AnimatedMoney value={summary.unrealizedPl} signed delay={180} duration={1050} />} sub={formatSignedPct(summary.unrealizedPlPct)} tone={summary.unrealizedPl > 0 ? "positive" : summary.unrealizedPl < 0 ? "negative" : "flat"} />
+              <span>
+                Today{" "}
+                <strong className={cn("figure font-semibold", dayTone)}>
+                  <AnimatedMoney value={dayPnl} signed delay={100} duration={900} /> ({formatSignedPct(dailyPerformance.weightedDayChangePct)})
+                </strong>
+              </span>
+              {bench && (
+                <span>
+                  Total return{" "}
+                  <strong className={cn("figure font-semibold", bench.gain >= 0 ? "text-up" : "text-down")}>
+                    {bench.gain < 0 ? "−" : "+"}{formatNumber(Math.abs(bench.gain), 0)} ({formatSignedPct(bench.portfolioPct)})
+                  </strong>
+                </span>
+              )}
             </div>
-            <div className="mt-3.5"><AsOf date={latestMarketDate} time={dailyPerformance.snapshotTime} label="Last updated" /></div>
-            {sinceLastVisit && <p className="mt-3 text-xs text-text-faint">{sinceLastVisit}</p>}
-            {nextDividend && <p className="mt-1 text-xs text-text-faint">{nextDividend}</p>}
           </div>
-          <div className="flex flex-wrap gap-2">
-            {!isDemo && <ActionButton endpoint="/api/prices" body={{ refresh: true }} label={<><RefreshCw className="h-3.5 w-3.5" /> Refresh prices</>} size="sm" />}
-          </div>
-        </div>
 
-        {isDemo && <p className="mt-5 rounded-md border border-blue-200 bg-blue-50 px-3 py-2 text-xs text-blue-900">Read-only demo: the portfolio data below is seeded for exploration.</p>}
-
-        <div className="mt-7 grid gap-0 border-t border-rule sm:grid-cols-2 lg:grid-cols-4">
-          <SummaryMetric label="Total cost" value={<AnimatedMoney value={summary.totalCost} delay={120} />} />
-          <SummaryMetric label="Unrealised P/L" value={<AnimatedMoney value={summary.unrealizedPl} signed delay={180} />} sub={formatSignedPct(summary.unrealizedPlPct)} tone={summary.unrealizedPl > 0 ? "positive" : summary.unrealizedPl < 0 ? "negative" : "flat"} />
-          <SummaryMetric label="Dividend income" value={<AnimatedMoney value={summary.dividendIncome} delay={240} />} />
-          <SummaryMetric label="Cash" value={<AnimatedMoney value={summary.cashBalance} delay={300} />} />
-        </div>
-        <p className="mt-3 text-xs text-text-faint">{formatNumber(summary.holdingsCount, 0)} holdings · Largest holding: {summary.largestHolding ? `${summary.largestHolding.ticker}, ${summary.largestHolding.weight?.toFixed(1)}%` : "—"} · Largest sector: {summary.largestSector ? `${summary.largestSector.sector}, ${summary.largestSector.weight.toFixed(1)}%` : "—"}</p>
-      </Band>
-
-      <Band tone="paper" className="px-3 sm:px-4 md:px-(--gutter-page)">
-        <SectionHeading eyebrow="Growth of capital" title="Portfolio against the KSE-100" accent="indigo" />
-        <div className="mt-5">
-          <Suspense fallback={<ChartsSkeleton />}>
-            <DashboardCharts userId={user.id} liveValue={summary.totalValue + summary.cashBalance} />
-          </Suspense>
-        </div>
-      </Band>
-
-      <Band tone="paper" className="px-3 sm:px-4 md:px-(--gutter-page)">
-        <SectionHeading eyebrow="Today" title="Contribution and allocation" accent="clay" />
-        <div className="mt-5 grid gap-8 xl:grid-cols-2">
-          <PortfolioContribution rows={dailyPerformance.rows.map((row) => ({ ticker: row.ticker, companyName: row.companyName, contribution: row.dayPnl, priceMove: row.dayChangePct, weight: row.weight }))} gainers={dailyPerformance.gainers} losers={dailyPerformance.losers} causes={causes} />
-          <DashboardAllocation sectors={sectorAllocations} holdings={holdingAllocations} />
-        </div>
-      </Band>
-
-      <Band tone="paper" rule="none" className="px-3 sm:px-4 md:px-(--gutter-page)">
-        <div className="grid gap-8 xl:grid-cols-2">
-          {checks.length > 0 && (
-            <section>
-              <div className="flex items-center gap-2 text-text-muted"><CircleAlert className="h-4 w-4" /><h2 className="text-(length:--text-h2) font-semibold text-text-strong">Portfolio checks</h2></div>
-              <div className="mt-3 divide-y divide-rule">
-                {checks.map((check) => (
-                  <div key={check.id} className="flex items-start justify-between gap-2 py-3 first:pt-1 last:pb-0 hover:bg-surface-sunken/60">
-                    <Link href={check.href} className="min-w-0 flex-1">
-                      <p className="text-sm font-medium text-text-strong">{check.title}</p>
-                      <p className="mt-0.5 text-xs text-text-muted">{check.detail}</p>
-                    </Link>
-                    {!isDemo && <DismissCheckButton checkId={check.id} />}
-                  </div>
-                ))}
-              </div>
-            </section>
+          {bench && benchDelta !== null && (
+            <div className="flex flex-col items-end gap-3 pt-1 text-right">
+              <p className="eyebrow">Against the KSE-100</p>
+              <span className="flex items-baseline gap-2.5">
+                <span className={cn("figure text-(length:--text-h1) font-semibold tracking-editorial", benchDelta >= 0 ? "text-up" : "text-down")}>
+                  {formatSignedPct(benchDelta)}
+                </span>
+                <span className="text-xs text-text-faint">{benchDelta >= 0 ? "ahead" : "behind"}</span>
+              </span>
+              <span className="flex flex-col gap-1 text-xs text-text-muted">
+                <span>Portfolio <strong className="figure font-semibold text-text-strong">{formatSignedPct(bench.portfolioPct)}</strong></span>
+                <span>KSE-100 <strong className="figure font-semibold text-text-strong">{formatSignedPct(bench.ksePct)}</strong></span>
+              </span>
+              <AsOf date={latestMarketDate} time={dailyPerformance.snapshotTime} label="Last updated" />
+            </div>
           )}
+        </div>
+
+        {isDemo && <p className="relative z-2 mt-5 rounded-md border border-blue-200 bg-blue-50 px-3 py-2 text-xs text-blue-900">Read-only demo: the portfolio data below is seeded for exploration.</p>}
+
+        <div className="relative z-2 -mx-3 mt-7 sm:-mx-4 md:-mx-(--gutter-page)">
+          <div className="grid border-y border-rule sm:grid-cols-2 lg:grid-cols-4">
+            <HeroMetric label="Total cost" value={<AnimatedMoney value={summary.totalCost} delay={120} />} sub="PKR" first />
+            <HeroMetric label="Unrealised P/L" value={<AnimatedMoney value={summary.unrealizedPl} signed delay={180} />} sub={formatSignedPct(summary.unrealizedPlPct)} tone={summary.unrealizedPl > 0 ? "up" : summary.unrealizedPl < 0 ? "down" : undefined} />
+            <HeroMetric label="Dividends received" value={<AnimatedMoney value={summary.dividendIncome} delay={240} />} sub="Since first transaction" />
+            <HeroMetric label="Broker cash" value={<AnimatedMoney value={summary.cashBalance} delay={300} />} sub="Uninvested" last />
+          </div>
+        </div>
+        <p className="relative z-2 py-3 pb-5 text-xs text-text-muted">
+          {formatNumber(summary.holdingsCount, 0)} holdings · Largest holding: {summary.largestHolding ? `${summary.largestHolding.ticker}, ${summary.largestHolding.weight?.toFixed(1)}%` : "—"} · Largest sector: {summary.largestSector ? `${shortSector(summary.largestSector.sector)}, ${summary.largestSector.weight.toFixed(1)}%` : "—"}
+        </p>
+      </Band>
+
+      {/* ── Growth of capital ── */}
+      <Band tone="paper" className={cn("dot-grid", GUTTER)}>
+        <GrowthChart
+          data={series.map((p): GrowthPoint => ({ date: p.date, portfolio: p.portfolio, contributed: p.contributed }))}
+          asOf={latestMarketDate}
+          canRefresh={!isDemo}
+        />
+      </Band>
+
+      {/* ── Positions at close ── */}
+      <Band tone="paper" className={GUTTER}>
+        <div className="mb-4">
+          <span className="mb-3.5 block h-0.75 w-11 bg-clay" />
+          <h2 className="font-display text-(length:--text-h1) font-normal tracking-editorial text-text-strong">Positions at close</h2>
+        </div>
+        <PositionsTable rows={positionRows} />
+      </Band>
+
+      {/* ── Contribution · allocation · events ── */}
+      <Band tone="paper" rule="none" className={GUTTER}>
+        <div className="grid items-start gap-12 xl:grid-cols-2">
+          <div>
+            <PanelHeader title="Daily contribution" />
+            <ContributionLedger rows={contributionRows} />
+          </div>
+          <AllocationPanel sectors={sectorSlices} holdings={holdingSlices} activeWeights={activeWeights} totalValue={summary.totalValue} />
+        </div>
+
+        <div className="mt-9 border-t border-rule pt-7">
           <Suspense fallback={<EventsSkeleton />}>
-            <DashboardEvents userId={user.id} tickers={tickers} />
+            <DashboardEvents tickers={tickers} userId={user.id} />
           </Suspense>
         </div>
+
+        {checks.length > 0 && (
+          <div className="mt-9 border-t border-rule pt-7">
+            <PanelHeader title="Portfolio checks" />
+            <div className="ledger">
+              {checks.map((check) => (
+                <div key={check.id} className="ledger-row flex items-start justify-between gap-2 hover:bg-surface-sunken/50">
+                  <Link href={check.href} className="min-w-0 flex-1">
+                    <p className="text-sm font-medium text-text-strong">{check.title}</p>
+                    <p className="mt-0.5 text-xs text-text-muted">{check.detail}</p>
+                  </Link>
+                  {!isDemo && <DismissCheckButton checkId={check.id} />}
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
       </Band>
       <MarkSeen surface="dashboard" />
     </div>
   );
 }
 
-function SectionHeading({ eyebrow, title, accent }: { eyebrow: string; title: string; accent: "indigo" | "clay" | "saffron" }) {
-  const accentClass = accent === "indigo" ? "bg-indigo" : accent === "clay" ? "bg-clay" : "bg-saffron";
+function HeroMetric({
+  label,
+  value,
+  sub,
+  tone,
+  first,
+  last,
+}: {
+  label: string;
+  value: React.ReactNode;
+  sub?: string;
+  tone?: "up" | "down";
+  first?: boolean;
+  last?: boolean;
+}) {
   return (
-    <div>
-      <span className={cn("mb-3.5 block h-0.75 w-11", accentClass)} />
-      <p className="eyebrow">{eyebrow}</p>
-      <h2 className="mt-1.5 font-display text-(length:--text-h1) font-normal tracking-editorial text-text-strong">{title}</h2>
+    <div
+      className={cn(
+        "border-t border-rule px-3 py-4 first:border-t-0 sm:border-t-0 sm:border-l sm:px-6 sm:first:border-l-0",
+        first && "md:pl-(--gutter-page)",
+        last && "md:pr-(--gutter-page)"
+      )}
+    >
+      <p className="text-(length:--text-2xs) font-bold uppercase tracking-(--tracking-caps) text-text-faint">{label}</p>
+      <p className={cn("figure mt-1.5 text-(length:--text-h1) font-semibold", tone === "up" ? "text-up" : tone === "down" ? "text-down" : "text-text-strong")}>{value}</p>
+      {sub && <p className="figure mt-0.5 text-xs text-text-muted">{sub}</p>}
     </div>
   );
 }
 
-/**
- * Snapshot-history and benchmark charts. Fetched in its own boundary so the two
- * larger time-series queries never block the headline numbers from painting.
- */
-async function DashboardCharts({ userId, liveValue }: { userId: string; liveValue: number }) {
-  const supabase = await createClient();
-  const [snapshotsRes, benchmarkRes, marketSnapRes] = await Promise.all([
-    supabase
-      .from("portfolio_snapshots")
-      .select("snapshot_date, total_value, total_cost")
-      .eq("user_id", userId)
-      .order("snapshot_date", { ascending: true })
-      .limit(365),
-    supabase
-      .from("benchmark_series")
-      .select("point_date, contributed, portfolio, kse100, inflation, cpi")
-      .eq("user_id", userId)
-      .order("point_date", { ascending: true }),
-    supabase
-      .from("market_snapshots")
-      .select("snapshot_date, index_value")
-      .eq("market", "PSX")
-      .order("snapshot_date", { ascending: false })
-      .limit(1)
-      .maybeSingle(),
-  ]);
-
-  const datedSnapshots = (snapshotsRes.data ?? []).map((snapshot) => ({
-    date: snapshot.snapshot_date,
-    value: Number(snapshot.total_value),
-    cost: Number(snapshot.total_cost),
-  }));
-  let benchmarkSeries: BenchmarkPointRow[] = (benchmarkRes.data ?? []).map((point) => ({
-    date: point.point_date,
-    contributed: Number(point.contributed),
-    portfolio: Number(point.portfolio),
-    kse100: Number(point.kse100),
-    inflation: Number(point.inflation),
-    cpi: point.cpi !== null ? Number(point.cpi) : null,
-  }));
-
-  // Splice in a "today" point valued like the header (live holdings + cash) so
-  // the growth chart never trails the headline between benchmark rebuilds. The
-  // KSE-100 equivalent is scaled to the live index level when the market
-  // snapshot is newer than the stored series; the other lines carry forward.
-  const today = new Date().toLocaleDateString("en-CA", { timeZone: "Asia/Karachi" });
-  const anchor = benchmarkSeries.filter((p) => p.date <= today).at(-1);
-  if (anchor && liveValue > 0) {
-    let kse100 = anchor.kse100;
-    const liveIndex = marketSnapRes.data?.index_value ? Number(marketSnapRes.data.index_value) : null;
-    if (liveIndex && marketSnapRes.data!.snapshot_date > anchor.date) {
-      const { data: kseRow } = await supabase
-        .from("company_price_history")
-        .select("close")
-        .eq("ticker", "KSE100")
-        .lte("price_date", anchor.date)
-        .order("price_date", { ascending: false })
-        .limit(1)
-        .maybeSingle();
-      const baseClose = Number(kseRow?.close ?? 0);
-      if (baseClose > 0) kse100 = Math.round(anchor.kse100 * (liveIndex / baseClose) * 100) / 100;
-    }
-    benchmarkSeries = [
-      ...benchmarkSeries.filter((p) => p.date < today),
-      { date: today, contributed: anchor.contributed, portfolio: liveValue, kse100, inflation: anchor.inflation, cpi: anchor.cpi },
-    ];
-  }
-
-  return (
-    <>
-      {benchmarkSeries.length >= 2 && <BenchmarkGrowthChart data={benchmarkSeries} />}
-      <DashboardPerformance data={datedSnapshots} />
-    </>
-  );
-}
-
-/** Recent dividend / result / corporate-action news for held tickers. */
-async function DashboardEvents({ userId, tickers }: { userId: string; tickers: string[] }) {
+/** PSX filings for held tickers; streamed behind Suspense. */
+async function DashboardEvents({ tickers, userId }: { tickers: string[]; userId: string }) {
   const supabase = await createClient();
   const categories = ["dividend", "result", "corporate_announcement"];
-
-  // Prefer the shared, de-duplicated cluster store; fall back to the legacy
-  // per-user table until the cluster backfill has run.
   const clusters = await getClustersForTickers(supabase, tickers, { categories, limit: 5 });
   if (clusters.length > 0) {
     const events: PsxEventRow[] = clusters
@@ -379,7 +462,6 @@ async function DashboardEvents({ userId, tickers }: { userId: string; tickers: s
       }));
     return <ImportantPsxEvents events={events} />;
   }
-
   const { data: eventsData } = await supabase
     .from("news_articles")
     .select("id, ticker, title, url, category, published_at")
@@ -389,48 +471,18 @@ async function DashboardEvents({ userId, tickers }: { userId: string; tickers: s
     .in("category", categories)
     .order("published_at", { ascending: false })
     .limit(5);
-
   return <ImportantPsxEvents events={(eventsData ?? []) as PsxEventRow[]} />;
-}
-
-function ChartsSkeleton() {
-  return (
-    <>
-      <div className="rounded-lg border border-border bg-card p-4">
-        <Skeleton className="mb-4 h-4 w-40" />
-        <Skeleton className="h-80 w-full rounded-md" />
-      </div>
-      <div className="rounded-lg border border-border bg-card p-4">
-        <Skeleton className="mb-4 h-4 w-36" />
-        <Skeleton className="h-52 w-full rounded-md" />
-      </div>
-    </>
-  );
 }
 
 function EventsSkeleton() {
   return (
-    <section className="border-t border-border pt-4">
-      <Skeleton className="h-4 w-44" />
-      <div className="mt-3 space-y-3">
+    <section>
+      <Skeleton className="h-5 w-52" />
+      <div className="mt-4 space-y-3">
         {Array.from({ length: 4 }).map((_, i) => (
-          <Skeleton key={i} className="h-10 w-full rounded-md" />
+          <Skeleton key={i} className="h-8 w-full rounded-md" />
         ))}
       </div>
     </section>
-  );
-}
-
-function MetricInline({ label, value, sub, tone }: { label: string; value: ReactNode; sub: string; tone: "positive" | "negative" | "flat" }) {
-  return <div><span className="text-text-muted">{label} </span><span className={cn("figure font-semibold", tone === "positive" ? "text-up" : tone === "negative" ? "text-down" : "text-text-strong")}>{value} ({sub})</span></div>;
-}
-
-function SummaryMetric({ label, value, sub, tone }: { label: string; value: ReactNode; sub?: string; tone?: "positive" | "negative" | "flat" }) {
-  return (
-    <div className="border-t border-rule py-4 first:border-t-0 sm:border-t-0 sm:border-l sm:px-5 sm:py-0 sm:first:border-l-0 sm:first:pl-0">
-      <p className="text-(length:--text-2xs) font-bold uppercase tracking-(--tracking-caps) text-text-faint">{label}</p>
-      <p className={cn("figure mt-1.5 text-(length:--text-h1) font-semibold", tone === "positive" ? "text-up" : tone === "negative" ? "text-down" : "text-text-strong")}>{value}</p>
-      {sub && <p className="figure mt-0.5 text-xs text-text-muted">{sub}</p>}
-    </div>
   );
 }

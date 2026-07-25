@@ -113,7 +113,7 @@ export function TopNav({
             <path d="M32 4 V60" stroke="var(--indigo-2)" strokeWidth="3.55" />
             <circle cx="32" cy="60" r="3.6" fill="var(--indigo-2)" />
           </svg>
-          <span className="font-display text-[15px] tracking-editorial text-text-strong">PortfolioOS PK</span>
+          <span className="font-display text-[15px] tracking-editorial text-text-strong">Plumb</span>
         </Link>
 
         <nav className="flex min-w-0 flex-1 flex-wrap items-center gap-x-6 gap-y-2">

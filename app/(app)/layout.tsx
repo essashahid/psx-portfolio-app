@@ -12,25 +12,37 @@ import { NAV, resolveVisibleHrefs } from "@/lib/config/navigation";
 import { getCachedMarketGlobal } from "@/lib/market/read";
 import type { ExperienceLevel } from "@/lib/shared/types";
 
+const fmtCompactNum = (v: number) =>
+  v >= 1e9 ? `${formatNumber(v / 1e9, 1)}bn` : v >= 1e6 ? `${formatNumber(v / 1e6, 0)}m` : formatNumber(v, 0);
+
 async function getTickerItems(): Promise<TickerItem[]> {
-  const { snapshot } = await getCachedMarketGlobal();
+  const { snapshot, movers } = await getCachedMarketGlobal();
   if (!snapshot) return [];
   const items: TickerItem[] = [];
+  const total = snapshot.total_advancers + snapshot.total_decliners + snapshot.total_unchanged || 1;
+  if (snapshot.snapshot_time) {
+    items.push({ label: "As of", value: `${String(snapshot.snapshot_time).slice(0, 5)} PKT`, change: snapshot.snapshot_date, tone: "flat" });
+  }
   if (snapshot.index_name && snapshot.index_value !== null) {
     items.push({
       label: snapshot.index_name,
-      value: formatNumber(snapshot.index_value, 2),
-      change: snapshot.index_change_percent !== null ? formatSignedPct(snapshot.index_change_percent) : undefined,
+      value: formatNumber(snapshot.index_value, 0),
+      change: snapshot.index_change_percent !== null ? `${snapshot.index_change !== null ? formatNumber(snapshot.index_change, 0) + " " : ""}(${formatSignedPct(snapshot.index_change_percent)})` : undefined,
       tone: (snapshot.index_change_percent ?? 0) > 0 ? "up" : (snapshot.index_change_percent ?? 0) < 0 ? "down" : "flat",
     });
   }
   items.push({
-    label: "Advance/decline",
-    value: `${snapshot.total_advancers}/${snapshot.total_decliners}`,
-    tone: snapshot.total_advancers > snapshot.total_decliners ? "up" : snapshot.total_advancers < snapshot.total_decliners ? "down" : "flat",
+    label: "Breadth",
+    value: `${Math.round((snapshot.total_advancers / total) * 100)}%`,
+    change: "advancing",
+    tone: snapshot.total_advancers > snapshot.total_decliners ? "up" : "down",
   });
-  items.push({ label: "Volume", value: formatNumber(snapshot.total_volume, 0) });
-  items.push({ label: "Value traded", value: formatNumber(snapshot.total_value, 0) });
+  items.push({ label: "Volume", value: fmtCompactNum(snapshot.total_volume) });
+  items.push({ label: "Value traded", value: fmtCompactNum(snapshot.total_value) });
+  const gainer = movers.find((m) => m.category.includes("gain"));
+  const loser = movers.find((m) => m.category.includes("los"));
+  if (gainer?.change_percent != null) items.push({ label: "Top gainer", value: gainer.ticker, change: formatSignedPct(gainer.change_percent), tone: "up" });
+  if (loser?.change_percent != null) items.push({ label: "Top loser", value: loser.ticker, change: formatSignedPct(loser.change_percent), tone: "down" });
   if (snapshot.top_sector) items.push({ label: "Top sector", value: snapshot.top_sector, tone: "up" });
   if (snapshot.bottom_sector) items.push({ label: "Bottom sector", value: snapshot.bottom_sector, tone: "down" });
   return items;
@@ -89,6 +101,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
 
   return (
     <div className="flex min-h-dvh flex-col bg-background">
+      <div aria-hidden className="om-grain" />
       <NavProgress />
       <AutoRefreshPrices />
       <CommandPalette nav={navTargets} />

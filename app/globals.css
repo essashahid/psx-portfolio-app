@@ -340,6 +340,24 @@ a {
   .om-tape { animation: none; }
 }
 
+/* Dotted-paper field behind data-dense bands, straight from the design. */
+.dot-grid {
+  background-image: radial-gradient(color-mix(in oklab, var(--ink-4) 26%, transparent) 1px, transparent 1px);
+  background-size: 22px 22px;
+  background-position: -1px -1px;
+}
+
+/* Film-grain overlay: fixed, multiply-blended, never intercepts input. */
+.om-grain {
+  position: fixed;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  opacity: 0.5;
+  mix-blend-mode: multiply;
+  background-image: url("data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxNDAiIGhlaWdodD0iMTQwIj48ZmlsdGVyIGlkPSJuIj48ZmVUdXJidWxlbmNlIHR5cGU9ImZyYWN0YWxOb2lzZSIgYmFzZUZyZXF1ZW5jeT0iMC44NSIgbnVtT2N0YXZlcz0iMiIgc3RpdGNoVGlsZXM9InN0aXRjaCIvPjxmZUNvbG9yTWF0cml4IHR5cGU9InNhdHVyYXRlIiB2YWx1ZXM9IjAiLz48L2ZpbHRlcj48cmVjdCB3aWR0aD0iMTQwIiBoZWlnaHQ9IjE0MCIgZmlsdGVyPSJ1cmwoI24pIiBvcGFjaXR5PSIwLjE2Ii8+PC9zdmc+");
+}
+
 /* Shared polish for navigation, controls, data tables and raised surfaces. */
 button,
 input,
