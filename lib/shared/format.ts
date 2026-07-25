@@ -58,7 +58,7 @@ export function formatFinancialPeriod(period: string | null | undefined): string
 
 export function plColor(value: number | null | undefined): string {
   if (value === null || value === undefined || value === 0) return "text-muted-foreground";
-  return value > 0 ? "text-emerald-600" : "text-red-600";
+  return value > 0 ? "text-up" : "text-down";
 }
 
 export function parseNumberLoose(input: unknown): number | null {

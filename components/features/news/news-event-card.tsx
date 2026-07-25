@@ -126,7 +126,7 @@ function AffectedChips({ event, moves, max = 6 }: { event: NewsEvent; moves?: Ti
           >
             {ticker}
             {typeof move === "number" && (
-              <span className={cn("tabular-nums", move > 0 ? "text-emerald-700" : move < 0 ? "text-red-700" : "text-muted-foreground")}>
+              <span className={cn("tabular-nums", move > 0 ? "text-up" : move < 0 ? "text-down" : "text-muted-foreground")}>
                 {formatSignedPct(move)}
               </span>
             )}
@@ -301,7 +301,7 @@ export function NewsEventRow({ event, moves }: { event: NewsEvent; moves?: Ticke
           >
             {firstTicker}
             {typeof move === "number" && (
-              <span className={cn("tabular-nums", move > 0 ? "text-emerald-700" : move < 0 ? "text-red-700" : "text-muted-foreground")}>
+              <span className={cn("tabular-nums", move > 0 ? "text-up" : move < 0 ? "text-down" : "text-muted-foreground")}>
                 {formatSignedPct(move)}
               </span>
             )}

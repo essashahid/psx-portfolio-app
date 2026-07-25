@@ -22,9 +22,9 @@ function StanceBadge({ stance, label }: { stance: ForeignFlowSnapshot["stance"];
       className={cn(
         "inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-medium",
         stance === "accumulating"
-          ? "bg-emerald-50 text-emerald-700"
+          ? "bg-emerald-50 text-up"
           : stance === "distributing"
-            ? "bg-red-50 text-red-700"
+            ? "bg-red-50 text-down"
             : "bg-muted text-muted-foreground"
       )}
     >
@@ -50,7 +50,7 @@ function DivergingBar({ label, value, max, unit }: { label: string; value: numbe
           {positive && <div className="h-full rounded-r-sm bg-emerald-500/80" style={{ width: `${pct}%` }} />}
         </div>
       </div>
-      <span className={cn("w-14 shrink-0 text-right font-semibold tabular-nums", positive ? "text-emerald-600" : v < 0 ? "text-red-600" : "text-muted-foreground")}>
+      <span className={cn("w-14 shrink-0 text-right font-semibold tabular-nums", positive ? "text-up" : v < 0 ? "text-down" : "text-muted-foreground")}>
         {fmtFlow(value)}
       </span>
       <span className="hidden w-12 shrink-0 text-[10px] text-muted-foreground sm:inline">{unit}</span>
@@ -72,7 +72,7 @@ export function ForeignFlows({ snapshot, compact = false }: { snapshot: ForeignF
         <div className="flex items-center gap-3">
           <div>
             <p className="eyebrow flex items-center gap-1.5"><Globe2 className="h-3.5 w-3.5" /> Net foreign (FIPI), {day.date}</p>
-            <p className={cn("mt-0.5 text-2xl font-semibold tabular-nums tracking-tight", (day.fipiNet ?? 0) > 0 ? "text-emerald-600" : (day.fipiNet ?? 0) < 0 ? "text-red-600" : "")}>
+            <p className={cn("mt-0.5 text-2xl font-semibold tabular-nums tracking-tight", (day.fipiNet ?? 0) > 0 ? "text-up" : (day.fipiNet ?? 0) < 0 ? "text-down" : "")}>
               {fmtFlow(day.fipiNet)} <span className="text-sm font-normal text-muted-foreground">{unit}</span>
             </p>
           </div>
@@ -81,7 +81,7 @@ export function ForeignFlows({ snapshot, compact = false }: { snapshot: ForeignF
           <StanceBadge stance={stance} label={stanceLabel} />
           {cumulativeNet != null && (
             <span className="text-[11px] text-muted-foreground">
-              {snapshot.series.length}-day cumulative <span className={cn("font-semibold tabular-nums", cumulativeNet > 0 ? "text-emerald-600" : cumulativeNet < 0 ? "text-red-600" : "")}>{fmtFlow(cumulativeNet)} {unit}</span>
+              {snapshot.series.length}-day cumulative <span className={cn("font-semibold tabular-nums", cumulativeNet > 0 ? "text-up" : cumulativeNet < 0 ? "text-down" : "")}>{fmtFlow(cumulativeNet)} {unit}</span>
             </span>
           )}
         </div>
@@ -90,12 +90,12 @@ export function ForeignFlows({ snapshot, compact = false }: { snapshot: ForeignF
       {(day.fipiGrossBuy != null || day.fipiGrossSell != null) && (
         <div className="grid grid-cols-2 gap-2 text-center">
           <div className="rounded-lg bg-emerald-50 px-3 py-2">
-            <p className="text-[10px] uppercase tracking-wide text-emerald-700/80">Gross buy</p>
-            <p className="text-sm font-semibold tabular-nums text-emerald-700">{fmtFlow(day.fipiGrossBuy, false)} {unit}</p>
+            <p className="text-[10px] uppercase tracking-wide text-up/80">Gross buy</p>
+            <p className="text-sm font-semibold tabular-nums text-up">{fmtFlow(day.fipiGrossBuy, false)} {unit}</p>
           </div>
           <div className="rounded-lg bg-red-50 px-3 py-2">
-            <p className="text-[10px] uppercase tracking-wide text-red-700/80">Gross sell</p>
-            <p className="text-sm font-semibold tabular-nums text-red-700">{fmtFlow(day.fipiGrossSell, false)} {unit}</p>
+            <p className="text-[10px] uppercase tracking-wide text-down/80">Gross sell</p>
+            <p className="text-sm font-semibold tabular-nums text-down">{fmtFlow(day.fipiGrossSell, false)} {unit}</p>
           </div>
         </div>
       )}

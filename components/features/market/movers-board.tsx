@@ -100,7 +100,7 @@ export function MoversBoard({
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-1.5">
                     <span className="text-xs font-semibold">{r.ticker}</span>
-                    {isOwned && <span className="rounded bg-emerald-100 px-1 py-px text-[9px] font-semibold text-emerald-700">OWNED</span>}
+                    {isOwned && <span className="rounded bg-emerald-100 px-1 py-px text-[9px] font-semibold text-up">OWNED</span>}
                     {!isOwned && isWatch && <span className="rounded bg-muted px-1 py-px text-[9px] font-semibold text-muted-foreground">WATCH</span>}
                   </div>
                   <p className="truncate text-[10px] text-muted-foreground">{r.company_name ?? r.sector ?? ""}</p>
@@ -109,7 +109,7 @@ export function MoversBoard({
                   <span
                     className={cn(
                       "text-xs font-bold tabular-nums",
-                      t === "positive" ? "text-emerald-600" : t === "negative" ? "text-red-600" : "text-foreground"
+                      t === "positive" ? "text-up" : t === "negative" ? "text-down" : "text-foreground"
                     )}
                   >
                     {valueLabel(r)}

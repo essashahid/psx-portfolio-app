@@ -8,6 +8,7 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { Skeleton } from "@/components/ui/skeleton";
 import { AnimatedMoney } from "@/components/ui/animated-money";
 import { ActionButton } from "@/components/ui/action-button";
+import { Band } from "@/components/ui/band";
 import { AddTransactionDialog } from "@/components/features/holdings/add-transaction-dialog";
 import { ImportantPsxEvents, type PsxEventRow } from "@/components/features/dashboard/important-psx-events";
 import { getClustersForTickers } from "@/lib/news/global-store";
@@ -101,7 +102,7 @@ export default async function DashboardPage() {
     return (
       <div className="mx-auto max-w-2xl pt-12">
         <p className="eyebrow">Get started</p>
-        <h1 className="mt-1 text-3xl font-semibold">Portfolio dashboard</h1>
+        <h1 className="mt-1.5 font-display text-3xl font-normal tracking-editorial text-text-strong">Portfolio dashboard</h1>
         <EmptyState
           icon={Briefcase}
           title="Your portfolio is empty"
@@ -188,70 +189,94 @@ export default async function DashboardPage() {
   }
 
   return (
-    <div className="space-y-6 pb-4">
-      <header className="border-b border-border pb-6">
-        <div className="flex flex-wrap items-start justify-between gap-4">
+    <div className="-mx-3 sm:-mx-4 md:-mx-(--gutter-page)">
+      <Band tone="paper" className="px-3 sm:px-4 md:px-(--gutter-page)">
+        <div className="flex flex-wrap items-start justify-between gap-6">
           <div>
+            <span className="mb-3.5 block h-0.75 w-11 bg-indigo" />
             <p className="eyebrow">{firstName ? `${firstName}'s portfolio` : "Portfolio overview"}{profileRes.data?.demo_mode ? " · demo mode" : ""}</p>
-            <p className="mt-4 text-xs font-semibold uppercase tracking-[0.12em] text-muted-foreground">Portfolio value</p>
-            <h1 className="mt-1 text-4xl font-semibold tracking-tight sm:text-5xl"><AnimatedMoney value={summary.totalValue} duration={1300} /></h1>
-            <div className="mt-4 flex flex-wrap gap-x-7 gap-y-2 text-sm">
+            <div className="mt-2 flex flex-wrap items-end gap-3">
+              <h1 className="font-display text-[2.25rem] font-semibold leading-none tracking-editorial text-text-strong sm:text-(length:--text-display)">
+                <span className="mr-2 align-[0.48em] text-[0.36em] font-semibold tracking-[0.08em] text-text-faint">PKR</span>
+                <AnimatedMoney value={summary.totalValue} duration={1300} />
+              </h1>
+            </div>
+            <div className="mt-3.5 flex flex-wrap gap-x-7 gap-y-2 text-sm text-text-muted">
               <MetricInline label="Today" value={<AnimatedMoney value={dayPnl} signed delay={100} duration={900} />} sub={formatSignedPct(dailyPerformance.weightedDayChangePct)} tone={dayTone} />
               <MetricInline label="Overall return" value={<AnimatedMoney value={summary.unrealizedPl} signed delay={180} duration={1050} />} sub={formatSignedPct(summary.unrealizedPlPct)} tone={summary.unrealizedPl > 0 ? "positive" : summary.unrealizedPl < 0 ? "negative" : "flat"} />
             </div>
-            <div className="mt-4"><AsOf date={latestMarketDate} time={dailyPerformance.snapshotTime} label="Last updated" /></div>
-            {sinceLastVisit && <p className="mt-3 text-xs text-muted-foreground">{sinceLastVisit}</p>}
-            {nextDividend && <p className="mt-1 text-xs text-muted-foreground">{nextDividend}</p>}
+            <div className="mt-3.5"><AsOf date={latestMarketDate} time={dailyPerformance.snapshotTime} label="Last updated" /></div>
+            {sinceLastVisit && <p className="mt-3 text-xs text-text-faint">{sinceLastVisit}</p>}
+            {nextDividend && <p className="mt-1 text-xs text-text-faint">{nextDividend}</p>}
           </div>
           <div className="flex flex-wrap gap-2">
             {!isDemo && <ActionButton endpoint="/api/prices" body={{ refresh: true }} label={<><RefreshCw className="h-3.5 w-3.5" /> Refresh prices</>} size="sm" />}
           </div>
         </div>
-      </header>
 
-      {isDemo && <p className="rounded-md border border-blue-200 bg-blue-50 px-3 py-2 text-xs text-blue-900">Read-only demo: the portfolio data below is seeded for exploration.</p>}
+        {isDemo && <p className="mt-5 rounded-md border border-blue-200 bg-blue-50 px-3 py-2 text-xs text-blue-900">Read-only demo: the portfolio data below is seeded for exploration.</p>}
 
-      <Suspense fallback={<ChartsSkeleton />}>
-        <DashboardCharts userId={user.id} liveValue={summary.totalValue + summary.cashBalance} />
-      </Suspense>
-
-      <section>
-        <div className="grid border-y border-border sm:grid-cols-2 lg:grid-cols-4">
+        <div className="mt-7 grid gap-0 border-t border-rule sm:grid-cols-2 lg:grid-cols-4">
           <SummaryMetric label="Total cost" value={<AnimatedMoney value={summary.totalCost} delay={120} />} />
           <SummaryMetric label="Unrealised P/L" value={<AnimatedMoney value={summary.unrealizedPl} signed delay={180} />} sub={formatSignedPct(summary.unrealizedPlPct)} tone={summary.unrealizedPl > 0 ? "positive" : summary.unrealizedPl < 0 ? "negative" : "flat"} />
           <SummaryMetric label="Dividend income" value={<AnimatedMoney value={summary.dividendIncome} delay={240} />} />
           <SummaryMetric label="Cash" value={<AnimatedMoney value={summary.cashBalance} delay={300} />} />
         </div>
-        <p className="mt-2 text-xs text-muted-foreground">{formatNumber(summary.holdingsCount, 0)} holdings · Largest holding: {summary.largestHolding ? `${summary.largestHolding.ticker}, ${summary.largestHolding.weight?.toFixed(1)}%` : "—"} · Largest sector: {summary.largestSector ? `${summary.largestSector.sector}, ${summary.largestSector.weight.toFixed(1)}%` : "—"}</p>
-      </section>
+        <p className="mt-3 text-xs text-text-faint">{formatNumber(summary.holdingsCount, 0)} holdings · Largest holding: {summary.largestHolding ? `${summary.largestHolding.ticker}, ${summary.largestHolding.weight?.toFixed(1)}%` : "—"} · Largest sector: {summary.largestSector ? `${summary.largestSector.sector}, ${summary.largestSector.weight.toFixed(1)}%` : "—"}</p>
+      </Band>
 
-      <div className="grid gap-6 xl:grid-cols-2">
-        <PortfolioContribution rows={dailyPerformance.rows.map((row) => ({ ticker: row.ticker, companyName: row.companyName, contribution: row.dayPnl, priceMove: row.dayChangePct, weight: row.weight }))} gainers={dailyPerformance.gainers} losers={dailyPerformance.losers} causes={causes} />
-        <DashboardAllocation sectors={sectorAllocations} holdings={holdingAllocations} />
-      </div>
+      <Band tone="paper" className="px-3 sm:px-4 md:px-(--gutter-page)">
+        <SectionHeading eyebrow="Growth of capital" title="Portfolio against the KSE-100" accent="indigo" />
+        <div className="mt-5">
+          <Suspense fallback={<ChartsSkeleton />}>
+            <DashboardCharts userId={user.id} liveValue={summary.totalValue + summary.cashBalance} />
+          </Suspense>
+        </div>
+      </Band>
 
-      <div className="grid gap-6 xl:grid-cols-2">
-        {checks.length > 0 && (
-          <section className="border-t border-border pt-4">
-            <div className="flex items-center gap-2"><CircleAlert className="h-4 w-4 text-muted-foreground" /><h2 className="text-base font-semibold">Portfolio checks</h2></div>
-            <div className="mt-3 divide-y divide-border">
-              {checks.map((check) => (
-                <div key={check.id} className="flex items-start justify-between gap-2 py-3 first:pt-1 last:pb-0 hover:bg-muted/30">
-                  <Link href={check.href} className="min-w-0 flex-1">
-                    <p className="text-sm font-medium">{check.title}</p>
-                    <p className="mt-0.5 text-xs text-muted-foreground">{check.detail}</p>
-                  </Link>
-                  {!isDemo && <DismissCheckButton checkId={check.id} />}
-                </div>
-              ))}
-            </div>
-          </section>
-        )}
-        <Suspense fallback={<EventsSkeleton />}>
-          <DashboardEvents userId={user.id} tickers={tickers} />
-        </Suspense>
-      </div>
+      <Band tone="paper" className="px-3 sm:px-4 md:px-(--gutter-page)">
+        <SectionHeading eyebrow="Today" title="Contribution and allocation" accent="clay" />
+        <div className="mt-5 grid gap-8 xl:grid-cols-2">
+          <PortfolioContribution rows={dailyPerformance.rows.map((row) => ({ ticker: row.ticker, companyName: row.companyName, contribution: row.dayPnl, priceMove: row.dayChangePct, weight: row.weight }))} gainers={dailyPerformance.gainers} losers={dailyPerformance.losers} causes={causes} />
+          <DashboardAllocation sectors={sectorAllocations} holdings={holdingAllocations} />
+        </div>
+      </Band>
+
+      <Band tone="paper" rule="none" className="px-3 sm:px-4 md:px-(--gutter-page)">
+        <div className="grid gap-8 xl:grid-cols-2">
+          {checks.length > 0 && (
+            <section>
+              <div className="flex items-center gap-2 text-text-muted"><CircleAlert className="h-4 w-4" /><h2 className="text-(length:--text-h2) font-semibold text-text-strong">Portfolio checks</h2></div>
+              <div className="mt-3 divide-y divide-rule">
+                {checks.map((check) => (
+                  <div key={check.id} className="flex items-start justify-between gap-2 py-3 first:pt-1 last:pb-0 hover:bg-surface-sunken/60">
+                    <Link href={check.href} className="min-w-0 flex-1">
+                      <p className="text-sm font-medium text-text-strong">{check.title}</p>
+                      <p className="mt-0.5 text-xs text-text-muted">{check.detail}</p>
+                    </Link>
+                    {!isDemo && <DismissCheckButton checkId={check.id} />}
+                  </div>
+                ))}
+              </div>
+            </section>
+          )}
+          <Suspense fallback={<EventsSkeleton />}>
+            <DashboardEvents userId={user.id} tickers={tickers} />
+          </Suspense>
+        </div>
+      </Band>
       <MarkSeen surface="dashboard" />
+    </div>
+  );
+}
+
+function SectionHeading({ eyebrow, title, accent }: { eyebrow: string; title: string; accent: "indigo" | "clay" | "saffron" }) {
+  const accentClass = accent === "indigo" ? "bg-indigo" : accent === "clay" ? "bg-clay" : "bg-saffron";
+  return (
+    <div>
+      <span className={cn("mb-3.5 block h-0.75 w-11", accentClass)} />
+      <p className="eyebrow">{eyebrow}</p>
+      <h2 className="mt-1.5 font-display text-(length:--text-h1) font-normal tracking-editorial text-text-strong">{title}</h2>
     </div>
   );
 }
@@ -397,9 +422,15 @@ function EventsSkeleton() {
 }
 
 function MetricInline({ label, value, sub, tone }: { label: string; value: ReactNode; sub: string; tone: "positive" | "negative" | "flat" }) {
-  return <div><span className="text-muted-foreground">{label} </span><span className={cn("font-semibold tabular-nums", tone === "positive" ? "text-emerald-700" : tone === "negative" ? "text-red-700" : "text-foreground")}>{value} ({sub})</span></div>;
+  return <div><span className="text-text-muted">{label} </span><span className={cn("figure font-semibold", tone === "positive" ? "text-up" : tone === "negative" ? "text-down" : "text-text-strong")}>{value} ({sub})</span></div>;
 }
 
 function SummaryMetric({ label, value, sub, tone }: { label: string; value: ReactNode; sub?: string; tone?: "positive" | "negative" | "flat" }) {
-  return <div className="border-b border-border py-4 last:border-b-0 sm:border-b-0 sm:px-4 sm:first:pl-0 sm:border-r sm:last:border-r-0"><p className="text-xs font-medium text-muted-foreground">{label}</p><p className={cn("mt-1 text-lg font-semibold tabular-nums", tone === "positive" ? "text-emerald-700" : tone === "negative" ? "text-red-700" : "text-foreground")}>{value}</p>{sub && <p className="mt-0.5 text-xs text-muted-foreground">{sub}</p>}</div>;
+  return (
+    <div className="border-t border-rule py-4 first:border-t-0 sm:border-t-0 sm:border-l sm:px-5 sm:py-0 sm:first:border-l-0 sm:first:pl-0">
+      <p className="text-(length:--text-2xs) font-bold uppercase tracking-(--tracking-caps) text-text-faint">{label}</p>
+      <p className={cn("figure mt-1.5 text-(length:--text-h1) font-semibold", tone === "positive" ? "text-up" : tone === "negative" ? "text-down" : "text-text-strong")}>{value}</p>
+      {sub && <p className="figure mt-0.5 text-xs text-text-muted">{sub}</p>}
+    </div>
+  );
 }

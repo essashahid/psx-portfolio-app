@@ -1,36 +1,189 @@
 @import "tailwindcss";
 
 :root {
-  /* Quiet, high-contrast financial workspace palette. */
-  --background: #f6f6f4;
-  --foreground: #161716;
-  --card: #ffffff;
-  --card-foreground: #161716;
-  --muted: #eeefeb;
-  --muted-foreground: #6c6e68;
-  --border: #dedfda;
-  --primary: #1a1b1a;
+  /* ── PortfolioOS PK palette ──────────────────────────────────────────
+     Warm paper carries the reading surface; deep ink navy and saturated
+     colour fields carry the brand; the Spectrum (see lib/shared/sector-colors.ts)
+     carries data identity. Base ramps first, semantic aliases second — the
+     rest of the app should author against the semantic names below, not
+     these raw ramps. */
+  --paper-0: #fdfdfc;
+  --paper-1: #f6f6f4;
+  --paper-2: #eeefeb;
+  --paper-3: #e7e8e2;
+  --paper-4: #dedfda;
+
+  --ink-0: #0b0c0b;
+  --ink-1: #161716;
+  --ink-2: #3a3b38;
+  --ink-3: #6c6e68;
+  --ink-4: #9b9b92;
+
+  --navy-1: #0c1226;
+  --navy-2: #101a33;
+  --navy-3: #1b2747;
+  --navy-4: #2b3a63;
+
+  --indigo-1: #26399a;
+  --indigo-2: #3450c8;
+  --indigo-3: #8295e3;
+  --indigo-4: #eef1fb;
+
+  --saffron-1: #a86e05;
+  --saffron-2: #d9920b;
+  --saffron-3: #f0c164;
+  --saffron-4: #fbf3e0;
+
+  --clay-1: #a3421c;
+  --clay-2: #cd5b2e;
+  --clay-3: #e59a7c;
+  --clay-4: #fbeee8;
+
+  /* Directional — gains, losses, flat. Never used decoratively. */
+  --up-1: #0b6b47;
+  --up-2: #0b8a5c;
+  --up-3: #34c08c;
+  --up-4: #e6f4ee;
+  --down-1: #a32626;
+  --down-2: #cf3a3a;
+  --down-3: #e57e7e;
+  --down-4: #fbeaea;
+  --flat-2: #9b9b92;
+
+  /* ── Semantic aliases ─────────────────────────────────────────────── */
+  --surface-page: var(--paper-1);
+  --surface-raised: #ffffff;
+  --surface-sunken: var(--paper-2);
+  --surface-inset: var(--paper-3);
+  --surface-nav: var(--navy-2);
+  --surface-field-indigo: var(--indigo-4);
+  --surface-field-saffron: var(--saffron-4);
+  --surface-field-clay: var(--clay-4);
+  --surface-field-ink: var(--navy-2);
+
+  --text-strong: var(--ink-1);
+  --text-body: var(--ink-2);
+  --text-muted: var(--ink-3);
+  --text-faint: var(--ink-4);
+  --text-ghost: color-mix(in oklab, var(--ink-1) 22%, transparent);
+  --text-on-dark: #f2f3f7;
+  --text-on-dark-muted: color-mix(in oklab, #f2f3f7 62%, transparent);
+  --text-brand: var(--indigo-2);
+  --text-up: var(--up-1);
+  --text-down: var(--down-1);
+  --text-link: var(--indigo-2);
+  --text-link-hover: var(--indigo-1);
+
+  --rule: var(--paper-4);
+  --rule-soft: color-mix(in oklab, var(--paper-4) 62%, transparent);
+  --rule-strong: #c9cac3;
+  --rule-on-dark: color-mix(in oklab, #ffffff 14%, transparent);
+
+  --accent-primary: var(--indigo-2);
+  --accent-secondary: var(--saffron-2);
+  --accent-tertiary: var(--clay-2);
+  --focus-ring: var(--indigo-2);
+  --selection-bg: color-mix(in oklab, var(--indigo-2) 18%, transparent);
+
+  --status-danger: var(--down-2);
+  --status-warn: var(--saffron-2);
+  --status-info: var(--indigo-2);
+  --status-ok: var(--up-2);
+
+  /* ── Legacy aliases ───────────────────────────────────────────────
+     Every existing component reads these names via Tailwind's bg-background,
+     text-foreground, etc. Repointing them at the new semantic tokens carries
+     the redesign through without a mass find-replace. */
+  --background: var(--surface-page);
+  --foreground: var(--text-strong);
+  --card: var(--surface-raised);
+  --card-foreground: var(--text-strong);
+  --muted: var(--surface-sunken);
+  --muted-foreground: var(--text-muted);
+  --border: var(--rule);
+  --primary: var(--ink-1);
   --primary-foreground: #ffffff;
-  --accent: #e9eae6;
-  --destructive: oklch(0.55 0.2 25);
-  --ring: #b6b6ad;
-  --sidebar: #f1f2ee;
-  --sidebar-foreground: #161716;
-  --sidebar-muted: #676963;
-  --sidebar-active: #1a1b1a;
-  /* Brand accent — matches the chart editorial indigo (INK.line). */
-  --brand: #3450c8;
-  --brand-soft: #eef1fb;
-  /* Soft layered shadow used by cards & raised surfaces. */
+  --accent: var(--surface-inset);
+  --destructive: var(--status-danger);
+  --ring: var(--focus-ring);
+  --sidebar: var(--surface-sunken);
+  --sidebar-foreground: var(--text-strong);
+  --sidebar-muted: var(--text-muted);
+  --sidebar-active: var(--ink-1);
+  --brand: var(--indigo-2);
+  --brand-soft: var(--indigo-4);
   --shadow-card: 0 1px 2px rgba(13, 18, 15, 0.035), 0 14px 30px -20px rgba(13, 18, 15, 0.18);
-  /* Third text tier, below muted-foreground: axis ticks, footnotes, range ends. */
   --muted-foreground-soft: color-mix(in oklab, var(--muted-foreground) 68%, transparent);
+
+  /* ── Typography scale ─────────────────────────────────────────────
+     Newsreader (display serif) speaks for the brand: page titles, hero
+     numerals. Manrope runs the interface. Geist Mono runs every figure a
+     reader might compare down a column. */
+  --text-hero: 4.5rem;
+  --text-display: 3rem;
+  --text-title: 2rem;
+  --text-h1: 1.5rem;
+  --text-h2: 1.125rem;
+  --text-h3: 0.9375rem;
+  --text-sm: 0.8125rem;
+  --text-xs: 0.75rem;
+  --text-2xs: 0.6875rem;
+  --text-3xs: 0.625rem;
+  --tracking-editorial: -0.035em;
+  --tracking-tight: -0.02em;
+  --tracking-ui: -0.012em;
+  --tracking-eyebrow: 0.11em;
+  --tracking-caps: 0.08em;
+  --font-display-fallback: "Iowan Old Style", Georgia, serif;
+
+  /* ── Spacing & layout ─────────────────────────────────────────────
+     4px base, matching the product's existing Tailwind scale. Bands and
+     gutters get their own names because full-bleed horizontal fields (not
+     nested cards) carry section structure in this design. */
+  --gutter-page: 2rem;
+  --gutter-page-sm: 1rem;
+  --band-pad-y: 2.5rem;
+  --band-pad-y-sm: 1.5rem;
+  --section-gap: 2rem;
+  --row-pad-y: 10px;
+  --nav-height: 96px;
+  --content-max: 1180px;
+  --measure: 68ch;
+  --hit-min: 44px;
+
+  /* ── Shape ────────────────────────────────────────────────────────
+     Ruled, not boxed: hairlines and colour fields do the work drop
+     shadows and rounded cards used to. Radii stay small; shadow is
+     reserved for things that genuinely float. */
+  --radius-xs: 4px;
+  --radius-sm: 6px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --radius-xl: 16px;
+  --radius-pill: 9999px;
+  --border-hair: 1px;
+  --border-accent: 3px;
+  --border-rule: 1px solid var(--rule);
+  --shadow-raised: 0 1px 2px rgba(13, 18, 15, 0.035), 0 14px 30px -20px rgba(13, 18, 15, 0.18);
+  --shadow-tooltip: 0 2px 6px rgba(0, 0, 0, 0.05), 0 16px 40px -16px rgba(0, 0, 0, 0.22);
+  --shadow-dialog: 0 8px 24px -8px rgba(0, 0, 0, 0.18), 0 40px 80px -40px rgba(0, 0, 0, 0.4);
+  --shadow-nav: 0 -12px 36px -28px rgba(0, 0, 0, 0.55);
+  --shadow-inset-rule: inset 0 -1px 0 var(--rule);
+  --blur-glass: blur(10px) saturate(1.3);
+  --blur-bar: blur(8px);
+
   /* Interaction timing. --dur-fast for hover and selection state, --dur-base
      for value transitions that carry meaning (bar widths, bar heights, range
-     position), so a changed number is seen moving rather than teleporting. */
+     position), --dur-slow for entrance choreography, --dur-draw for chart
+     line draw-in, --dur-count for headline numeral count-up — so a changed
+     number is seen moving rather than teleporting. */
   --dur-fast: 150ms;
   --dur-base: 300ms;
+  --dur-slow: 700ms;
+  --dur-draw: 850ms;
+  --dur-count: 1300ms;
   --ease-ui: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 /* Collapsing the duration tokens is enough to disable every transition built
@@ -39,6 +192,9 @@
   :root {
     --dur-fast: 0ms;
     --dur-base: 0ms;
+    --dur-slow: 0ms;
+    --dur-draw: 0ms;
+    --dur-count: 0ms;
   }
 }
 
@@ -61,9 +217,36 @@
   --color-sidebar-active: var(--sidebar-active);
   --color-brand: var(--brand);
   --color-brand-soft: var(--brand-soft);
+  --color-surface-page: var(--surface-page);
+  --color-surface-raised: var(--surface-raised);
+  --color-surface-sunken: var(--surface-sunken);
+  --color-surface-inset: var(--surface-inset);
+  --color-surface-nav: var(--surface-nav);
+  --color-text-strong: var(--text-strong);
+  --color-text-muted: var(--text-muted);
+  --color-text-faint: var(--text-faint);
+  --color-text-up: var(--text-up);
+  --color-text-down: var(--text-down);
+  --color-rule: var(--rule);
+  --color-rule-strong: var(--rule-strong);
+  --color-up: var(--up-2);
+  --color-down: var(--down-2);
+  --color-navy: var(--navy-2);
+  --color-indigo: var(--indigo-2);
+  --color-saffron: var(--saffron-2);
+  --color-clay: var(--clay-2);
+  --color-ink-1: var(--ink-1);
+  --color-ink-2: var(--ink-2);
+  --color-ink-3: var(--ink-3);
+  --color-paper-1: var(--paper-1);
+  --color-paper-2: var(--paper-2);
   --shadow-card: var(--shadow-card);
+  --shadow-raised: var(--shadow-raised);
+  --shadow-tooltip: var(--shadow-tooltip);
+  --shadow-dialog: var(--shadow-dialog);
   --font-sans: var(--font-manrope);
   --font-mono: var(--font-geist-mono);
+  --font-display: var(--font-newsreader), var(--font-display-fallback);
 }
 
 body {
@@ -130,6 +313,30 @@ a {
 /* Tighter optical tracking for large display headings. */
 .tracking-editorial {
   letter-spacing: -0.035em;
+}
+
+/* Every figure a reader might compare down a column. */
+.figure {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0em;
+}
+
+/* Scrolling market-ticker strip: two duplicated runs, offset by exactly -50%
+   so the loop is seamless regardless of viewport width. */
+@keyframes om-tape {
+  from { transform: translateX(0); }
+  to { transform: translateX(-50%); }
+}
+.om-tape {
+  width: max-content;
+  animation: om-tape 46s linear infinite;
+}
+.om-tape:hover {
+  animation-play-state: paused;
+}
+@media (prefers-reduced-motion: reduce) {
+  .om-tape { animation: none; }
 }
 
 /* Shared polish for navigation, controls, data tables and raised surfaces. */

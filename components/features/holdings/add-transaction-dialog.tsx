@@ -127,7 +127,7 @@ export function AddTransactionDialog({
             <Label>Notes (optional)</Label>
             <Input value={form.notes} onChange={(e) => set("notes", e.target.value)} placeholder="e.g. bought on results dip" />
           </div>
-          {error && <p className="rounded-md bg-red-50 px-3 py-2 text-xs text-red-700">{error}</p>}
+          {error && <p className="rounded-md bg-red-50 px-3 py-2 text-xs text-down">{error}</p>}
           <div className="flex justify-end gap-2 pt-1">
             <Button type="button" variant="outline" onClick={() => setOpen(false)}>Cancel</Button>
             <Button type="submit" disabled={busy}>

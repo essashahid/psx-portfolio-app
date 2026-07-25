@@ -271,7 +271,7 @@ function SummaryCard({ label, metricKey, val, isMargin, priorVal, priorLabel, va
                 {chg ? (
                     <div className="mt-2 text-xs font-medium" title={`Current: ${val === null ? "—" : isMargin ? val.toFixed(1) + "%" : formatValue(val, metricKey, valueMode)}\n${priorLabel}: ${priorVal === null ? "—" : isMargin ? priorVal.toFixed(1) + "%" : formatValue(priorVal, metricKey, valueMode)}\nChange: ${chg.text}`}>
                         <span className={cn(
-                            chg.tone === "positive" ? "text-emerald-700" : chg.tone === "negative" ? "text-red-700" : "text-slate-600"
+                            chg.tone === "positive" ? "text-up" : chg.tone === "negative" ? "text-down" : "text-slate-600"
                         )}>
                             {chg.text} {comparison}
                         </span>
@@ -710,7 +710,7 @@ export function EarningsWorkspace({
                           <ul className="space-y-2.5">
                               {takeaways.map((t, i) => (
                                   <li key={i} className="flex items-start gap-2.5 text-sm text-slate-700 leading-relaxed">
-                                      <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
+                                      <CheckCircle2 className="w-4 h-4 text-up shrink-0 mt-0.5" />
                                       {t}
                                   </li>
                               ))}
@@ -840,12 +840,12 @@ export function EarningsWorkspace({
                                       <TD className="text-right text-xs py-2.5 tabular-nums">{raw(r, "eps") !== null ? `PKR ${raw(r, "eps")?.toFixed(2)}` : "—"}</TD>
                                       <TD className="text-right text-xs py-2.5 whitespace-nowrap">
                                           {revChg ? (
-                                              <span className={cn(revChg.tone === "positive" ? "text-emerald-700" : revChg.tone === "negative" ? "text-red-700" : "text-slate-600")}>{revChg.text}</span>
+                                              <span className={cn(revChg.tone === "positive" ? "text-up" : revChg.tone === "negative" ? "text-down" : "text-slate-600")}>{revChg.text}</span>
                                           ) : "—"}
                                       </TD>
                                       <TD className="text-right text-xs py-2.5 whitespace-nowrap">
                                           {patChg ? (
-                                              <span className={cn(patChg.tone === "positive" ? "text-emerald-700" : patChg.tone === "negative" ? "text-red-700" : "text-slate-600")}>{patChg.text}</span>
+                                              <span className={cn(patChg.tone === "positive" ? "text-up" : patChg.tone === "negative" ? "text-down" : "text-slate-600")}>{patChg.text}</span>
                                           ) : "—"}
                                       </TD>
                                       <TD className="text-xs py-2.5 whitespace-nowrap pl-4">

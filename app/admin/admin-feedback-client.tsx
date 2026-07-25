@@ -115,7 +115,7 @@ export function AdminFeedbackClient() {
         </div>
       </div>
 
-      {error && <p className="mb-3 rounded-md bg-red-50 px-3 py-2 text-xs text-red-700">{error}</p>}
+      {error && <p className="mb-3 rounded-md bg-red-50 px-3 py-2 text-xs text-down">{error}</p>}
 
       <div className="overflow-x-auto rounded-lg border border-border">
         <Table>

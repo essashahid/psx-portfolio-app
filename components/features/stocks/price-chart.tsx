@@ -41,7 +41,7 @@ function chipClass(active: boolean): string {
   return cn(
     "inline-flex items-center gap-1 rounded-md border px-2 py-1 text-[11px] font-medium transition-colors duration-200",
     active
-      ? "border-emerald-600/30 bg-emerald-50 text-emerald-700"
+      ? "border-emerald-600/30 bg-emerald-50 text-up"
       : "border-slate-200 bg-white text-muted-foreground hover:bg-slate-50 hover:text-foreground"
   );
 }
@@ -232,7 +232,7 @@ export function StockPriceChart({
               <span
                 className={cn(
                   "text-xs font-semibold tabular-nums transition-colors",
-                  trendUp ? "text-emerald-600" : "text-red-600"
+                  trendUp ? "text-up" : "text-down"
                 )}
               >
                 {formatSignedPct(rangeChange)}
@@ -244,7 +244,7 @@ export function StockPriceChart({
             <span
               className={cn(
                 "text-xs font-semibold tabular-nums transition-colors",
-                relPerf.diff >= 0 ? "text-emerald-600" : "text-red-600"
+                relPerf.diff >= 0 ? "text-up" : "text-down"
               )}
               title="The stock's total return over this range minus the KSE-100's, in percentage points."
             >

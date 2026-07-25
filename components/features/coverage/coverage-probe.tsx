@@ -56,7 +56,7 @@ export function CoverageProbe() {
           Test coverage
         </Button>
       </div>
-      {error && <p className="text-xs text-red-600">{error}</p>}
+      {error && <p className="text-xs text-down">{error}</p>}
       {results && (
         <div className="space-y-1.5">
           {results.map((r) => (
@@ -65,7 +65,7 @@ export function CoverageProbe() {
               <Badge variant={r.quote ? "green" : "secondary"}>quote {r.quote ? "✓" : "✗"}</Badge>
               <Badge variant={r.history ? "green" : "secondary"}>history {r.history ? "✓" : "✗"}</Badge>
               {r.symbol && <span className="text-[11px] text-muted-foreground">symbol: {r.symbol}</span>}
-              {r.error && <span className="text-[11px] text-red-600">{r.error}</span>}
+              {r.error && <span className="text-[11px] text-down">{r.error}</span>}
             </div>
           ))}
         </div>

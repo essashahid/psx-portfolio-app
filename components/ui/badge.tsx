@@ -14,8 +14,8 @@ const variants: Record<BadgeVariant, string> = {
   default: "bg-primary text-primary-foreground",
   secondary: "bg-muted text-muted-foreground",
   outline: "border border-border text-foreground",
-  green: "bg-emerald-50 text-emerald-700 border border-emerald-200",
-  red: "bg-red-50 text-red-700 border border-red-200",
+  green: "bg-emerald-50 text-up border border-emerald-200",
+  red: "bg-red-50 text-down border border-red-200",
   amber: "bg-amber-50 text-amber-700 border border-amber-200",
   blue: "bg-blue-50 text-blue-700 border border-blue-200",
 };

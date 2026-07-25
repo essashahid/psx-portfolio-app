@@ -83,8 +83,8 @@ export function LedgerTable({
                   <td className="py-2 pr-4 tabular-nums text-muted-foreground">{row.date ?? "—"}</td>
                   <td className="px-2 py-2 font-medium">{row.narration}</td>
                   <td className="px-2 py-2 text-muted-foreground">{row.ticker ?? "—"}</td>
-                  <td className="px-2 py-2 text-right tabular-nums text-red-700">{row.debit ? formatMoney(row.debit) : "—"}</td>
-                  <td className="px-2 py-2 text-right tabular-nums text-emerald-700">{row.credit ? formatMoney(row.credit) : "—"}</td>
+                  <td className="px-2 py-2 text-right tabular-nums text-down">{row.debit ? formatMoney(row.debit) : "—"}</td>
+                  <td className="px-2 py-2 text-right tabular-nums text-up">{row.credit ? formatMoney(row.credit) : "—"}</td>
                   <td className="px-2 py-2 text-right font-medium tabular-nums">{formatMoney(row.balance)}</td>
                   <td className="px-2 py-2">
                     <div className="flex justify-end gap-1.5">

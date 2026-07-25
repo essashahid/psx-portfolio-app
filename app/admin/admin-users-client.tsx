@@ -62,7 +62,7 @@ export function AdminUsersClient() {
       </div>
 
       {error && (
-        <p className="mb-3 rounded-md bg-red-50 px-3 py-2 text-xs text-red-700">{error}</p>
+        <p className="mb-3 rounded-md bg-red-50 px-3 py-2 text-xs text-down">{error}</p>
       )}
 
       <div className="overflow-x-auto rounded-lg border border-border">
@@ -95,7 +95,7 @@ export function AdminUsersClient() {
                     <Link href={`/admin/users/${u.id}`} className="block">
                       <span className="flex items-center gap-1.5 font-medium">
                         {u.full_name || "—"}
-                        {u.is_admin && <ShieldCheck className="h-3.5 w-3.5 text-emerald-600" />}
+                        {u.is_admin && <ShieldCheck className="h-3.5 w-3.5 text-up" />}
                       </span>
                       <span className="text-xs text-muted-foreground">{u.email}</span>
                     </Link>
@@ -199,7 +199,7 @@ function CreateUserDialog({
           <input type="checkbox" checked={isAdmin} onChange={(e) => setIsAdmin(e.target.checked)} className="h-4 w-4" />
           Grant admin access
         </label>
-        {error && <p className="rounded-md bg-red-50 px-3 py-2 text-xs text-red-700">{error}</p>}
+        {error && <p className="rounded-md bg-red-50 px-3 py-2 text-xs text-down">{error}</p>}
         <div className="flex justify-end gap-2 pt-1">
           <Button type="button" variant="ghost" onClick={onClose}>Cancel</Button>
           <Button type="submit" disabled={saving}>

@@ -167,7 +167,7 @@ export default async function BullsBearsPage() {
       {topOwned.length > 0 && (
         <Card className="rise border-emerald-100">
           <CardHeader>
-            <CardTitle className="flex items-center gap-2"><Briefcase className="h-4 w-4 text-emerald-600" /> Your holdings inside the top 50</CardTitle>
+            <CardTitle className="flex items-center gap-2"><Briefcase className="h-4 w-4 text-up" /> Your holdings inside the top 50</CardTitle>
             <CardDescription>Owned names that also make the current score shortlist.</CardDescription>
           </CardHeader>
           <CardContent>
@@ -206,7 +206,7 @@ function HeroMetric({ label, value, sub, tone: t }: { label: string; value: stri
   return (
     <div className="rounded-lg border border-border bg-card p-3">
       <p className="text-[10px] uppercase tracking-wide text-muted-foreground">{label}</p>
-      <p className={cn("mt-1 text-xl font-semibold tabular-nums", t === "positive" ? "text-emerald-700" : t === "negative" ? "text-red-700" : "text-foreground")}>{value}</p>
+      <p className={cn("mt-1 text-xl font-semibold tabular-nums", t === "positive" ? "text-up" : t === "negative" ? "text-down" : "text-foreground")}>{value}</p>
       {sub && <p className="mt-0.5 text-[10px] text-muted-foreground">{sub}</p>}
     </div>
   );
@@ -239,7 +239,7 @@ function LiveRecapCard({ recap }: { recap: Awaited<ReturnType<typeof getBullsBea
           <p className="eyebrow">{recap.indexName ?? "Index"}</p>
           <div className="mt-1 flex items-end justify-between gap-3">
             <p className="text-3xl font-semibold tabular-nums">{recap.indexValue?.toLocaleString("en-PK", { maximumFractionDigits: 2 }) ?? "-"}</p>
-            <p className={cn("flex items-center gap-1 text-sm font-semibold tabular-nums", indexTone === "positive" ? "text-emerald-600" : indexTone === "negative" ? "text-red-600" : "text-muted-foreground")}>
+            <p className={cn("flex items-center gap-1 text-sm font-semibold tabular-nums", indexTone === "positive" ? "text-up" : indexTone === "negative" ? "text-down" : "text-muted-foreground")}>
               {indexTone === "positive" ? <ArrowUpRight className="h-4 w-4" /> : indexTone === "negative" ? <ArrowDownRight className="h-4 w-4" /> : null}
               {fmtPct(recap.indexChangePct)}
             </p>
@@ -269,7 +269,7 @@ function LiveRecapCard({ recap }: { recap: Awaited<ReturnType<typeof getBullsBea
 function SmallStat({ label, value, tone: t, align = "center" }: { label: string; value: string; tone?: "positive" | "negative"; align?: "center" | "left" }) {
   return (
     <div className={align === "center" ? "text-center" : "min-w-0"}>
-      <p className={cn("truncate text-sm font-semibold tabular-nums", t === "positive" ? "text-emerald-600" : t === "negative" ? "text-red-600" : "text-foreground")}>{value}</p>
+      <p className={cn("truncate text-sm font-semibold tabular-nums", t === "positive" ? "text-up" : t === "negative" ? "text-down" : "text-foreground")}>{value}</p>
       <p className="text-[10px] uppercase tracking-wide text-muted-foreground">{label}</p>
     </div>
   );
@@ -317,7 +317,7 @@ function PortfolioStrategyPanel({ rows }: { rows: PortfolioStrategyRow[] }) {
   return (
     <Card className="rise rise-2 border-emerald-100">
       <CardHeader>
-        <CardTitle className="flex items-center gap-2"><Briefcase className="h-4 w-4 text-emerald-600" /> What this means for my portfolio</CardTitle>
+        <CardTitle className="flex items-center gap-2"><Briefcase className="h-4 w-4 text-up" /> What this means for my portfolio</CardTitle>
         <CardDescription>
           This applies the episode’s thinking to stocks you already own: score first, then rotation, setup, budget impact, and earnings quality. It is not a blind buy/sell list; it tells you what deserves research, sizing, or risk review.
         </CardDescription>
@@ -458,7 +458,7 @@ function IndexTechnicalCard({ data }: { data: Awaited<ReturnType<typeof getBulls
       </CardHeader>
       <CardContent className="space-y-3">
         <div className="rounded-lg border border-emerald-200 bg-emerald-50/50 p-3">
-          <p className="text-sm font-semibold text-emerald-800">Current bias: {map.bias}</p>
+          <p className="text-sm font-semibold text-up">Current bias: {map.bias}</p>
           <p className="mt-1 text-xs leading-relaxed text-emerald-950/80">{map.breakoutConfirmation}</p>
         </div>
         <div className="grid gap-2 sm:grid-cols-2">
@@ -592,7 +592,7 @@ function BucketBar({ bucket, row }: { bucket: SectorBucket; row: BucketRow | nul
         )}
       </div>
       <div className="text-right">
-        <p className={cn("text-sm font-semibold tabular-nums", t === "positive" ? "text-emerald-600" : t === "negative" ? "text-red-600" : "text-foreground")}>{fmtPct(value)}</p>
+        <p className={cn("text-sm font-semibold tabular-nums", t === "positive" ? "text-up" : t === "negative" ? "text-down" : "text-foreground")}>{fmtPct(value)}</p>
         {row && <p className="text-[10px] text-muted-foreground">{row.advancers} up / {row.decliners} down</p>}
       </div>
     </div>
@@ -691,7 +691,7 @@ function MiniStockGrid({ stocks }: { stocks: ScoredStock[] }) {
           </div>
           <div className="mt-2 flex items-center justify-between text-[11px]">
             <span className="text-muted-foreground">Rank #{s.rank}</span>
-            <span className={cn("font-semibold tabular-nums", tone(s.changePercent) === "positive" ? "text-emerald-600" : tone(s.changePercent) === "negative" ? "text-red-600" : "text-muted-foreground")}>{fmtPct(s.changePercent)}</span>
+            <span className={cn("font-semibold tabular-nums", tone(s.changePercent) === "positive" ? "text-up" : tone(s.changePercent) === "negative" ? "text-down" : "text-muted-foreground")}>{fmtPct(s.changePercent)}</span>
           </div>
         </Link>
       ))}
@@ -754,7 +754,7 @@ function BudgetMapper({ impacts }: { impacts: BudgetImpact[] }) {
       <CardContent className="space-y-4">
         {touched.length > 0 && (
           <div className="rounded-lg border border-emerald-200 bg-emerald-50/55 p-3">
-            <p className="text-xs font-semibold text-emerald-800">Your portfolio has direct matches</p>
+            <p className="text-xs font-semibold text-up">Your portfolio has direct matches</p>
             <p className="mt-1 text-xs text-emerald-900/75">
               {touched.length} policy item{touched.length === 1 ? "" : "s"} matched at least one holding by sector keywords.
             </p>
@@ -834,7 +834,7 @@ function SignalNoiseCard({ signal, noise }: { signal: string[]; noise: string[] 
 function SignalList({ title, items, icon: Icon, tone: t }: { title: string; items: string[]; icon: typeof Activity; tone: "positive" | "negative" }) {
   return (
     <div className={cn("rounded-lg border p-3", t === "positive" ? "border-emerald-200 bg-emerald-50/50" : "border-red-200 bg-red-50/50")}>
-      <p className={cn("mb-2 flex items-center gap-1.5 text-xs font-semibold", t === "positive" ? "text-emerald-800" : "text-red-800")}>
+      <p className={cn("mb-2 flex items-center gap-1.5 text-xs font-semibold", t === "positive" ? "text-up" : "text-down")}>
         <Icon className="h-3.5 w-3.5" />
         {title}
       </p>
@@ -850,7 +850,7 @@ function SignalList({ title, items, icon: Icon, tone: t }: { title: string; item
 function DecisionTile({ icon: Icon, label, value, tone: t }: { icon: typeof Activity; label: string; value: number; tone: "positive" | "neutral" | "caution" }) {
   return (
     <div className={cn("flex items-center gap-3 rounded-lg border p-3", t === "positive" ? "border-emerald-200 bg-emerald-50/55" : t === "caution" ? "border-amber-200 bg-amber-50/55" : "border-border bg-muted/25")}>
-      <Icon className={cn("h-4 w-4 shrink-0", t === "positive" ? "text-emerald-700" : t === "caution" ? "text-amber-700" : "text-muted-foreground")} />
+      <Icon className={cn("h-4 w-4 shrink-0", t === "positive" ? "text-up" : t === "caution" ? "text-amber-700" : "text-muted-foreground")} />
       <div>
         <p className="text-lg font-semibold tabular-nums">{value}</p>
         <p className="text-[10px] uppercase tracking-wide text-muted-foreground">{label}</p>
@@ -935,7 +935,7 @@ function bucketToneClass(bucket: SectorBucket) {
     case "cyclical":
       return "bg-blue-50 text-blue-700";
     case "defensive":
-      return "bg-emerald-50 text-emerald-700";
+      return "bg-emerald-50 text-up";
     case "financials":
       return "bg-violet-50 text-violet-700";
     default:
@@ -1055,14 +1055,14 @@ function AtAGlance({ data }: { data: Awaited<ReturnType<typeof getBullsBears>> }
     neutral: "border-border bg-muted/30",
   };
   const iconStyles: Record<GlanceItem["tone"], string> = {
-    positive: "text-emerald-700",
-    negative: "text-red-600",
+    positive: "text-up",
+    negative: "text-down",
     caution: "text-amber-700",
     neutral: "text-muted-foreground",
   };
   const labelStyles: Record<GlanceItem["tone"], string> = {
-    positive: "text-emerald-800",
-    negative: "text-red-800",
+    positive: "text-up",
+    negative: "text-down",
     caution: "text-amber-800",
     neutral: "text-muted-foreground",
   };
@@ -1076,7 +1076,7 @@ function AtAGlance({ data }: { data: Awaited<ReturnType<typeof getBullsBears>> }
   return (
     <Card className="rise rise-1">
       <CardHeader>
-        <CardTitle className="flex items-center gap-2"><Sparkles className="h-4 w-4 text-emerald-600" /> This week at a glance</CardTitle>
+        <CardTitle className="flex items-center gap-2"><Sparkles className="h-4 w-4 text-up" /> This week at a glance</CardTitle>
         <CardDescription>
           Plain-English summary of what the live market data + this week&apos;s episode are telling you. Each point links to a section further down.
         </CardDescription>

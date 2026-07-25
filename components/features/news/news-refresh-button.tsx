@@ -36,7 +36,7 @@ export function NewsRefreshButton() {
         {loading ? "Checking sources..." : "Refresh"}
       </Button>
       {(message || error) && (
-        <span className={`text-[11px] ${error ? "text-red-600" : "text-muted-foreground"}`}>
+        <span className={`text-[11px] ${error ? "text-down" : "text-muted-foreground"}`}>
           {error ?? message}
         </span>
       )}

@@ -1,14 +1,40 @@
 import { redirect } from "next/navigation";
 import { createClient, getEffectiveUser } from "@/lib/supabase/server";
-import { MobileBottomNav, MobileTopBar, Sidebar } from "@/components/shared/sidebar";
+import { MobileBottomNav, MobileTopBar, TopNav } from "@/components/shared/top-nav";
+import { MarketTickerTape, type TickerItem } from "@/components/shared/market-ticker-tape";
 import { AutoRefreshPrices } from "@/components/shared/auto-refresh-prices";
 import { NavProgress } from "@/components/shared/nav-progress";
 import { ImpersonationBanner } from "@/components/shared/impersonation-banner";
 import { FeedbackWidget } from "@/components/shared/feedback-widget";
 import { CommandPalette } from "@/components/shared/command-palette";
-import { DISCLAIMER } from "@/lib/shared/format";
+import { DISCLAIMER, formatNumber, formatSignedPct } from "@/lib/shared/format";
 import { NAV, resolveVisibleHrefs } from "@/lib/config/navigation";
+import { getCachedMarketGlobal } from "@/lib/market/read";
 import type { ExperienceLevel } from "@/lib/shared/types";
+
+async function getTickerItems(): Promise<TickerItem[]> {
+  const { snapshot } = await getCachedMarketGlobal();
+  if (!snapshot) return [];
+  const items: TickerItem[] = [];
+  if (snapshot.index_name && snapshot.index_value !== null) {
+    items.push({
+      label: snapshot.index_name,
+      value: formatNumber(snapshot.index_value, 2),
+      change: snapshot.index_change_percent !== null ? formatSignedPct(snapshot.index_change_percent) : undefined,
+      tone: (snapshot.index_change_percent ?? 0) > 0 ? "up" : (snapshot.index_change_percent ?? 0) < 0 ? "down" : "flat",
+    });
+  }
+  items.push({
+    label: "Advance/decline",
+    value: `${snapshot.total_advancers}/${snapshot.total_decliners}`,
+    tone: snapshot.total_advancers > snapshot.total_decliners ? "up" : snapshot.total_advancers < snapshot.total_decliners ? "down" : "flat",
+  });
+  items.push({ label: "Volume", value: formatNumber(snapshot.total_volume, 0) });
+  items.push({ label: "Value traded", value: formatNumber(snapshot.total_value, 0) });
+  if (snapshot.top_sector) items.push({ label: "Top sector", value: snapshot.top_sector, tone: "up" });
+  if (snapshot.bottom_sector) items.push({ label: "Bottom sector", value: snapshot.bottom_sector, tone: "down" });
+  return items;
+}
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   const supabase = await createClient();
@@ -20,7 +46,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   // When impersonating, the admin's client has override RLS so it can read the
   // impersonated user's profile. We load alerts and profile for the effective
   // user (the customer), so the admin sees exactly what the customer sees.
-  const [{ count }, profileRes] = await Promise.all([
+  const [{ count }, profileRes, tickerItems] = await Promise.all([
     supabase
       .from("alerts")
       .select("id", { count: "exact", head: true })
@@ -31,6 +57,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
       .select("onboarded, experience_level, extra_features, hidden_features, enabled_features, is_admin, demo_mode")
       .eq("id", user.id)
       .maybeSingle(),
+    getTickerItems(),
   ]);
 
   // Skip the onboarding redirect when an admin is viewing on behalf of a user
@@ -61,31 +88,30 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   }));
 
   return (
-    <div className="min-h-dvh bg-background md:flex md:h-dvh md:overflow-hidden">
+    <div className="flex min-h-dvh flex-col bg-background">
       <NavProgress />
       <AutoRefreshPrices />
       <CommandPalette nav={navTargets} />
-      <Sidebar email={user.email ?? ""} openAlerts={count ?? 0} visibleHrefs={visibleHrefs} isAdmin={isAdmin} />
-      <div className="flex min-w-0 flex-1 flex-col md:h-dvh">
-        <MobileTopBar openAlerts={count ?? 0} />
-        {isImpersonating && (
-          <ImpersonationBanner
-            viewingEmail={user.email}
-            adminEmail={realUser.email}
-          />
-        )}
-        {isDemo && (
-          <div className="shrink-0 border-b border-blue-200 bg-blue-50 px-3 py-2 text-center text-xs text-blue-900 sm:px-4">
-            Read-only demo: explore the launch tabs and curated Copilot research. Editing, refreshes and AI generation are disabled.
-          </div>
-        )}
-        <main className="scroll-touch flex-1 overflow-y-auto overscroll-y-contain px-3 py-3 pb-[calc(5.75rem+env(safe-area-inset-bottom))] sm:px-4 sm:py-4 md:p-8">
-          <div className="mx-auto w-full max-w-7xl">{children}</div>
-        </main>
-        <footer className="hidden border-t border-border bg-card px-6 py-2 md:block">
-          <p className="mx-auto max-w-7xl text-[11px] text-muted-foreground">{DISCLAIMER}</p>
-        </footer>
-      </div>
+      <TopNav email={user.email ?? ""} openAlerts={count ?? 0} visibleHrefs={visibleHrefs} isAdmin={isAdmin} />
+      <MobileTopBar openAlerts={count ?? 0} />
+      <MarketTickerTape items={tickerItems} />
+      {isImpersonating && (
+        <ImpersonationBanner
+          viewingEmail={user.email}
+          adminEmail={realUser.email}
+        />
+      )}
+      {isDemo && (
+        <div className="shrink-0 border-b border-blue-200 bg-blue-50 px-3 py-2 text-center text-xs text-blue-900 sm:px-4">
+          Read-only demo: explore the launch tabs and curated Copilot research. Editing, refreshes and AI generation are disabled.
+        </div>
+      )}
+      <main className="scroll-touch flex-1 px-3 py-3 pb-[calc(5.75rem+env(safe-area-inset-bottom))] sm:px-4 sm:py-4 md:px-(--gutter-page) md:py-8 md:pb-8">
+        <div className="mx-auto w-full max-w-7xl">{children}</div>
+      </main>
+      <footer className="hidden border-t border-border bg-card px-6 py-2 md:block">
+        <p className="mx-auto max-w-7xl text-[11px] text-muted-foreground">{DISCLAIMER}</p>
+      </footer>
       {user.email === "demo@example.com" && <FeedbackWidget isDemo={isDemo} />}
       <MobileBottomNav email={user.email ?? ""} openAlerts={count ?? 0} visibleHrefs={visibleHrefs} isAdmin={isAdmin} />
     </div>

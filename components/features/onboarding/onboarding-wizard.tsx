@@ -58,7 +58,7 @@ function ChoiceCard({ icon: Icon, title, description, selected, onClick }: Choic
       <span className="min-w-0">
         <span className="flex items-center gap-1.5 text-sm font-semibold">
           {title}
-          {selected && <Check className="h-3.5 w-3.5 text-emerald-600" />}
+          {selected && <Check className="h-3.5 w-3.5 text-up" />}
         </span>
         <span className="mt-0.5 block text-xs leading-relaxed text-muted-foreground">{description}</span>
       </span>
@@ -227,7 +227,7 @@ export function OnboardingWizard({
 
       </div>
 
-      {error && <p className="mt-4 rounded-md bg-red-50 px-3 py-2 text-xs text-red-700">{error}</p>}
+      {error && <p className="mt-4 rounded-md bg-red-50 px-3 py-2 text-xs text-down">{error}</p>}
 
       <div className="mt-7 flex items-center justify-between gap-3">
         {step > 0 ? (
@@ -269,7 +269,7 @@ function Step({ title, subtitle, children }: { title: string; subtitle: string; 
 export function OnboardingBrand() {
   return (
     <div className="mb-8 flex items-center gap-2.5">
-      <CandlestickChart className="h-6 w-6 text-emerald-600" />
+      <CandlestickChart className="h-6 w-6 text-up" />
       <span className="text-[15px] font-semibold tracking-tight">PortfolioOS PK</span>
     </div>
   );

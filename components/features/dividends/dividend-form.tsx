@@ -208,7 +208,7 @@ export function DividendManager({
                     <button onClick={() => openEdit(d)} className="rounded p-1 text-muted-foreground hover:bg-muted" title="Edit dividend">
                       <Edit2 className="h-3.5 w-3.5" />
                     </button>
-                    <button onClick={() => remove(d.id)} className="rounded p-1 text-muted-foreground hover:bg-muted hover:text-red-600" title="Delete dividend">
+                    <button onClick={() => remove(d.id)} className="rounded p-1 text-muted-foreground hover:bg-muted hover:text-down" title="Delete dividend">
                       <Trash2 className="h-3.5 w-3.5" />
                     </button>
                   </div>
@@ -284,7 +284,7 @@ export function DividendManager({
               <Input value={form.notes} onChange={(e) => set("notes", e.target.value)} placeholder="Optional" />
             </div>
           </div>
-          {error && <p className="rounded bg-red-50 px-2 py-1.5 text-xs text-red-700">{error}</p>}
+          {error && <p className="rounded bg-red-50 px-2 py-1.5 text-xs text-down">{error}</p>}
           <div className="flex justify-end gap-2">
             <Button type="button" variant="outline" onClick={() => setOpen(false)}>Cancel</Button>
             <Button disabled={busy}>

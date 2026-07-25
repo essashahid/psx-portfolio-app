@@ -142,7 +142,7 @@ export function JournalForm({ tickers, defaultTicker }: { tickers: string[]; def
             <Button type="submit" disabled={busy}>
               {busy && <Loader2 className="h-4 w-4 animate-spin" />} Save entry
             </Button>
-            {msg && <p className={`text-xs ${msg.startsWith("Error") ? "text-red-600" : "text-emerald-700"}`}>{msg}</p>}
+            {msg && <p className={`text-xs ${msg.startsWith("Error") ? "text-down" : "text-up"}`}>{msg}</p>}
           </div>
         </form>
       </CardContent>

@@ -34,9 +34,9 @@ export function IndicatorBrowser({ active, onToggleIndicator, onClose }: Indicat
               className="h-9 justify-start gap-0 text-xs"
               onClick={() => onToggleIndicator(ind.name)}
             >
-              <span className={cn("w-12 text-left font-semibold", isOn && "text-emerald-700")}>{ind.name}</span>
+              <span className={cn("w-12 text-left font-semibold", isOn && "text-up")}>{ind.name}</span>
               <span className="flex-1 truncate text-left text-muted-foreground">{ind.desc}</span>
-              {isOn && <Check className="h-3.5 w-3.5 shrink-0 text-emerald-600" />}
+              {isOn && <Check className="h-3.5 w-3.5 shrink-0 text-up" />}
             </Button>
           );
         })}

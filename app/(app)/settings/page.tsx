@@ -265,7 +265,7 @@ export default async function SettingsPage() {
 
       <Card className="border-red-200">
         <CardHeader>
-          <CardTitle className="text-red-700">Danger zone</CardTitle>
+          <CardTitle className="text-down">Danger zone</CardTitle>
           <CardDescription>Reset deletes ALL portfolio data and uploaded files for your account. This cannot be undone.</CardDescription>
         </CardHeader>
         <CardContent>

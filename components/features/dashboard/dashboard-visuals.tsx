@@ -58,7 +58,7 @@ export function PortfolioContribution({ rows, gainers, losers, causes = {} }: { 
           return <div key={row.ticker} className="grid grid-cols-[3.8rem_minmax(0,1fr)_5.25rem] items-center gap-2 text-xs">
             <span className="font-semibold" title={row.companyName ?? row.ticker}>{row.ticker}</span>
             <div className="relative h-5"><span className="absolute inset-y-0 left-1/2 w-px bg-border" />{positive ? <span className="absolute left-1/2 top-1 h-3 rounded-r bg-emerald-600/75" style={{ width }} /> : <span className="absolute right-1/2 top-1 h-3 rounded-l bg-red-600/70" style={{ width }} />}</div>
-            <span className={cn("text-right font-medium tabular-nums", positive ? "text-emerald-700" : "text-red-700")}>{formatMoney(row.contribution)}</span>
+            <span className={cn("text-right font-medium tabular-nums", positive ? "text-up" : "text-down")}>{formatMoney(row.contribution)}</span>
             <span className="col-start-2 col-span-2 -mt-2 text-[10px] text-muted-foreground">
               {formatSignedPct(row.priceMove)} price move · {row.weight?.toFixed(1) ?? "—"}% weight
               {causes[row.ticker] && <> · <a href={causes[row.ticker].url} target="_blank" rel="noopener noreferrer" className="text-foreground underline decoration-dotted underline-offset-2" title={causes[row.ticker].title}>why?</a></>}

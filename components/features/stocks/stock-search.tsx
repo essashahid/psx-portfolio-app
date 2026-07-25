@@ -149,7 +149,7 @@ export function StockSearch({
         autoFocus={autoFocus}
         className="group flex h-11 w-full items-center gap-2.5 rounded-xl border border-border bg-card px-3.5 text-left shadow-[var(--shadow-card)] transition-colors hover:border-emerald-500/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/40"
       >
-        <Search className="h-4 w-4 shrink-0 text-muted-foreground transition-colors group-hover:text-emerald-600" />
+        <Search className="h-4 w-4 shrink-0 text-muted-foreground transition-colors group-hover:text-up" />
         <span className="text-sm text-muted-foreground">Search PSX by ticker or company</span>
         <kbd className="ml-auto hidden items-center gap-0.5 rounded-md border border-border bg-muted px-1.5 py-0.5 font-sans text-[11px] font-medium text-muted-foreground sm:inline-flex">
           {modKey}K
@@ -238,7 +238,7 @@ export function StockSearch({
                       <div className="min-w-0 flex-1">
                         <div className="flex items-center gap-1.5">
                           <span className="text-sm font-semibold">{r.ticker}</span>
-                          {r.owned && <Briefcase className="h-3 w-3 text-emerald-600" />}
+                          {r.owned && <Briefcase className="h-3 w-3 text-up" />}
                           {r.watched && <Star className="h-3 w-3 fill-amber-400 text-amber-500" />}
                         </div>
                         <p className="truncate text-xs text-muted-foreground">
@@ -253,7 +253,7 @@ export function StockSearch({
                             <p
                               className={cn(
                                 "text-[11px] tabular-nums",
-                                r.dayChangePct > 0 ? "text-emerald-600" : r.dayChangePct < 0 ? "text-red-600" : "text-muted-foreground"
+                                r.dayChangePct > 0 ? "text-up" : r.dayChangePct < 0 ? "text-down" : "text-muted-foreground"
                               )}
                             >
                               {formatSignedPct(r.dayChangePct)}

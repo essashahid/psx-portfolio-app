@@ -31,7 +31,7 @@ function Figure({ value, label, tone }: { value: string; label: string; tone?: "
     <div className="rounded-lg bg-muted p-4">
       <p
         className={`text-2xl font-semibold tabular-nums ${
-          tone === "danger" ? "text-red-600" : tone === "positive" ? "text-emerald-600" : "text-foreground"
+          tone === "danger" ? "text-down" : tone === "positive" ? "text-up" : "text-foreground"
         }`}
       >
         {value}

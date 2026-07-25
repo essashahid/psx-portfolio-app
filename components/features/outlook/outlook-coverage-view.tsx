@@ -26,7 +26,7 @@ const QUALITY_LABEL: Record<SeriesQuality, string> = {
 /** Colour is reserved for the two states that need action. */
 function qualityClass(q: SeriesQuality): string {
   if (q === "stale") return "text-amber-700";
-  if (q === "missing") return "text-red-600";
+  if (q === "missing") return "text-down";
   return "text-muted-foreground";
 }
 

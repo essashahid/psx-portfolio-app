@@ -129,7 +129,7 @@ export function TaxProfileForm({ settings }: { settings: TaxSettings }) {
         {settings.updated_at && (
           <span className="text-[11px] text-muted-foreground">Last updated {settings.updated_at.slice(0, 10)}</span>
         )}
-        {msg && <span className={`text-[11px] ${msg.error ? "text-red-600" : "text-emerald-700"}`}>{msg.text}</span>}
+        {msg && <span className={`text-[11px] ${msg.error ? "text-down" : "text-up"}`}>{msg.text}</span>}
       </div>
     </div>
   );

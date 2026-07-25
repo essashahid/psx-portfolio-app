@@ -180,7 +180,7 @@ export default async function CoveragePage() {
                     <TD className="text-xs">{l.section}</TD>
                     <TD className="text-[11px] text-muted-foreground">{l.source}</TD>
                     <TD>
-                      <span className={cn("text-xs font-medium", l.status === "ok" ? "text-emerald-600" : l.status === "error" ? "text-red-600" : "text-muted-foreground")}>
+                      <span className={cn("text-xs font-medium", l.status === "ok" ? "text-up" : l.status === "error" ? "text-down" : "text-muted-foreground")}>
                         {l.status}
                       </span>
                     </TD>

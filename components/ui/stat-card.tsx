@@ -14,21 +14,21 @@ export function StatCard({
 }) {
   return (
     <Card className={cn(
-      tone === "positive" && "border-l-[3px] border-l-emerald-500",
-      tone === "negative" && "border-l-[3px] border-l-red-400",
+      tone === "positive" && "border-l-(length:--border-accent) border-l-up",
+      tone === "negative" && "border-l-(length:--border-accent) border-l-down",
     )}>
       <CardContent className="p-4">
-        <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">{label}</p>
+        <p className="text-(length:--text-2xs) font-bold uppercase tracking-(--tracking-caps) text-text-faint">{label}</p>
         <p
           className={cn(
-            "mt-1 text-lg font-semibold tabular-nums",
-            tone === "positive" && "text-emerald-600",
-            tone === "negative" && "text-red-600"
+            "figure mt-1.5 text-(length:--text-h1) font-semibold",
+            tone === "positive" && "text-up",
+            tone === "negative" && "text-down"
           )}
         >
           {value}
         </p>
-        {sub && <p className="mt-0.5 text-xs text-muted-foreground">{sub}</p>}
+        {sub && <p className="figure mt-0.5 text-xs text-text-muted">{sub}</p>}
       </CardContent>
     </Card>
   );

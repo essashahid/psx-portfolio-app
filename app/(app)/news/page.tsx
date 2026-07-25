@@ -224,8 +224,9 @@ export default async function NewsPage({ searchParams }: { searchParams: Promise
     <div className="mx-auto max-w-[1240px] space-y-5">
       <header className="flex flex-wrap items-end justify-between gap-4">
         <div className="max-w-3xl">
+          <span className="mb-3.5 block h-0.75 w-11 bg-indigo" />
           <p className="eyebrow">PSX intelligence</p>
-          <h1 className="text-2xl font-semibold tracking-editorial sm:text-3xl">News & Events</h1>
+          <h1 className="font-display text-(length:--text-title) font-normal tracking-editorial text-text-strong sm:text-3xl">News & Events</h1>
           <p className="mt-1 text-sm text-muted-foreground">
             Important developments suggested for you based on your holdings, watchlist, sectors, and the wider market.
           </p>
@@ -290,7 +291,7 @@ export default async function NewsPage({ searchParams }: { searchParams: Promise
               >
                 <span className="font-medium">{item.ticker}</span>
                 {typeof item.move === "number" && (
-                  <span className={cn("tabular-nums", item.move > 0 ? "text-emerald-700" : item.move < 0 ? "text-red-700" : "text-muted-foreground")}>
+                  <span className={cn("tabular-nums", item.move > 0 ? "text-up" : item.move < 0 ? "text-down" : "text-muted-foreground")}>
                     {formatSignedPct(item.move)}
                   </span>
                 )}
@@ -491,7 +492,7 @@ export default async function NewsPage({ searchParams }: { searchParams: Promise
                     <span
                       className={cn(
                         "shrink-0 text-xs font-medium tabular-nums",
-                        (row.average_return ?? 0) > 0 ? "text-emerald-700" : (row.average_return ?? 0) < 0 ? "text-red-700" : "text-muted-foreground"
+                        (row.average_return ?? 0) > 0 ? "text-up" : (row.average_return ?? 0) < 0 ? "text-down" : "text-muted-foreground"
                       )}
                     >
                       {formatSignedPct(row.average_return)}

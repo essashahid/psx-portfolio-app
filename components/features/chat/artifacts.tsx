@@ -333,12 +333,12 @@ function MetricStrip({ spec }: { spec: MetricStripArtifact }) {
           <p className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">{m.label}</p>
           <p className={cn(
             "mt-0.5 text-[17px] font-semibold tabular-nums leading-tight",
-            m.tone === "positive" ? "text-emerald-600" : m.tone === "negative" ? "text-red-600" : "text-foreground"
+            m.tone === "positive" ? "text-up" : m.tone === "negative" ? "text-down" : "text-foreground"
           )}>
             {m.value}
           </p>
           {m.delta && (
-            <p className={cn("mt-0.5 text-[11px] tabular-nums", m.tone === "positive" ? "text-emerald-600" : m.tone === "negative" ? "text-red-600" : "text-muted-foreground")}>
+            <p className={cn("mt-0.5 text-[11px] tabular-nums", m.tone === "positive" ? "text-up" : m.tone === "negative" ? "text-down" : "text-muted-foreground")}>
               {m.delta}
             </p>
           )}
@@ -369,13 +369,13 @@ const NUMERICISH = /^[+-]?\d[\d,]*(?:\.\d+)?$/;
 function cellTone(value: string | number | null, format?: TableArtifact["columns"][number]["format"]): string | null {
   if (value == null) return null;
   if (typeof value === "number") {
-    if (value < 0) return "text-red-600";
-    if (format === "percent" && value > 0) return "text-emerald-600";
+    if (value < 0) return "text-down";
+    if (format === "percent" && value > 0) return "text-up";
     return null;
   }
   const s = String(value).trim();
-  if (/^[-−]\s?(?:PKR\s?)?\d/.test(s)) return "text-red-600";
-  if (/^\+\s?(?:PKR\s?)?\d/.test(s)) return "text-emerald-600";
+  if (/^[-−]\s?(?:PKR\s?)?\d/.test(s)) return "text-down";
+  if (/^\+\s?(?:PKR\s?)?\d/.test(s)) return "text-up";
   return null;
 }
 
@@ -500,7 +500,7 @@ function PortfolioAttribution({ spec }: { spec: PortfolioAttributionArtifact }) 
                   style={{ width: `${Math.max(pct * 100, 2)}%` }}
                 />
               </div>
-              <span className={cn("w-20 shrink-0 text-right text-[12px] font-semibold tabular-nums", tone === "positive" ? "text-emerald-600" : tone === "negative" ? "text-red-600" : "text-muted-foreground")}>
+              <span className={cn("w-20 shrink-0 text-right text-[12px] font-semibold tabular-nums", tone === "positive" ? "text-up" : tone === "negative" ? "text-down" : "text-muted-foreground")}>
                 {item.value >= 0 ? "+" : ""}{item.value.toLocaleString("en-PK", { maximumFractionDigits: 2 })}
                 {item.percent != null && <span className="ml-1 text-[10px] text-muted-foreground">({item.percent >= 0 ? "+" : ""}{item.percent.toFixed(1)}%)</span>}
               </span>
@@ -670,7 +670,7 @@ function BenchmarkExcess({ spec }: { spec: BenchmarkExcessArtifact }) {
                   style={beat ? { left: "50%", width: `${half}%` } : { right: "50%", width: `${half}%` }}
                 />
               </div>
-              <span className={cn("w-16 shrink-0 text-right text-[12px] font-semibold tabular-nums", beat ? "text-emerald-600" : "text-red-600")}>
+              <span className={cn("w-16 shrink-0 text-right text-[12px] font-semibold tabular-nums", beat ? "text-up" : "text-down")}>
                 {pct(r.excess)}
               </span>
               <span className="hidden w-28 shrink-0 text-right text-[10px] text-muted-foreground tabular-nums sm:block">

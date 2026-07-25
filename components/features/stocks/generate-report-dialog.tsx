@@ -305,7 +305,7 @@ export function GenerateReportDialog({
                 </>
               ) : (
                 <div className="space-y-2">
-                  <p className="text-sm font-semibold text-red-700">Report cannot be generated</p>
+                  <p className="text-sm font-semibold text-down">Report cannot be generated</p>
                   <p className="text-xs text-muted-foreground">{preview?.error ?? "Company metadata could not be resolved."}</p>
                   <div className="flex gap-2">
                     <Button variant="outline" size="sm" onClick={loadPreview}>
@@ -429,7 +429,7 @@ export function GenerateReportDialog({
                     const active = running && !done && !failed && i === stages.findIndex((s) => s.status === "pending");
                     return (
                       <div key={step.label} className={cn("flex items-center gap-2 text-xs", !done && !active && !failed && "text-muted-foreground")}>
-                        {done ? <Check className="h-3.5 w-3.5 text-emerald-600" /> : failed ? <XCircle className="h-3.5 w-3.5 text-red-600" /> : active ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <span className="h-3.5 w-3.5 rounded-full border border-border" />}
+                        {done ? <Check className="h-3.5 w-3.5 text-up" /> : failed ? <XCircle className="h-3.5 w-3.5 text-down" /> : active ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <span className="h-3.5 w-3.5 rounded-full border border-border" />}
                         {step.label}
                       </div>
                     );
@@ -439,7 +439,7 @@ export function GenerateReportDialog({
             )}
 
             {error && (
-              <div className="flex items-start gap-2 rounded-md bg-red-50 px-3 py-2 text-red-700">
+              <div className="flex items-start gap-2 rounded-md bg-red-50 px-3 py-2 text-down">
                 <XCircle className="mt-0.5 h-4 w-4 shrink-0" />
                 <div>
                   <p className="text-sm font-semibold">Generation Failed</p>

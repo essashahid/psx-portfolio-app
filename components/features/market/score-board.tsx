@@ -96,7 +96,7 @@ export function ScoreBoard({ stocks, owned = [] }: { stocks: ScoredStock[]; owne
             <button
               key={k}
               onClick={() => { setSortKey(k); setVisible(PAGE); }}
-              className={cn("flex h-10 shrink-0 items-center gap-0.5 rounded-md px-2 text-[11px] font-medium capitalize transition-colors md:h-auto md:py-1", sortKey === k ? "bg-emerald-50 text-emerald-700" : "text-muted-foreground hover:text-foreground")}
+              className={cn("flex h-10 shrink-0 items-center gap-0.5 rounded-md px-2 text-[11px] font-medium capitalize transition-colors md:h-auto md:py-1", sortKey === k ? "bg-emerald-50 text-up" : "text-muted-foreground hover:text-foreground")}
             >
               {k === "score" ? "Score" : SUBSCORE_META[k as SubScoreKey].label}
             </button>
@@ -134,7 +134,7 @@ export function ScoreBoard({ stocks, owned = [] }: { stocks: ScoredStock[]; owne
                     <div className="min-w-0">
                       <div className="flex items-center gap-1.5">
                         <span className="text-sm font-semibold">{s.ticker}</span>
-                        {isOwned && <Briefcase className="h-3 w-3 text-emerald-600" aria-label="Owned" />}
+                        {isOwned && <Briefcase className="h-3 w-3 text-up" aria-label="Owned" />}
                         <span className="rounded bg-muted px-1 text-[8px] font-semibold uppercase text-muted-foreground">{BUCKET_META[s.bucket].label}</span>
                       </div>
                       <p className="truncate text-[11px] text-muted-foreground">{s.companyName ?? s.sector ?? ""}</p>
@@ -149,7 +149,7 @@ export function ScoreBoard({ stocks, owned = [] }: { stocks: ScoredStock[]; owne
                     </div>
                   ))}
                   <div className="text-right">
-                    <span className={cn("inline-block rounded-md px-1.5 py-0.5 text-xs font-bold tabular-nums lg:bg-transparent lg:px-0", t === "positive" ? "bg-emerald-50 text-emerald-700 lg:text-emerald-600" : t === "negative" ? "bg-red-50 text-red-700 lg:text-red-600" : "text-muted-foreground")}>{fmtPct(s.changePercent)}</span>
+                    <span className={cn("inline-block rounded-md px-1.5 py-0.5 text-xs font-bold tabular-nums lg:bg-transparent lg:px-0", t === "positive" ? "bg-emerald-50 text-up lg:text-up" : t === "negative" ? "bg-red-50 text-down lg:text-down" : "text-muted-foreground")}>{fmtPct(s.changePercent)}</span>
                     <span className={cn("ml-2 inline-flex h-8 w-8 items-center justify-center rounded-full text-xs font-bold tabular-nums text-white lg:hidden", scoreColor(s.score))}>
                       {s.score.toFixed(0)}
                     </span>
@@ -254,7 +254,7 @@ function ScoreDetail({ s }: { s: ScoredStock }) {
             </div>
           ))}
         </dl>
-        <Link href={`/stocks/${s.ticker}`} className="mt-2 inline-block text-[11px] font-medium text-emerald-600 hover:underline">
+        <Link href={`/stocks/${s.ticker}`} className="mt-2 inline-block text-[11px] font-medium text-up hover:underline">
           Open {s.ticker} cockpit →
         </Link>
       </div>

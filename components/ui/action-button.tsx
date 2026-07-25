@@ -59,7 +59,7 @@ export function ActionButton({
         {label}
       </Button>
       {message && (
-        <span className={`max-w-xs text-[11px] ${message.error ? "text-red-600" : "text-emerald-700"}`}>
+        <span className={`max-w-xs text-[11px] ${message.error ? "text-down" : "text-up"}`}>
           {message.text}
         </span>
       )}

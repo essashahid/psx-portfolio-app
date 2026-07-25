@@ -36,11 +36,12 @@ export default async function HoldingsPage() {
 
   return (
     <div className="space-y-5">
-      <header className="flex flex-wrap items-start justify-between gap-4 border-b border-border pb-4">
+      <header className="flex flex-wrap items-start justify-between gap-4 border-b border-rule pb-5">
         <div>
+          <span className="mb-3.5 block h-0.75 w-11 bg-indigo" />
           <p className="eyebrow">Portfolio</p>
-          <h1 className="mt-1 text-2xl font-semibold tracking-tight">Holdings</h1>
-          <p className="mt-1 flex flex-wrap items-center gap-x-1.5 text-xs text-muted-foreground">
+          <h1 className="mt-1.5 font-display text-(length:--text-title) font-normal tracking-editorial text-text-strong">Holdings</h1>
+          <p className="mt-1.5 flex flex-wrap items-center gap-x-1.5 text-xs text-text-muted">
             <span>{formatNumber(summary.holdingsCount, 0)} positions ·</span>
             <AsOf date={latestPriceDate} label="Prices" />
             <span>· {summary.pricedHoldings} of {summary.holdingsCount} priced{unpriced ? ` · ${unpriced} valued at cost` : ""}</span>
@@ -74,7 +75,7 @@ export default async function HoldingsPage() {
       ) : (
         <>
           <section>
-            <div className="grid overflow-hidden rounded-lg border border-border bg-card sm:grid-cols-2 lg:grid-cols-4">
+            <div className="grid border-t border-rule sm:grid-cols-2 lg:grid-cols-4">
               <Metric label="Market value" value={formatMoney(summary.totalValue)} sub={`${summary.pricedHoldings} priced positions`} />
               <Metric label="Cost basis" value={formatMoney(summary.totalCost)} />
               <Metric label="Unrealised P/L" value={formatMoney(summary.unrealizedPl)} sub={formatSignedPct(summary.unrealizedPlPct)} tone={summary.unrealizedPl > 0 ? "positive" : summary.unrealizedPl < 0 ? "negative" : "flat"} />
@@ -116,5 +117,11 @@ export default async function HoldingsPage() {
 }
 
 function Metric({ label, value, sub, tone }: { label: string; value: string; sub?: string; tone?: "positive" | "negative" | "flat" }) {
-  return <div className="border-b border-border p-4 last:border-b-0 sm:border-b-0 sm:border-r sm:last:border-r-0"><p className="text-xs font-medium text-muted-foreground">{label}</p><p className={`mt-1 text-lg font-semibold tabular-nums ${tone === "positive" ? "text-emerald-700" : tone === "negative" ? "text-red-700" : ""}`}>{value}</p>{sub && <p className="mt-0.5 text-xs text-muted-foreground">{sub}</p>}</div>;
+  return (
+    <div className="border-t border-rule py-4 first:border-t-0 sm:border-t-0 sm:border-l sm:px-5 sm:py-0 sm:first:border-l-0 sm:first:pl-0">
+      <p className="text-(length:--text-2xs) font-bold uppercase tracking-(--tracking-caps) text-text-faint">{label}</p>
+      <p className={`figure mt-1.5 text-(length:--text-h1) font-semibold ${tone === "positive" ? "text-up" : tone === "negative" ? "text-down" : "text-text-strong"}`}>{value}</p>
+      {sub && <p className="figure mt-0.5 text-xs text-text-muted">{sub}</p>}
+    </div>
+  );
 }

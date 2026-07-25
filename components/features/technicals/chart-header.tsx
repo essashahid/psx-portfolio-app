@@ -32,7 +32,7 @@ export function ChartHeader({
           <div className="flex items-center gap-2">
             <span className="font-semibold tabular-nums">PKR {price.toFixed(2)}</span>
             {changePct !== null && (
-              <span className={cn("text-xs font-medium tabular-nums", changePct > 0 ? "text-emerald-600" : changePct < 0 ? "text-red-600" : "text-muted-foreground")}>
+              <span className={cn("text-xs font-medium tabular-nums", changePct > 0 ? "text-up" : changePct < 0 ? "text-down" : "text-muted-foreground")}>
                 {changePct > 0 ? "+" : ""}{changePct.toFixed(2)}%
               </span>
             )}

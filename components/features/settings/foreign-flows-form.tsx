@@ -109,7 +109,7 @@ export function ForeignFlowsForm({ lastDate, autoConfigured }: { lastDate: strin
         <Button size="sm" onClick={save} disabled={busy}>
           {busy && <Loader2 className="h-3.5 w-3.5 animate-spin" />} Save flows
         </Button>
-        {msg && <span className={`text-[11px] ${msg.error ? "text-red-600" : "text-emerald-700"}`}>{msg.text}</span>}
+        {msg && <span className={`text-[11px] ${msg.error ? "text-down" : "text-up"}`}>{msg.text}</span>}
       </div>
     </div>
   );

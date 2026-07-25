@@ -270,7 +270,7 @@ export function CommandPalette({ nav }: { nav: NavTarget[] }) {
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-1.5">
                       <span className="text-sm font-semibold">{r.ticker}</span>
-                      {r.owned && <Briefcase className="h-3 w-3 text-emerald-600" />}
+                      {r.owned && <Briefcase className="h-3 w-3 text-up" />}
                       {r.watched && <Star className="h-3 w-3 fill-amber-400 text-amber-500" />}
                     </div>
                     <p className="truncate text-xs text-muted-foreground">{r.companyName ?? "—"}{r.sector ? ` · ${r.sector}` : ""}</p>
@@ -279,7 +279,7 @@ export function CommandPalette({ nav }: { nav: NavTarget[] }) {
                     <div className="shrink-0 text-right">
                       <p className="text-xs font-semibold tabular-nums">{formatNumber(r.price)}</p>
                       {r.dayChangePct !== null && (
-                        <p className={cn("text-[11px] tabular-nums", r.dayChangePct > 0 ? "text-emerald-600" : r.dayChangePct < 0 ? "text-red-600" : "text-muted-foreground")}>{formatSignedPct(r.dayChangePct)}</p>
+                        <p className={cn("text-[11px] tabular-nums", r.dayChangePct > 0 ? "text-up" : r.dayChangePct < 0 ? "text-down" : "text-muted-foreground")}>{formatSignedPct(r.dayChangePct)}</p>
                       )}
                     </div>
                   )}

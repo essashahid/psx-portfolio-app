@@ -179,7 +179,7 @@ export function BenchmarkGrowthChart({ data }: { data: BenchmarkPointRow[] }) {
         <div className="flex flex-wrap items-baseline gap-x-7 gap-y-1 pb-3 pt-1">
           <div>
             <span className="text-2xl font-semibold tabular-nums">{formatMoney(headline.portfolio)}</span>
-            <span className={cn("ml-2 text-xs font-medium tabular-nums", headline.gainVsContrib >= 0 ? "text-emerald-700" : "text-red-700")}>
+            <span className={cn("ml-2 text-xs font-medium tabular-nums", headline.gainVsContrib >= 0 ? "text-up" : "text-down")}>
               {formatMoney(headline.gainVsContrib)} ({formatSignedPct(headline.gainPct)}) on capital
             </span>
           </div>
@@ -226,7 +226,7 @@ function MetricInline({ label, value }: { label: string; value: number }) {
   return (
     <div className="text-sm">
       <span className="text-muted-foreground">{label} </span>
-      <span className={cn("font-semibold tabular-nums", value >= 0 ? "text-emerald-700" : "text-red-700")}>{formatMoney(value)}</span>
+      <span className={cn("font-semibold tabular-nums", value >= 0 ? "text-up" : "text-down")}>{formatMoney(value)}</span>
     </div>
   );
 }

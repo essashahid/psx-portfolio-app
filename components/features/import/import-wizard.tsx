@@ -200,7 +200,7 @@ export function ImportWizard() {
               }}
             />
           </label>
-          {error && <p className="mt-3 rounded-md bg-red-50 px-3 py-2 text-xs text-red-700">{error}</p>}
+          {error && <p className="mt-3 rounded-md bg-red-50 px-3 py-2 text-xs text-down">{error}</p>}
           <div className="mt-4 grid gap-2 text-xs text-muted-foreground sm:grid-cols-2">
             <p>• <strong>Holdings snapshot</strong>: updates positions to match the statement.</p>
             <p>• <strong>Trade history</strong>: stores transactions, recalculates weighted-average cost.</p>
@@ -218,7 +218,7 @@ export function ImportWizard() {
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <CheckCircle2 className="h-4 w-4 text-emerald-600" /> Import complete
+            <CheckCircle2 className="h-4 w-4 text-up" /> Import complete
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-3">
@@ -442,7 +442,7 @@ export function ImportWizard() {
               <>This will <strong>record {includable.length} dividend/cash row(s)</strong>, linked to tickers where possible.</>
             )}
           </p>
-          {error && <p className="rounded-md bg-red-50 px-3 py-2 text-xs text-red-700">{error}</p>}
+          {error && <p className="rounded-md bg-red-50 px-3 py-2 text-xs text-down">{error}</p>}
           <div className="flex gap-2">
             <Button onClick={commit} disabled={busy || includable.length === 0}>
               {busy && <Loader2 className="h-4 w-4 animate-spin" />}

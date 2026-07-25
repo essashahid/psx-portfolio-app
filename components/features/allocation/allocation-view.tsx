@@ -21,10 +21,10 @@ const pct = (x: number, d = 1) => `${(x * 100).toFixed(d)}%`;
 const pkr = (n: number) => "PKR " + Math.round(n).toLocaleString("en-US");
 
 const CONF_TONE: Record<ConfidenceLevel, string> = {
-  high: "text-emerald-700 bg-emerald-500",
+  high: "text-up bg-emerald-500",
   moderate: "text-amber-700 bg-amber-500",
   low: "text-orange-700 bg-orange-500",
-  insufficient: "text-red-700 bg-red-500",
+  insufficient: "text-down bg-red-500",
 };
 
 export function AllocationView({ initial, savedAt }: { initial: AllocationForecast | null; savedAt: string | null }) {
@@ -61,7 +61,7 @@ export function AllocationView({ initial, savedAt }: { initial: AllocationForeca
       <div className="space-y-3">
         <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-dashed border-border bg-muted/30 px-4 py-4">
           <div className="flex items-center gap-2.5">
-            <Compass className="h-5 w-5 shrink-0 text-emerald-600" />
+            <Compass className="h-5 w-5 shrink-0 text-up" />
             <div>
               <p className="text-sm font-semibold">No forecast yet</p>
               <p className="text-xs text-muted-foreground">
@@ -71,7 +71,7 @@ export function AllocationView({ initial, savedAt }: { initial: AllocationForeca
           </div>
           {generateBtn}
         </div>
-        {state === "error" && <p className="text-sm text-red-600">{errMsg}</p>}
+        {state === "error" && <p className="text-sm text-down">{errMsg}</p>}
       </div>
     );
   }
@@ -85,7 +85,7 @@ export function AllocationView({ initial, savedAt }: { initial: AllocationForeca
         </p>
         {generateBtn}
       </div>
-      {state === "error" && <p className="text-sm text-red-600">{errMsg}</p>}
+      {state === "error" && <p className="text-sm text-down">{errMsg}</p>}
 
       <ConfidenceStrip forecast={forecast} />
       {forecast.narrative?.summary && (
@@ -166,7 +166,7 @@ function RecommendationHero({ forecast }: { forecast: AllocationForecast }) {
       <CardHeader>
         <div className="flex flex-wrap items-center justify-between gap-2">
           <CardTitle className="flex items-center gap-2">
-            <ShieldCheck className="h-4 w-4 text-emerald-600" /> Recommended allocation
+            <ShieldCheck className="h-4 w-4 text-up" /> Recommended allocation
           </CardTitle>
           <span className="text-xs text-muted-foreground">Lead scenario: {r.label}</span>
         </div>
@@ -189,7 +189,7 @@ function RecommendationHero({ forecast }: { forecast: AllocationForecast }) {
           <OutcomeGrid outcome={o} />
 
           <div className="flex items-center gap-2 rounded-md border border-emerald-200 bg-emerald-50/60 px-3 py-2">
-            <ArrowRight className="h-4 w-4 shrink-0 text-emerald-600" />
+            <ArrowRight className="h-4 w-4 shrink-0 text-up" />
             <p className="text-sm text-emerald-900">
               Deploy first into <span className="font-semibold">{ASSET_LABEL[r.deployFirst!]}</span>, where you are
               furthest below target.
@@ -409,7 +409,7 @@ function StressPanel({ forecast }: { forecast: AllocationForecast }) {
                 <p className="font-medium">{r.label}</p>
                 <p className="text-xs text-muted-foreground">{r.note}</p>
               </td>
-              <td className={cn("py-1.5 pl-3 text-right tabular-nums font-semibold", r.mixReturn < 0 ? "text-red-600" : "text-emerald-700")}>
+              <td className={cn("py-1.5 pl-3 text-right tabular-nums font-semibold", r.mixReturn < 0 ? "text-down" : "text-up")}>
                 {pct(r.mixReturn)}
               </td>
             </tr>

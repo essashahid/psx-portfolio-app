@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { Manrope, Geist_Mono } from "next/font/google";
+import { Manrope, Geist_Mono, Newsreader } from "next/font/google";
 import "./globals.css";
 
 const manrope = Manrope({
@@ -8,6 +8,12 @@ const manrope = Manrope({
   weight: ["400", "500", "600", "700", "800"],
 });
 const geistMono = Geist_Mono({ variable: "--font-geist-mono", subsets: ["latin"] });
+const newsreader = Newsreader({
+  variable: "--font-newsreader",
+  subsets: ["latin"],
+  style: ["normal", "italic"],
+  weight: ["300", "400", "500", "600", "700"],
+});
 
 export const metadata: Metadata = {
   title: "PortfolioOS PK",
@@ -36,7 +42,7 @@ import { PwaUpdater } from "@/components/shared/pwa-updater";
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en">
-      <body className={`${manrope.variable} ${geistMono.variable} font-sans antialiased`}>
+      <body className={`${manrope.variable} ${geistMono.variable} ${newsreader.variable} font-sans antialiased`}>
         {children}
         <PwaUpdater />
         {/* Vercel Web Analytics: cookieless visitor + page-view tracking.

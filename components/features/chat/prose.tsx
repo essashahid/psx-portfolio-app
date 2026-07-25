@@ -31,8 +31,8 @@ const SIGNED_TOKEN = /(?<![\w.+-])([+-](?:PKR\s?)?\d[\d,]*(?:\.\d+)?\s?(?:%|pts?
 const DIRECTIONAL = /\b(up|rose|gained|jumped|surged|down|fell|dropped|declined|slid|lost)\s(\d[\d,]*(?:\.\d+)?\s?(?:%|pts?|bps))/gi;
 const NEGATIVE_WORDS = new Set(["down", "fell", "dropped", "declined", "slid", "lost"]);
 
-const POS = "text-emerald-600 tabular-nums";
-const NEG = "text-red-600 tabular-nums";
+const POS = "text-up tabular-nums";
+const NEG = "text-down tabular-nums";
 
 function colorizeString(text: string, keyBase: number): ReactNode[] {
   const marks: { start: number; end: number; cls: string; text: string }[] = [];

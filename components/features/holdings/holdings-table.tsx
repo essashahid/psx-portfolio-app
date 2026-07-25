@@ -74,8 +74,8 @@ function MobileMetric({
       <p
         className={cn(
           "mt-0.5 min-w-0 truncate text-sm font-semibold tabular-nums",
-          tone === "positive" && "text-emerald-600",
-          tone === "negative" && "text-red-600",
+          tone === "positive" && "text-up",
+          tone === "negative" && "text-down",
           tone === "muted" && "text-muted-foreground",
           tone === "accent" && "text-amber-600"
         )}
@@ -363,7 +363,7 @@ export function HoldingsTable({
         cell: (c) => {
           const daily = dailyByTicker.get(c.row.original.ticker);
           if (!daily || daily.dayChangePct === null) return <span className="text-sm text-muted-foreground">—</span>;
-          const tone = daily.dayChangePct > 0 ? "text-emerald-600" : daily.dayChangePct < 0 ? "text-red-600" : "text-muted-foreground";
+          const tone = daily.dayChangePct > 0 ? "text-up" : daily.dayChangePct < 0 ? "text-down" : "text-muted-foreground";
           return <span title={daily.dayPnl !== null ? `Portfolio contribution ${formatMoney(daily.dayPnl)}` : "Daily price movement"} className={cn("tabular-nums text-sm font-medium", tone)}>{formatSignedPct(daily.dayChangePct)}</span>;
         },
       }),
@@ -378,7 +378,7 @@ export function HoldingsTable({
         cell: (c) => {
           const pl = c.getValue();
           if (pl === null) return <span className="text-sm text-muted-foreground">—</span>;
-          const tone = pl > 0 ? "text-emerald-600" : pl < 0 ? "text-red-600" : "";
+          const tone = pl > 0 ? "text-up" : pl < 0 ? "text-down" : "";
           return <span className={cn("tabular-nums text-sm font-medium", tone)}>{formatMoney(pl)}</span>;
         },
       }),
@@ -389,7 +389,7 @@ export function HoldingsTable({
           const h = c.row.original;
           if (!h.total_cost) return <span className="text-sm text-muted-foreground">—</span>;
           const totalReturn = ((h.unrealized_pl ?? 0) + h.dividend_income) / h.total_cost * 100;
-          return <span className={cn("tabular-nums text-sm", totalReturn > 0 ? "text-emerald-600" : totalReturn < 0 ? "text-red-600" : "")}>{formatSignedPct(totalReturn)}</span>;
+          return <span className={cn("tabular-nums text-sm", totalReturn > 0 ? "text-up" : totalReturn < 0 ? "text-down" : "")}>{formatSignedPct(totalReturn)}</span>;
         },
       }),
       col.accessor("weight", {

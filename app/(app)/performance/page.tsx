@@ -49,8 +49,9 @@ export default async function PerformancePage() {
     return (
       <div className="space-y-5">
         <header>
+          <span className="mb-3.5 block h-0.75 w-11 bg-indigo" />
           <p className="eyebrow">Portfolio</p>
-          <h1 className="mt-1 text-2xl font-semibold">Performance</h1>
+          <h1 className="mt-1.5 font-display text-(length:--text-title) font-normal tracking-editorial text-text-strong">Performance</h1>
         </header>
         <EmptyState
           icon={TrendingUp}
@@ -147,8 +148,9 @@ export default async function PerformancePage() {
       <header className="border-b border-border pb-5">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
+            <span className="mb-3.5 block h-0.75 w-11 bg-indigo" />
             <p className="eyebrow">Portfolio</p>
-            <h1 className="mt-1 text-2xl font-semibold tracking-tight">Performance</h1>
+            <h1 className="mt-1.5 font-display text-(length:--text-title) font-normal tracking-editorial text-text-strong">Performance</h1>
             <p className="mt-1 max-w-3xl text-sm text-muted-foreground">
               Ledger-backed capital, realised return, unrealised return, costs and reconciliation.
             </p>
@@ -193,7 +195,7 @@ export default async function PerformancePage() {
           </div>
         )}
         {sourceReconciled && (
-          <div className="mt-4 flex gap-2 border-l-2 border-emerald-600 pl-3 text-sm text-emerald-800">
+          <div className="mt-4 flex gap-2 border-l-2 border-emerald-600 pl-3 text-sm text-up">
             <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0" />
             <p>{analytics.source.detail}</p>
           </div>
@@ -252,7 +254,7 @@ export default async function PerformancePage() {
               Trade commission, SST and CDC are already embedded in realised/unrealised P/L. Account charges and CGT are deducted separately.
             </p>
           </div>
-          <div className={cn("text-xs", Math.abs(bridgeDifference) < 0.01 ? "text-emerald-700" : "text-red-700")}>
+          <div className={cn("text-xs", Math.abs(bridgeDifference) < 0.01 ? "text-up" : "text-down")}>
             {Math.abs(bridgeDifference) < 0.01
               ? "Bridge reconciles"
               : `Unreconciled difference: ${formatMoney(bridgeDifference)}`}
@@ -275,7 +277,7 @@ export default async function PerformancePage() {
               {bridge.map((row) => (
                 <tr key={row.label} className="border-b border-border last:border-0">
                   <td className="py-2 pr-4 font-medium">{row.label}</td>
-                  <td className={cn("px-2 py-2 text-right tabular-nums", row.value < 0 ? "text-red-700" : row.value > 0 ? "text-emerald-700" : "")}>
+                  <td className={cn("px-2 py-2 text-right tabular-nums", row.value < 0 ? "text-down" : row.value > 0 ? "text-up" : "")}>
                     {formatMoney(row.value)}
                   </td>
                   <td className="px-2 py-2">{row.includedInReconciliation ? "Included" : "Audit only"}</td>
@@ -284,7 +286,7 @@ export default async function PerformancePage() {
               ))}
               <tr className="border-b border-border last:border-0">
                 <td className="py-2 pr-4 font-medium">Net dividend income</td>
-                <td className="px-2 py-2 text-right tabular-nums text-emerald-700">{formatMoney(portfolio.dividendIncome)}</td>
+                <td className="px-2 py-2 text-right tabular-nums text-up">{formatMoney(portfolio.dividendIncome)}</td>
                 <td className="px-2 py-2">Displayed separately</td>
                 <td className="px-2 py-2 text-muted-foreground">Included in total-return review without adding it twice to current cash or net worth.</td>
               </tr>
@@ -487,7 +489,7 @@ export default async function PerformancePage() {
                   <td className="px-2 py-2 text-right tabular-nums">{formatNumber(row.manualPurchaseQuantity, 0)}</td>
                   <td className="px-2 py-2 text-right tabular-nums font-medium">{formatNumber(row.expectedQuantity, 0)}</td>
                   <td className="px-2 py-2 text-right tabular-nums">{formatNumber(row.currentPlatformQuantity, 0)}</td>
-                  <td className={cn("px-2 py-2 text-right tabular-nums", row.difference ? "text-red-700" : "text-muted-foreground")}>
+                  <td className={cn("px-2 py-2 text-right tabular-nums", row.difference ? "text-down" : "text-muted-foreground")}>
                     {row.difference === null ? "—" : formatNumber(row.difference, 0)}
                   </td>
                   <td className="px-2 py-2">
@@ -531,20 +533,20 @@ function VerdictBlock({
   const sentences: React.ReactNode[] = [];
   if (xirrPct !== null) {
     sentences.push(
-      <>Your money-weighted return (XIRR) is <strong className={cn("tabular-nums", xirrPct >= 0 ? "text-emerald-700" : "text-red-700")}>{xirrPct}%</strong> a year{period ? ` over ${period}` : ""}, turning {formatMoney(totalDeposited)} of invested capital into a net gain of <strong className={cn("tabular-nums", netGain >= 0 ? "text-emerald-700" : "text-red-700")}>{formatMoney(netGain)}</strong>{returnPct !== null ? ` (${formatSignedPct(returnPct)})` : ""}.</>
+      <>Your money-weighted return (XIRR) is <strong className={cn("tabular-nums", xirrPct >= 0 ? "text-up" : "text-down")}>{xirrPct}%</strong> a year{period ? ` over ${period}` : ""}, turning {formatMoney(totalDeposited)} of invested capital into a net gain of <strong className={cn("tabular-nums", netGain >= 0 ? "text-up" : "text-down")}>{formatMoney(netGain)}</strong>{returnPct !== null ? ` (${formatSignedPct(returnPct)})` : ""}.</>
     );
   } else {
-    sentences.push(<>Your net investment gain is <strong className={cn("tabular-nums", netGain >= 0 ? "text-emerald-700" : "text-red-700")}>{formatMoney(netGain)}</strong>{returnPct !== null ? ` (${formatSignedPct(returnPct)})` : ""} on {formatMoney(totalDeposited)} of invested capital. A money-weighted return needs a complete cash-flow history to compute.</>);
+    sentences.push(<>Your net investment gain is <strong className={cn("tabular-nums", netGain >= 0 ? "text-up" : "text-down")}>{formatMoney(netGain)}</strong>{returnPct !== null ? ` (${formatSignedPct(returnPct)})` : ""} on {formatMoney(totalDeposited)} of invested capital. A money-weighted return needs a complete cash-flow history to compute.</>);
   }
 
   if (benchmark) {
     const beatKse = benchmark.excessVsKse100 >= 0;
     sentences.push(
-      <>Against the KSE-100, the same contributions tracked to the index would be worth {formatMoney(benchmark.kse100Equivalent)}, so you are <strong className={cn("tabular-nums", beatKse ? "text-emerald-700" : "text-red-700")}>{beatKse ? "ahead of" : "behind"} the market by {formatMoney(Math.abs(benchmark.excessVsKse100))}</strong>.</>
+      <>Against the KSE-100, the same contributions tracked to the index would be worth {formatMoney(benchmark.kse100Equivalent)}, so you are <strong className={cn("tabular-nums", beatKse ? "text-up" : "text-down")}>{beatKse ? "ahead of" : "behind"} the market by {formatMoney(Math.abs(benchmark.excessVsKse100))}</strong>.</>
     );
     const keptAhead = benchmark.excessVsInflation >= 0;
     sentences.push(
-      <>After inflation, your capital {keptAhead ? "kept its purchasing power and then some" : "lost ground to rising prices"}: real value {keptAhead ? "grew by" : "fell short by"} <strong className={cn("tabular-nums", keptAhead ? "text-emerald-700" : "text-red-700")}>{formatMoney(Math.abs(benchmark.excessVsInflation))}</strong> versus what the same money kept at CPI would be worth.</>
+      <>After inflation, your capital {keptAhead ? "kept its purchasing power and then some" : "lost ground to rising prices"}: real value {keptAhead ? "grew by" : "fell short by"} <strong className={cn("tabular-nums", keptAhead ? "text-up" : "text-down")}>{formatMoney(Math.abs(benchmark.excessVsInflation))}</strong> versus what the same money kept at CPI would be worth.</>
     );
   }
 
@@ -573,7 +575,7 @@ function Metric({
   return (
     <div className="min-w-0 border-l border-border pl-3">
       <p className="text-[10px] uppercase tracking-wide text-muted-foreground">{label}</p>
-      <p className={cn("mt-1 truncate text-lg font-semibold tabular-nums", tone === "positive" ? "text-emerald-700" : tone === "negative" ? "text-red-700" : "")}>{value}</p>
+      <p className={cn("mt-1 truncate text-lg font-semibold tabular-nums", tone === "positive" ? "text-up" : tone === "negative" ? "text-down" : "")}>{value}</p>
       <p className="mt-0.5 text-[11px] text-muted-foreground">{sub}</p>
     </div>
   );
@@ -602,7 +604,7 @@ function StatusBlock({
   return (
     <div className="border-l border-border pl-3">
       <div className="flex items-center gap-2">
-        {available ? <CheckCircle2 className="h-4 w-4 text-emerald-700" /> : <AlertTriangle className="h-4 w-4 text-amber-600" />}
+        {available ? <CheckCircle2 className="h-4 w-4 text-up" /> : <AlertTriangle className="h-4 w-4 text-amber-600" />}
         <h3 className="text-sm font-semibold">{title}</h3>
       </div>
       <p className="mt-2 text-xs text-muted-foreground">{reason}</p>
@@ -628,7 +630,7 @@ function Count({
   return (
     <div className="flex items-center justify-between gap-3 border-b border-border py-2">
       <span className="text-muted-foreground">{label}</span>
-      <span className={cn("font-medium tabular-nums", !neutral && (ok ? "text-emerald-700" : "text-red-700"))}>
+      <span className={cn("font-medium tabular-nums", !neutral && (ok ? "text-up" : "text-down"))}>
         {money ? formatMoney(value) : formatNumber(value, 2)}
       </span>
     </div>
@@ -676,7 +678,7 @@ function RealisedTable({ sales }: { sales: NonNullable<Awaited<ReturnType<typeof
                 <td className="px-2 py-2 text-right tabular-nums">{formatMoney(sale.grossProceeds)}</td>
                 <td className="px-2 py-2 text-right tabular-nums">{formatMoney(sale.saleFees)}</td>
                 <td className="px-2 py-2 text-right tabular-nums">{formatMoney(sale.proceeds)}</td>
-                <td className={cn("px-2 py-2 text-right font-medium tabular-nums", sale.realized >= 0 ? "text-emerald-700" : "text-red-700")}>{formatMoney(sale.realized)}</td>
+                <td className={cn("px-2 py-2 text-right font-medium tabular-nums", sale.realized >= 0 ? "text-up" : "text-down")}>{formatMoney(sale.realized)}</td>
                 <td className="px-2 py-2 text-right tabular-nums">{formatSignedPct(sale.realizedReturnPct)}</td>
                 <td className="px-2 py-2 text-right tabular-nums">{sale.averageHoldingDays !== null ? `${formatNumber(sale.averageHoldingDays, 0)}d` : "—"}</td>
                 <td className="px-2 py-2"><Badge variant={sale.status === "Closed" ? "secondary" : "blue"}>{sale.status}</Badge></td>
@@ -724,7 +726,7 @@ function YearTable({ rows }: { rows: NonNullable<Awaited<ReturnType<typeof getPe
                 <td className="px-2 py-2 text-right tabular-nums">{formatMoney(row.buys)}</td>
                 <td className="px-2 py-2 text-right tabular-nums">{formatMoney(row.sells)}</td>
                 <td className="px-2 py-2 text-right tabular-nums">{formatMoney(row.netCapitalDeployed)}</td>
-                <td className={cn("px-2 py-2 text-right tabular-nums", row.realizedPl >= 0 ? "text-emerald-700" : "text-red-700")}>{formatMoney(row.realizedPl)}</td>
+                <td className={cn("px-2 py-2 text-right tabular-nums", row.realizedPl >= 0 ? "text-up" : "text-down")}>{formatMoney(row.realizedPl)}</td>
                 <td className="px-2 py-2 text-right tabular-nums">{formatMoney(row.tradingCharges)}</td>
                 <td className="px-2 py-2 text-right tabular-nums">{formatMoney(row.accountCharges)}</td>
                 <td className="px-2 py-2 text-right tabular-nums">{formatMoney(row.cgtTariffs)}</td>
@@ -798,8 +800,8 @@ function PositionTable({ rows }: { rows: NonNullable<Awaited<ReturnType<typeof g
                 <td className="px-2 py-2 text-right tabular-nums">{row.averageHoldingAgeDays !== null ? `${formatNumber(row.averageHoldingAgeDays, 0)}d` : "—"}</td>
                 <td className="px-2 py-2 text-right tabular-nums">{formatMoney(row.amountInvested)}</td>
                 <td className="px-2 py-2 text-right tabular-nums">{formatMoney(row.currentValue)}</td>
-                <td className={cn("px-2 py-2 text-right tabular-nums", (row.unrealizedPl ?? 0) >= 0 ? "text-emerald-700" : "text-red-700")}>{formatMoney(row.unrealizedPl)}</td>
-                <td className={cn("px-2 py-2 text-right tabular-nums", row.xirrPct === null ? "text-muted-foreground" : row.xirrPct >= 0 ? "text-emerald-700" : "text-red-700")}>{row.xirrPct !== null ? `${row.xirrPct}%` : "—"}</td>
+                <td className={cn("px-2 py-2 text-right tabular-nums", (row.unrealizedPl ?? 0) >= 0 ? "text-up" : "text-down")}>{formatMoney(row.unrealizedPl)}</td>
+                <td className={cn("px-2 py-2 text-right tabular-nums", row.xirrPct === null ? "text-muted-foreground" : row.xirrPct >= 0 ? "text-up" : "text-down")}>{row.xirrPct !== null ? `${row.xirrPct}%` : "—"}</td>
               </tr>
             ))}
           </tbody>
@@ -895,7 +897,7 @@ function AuditWorkspace({
                   <td className="py-2 pr-4 tabular-nums">{row.date}</td>
                   <td className="px-2 py-2">{row.label ?? "Cash flow"}</td>
                   <td className="px-2 py-2 text-muted-foreground">{row.source ?? "—"}</td>
-                  <td className={cn("px-2 py-2 text-right tabular-nums", row.amount < 0 ? "text-red-700" : "text-emerald-700")}>{formatMoney(row.amount)}</td>
+                  <td className={cn("px-2 py-2 text-right tabular-nums", row.amount < 0 ? "text-down" : "text-up")}>{formatMoney(row.amount)}</td>
                 </tr>
               ))}
             </tbody>

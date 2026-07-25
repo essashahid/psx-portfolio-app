@@ -118,7 +118,7 @@ export function MarketHeatmap({
 
       {filtered.length > shown.length && (
         <div className="text-center">
-          <button onClick={() => setExpanded(true)} className="text-[11px] font-medium text-emerald-600 hover:underline">
+          <button onClick={() => setExpanded(true)} className="text-[11px] font-medium text-up hover:underline">
             Show more ({filtered.length - shown.length} hidden)
           </button>
         </div>

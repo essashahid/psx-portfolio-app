@@ -538,7 +538,7 @@ export function Chat({
           {loading ? (
             <Loader2 className="h-3.5 w-3.5 shrink-0 animate-spin text-muted-foreground" />
           ) : (
-            <MessageSquareText className={cn("h-3.5 w-3.5 shrink-0", active ? "text-emerald-600" : "text-muted-foreground")} />
+            <MessageSquareText className={cn("h-3.5 w-3.5 shrink-0", active ? "text-up" : "text-muted-foreground")} />
           )}
           <span className="min-w-0 flex-1">
             <span className="block truncate text-[13px] font-medium text-foreground">{thread.title}</span>
@@ -561,7 +561,7 @@ export function Chat({
               onClick={() => void deleteThread(thread.id)}
               title="Delete"
               aria-label="Delete chat"
-              className="flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-background hover:text-red-600"
+              className="flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-background hover:text-down"
             >
               <Trash2 className="h-3 w-3" />
             </button>
@@ -718,11 +718,11 @@ export function Chat({
             <div className="w-full max-w-180">
               {/* Welcome heading */}
               <div className="rise mb-7 text-center">
-                <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-emerald-50 text-emerald-600">
+                <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-brand-soft text-brand">
                   <Sparkles className="h-5 w-5" />
                 </div>
-                <h2 className="text-lg font-semibold tracking-[-0.01em]">{readOnly ? "Browse demo research" : "Research your portfolio"}</h2>
-                <p className="mx-auto mt-1.5 max-w-md text-sm leading-6 text-muted-foreground">
+                <h2 className="font-display text-(length:--text-h1) font-normal tracking-editorial text-text-strong">{readOnly ? "Browse demo research" : "Research your portfolio"}</h2>
+                <p className="mx-auto mt-2 max-w-md text-sm leading-6 text-text-muted">
                   {readOnly
                     ? "Open a curated conversation to see labelled answers, charts and tables based on the demo portfolio."
                     : "Ask about your holdings, compare companies, review official filings, analyse valuation or understand what moved your portfolio."}
@@ -1090,7 +1090,7 @@ function ModelPicker({
                         {available ? m.hint : provider?.allowed ? "API key not configured" : "Disabled for this account"}
                       </span>
                     </span>
-                    {active && <Check className="h-3.5 w-3.5 shrink-0 text-emerald-600" />}
+                    {active && <Check className="h-3.5 w-3.5 shrink-0 text-up" />}
                   </button>
                 );
               })}
@@ -1140,7 +1140,7 @@ function ResearchActivity({
         className="flex min-h-12 w-full items-center gap-3 px-4 py-2.5 text-left"
         aria-expanded={expanded}
       >
-        <span className="relative flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-emerald-200/80 bg-white text-emerald-700 shadow-sm">
+        <span className="relative flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-emerald-200/80 bg-white text-up shadow-sm">
           {active ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
           {active && <span className="absolute -right-1 -top-1 h-2.5 w-2.5 animate-pulse rounded-full border-2 border-white bg-emerald-500" />}
         </span>
@@ -1148,7 +1148,7 @@ function ResearchActivity({
           <span className="flex items-center gap-2 text-xs font-semibold tracking-[-0.01em] text-foreground">
             {active ? "Research in progress" : "Research complete"}
             {active && (
-              <span className="rounded-full border border-emerald-200 bg-emerald-50 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-[0.12em] text-emerald-700">
+              <span className="rounded-full border border-emerald-200 bg-emerald-50 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-[0.12em] text-up">
                 Live
               </span>
             )}
@@ -1168,7 +1168,7 @@ function ResearchActivity({
                   {index < steps.length - 1 && <span className="absolute left-2.75 top-6 h-[calc(100%-0.25rem)] w-px bg-emerald-200" />}
                   <span className={cn(
                     "relative z-10 flex h-6 w-6 shrink-0 items-center justify-center rounded-full border bg-white",
-                    isRunning ? "border-emerald-400 text-emerald-700 shadow-[0_0_0_3px_rgba(16,185,129,0.10)]" : "border-emerald-200 text-emerald-600"
+                    isRunning ? "border-emerald-400 text-up shadow-[0_0_0_3px_rgba(16,185,129,0.10)]" : "border-emerald-200 text-up"
                   )}>
                     {isRunning ? <Loader2 className="h-3 w-3 animate-spin" /> : <Icon className="h-3 w-3" />}
                   </span>
@@ -1180,7 +1180,7 @@ function ResearchActivity({
               );
             })}
             {complete && !active && (
-              <div className="mt-2 flex items-center gap-2 border-t border-emerald-950/10 pt-2 text-[10px] font-medium text-emerald-700">
+              <div className="mt-2 flex items-center gap-2 border-t border-emerald-950/10 pt-2 text-[10px] font-medium text-up">
                 <Check className="h-3 w-3" /> Sources reviewed and answer synthesized
               </div>
             )}

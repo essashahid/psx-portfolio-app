@@ -5,7 +5,9 @@ export function Card({ className, ...props }: React.HTMLAttributes<HTMLDivElemen
   return (
     <div
       className={cn(
-        "rounded-lg border border-border bg-card text-card-foreground shadow-[var(--shadow-card)]",
+        // Ruled, not boxed: hairlines carry structure. Shadow is reserved for
+        // surfaces that genuinely float (dialogs, tooltips, mobile nav).
+        "rounded-md border border-rule bg-card text-card-foreground",
         className
       )}
       {...props}

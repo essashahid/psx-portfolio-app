@@ -150,7 +150,7 @@ export default async function CompareStocksPage({ searchParams }: { searchParams
                       const v = col.ratios.get(m.name);
                       const isBest = best === col.ticker && columns.length > 1;
                       return (
-                        <td key={col.ticker} className={`p-3 text-right tabular-nums ${isBest ? "font-semibold text-emerald-700" : ""}`}>
+                        <td key={col.ticker} className={`p-3 text-right tabular-nums ${isBest ? "font-semibold text-up" : ""}`}>
                           {v !== null && v !== undefined ? `${m.suffix === "%" ? v.toFixed(2) : v.toFixed(2)}${m.suffix ?? ""}` : <span className="text-muted-foreground">—</span>}
                         </td>
                       );

@@ -14,7 +14,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
       <header className="sticky top-0 z-30 border-b border-border bg-card/95 backdrop-blur">
         <div className="mx-auto flex w-full max-w-6xl items-center justify-between px-4 py-3">
           <div className="flex items-center gap-2.5">
-            <ShieldCheck className="h-5 w-5 text-emerald-600" />
+            <ShieldCheck className="h-5 w-5 text-up" />
             <span className="text-sm font-semibold tracking-tight">Admin</span>
             <span className="hidden text-xs text-muted-foreground sm:inline">Account management</span>
           </div>

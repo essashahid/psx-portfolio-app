@@ -835,7 +835,7 @@ export function FinancialsWorkspace({
               <p className={cn("mt-2 font-semibold tabular-nums text-slate-950", ["revenue", "profit_after_tax", "net_margin"].includes(item.key) ? "text-2xl" : "text-xl")}>{formatValue(item.value, item.key, valueMode)}</p>
               <div className="mt-1 flex items-center justify-between gap-2">
                 <p
-                  className={cn("text-xs font-medium", item.change?.tone === "positive" && "text-emerald-700", item.change?.tone === "negative" && "text-red-700", !item.change && "text-amber-700")}
+                  className={cn("text-xs font-medium", item.change?.tone === "positive" && "text-up", item.change?.tone === "negative" && "text-down", !item.change && "text-amber-700")}
                   title={item.change && item.prior ? `${labelPeriod(item.row!)} ${LABELS[item.key]}: ${formatValue(item.value, item.key, valueMode)}\n${labelPeriod(item.prior)} ${LABELS[item.key]}: ${formatValue(value(item.prior, item.key), item.key, valueMode)}\nChange: ${item.change.text}` : undefined}
                 >
                   {item.change ? `${item.change.text} ${comparisonLabel(item.row!)}` : "No comparable period"}
@@ -961,7 +961,7 @@ export function FinancialsWorkspace({
                   <TR>
                     <TH className="sticky left-0 z-[1] bg-white">Line item</TH>
                     {visiblePeriods.map((period, i) => (
-                      <TH key={`${period.statement_type}-${i}`} className={cn("text-right", i === 0 && "bg-emerald-50/80 text-emerald-800")}>
+                      <TH key={`${period.statement_type}-${i}`} className={cn("text-right", i === 0 && "bg-emerald-50/80 text-up")}>
                         {(() => {
                           const meta = statementPeriodMeta(period);
                           return (
@@ -1009,7 +1009,7 @@ export function FinancialsWorkspace({
                           </TD>
                         ))}
                         {showChangeColumn ? (
-                          <TD className={cn("text-right text-xs font-semibold tabular-nums", change?.tone === "positive" && "text-emerald-700", change?.tone === "negative" && "text-red-700", !change && "text-muted-foreground")}>
+                          <TD className={cn("text-right text-xs font-semibold tabular-nums", change?.tone === "positive" && "text-up", change?.tone === "negative" && "text-down", !change && "text-muted-foreground")}>
                             {change ? `${change.text} ${comparisonLabel(visiblePeriods[0])}` : "—"}
                           </TD>
                         ) : null}

@@ -240,7 +240,7 @@ export function AddLedgerEntryDialog({
             <Input value={form.description} onChange={(e) => set("description", e.target.value)} placeholder={mode === "cash" ? "Raast, online transfer" : ""} />
           </div>
 
-          {error && <p className="rounded-md bg-red-50 px-3 py-2 text-xs text-red-700">{error}</p>}
+          {error && <p className="rounded-md bg-red-50 px-3 py-2 text-xs text-down">{error}</p>}
           <div className="flex justify-end gap-2 pt-1">
             <Button type="button" variant="outline" onClick={() => setOpen(false)}>Cancel</Button>
             <Button type="submit" disabled={busy}>

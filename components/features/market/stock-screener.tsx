@@ -146,7 +146,7 @@ export function StockScreener({ stocks }: { stocks: ScreenerStock[] }) {
               onClick={() => applySort(s.key)}
               className={cn(
                 "flex h-10 shrink-0 items-center gap-0.5 rounded-md px-2 text-[11px] font-medium transition-colors md:h-auto md:py-1",
-                sortKey === s.key ? "bg-emerald-50 text-emerald-700" : "text-muted-foreground hover:text-foreground"
+                sortKey === s.key ? "bg-emerald-50 text-up" : "text-muted-foreground hover:text-foreground"
               )}
             >
               {s.label}{sortKey === s.key && (desc ? <ArrowDown className="h-3 w-3" /> : <ArrowUp className="h-3 w-3" />)}
@@ -186,10 +186,10 @@ export function StockScreener({ stocks }: { stocks: ScreenerStock[] }) {
                   <div className="min-w-0">
                     <div className="flex items-center gap-1.5">
                       <span className="text-sm font-semibold">{s.ticker}</span>
-                      {s.owned && <Briefcase className="h-3 w-3 text-emerald-600" aria-label="Owned" />}
+                      {s.owned && <Briefcase className="h-3 w-3 text-up" aria-label="Owned" />}
                       {!s.owned && s.watched && <Star className="h-3 w-3 text-amber-500" aria-label="Watchlist" />}
-                      {s.nearHigh && <span className="rounded bg-emerald-50 px-1 text-[8px] font-semibold text-emerald-700">52W HI</span>}
-                      {s.nearLow && <span className="rounded bg-red-50 px-1 text-[8px] font-semibold text-red-700">52W LO</span>}
+                      {s.nearHigh && <span className="rounded bg-emerald-50 px-1 text-[8px] font-semibold text-up">52W HI</span>}
+                      {s.nearLow && <span className="rounded bg-red-50 px-1 text-[8px] font-semibold text-down">52W LO</span>}
                       {s.unusualVolume && <Flame className="h-3 w-3 text-amber-500" aria-label="Unusual volume" />}
                     </div>
                     <p className="truncate text-[11px] text-muted-foreground">{s.companyName ?? s.sector ?? ""}</p>
@@ -213,10 +213,10 @@ export function StockScreener({ stocks }: { stocks: ScreenerStock[] }) {
                 {/* Price + change (mobile groups these on the right) */}
                 <div className="text-right">
                   <p className="text-sm font-semibold tabular-nums">{fmtPrice(s.price)}</p>
-                  <p className={cn("text-[11px] tabular-nums lg:hidden", t === "positive" ? "text-emerald-600" : t === "negative" ? "text-red-600" : "text-muted-foreground")}>{fmtPct(s.changePercent)}</p>
+                  <p className={cn("text-[11px] tabular-nums lg:hidden", t === "positive" ? "text-up" : t === "negative" ? "text-down" : "text-muted-foreground")}>{fmtPct(s.changePercent)}</p>
                 </div>
                 <div className="hidden text-right lg:block">
-                  <span className={cn("inline-block rounded-md px-1.5 py-0.5 text-xs font-bold tabular-nums", t === "positive" ? "bg-emerald-50 text-emerald-700" : t === "negative" ? "bg-red-50 text-red-700" : "text-muted-foreground")}>
+                  <span className={cn("inline-block rounded-md px-1.5 py-0.5 text-xs font-bold tabular-nums", t === "positive" ? "bg-emerald-50 text-up" : t === "negative" ? "bg-red-50 text-down" : "text-muted-foreground")}>
                     {fmtPct(s.changePercent)}
                   </span>
                 </div>

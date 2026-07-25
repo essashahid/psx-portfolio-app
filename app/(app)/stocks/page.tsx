@@ -62,7 +62,7 @@ export default async function StockResearchPage() {
                 {d.index?.value != null ? (
                   <>
                     <p className="text-lg font-semibold tabular-nums">{d.index.value.toLocaleString("en-PK", { maximumFractionDigits: 0 })}</p>
-                    <p className={cn("text-[11px] font-medium tabular-nums", indexTone === "positive" ? "text-emerald-600" : indexTone === "negative" ? "text-red-600" : "text-muted-foreground")}>{fmtPct(d.index.changePercent)}</p>
+                    <p className={cn("text-[11px] font-medium tabular-nums", indexTone === "positive" ? "text-up" : indexTone === "negative" ? "text-down" : "text-muted-foreground")}>{fmtPct(d.index.changePercent)}</p>
                   </>
                 ) : (
                   <p className="mt-1 text-xs text-muted-foreground">Unavailable</p>
@@ -73,9 +73,9 @@ export default async function StockResearchPage() {
               <CardContent className="p-4">
                 <p className="text-[10px] uppercase tracking-wide text-muted-foreground">Breadth</p>
                 <p className="text-lg font-semibold tabular-nums">
-                  <span className="text-emerald-600">{d.breadth?.advancers ?? 0}</span>
+                  <span className="text-up">{d.breadth?.advancers ?? 0}</span>
                   <span className="mx-1 text-muted-foreground">/</span>
-                  <span className="text-red-600">{d.breadth?.decliners ?? 0}</span>
+                  <span className="text-down">{d.breadth?.decliners ?? 0}</span>
                 </p>
                 <p className="text-[11px] text-muted-foreground">advancing / declining</p>
               </CardContent>

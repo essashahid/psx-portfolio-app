@@ -199,7 +199,7 @@ export function UserDetailClient({ userId }: { userId: string }) {
     return (
       <div>
         <BackLink />
-        <p className="mt-4 rounded-md bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>
+        <p className="mt-4 rounded-md bg-red-50 px-3 py-2 text-sm text-down">{error}</p>
       </div>
     );
   }
@@ -279,8 +279,8 @@ export function UserDetailClient({ userId }: { userId: string }) {
               Demo mode
             </label>
           </div>
-          {error && <p className="rounded-md bg-red-50 px-3 py-2 text-xs text-red-700">{error}</p>}
-          {savedMsg && <p className="rounded-md bg-emerald-50 px-3 py-2 text-xs text-emerald-700">{savedMsg}</p>}
+          {error && <p className="rounded-md bg-red-50 px-3 py-2 text-xs text-down">{error}</p>}
+          {savedMsg && <p className="rounded-md bg-emerald-50 px-3 py-2 text-xs text-up">{savedMsg}</p>}
           <div className="flex justify-end">
             <Button type="submit" disabled={saving}>
               {saving && <Loader2 className="h-4 w-4 animate-spin" />}
@@ -382,7 +382,7 @@ export function UserDetailClient({ userId }: { userId: string }) {
           </div>
         </div>
         {(error || savedMsg) && (
-          <p className={`mt-4 rounded-md px-3 py-2 text-xs ${error ? "bg-red-50 text-red-700" : "bg-emerald-50 text-emerald-700"}`}>
+          <p className={`mt-4 rounded-md px-3 py-2 text-xs ${error ? "bg-red-50 text-down" : "bg-emerald-50 text-up"}`}>
             {error ?? savedMsg}
           </p>
         )}
@@ -540,7 +540,7 @@ function SetPasswordDialog({ userId, open, onClose }: { userId: string; open: bo
             <Label htmlFor="p-pass">New password</Label>
             <Input id="p-pass" required minLength={8} value={password} onChange={(e) => setPassword(e.target.value)} placeholder="At least 8 characters" />
           </div>
-          {error && <p className="rounded-md bg-red-50 px-3 py-2 text-xs text-red-700">{error}</p>}
+          {error && <p className="rounded-md bg-red-50 px-3 py-2 text-xs text-down">{error}</p>}
           <div className="flex justify-end gap-2">
             <Button type="button" variant="ghost" onClick={onClose}>Cancel</Button>
             <Button type="submit" disabled={saving}>
@@ -596,7 +596,7 @@ function DeleteDialog({
           <Label htmlFor="del-confirm">Type the email to confirm</Label>
           <Input id="del-confirm" value={confirm} onChange={(e) => setConfirm(e.target.value)} placeholder={email} />
         </div>
-        {error && <p className="rounded-md bg-red-50 px-3 py-2 text-xs text-red-700">{error}</p>}
+        {error && <p className="rounded-md bg-red-50 px-3 py-2 text-xs text-down">{error}</p>}
         <div className="flex justify-end gap-2">
           <Button type="button" variant="ghost" onClick={onClose}>Cancel</Button>
           <Button variant="destructive" disabled={confirm !== email || saving} onClick={del}>

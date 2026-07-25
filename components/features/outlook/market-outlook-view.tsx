@@ -24,9 +24,9 @@ import type { WfHorizon } from "@/lib/engine/outlook/walkforward";
  */
 
 const TONE_TEXT: Record<Tone, string> = {
-  positive: "text-emerald-700",
+  positive: "text-up",
   neutral: "text-foreground",
-  negative: "text-red-600",
+  negative: "text-down",
 };
 
 const fmt = (v: number) => Math.round(v).toLocaleString("en-US");
@@ -90,8 +90,8 @@ const BASIS_LABEL: Record<SectorBasis, string> = {
 };
 
 const EFFECT_LABEL: Record<OutlookDriver["effect"], { text: string; dot: string; className: string }> = {
-  positive: { text: "Supportive", dot: "bg-emerald-500", className: "text-emerald-700" },
-  risk: { text: "Risk", dot: "bg-red-500", className: "text-red-600" },
+  positive: { text: "Supportive", dot: "bg-emerald-500", className: "text-up" },
+  risk: { text: "Risk", dot: "bg-red-500", className: "text-down" },
   mixed: { text: "Mixed", dot: "bg-amber-400", className: "text-amber-700" },
 };
 
@@ -242,9 +242,9 @@ export function MarketOutlookView({ outlook, isAdmin = false }: { outlook: Custo
             <div className="mt-3 grid gap-3 sm:grid-cols-3">
               {(
                 [
-                  { label: "Rise", value: outlook.scenarios.rise, bar: "bg-emerald-500", text: "text-emerald-700" },
+                  { label: "Rise", value: outlook.scenarios.rise, bar: "bg-emerald-500", text: "text-up" },
                   { label: "Broadly sideways", value: outlook.scenarios.sideways, bar: "bg-muted-foreground/40", text: "text-foreground" },
-                  { label: "Fall", value: outlook.scenarios.fall, bar: "bg-red-500", text: "text-red-600" },
+                  { label: "Fall", value: outlook.scenarios.fall, bar: "bg-red-500", text: "text-down" },
                 ] as const
               ).map((s) => (
                 <div key={s.label} className="rounded-lg bg-muted p-3">

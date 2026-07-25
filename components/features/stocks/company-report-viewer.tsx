@@ -136,11 +136,11 @@ export function CompanyReportViewer({
         <div className="flex shrink-0 gap-2">
           {/* Validation badge */}
           {payload.validation.passed ? (
-            <span className="inline-flex items-center gap-1 rounded-md border border-emerald-200 bg-emerald-50 px-2 py-0.5 text-[10px] text-emerald-700">
+            <span className="inline-flex items-center gap-1 rounded-md border border-emerald-200 bg-emerald-50 px-2 py-0.5 text-[10px] text-up">
               <CheckCircle2 className="h-3 w-3" /> Verified
             </span>
           ) : (
-            <span className="inline-flex items-center gap-1 rounded-md border border-red-200 bg-red-50 px-2 py-0.5 text-[10px] text-red-700">
+            <span className="inline-flex items-center gap-1 rounded-md border border-red-200 bg-red-50 px-2 py-0.5 text-[10px] text-down">
               <AlertCircle className="h-3 w-3" /> Issues
             </span>
           )}

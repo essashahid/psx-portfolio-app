@@ -138,7 +138,7 @@ export function GoalsEditor({ holdings }: { holdings: EnrichedHolding[] }) {
                 </TD>
                 <TD>
                   <Button size="sm" variant="outline" disabled={row.saving} onClick={() => save(h.ticker)}>
-                    {row.saving ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : row.saved ? <Check className="h-3.5 w-3.5 text-emerald-600" /> : "Save"}
+                    {row.saving ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : row.saved ? <Check className="h-3.5 w-3.5 text-up" /> : "Save"}
                   </Button>
                 </TD>
               </TR>

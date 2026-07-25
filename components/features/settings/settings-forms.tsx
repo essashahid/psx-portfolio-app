@@ -65,7 +65,7 @@ export function ProfileForm({ profile }: { profile: Profile }) {
         <Button type="submit" size="sm" disabled={busy}>
           {busy && <Loader2 className="h-3.5 w-3.5 animate-spin" />} Save profile
         </Button>
-        {msg && <p className={`text-xs ${msg.startsWith("Error") ? "text-red-600" : "text-emerald-700"}`}>{msg}</p>}
+        {msg && <p className={`text-xs ${msg.startsWith("Error") ? "text-down" : "text-up"}`}>{msg}</p>}
       </div>
     </form>
   );
@@ -156,7 +156,7 @@ export function PreferencesForm({ profile }: { profile: Profile }) {
         <Link href="/onboarding" className="text-xs text-muted-foreground underline-offset-2 hover:text-foreground hover:underline">
           Redo onboarding
         </Link>
-        {msg && <p className={`text-xs ${msg.startsWith("Error") ? "text-red-600" : "text-emerald-700"}`}>{msg}</p>}
+        {msg && <p className={`text-xs ${msg.startsWith("Error") ? "text-down" : "text-up"}`}>{msg}</p>}
       </div>
     </form>
   );
@@ -200,7 +200,7 @@ export function FreeCashForm({ profileId, freeCash }: { profileId: string; freeC
       <Button type="submit" size="sm" disabled={busy}>
         {busy && <Loader2 className="h-3.5 w-3.5 animate-spin" />} Save
       </Button>
-      {msg && <p className={`text-xs ${msg.startsWith("Error") ? "text-red-600" : "text-emerald-700"}`}>{msg}</p>}
+      {msg && <p className={`text-xs ${msg.startsWith("Error") ? "text-down" : "text-up"}`}>{msg}</p>}
     </form>
   );
 }
@@ -292,7 +292,7 @@ export function PriceManager({
         <Button size="sm" onClick={saveAll} disabled={busy}>
           {busy && <Loader2 className="h-3.5 w-3.5 animate-spin" />} Save entered prices
         </Button>
-        {msg && <p className={`text-xs ${msg.startsWith("Error") ? "text-red-600" : "text-emerald-700"}`}>{msg}</p>}
+        {msg && <p className={`text-xs ${msg.startsWith("Error") ? "text-down" : "text-up"}`}>{msg}</p>}
       </div>
       <div className="space-y-2 rounded-md border border-border bg-muted/30 p-3">
         <Label>Bulk upload prices (CSV)</Label>
@@ -356,7 +356,7 @@ export function BrokerAccounts({
           {accounts.map((a) => (
             <li key={a.id} className="flex items-center justify-between rounded-md border border-border px-3 py-1.5 text-xs">
               <span><span className="font-medium">{a.label}</span> <span className="text-muted-foreground">({a.broker_type})</span></span>
-              <button onClick={() => remove(a.id)} className="text-muted-foreground hover:text-red-600">
+              <button onClick={() => remove(a.id)} className="text-muted-foreground hover:text-down">
                 <Trash2 className="h-3.5 w-3.5" />
               </button>
             </li>
@@ -409,7 +409,7 @@ export function SavedMappings({
       {mappings.map((m) => (
         <li key={m.id} className="flex items-center justify-between rounded-md border border-border px-3 py-1.5 text-xs">
           <span><span className="font-medium">{m.name}</span> <span className="text-muted-foreground">({m.statement_type}, saved {m.created_at.slice(0, 10)})</span></span>
-          <button onClick={() => remove(m.id)} className="text-muted-foreground hover:text-red-600">
+          <button onClick={() => remove(m.id)} className="text-muted-foreground hover:text-down">
             <Trash2 className="h-3.5 w-3.5" />
           </button>
         </li>
@@ -450,7 +450,7 @@ export function StatementsList({
               ({s.file_type}, {s.statement_type ?? "?"}, {s.status}, {s.created_at.slice(0, 10)})
             </span>
           </span>
-          <button onClick={() => remove(s.id)} disabled={busyId === s.id} className="ml-2 shrink-0 text-muted-foreground hover:text-red-600">
+          <button onClick={() => remove(s.id)} disabled={busyId === s.id} className="ml-2 shrink-0 text-muted-foreground hover:text-down">
             {busyId === s.id ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Trash2 className="h-3.5 w-3.5" />}
           </button>
         </li>

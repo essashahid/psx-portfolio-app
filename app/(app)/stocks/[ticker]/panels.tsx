@@ -154,8 +154,8 @@ function OverviewMetric({
       <p
         className={cn(
           "mt-0.5 truncate text-sm font-semibold tabular-nums text-slate-950",
-          tone === "positive" && "text-emerald-700",
-          tone === "negative" && "text-red-700",
+          tone === "positive" && "text-up",
+          tone === "negative" && "text-down",
           tone === "warning" && "text-amber-700"
         )}
       >
@@ -235,7 +235,7 @@ function AccumulationContext({
         )}
         {vsCost !== null && (
           <p className="text-[11px] text-slate-600">
-            Current price is <span className={cn("font-semibold tabular-nums", vsCost >= 0 ? "text-emerald-700" : "text-red-700")}>{formatSignedPct(vsCost)}</span> versus your average cost.
+            Current price is <span className={cn("font-semibold tabular-nums", vsCost >= 0 ? "text-up" : "text-down")}>{formatSignedPct(vsCost)}</span> versus your average cost.
           </p>
         )}
       </div>
@@ -411,8 +411,8 @@ export async function OverviewPanel({
                   <div
                     className={cn(
                       "mt-3 rounded-xl px-3 py-2",
-                      positionTone === "positive" && "bg-emerald-50 text-emerald-800",
-                      positionTone === "negative" && "bg-red-50 text-red-800",
+                      positionTone === "positive" && "bg-emerald-50 text-up",
+                      positionTone === "negative" && "bg-red-50 text-down",
                       !positionTone && "bg-slate-50 text-slate-700"
                     )}
                   >

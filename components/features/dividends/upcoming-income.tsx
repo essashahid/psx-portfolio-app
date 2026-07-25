@@ -129,7 +129,7 @@ function Stat({
       <p
         className={cn(
           "mt-0.5 text-sm font-semibold tabular-nums",
-          tone === "negative" && "text-red-600",
+          tone === "negative" && "text-down",
           tone === "warn" && "text-amber-600"
         )}
       >

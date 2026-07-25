@@ -110,7 +110,7 @@ export function EditHoldingDialog({ holding }: { holding: EnrichedHolding }) {
               onChange={(e) => setNotes(e.target.value)}
             />
           </div>
-          {err && <p className="rounded bg-red-50 px-2 py-1.5 text-xs text-red-700">{err}</p>}
+          {err && <p className="rounded bg-red-50 px-2 py-1.5 text-xs text-down">{err}</p>}
         </div>
 
         <div className="mt-4 flex flex-col-reverse gap-2 sm:flex-row sm:items-center sm:justify-between">

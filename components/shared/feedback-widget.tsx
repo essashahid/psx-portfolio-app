@@ -128,7 +128,7 @@ export function FeedbackWidget({ isDemo }: { isDemo: boolean }) {
                 </span>
               </div>
               <p className="text-base font-semibold text-emerald-950">Thanks, your feedback was sent.</p>
-              <p className="mt-1 max-w-sm text-sm text-emerald-800">
+              <p className="mt-1 max-w-sm text-sm text-up">
                 It has been added to the admin feedback queue with this page attached, so it is easy to review in context.
               </p>
             </div>
@@ -181,7 +181,7 @@ export function FeedbackWidget({ isDemo }: { isDemo: boolean }) {
                 <span
                   className={`text-[11px] tabular-nums ${
                     messageTooLong
-                      ? "text-red-700"
+                      ? "text-down"
                       : nearLimit
                         ? "text-amber-700"
                         : "text-muted-foreground"
@@ -207,7 +207,7 @@ export function FeedbackWidget({ isDemo }: { isDemo: boolean }) {
               />
               <p
                 className={`text-[11px] ${
-                  messageTooLong || messageTooShort ? "text-red-700" : "text-muted-foreground"
+                  messageTooLong || messageTooShort ? "text-down" : "text-muted-foreground"
                 }`}
               >
                 {messageTooLong
@@ -230,7 +230,7 @@ export function FeedbackWidget({ isDemo }: { isDemo: boolean }) {
             </div>
 
             <p className="text-[11px] text-muted-foreground">Page: {pagePath}</p>
-            {error && <p className="rounded-md bg-red-50 px-3 py-2 text-xs text-red-700">{error}</p>}
+            {error && <p className="rounded-md bg-red-50 px-3 py-2 text-xs text-down">{error}</p>}
 
             <div className="flex justify-end gap-2 pt-1">
               <Button type="button" variant="outline" onClick={() => setOpen(false)}>

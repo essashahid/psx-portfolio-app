@@ -90,7 +90,7 @@ export default function LoginPage() {
 
       <div className="relative z-10 flex w-full max-w-4xl flex-col items-center pt-[calc(2.5rem+env(safe-area-inset-top))] text-center sm:pt-20 md:pt-24">
         <div className="rise rise-1 mb-7 flex items-center gap-2.5">
-          <CandlestickChart className="h-6 w-6 text-emerald-600" />
+          <CandlestickChart className="h-6 w-6 text-up" />
           <span className="text-[15px] font-semibold tracking-tight">PortfolioOS PK</span>
         </div>
 
@@ -157,7 +157,7 @@ export default function LoginPage() {
         </div>
 
         {(error || info) && (
-          <p className={`rise rise-5 mt-4 w-full max-w-xl rounded-md px-3 py-2 text-center text-xs ${error ? "bg-red-50 text-red-700" : "bg-emerald-50 text-emerald-700"}`}>
+          <p className={`rise rise-5 mt-4 w-full max-w-xl rounded-md px-3 py-2 text-center text-xs ${error ? "bg-red-50 text-down" : "bg-emerald-50 text-up"}`}>
             {error ?? info}
           </p>
         )}
@@ -165,7 +165,7 @@ export default function LoginPage() {
         <ul className="rise rise-5 mt-7 grid w-full max-w-2xl gap-2.5 text-left sm:grid-cols-3">
           {VALUE_POINTS.map(({ icon: Icon, text }) => (
             <li key={text} className="flex items-start gap-2.5 text-xs text-muted-foreground">
-              <Icon className="mt-0.5 h-4 w-4 shrink-0 text-emerald-600" />
+              <Icon className="mt-0.5 h-4 w-4 shrink-0 text-up" />
               <span className="leading-relaxed">{text}</span>
             </li>
           ))}

@@ -32,7 +32,7 @@ function HeaderMetric({ label, value, sub, tone, hint }: { label: string; value:
       >
         {label}
       </p>
-      <p className={cn("mt-0.5 text-sm font-semibold tabular-nums text-foreground", tone === "positive" && "text-emerald-600", tone === "negative" && "text-red-600")}>{value}</p>
+      <p className={cn("mt-0.5 text-sm font-semibold tabular-nums text-foreground", tone === "positive" && "text-up", tone === "negative" && "text-down")}>{value}</p>
       {sub && <p className="text-[10px] text-muted-foreground">{sub}</p>}
     </div>
   );
@@ -144,7 +144,7 @@ export default async function StockCockpitPage({ params }: { params: Promise<{ t
                 <p className="text-3xl font-semibold leading-tight tabular-nums text-slate-950">
                   {quote.price !== null ? `PKR ${formatNumber(quote.price)}` : "—"}
                 </p>
-                <p className={cn("mt-0.5 text-xs font-medium tabular-nums", dayTone === "positive" && "text-emerald-600", dayTone === "negative" && "text-red-600", !dayTone && "text-muted-foreground")}>
+                <p className={cn("mt-0.5 text-xs font-medium tabular-nums", dayTone === "positive" && "text-up", dayTone === "negative" && "text-down", !dayTone && "text-muted-foreground")}>
                   {quote.dayChange !== null ? `${quote.dayChange > 0 ? "+" : quote.dayChange < 0 ? "−" : ""}PKR ${formatNumber(Math.abs(quote.dayChange))}` : ""}
                   {quote.dayChangePct !== null ? `${quote.dayChange !== null ? " · " : ""}${formatSignedPct(quote.dayChangePct)} today` : quote.dayChange === null ? "—" : ""}
                   {lastUpdated ? <span className="font-normal text-muted-foreground"> · Updated {lastUpdated}</span> : null}

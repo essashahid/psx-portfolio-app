@@ -112,7 +112,7 @@ export function RiskPanel({ model }: { model: OutlookViewModel }) {
         <div className="rounded-lg bg-muted p-4">
           <p className="text-xs text-muted-foreground">Where the period ended</p>
           <div className="mt-1.5 flex flex-wrap items-baseline gap-x-2 gap-y-1">
-            <span className="text-3xl font-semibold tabular-nums text-emerald-600">{pct1(horizon.positiveRate)}</span>
+            <span className="text-3xl font-semibold tabular-nums text-up">{pct1(horizon.positiveRate)}</span>
             <span className="text-sm text-muted-foreground">
               of periods finished higher than they started {horizon.forward}
             </span>

@@ -45,8 +45,9 @@ export default async function DividendsPage() {
     <div className="space-y-6">
       <header className="flex flex-wrap items-start justify-between gap-4 border-b border-border pb-5">
         <div>
+          <span className="mb-3.5 block h-0.75 w-11 bg-indigo" />
           <p className="eyebrow">Income</p>
-          <h1 className="mt-1 text-2xl font-semibold tracking-tight">Dividend Income</h1>
+          <h1 className="mt-1.5 font-display text-(length:--text-title) font-normal tracking-editorial text-text-strong">Dividend Income</h1>
           <p className="mt-1 max-w-2xl text-sm text-muted-foreground">Track received income, upcoming announcements, tax deductions and manually recorded dividends.</p>
           {!isDemo && <p className="mt-3 text-xs text-muted-foreground">Tax profile: {taxSettings.taxpayer_status === "filer" ? "ATL filer" : taxSettings.taxpayer_status} · Estimated rate {taxRate} · {taxSettings.configured ? `Tax year ${taxSettings.tax_year}` : "Profile needs confirmation"}</p>}
         </div>
