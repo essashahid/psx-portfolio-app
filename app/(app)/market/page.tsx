@@ -11,12 +11,31 @@ import {
   SectorTileBoard,
   ReturnHistogram,
   ParticipantFlowBar,
+  MarketInternals,
+  type Gauge,
 } from "@/components/features/market/market-pulse-visuals";
 import { Activity, ArrowDownRight, ArrowUpRight, RefreshCw } from "lucide-react";
 import { cn } from "@/lib/shared/format";
 import type { SupabaseClient } from "@supabase/supabase-js";
 
 export const dynamic = "force-dynamic";
+
+/** Thirty-day averages of traded volume and value, for the internals gauges. */
+async function getThirtyDayAverages(supabase: SupabaseClient): Promise<{ volume: number | null; value: number | null }> {
+  const since = new Date(Date.now() - 30 * 86_400_000).toISOString().slice(0, 10);
+  const { data } = await supabase
+    .from("market_snapshots")
+    .select("total_volume, total_value")
+    .eq("market", "PSX")
+    .gte("snapshot_date", since);
+  if (!data || data.length === 0) return { volume: null, value: null };
+  const vols = data.map((r) => Number(r.total_volume)).filter((v) => v > 0);
+  const vals = data.map((r) => Number(r.total_value)).filter((v) => v > 0);
+  return {
+    volume: vols.length ? vols.reduce((n, v) => n + v, 0) / vols.length : null,
+    value: vals.length ? vals.reduce((n, v) => n + v, 0) / vals.length : null,
+  };
+}
 
 /** 52-week band for the index, from the stored KSE100 price history. */
 async function getIndexYearRange(supabase: SupabaseClient): Promise<{ low: number; high: number; prevClose: number | null } | null> {
@@ -44,10 +63,11 @@ export default async function MarketPulsePage() {
   // allowStale: the design always draws the participation band, so render the
   // most recent flow day we hold and label its age rather than showing nothing.
   const foreignFlow = await getForeignFlowSnapshot(supabase, 90, { allowStale: true });
-  const [market, profileRes, yearRange] = await Promise.all([
+  const [market, profileRes, yearRange, averages] = await Promise.all([
     getMarketDashboard(supabase, user.id),
     supabase.from("profiles").select("demo_mode").eq("id", user.id).maybeSingle(),
     getIndexYearRange(supabase),
+    getThirtyDayAverages(supabase),
   ]);
   const isDemo = Boolean(profileRes.data?.demo_mode);
   const refresh = isDemo ? null : <ActionButton endpoint="/api/market/refresh" body={{ section: "all" }} label={<><RefreshCw className="h-3.5 w-3.5" /> Refresh market</>} variant="outline" size="sm" />;
@@ -73,6 +93,48 @@ export default async function MarketPulsePage() {
   const histogramChanges = market.heatmap
     .filter((item) => item.change_percent !== null)
     .map((item) => ({ ticker: item.ticker, pct: Number(item.change_percent) }));
+  // Each gauge scales so the reference (30-day average, or parity) sits at a
+  // fixed tick and today's reading fills against it.
+  const ratioValue = ratio;
+  const highs = market.heatmap.filter((i) => i.near_high).length;
+  const lows = market.heatmap.filter((i) => i.near_low).length;
+  const against = (today: number, avg: number | null) => {
+    if (!avg || avg <= 0) return { fill: 60, mark: 60, delta: "no history", tone: "flat" as const, note: "30-day average unavailable" };
+    const scale = Math.max(today, avg) * 1.25;
+    const pctDelta = ((today - avg) / avg) * 100;
+    return {
+      fill: (today / scale) * 100,
+      mark: (avg / scale) * 100,
+      delta: `${pctDelta < 0 ? "−" : "+"}${Math.abs(pctDelta).toFixed(0)}%`,
+      tone: (pctDelta >= 0 ? "up" : "down") as "up" | "down",
+      note: `30-day average ${fmtCompact(avg)}`,
+    };
+  };
+  const volumeGauge = against(snapshot.total_volume, averages.volume);
+  const valueGauge = against(snapshot.total_value, averages.value);
+  const gauges: Gauge[] = [
+    { label: "Volume", value: `${fmtCompact(snapshot.total_volume)} shares`, ...volumeGauge },
+    { label: "Value traded", value: `${fmtCompact(snapshot.total_value)} PKR`, ...valueGauge },
+    {
+      label: "Advance-decline",
+      value: ratioValue.toFixed(2),
+      delta: `${snapshot.total_advancers} to ${snapshot.total_decliners}`,
+      fill: (snapshot.total_advancers / (snapshot.total_advancers + snapshot.total_decliners || 1)) * 100,
+      mark: 50,
+      tone: ratioValue >= 1 ? "up" : "down",
+      note: `${fmtInt(snapshot.item_count)} companies traded`,
+    },
+    {
+      label: "52-week highs",
+      value: String(highs),
+      delta: `${lows} low${lows === 1 ? "" : "s"}`,
+      fill: (highs / (highs + lows || 1)) * 100,
+      mark: 50,
+      tone: highs >= lows ? "up" : "down",
+      note: "new extremes today",
+    },
+  ];
+
   const participantRows = [
     ...(foreignFlow && foreignFlow.day.fipiNet !== null ? [{ label: "Foreign investors", net: foreignFlow.day.fipiNet }] : []),
     ...(foreignFlow?.participants ?? []).map((p) => ({ label: p.label, net: p.net })),
@@ -141,14 +203,6 @@ export default async function MarketPulsePage() {
           </span>
         </div>
         <ReturnHistogram changes={histogramChanges} ownedTickers={[...market.ownedTickers]} />
-        <div className="mt-7 grid grid-cols-2 gap-5 border-t border-rule pt-5 sm:grid-cols-3 lg:grid-cols-6">
-          <MarketStat label="Volume" value={fmtCompact(snapshot.total_volume)} />
-          <MarketStat label="Value traded" value={`PKR ${fmtCompact(snapshot.total_value)}`} />
-          <MarketStat label="A/D ratio" value={ratio.toFixed(2)} tone={ratio >= 1 ? "positive" : "negative"} />
-          <MarketStat label="Near 52w highs" value={String(market.heatmap.filter((i) => i.near_high).length)} tone="positive" />
-          <MarketStat label="Near 52w lows" value={String(market.heatmap.filter((i) => i.near_low).length)} tone="negative" />
-          <MarketStat label="Most active" value={snapshot.most_active_ticker ?? "—"} />
-        </div>
       </Band>
 
       <Band tone="paper" className="px-3 sm:px-4 md:px-(--gutter-page)">
@@ -173,6 +227,8 @@ export default async function MarketPulsePage() {
             {!isDemo && <ActionButton endpoint="/api/flows/refresh" label={<><RefreshCw className="h-3.5 w-3.5" /> Refresh flows</>} variant="outline" size="sm" />}
           </div>
         )}
+
+        <MarketInternals gauges={gauges} />
       </Band>
 
       <div className="px-3 py-6 sm:px-4 md:px-(--gutter-page)">

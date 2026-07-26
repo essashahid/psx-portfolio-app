@@ -75,7 +75,7 @@ export function FiftyTwoWeekStrip({
         {prevClose !== null && (
           <span title="Previous close" className="absolute inset-y-0 w-px bg-text-faint" style={{ left: `${pos(prevClose)}%` }} />
         )}
-        <span title="Last" className="absolute -inset-y-[3px] w-0.5 bg-ink-1" style={{ left: `${pos(last)}%` }} />
+        <span title="Last" className="absolute -inset-y-0.75 w-0.5 bg-ink-1" style={{ left: `${pos(last)}%` }} />
       </div>
       <div className="mt-2.5 flex justify-between">
         <span className="figure text-(length:--text-2xs) text-text-faint">{low.toLocaleString("en-PK", { maximumFractionDigits: 0 })}</span>
@@ -247,6 +247,52 @@ export function ReturnHistogram({ changes, ownedTickers }: HistogramInput) {
           <span className="text-(length:--text-3xs) font-bold uppercase tracking-(--tracking-caps) text-up">Strongest</span>
         </span>
       </div>
+    </div>
+  );
+}
+
+/* ── Market internals: value, its reference tick, and the delta ─────────── */
+export interface Gauge {
+  label: string;
+  value: string;
+  delta: string;
+  /** Where today sits on the bar, 0–100. */
+  fill: number;
+  /** Where the reference (30-day average, or parity) sits, 0–100. */
+  mark: number;
+  tone: "up" | "down" | "flat";
+  note: string;
+}
+
+export function MarketInternals({ gauges }: { gauges: Gauge[] }) {
+  return (
+    <div
+      className="mt-9 grid gap-7 border-t border-rule pt-7"
+      style={{ gridTemplateColumns: "repeat(auto-fit, minmax(190px, 1fr))" }}
+    >
+      {gauges.map((g) => {
+        const colour = g.tone === "up" ? "var(--up-1)" : g.tone === "down" ? "var(--down-1)" : "var(--flat-2)";
+        return (
+          <div key={g.label}>
+            <p className="text-(length:--text-3xs) font-bold uppercase tracking-(--tracking-caps) text-text-faint">{g.label}</p>
+            <p className="figure mt-2 text-(length:--text-h2) font-semibold text-text-strong">{g.value}</p>
+            <div className="mt-2.5 flex items-center gap-2">
+              <span className="relative h-1.5 flex-1 bg-surface-inset">
+                <span className="absolute inset-y-0 left-0" style={{ width: `${Math.min(100, Math.max(0, g.fill))}%`, background: colour }} />
+                <span
+                  title="Reference"
+                  className="absolute -inset-y-0.75 w-px bg-text-faint"
+                  style={{ left: `${Math.min(100, Math.max(0, g.mark))}%` }}
+                />
+              </span>
+              <span className={cn("figure whitespace-nowrap text-(length:--text-2xs) font-semibold", g.tone === "up" ? "text-up" : g.tone === "down" ? "text-down" : "text-text-muted")}>
+                {g.delta}
+              </span>
+            </div>
+            <p className="mt-1.5 text-(length:--text-2xs) text-text-faint">{g.note}</p>
+          </div>
+        );
+      })}
     </div>
   );
 }
