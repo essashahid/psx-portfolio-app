@@ -39,6 +39,43 @@
   --clay-3: #e59a7c;
   --clay-4: #fbeee8;
 
+  /* ── The Spectrum ───────────────────────────────────────────────────
+     A fixed ring of desaturated editorial hues tuned to sit calmly on warm
+     paper. Every PSX sector, news category and chart series draws from this
+     one ring, so a sector reads as the same colour everywhere. These mirror
+     lib/shared/sector-colors.ts, which stays the source of truth for the
+     per-sector mapping. */
+  --sp-indigo: #3450c8;
+  --sp-emerald: #0b8a5c;
+  --sp-amber: #d9920b;
+  --sp-terracotta: #cd5b2e;
+  --sp-plum: #8f3fae;
+  --sp-cyan: #0f7e96;
+  --sp-olive: #5e7d16;
+  --sp-rose: #c23a6b;
+  --sp-violet: #6a4fd0;
+  --sp-aqua: #2f9e8f;
+  --sp-bronze: #9a6a2e;
+  --sp-slate: #4a6fa5;
+  --sp-burnt: #b5532a;
+  --sp-teal: #0f8a8a;
+  --sp-gold: #c79a1e;
+  --sp-steel: #5a7a8c;
+  --sp-stone: #8a7a66;
+  --sp-sage: #7a8a5e;
+  --sp-maroon: #8c2f39;
+  --sp-brick: #b06a4a;
+  --sp-neutral: #6b6b64;
+  --sp-unclassified: #9b9b92;
+
+  /* Chart-specific roles pulled from the same ring. */
+  --chart-line: var(--sp-indigo);
+  --chart-line-soft: #8295e3;
+  --chart-grid: #e6e6df;
+  --chart-axis: #82827a;
+  --chart-up: var(--up-2);
+  --chart-down: var(--down-2);
+
   /* Directional — gains, losses, flat. Never used decoratively. */
   --up-1: #0b6b47;
   --up-2: #0b8a5c;

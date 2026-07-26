@@ -278,15 +278,29 @@ export function ParticipantFlowBar({ rows, unit }: { rows: ParticipantRow[]; uni
   const buyers = coloured.filter((r) => r.net > 0).sort((a, b) => b.net - a.net);
   const gross = active.reduce((n, r) => n + Math.abs(r.net), 0) || 1;
 
+  const pct = (v: number) => `${(Math.abs(v) / gross) * 100}%`;
+
   return (
     <div>
-      <div className="flex h-8.5 items-stretch gap-0.5">
+      {/* Explicit widths rather than flex-grow: every segment must be visible
+          even when its share of the day's gross is a fraction of a percent. */}
+      <div className="flex h-9 items-stretch gap-px overflow-hidden">
         {sellers.map((r) => (
-          <span key={r.label} title={`${r.label} · ${r.net.toFixed(1)} ${unit}`} style={{ flex: Math.abs(r.net) / gross, background: `color-mix(in oklab, ${r.color} 55%, var(--down-3))` }} />
+          <span
+            key={r.label}
+            title={`${r.label} · ${r.net.toFixed(1)} ${unit}`}
+            className="min-w-px"
+            style={{ width: pct(r.net), background: `color-mix(in oklab, ${r.color} 55%, var(--down-2))` }}
+          />
         ))}
-        <span className="w-0.5 bg-ink-1" />
+        <span className="w-0.5 shrink-0 bg-ink-1" />
         {buyers.map((r) => (
-          <span key={r.label} title={`${r.label} · +${r.net.toFixed(1)} ${unit}`} style={{ flex: r.net / gross, background: r.color }} />
+          <span
+            key={r.label}
+            title={`${r.label} · +${r.net.toFixed(1)} ${unit}`}
+            className="min-w-px"
+            style={{ width: pct(r.net), background: r.color }}
+          />
         ))}
       </div>
       <div className="mt-2 flex justify-between">
@@ -296,7 +310,10 @@ export function ParticipantFlowBar({ rows, unit }: { rows: ParticipantRow[]; uni
       <div className="mt-4 flex flex-wrap gap-x-6 gap-y-2.5">
         {coloured.map((r) => (
           <span key={r.label} className="inline-flex items-baseline gap-2 whitespace-nowrap">
-            <span className="h-2.25 w-2.25 self-center" style={{ background: r.color }} />
+            <span
+              className="h-2.5 w-2.5 shrink-0 self-center"
+              style={{ background: r.net >= 0 ? r.color : `color-mix(in oklab, ${r.color} 55%, var(--down-2))` }}
+            />
             <span className="text-xs text-text-muted">{r.label}</span>
             <span className={cn("figure text-sm font-semibold", r.net >= 0 ? "text-up" : "text-down")}>
               {r.net >= 0 ? "+" : ""}{r.net.toFixed(1)} {unit}
