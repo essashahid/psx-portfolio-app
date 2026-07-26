@@ -103,7 +103,7 @@ export default async function SettingsPage() {
   const marketProvider = (process.env.MARKET_DATA_PROVIDER ?? "psx").toLowerCase();
 
   return (
-    <div className="space-y-4">
+    <div className="mx-auto w-full max-w-(--content-max) space-y-4">
       <PageHeader eyebrow="Configuration" title="Settings" description="Profile, prices, accounts, data management and integrations." />
 
       <Card>

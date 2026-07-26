@@ -47,7 +47,7 @@ export default async function AlertsPage({
   const { data: alerts } = await query;
 
   return (
-    <div className="space-y-4">
+    <div className="mx-auto w-full max-w-(--content-max) space-y-4">
       <PageHeader
         eyebrow="Signals"
         title="Alerts"

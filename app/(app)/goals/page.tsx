@@ -19,7 +19,7 @@ export default async function GoalsPage() {
   const summary = await getPortfolio(supabase, user.id);
 
   return (
-    <div className="space-y-4">
+    <div className="mx-auto w-full max-w-(--content-max) space-y-4">
       <PageHeader
         eyebrow="Planning"
         title="Goals & Targets"

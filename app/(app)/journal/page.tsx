@@ -68,7 +68,7 @@ export default async function JournalPage({
   };
 
   return (
-    <div className="space-y-4">
+    <div className="mx-auto w-full max-w-(--content-max) space-y-4">
       <PageHeader
         eyebrow="Decisions"
         title="Investment Journal"

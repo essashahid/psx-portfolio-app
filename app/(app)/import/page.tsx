@@ -20,7 +20,7 @@ export default async function ImportPage() {
     .limit(15);
 
   return (
-    <div className="space-y-5">
+    <div className="mx-auto w-full max-w-(--content-max) space-y-5">
       <PageHeader
         title="Import Center"
         description="Bring in AKD/CDC statements without sharing any credentials. Every file goes through preview and confirmation before it touches your portfolio."
