@@ -62,21 +62,26 @@ const sum = (xs: (number | null)[]) => xs.reduce<number>((s, v) => s + (v ?? 0),
 
 export async function runDailyUpdate(
   supabase: SupabaseClient,
-  userId: string
+  userId: string,
+  /** Set on non-trading days: the exchange has produced no new close to fetch. */
+  opts: { skipPrices?: boolean } = {}
 ): Promise<DailyUpdateSummary> {
   const runDate = new Date().toISOString().slice(0, 10);
   const errors: string[] = [];
 
   const before = await snapshotState(supabase, userId);
 
-  // 1. Prices
+  // 1. Prices. Skipped when the market was shut: there is no new close, so a
+  //    fetch would spend a provider call per holding to learn nothing.
   let prices_updated = 0;
-  try {
-    const provider = getMarketDataProvider(supabase, userId);
-    const res = await provider.refreshPortfolioPrices(userId);
-    prices_updated = res.updated;
-  } catch (e) {
-    errors.push(`prices: ${e instanceof Error ? e.message : String(e)}`);
+  if (!opts.skipPrices) {
+    try {
+      const provider = getMarketDataProvider(supabase, userId);
+      const res = await provider.refreshPortfolioPrices(userId);
+      prices_updated = res.updated;
+    } catch (e) {
+      errors.push(`prices: ${e instanceof Error ? e.message : String(e)}`);
+    }
   }
 
   // 2. Dividend detection (reads announcement PDFs)

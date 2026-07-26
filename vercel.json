@@ -18,7 +18,7 @@
     },
     {
       "path": "/api/cron/backfill/fundamentals",
-      "schedule": "50 9 * * 1-6"
+      "schedule": "50 9 * * 1-5"
     },
     {
       "path": "/api/cron/data-health",

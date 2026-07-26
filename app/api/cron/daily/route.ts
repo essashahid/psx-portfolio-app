@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { runDailyUpdate } from "@/lib/dividends/daily";
 import { syncNewsClusters } from "@/lib/news/global-store";
+import { isPsxWeekday } from "@/lib/market/trading-day";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 300;
@@ -32,6 +33,10 @@ export async function GET(request: Request) {
 
   const admin = createAdminClient();
 
+  // News and dividend announcements keep arriving at the weekend; PSX prices do
+  // not. The run happens either way, without the pointless price fetch.
+  const tradingDay = isPsxWeekday();
+
   // Users who actually hold something — no point scanning empty accounts.
   const { data: holders, error } = await admin.from("holdings").select("user_id").gt("quantity", 0);
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
@@ -40,7 +45,7 @@ export async function GET(request: Request) {
   const results: { user_id: string; ok: boolean; highlights?: string[]; error?: string }[] = [];
   for (const userId of userIds) {
     try {
-      const summary = await runDailyUpdate(admin, userId);
+      const summary = await runDailyUpdate(admin, userId, { skipPrices: !tradingDay });
       results.push({ user_id: userId, ok: true, highlights: summary.highlights });
     } catch (e) {
       results.push({ user_id: userId, ok: false, error: e instanceof Error ? e.message : String(e) });
@@ -54,6 +59,8 @@ export async function GET(request: Request) {
   return NextResponse.json({
     ok: true,
     run_date: new Date().toISOString().slice(0, 10),
+    trading_day: tradingDay,
+    prices_refreshed: tradingDay,
     users_processed: results.length,
     clusters_synced: clusters,
     results,
