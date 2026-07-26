@@ -1,8 +1,11 @@
 import { MarketOutlookView } from "@/components/features/outlook/market-outlook-view";
+import { BaseRatesView } from "@/components/features/outlook/base-rates-view";
 import { getMarketOutlook } from "@/lib/engine/outlook/read";
+import { getOutlookBaseRates } from "@/lib/engine/outlook/base-rates";
 import { getAdminContext } from "@/lib/admin/guard";
 import { Band } from "@/components/ui/band";
 import { cn, formatNumber } from "@/lib/shared/format";
+import { AsOf } from "@/components/shared/as-of";
 
 export const dynamic = "force-dynamic";
 
@@ -23,7 +26,11 @@ const STANCE_TONE: Record<string, string> = {
  * that route guards itself as well.
  */
 export default async function OutlookPage() {
-  const [outlook, { isAdmin }] = await Promise.all([getMarketOutlook(), getAdminContext()]);
+  const [outlook, { isAdmin }, baseRates] = await Promise.all([
+    getMarketOutlook(),
+    getAdminContext(),
+    getOutlookBaseRates().catch(() => null),
+  ]);
   const stanceTone = STANCE_TONE[String(outlook.stance.tone)] ?? "text-text-strong";
 
   return (
@@ -43,7 +50,7 @@ export default async function OutlookPage() {
             </h1>
             <div className="mt-5 flex items-end gap-5">
               <span>
-                <span className="block text-(length:--text-3xs) font-bold uppercase tracking-(--tracking-caps) text-text-faint">KSE-100</span>
+                <span className="block text-(length:--text-3xs) font-bold uppercase tracking-(--tracking-caps) text-text-faint">KSE-100 at close</span>
                 <span className="figure mt-1.5 block text-(length:--text-display) font-semibold leading-none tracking-editorial text-text-strong">
                   {formatNumber(outlook.close, 0)}
                 </span>
@@ -67,6 +74,13 @@ export default async function OutlookPage() {
         <p className="mt-3 max-w-(--measure) text-(length:--text-2xs) leading-relaxed text-text-faint">
           {outlook.evidenceQuality.note}
         </p>
+        {baseRates && (
+          <p className="mt-2 max-w-(--measure) text-(length:--text-2xs) leading-relaxed text-text-faint">
+            {formatNumber(baseRates.sample.sessions, 0)} trading sessions from {monthYear(baseRates.sample.firstSession)} to{" "}
+            {monthYear(baseRates.sample.lastSession)}, with no gap longer than {baseRates.sample.longestGapSessions} sessions.
+            Every rate below counts non-overlapping windows only.
+          </p>
+        )}
 
         {outlook.staleWarning && (
           <p className="mt-6 border-l-[3px] border-[var(--saffron-2)] pl-4 text-xs leading-relaxed text-text-muted">
@@ -75,10 +89,75 @@ export default async function OutlookPage() {
         )}
       </Band>
 
+      {/* ── Historical base rates, the ladder and the volatility split ── */}
+      {baseRates && (
+        <Band tone="paper" className={cn("dot-grid", GUTTER)}>
+          <BaseRatesView data={baseRates} />
+        </Band>
+      )}
+
       {/* ── The model's own panels ── */}
-      <Band tone="paper" rule="none" className={cn("dot-grid", GUTTER)}>
+      <Band tone="paper" className={GUTTER}>
         <MarketOutlookView outlook={outlook} isAdmin={isAdmin} />
+      </Band>
+
+      {/* ── How this is built ── */}
+      <Band tone="paper" rule="none" className={GUTTER}>
+        <div className="grid gap-12 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
+          <div>
+            <p className="eyebrow">How this is built</p>
+            <h2 className="mt-1.5 font-display text-(length:--text-h1) font-normal tracking-editorial text-text-strong">
+              What the model can and cannot say
+            </h2>
+            <p className="mt-5 max-w-(--measure) text-sm leading-relaxed text-text-muted">
+              These are historical base rates for the KSE-100, not a forecast of this particular week. Every figure counts
+              non-overlapping windows, so the same market episode is never reused to make a sample look larger than it is.
+            </p>
+            {baseRates && (
+              <div className="mt-7 grid grid-cols-3 gap-6 border-t border-rule pt-6">
+                <Fact label="Sessions" value={formatNumber(baseRates.sample.sessions, 0)} />
+                <Fact label="Years of history" value={formatNumber(baseRates.sample.years, 1)} />
+                <Fact label="First session" value={monthYear(baseRates.sample.firstSession)} />
+              </div>
+            )}
+          </div>
+
+          <div>
+            <p className="text-(length:--text-3xs) font-bold uppercase tracking-(--tracking-caps) text-text-faint">
+              Deliberately excluded
+            </p>
+            <div className="ledger mt-3.5">
+              {outlook.notIncluded.items.map((item) => (
+                <div key={item} className="ledger-row">
+                  <p className="text-sm leading-relaxed text-text-muted">{item}</p>
+                </div>
+              ))}
+            </div>
+            <p className="mt-4 text-(length:--text-2xs) leading-relaxed text-text-faint">{outlook.notIncluded.note}</p>
+          </div>
+        </div>
+
+        <div className="mt-9 flex flex-wrap items-center justify-between gap-4 border-t border-rule pt-5">
+          <AsOf date={outlook.asOf} label="Last updated" />
+          <span className="text-(length:--text-2xs) text-text-faint">
+            Historical frequencies, not predictions. Research support only, not financial advice.
+          </span>
+        </div>
       </Band>
     </div>
   );
+}
+
+function Fact({ label, value }: { label: string; value: string }) {
+  return (
+    <div>
+      <p className="text-(length:--text-3xs) font-bold uppercase tracking-(--tracking-caps) text-text-faint">{label}</p>
+      <p className="figure mt-2 text-(length:--text-h1) font-semibold text-text-strong">{value}</p>
+    </div>
+  );
+}
+
+/** "Jan 2009" from an ISO date. */
+function monthYear(iso: string): string {
+  return new Date(`${iso}T12:00:00`).toLocaleDateString("en-GB", { month: "short", year: "numeric" });
 }
