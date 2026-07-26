@@ -3,10 +3,9 @@ import { getScreenerData } from "@/lib/market/screener";
 import { fmtPct, fmtInt, tone } from "@/lib/market/format";
 import { ScreenerTable } from "@/components/features/stocks/screener-table";
 import { EmptyState } from "@/components/ui/empty-state";
-import { ActionButton } from "@/components/ui/action-button";
 import { Band } from "@/components/ui/band";
 import { cn, formatNumber } from "@/lib/shared/format";
-import { Activity, RefreshCw, DatabaseZap } from "lucide-react";
+import { Activity } from "lucide-react";
 
 export const dynamic = "force-dynamic";
 
@@ -17,20 +16,11 @@ export default async function StockResearchPage() {
   const user = await getUser();
   if (!user) return null;
 
-  const [d, profileRes] = await Promise.all([
+  const [d] = await Promise.all([
     getScreenerData(supabase, user.id),
-    supabase.from("profiles").select("demo_mode").eq("id", user.id).maybeSingle(),
   ]);
-  const isDemo = Boolean(profileRes.data?.demo_mode);
   const indexTone = tone(d.index?.changePercent);
   const coveragePct = d.coverage.total ? Math.round((d.coverage.withSpark / d.coverage.total) * 100) : 0;
-
-  const actions = isDemo ? null : (
-    <div className="flex flex-wrap items-center gap-2">
-      <ActionButton endpoint="/api/market/refresh" body={{ section: "snapshot" }} label={<><RefreshCw className="h-3.5 w-3.5" /> Refresh prices</>} variant="outline" size="sm" />
-      <ActionButton endpoint="/api/market/backfill" body={{ limit: 60 }} label={<><DatabaseZap className="h-3.5 w-3.5" /> Build deep data</>} variant="outline" size="sm" />
-    </div>
-  );
 
   if (!d.snapshotDate) {
     return (
@@ -43,7 +33,6 @@ export default async function StockResearchPage() {
               icon={Activity}
               title="No market data yet"
               description="The screener is powered by the daily market snapshot. Refresh prices to pull the whole PSX, then build deep data for trends and 52-week ranges."
-              action={actions ?? undefined}
             />
           </div>
         </Band>
@@ -86,7 +75,6 @@ export default async function StockResearchPage() {
             </div>
           </div>
           <div className="flex flex-col items-end gap-3 pb-1">
-            {actions}
             <p className="text-(length:--text-2xs) text-text-faint">
               Snapshot {d.snapshotDate}{d.updatedLabel ? ` · updated ${d.updatedLabel} PKT` : ""} · via {d.source ?? "PSX"}
             </p>

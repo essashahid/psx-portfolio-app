@@ -6,9 +6,8 @@ import { normalizeEvent, type DividendEvent } from "@/lib/dividends/engine";
 import { DividendManager } from "@/components/features/dividends/dividend-form";
 import { DividendIncomeWorkspace } from "@/components/features/dividends/dividend-income-workspace";
 import { DividendTrajectory, DividendYieldTable, TaxYearStatement } from "@/components/features/dividends/dividend-analytics";
-import { ActionButton } from "@/components/ui/action-button";
 import { Band } from "@/components/ui/band";
-import { ChevronDown, Download, RefreshCw, TrendingUp } from "lucide-react";
+import { ChevronDown, Download } from "lucide-react";
 
 export const dynamic = "force-dynamic";
 
@@ -42,11 +41,9 @@ export default async function DividendsPage() {
           </div>
           <div className="flex flex-wrap items-center gap-2">
             {!isDemo && <DividendManager dividends={dividends} holdings={summary.holdings} triggerOnly />}
-            {!isDemo && <ActionButton endpoint="/api/dividends/check" label={<><RefreshCw className="h-3.5 w-3.5" /> Check announcements</>} variant="outline" size="sm" />}
             <details className="relative">
               <summary className="inline-flex h-10 cursor-pointer list-none items-center justify-center gap-1.5 rounded-md border border-rule bg-card px-3 text-xs font-medium transition-colors hover:bg-accent md:h-8"><span>More</span><ChevronDown className="h-3.5 w-3.5" /></summary>
               <div className="absolute right-0 z-20 mt-1 flex w-52 flex-col gap-1 rounded-md border border-rule bg-card p-1.5 shadow-card">
-                {!isDemo && <ActionButton endpoint="/api/dividends/forecast" label={<><TrendingUp className="h-3.5 w-3.5" /> Estimate future dividends</>} variant="ghost" size="sm" className="w-full justify-start px-2.5" />}
                 {/* eslint-disable-next-line @next/next/no-html-link-for-pages -- CSV download, not a page navigation */}
                 <a href="/api/export/dividends" className="rounded px-2.5 py-2 text-xs hover:bg-muted"><Download className="mr-1.5 inline h-3.5 w-3.5" /> Export CSV</a>
               </div>

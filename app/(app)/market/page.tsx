@@ -3,7 +3,6 @@ import { getMarketDashboard } from "@/lib/market/read";
 import { getForeignFlowSnapshot } from "@/lib/market/foreign-flows";
 import { fmtCompact, fmtInt, fmtPct, tone } from "@/lib/market/format";
 import { EmptyState } from "@/components/ui/empty-state";
-import { ActionButton } from "@/components/ui/action-button";
 import { Band } from "@/components/ui/band";
 import {
   BreadthStrip,
@@ -14,7 +13,7 @@ import {
   MarketInternals,
   type Gauge,
 } from "@/components/features/market/market-pulse-visuals";
-import { Activity, ArrowDownRight, ArrowUpRight, RefreshCw } from "lucide-react";
+import { Activity, ArrowDownRight, ArrowUpRight } from "lucide-react";
 import { cn } from "@/lib/shared/format";
 import type { SupabaseClient } from "@supabase/supabase-js";
 
@@ -63,17 +62,14 @@ export default async function MarketPulsePage() {
   // allowStale: the design always draws the participation band, so render the
   // most recent flow day we hold and label its age rather than showing nothing.
   const foreignFlow = await getForeignFlowSnapshot(supabase, 90, { allowStale: true });
-  const [market, profileRes, yearRange, averages] = await Promise.all([
+  const [market, yearRange, averages] = await Promise.all([
     getMarketDashboard(supabase, user.id),
-    supabase.from("profiles").select("demo_mode").eq("id", user.id).maybeSingle(),
     getIndexYearRange(supabase),
     getThirtyDayAverages(supabase),
   ]);
-  const isDemo = Boolean(profileRes.data?.demo_mode);
-  const refresh = isDemo ? null : <ActionButton endpoint="/api/market/refresh" body={{ section: "all" }} label={<><RefreshCw className="h-3.5 w-3.5" /> Refresh market</>} variant="outline" size="sm" />;
 
   if (!market.snapshot) {
-    return <div className="space-y-6"><header><p className="eyebrow">PSX · Market Pulse</p><h1 className="mt-1.5 font-display text-(length:--text-title) font-normal tracking-editorial text-text-strong">Market Pulse</h1></header><EmptyState icon={Activity} title="No market snapshot yet" description="Refresh the PSX market snapshot to load breadth, sector and mover data." action={refresh ?? undefined} /></div>;
+    return <div className="space-y-6"><header><p className="eyebrow">PSX · Market Pulse</p><h1 className="mt-1.5 font-display text-(length:--text-title) font-normal tracking-editorial text-text-strong">Market Pulse</h1></header><EmptyState icon={Activity} title="No market snapshot yet" description="Refresh the PSX market snapshot to load breadth, sector and mover data." /></div>;
   }
 
   const snapshot = market.snapshot;
@@ -164,7 +160,6 @@ export default async function MarketPulsePage() {
             </div>
           </div>
           <div className="flex flex-col items-end gap-3 pb-1">
-            {refresh}
             <p className="text-(length:--text-2xs) text-text-faint">Updated {market.updatedLabel ?? snapshot.snapshot_date} PKT · {snapshot.freshness === "fresh" ? "current" : snapshot.freshness} · flows {foreignFlow?.day.date ?? "n/a"}</p>
           </div>
         </div>
@@ -220,12 +215,9 @@ export default async function MarketPulsePage() {
         {participantRows.length > 0 ? (
           <ParticipantFlowBar rows={participantRows} unit={foreignFlow ? `${foreignFlow.day.currency} mn` : "mn"} />
         ) : (
-          <div className="flex flex-wrap items-center justify-between gap-4 py-4">
-            <p className="max-w-(--measure) text-sm text-text-muted">
-              No investor-flow data is stored for the recent window. NCCPL participant flows load with the flows refresh; the strip fills in as soon as a flow day lands.
-            </p>
-            {!isDemo && <ActionButton endpoint="/api/flows/refresh" label={<><RefreshCw className="h-3.5 w-3.5" /> Refresh flows</>} variant="outline" size="sm" />}
-          </div>
+          <p className="max-w-(--measure) py-4 text-sm text-text-muted">
+            No investor-flow data is stored for the recent window.
+          </p>
         )}
 
         <MarketInternals gauges={gauges} />

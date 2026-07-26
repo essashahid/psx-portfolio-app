@@ -5,13 +5,11 @@ import Link from "next/link";
 import { ArrowRight, ChevronDown } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { SegmentedControl } from "@/components/ui/segmented-control";
 import { Disclosure } from "@/components/features/outlook/outlook-primitives";
 import { cn } from "@/lib/shared/format";
 import { Sparkline } from "@/components/shared/sparkline";
 import type { CustomerOutlook, CustomerLevel, SectorBasis } from "@/lib/engine/outlook/customer-outlook";
 import type { OutlookDriver } from "@/lib/engine/outlook/drivers";
-import type { WfHorizon } from "@/lib/engine/outlook/walkforward";
 
 /**
  * The customer-facing Market Outlook.
@@ -25,32 +23,6 @@ import type { WfHorizon } from "@/lib/engine/outlook/walkforward";
 
 const fmt = (v: number) => Math.round(v).toLocaleString("en-US");
 const pct = (v: number, d = 0) => `${(v * 100).toFixed(d)}%`;
-
-/** Where the current level sits inside the expected range. */
-function RangeBar({ lo, hi, current }: { lo: number; hi: number; current: number }) {
-  const span = hi - lo || 1;
-  const position = Math.min(Math.max((current - lo) / span, 0), 1);
-  return (
-    <div>
-      <div className="relative h-2 rounded-full bg-linear-to-r from-amber-300 via-brand-soft to-emerald-300">
-        <span
-          aria-hidden
-          className="absolute -top-1 h-4 w-4 -translate-x-2 rounded-full border-2 border-card bg-foreground shadow-sm transition-[left] duration-(--dur-base) ease-(--ease-ui)"
-          style={{ left: `${position * 100}%` }}
-        />
-      </div>
-      <div className="mt-2 flex items-baseline justify-between text-[11px] tabular-nums text-muted-foreground">
-        <span>{fmt(lo)}</span>
-        <span className="font-medium text-foreground">Now {fmt(current)}</span>
-        <span>{fmt(hi)}</span>
-      </div>
-      <div className="mt-1 flex items-baseline justify-between text-[10px] uppercase tracking-wide text-muted-foreground">
-        <span>Lower end</span>
-        <span>Upper end</span>
-      </div>
-    </div>
-  );
-}
 
 function LevelRow({ level, kind }: { level: CustomerLevel; kind: "support" | "resistance" }) {
   return (
@@ -183,8 +155,6 @@ function DriverRow({ driver }: { driver: OutlookDriver }) {
 }
 
 export function MarketOutlookView({ outlook, isAdmin = false }: { outlook: CustomerOutlook; isAdmin?: boolean }) {
-  const [horizonKey, setHorizonKey] = useState<WfHorizon>(10);
-  const horizon = outlook.horizons.find((h) => h.key === horizonKey) ?? outlook.horizons[0];
 
   return (
     <div className="space-y-4">
@@ -223,80 +193,6 @@ export function MarketOutlookView({ outlook, isAdmin = false }: { outlook: Custo
           </CardContent>
         </Card>
       )}
-
-      {/* The horizon view. */}
-      <Card className="rise rise-1">
-        <CardContent className="space-y-4 p-4">
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-            <div>
-              <h2 className="text-sm font-semibold tracking-editorial text-foreground">Choose outlook period</h2>
-              <p className="mt-1 text-xs text-muted-foreground">The view updates for each window.</p>
-            </div>
-            <SegmentedControl
-              label="Outlook period"
-              value={String(horizonKey)}
-              onChange={(v) => setHorizonKey(Number(v) as WfHorizon)}
-              className="sm:w-auto sm:min-w-[16rem]"
-              options={outlook.horizons.map((h) => ({
-                value: String(h.key),
-                label: h.label,
-                hint: h.bestSupported ? `${h.label}, the best-supported window` : `${h.label}, direction not supported`,
-              }))}
-            />
-          </div>
-
-          {horizon && (
-            <>
-              <div className="rounded-lg bg-muted p-4">
-                <div className="flex flex-wrap items-center gap-2">
-                  <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">Our current view</p>
-                  {horizon.bestSupported && <Badge variant="green">Best-supported window</Badge>}
-                </div>
-                <p className="mt-1.5 text-sm leading-relaxed text-foreground">{horizon.view}</p>
-                {horizon.directionNote && (
-                  <p className="mt-2 text-[11px] leading-relaxed text-muted-foreground">{horizon.directionNote}</p>
-                )}
-
-                {(horizon.range || horizon.keyLevel) && (
-                  <div className="mt-4 grid gap-4 sm:grid-cols-2">
-                    {horizon.range && (
-                      <div>
-                        <p className="text-xs text-muted-foreground">Estimated full movement range</p>
-                        <p className="mt-0.5 text-lg font-semibold tabular-nums text-foreground">
-                          {fmt(horizon.range.loIndex)}&ndash;{fmt(horizon.range.hiIndex)}
-                        </p>
-                      </div>
-                    )}
-                    {horizon.keyLevel && (
-                      <div>
-                        <p className="text-xs text-muted-foreground">Key level to watch</p>
-                        <p className="mt-0.5 text-lg font-semibold tabular-nums text-foreground">{fmt(horizon.keyLevel.price)}</p>
-                      </div>
-                    )}
-                  </div>
-                )}
-
-                {horizon.range && (
-                  <div className="mt-4">
-                    <RangeBar lo={horizon.range.loIndex} hi={horizon.range.hiIndex} current={outlook.close} />
-                    <p className="mt-2.5 text-[11px] leading-relaxed text-muted-foreground">{horizon.rangeNote}</p>
-                  </div>
-                )}
-              </div>
-
-              <div className="rounded-lg bg-muted p-4">
-                <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">Simple takeaway</p>
-                <p className="mt-1.5 text-sm leading-relaxed text-foreground">{horizon.takeaway}</p>
-                <div className="mt-3 rounded-md border border-border bg-card p-3">
-                  <p className="text-xs text-muted-foreground">Risk level</p>
-                  <p className="mt-0.5 text-base font-semibold text-foreground">{horizon.risk.label}</p>
-                  <p className="mt-0.5 text-[11px] leading-relaxed text-muted-foreground">{horizon.risk.note}</p>
-                </div>
-              </div>
-            </>
-          )}
-        </CardContent>
-      </Card>
 
       {/* Levels. */}
       <Card className="rise rise-2">
@@ -362,17 +258,6 @@ export function MarketOutlookView({ outlook, isAdmin = false }: { outlook: Custo
             ))}
           </div>
 
-          <div className="mt-3 rounded-lg border border-border p-3">
-            <p className="text-xs font-medium text-foreground">Not included in this outlook</p>
-            <p className="mt-1 text-[11px] leading-relaxed text-muted-foreground">{outlook.notIncluded.note}</p>
-            <ul className="mt-2 flex flex-wrap gap-x-4 gap-y-1">
-              {outlook.notIncluded.items.map((item) => (
-                <li key={item} className="text-[11px] text-muted-foreground">
-                  {item}
-                </li>
-              ))}
-            </ul>
-          </div>
         </CardContent>
       </Card>
 

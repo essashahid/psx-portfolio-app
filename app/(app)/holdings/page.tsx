@@ -7,7 +7,6 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { AsOf } from "@/components/shared/as-of";
 import { ActionButton } from "@/components/ui/action-button";
 import { formatMoney, formatNumber } from "@/lib/shared/format";
-import { normalizeEnabledFeatures } from "@/lib/config/features";
 import { Band } from "@/components/ui/band";
 import { PanelHeader } from "@/components/ui/panel-header";
 import { SectorWeightBar, SectorTreemap, BelowCostPlot } from "@/components/features/holdings/holdings-visuals";
@@ -32,16 +31,12 @@ export default async function HoldingsPage() {
   const [summary, dailyPerformance, profileRes] = await Promise.all([
     getPortfolio(supabase, user.id),
     getDailyHoldingPerformance(supabase, user.id),
-    supabase.from("profiles").select("enabled_features, demo_mode").eq("id", user.id).maybeSingle(),
+    supabase.from("profiles").select("demo_mode").eq("id", user.id).maybeSingle(),
   ]);
   const isDemo = Boolean(profileRes.data?.demo_mode);
-  const enabledFeatures = normalizeEnabledFeatures(profileRes.data?.enabled_features);
-  const companyEnrichmentEnabled = enabledFeatures.includes("company_enrichment");
 
   const latestPriceDate = summary.holdings.map((holding) => holding.price_date).filter(Boolean).sort().at(-1) ?? null;
   const unpriced = summary.holdingsCount - summary.pricedHoldings;
-  const missingCompany = summary.holdings.filter((holding) => !holding.company_name?.trim()).length;
-  const unclassified = summary.holdings.filter((holding) => !holding.sector?.trim()).length;
 
   const dayPnl = dailyPerformance.totalDayPnl;
   const belowCostRows = summary.holdings
@@ -93,7 +88,6 @@ export default async function HoldingsPage() {
       ) : (
         <>
           <Band tone="paper" className="px-3 sm:px-4 md:px-(--gutter-page)">
-            {(missingCompany > 0 || unclassified > 0 || unpriced > 0) && <div className="mb-5 flex flex-wrap items-center justify-between gap-2 rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-900"><span><strong>Portfolio data</strong> · {[missingCompany && `${missingCompany} holding${missingCompany === 1 ? "" : "s"} missing company information`, unclassified && `${unclassified} unclassified sector${unclassified === 1 ? "" : "s"}`, unpriced && `${unpriced} unpriced position${unpriced === 1 ? "" : "s"}`].filter(Boolean).join(" · ")}</span>{companyEnrichmentEnabled && !isDemo && <ActionButton endpoint="/api/holdings/enrich" label={<>Review issues</>} variant="outline" size="sm" />}</div>}
             <HoldingsTable holdings={summary.holdings} summary={summary} dailyRows={dailyPerformance.rows.map((row) => ({ ticker: row.ticker, dayChangePct: row.dayChangePct, dayPnl: row.dayPnl }))} readOnly={isDemo} />
           </Band>
 
