@@ -1,0 +1,95 @@
+/* ── Colour ───────────────────────────────────────────────────────────────
+   Ink, Paper & Spectrum. Warm paper carries the reading surface; deep ink
+   navy and saturated colour fields carry the brand; the Spectrum (see
+   spectrum.css) carries data identity. Base values first, semantic aliases
+   second — always author against the semantic names. */
+:root {
+  /* Paper — warm neutral ramp, lightest to deepest */
+  --paper-0: #fdfdfc;
+  --paper-1: #f6f6f4;
+  --paper-2: #eeefeb;
+  --paper-3: #e7e8e2;
+  --paper-4: #dedfda;
+
+  /* Ink — warm near-black ramp */
+  --ink-0: #0b0c0b;
+  --ink-1: #161716;
+  --ink-2: #3a3b38;
+  --ink-3: #6c6e68;
+  --ink-4: #9b9b92;
+
+  /* Navy — the brand's dark field. Used full-bleed, never as a border. */
+  --navy-1: #0c1226;
+  --navy-2: #101a33;
+  --navy-3: #1b2747;
+  --navy-4: #2b3a63;
+
+  /* Indigo — primary brand hue, inherited from the chart ink (INK.line) */
+  --indigo-1: #26399a;
+  --indigo-2: #3450c8;
+  --indigo-3: #8295e3;
+  --indigo-4: #eef1fb;
+
+  /* Saffron — secondary brand hue, for emphasis and highlight fields */
+  --saffron-1: #a86e05;
+  --saffron-2: #d9920b;
+  --saffron-3: #f0c164;
+  --saffron-4: #fbf3e0;
+
+  /* Clay — tertiary brand hue, for warm bands and warning-adjacent fields */
+  --clay-1: #a3421c;
+  --clay-2: #cd5b2e;
+  --clay-3: #e59a7c;
+  --clay-4: #fbeee8;
+
+  /* Directional — gains, losses, flat. Never used decoratively. */
+  --up-1: #0b6b47;
+  --up-2: #0b8a5c;
+  --up-3: #34c08c;
+  --up-4: #e6f4ee;
+  --down-1: #a32626;
+  --down-2: #cf3a3a;
+  --down-3: #e57e7e;
+  --down-4: #fbeaea;
+  --flat-2: #9b9b92;
+
+  /* ── Semantic aliases ─────────────────────────────────────────────── */
+  --surface-page: var(--paper-1);
+  --surface-raised: #ffffff;
+  --surface-sunken: var(--paper-2);
+  --surface-inset: var(--paper-3);
+  --surface-nav: var(--navy-2);
+  --surface-field-indigo: var(--indigo-4);
+  --surface-field-saffron: var(--saffron-4);
+  --surface-field-clay: var(--clay-4);
+  --surface-field-ink: var(--navy-2);
+
+  --text-strong: var(--ink-1);
+  --text-body: var(--ink-2);
+  --text-muted: var(--ink-3);
+  --text-faint: var(--ink-4);
+  --text-ghost: color-mix(in oklab, var(--ink-1) 22%, transparent);
+  --text-on-dark: #f2f3f7;
+  --text-on-dark-muted: color-mix(in oklab, #f2f3f7 62%, transparent);
+  --text-brand: var(--indigo-2);
+  --text-up: var(--up-1);
+  --text-down: var(--down-1);
+  --text-link: var(--indigo-2);
+  --text-link-hover: var(--indigo-1);
+
+  --rule: var(--paper-4);
+  --rule-soft: color-mix(in oklab, var(--paper-4) 62%, transparent);
+  --rule-strong: #c9cac3;
+  --rule-on-dark: color-mix(in oklab, #ffffff 14%, transparent);
+
+  --accent-primary: var(--indigo-2);
+  --accent-secondary: var(--saffron-2);
+  --accent-tertiary: var(--clay-2);
+  --focus-ring: var(--indigo-2);
+  --selection-bg: color-mix(in oklab, var(--indigo-2) 18%, transparent);
+
+  --status-danger: var(--down-2);
+  --status-warn: var(--saffron-2);
+  --status-info: var(--indigo-2);
+  --status-ok: var(--up-2);
+}

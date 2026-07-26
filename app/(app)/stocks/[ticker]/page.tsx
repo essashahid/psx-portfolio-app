@@ -3,52 +3,40 @@ import Link from "next/link";
 import { createClient, getUser } from "@/lib/supabase/server";
 import { getCompanyHeader } from "@/lib/company/service";
 import { computeRatios } from "@/lib/engine/ratios";
-import { Card, CardContent } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Tabs } from "@/components/ui/tabs";
 import { WatchlistButton } from "@/components/features/stocks/watchlist-button";
 import { GenerateReportDialog } from "@/components/features/stocks/generate-report-dialog";
 import { AskCopilotLink } from "@/components/shared/ask-copilot-link";
+import { CompanyTabs } from "@/components/features/stocks/company-tabs";
+import { PriceTrack } from "@/components/features/stocks/price-track";
 import { CardSkeleton, TableSkeleton } from "@/components/ui/page-skeleton";
+import { Band } from "@/components/ui/band";
 import { formatNumber, formatSignedPct, formatFinancialPeriod, cn } from "@/lib/shared/format";
 import { normalizeEnabledFeatures } from "@/lib/config/features";
-import { ArrowLeft, Search } from "lucide-react";
+import { sectorColor } from "@/lib/shared/sector-colors";
+import { ArrowLeft } from "lucide-react";
 import {
-  OverviewPanel, FinancialsPanel, EarningsPanel, RatiosPanel,
-  DividendsPanel, NewsFilingsPanel, AiAnalysisPanel, TechnicalsPanel,
+  OverviewPanel, FinancialsPanel, EarningsPanel,
+  DividendsPanel, NewsFilingsPanel, TechnicalsPanel,
 } from "./panels";
 
 export const dynamic = "force-dynamic";
 
-function HeaderMetric({ label, value, sub, tone, hint }: { label: string; value: string; sub?: string; tone?: "positive" | "negative"; hint?: string }) {
-  return (
-    <div className="min-w-[7rem]">
-      <p
-        className={cn(
-          "text-[10px] font-medium uppercase tracking-wide text-muted-foreground",
-          hint && "cursor-help underline decoration-dotted decoration-muted-foreground/40 underline-offset-2"
-        )}
-        title={hint}
-      >
-        {label}
-      </p>
-      <p className={cn("mt-0.5 text-sm font-semibold tabular-nums text-foreground", tone === "positive" && "text-up", tone === "negative" && "text-down")}>{value}</p>
-      {sub && <p className="text-[10px] text-muted-foreground">{sub}</p>}
-    </div>
-  );
-}
+const GUTTER = "px-3 sm:px-4 md:px-(--gutter-page)";
 
 function compactNumber(value: number | null | undefined, digits = 1): string {
   if (value === null || value === undefined || Number.isNaN(value)) return "—";
-  return new Intl.NumberFormat("en-PK", {
-    notation: "compact",
-    maximumFractionDigits: digits,
-  }).format(value);
+  return new Intl.NumberFormat("en-PK", { notation: "compact", maximumFractionDigits: digits }).format(value);
 }
 
-function compactMoney(value: number | null | undefined): string {
-  if (value === null || value === undefined || Number.isNaN(value)) return "—";
-  return `PKR ${compactNumber(value)}`;
+/** One cell of the six-metric strip under the header. */
+function HeaderMetric({ label, value, sub }: { label: string; value: string; sub?: string }) {
+  return (
+    <div className="border-t border-rule py-3.5 first:border-t-0 sm:border-t-0 sm:border-l sm:px-5 sm:py-0 sm:first:border-l-0 sm:first:pl-0">
+      <p className="text-(length:--text-3xs) font-bold uppercase tracking-(--tracking-caps) text-text-faint">{label}</p>
+      <p className="figure mt-1.5 text-(length:--text-h2) font-semibold text-text-strong">{value}</p>
+      {sub && <p className="mt-0.5 text-(length:--text-2xs) text-text-faint">{sub}</p>}
+    </div>
+  );
 }
 
 export default async function StockCockpitPage({ params }: { params: Promise<{ ticker: string }> }) {
@@ -60,30 +48,35 @@ export default async function StockCockpitPage({ params }: { params: Promise<{ t
   if (!user) return null;
 
   // Shell: cache-first profile + live quote + 52w range, plus ownership/watch
-  // status. Heavy per-section data streams in below via Suspense.
+  // status and the 60 closes the header track draws. Heavy per-section data
+  // streams in below via Suspense.
   //
   // Valuation metrics (P/E, EPS, dividend yield) come from the ratio engine —
   // the single source of truth shared with the Overview tab — so the header can
-  // never disagree with Key signals on the period or the value. The engine
-  // already selects the latest reliable financial period per stock, so this is
-  // correct for every ticker, not just the one on screen.
-  const [header, { data: holding }, { data: watch }, ratios, profileRes] = await Promise.all([
-    getCompanyHeader(supabase, ticker),
-    supabase.from("holdings").select("quantity").eq("user_id", user.id).eq("ticker", ticker).eq("hidden", false).gt("quantity", 0).maybeSingle(),
-    supabase.from("stock_watchlist").select("ticker").eq("user_id", user.id).eq("ticker", ticker).maybeSingle(),
-    computeRatios(supabase, ticker),
-    supabase.from("profiles").select("enabled_features, demo_mode").eq("id", user.id).maybeSingle(),
-  ]);
+  // never disagree with Key signals on the period or the value.
+  const [header, { data: holding }, { data: watch }, ratios, profileRes, { data: closesRows }] =
+    await Promise.all([
+      getCompanyHeader(supabase, ticker),
+      supabase.from("holdings").select("quantity").eq("user_id", user.id).eq("ticker", ticker).eq("hidden", false).gt("quantity", 0).maybeSingle(),
+      supabase.from("stock_watchlist").select("ticker").eq("user_id", user.id).eq("ticker", ticker).maybeSingle(),
+      computeRatios(supabase, ticker),
+      supabase.from("profiles").select("enabled_features, demo_mode").eq("id", user.id).maybeSingle(),
+      supabase.from("company_price_history").select("price_date, close").eq("ticker", ticker).order("price_date", { ascending: false }).limit(60),
+    ]);
+
   const enabledFeatures = normalizeEnabledFeatures(profileRes.data?.enabled_features);
   const isDemo = Boolean(profileRes.data?.demo_mode);
   const companyEnrichmentEnabled = enabledFeatures.includes("company_enrichment") && !isDemo;
   const companyReportsEnabled = enabledFeatures.includes("company_reports") && !isDemo;
 
   const { metadata, quote } = header;
-  const dayTone = quote.dayChangePct ? (quote.dayChangePct > 0 ? "positive" : "negative") : undefined;
+  const hue = sectorColor(metadata.sector);
+  const dayUp = quote.dayChangePct !== null && quote.dayChangePct > 0;
+  const dayDown = quote.dayChangePct !== null && quote.dayChangePct < 0;
 
-  // Header fundamentals, read from the ratio engine so value + period + source
-  // match the Overview exactly. Each metric keeps the engine's own period label.
+  // Oldest-first for the track; the query reads newest-first for the limit.
+  const closes = (closesRows ?? []).map((r) => Number(r.close)).filter((c) => Number.isFinite(c) && c > 0).reverse();
+
   const peRatio = ratios.find((r) => r.ratio_name === "P/E") ?? null;
   const divYieldRatio = ratios.find((r) => r.ratio_name === "Dividend yield (TTM)") ?? null;
   const pe = peRatio?.ratio_value ?? null;
@@ -91,87 +84,101 @@ export default async function StockCockpitPage({ params }: { params: Promise<{ t
   const eps = typeof epsRaw === "number" && Number.isFinite(epsRaw) ? epsRaw : null;
   const epsPeriod = formatFinancialPeriod(peRatio?.source_period);
   const divYield = divYieldRatio?.ratio_value ?? null;
-  const range52 =
-    header.technicals?.fiftyTwoWeekLow !== null && header.technicals?.fiftyTwoWeekLow !== undefined &&
-    header.technicals?.fiftyTwoWeekHigh !== null && header.technicals?.fiftyTwoWeekHigh !== undefined
-      ? `${formatNumber(header.technicals.fiftyTwoWeekLow)}-${formatNumber(header.technicals.fiftyTwoWeekHigh)}`
-      : "—";
-  const lastUpdated = quote.asOf ?? metadata.meta.lastUpdated?.slice(0, 10) ?? null;
-  const hasUsableRatios = ratios.some((row) => row.ratio_value !== null && Number.isFinite(row.ratio_value));
+
+  const low52 = header.technicals?.fiftyTwoWeekLow ?? null;
+  const high52 = header.technicals?.fiftyTwoWeekHigh ?? null;
+  const hasRange = low52 !== null && high52 !== null && high52 > low52;
+  const pctOfRange =
+    hasRange && quote.price !== null
+      ? Math.round(((quote.price - low52) / (high52 - low52)) * 100)
+      : null;
+
+  // Every panel sits in the same dot-grid field, so switching tabs changes the
+  // content and nothing else about the page.
+  const panel = (node: React.ReactNode) => (
+    <Band tone="paper" rule="none" className={cn("dot-grid", GUTTER)}>
+      {node}
+    </Band>
+  );
 
   const tabs = [
-    { id: "overview", label: "Overview", content: <Suspense fallback={<CardSkeleton lines={8} />}><OverviewPanel ticker={ticker} companyEnrichmentEnabled={companyEnrichmentEnabled} readOnly={isDemo} /></Suspense> },
-    { id: "financials", label: "Financials", content: <Suspense fallback={<TableSkeleton />}><FinancialsPanel ticker={ticker} readOnly={isDemo} /></Suspense> },
-    { id: "earnings", label: "Earnings", content: <Suspense fallback={<CardSkeleton lines={6} />}><EarningsPanel ticker={ticker} readOnly={isDemo} /></Suspense> },
-    ...(hasUsableRatios
-      ? [{ id: "ratios", label: "Ratios", content: <Suspense fallback={<TableSkeleton />}><RatiosPanel ticker={ticker} readOnly={isDemo} /></Suspense> }]
-      : []),
-    { id: "dividends", label: "Dividends", content: <Suspense fallback={<TableSkeleton />}><DividendsPanel ticker={ticker} /></Suspense> },
+    { id: "overview", label: "Overview", content: panel(<Suspense fallback={<CardSkeleton lines={8} />}><OverviewPanel ticker={ticker} companyEnrichmentEnabled={companyEnrichmentEnabled} readOnly={isDemo} /></Suspense>) },
+    { id: "fundamentals", label: "Fundamentals", content: panel(<Suspense fallback={<TableSkeleton />}><FinancialsPanel ticker={ticker} readOnly={isDemo} /></Suspense>) },
+    { id: "earnings", label: "Earnings", content: panel(<Suspense fallback={<CardSkeleton lines={6} />}><EarningsPanel ticker={ticker} readOnly={isDemo} /></Suspense>) },
+    { id: "dividends", label: "Dividends", content: panel(<Suspense fallback={<TableSkeleton />}><DividendsPanel ticker={ticker} /></Suspense>) },
     // Placed after the fundamental tabs on purpose: the chart is for timing an
     // accumulation, not for forming the view.
-    { id: "technicals", label: "Technicals", content: <Suspense fallback={<CardSkeleton lines={10} />}><TechnicalsPanel ticker={ticker} /></Suspense> },
-    { id: "news", label: "News & Filings", content: <Suspense fallback={<CardSkeleton lines={8} />}><NewsFilingsPanel ticker={ticker} /></Suspense> },
+    { id: "technicals", label: "Technicals", content: panel(<Suspense fallback={<CardSkeleton lines={10} />}><TechnicalsPanel ticker={ticker} /></Suspense>) },
+    { id: "news", label: "Filings & news", content: panel(<Suspense fallback={<CardSkeleton lines={8} />}><NewsFilingsPanel ticker={ticker} /></Suspense>) },
   ];
 
   return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <Link href="/stocks" className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground">
-          <ArrowLeft className="h-3.5 w-3.5" /> Stock research
+    <div className="settle -mx-3 sm:-mx-4 md:-mx-(--gutter-page)">
+      {/* ── Identity band, tinted with the sector's own hue ── */}
+      <Band
+        tone="paper"
+        className={GUTTER}
+        style={{ background: `color-mix(in oklab, ${hue} 12%, var(--surface-page))` }}
+      >
+        <Link href="/stocks" className="mb-5 inline-flex items-center gap-1.5 text-xs text-text-muted transition-colors hover:text-text-strong">
+          <ArrowLeft className="h-3.5 w-3.5" /> All companies
         </Link>
-        <Link href="/stocks" className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground">
-          <Search className="h-3.5 w-3.5" /> Search another stock
-        </Link>
-      </div>
 
-      <Card className="overflow-hidden border-slate-200 bg-white shadow-sm">
-        <CardContent className="p-4 sm:p-5">
-          <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-            <div className="min-w-0">
-              <div className="flex flex-wrap items-center gap-2">
-                <h1 className="text-2xl font-semibold tracking-tight text-slate-950">{ticker}</h1>
-                {holding && <Badge variant="green">Owned</Badge>}
-              </div>
-              <p className="mt-1 text-sm font-medium text-slate-700">{metadata.companyName ?? "Company name unavailable"}</p>
-              <p className="mt-0.5 text-xs text-muted-foreground">
-                {[metadata.sector, metadata.exchange ?? "PSX"].filter(Boolean).join(" · ")}
-              </p>
+        <div className="flex flex-wrap items-end justify-between gap-7">
+          <div className="min-w-0">
+            <span className="mb-3.5 block h-0.75 w-11" style={{ background: hue }} />
+            <div className="flex flex-wrap items-baseline gap-3.5">
+              <h1 className="font-display text-(length:--text-title) font-normal tracking-editorial text-text-strong">{ticker}</h1>
+              {holding && (
+                <span className="text-(length:--text-2xs) font-semibold uppercase tracking-(--tracking-caps) text-text-muted">
+                  In your book
+                </span>
+              )}
             </div>
-
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-center lg:justify-end">
-              <div className="sm:text-right">
-                <p className="text-[11px] uppercase tracking-wide text-muted-foreground">Current price</p>
-                <p className="text-3xl font-semibold leading-tight tabular-nums text-slate-950">
-                  {quote.price !== null ? `PKR ${formatNumber(quote.price)}` : "—"}
-                </p>
-                <p className={cn("mt-0.5 text-xs font-medium tabular-nums", dayTone === "positive" && "text-up", dayTone === "negative" && "text-down", !dayTone && "text-muted-foreground")}>
-                  {quote.dayChange !== null ? `${quote.dayChange > 0 ? "+" : quote.dayChange < 0 ? "−" : ""}PKR ${formatNumber(Math.abs(quote.dayChange))}` : ""}
-                  {quote.dayChangePct !== null ? `${quote.dayChange !== null ? " · " : ""}${formatSignedPct(quote.dayChangePct)} today` : quote.dayChange === null ? "—" : ""}
-                  {lastUpdated ? <span className="font-normal text-muted-foreground"> · Updated {lastUpdated}</span> : null}
-                </p>
-              </div>
-              <div className="flex flex-wrap items-center gap-2">
-                {companyReportsEnabled && <GenerateReportDialog ticker={ticker} companyName={metadata.companyName} />}
-                {!isDemo && <WatchlistButton ticker={ticker} initialWatched={!!watch} size="default" />}
-                <AskCopilotLink question={`What should I know about ${ticker} right now?`} />
-              </div>
-            </div>
+            <p className="mt-2 text-(length:--text-h3) text-text-strong">{metadata.companyName ?? "Company name unavailable"}</p>
+            <p className="mt-1 text-(length:--text-2xs) text-text-faint">
+              {[metadata.sector, metadata.exchange ?? "PSX"].filter(Boolean).join(" · ")}
+            </p>
           </div>
 
-          <div className="mt-5 overflow-x-auto border-t border-slate-200 pt-4">
-            <div className="grid min-w-[47.5rem] grid-cols-6 gap-4">
-              <HeaderMetric label="Market cap" value={compactMoney(metadata.marketCap)} />
-              <HeaderMetric label="P/E" value={pe !== null ? `${pe.toFixed(1)}x` : "—"} sub={pe !== null && epsPeriod ? `Based on ${epsPeriod} EPS` : pe === null ? "needs financials" : undefined} />
-              <HeaderMetric label="EPS" value={eps !== null ? `PKR ${formatNumber(eps)}` : "—"} sub={eps !== null ? epsPeriod ?? undefined : "needs financials"} />
-              <HeaderMetric label="Dividend yield" value={divYield !== null ? `${divYield.toFixed(2)}%` : "Incomplete"} sub={divYield !== null ? "Announced DPS · TTM" : "DPS unverified"} hint={divYield !== null ? "Trailing 12-month announced cash dividend per share divided by the current price. Based on the company's public payout announcements — not your personal dividend receipts, which are reconciled separately in the Dividend status card." : undefined} />
-              <HeaderMetric label="Volume" value={quote.volume !== null ? compactNumber(quote.volume) : "—"} />
-              <HeaderMetric label="52-week range" value={range52} />
+          <div className="min-w-[15.625rem] max-w-[28.75rem] flex-1 basis-[18.75rem] self-end">
+            <PriceTrack closes={closes} low52={low52} high52={high52} hue={hue} />
+          </div>
+
+          <div className="flex flex-col items-end gap-3">
+            <div className="text-right">
+              <span className="block text-(length:--text-3xs) font-bold uppercase tracking-(--tracking-caps) text-text-faint">Last price</span>
+              <span className="figure mt-1.5 block text-(length:--text-display) font-semibold leading-none tracking-editorial text-text-strong">
+                {quote.price !== null ? formatNumber(quote.price) : "—"}
+              </span>
+              <span className={cn("figure mt-1.5 block text-sm font-semibold", dayUp && "text-up", dayDown && "text-down", !dayUp && !dayDown && "text-text-muted")}>
+                {quote.dayChange !== null ? `${quote.dayChange > 0 ? "+" : quote.dayChange < 0 ? "−" : ""}${formatNumber(Math.abs(quote.dayChange))}` : ""}
+                {quote.dayChangePct !== null ? `${quote.dayChange !== null ? " · " : ""}${formatSignedPct(quote.dayChangePct)} today` : quote.dayChange === null ? "—" : ""}
+              </span>
+            </div>
+            <div className="flex flex-wrap justify-end gap-2.5">
+              {!isDemo && <WatchlistButton ticker={ticker} initialWatched={!!watch} size="default" />}
+              {companyReportsEnabled && <GenerateReportDialog ticker={ticker} companyName={metadata.companyName} />}
+              <AskCopilotLink question={`What should I know about ${ticker} right now?`} />
             </div>
           </div>
-        </CardContent>
-      </Card>
+        </div>
 
-      <Tabs tabs={tabs} initial="overview" />
+        <div className="mt-7 grid border-t border-rule sm:grid-cols-3 lg:grid-cols-6">
+          <HeaderMetric label="Market cap" value={metadata.marketCap !== null ? compactNumber(metadata.marketCap) : "—"} sub="PKR" />
+          <HeaderMetric label="P/E" value={pe !== null ? `${pe.toFixed(1)}x` : "—"} sub={pe !== null && epsPeriod ? `based on ${epsPeriod} EPS` : "needs financials"} />
+          <HeaderMetric label="EPS" value={eps !== null ? formatNumber(eps) : "—"} sub={eps !== null ? epsPeriod ?? "PKR" : "needs financials"} />
+          <HeaderMetric label="Dividend yield" value={divYield !== null ? `${divYield.toFixed(2)}%` : "—"} sub={divYield !== null ? "announced DPS · TTM" : "DPS unverified"} />
+          <HeaderMetric label="Volume" value={quote.volume !== null ? compactNumber(quote.volume) : "—"} sub="shares today" />
+          <HeaderMetric
+            label="52-week range"
+            value={hasRange ? `${formatNumber(low52)}–${formatNumber(high52)}` : "—"}
+            sub={pctOfRange !== null ? `${pctOfRange}% of range` : undefined}
+          />
+        </div>
+      </Band>
+
+      <CompanyTabs tabs={tabs} initial="overview" accent={hue} />
     </div>
   );
 }

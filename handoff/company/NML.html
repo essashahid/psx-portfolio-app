@@ -1,0 +1,998 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>NML · Nishat Mills · Plumb</title>
+<link rel="stylesheet" href="../tokens/fonts.css">
+<link rel="stylesheet" href="../tokens/colors.css">
+<link rel="stylesheet" href="../tokens/spectrum.css">
+<link rel="stylesheet" href="../tokens/typography.css">
+<link rel="stylesheet" href="../tokens/spacing.css">
+<link rel="stylesheet" href="../tokens/shape.css">
+<link rel="stylesheet" href="../tokens/motion.css">
+<link rel="stylesheet" href="../tokens/base.css">
+<style>
+  body { margin:0; background:var(--surface-page); }
+  a { color: var(--indigo-2); text-decoration: none; }
+  a:hover { text-decoration: underline; text-underline-offset: 2px; }
+  button { font-family: var(--font-ui); }
+</style>
+</head>
+<body>
+
+<div style="position:sticky; top:0; z-index:20; background:color-mix(in oklab, var(--surface-page) 94%, transparent); backdrop-filter:var(--blur-bar); border-bottom:var(--border-rule)">
+  <div style="display:flex; align-items:center; gap:34px; padding:15px var(--gutter-page) 14px">
+    <span style="display:flex; align-items:center; gap:10px; flex-shrink:0">
+      <svg width="19" height="19" viewBox="0 0 64 64" aria-hidden="true" style="display:block">
+        <rect x="14" y="14" width="36" height="36" fill="none" stroke="var(--text-strong)" stroke-width="3.55"></rect>
+        <path d="M32 4 V60" stroke="var(--indigo-2)" stroke-width="3.55"></path>
+        <circle cx="32" cy="60" r="3.6" fill="var(--indigo-2)"></circle>
+      </svg>
+      <span style="font-family:var(--font-display); font-size:var(--text-h3); letter-spacing:var(--tracking-editorial); color:var(--text-strong)">Plumb</span>
+    </span>
+    <div style="flex:1; min-width:0; display:flex; flex-wrap:wrap; align-items:center; gap:8px 26px">
+      <span style="font-size:var(--text-body); font-weight:500; color:var(--text-muted); white-space:nowrap">Dashboard</span>
+      <span style="font-size:var(--text-body); font-weight:500; color:var(--text-muted); white-space:nowrap">Holdings</span>
+      <span style="font-size:var(--text-body); font-weight:500; color:var(--text-muted); white-space:nowrap">Dividends</span>
+      <span style="font-size:var(--text-body); font-weight:500; color:var(--text-muted); white-space:nowrap">Performance</span>
+      <span style="font-size:var(--text-body); font-weight:600; color:var(--text-strong); white-space:nowrap">Stock Research</span>
+    </div>
+  </div>
+</div>
+
+<section style="background:var(--surface-page); color:var(--text-strong); padding:var(--band-pad-y) var(--gutter-page); border-bottom:var(--border-rule); background:color-mix(in oklab, #c23a6b 12%, var(--surface-page))">
+  <a href="../screener.html" style="display:inline-flex; align-items:center; gap:7px; margin-bottom:20px; font-size:var(--text-xs); color:var(--text-muted)">
+    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M19 12H5"></path><path d="m12 19-7-7 7-7"></path></svg>
+    <span>All companies</span>
+  </a>
+  <div style="display:flex; flex-wrap:wrap; align-items:flex-end; justify-content:space-between; gap:28px">
+    <div>
+      <span style="display:block; width:44px; height:3px; background:#c23a6b; margin-bottom:14px"></span>
+      <div style="display:flex; flex-wrap:wrap; align-items:baseline; gap:14px">
+        <h1 style="margin:0; font-family:var(--font-display); font-size:var(--text-title); font-weight:400; letter-spacing:var(--tracking-editorial)">NML</h1>
+        
+      </div>
+      <p style="margin:8px 0 0; font-size:var(--text-h3); color:var(--text-strong)">Nishat Mills</p>
+      <p style="margin:4px 0 0; font-size:var(--text-2xs); color:var(--text-faint)">Textile Composite · PSX</p>
+    </div>
+    <div style="flex:1 1 300px; min-width:250px; max-width:460px; align-self:flex-end">
+      <div style="display:flex; align-items:baseline; justify-content:space-between; gap:12px; margin-bottom:5px">
+        <span style="font-size:var(--text-3xs); font-weight:700; text-transform:uppercase; letter-spacing:var(--tracking-caps); color:var(--text-faint)">Last 60 sessions</span>
+        <span class="figure" style="font-size:var(--text-2xs); color:var(--text-faint)">high 98.20</span>
+      </div>
+      <svg viewBox="0 0 460 104" width="100%" height="104" preserveAspectRatio="none" style="display:block; overflow:visible" aria-hidden="true">
+        <line x1="0" y1="4.0" x2="460" y2="4.0" stroke="var(--rule-strong)" stroke-dasharray="3 4" vector-effect="non-scaling-stroke"></line>
+        <line x1="0" y1="100.0" x2="460" y2="100.0" stroke="var(--rule-strong)" stroke-dasharray="3 4" vector-effect="non-scaling-stroke"></line>
+        <path d="M0.0 63.0 L7.8 60.3 L15.6 56.6 L23.4 56.3 L31.2 55.3 L39.0 55.3 L46.8 58.6 L54.6 57.6 L62.4 60.3 L70.2 58.6 L78.0 56.2 L85.8 55.9 L93.6 57.1 L101.4 54.1 L109.2 50.5 L116.9 53.0 L124.7 53.0 L132.5 54.3 L140.3 56.5 L148.1 55.7 L155.9 54.5 L163.7 52.3 L171.5 52.7 L179.3 50.8 L187.1 50.2 L194.9 47.5 L202.7 46.5 L210.5 44.9 L218.3 43.6 L226.1 42.0 L233.9 44.3 L241.7 43.4 L249.5 42.1 L257.3 44.7 L265.1 44.5 L272.9 43.7 L280.7 46.3 L288.5 46.6 L296.3 48.2 L304.1 47.3 L311.9 46.2 L319.7 46.6 L327.5 48.0 L335.3 45.2 L343.1 41.8 L350.8 43.1 L358.6 39.4 L366.4 37.7 L374.2 40.6 L382.0 39.3 L389.8 36.4 L397.6 37.8 L405.4 39.3 L413.2 37.2 L421.0 39.4 L428.8 38.4 L436.6 40.6 L444.4 43.8 L452.2 42.9 L460.0 40.5 L460 104 L0 104 Z" fill="#c23a6b" fill-opacity="0.12"></path>
+        <path d="M0.0 63.0 L7.8 60.3 L15.6 56.6 L23.4 56.3 L31.2 55.3 L39.0 55.3 L46.8 58.6 L54.6 57.6 L62.4 60.3 L70.2 58.6 L78.0 56.2 L85.8 55.9 L93.6 57.1 L101.4 54.1 L109.2 50.5 L116.9 53.0 L124.7 53.0 L132.5 54.3 L140.3 56.5 L148.1 55.7 L155.9 54.5 L163.7 52.3 L171.5 52.7 L179.3 50.8 L187.1 50.2 L194.9 47.5 L202.7 46.5 L210.5 44.9 L218.3 43.6 L226.1 42.0 L233.9 44.3 L241.7 43.4 L249.5 42.1 L257.3 44.7 L265.1 44.5 L272.9 43.7 L280.7 46.3 L288.5 46.6 L296.3 48.2 L304.1 47.3 L311.9 46.2 L319.7 46.6 L327.5 48.0 L335.3 45.2 L343.1 41.8 L350.8 43.1 L358.6 39.4 L366.4 37.7 L374.2 40.6 L382.0 39.3 L389.8 36.4 L397.6 37.8 L405.4 39.3 L413.2 37.2 L421.0 39.4 L428.8 38.4 L436.6 40.6 L444.4 43.8 L452.2 42.9 L460.0 40.5" fill="none" stroke="#c23a6b" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" vector-effect="non-scaling-stroke"></path>
+        <circle cx="460" cy="40.5" r="3.5" fill="#c23a6b"></circle>
+      </svg>
+      <div style="display:flex; align-items:baseline; justify-content:space-between; gap:12px; margin-top:5px">
+        <span style="font-size:var(--text-2xs); color:var(--text-faint)">Dashed rails are the 52-week high and low · 62% of range</span>
+        <span class="figure" style="font-size:var(--text-2xs); color:var(--text-faint)">low 62.40</span>
+      </div>
+    </div>
+    <div style="display:flex; flex-direction:column; align-items:flex-end; gap:12px">
+      <div style="text-align:right">
+        <span style="display:block; font-size:var(--text-3xs); font-weight:700; text-transform:uppercase; letter-spacing:var(--tracking-caps); color:var(--text-faint)">Last price</span>
+        <span class="figure" style="display:block; margin-top:6px; font-size:var(--text-display); font-weight:600; line-height:1; letter-spacing:var(--tracking-editorial)">84.60</span>
+        <span class="figure" style="display:block; margin-top:6px; font-size:var(--text-sm); font-weight:600; color:var(--text-down)">−0.37 · −0.44% today</span>
+      </div>
+      <div style="display:flex; flex-wrap:wrap; gap:9px">
+        <button type="button" style="border:1px solid var(--rule-strong); background:var(--surface-raised); border-radius:var(--radius-sm); padding:7px 13px; font-size:var(--text-xs); font-weight:600; color:var(--text-strong); cursor:pointer">Watch</button>
+        <button type="button" style="border:1px solid var(--rule-strong); background:var(--surface-raised); border-radius:var(--radius-sm); padding:7px 13px; font-size:var(--text-xs); font-weight:600; color:var(--text-strong); cursor:pointer">Generate report</button>
+        <button type="button" style="border:none; background:var(--ink-1); border-radius:var(--radius-sm); padding:7px 13px; font-size:var(--text-xs); font-weight:600; color:var(--text-on-dark); cursor:pointer">Ask Copilot</button>
+      </div>
+    </div>
+  </div>
+  <div style="display:grid; grid-template-columns:repeat(6, minmax(0,1fr)); gap:22px; margin-top:28px; padding-top:22px; border-top:1px solid var(--rule)">
+    <div>
+      <p style="margin:0; font-size:var(--text-3xs); font-weight:700; text-transform:uppercase; letter-spacing:var(--tracking-caps); color:var(--text-faint)">Market cap</p>
+      <p class="figure" style="margin:6px 0 0; font-size:var(--text-h2); font-weight:600; color:var(--text-strong)">29.7bn</p>
+      <p style="margin:3px 0 0; font-size:var(--text-2xs); color:var(--text-faint)">PKR</p>
+    </div>
+    <div>
+      <p style="margin:0; font-size:var(--text-3xs); font-weight:700; text-transform:uppercase; letter-spacing:var(--tracking-caps); color:var(--text-faint)">P/E</p>
+      <p class="figure" style="margin:6px 0 0; font-size:var(--text-h2); font-weight:600; color:var(--text-strong)">6.2x</p>
+      <p style="margin:3px 0 0; font-size:var(--text-2xs); color:var(--text-faint)">based on FY2025 EPS</p>
+    </div>
+    <div>
+      <p style="margin:0; font-size:var(--text-3xs); font-weight:700; text-transform:uppercase; letter-spacing:var(--tracking-caps); color:var(--text-faint)">EPS</p>
+      <p class="figure" style="margin:6px 0 0; font-size:var(--text-h2); font-weight:600; color:var(--text-strong)">13.65</p>
+      <p style="margin:3px 0 0; font-size:var(--text-2xs); color:var(--text-faint)">FY2025</p>
+    </div>
+    <div>
+      <p style="margin:0; font-size:var(--text-3xs); font-weight:700; text-transform:uppercase; letter-spacing:var(--tracking-caps); color:var(--text-faint)">Dividend yield</p>
+      <p class="figure" style="margin:6px 0 0; font-size:var(--text-h2); font-weight:600; color:var(--text-strong)">0.98%</p>
+      <p style="margin:3px 0 0; font-size:var(--text-2xs); color:var(--text-faint)">announced DPS · TTM</p>
+    </div>
+    <div>
+      <p style="margin:0; font-size:var(--text-3xs); font-weight:700; text-transform:uppercase; letter-spacing:var(--tracking-caps); color:var(--text-faint)">Volume</p>
+      <p class="figure" style="margin:6px 0 0; font-size:var(--text-h2); font-weight:600; color:var(--text-strong)">2.0m</p>
+      <p style="margin:3px 0 0; font-size:var(--text-2xs); color:var(--text-faint)">shares today</p>
+    </div>
+    <div>
+      <p style="margin:0; font-size:var(--text-3xs); font-weight:700; text-transform:uppercase; letter-spacing:var(--tracking-caps); color:var(--text-faint)">52-week range</p>
+      <p class="figure" style="margin:6px 0 0; font-size:var(--text-h2); font-weight:600; color:var(--text-strong)">62.40–98.20</p>
+      <p style="margin:3px 0 0; font-size:var(--text-2xs); color:var(--text-faint)">62% of range</p>
+    </div>
+  </div>
+</section>
+
+<section style="background:var(--surface-page); color:var(--text-strong); padding:var(--band-pad-y) var(--gutter-page); border-bottom:var(--border-rule); padding-top:0; padding-bottom:0">
+  <div style="display:flex; flex-wrap:wrap; gap:26px; padding:18px 0 0">
+    <button type="button" data-tab="overview" onclick="pickTab('overview')" style="border:none; background:none; padding:0 0 6px; font-size:var(--text-sm); font-weight:500; color:var(--text-muted); border-bottom:2px solid transparent; white-space:nowrap; cursor:pointer">Overview</button>
+    <button type="button" data-tab="fundamentals" onclick="pickTab('fundamentals')" style="border:none; background:none; padding:0 0 6px; font-size:var(--text-sm); font-weight:500; color:var(--text-muted); border-bottom:2px solid transparent; white-space:nowrap; cursor:pointer">Fundamentals</button>
+    <button type="button" data-tab="earnings" onclick="pickTab('earnings')" style="border:none; background:none; padding:0 0 6px; font-size:var(--text-sm); font-weight:500; color:var(--text-muted); border-bottom:2px solid transparent; white-space:nowrap; cursor:pointer">Earnings</button>
+    <button type="button" data-tab="dividends" onclick="pickTab('dividends')" style="border:none; background:none; padding:0 0 6px; font-size:var(--text-sm); font-weight:500; color:var(--text-muted); border-bottom:2px solid transparent; white-space:nowrap; cursor:pointer">Dividends</button>
+    <button type="button" data-tab="technicals" onclick="pickTab('technicals')" style="border:none; background:none; padding:0 0 6px; font-size:var(--text-sm); font-weight:500; color:var(--text-muted); border-bottom:2px solid transparent; white-space:nowrap; cursor:pointer">Technicals</button>
+    <button type="button" data-tab="news" onclick="pickTab('news')" style="border:none; background:none; padding:0 0 6px; font-size:var(--text-sm); font-weight:500; color:var(--text-muted); border-bottom:2px solid transparent; white-space:nowrap; cursor:pointer">Filings & news</button>
+  </div>
+</section>
+
+<section style="background:var(--surface-page); color:var(--text-strong); padding:var(--band-pad-y) var(--gutter-page); border-bottom:var(--border-rule); background-image:radial-gradient(color-mix(in oklab, var(--ink-4) 26%, transparent) 1px, transparent 1px); background-size:22px 22px; background-position:-1px -1px">
+  <div data-panel="overview">
+    <p class="eyebrow" style="margin:0">The business</p>
+    <p style="margin:12px 0 0; max-width:68ch; font-size:var(--text-body); line-height:1.65; color:var(--text-muted); text-wrap:pretty">No description on file. PSX company data carries no business summary for NML yet, so nothing is shown rather than inferred.</p>
+    <div style="margin-top:30px">
+      <p style="margin:0 0 12px; padding-bottom:8px; border-bottom:1px solid var(--rule-strong); font-size:var(--text-3xs); font-weight:700; text-transform:uppercase; letter-spacing:var(--tracking-caps); color:var(--text-faint)">Key signals</p>
+      <div class="ledger">
+        <div class="ledger-row" style="display:grid; grid-template-columns:minmax(0,1fr) auto; align-items:baseline; gap:18px">
+          <span><span style="display:block; font-size:var(--text-sm); color:var(--text-strong)">Valuation against the sector</span>
+          <span class="figure" style="display:block; margin-top:3px; font-size:var(--text-2xs); color:var(--text-faint)">P/E, FY2025</span></span>
+          <span class="figure" style="text-align:right; font-size:var(--text-sm); font-weight:600; color:var(--text-strong)">6.2x against 5.5x</span>
+        </div>
+        <div class="ledger-row" style="display:grid; grid-template-columns:minmax(0,1fr) auto; align-items:baseline; gap:18px">
+          <span><span style="display:block; font-size:var(--text-sm); color:var(--text-strong)">Distance from the 52-week high</span>
+          <span class="figure" style="display:block; margin-top:3px; font-size:var(--text-2xs); color:var(--text-faint)">high 98.20</span></span>
+          <span class="figure" style="text-align:right; font-size:var(--text-sm); font-weight:600; color:var(--text-strong)">−13.8%</span>
+        </div>
+        <div class="ledger-row" style="display:grid; grid-template-columns:minmax(0,1fr) auto; align-items:baseline; gap:18px">
+          <span><span style="display:block; font-size:var(--text-sm); color:var(--text-strong)">Momentum</span>
+          <span class="figure" style="display:block; margin-top:3px; font-size:var(--text-2xs); color:var(--text-faint)">50-session 78.85</span></span>
+          <span class="figure" style="text-align:right; font-size:var(--text-sm); font-weight:600; color:var(--text-strong)">Above the 50-session average</span>
+        </div>
+        <div class="ledger-row" style="display:grid; grid-template-columns:minmax(0,1fr) auto; align-items:baseline; gap:18px">
+          <span><span style="display:block; font-size:var(--text-sm); color:var(--text-strong)">Payout</span>
+          <span class="figure" style="display:block; margin-top:3px; font-size:var(--text-2xs); color:var(--text-faint)">trailing twelve months</span></span>
+          <span class="figure" style="text-align:right; font-size:var(--text-sm); font-weight:600; color:var(--text-strong)">0.98% on the current price</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div data-panel="fundamentals" hidden>
+    <p class="eyebrow" style="margin:0">Five filed years</p>
+    <h2 style="margin:6px 0 4px; font-family:var(--font-display); font-size:var(--text-h1); font-weight:400; letter-spacing:var(--tracking-editorial)">How the business earns</h2>
+    <p style="margin:0 0 26px; max-width:68ch; font-size:var(--text-sm); color:var(--text-muted)">Shaded band is this company's own FY2021–FY2025 range. The dashed hairline is the sector median. Select a chart to read the years and the sector ranking.</p>
+    <div style="display:grid; grid-template-columns:repeat(3, minmax(0,1fr)); gap:1px; background:var(--rule)">
+        <button type="button" data-metric="revenue" onclick="pickMetric('revenue')" title="Read Revenue year by year" style="display:block; width:100%; text-align:left; border:none; border-left:2px solid transparent; background:transparent; padding:18px 20px 16px; cursor:pointer">
+          <span style="display:flex; align-items:baseline; justify-content:space-between; gap:12px">
+            <span data-mlabel style="font-size:var(--text-3xs); font-weight:700; text-transform:uppercase; letter-spacing:var(--tracking-caps); color:var(--text-faint)">Revenue</span>
+            <span class="figure" style="font-size:var(--text-2xs); font-weight:600; color:var(--text-up)">+33.8% on FY2024</span>
+          </span>
+          <span class="figure" style="display:block; margin-top:8px; font-size:var(--text-h1); font-weight:600; line-height:1; color:var(--text-strong)">33.1bn</span>
+          <span style="display:block; margin-top:3px; font-size:var(--text-2xs); color:var(--text-faint)">PKR, filed accounts</span>
+          <svg viewBox="0 0 240 66" width="100%" height="66" preserveAspectRatio="none" style="display:block; margin-top:14px; overflow:visible" aria-hidden="true">
+            <rect x="0" y="10.1" width="240" height="45.8" fill="#c23a6b" fill-opacity="0.1"></rect>
+            <line x1="0" y1="10.1" x2="240" y2="10.1" stroke="var(--ink-3)" stroke-dasharray="3 4" vector-effect="non-scaling-stroke"></line>
+            <path d="M0.0 55.9 L60.0 42.0 L120.0 43.5 L180.0 32.2 L240.0 10.1" fill="none" stroke="#c23a6b" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" vector-effect="non-scaling-stroke"></path>
+            <circle cx="240" cy="10.1" r="3" fill="#c23a6b"></circle>
+          </svg>
+          <span style="display:flex; align-items:baseline; justify-content:space-between; gap:12px; margin-top:9px">
+            <span class="figure" style="font-size:var(--text-2xs); color:var(--text-faint)">5-yr 15.8bn–33.1bn</span>
+            <span class="figure" style="font-size:var(--text-2xs); color:var(--text-muted)">median 33.1bn</span>
+          </span>
+        </button>
+        <button type="button" data-metric="margin" onclick="pickMetric('margin')" title="Read Net margin year by year" style="display:block; width:100%; text-align:left; border:none; border-left:2px solid transparent; background:transparent; padding:18px 20px 16px; cursor:pointer">
+          <span style="display:flex; align-items:baseline; justify-content:space-between; gap:12px">
+            <span data-mlabel style="font-size:var(--text-3xs); font-weight:700; text-transform:uppercase; letter-spacing:var(--tracking-caps); color:var(--text-faint)">Net margin</span>
+            <span class="figure" style="font-size:var(--text-2xs); font-weight:600; color:var(--text-down)">−4.7% on FY2024</span>
+          </span>
+          <span class="figure" style="display:block; margin-top:8px; font-size:var(--text-h1); font-weight:600; line-height:1; color:var(--text-strong)">14.5%</span>
+          <span style="display:block; margin-top:3px; font-size:var(--text-2xs); color:var(--text-faint)">profit after tax ÷ revenue</span>
+          <svg viewBox="0 0 240 66" width="100%" height="66" preserveAspectRatio="none" style="display:block; margin-top:14px; overflow:visible" aria-hidden="true">
+            <rect x="0" y="10.1" width="240" height="45.8" fill="#c23a6b" fill-opacity="0.1"></rect>
+            <line x1="0" y1="55.9" x2="240" y2="55.9" stroke="var(--ink-3)" stroke-dasharray="3 4" vector-effect="non-scaling-stroke"></line>
+            <path d="M0.0 23.0 L60.0 45.9 L120.0 10.1 L180.0 33.0 L240.0 55.9" fill="none" stroke="#c23a6b" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" vector-effect="non-scaling-stroke"></path>
+            <circle cx="240" cy="55.9" r="3" fill="#c23a6b"></circle>
+          </svg>
+          <span style="display:flex; align-items:baseline; justify-content:space-between; gap:12px; margin-top:9px">
+            <span class="figure" style="font-size:var(--text-2xs); color:var(--text-faint)">5-yr 14.5%–15.9%</span>
+            <span class="figure" style="font-size:var(--text-2xs); color:var(--text-muted)">median 14.5%</span>
+          </span>
+        </button>
+        <button type="button" data-metric="eps" onclick="pickMetric('eps')" title="Read Earnings per share year by year" style="display:block; width:100%; text-align:left; border:none; border-left:2px solid transparent; background:transparent; padding:18px 20px 16px; cursor:pointer">
+          <span style="display:flex; align-items:baseline; justify-content:space-between; gap:12px">
+            <span data-mlabel style="font-size:var(--text-3xs); font-weight:700; text-transform:uppercase; letter-spacing:var(--tracking-caps); color:var(--text-faint)">Earnings per share</span>
+            <span class="figure" style="font-size:var(--text-2xs); font-weight:600; color:var(--text-up)">+27.5% on FY2024</span>
+          </span>
+          <span class="figure" style="display:block; margin-top:8px; font-size:var(--text-h1); font-weight:600; line-height:1; color:var(--text-strong)">13.65</span>
+          <span style="display:block; margin-top:3px; font-size:var(--text-2xs); color:var(--text-faint)">PKR, diluted</span>
+          <svg viewBox="0 0 240 66" width="100%" height="66" preserveAspectRatio="none" style="display:block; margin-top:14px; overflow:visible" aria-hidden="true">
+            <rect x="0" y="10.1" width="240" height="45.8" fill="#c23a6b" fill-opacity="0.1"></rect>
+            <line x1="0" y1="10.1" x2="240" y2="10.1" stroke="var(--ink-3)" stroke-dasharray="3 4" vector-effect="non-scaling-stroke"></line>
+            <path d="M0.0 55.9 L60.0 42.9 L120.0 40.1 L180.0 30.3 L240.0 10.1" fill="none" stroke="#c23a6b" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" vector-effect="non-scaling-stroke"></path>
+            <circle cx="240" cy="10.1" r="3" fill="#c23a6b"></circle>
+          </svg>
+          <span style="display:flex; align-items:baseline; justify-content:space-between; gap:12px; margin-top:9px">
+            <span class="figure" style="font-size:var(--text-2xs); color:var(--text-faint)">5-yr 6.97–13.65</span>
+            <span class="figure" style="font-size:var(--text-2xs); color:var(--text-muted)">median 13.65</span>
+          </span>
+        </button>
+        <button type="button" data-metric="roe" onclick="pickMetric('roe')" title="Read Return on equity year by year" style="display:block; width:100%; text-align:left; border:none; border-left:2px solid transparent; background:transparent; padding:18px 20px 16px; cursor:pointer">
+          <span style="display:flex; align-items:baseline; justify-content:space-between; gap:12px">
+            <span data-mlabel style="font-size:var(--text-3xs); font-weight:700; text-transform:uppercase; letter-spacing:var(--tracking-caps); color:var(--text-faint)">Return on equity</span>
+            <span class="figure" style="font-size:var(--text-2xs); font-weight:600; color:var(--text-up)">+11.8% on FY2024</span>
+          </span>
+          <span class="figure" style="display:block; margin-top:8px; font-size:var(--text-h1); font-weight:600; line-height:1; color:var(--text-strong)">9.5%</span>
+          <span style="display:block; margin-top:3px; font-size:var(--text-2xs); color:var(--text-faint)">profit ÷ average equity</span>
+          <svg viewBox="0 0 240 66" width="100%" height="66" preserveAspectRatio="none" style="display:block; margin-top:14px; overflow:visible" aria-hidden="true">
+            <rect x="0" y="10.1" width="240" height="45.8" fill="#c23a6b" fill-opacity="0.1"></rect>
+            <line x1="0" y1="10.1" x2="240" y2="10.1" stroke="var(--ink-3)" stroke-dasharray="3 4" vector-effect="non-scaling-stroke"></line>
+            <path d="M0.0 55.9 L60.0 38.1 L120.0 33.4 L180.0 29.4 L240.0 10.1" fill="none" stroke="#c23a6b" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" vector-effect="non-scaling-stroke"></path>
+            <circle cx="240" cy="10.1" r="3" fill="#c23a6b"></circle>
+          </svg>
+          <span style="display:flex; align-items:baseline; justify-content:space-between; gap:12px; margin-top:9px">
+            <span class="figure" style="font-size:var(--text-2xs); color:var(--text-faint)">5-yr 7.1%–9.5%</span>
+            <span class="figure" style="font-size:var(--text-2xs); color:var(--text-muted)">median 9.5%</span>
+          </span>
+        </button>
+        <button type="button" data-metric="de" onclick="pickMetric('de')" title="Read Debt to equity year by year" style="display:block; width:100%; text-align:left; border:none; border-left:2px solid transparent; background:transparent; padding:18px 20px 16px; cursor:pointer">
+          <span style="display:flex; align-items:baseline; justify-content:space-between; gap:12px">
+            <span data-mlabel style="font-size:var(--text-3xs); font-weight:700; text-transform:uppercase; letter-spacing:var(--tracking-caps); color:var(--text-faint)">Debt to equity</span>
+            <span class="figure" style="font-size:var(--text-2xs); font-weight:600; color:var(--text-up)">−9.0% on FY2024</span>
+          </span>
+          <span class="figure" style="display:block; margin-top:8px; font-size:var(--text-h1); font-weight:600; line-height:1; color:var(--text-strong)">0.41x</span>
+          <span style="display:block; margin-top:3px; font-size:var(--text-2xs); color:var(--text-faint)">total debt ÷ equity</span>
+          <svg viewBox="0 0 240 66" width="100%" height="66" preserveAspectRatio="none" style="display:block; margin-top:14px; overflow:visible" aria-hidden="true">
+            <rect x="0" y="10.1" width="240" height="45.8" fill="#c23a6b" fill-opacity="0.1"></rect>
+            <line x1="0" y1="55.9" x2="240" y2="55.9" stroke="var(--ink-3)" stroke-dasharray="3 4" vector-effect="non-scaling-stroke"></line>
+            <path d="M0.0 10.1 L60.0 13.2 L120.0 32.6 L180.0 37.0 L240.0 55.9" fill="none" stroke="#c23a6b" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" vector-effect="non-scaling-stroke"></path>
+            <circle cx="240" cy="55.9" r="3" fill="#c23a6b"></circle>
+          </svg>
+          <span style="display:flex; align-items:baseline; justify-content:space-between; gap:12px; margin-top:9px">
+            <span class="figure" style="font-size:var(--text-2xs); color:var(--text-faint)">5-yr 0.41x–0.51x</span>
+            <span class="figure" style="font-size:var(--text-2xs); color:var(--text-muted)">median 0.41x</span>
+          </span>
+        </button>
+        <button type="button" data-metric="cc" onclick="pickMetric('cc')" title="Read Cash conversion year by year" style="display:block; width:100%; text-align:left; border:none; border-left:2px solid transparent; background:transparent; padding:18px 20px 16px; cursor:pointer">
+          <span style="display:flex; align-items:baseline; justify-content:space-between; gap:12px">
+            <span data-mlabel style="font-size:var(--text-3xs); font-weight:700; text-transform:uppercase; letter-spacing:var(--tracking-caps); color:var(--text-faint)">Cash conversion</span>
+            <span class="figure" style="font-size:var(--text-2xs); font-weight:600; color:var(--text-up)">+0.5% on FY2024</span>
+          </span>
+          <span class="figure" style="display:block; margin-top:8px; font-size:var(--text-h1); font-weight:600; line-height:1; color:var(--text-strong)">88%</span>
+          <span style="display:block; margin-top:3px; font-size:var(--text-2xs); color:var(--text-faint)">operating cash flow ÷ profit</span>
+          <svg viewBox="0 0 240 66" width="100%" height="66" preserveAspectRatio="none" style="display:block; margin-top:14px; overflow:visible" aria-hidden="true">
+            <rect x="0" y="10.1" width="240" height="45.8" fill="#c23a6b" fill-opacity="0.1"></rect>
+            <line x1="0" y1="10.1" x2="240" y2="10.1" stroke="var(--ink-3)" stroke-dasharray="3 4" vector-effect="non-scaling-stroke"></line>
+            <path d="M0.0 55.9 L60.0 35.1 L120.0 33.3 L180.0 11.5 L240.0 10.1" fill="none" stroke="#c23a6b" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" vector-effect="non-scaling-stroke"></path>
+            <circle cx="240" cy="10.1" r="3" fill="#c23a6b"></circle>
+          </svg>
+          <span style="display:flex; align-items:baseline; justify-content:space-between; gap:12px; margin-top:9px">
+            <span class="figure" style="font-size:var(--text-2xs); color:var(--text-faint)">5-yr 73%–88%</span>
+            <span class="figure" style="font-size:var(--text-2xs); color:var(--text-muted)">median 88%</span>
+          </span>
+        </button>
+    </div>
+    <div data-detail="revenue" hidden style="display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1.15fr); gap:52px; margin-top:34px; align-items:start">
+          <div>
+            <p style="margin:0 0 12px; padding-bottom:8px; border-bottom:1px solid var(--rule-strong); font-size:var(--text-3xs); font-weight:700; text-transform:uppercase; letter-spacing:var(--tracking-caps); color:var(--text-faint)">Revenue · PKR, filed accounts</p>
+            <div class="ledger"><div class="ledger-row" style="display:grid; grid-template-columns:minmax(0,1fr) auto 88px; align-items:baseline; gap:16px">
+              <span style="font-size:var(--text-sm); color:var(--text-strong)">FY2021</span>
+              <span class="figure" style="text-align:right; font-size:var(--text-sm); font-weight:600; color:var(--text-strong)">15.8bn</span>
+              <span class="figure" style="text-align:right; font-size:var(--text-sm); color:var(--text-faint)">—</span>
+            </div><div class="ledger-row" style="display:grid; grid-template-columns:minmax(0,1fr) auto 88px; align-items:baseline; gap:16px">
+              <span style="font-size:var(--text-sm); color:var(--text-strong)">FY2022</span>
+              <span class="figure" style="text-align:right; font-size:var(--text-sm); font-weight:600; color:var(--text-strong)">21.1bn</span>
+              <span class="figure" style="text-align:right; font-size:var(--text-sm); color:var(--text-up)">+33.3%</span>
+            </div><div class="ledger-row" style="display:grid; grid-template-columns:minmax(0,1fr) auto 88px; align-items:baseline; gap:16px">
+              <span style="font-size:var(--text-sm); color:var(--text-strong)">FY2023</span>
+              <span class="figure" style="text-align:right; font-size:var(--text-sm); font-weight:600; color:var(--text-strong)">20.5bn</span>
+              <span class="figure" style="text-align:right; font-size:var(--text-sm); color:var(--text-down)">−2.6%</span>
+            </div><div class="ledger-row" style="display:grid; grid-template-columns:minmax(0,1fr) auto 88px; align-items:baseline; gap:16px">
+              <span style="font-size:var(--text-sm); color:var(--text-strong)">FY2024</span>
+              <span class="figure" style="text-align:right; font-size:var(--text-sm); font-weight:600; color:var(--text-strong)">24.8bn</span>
+              <span class="figure" style="text-align:right; font-size:var(--text-sm); color:var(--text-up)">+20.8%</span>
+            </div><div class="ledger-row" style="display:grid; grid-template-columns:minmax(0,1fr) auto 88px; align-items:baseline; gap:16px">
+              <span style="font-size:var(--text-sm); color:var(--text-strong)">FY2025</span>
+              <span class="figure" style="text-align:right; font-size:var(--text-sm); font-weight:600; color:var(--text-strong)">33.1bn</span>
+              <span class="figure" style="text-align:right; font-size:var(--text-sm); color:var(--text-up)">+33.8%</span>
+            </div></div>
+            <p style="margin:16px 0 0; max-width:60ch; font-size:var(--text-2xs); line-height:1.6; color:var(--text-muted); text-wrap:pretty">Revenue says how much business the company did before any judgement about cost. Compare it with margin: growth that arrives with a thinner margin is bought, not earned.</p>
+          </div>
+          <div>
+            <p style="margin:0 0 12px; padding-bottom:8px; border-bottom:1px solid var(--rule-strong); font-size:var(--text-3xs); font-weight:700; text-transform:uppercase; letter-spacing:var(--tracking-caps); color:var(--text-faint)">Revenue across Textile Composite</p>
+            <div class="ledger"><div class="ledger-row">
+              <div style="display:grid; grid-template-columns:22px 88px minmax(0,1fr) 92px; align-items:baseline; gap:12px">
+                <span class="figure" style="font-size:var(--text-2xs); color:var(--text-faint)">1</span>
+                <span style="font-size:var(--text-sm); font-weight:600; color:var(--text-strong)">NML</span>
+                <span style="min-width:0; font-size:var(--text-2xs); color:var(--text-faint); overflow:hidden; text-overflow:ellipsis; white-space:nowrap">Nishat Mills</span>
+                <span class="figure" style="text-align:right; font-size:var(--text-sm); font-weight:600; color:var(--text-strong)">33.1bn</span>
+              </div>
+              <div style="height:3px; margin-top:7px; background:var(--surface-inset)">
+                <span style="display:block; height:100%; width:100.0%; background:#c23a6b"></span>
+              </div>
+            </div></div>
+            <p style="margin:16px 0 0; font-size:var(--text-2xs); color:var(--text-faint)">1 companies in this sector are covered; the dashed hairline in each chart is their FY2025 median.</p>
+          </div>
+        </div><div data-detail="margin" hidden style="display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1.15fr); gap:52px; margin-top:34px; align-items:start">
+          <div>
+            <p style="margin:0 0 12px; padding-bottom:8px; border-bottom:1px solid var(--rule-strong); font-size:var(--text-3xs); font-weight:700; text-transform:uppercase; letter-spacing:var(--tracking-caps); color:var(--text-faint)">Net margin · profit after tax ÷ revenue</p>
+            <div class="ledger"><div class="ledger-row" style="display:grid; grid-template-columns:minmax(0,1fr) auto 88px; align-items:baseline; gap:16px">
+              <span style="font-size:var(--text-sm); color:var(--text-strong)">FY2021</span>
+              <span class="figure" style="text-align:right; font-size:var(--text-sm); font-weight:600; color:var(--text-strong)">15.5%</span>
+              <span class="figure" style="text-align:right; font-size:var(--text-sm); color:var(--text-faint)">—</span>
+            </div><div class="ledger-row" style="display:grid; grid-template-columns:minmax(0,1fr) auto 88px; align-items:baseline; gap:16px">
+              <span style="font-size:var(--text-sm); color:var(--text-strong)">FY2022</span>
+              <span class="figure" style="text-align:right; font-size:var(--text-sm); font-weight:600; color:var(--text-strong)">14.8%</span>
+              <span class="figure" style="text-align:right; font-size:var(--text-sm); color:var(--text-down)">−4.6%</span>
+            </div><div class="ledger-row" style="display:grid; grid-template-columns:minmax(0,1fr) auto 88px; align-items:baseline; gap:16px">
+              <span style="font-size:var(--text-sm); color:var(--text-strong)">FY2023</span>
+              <span class="figure" style="text-align:right; font-size:var(--text-sm); font-weight:600; color:var(--text-strong)">15.9%</span>
+              <span class="figure" style="text-align:right; font-size:var(--text-sm); color:var(--text-up)">+7.5%</span>
+            </div><div class="ledger-row" style="display:grid; grid-template-columns:minmax(0,1fr) auto 88px; align-items:baseline; gap:16px">
+              <span style="font-size:var(--text-sm); color:var(--text-strong)">FY2024</span>
+              <span class="figure" style="text-align:right; font-size:var(--text-sm); font-weight:600; color:var(--text-strong)">15.2%</span>
+              <span class="figure" style="text-align:right; font-size:var(--text-sm); color:var(--text-down)">−4.5%</span>
+            </div><div class="ledger-row" style="display:grid; grid-template-columns:minmax(0,1fr) auto 88px; align-items:baseline; gap:16px">
+              <span style="font-size:var(--text-sm); color:var(--text-strong)">FY2025</span>
+              <span class="figure" style="text-align:right; font-size:var(--text-sm); font-weight:600; color:var(--text-strong)">14.5%</span>
+              <span class="figure" style="text-align:right; font-size:var(--text-sm); color:var(--text-down)">−4.7%</span>
+            </div></div>
+            <p style="margin:16px 0 0; max-width:60ch; font-size:var(--text-2xs); line-height:1.6; color:var(--text-muted); text-wrap:pretty">How much of each rupee of revenue survives to profit. Stable margin through a cost cycle is the clearest sign of pricing power.</p>
+          </div>
+          <div>
+            <p style="margin:0 0 12px; padding-bottom:8px; border-bottom:1px solid var(--rule-strong); font-size:var(--text-3xs); font-weight:700; text-transform:uppercase; letter-spacing:var(--tracking-caps); color:var(--text-faint)">Net margin across Textile Composite</p>
+            <div class="ledger"><div class="ledger-row">
+              <div style="display:grid; grid-template-columns:22px 88px minmax(0,1fr) 92px; align-items:baseline; gap:12px">
+                <span class="figure" style="font-size:var(--text-2xs); color:var(--text-faint)">1</span>
+                <span style="font-size:var(--text-sm); font-weight:600; color:var(--text-strong)">NML</span>
+                <span style="min-width:0; font-size:var(--text-2xs); color:var(--text-faint); overflow:hidden; text-overflow:ellipsis; white-space:nowrap">Nishat Mills</span>
+                <span class="figure" style="text-align:right; font-size:var(--text-sm); font-weight:600; color:var(--text-strong)">14.5%</span>
+              </div>
+              <div style="height:3px; margin-top:7px; background:var(--surface-inset)">
+                <span style="display:block; height:100%; width:100.0%; background:#c23a6b"></span>
+              </div>
+            </div></div>
+            <p style="margin:16px 0 0; font-size:var(--text-2xs); color:var(--text-faint)">1 companies in this sector are covered; the dashed hairline in each chart is their FY2025 median.</p>
+          </div>
+        </div><div data-detail="eps" hidden style="display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1.15fr); gap:52px; margin-top:34px; align-items:start">
+          <div>
+            <p style="margin:0 0 12px; padding-bottom:8px; border-bottom:1px solid var(--rule-strong); font-size:var(--text-3xs); font-weight:700; text-transform:uppercase; letter-spacing:var(--tracking-caps); color:var(--text-faint)">Earnings per share · PKR, diluted</p>
+            <div class="ledger"><div class="ledger-row" style="display:grid; grid-template-columns:minmax(0,1fr) auto 88px; align-items:baseline; gap:16px">
+              <span style="font-size:var(--text-sm); color:var(--text-strong)">FY2021</span>
+              <span class="figure" style="text-align:right; font-size:var(--text-sm); font-weight:600; color:var(--text-strong)">6.97</span>
+              <span class="figure" style="text-align:right; font-size:var(--text-sm); color:var(--text-faint)">—</span>
+            </div><div class="ledger-row" style="display:grid; grid-template-columns:minmax(0,1fr) auto 88px; align-items:baseline; gap:16px">
+              <span style="font-size:var(--text-sm); color:var(--text-strong)">FY2022</span>
+              <span class="figure" style="text-align:right; font-size:var(--text-sm); font-weight:600; color:var(--text-strong)">8.86</span>
+              <span class="figure" style="text-align:right; font-size:var(--text-sm); color:var(--text-up)">+27.2%</span>
+            </div><div class="ledger-row" style="display:grid; grid-template-columns:minmax(0,1fr) auto 88px; align-items:baseline; gap:16px">
+              <span style="font-size:var(--text-sm); color:var(--text-strong)">FY2023</span>
+              <span class="figure" style="text-align:right; font-size:var(--text-sm); font-weight:600; color:var(--text-strong)">9.27</span>
+              <span class="figure" style="text-align:right; font-size:var(--text-sm); color:var(--text-up)">+4.7%</span>
+            </div><div class="ledger-row" style="display:grid; grid-template-columns:minmax(0,1fr) auto 88px; align-items:baseline; gap:16px">
+              <span style="font-size:var(--text-sm); color:var(--text-strong)">FY2024</span>
+              <span class="figure" style="text-align:right; font-size:var(--text-sm); font-weight:600; color:var(--text-strong)">10.70</span>
+              <span class="figure" style="text-align:right; font-size:var(--text-sm); color:var(--text-up)">+15.4%</span>
+            </div><div class="ledger-row" style="display:grid; grid-template-columns:minmax(0,1fr) auto 88px; align-items:baseline; gap:16px">
+              <span style="font-size:var(--text-sm); color:var(--text-strong)">FY2025</span>
+              <span class="figure" style="text-align:right; font-size:var(--text-sm); font-weight:600; color:var(--text-strong)">13.65</span>
+              <span class="figure" style="text-align:right; font-size:var(--text-sm); color:var(--text-up)">+27.5%</span>
+            </div></div>
+            <p style="margin:16px 0 0; max-width:60ch; font-size:var(--text-2xs); line-height:1.6; color:var(--text-muted); text-wrap:pretty">The per-share claim on profit, and the denominator of the P/E in the header. EPS rising faster than revenue means margin or leverage is doing the work.</p>
+          </div>
+          <div>
+            <p style="margin:0 0 12px; padding-bottom:8px; border-bottom:1px solid var(--rule-strong); font-size:var(--text-3xs); font-weight:700; text-transform:uppercase; letter-spacing:var(--tracking-caps); color:var(--text-faint)">Earnings per share across Textile Composite</p>
+            <div class="ledger"><div class="ledger-row">
+              <div style="display:grid; grid-template-columns:22px 88px minmax(0,1fr) 92px; align-items:baseline; gap:12px">
+                <span class="figure" style="font-size:var(--text-2xs); color:var(--text-faint)">1</span>
+                <span style="font-size:var(--text-sm); font-weight:600; color:var(--text-strong)">NML</span>
+                <span style="min-width:0; font-size:var(--text-2xs); color:var(--text-faint); overflow:hidden; text-overflow:ellipsis; white-space:nowrap">Nishat Mills</span>
+                <span class="figure" style="text-align:right; font-size:var(--text-sm); font-weight:600; color:var(--text-strong)">13.65</span>
+              </div>
+              <div style="height:3px; margin-top:7px; background:var(--surface-inset)">
+                <span style="display:block; height:100%; width:100.0%; background:#c23a6b"></span>
+              </div>
+            </div></div>
+            <p style="margin:16px 0 0; font-size:var(--text-2xs); color:var(--text-faint)">1 companies in this sector are covered; the dashed hairline in each chart is their FY2025 median.</p>
+          </div>
+        </div><div data-detail="roe" hidden style="display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1.15fr); gap:52px; margin-top:34px; align-items:start">
+          <div>
+            <p style="margin:0 0 12px; padding-bottom:8px; border-bottom:1px solid var(--rule-strong); font-size:var(--text-3xs); font-weight:700; text-transform:uppercase; letter-spacing:var(--tracking-caps); color:var(--text-faint)">Return on equity · profit ÷ average equity</p>
+            <div class="ledger"><div class="ledger-row" style="display:grid; grid-template-columns:minmax(0,1fr) auto 88px; align-items:baseline; gap:16px">
+              <span style="font-size:var(--text-sm); color:var(--text-strong)">FY2021</span>
+              <span class="figure" style="text-align:right; font-size:var(--text-sm); font-weight:600; color:var(--text-strong)">7.1%</span>
+              <span class="figure" style="text-align:right; font-size:var(--text-sm); color:var(--text-faint)">—</span>
+            </div><div class="ledger-row" style="display:grid; grid-template-columns:minmax(0,1fr) auto 88px; align-items:baseline; gap:16px">
+              <span style="font-size:var(--text-sm); color:var(--text-strong)">FY2022</span>
+              <span class="figure" style="text-align:right; font-size:var(--text-sm); font-weight:600; color:var(--text-strong)">8.0%</span>
+              <span class="figure" style="text-align:right; font-size:var(--text-sm); color:var(--text-up)">+13.0%</span>
+            </div><div class="ledger-row" style="display:grid; grid-template-columns:minmax(0,1fr) auto 88px; align-items:baseline; gap:16px">
+              <span style="font-size:var(--text-sm); color:var(--text-strong)">FY2023</span>
+              <span class="figure" style="text-align:right; font-size:var(--text-sm); font-weight:600; color:var(--text-strong)">8.3%</span>
+              <span class="figure" style="text-align:right; font-size:var(--text-sm); color:var(--text-up)">+3.0%</span>
+            </div><div class="ledger-row" style="display:grid; grid-template-columns:minmax(0,1fr) auto 88px; align-items:baseline; gap:16px">
+              <span style="font-size:var(--text-sm); color:var(--text-strong)">FY2024</span>
+              <span class="figure" style="text-align:right; font-size:var(--text-sm); font-weight:600; color:var(--text-strong)">8.5%</span>
+              <span class="figure" style="text-align:right; font-size:var(--text-sm); color:var(--text-up)">+2.5%</span>
+            </div><div class="ledger-row" style="display:grid; grid-template-columns:minmax(0,1fr) auto 88px; align-items:baseline; gap:16px">
+              <span style="font-size:var(--text-sm); color:var(--text-strong)">FY2025</span>
+              <span class="figure" style="text-align:right; font-size:var(--text-sm); font-weight:600; color:var(--text-strong)">9.5%</span>
+              <span class="figure" style="text-align:right; font-size:var(--text-sm); color:var(--text-up)">+11.8%</span>
+            </div></div>
+            <p style="margin:16px 0 0; max-width:60ch; font-size:var(--text-2xs); line-height:1.6; color:var(--text-muted); text-wrap:pretty">What the company earns on shareholders' own capital. Read it beside debt to equity — leverage lifts return on equity without improving the business.</p>
+          </div>
+          <div>
+            <p style="margin:0 0 12px; padding-bottom:8px; border-bottom:1px solid var(--rule-strong); font-size:var(--text-3xs); font-weight:700; text-transform:uppercase; letter-spacing:var(--tracking-caps); color:var(--text-faint)">Return on equity across Textile Composite</p>
+            <div class="ledger"><div class="ledger-row">
+              <div style="display:grid; grid-template-columns:22px 88px minmax(0,1fr) 92px; align-items:baseline; gap:12px">
+                <span class="figure" style="font-size:var(--text-2xs); color:var(--text-faint)">1</span>
+                <span style="font-size:var(--text-sm); font-weight:600; color:var(--text-strong)">NML</span>
+                <span style="min-width:0; font-size:var(--text-2xs); color:var(--text-faint); overflow:hidden; text-overflow:ellipsis; white-space:nowrap">Nishat Mills</span>
+                <span class="figure" style="text-align:right; font-size:var(--text-sm); font-weight:600; color:var(--text-strong)">9.5%</span>
+              </div>
+              <div style="height:3px; margin-top:7px; background:var(--surface-inset)">
+                <span style="display:block; height:100%; width:100.0%; background:#c23a6b"></span>
+              </div>
+            </div></div>
+            <p style="margin:16px 0 0; font-size:var(--text-2xs); color:var(--text-faint)">1 companies in this sector are covered; the dashed hairline in each chart is their FY2025 median.</p>
+          </div>
+        </div><div data-detail="de" hidden style="display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1.15fr); gap:52px; margin-top:34px; align-items:start">
+          <div>
+            <p style="margin:0 0 12px; padding-bottom:8px; border-bottom:1px solid var(--rule-strong); font-size:var(--text-3xs); font-weight:700; text-transform:uppercase; letter-spacing:var(--tracking-caps); color:var(--text-faint)">Debt to equity · total debt ÷ equity</p>
+            <div class="ledger"><div class="ledger-row" style="display:grid; grid-template-columns:minmax(0,1fr) auto 88px; align-items:baseline; gap:16px">
+              <span style="font-size:var(--text-sm); color:var(--text-strong)">FY2021</span>
+              <span class="figure" style="text-align:right; font-size:var(--text-sm); font-weight:600; color:var(--text-strong)">0.51x</span>
+              <span class="figure" style="text-align:right; font-size:var(--text-sm); color:var(--text-faint)">—</span>
+            </div><div class="ledger-row" style="display:grid; grid-template-columns:minmax(0,1fr) auto 88px; align-items:baseline; gap:16px">
+              <span style="font-size:var(--text-sm); color:var(--text-strong)">FY2022</span>
+              <span class="figure" style="text-align:right; font-size:var(--text-sm); font-weight:600; color:var(--text-strong)">0.50x</span>
+              <span class="figure" style="text-align:right; font-size:var(--text-sm); color:var(--text-up)">−1.3%</span>
+            </div><div class="ledger-row" style="display:grid; grid-template-columns:minmax(0,1fr) auto 88px; align-items:baseline; gap:16px">
+              <span style="font-size:var(--text-sm); color:var(--text-strong)">FY2023</span>
+              <span class="figure" style="text-align:right; font-size:var(--text-sm); font-weight:600; color:var(--text-strong)">0.46x</span>
+              <span class="figure" style="text-align:right; font-size:var(--text-sm); color:var(--text-up)">−8.3%</span>
+            </div><div class="ledger-row" style="display:grid; grid-template-columns:minmax(0,1fr) auto 88px; align-items:baseline; gap:16px">
+              <span style="font-size:var(--text-sm); color:var(--text-strong)">FY2024</span>
+              <span class="figure" style="text-align:right; font-size:var(--text-sm); font-weight:600; color:var(--text-strong)">0.45x</span>
+              <span class="figure" style="text-align:right; font-size:var(--text-sm); color:var(--text-up)">−2.1%</span>
+            </div><div class="ledger-row" style="display:grid; grid-template-columns:minmax(0,1fr) auto 88px; align-items:baseline; gap:16px">
+              <span style="font-size:var(--text-sm); color:var(--text-strong)">FY2025</span>
+              <span class="figure" style="text-align:right; font-size:var(--text-sm); font-weight:600; color:var(--text-strong)">0.41x</span>
+              <span class="figure" style="text-align:right; font-size:var(--text-sm); color:var(--text-up)">−9.0%</span>
+            </div></div>
+            <p style="margin:16px 0 0; max-width:60ch; font-size:var(--text-2xs); line-height:1.6; color:var(--text-muted); text-wrap:pretty">How much of the balance sheet is borrowed. Lower is calmer; a falling line through a high-rate period is a management decision worth reading about.</p>
+          </div>
+          <div>
+            <p style="margin:0 0 12px; padding-bottom:8px; border-bottom:1px solid var(--rule-strong); font-size:var(--text-3xs); font-weight:700; text-transform:uppercase; letter-spacing:var(--tracking-caps); color:var(--text-faint)">Debt to equity across Textile Composite</p>
+            <div class="ledger"><div class="ledger-row">
+              <div style="display:grid; grid-template-columns:22px 88px minmax(0,1fr) 92px; align-items:baseline; gap:12px">
+                <span class="figure" style="font-size:var(--text-2xs); color:var(--text-faint)">1</span>
+                <span style="font-size:var(--text-sm); font-weight:600; color:var(--text-strong)">NML</span>
+                <span style="min-width:0; font-size:var(--text-2xs); color:var(--text-faint); overflow:hidden; text-overflow:ellipsis; white-space:nowrap">Nishat Mills</span>
+                <span class="figure" style="text-align:right; font-size:var(--text-sm); font-weight:600; color:var(--text-strong)">0.41x</span>
+              </div>
+              <div style="height:3px; margin-top:7px; background:var(--surface-inset)">
+                <span style="display:block; height:100%; width:100.0%; background:#c23a6b"></span>
+              </div>
+            </div></div>
+            <p style="margin:16px 0 0; font-size:var(--text-2xs); color:var(--text-faint)">1 companies in this sector are covered; the dashed hairline in each chart is their FY2025 median.</p>
+          </div>
+        </div><div data-detail="cc" hidden style="display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1.15fr); gap:52px; margin-top:34px; align-items:start">
+          <div>
+            <p style="margin:0 0 12px; padding-bottom:8px; border-bottom:1px solid var(--rule-strong); font-size:var(--text-3xs); font-weight:700; text-transform:uppercase; letter-spacing:var(--tracking-caps); color:var(--text-faint)">Cash conversion · operating cash flow ÷ profit</p>
+            <div class="ledger"><div class="ledger-row" style="display:grid; grid-template-columns:minmax(0,1fr) auto 88px; align-items:baseline; gap:16px">
+              <span style="font-size:var(--text-sm); color:var(--text-strong)">FY2021</span>
+              <span class="figure" style="text-align:right; font-size:var(--text-sm); font-weight:600; color:var(--text-strong)">73%</span>
+              <span class="figure" style="text-align:right; font-size:var(--text-sm); color:var(--text-faint)">—</span>
+            </div><div class="ledger-row" style="display:grid; grid-template-columns:minmax(0,1fr) auto 88px; align-items:baseline; gap:16px">
+              <span style="font-size:var(--text-sm); color:var(--text-strong)">FY2022</span>
+              <span class="figure" style="text-align:right; font-size:var(--text-sm); font-weight:600; color:var(--text-strong)">80%</span>
+              <span class="figure" style="text-align:right; font-size:var(--text-sm); color:var(--text-up)">+9.3%</span>
+            </div><div class="ledger-row" style="display:grid; grid-template-columns:minmax(0,1fr) auto 88px; align-items:baseline; gap:16px">
+              <span style="font-size:var(--text-sm); color:var(--text-strong)">FY2023</span>
+              <span class="figure" style="text-align:right; font-size:var(--text-sm); font-weight:600; color:var(--text-strong)">80%</span>
+              <span class="figure" style="text-align:right; font-size:var(--text-sm); color:var(--text-up)">+0.7%</span>
+            </div><div class="ledger-row" style="display:grid; grid-template-columns:minmax(0,1fr) auto 88px; align-items:baseline; gap:16px">
+              <span style="font-size:var(--text-sm); color:var(--text-strong)">FY2024</span>
+              <span class="figure" style="text-align:right; font-size:var(--text-sm); font-weight:600; color:var(--text-strong)">88%</span>
+              <span class="figure" style="text-align:right; font-size:var(--text-sm); color:var(--text-up)">+8.9%</span>
+            </div><div class="ledger-row" style="display:grid; grid-template-columns:minmax(0,1fr) auto 88px; align-items:baseline; gap:16px">
+              <span style="font-size:var(--text-sm); color:var(--text-strong)">FY2025</span>
+              <span class="figure" style="text-align:right; font-size:var(--text-sm); font-weight:600; color:var(--text-strong)">88%</span>
+              <span class="figure" style="text-align:right; font-size:var(--text-sm); color:var(--text-up)">+0.5%</span>
+            </div></div>
+            <p style="margin:16px 0 0; max-width:60ch; font-size:var(--text-2xs); line-height:1.6; color:var(--text-muted); text-wrap:pretty">Whether reported profit shows up as cash. Sustained readings below 100% mean profit is sitting in receivables or inventory rather than the bank.</p>
+          </div>
+          <div>
+            <p style="margin:0 0 12px; padding-bottom:8px; border-bottom:1px solid var(--rule-strong); font-size:var(--text-3xs); font-weight:700; text-transform:uppercase; letter-spacing:var(--tracking-caps); color:var(--text-faint)">Cash conversion across Textile Composite</p>
+            <div class="ledger"><div class="ledger-row">
+              <div style="display:grid; grid-template-columns:22px 88px minmax(0,1fr) 92px; align-items:baseline; gap:12px">
+                <span class="figure" style="font-size:var(--text-2xs); color:var(--text-faint)">1</span>
+                <span style="font-size:var(--text-sm); font-weight:600; color:var(--text-strong)">NML</span>
+                <span style="min-width:0; font-size:var(--text-2xs); color:var(--text-faint); overflow:hidden; text-overflow:ellipsis; white-space:nowrap">Nishat Mills</span>
+                <span class="figure" style="text-align:right; font-size:var(--text-sm); font-weight:600; color:var(--text-strong)">88%</span>
+              </div>
+              <div style="height:3px; margin-top:7px; background:var(--surface-inset)">
+                <span style="display:block; height:100%; width:100.0%; background:#c23a6b"></span>
+              </div>
+            </div></div>
+            <p style="margin:16px 0 0; font-size:var(--text-2xs); color:var(--text-faint)">1 companies in this sector are covered; the dashed hairline in each chart is their FY2025 median.</p>
+          </div>
+        </div>
+  </div>
+
+  <div data-panel="earnings" hidden>
+    <p class="eyebrow" style="margin:0">Quarterly earnings</p>
+    <h2 style="margin:6px 0 24px; font-family:var(--font-display); font-size:var(--text-h1); font-weight:400; letter-spacing:var(--tracking-editorial)">Reported against expected</h2>
+    <div style="display:flex; align-items:flex-end; gap:20px; height:200px">
+      <div style="flex:1; display:flex; flex-direction:column; align-items:center; gap:9px; height:100%">
+        <span style="flex:1; display:flex; align-items:flex-end; width:100%"><span title="Q1 FY2025 · reported 3.00 against 2.86 expected" style="display:block; width:100%; height:44%; background:var(--up-1)"></span></span>
+        <span class="figure" style="font-size:var(--text-sm); font-weight:600; color:var(--text-up)">+5.0%</span>
+        <span style="font-size:var(--text-3xs); color:var(--text-faint); text-align:center">Q1 FY2025</span>
+      </div>
+      <div style="flex:1; display:flex; flex-direction:column; align-items:center; gap:9px; height:100%">
+        <span style="flex:1; display:flex; align-items:flex-end; width:100%"><span title="Q2 FY2025 · reported 3.63 against 3.65 expected" style="display:block; width:100%; height:53%; background:var(--down-1)"></span></span>
+        <span class="figure" style="font-size:var(--text-sm); font-weight:600; color:var(--text-down)">−0.7%</span>
+        <span style="font-size:var(--text-3xs); color:var(--text-faint); text-align:center">Q2 FY2025</span>
+      </div>
+      <div style="flex:1; display:flex; flex-direction:column; align-items:center; gap:9px; height:100%">
+        <span style="flex:1; display:flex; align-items:flex-end; width:100%"><span title="Q3 FY2025 · reported 3.55 against 3.77 expected" style="display:block; width:100%; height:52%; background:var(--down-1)"></span></span>
+        <span class="figure" style="font-size:var(--text-sm); font-weight:600; color:var(--text-down)">−5.8%</span>
+        <span style="font-size:var(--text-3xs); color:var(--text-faint); text-align:center">Q3 FY2025</span>
+      </div>
+      <div style="flex:1; display:flex; flex-direction:column; align-items:center; gap:9px; height:100%">
+        <span style="flex:1; display:flex; align-items:flex-end; width:100%"><span title="Q4 FY2025 · reported 3.47 against 3.39 expected" style="display:block; width:100%; height:51%; background:var(--up-1)"></span></span>
+        <span class="figure" style="font-size:var(--text-sm); font-weight:600; color:var(--text-up)">+2.4%</span>
+        <span style="font-size:var(--text-3xs); color:var(--text-faint); text-align:center">Q4 FY2025</span>
+      </div>
+      <div style="flex:1; display:flex; flex-direction:column; align-items:center; gap:9px; height:100%">
+        <span style="flex:1; display:flex; align-items:flex-end; width:100%"><span title="Q1 FY2026 · reported 3.32 against 3.42 expected" style="display:block; width:100%; height:49%; background:var(--down-1)"></span></span>
+        <span class="figure" style="font-size:var(--text-sm); font-weight:600; color:var(--text-down)">−3.0%</span>
+        <span style="font-size:var(--text-3xs); color:var(--text-faint); text-align:center">Q1 FY2026</span>
+      </div>
+      <div style="flex:1; display:flex; flex-direction:column; align-items:center; gap:9px; height:100%">
+        <span style="flex:1; display:flex; align-items:flex-end; width:100%"><span title="Q2 FY2026 · reported 3.24 against 3.07 expected" style="display:block; width:100%; height:48%; background:var(--up-1)"></span></span>
+        <span class="figure" style="font-size:var(--text-sm); font-weight:600; color:var(--text-up)">+5.8%</span>
+        <span style="font-size:var(--text-3xs); color:var(--text-faint); text-align:center">Q2 FY2026</span>
+      </div>
+      <div style="flex:1; display:flex; flex-direction:column; align-items:center; gap:9px; height:100%">
+        <span style="flex:1; display:flex; align-items:flex-end; width:100%"><span title="Q3 FY2026 · reported 3.87 against 3.87 expected" style="display:block; width:100%; height:57%; background:var(--up-1)"></span></span>
+        <span class="figure" style="font-size:var(--text-sm); font-weight:600; color:var(--text-muted)">+0.0%</span>
+        <span style="font-size:var(--text-3xs); color:var(--text-faint); text-align:center">Q3 FY2026</span>
+      </div>
+    </div>
+    <div style="display:grid; grid-template-columns:minmax(0,1fr) 108px 108px 96px; gap:14px; margin-top:30px; padding-bottom:9px; border-bottom:1px solid var(--rule-strong)">
+      <span style="font-size:var(--text-3xs); font-weight:700; text-transform:uppercase; letter-spacing:var(--tracking-caps); color:var(--text-faint)">Quarter</span><span style="text-align:right; font-size:var(--text-3xs); font-weight:700; text-transform:uppercase; letter-spacing:var(--tracking-caps); color:var(--text-faint)">Reported EPS</span><span style="text-align:right; font-size:var(--text-3xs); font-weight:700; text-transform:uppercase; letter-spacing:var(--tracking-caps); color:var(--text-faint)">Expected</span><span style="text-align:right; font-size:var(--text-3xs); font-weight:700; text-transform:uppercase; letter-spacing:var(--tracking-caps); color:var(--text-faint)">Surprise</span>
+    </div>
+    <div class="ledger">
+      <div class="ledger-row" style="display:grid; grid-template-columns:minmax(0,1fr) 108px 108px 96px; align-items:baseline; gap:14px">
+        <span style="font-size:var(--text-sm); color:var(--text-strong)">Q1 FY2025</span>
+        <span class="figure" style="text-align:right; font-size:var(--text-sm); font-weight:600; color:var(--text-strong)">3.00</span>
+        <span class="figure" style="text-align:right; font-size:var(--text-sm); color:var(--text-muted)">2.86</span>
+        <span class="figure" style="text-align:right; font-size:var(--text-sm); font-weight:600; color:var(--text-up)">+5.0%</span>
+      </div>
+      <div class="ledger-row" style="display:grid; grid-template-columns:minmax(0,1fr) 108px 108px 96px; align-items:baseline; gap:14px">
+        <span style="font-size:var(--text-sm); color:var(--text-strong)">Q2 FY2025</span>
+        <span class="figure" style="text-align:right; font-size:var(--text-sm); font-weight:600; color:var(--text-strong)">3.63</span>
+        <span class="figure" style="text-align:right; font-size:var(--text-sm); color:var(--text-muted)">3.65</span>
+        <span class="figure" style="text-align:right; font-size:var(--text-sm); font-weight:600; color:var(--text-down)">−0.7%</span>
+      </div>
+      <div class="ledger-row" style="display:grid; grid-template-columns:minmax(0,1fr) 108px 108px 96px; align-items:baseline; gap:14px">
+        <span style="font-size:var(--text-sm); color:var(--text-strong)">Q3 FY2025</span>
+        <span class="figure" style="text-align:right; font-size:var(--text-sm); font-weight:600; color:var(--text-strong)">3.55</span>
+        <span class="figure" style="text-align:right; font-size:var(--text-sm); color:var(--text-muted)">3.77</span>
+        <span class="figure" style="text-align:right; font-size:var(--text-sm); font-weight:600; color:var(--text-down)">−5.8%</span>
+      </div>
+      <div class="ledger-row" style="display:grid; grid-template-columns:minmax(0,1fr) 108px 108px 96px; align-items:baseline; gap:14px">
+        <span style="font-size:var(--text-sm); color:var(--text-strong)">Q4 FY2025</span>
+        <span class="figure" style="text-align:right; font-size:var(--text-sm); font-weight:600; color:var(--text-strong)">3.47</span>
+        <span class="figure" style="text-align:right; font-size:var(--text-sm); color:var(--text-muted)">3.39</span>
+        <span class="figure" style="text-align:right; font-size:var(--text-sm); font-weight:600; color:var(--text-up)">+2.4%</span>
+      </div>
+      <div class="ledger-row" style="display:grid; grid-template-columns:minmax(0,1fr) 108px 108px 96px; align-items:baseline; gap:14px">
+        <span style="font-size:var(--text-sm); color:var(--text-strong)">Q1 FY2026</span>
+        <span class="figure" style="text-align:right; font-size:var(--text-sm); font-weight:600; color:var(--text-strong)">3.32</span>
+        <span class="figure" style="text-align:right; font-size:var(--text-sm); color:var(--text-muted)">3.42</span>
+        <span class="figure" style="text-align:right; font-size:var(--text-sm); font-weight:600; color:var(--text-down)">−3.0%</span>
+      </div>
+      <div class="ledger-row" style="display:grid; grid-template-columns:minmax(0,1fr) 108px 108px 96px; align-items:baseline; gap:14px">
+        <span style="font-size:var(--text-sm); color:var(--text-strong)">Q2 FY2026</span>
+        <span class="figure" style="text-align:right; font-size:var(--text-sm); font-weight:600; color:var(--text-strong)">3.24</span>
+        <span class="figure" style="text-align:right; font-size:var(--text-sm); color:var(--text-muted)">3.07</span>
+        <span class="figure" style="text-align:right; font-size:var(--text-sm); font-weight:600; color:var(--text-up)">+5.8%</span>
+      </div>
+      <div class="ledger-row" style="display:grid; grid-template-columns:minmax(0,1fr) 108px 108px 96px; align-items:baseline; gap:14px">
+        <span style="font-size:var(--text-sm); color:var(--text-strong)">Q3 FY2026</span>
+        <span class="figure" style="text-align:right; font-size:var(--text-sm); font-weight:600; color:var(--text-strong)">3.87</span>
+        <span class="figure" style="text-align:right; font-size:var(--text-sm); color:var(--text-muted)">3.87</span>
+        <span class="figure" style="text-align:right; font-size:var(--text-sm); font-weight:600; color:var(--text-muted)">+0.0%</span>
+      </div>
+    </div>
+  </div>
+
+  <div data-panel="dividends" hidden>
+    <p class="eyebrow" style="margin:0">Announced payouts</p>
+    <h2 style="margin:6px 0 20px; font-family:var(--font-display); font-size:var(--text-h1); font-weight:400; letter-spacing:var(--tracking-editorial)">What the company declared</h2>
+    <div style="display:grid; grid-template-columns:minmax(0,1fr) 116px 116px 108px 96px; gap:14px; padding-bottom:9px; border-bottom:1px solid var(--rule-strong)">
+      <span style="font-size:var(--text-3xs); font-weight:700; text-transform:uppercase; letter-spacing:var(--tracking-caps); color:var(--text-faint)">Announced</span><span style="text-align:right; font-size:var(--text-3xs); font-weight:700; text-transform:uppercase; letter-spacing:var(--tracking-caps); color:var(--text-faint)">Ex-date</span><span style="text-align:right; font-size:var(--text-3xs); font-weight:700; text-transform:uppercase; letter-spacing:var(--tracking-caps); color:var(--text-faint)">Pay date</span><span style="text-align:right; font-size:var(--text-3xs); font-weight:700; text-transform:uppercase; letter-spacing:var(--tracking-caps); color:var(--text-faint)">Per share</span><span style="text-align:right; font-size:var(--text-3xs); font-weight:700; text-transform:uppercase; letter-spacing:var(--tracking-caps); color:var(--text-faint)">Kind</span>
+    </div>
+    <div class="ledger">
+      <div class="ledger-row" style="display:grid; grid-template-columns:minmax(0,1fr) 116px 116px 108px 96px; align-items:baseline; gap:14px">
+        <span class="figure" style="font-size:var(--text-sm); color:var(--text-strong)">2026-06-18</span>
+        <span class="figure" style="text-align:right; font-size:var(--text-sm); color:var(--text-muted)">2026-08-06</span>
+        <span class="figure" style="text-align:right; font-size:var(--text-sm); color:var(--text-muted)">2026-08-28</span>
+        <span class="figure" style="text-align:right; font-size:var(--text-sm); font-weight:600; color:var(--text-strong)">0.33</span>
+        <span style="text-align:right; font-size:var(--text-2xs); color:var(--text-muted)">Cash</span>
+      </div>
+      <div class="ledger-row" style="display:grid; grid-template-columns:minmax(0,1fr) 116px 116px 108px 96px; align-items:baseline; gap:14px">
+        <span class="figure" style="font-size:var(--text-sm); color:var(--text-strong)">2026-02-14</span>
+        <span class="figure" style="text-align:right; font-size:var(--text-sm); color:var(--text-muted)">2026-03-04</span>
+        <span class="figure" style="text-align:right; font-size:var(--text-sm); color:var(--text-muted)">2026-03-26</span>
+        <span class="figure" style="text-align:right; font-size:var(--text-sm); font-weight:600; color:var(--text-strong)">0.25</span>
+        <span style="text-align:right; font-size:var(--text-2xs); color:var(--text-muted)">Cash</span>
+      </div>
+      <div class="ledger-row" style="display:grid; grid-template-columns:minmax(0,1fr) 116px 116px 108px 96px; align-items:baseline; gap:14px">
+        <span class="figure" style="font-size:var(--text-sm); color:var(--text-strong)">2025-10-22</span>
+        <span class="figure" style="text-align:right; font-size:var(--text-sm); color:var(--text-muted)">2025-11-07</span>
+        <span class="figure" style="text-align:right; font-size:var(--text-sm); color:var(--text-muted)">2025-11-27</span>
+        <span class="figure" style="text-align:right; font-size:var(--text-sm); font-weight:600; color:var(--text-strong)">0.25</span>
+        <span style="text-align:right; font-size:var(--text-2xs); color:var(--text-muted)">Cash</span>
+      </div>
+      <div class="ledger-row" style="display:grid; grid-template-columns:minmax(0,1fr) 116px 116px 108px 96px; align-items:baseline; gap:14px">
+        <span class="figure" style="font-size:var(--text-sm); color:var(--text-strong)">2025-06-19</span>
+        <span class="figure" style="text-align:right; font-size:var(--text-sm); color:var(--text-muted)">2025-07-08</span>
+        <span class="figure" style="text-align:right; font-size:var(--text-sm); color:var(--text-muted)">2025-07-30</span>
+        <span class="figure" style="text-align:right; font-size:var(--text-sm); font-weight:600; color:var(--text-strong)">0.31</span>
+        <span style="text-align:right; font-size:var(--text-2xs); color:var(--text-muted)">Cash</span>
+      </div>
+    </div>
+    <p style="margin:18px 0 0; font-size:var(--text-2xs); color:var(--text-faint)">Company announcements, not your receipts. Dividends you were actually paid are reconciled on the Dividends page.</p>
+  </div>
+
+  <div data-panel="technicals" hidden>
+    <p class="eyebrow" style="margin:0">Price structure</p>
+    <h2 style="margin:6px 0 22px; font-family:var(--font-display); font-size:var(--text-h1); font-weight:400; letter-spacing:var(--tracking-editorial)">For timing, not for forming the view</h2>
+    <div style="display:grid; grid-template-columns:minmax(0,1.35fr) minmax(0,1fr); gap:52px; align-items:start">
+      <div>
+        <svg viewBox="0 0 460 200" width="100%" height="200" preserveAspectRatio="none" style="display:block" aria-hidden="true">
+          <path d="M0.0 121.7 L7.8 116.5 L15.6 109.2 L23.4 108.5 L31.2 106.6 L39.0 106.6 L46.8 113.0 L54.6 111.1 L62.4 116.5 L70.2 113.1 L78.0 108.3 L85.8 107.7 L93.6 110.1 L101.4 104.2 L109.2 97.1 L116.9 102.0 L124.7 102.0 L132.5 104.6 L140.3 108.9 L148.1 107.3 L155.9 105.0 L163.7 100.6 L171.5 101.3 L179.3 97.7 L187.1 96.5 L194.9 91.0 L202.7 89.1 L210.5 86.0 L218.3 83.4 L226.1 80.3 L233.9 84.7 L241.7 83.0 L249.5 80.5 L257.3 85.5 L265.1 85.1 L272.9 83.6 L280.7 88.7 L288.5 89.4 L296.3 92.4 L304.1 90.7 L311.9 88.4 L319.7 89.3 L327.5 92.1 L335.3 86.6 L343.1 79.8 L350.8 82.5 L358.6 75.1 L366.4 71.8 L374.2 77.4 L382.0 74.9 L389.8 69.2 L397.6 71.9 L405.4 74.8 L413.2 70.7 L421.0 75.0 L428.8 73.0 L436.6 77.3 L444.4 83.7 L452.2 82.1 L460.0 77.2" fill="none" stroke="var(--chart-line)" stroke-width="2" vector-effect="non-scaling-stroke"></path>
+        </svg>
+        <div style="margin-top:22px">
+          <div style="display:flex; align-items:baseline; justify-content:space-between; gap:16px">
+            <span class="figure" style="font-size:var(--text-2xs); color:var(--text-faint)">62.40</span>
+            <span style="font-size:var(--text-3xs); font-weight:700; text-transform:uppercase; letter-spacing:var(--tracking-caps); color:var(--text-faint)">52-week range</span>
+            <span class="figure" style="font-size:var(--text-2xs); color:var(--text-faint)">98.20</span>
+          </div>
+          <div style="position:relative; height:10px; margin-top:8px; background:var(--surface-inset)">
+            <span style="position:absolute; top:-3px; bottom:-3px; left:62.0%; width:2px; background:var(--ink-1)"></span>
+          </div>
+        </div>
+      </div>
+      <div>
+        <p style="margin:0 0 12px; padding-bottom:8px; border-bottom:1px solid var(--rule-strong); font-size:var(--text-3xs); font-weight:700; text-transform:uppercase; letter-spacing:var(--tracking-caps); color:var(--text-faint)">Indicators</p>
+        <div class="ledger">
+          <div class="ledger-row" style="display:flex; align-items:baseline; justify-content:space-between; gap:16px">
+            <span style="font-size:var(--text-sm); color:var(--text-muted)">20-session average</span>
+            <span class="figure" style="font-size:var(--text-sm); font-weight:600; color:var(--text-up)">84.48</span>
+          </div>
+          <div class="ledger-row" style="display:flex; align-items:baseline; justify-content:space-between; gap:16px">
+            <span style="font-size:var(--text-sm); color:var(--text-muted)">50-session average</span>
+            <span class="figure" style="font-size:var(--text-sm); font-weight:600; color:var(--text-up)">78.85</span>
+          </div>
+          <div class="ledger-row" style="display:flex; align-items:baseline; justify-content:space-between; gap:16px">
+            <span style="font-size:var(--text-sm); color:var(--text-muted)">100-session average</span>
+            <span class="figure" style="font-size:var(--text-sm); font-weight:600; color:var(--text-down)">85.06</span>
+          </div>
+          <div class="ledger-row" style="display:flex; align-items:baseline; justify-content:space-between; gap:16px">
+            <span style="font-size:var(--text-sm); color:var(--text-muted)">200-session average</span>
+            <span class="figure" style="font-size:var(--text-sm); font-weight:600; color:var(--text-up)">79.42</span>
+          </div>
+          <div class="ledger-row" style="display:flex; align-items:baseline; justify-content:space-between; gap:16px">
+            <span style="font-size:var(--text-sm); color:var(--text-muted)">RSI, 14 sessions</span>
+            <span class="figure" style="font-size:var(--text-sm); font-weight:600; color:var(--text-strong)">53</span>
+          </div>
+          <div class="ledger-row" style="display:flex; align-items:baseline; justify-content:space-between; gap:16px">
+            <span style="font-size:var(--text-sm); color:var(--text-muted)">Annualised volatility</span>
+            <span class="figure" style="font-size:var(--text-sm); font-weight:600; color:var(--text-strong)">22.0%</span>
+          </div>
+          <div class="ledger-row" style="display:flex; align-items:baseline; justify-content:space-between; gap:16px">
+            <span style="font-size:var(--text-sm); color:var(--text-muted)">Average volume, 30 sessions</span>
+            <span class="figure" style="font-size:var(--text-sm); font-weight:600; color:var(--text-strong)">2.3m</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div data-panel="news" hidden>
+    <p class="eyebrow" style="margin:0">Primary sources</p>
+    <h2 style="margin:6px 0 4px; font-family:var(--font-display); font-size:var(--text-h1); font-weight:400; letter-spacing:var(--tracking-editorial)">Everything filed or reported</h2>
+    <p style="margin:0 0 22px; max-width:68ch; font-size:var(--text-sm); color:var(--text-muted)">In date order, newest first. Each entry names the one figure it moved, so you can tell an accounting event from an announcement that changed nothing.</p>
+    <div style="display:flex; flex-wrap:wrap; gap:8px; padding-bottom:22px; border-bottom:1px solid var(--rule)">
+      <button type="button" data-chip="all" onclick="pickFiling('all')" style="display:inline-flex; align-items:center; gap:8px; border:1px solid var(--rule-strong); background:transparent; border-radius:var(--radius-pill); padding:5px 13px; font-size:var(--text-2xs); font-weight:600; color:var(--text-muted); cursor:pointer">
+        <span style="width:6px; height:6px; border-radius:var(--radius-pill); background:var(--ink-2)"></span><span>Everything</span><span class="figure" style="opacity:0.6">8</span>
+      </button>
+      <button type="button" data-chip="result" onclick="pickFiling('result')" style="display:inline-flex; align-items:center; gap:8px; border:1px solid var(--rule-strong); background:transparent; border-radius:var(--radius-pill); padding:5px 13px; font-size:var(--text-2xs); font-weight:600; color:var(--text-muted); cursor:pointer">
+        <span style="width:6px; height:6px; border-radius:var(--radius-pill); background:var(--sp-indigo)"></span><span>Result</span><span class="figure" style="opacity:0.6">3</span>
+      </button>
+      <button type="button" data-chip="dividend" onclick="pickFiling('dividend')" style="display:inline-flex; align-items:center; gap:8px; border:1px solid var(--rule-strong); background:transparent; border-radius:var(--radius-pill); padding:5px 13px; font-size:var(--text-2xs); font-weight:600; color:var(--text-muted); cursor:pointer">
+        <span style="width:6px; height:6px; border-radius:var(--radius-pill); background:var(--sp-olive)"></span><span>Dividend</span><span class="figure" style="opacity:0.6">1</span>
+      </button>
+      <button type="button" data-chip="board" onclick="pickFiling('board')" style="display:inline-flex; align-items:center; gap:8px; border:1px solid var(--rule-strong); background:transparent; border-radius:var(--radius-pill); padding:5px 13px; font-size:var(--text-2xs); font-weight:600; color:var(--text-muted); cursor:pointer">
+        <span style="width:6px; height:6px; border-radius:var(--radius-pill); background:var(--sp-slate)"></span><span>Board meeting</span><span class="figure" style="opacity:0.6">1</span>
+      </button>
+      <button type="button" data-chip="action" onclick="pickFiling('action')" style="display:inline-flex; align-items:center; gap:8px; border:1px solid var(--rule-strong); background:transparent; border-radius:var(--radius-pill); padding:5px 13px; font-size:var(--text-2xs); font-weight:600; color:var(--text-muted); cursor:pointer">
+        <span style="width:6px; height:6px; border-radius:var(--radius-pill); background:var(--sp-plum)"></span><span>Corporate action</span><span class="figure" style="opacity:0.6">2</span>
+      </button>
+      <button type="button" data-chip="news" onclick="pickFiling('news')" style="display:inline-flex; align-items:center; gap:8px; border:1px solid var(--rule-strong); background:transparent; border-radius:var(--radius-pill); padding:5px 13px; font-size:var(--text-2xs); font-weight:600; color:var(--text-muted); cursor:pointer">
+        <span style="width:6px; height:6px; border-radius:var(--radius-pill); background:var(--sp-neutral)"></span><span>Press coverage</span><span class="figure" style="opacity:0.6">1</span>
+      </button>
+    </div>
+    
+          <div data-month="July 2026">
+            <div style="display:grid; grid-template-columns:104px minmax(0,1fr); align-items:center; padding:20px 0 10px">
+              <span style="font-size:var(--text-3xs); font-weight:700; text-transform:uppercase; letter-spacing:var(--tracking-caps); color:var(--text-faint)">July 2026</span><span style="height:1px; background:var(--rule)"></span>
+            </div>
+            <div data-filing="board" style="display:grid; grid-template-columns:104px 1px minmax(0,1fr)">
+              <div style="padding:2px 20px 0 0; text-align:right">
+                <span class="figure" style="display:block; font-size:var(--text-sm); font-weight:600; color:var(--text-strong)">24 Jul</span>
+                <span class="figure" style="display:block; margin-top:2px; font-size:var(--text-2xs); color:var(--text-faint)">2026</span>
+              </div>
+              <div style="position:relative; background:var(--rule)">
+                <span style="position:absolute; top:5px; left:-4px; width:9px; height:9px; border-radius:var(--radius-pill); background:var(--sp-slate)"></span>
+              </div>
+              <div style="padding:0 0 30px 26px">
+                <p style="margin:0; font-size:var(--text-3xs); font-weight:700; text-transform:uppercase; letter-spacing:var(--tracking-caps); color:var(--sp-slate)">Board meeting</p>
+                <p style="margin:7px 0 0; max-width:62ch; font-size:var(--text-body); line-height:1.5; color:var(--text-strong); text-wrap:pretty">Notice of board meeting to consider the accounts for the year ending 30 June 2026</p>
+                <p style="margin:10px 0 0; font-size:var(--text-xs); color:var(--text-faint)">Nothing filed yet. The figure arrives with the accounts.</p>
+                <div style="display:flex; flex-wrap:wrap; align-items:center; gap:14px; margin-top:12px">
+                  <span style="font-size:var(--text-2xs); color:var(--text-faint)">PSX announcement</span>
+                  <a href="#" style="display:inline-flex; align-items:center; gap:6px; font-size:var(--text-2xs); font-weight:600">Read the notice
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M7 17 17 7"></path><path d="M7 7h10v10"></path></svg>
+                  </a>
+                </div>
+              </div>
+            </div><div data-filing="action" style="display:grid; grid-template-columns:104px 1px minmax(0,1fr)">
+              <div style="padding:2px 20px 0 0; text-align:right">
+                <span class="figure" style="display:block; font-size:var(--text-sm); font-weight:600; color:var(--text-strong)">18 Jul</span>
+                <span class="figure" style="display:block; margin-top:2px; font-size:var(--text-2xs); color:var(--text-faint)">2026</span>
+              </div>
+              <div style="position:relative; background:var(--rule)">
+                <span style="position:absolute; top:5px; left:-4px; width:9px; height:9px; border-radius:var(--radius-pill); background:var(--sp-plum)"></span>
+              </div>
+              <div style="padding:0 0 30px 26px">
+                <p style="margin:0; font-size:var(--text-3xs); font-weight:700; text-transform:uppercase; letter-spacing:var(--tracking-caps); color:var(--sp-plum)">Corporate action</p>
+                <p style="margin:7px 0 0; max-width:62ch; font-size:var(--text-body); line-height:1.5; color:var(--text-strong); text-wrap:pretty">Notice of book closure and entitlement for shareholders on the register</p>
+                <div style="display:flex; flex-wrap:wrap; align-items:baseline; gap:14px; margin-top:12px; padding:10px 0; border-top:1px solid var(--rule); border-bottom:1px solid var(--rule)">
+                  <span style="font-size:var(--text-3xs); font-weight:700; text-transform:uppercase; letter-spacing:var(--tracking-caps); color:var(--text-faint)">Register closes</span>
+                  <span class="figure" style="font-size:var(--text-h2); font-weight:600; line-height:1; color:var(--text-strong)">06 Aug 2026</span>
+                  <span class="figure" style="font-size:var(--text-xs); font-weight:600; color:var(--text-muted)"></span>
+                </div>
+                <div style="display:flex; flex-wrap:wrap; align-items:center; gap:14px; margin-top:12px">
+                  <span style="font-size:var(--text-2xs); color:var(--text-faint)">PSX announcement</span>
+                  <a href="#" style="display:inline-flex; align-items:center; gap:6px; font-size:var(--text-2xs); font-weight:600">Read the notice
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M7 17 17 7"></path><path d="M7 7h10v10"></path></svg>
+                  </a>
+                </div>
+              </div>
+            </div><div data-filing="news" style="display:grid; grid-template-columns:104px 1px minmax(0,1fr)">
+              <div style="padding:2px 20px 0 0; text-align:right">
+                <span class="figure" style="display:block; font-size:var(--text-sm); font-weight:600; color:var(--text-strong)">12 Jul</span>
+                <span class="figure" style="display:block; margin-top:2px; font-size:var(--text-2xs); color:var(--text-faint)">2026</span>
+              </div>
+              <div style="position:relative; background:var(--rule)">
+                <span style="position:absolute; top:5px; left:-4px; width:9px; height:9px; border-radius:var(--radius-pill); background:var(--sp-neutral)"></span>
+              </div>
+              <div style="padding:0 0 30px 26px">
+                <p style="margin:0; font-size:var(--text-3xs); font-weight:700; text-transform:uppercase; letter-spacing:var(--tracking-caps); color:var(--sp-neutral)">Press coverage</p>
+                <p style="margin:7px 0 0; max-width:62ch; font-size:var(--text-body); line-height:1.5; color:var(--text-strong); text-wrap:pretty">NML named among the sector's larger movers in the week's market wrap</p>
+                <div style="display:flex; flex-wrap:wrap; align-items:baseline; gap:14px; margin-top:12px; padding:10px 0; border-top:1px solid var(--rule); border-bottom:1px solid var(--rule)">
+                  <span style="font-size:var(--text-3xs); font-weight:700; text-transform:uppercase; letter-spacing:var(--tracking-caps); color:var(--text-faint)">Price on the day</span>
+                  <span class="figure" style="font-size:var(--text-h2); font-weight:600; line-height:1; color:var(--text-strong)">84.60</span>
+                  <span class="figure" style="font-size:var(--text-xs); font-weight:600; color:var(--text-down)">−0.44%</span>
+                </div>
+                <div style="display:flex; flex-wrap:wrap; align-items:center; gap:14px; margin-top:12px">
+                  <span style="font-size:var(--text-2xs); color:var(--text-faint)">News cluster · 4 outlets</span>
+                  <a href="#" style="display:inline-flex; align-items:center; gap:6px; font-size:var(--text-2xs); font-weight:600">Read the cluster
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M7 17 17 7"></path><path d="M7 7h10v10"></path></svg>
+                  </a>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div data-month="June 2026">
+            <div style="display:grid; grid-template-columns:104px minmax(0,1fr); align-items:center; padding:20px 0 10px">
+              <span style="font-size:var(--text-3xs); font-weight:700; text-transform:uppercase; letter-spacing:var(--tracking-caps); color:var(--text-faint)">June 2026</span><span style="height:1px; background:var(--rule)"></span>
+            </div>
+            <div data-filing="dividend" style="display:grid; grid-template-columns:104px 1px minmax(0,1fr)">
+              <div style="padding:2px 20px 0 0; text-align:right">
+                <span class="figure" style="display:block; font-size:var(--text-sm); font-weight:600; color:var(--text-strong)">18 Jun</span>
+                <span class="figure" style="display:block; margin-top:2px; font-size:var(--text-2xs); color:var(--text-faint)">2026</span>
+              </div>
+              <div style="position:relative; background:var(--rule)">
+                <span style="position:absolute; top:5px; left:-4px; width:9px; height:9px; border-radius:var(--radius-pill); background:var(--sp-olive)"></span>
+              </div>
+              <div style="padding:0 0 30px 26px">
+                <p style="margin:0; font-size:var(--text-3xs); font-weight:700; text-transform:uppercase; letter-spacing:var(--tracking-caps); color:var(--sp-olive)">Dividend</p>
+                <p style="margin:7px 0 0; max-width:62ch; font-size:var(--text-body); line-height:1.5; color:var(--text-strong); text-wrap:pretty">Interim cash dividend declared for the period, payable 28 August 2026</p>
+                <div style="display:flex; flex-wrap:wrap; align-items:baseline; gap:14px; margin-top:12px; padding:10px 0; border-top:1px solid var(--rule); border-bottom:1px solid var(--rule)">
+                  <span style="font-size:var(--text-3xs); font-weight:700; text-transform:uppercase; letter-spacing:var(--tracking-caps); color:var(--text-faint)">Dividend per share</span>
+                  <span class="figure" style="font-size:var(--text-h2); font-weight:600; line-height:1; color:var(--text-strong)">0.33</span>
+                  <span class="figure" style="font-size:var(--text-xs); font-weight:600; color:var(--text-muted)">0.39% on the last price</span>
+                </div>
+                <div style="display:flex; flex-wrap:wrap; align-items:center; gap:14px; margin-top:12px">
+                  <span style="font-size:var(--text-2xs); color:var(--text-faint)">PSX announcement</span>
+                  <a href="#" style="display:inline-flex; align-items:center; gap:6px; font-size:var(--text-2xs); font-weight:600">Read the announcement
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M7 17 17 7"></path><path d="M7 7h10v10"></path></svg>
+                  </a>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div data-month="April 2026">
+            <div style="display:grid; grid-template-columns:104px minmax(0,1fr); align-items:center; padding:20px 0 10px">
+              <span style="font-size:var(--text-3xs); font-weight:700; text-transform:uppercase; letter-spacing:var(--tracking-caps); color:var(--text-faint)">April 2026</span><span style="height:1px; background:var(--rule)"></span>
+            </div>
+            <div data-filing="result" style="display:grid; grid-template-columns:104px 1px minmax(0,1fr)">
+              <div style="padding:2px 20px 0 0; text-align:right">
+                <span class="figure" style="display:block; font-size:var(--text-sm); font-weight:600; color:var(--text-strong)">24 Apr</span>
+                <span class="figure" style="display:block; margin-top:2px; font-size:var(--text-2xs); color:var(--text-faint)">2026</span>
+              </div>
+              <div style="position:relative; background:var(--rule)">
+                <span style="position:absolute; top:5px; left:-4px; width:9px; height:9px; border-radius:var(--radius-pill); background:var(--sp-indigo)"></span>
+              </div>
+              <div style="padding:0 0 30px 26px">
+                <p style="margin:0; font-size:var(--text-3xs); font-weight:700; text-transform:uppercase; letter-spacing:var(--tracking-caps); color:var(--sp-indigo)">Result</p>
+                <p style="margin:7px 0 0; max-width:62ch; font-size:var(--text-body); line-height:1.5; color:var(--text-strong); text-wrap:pretty">Condensed interim financial statements for the nine months ended 31 March 2026</p>
+                <div style="display:flex; flex-wrap:wrap; align-items:baseline; gap:14px; margin-top:12px; padding:10px 0; border-top:1px solid var(--rule); border-bottom:1px solid var(--rule)">
+                  <span style="font-size:var(--text-3xs); font-weight:700; text-transform:uppercase; letter-spacing:var(--tracking-caps); color:var(--text-faint)">Earnings per share, 9M FY2026</span>
+                  <span class="figure" style="font-size:var(--text-h2); font-weight:600; line-height:1; color:var(--text-strong)">10.44</span>
+                  <span class="figure" style="font-size:var(--text-xs); font-weight:600; color:var(--text-up)">+23.5% on 9M FY2025</span>
+                </div>
+                <div style="display:flex; flex-wrap:wrap; align-items:center; gap:14px; margin-top:12px">
+                  <span style="font-size:var(--text-2xs); color:var(--text-faint)">Company filing · unaudited</span>
+                  <a href="#" style="display:inline-flex; align-items:center; gap:6px; font-size:var(--text-2xs); font-weight:600">Read the filing
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M7 17 17 7"></path><path d="M7 7h10v10"></path></svg>
+                  </a>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div data-month="February 2026">
+            <div style="display:grid; grid-template-columns:104px minmax(0,1fr); align-items:center; padding:20px 0 10px">
+              <span style="font-size:var(--text-3xs); font-weight:700; text-transform:uppercase; letter-spacing:var(--tracking-caps); color:var(--text-faint)">February 2026</span><span style="height:1px; background:var(--rule)"></span>
+            </div>
+            <div data-filing="result" style="display:grid; grid-template-columns:104px 1px minmax(0,1fr)">
+              <div style="padding:2px 20px 0 0; text-align:right">
+                <span class="figure" style="display:block; font-size:var(--text-sm); font-weight:600; color:var(--text-strong)">27 Feb</span>
+                <span class="figure" style="display:block; margin-top:2px; font-size:var(--text-2xs); color:var(--text-faint)">2026</span>
+              </div>
+              <div style="position:relative; background:var(--rule)">
+                <span style="position:absolute; top:5px; left:-4px; width:9px; height:9px; border-radius:var(--radius-pill); background:var(--sp-indigo)"></span>
+              </div>
+              <div style="padding:0 0 30px 26px">
+                <p style="margin:0; font-size:var(--text-3xs); font-weight:700; text-transform:uppercase; letter-spacing:var(--tracking-caps); color:var(--sp-indigo)">Result</p>
+                <p style="margin:7px 0 0; max-width:62ch; font-size:var(--text-body); line-height:1.5; color:var(--text-strong); text-wrap:pretty">Condensed interim financial statements for the half year ended 31 December 2025</p>
+                <div style="display:flex; flex-wrap:wrap; align-items:baseline; gap:14px; margin-top:12px; padding:10px 0; border-top:1px solid var(--rule); border-bottom:1px solid var(--rule)">
+                  <span style="font-size:var(--text-3xs); font-weight:700; text-transform:uppercase; letter-spacing:var(--tracking-caps); color:var(--text-faint)">Net margin, 1H FY2026</span>
+                  <span class="figure" style="font-size:var(--text-h2); font-weight:600; line-height:1; color:var(--text-strong)">14.5%</span>
+                  <span class="figure" style="font-size:var(--text-xs); font-weight:600; color:var(--text-up)">+0.1pp on FY2025</span>
+                </div>
+                <div style="display:flex; flex-wrap:wrap; align-items:center; gap:14px; margin-top:12px">
+                  <span style="font-size:var(--text-2xs); color:var(--text-faint)">Company filing · unaudited</span>
+                  <a href="#" style="display:inline-flex; align-items:center; gap:6px; font-size:var(--text-2xs); font-weight:600">Read the filing
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M7 17 17 7"></path><path d="M7 7h10v10"></path></svg>
+                  </a>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div data-month="December 2025">
+            <div style="display:grid; grid-template-columns:104px minmax(0,1fr); align-items:center; padding:20px 0 10px">
+              <span style="font-size:var(--text-3xs); font-weight:700; text-transform:uppercase; letter-spacing:var(--tracking-caps); color:var(--text-faint)">December 2025</span><span style="height:1px; background:var(--rule)"></span>
+            </div>
+            <div data-filing="action" style="display:grid; grid-template-columns:104px 1px minmax(0,1fr)">
+              <div style="padding:2px 20px 0 0; text-align:right">
+                <span class="figure" style="display:block; font-size:var(--text-sm); font-weight:600; color:var(--text-strong)">16 Dec</span>
+                <span class="figure" style="display:block; margin-top:2px; font-size:var(--text-2xs); color:var(--text-faint)">2025</span>
+              </div>
+              <div style="position:relative; background:var(--rule)">
+                <span style="position:absolute; top:5px; left:-4px; width:9px; height:9px; border-radius:var(--radius-pill); background:var(--sp-plum)"></span>
+              </div>
+              <div style="padding:0 0 30px 26px">
+                <p style="margin:0; font-size:var(--text-3xs); font-weight:700; text-transform:uppercase; letter-spacing:var(--tracking-caps); color:var(--sp-plum)">Corporate action</p>
+                <p style="margin:7px 0 0; max-width:62ch; font-size:var(--text-body); line-height:1.5; color:var(--text-strong); text-wrap:pretty">Pattern of shareholding filed for the year ended 30 June 2025</p>
+                <div style="display:flex; flex-wrap:wrap; align-items:baseline; gap:14px; margin-top:12px; padding:10px 0; border-top:1px solid var(--rule); border-bottom:1px solid var(--rule)">
+                  <span style="font-size:var(--text-3xs); font-weight:700; text-transform:uppercase; letter-spacing:var(--tracking-caps); color:var(--text-faint)">Free float</span>
+                  <span class="figure" style="font-size:var(--text-h2); font-weight:600; line-height:1; color:var(--text-strong)">34.6%</span>
+                  <span class="figure" style="font-size:var(--text-xs); font-weight:600; color:var(--text-muted)"></span>
+                </div>
+                <div style="display:flex; flex-wrap:wrap; align-items:center; gap:14px; margin-top:12px">
+                  <span style="font-size:var(--text-2xs); color:var(--text-faint)">Company filing</span>
+                  <a href="#" style="display:inline-flex; align-items:center; gap:6px; font-size:var(--text-2xs); font-weight:600">Read the filing
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M7 17 17 7"></path><path d="M7 7h10v10"></path></svg>
+                  </a>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div data-month="September 2025">
+            <div style="display:grid; grid-template-columns:104px minmax(0,1fr); align-items:center; padding:20px 0 10px">
+              <span style="font-size:var(--text-3xs); font-weight:700; text-transform:uppercase; letter-spacing:var(--tracking-caps); color:var(--text-faint)">September 2025</span><span style="height:1px; background:var(--rule)"></span>
+            </div>
+            <div data-filing="result" style="display:grid; grid-template-columns:104px 1px minmax(0,1fr)">
+              <div style="padding:2px 20px 0 0; text-align:right">
+                <span class="figure" style="display:block; font-size:var(--text-sm); font-weight:600; color:var(--text-strong)">26 Sep</span>
+                <span class="figure" style="display:block; margin-top:2px; font-size:var(--text-2xs); color:var(--text-faint)">2025</span>
+              </div>
+              <div style="position:relative; background:var(--rule)">
+                <span style="position:absolute; top:5px; left:-4px; width:9px; height:9px; border-radius:var(--radius-pill); background:var(--sp-indigo)"></span>
+              </div>
+              <div style="padding:0 0 30px 26px">
+                <p style="margin:0; font-size:var(--text-3xs); font-weight:700; text-transform:uppercase; letter-spacing:var(--tracking-caps); color:var(--sp-indigo)">Result</p>
+                <p style="margin:7px 0 0; max-width:62ch; font-size:var(--text-body); line-height:1.5; color:var(--text-strong); text-wrap:pretty">Annual audited financial statements and directors' report for FY2025</p>
+                <div style="display:flex; flex-wrap:wrap; align-items:baseline; gap:14px; margin-top:12px; padding:10px 0; border-top:1px solid var(--rule); border-bottom:1px solid var(--rule)">
+                  <span style="font-size:var(--text-3xs); font-weight:700; text-transform:uppercase; letter-spacing:var(--tracking-caps); color:var(--text-faint)">Earnings per share, FY2025</span>
+                  <span class="figure" style="font-size:var(--text-h2); font-weight:600; line-height:1; color:var(--text-strong)">13.65</span>
+                  <span class="figure" style="font-size:var(--text-xs); font-weight:600; color:var(--text-up)">+27.5% on FY2024</span>
+                </div>
+                <div style="display:flex; flex-wrap:wrap; align-items:center; gap:14px; margin-top:12px">
+                  <span style="font-size:var(--text-2xs); color:var(--text-faint)">Company filing · audited</span>
+                  <a href="#" style="display:inline-flex; align-items:center; gap:6px; font-size:var(--text-2xs); font-weight:600">Read the annual report
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M7 17 17 7"></path><path d="M7 7h10v10"></path></svg>
+                  </a>
+                </div>
+              </div>
+            </div>
+          </div>
+  </div>
+</section>
+
+<div style="background:var(--surface-page); color:var(--text-strong); padding:var(--band-pad-y) var(--gutter-page); border-bottom:var(--border-rule); border-bottom:none">
+  <div style="display:flex; align-items:center; gap:10px">
+    <span style="width:6px; height:6px; border-radius:var(--radius-pill); background:var(--up-2)"></span>
+    <span class="figure" style="font-size:var(--text-2xs); color:var(--text-faint)">As of 25 Jul 2026, 15:30 PKT</span>
+  </div>
+</div>
+
+<script>
+  var SECTOR = "#c23a6b";
+  function pickTab(id) {
+    document.querySelectorAll('[data-panel]').forEach(function (p) { p.hidden = p.dataset.panel !== id; });
+    document.querySelectorAll('[data-tab]').forEach(function (b) {
+      var on = b.dataset.tab === id;
+      b.style.fontWeight = on ? 600 : 500;
+      b.style.color = on ? 'var(--text-strong)' : 'var(--text-muted)';
+      b.style.borderBottomColor = on ? SECTOR : 'transparent';
+    });
+  }
+  function pickMetric(key) {
+    document.querySelectorAll('[data-detail]').forEach(function (d) { d.hidden = d.dataset.detail !== key; });
+    document.querySelectorAll('[data-metric]').forEach(function (b) {
+      var on = b.dataset.metric === key;
+      b.style.background = on ? 'color-mix(in oklab, ' + SECTOR + ' 10%, var(--surface-page))' : 'transparent';
+      b.style.borderLeftColor = on ? SECTOR : 'transparent';
+      b.querySelector('[data-mlabel]').style.color = on ? 'var(--text-strong)' : 'var(--text-faint)';
+    });
+  }
+  function pickFiling(id) {
+    document.querySelectorAll('[data-filing]').forEach(function (f) { f.hidden = id !== 'all' && f.dataset.filing !== id; });
+    document.querySelectorAll('[data-month]').forEach(function (m) {
+      var any = Array.prototype.some.call(m.querySelectorAll('[data-filing]'), function (f) { return !f.hidden; });
+      m.hidden = !any;
+    });
+    document.querySelectorAll('[data-chip]').forEach(function (b) {
+      var on = b.dataset.chip === id;
+      b.style.background = on ? 'var(--ink-1)' : 'transparent';
+      b.style.borderColor = on ? 'var(--ink-1)' : 'var(--rule-strong)';
+      b.style.color = on ? 'var(--text-on-dark)' : 'var(--text-muted)';
+    });
+  }
+  pickTab('overview'); pickMetric('revenue'); pickFiling('all');
+</script>
+</body>
+</html>

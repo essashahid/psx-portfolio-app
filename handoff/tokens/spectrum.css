@@ -1,0 +1,40 @@
+/* ── The Spectrum ─────────────────────────────────────────────────────────
+   A fixed ring of 16 desaturated editorial hues, all tuned to sit calmly on
+   warm paper. Every PSX sector, news category and chart series draws from this
+   one ring, so a sector reads as the same colour in the allocation donut, the
+   holdings ledger and the sector bars. Values are the product's own
+   lib/shared/sector-colors.ts anchors — do not invent new data colours. */
+:root {
+  --sp-indigo: #3450c8;      /* banks, financials */
+  --sp-emerald: #0b8a5c;     /* food & personal care */
+  --sp-amber: #d9920b;       /* oil marketing companies */
+  --sp-terracotta: #cd5b2e;  /* oil & gas exploration */
+  --sp-plum: #8f3fae;        /* insurance & takaful */
+  --sp-cyan: #0f7e96;        /* chemicals */
+  --sp-olive: #5e7d16;       /* fertiliser */
+  --sp-rose: #c23a6b;        /* textile */
+  --sp-violet: #6a4fd0;      /* technology & communication */
+  --sp-aqua: #2f9e8f;        /* glass & ceramics */
+  --sp-bronze: #9a6a2e;      /* engineering & steel */
+  --sp-slate: #4a6fa5;       /* automobile assemblers */
+  --sp-burnt: #b5532a;       /* refinery */
+  --sp-teal: #0f8a8a;        /* pharma & health */
+  --sp-gold: #c79a1e;        /* power & energy */
+  --sp-steel: #5a7a8c;       /* transport & logistics */
+
+  --sp-stone: #8a7a66;       /* cement */
+  --sp-sage: #7a8a5e;        /* paper & board */
+  --sp-maroon: #8c2f39;      /* tobacco */
+  --sp-brick: #b06a4a;       /* real estate */
+  --sp-neutral: #6b6b64;     /* conglomerates, miscellaneous */
+  --sp-unclassified: #9b9b92;
+
+  /* Chart-specific roles pulled from the same ring. */
+  --chart-line: var(--sp-indigo);
+  --chart-line-soft: #8295e3;
+  --chart-up: var(--up-2);
+  --chart-down: var(--down-2);
+  --chart-grid: #e6e6df;
+  --chart-axis: #82827a;
+  --chart-tick-size: 10.5px;
+}

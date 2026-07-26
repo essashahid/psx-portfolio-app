@@ -1,0 +1,24 @@
+/* ── Motion ───────────────────────────────────────────────────────────────
+   Two speeds. --dur-fast for state (hover, selection). --dur-base for values
+   that carry meaning, so a changed number is seen moving rather than
+   teleporting. Collapsing the tokens under reduced-motion disables every
+   transition built on them, so components need no branch of their own. */
+:root {
+  --dur-fast: 150ms; /* @kind other */
+  --dur-base: 300ms; /* @kind other */
+  --dur-slow: 700ms; /* @kind other */
+  --dur-draw: 850ms; /* @kind other */   /* chart line draw-in */
+  --dur-count: 1300ms; /* @kind other */ /* headline numeral count-up */
+  --ease-ui: cubic-bezier(0.22, 1, 0.36, 1); /* @kind other */
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1); /* @kind other */
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --dur-fast: 0ms; /* @kind other */
+    --dur-base: 0ms; /* @kind other */
+    --dur-slow: 0ms; /* @kind other */
+    --dur-draw: 0ms; /* @kind other */
+    --dur-count: 0ms; /* @kind other */
+  }
+}

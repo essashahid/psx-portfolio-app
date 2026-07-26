@@ -1,0 +1,38 @@
+/* ── Typography ───────────────────────────────────────────────────────────
+   Three voices. Newsreader (display serif) speaks for the brand: page titles,
+   pull quotes, hero numerals in editorial contexts. Manrope runs the interface.
+   Geist Mono runs every figure that a reader might compare down a column. */
+:root {
+  --text-hero: 4.5rem;      /* 72px — full-bleed band numerals */
+  --text-display: 3rem;     /* 48px — portfolio value */
+  --text-title: 2rem;       /* 32px — editorial page title */
+  --text-h1: 1.5rem;        /* 24px */
+  --text-h2: 1.125rem;      /* 18px — section heads */
+  --text-h3: 0.9375rem;     /* 15px — panel heads */
+  --text-body: 0.875rem;    /* 14px — default */
+  --text-sm: 0.8125rem;     /* 13px — controls, dense rows */
+  --text-xs: 0.75rem;       /* 12px — meta */
+  --text-2xs: 0.6875rem;    /* 11px — eyebrow, table head, badges */
+  --text-3xs: 0.625rem;     /* 10px — axis ticks, footnotes */
+
+  --weight-regular: 400;
+  --weight-medium: 500;
+  --weight-semibold: 600;
+  --weight-bold: 700;
+  --weight-black: 800;
+
+  --leading-tight: 1.1;
+  --leading-snug: 1.25;
+  --leading-normal: 1.45;
+  --leading-relaxed: 1.65;
+
+  --tracking-editorial: -0.035em;  /* large display headings */
+  --tracking-tight: -0.02em;
+  --tracking-ui: -0.012em;         /* body default */
+  --tracking-none: 0em;
+  --tracking-eyebrow: 0.11em;
+  --tracking-caps: 0.08em;
+
+  /* Numerals always tabular so columns align. */
+  --numeric-features: "tnum" 1, "kern" 1, "liga" 1; /* @kind other */
+}

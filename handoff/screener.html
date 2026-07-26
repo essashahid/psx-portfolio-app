@@ -1,0 +1,647 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Stock Research · Plumb</title>
+<link rel="stylesheet" href="tokens/fonts.css">
+<link rel="stylesheet" href="tokens/colors.css">
+<link rel="stylesheet" href="tokens/spectrum.css">
+<link rel="stylesheet" href="tokens/typography.css">
+<link rel="stylesheet" href="tokens/spacing.css">
+<link rel="stylesheet" href="tokens/shape.css">
+<link rel="stylesheet" href="tokens/motion.css">
+<link rel="stylesheet" href="tokens/base.css">
+<style>
+  body { margin:0; background:var(--surface-page); }
+  a { color: var(--indigo-2); text-decoration: none; }
+  a:hover { text-decoration: underline; text-underline-offset: 2px; }
+  button { font-family: var(--font-ui); }
+</style>
+</head>
+<body>
+
+<div style="position:sticky; top:0; z-index:20; background:color-mix(in oklab, var(--surface-page) 94%, transparent); backdrop-filter:var(--blur-bar); border-bottom:var(--border-rule)">
+  <div style="display:flex; align-items:center; gap:34px; padding:15px var(--gutter-page) 14px">
+    <span style="display:flex; align-items:center; gap:10px; flex-shrink:0">
+      <svg width="19" height="19" viewBox="0 0 64 64" aria-hidden="true" style="display:block">
+        <rect x="14" y="14" width="36" height="36" fill="none" stroke="var(--text-strong)" stroke-width="3.55"></rect>
+        <path d="M32 4 V60" stroke="var(--indigo-2)" stroke-width="3.55"></path>
+        <circle cx="32" cy="60" r="3.6" fill="var(--indigo-2)"></circle>
+      </svg>
+      <span style="font-family:var(--font-display); font-size:var(--text-h3); letter-spacing:var(--tracking-editorial); color:var(--text-strong)">Plumb</span>
+    </span>
+    <div style="flex:1; min-width:0; display:flex; flex-wrap:wrap; align-items:center; gap:8px 26px">
+      <span style="font-size:var(--text-body); font-weight:500; color:var(--text-muted); white-space:nowrap">Dashboard</span>
+      <span style="font-size:var(--text-body); font-weight:500; color:var(--text-muted); white-space:nowrap">Holdings</span>
+      <span style="font-size:var(--text-body); font-weight:500; color:var(--text-muted); white-space:nowrap">Dividends</span>
+      <span style="font-size:var(--text-body); font-weight:500; color:var(--text-muted); white-space:nowrap">Performance</span>
+      <span style="font-size:var(--text-body); font-weight:600; color:var(--text-strong); white-space:nowrap">Stock Research</span>
+    </div>
+  </div>
+</div>
+<section style="background:var(--surface-page); color:var(--text-strong); padding:var(--band-pad-y) var(--gutter-page); border-bottom:var(--border-rule); background:color-mix(in oklab, var(--sp-violet) 12%, var(--surface-page))">
+  <div style="display:flex; flex-wrap:wrap; align-items:flex-end; justify-content:space-between; gap:28px">
+    <div>
+      <span style="display:block; width:44px; height:3px; background:var(--sp-violet); margin-bottom:14px"></span>
+      <h1 style="margin:0; font-family:var(--font-display); font-size:var(--text-title); font-weight:400; letter-spacing:var(--tracking-editorial)">Stock Research</h1>
+      <div style="display:flex; align-items:flex-end; gap:20px; margin-top:18px">
+        <span><span style="display:block; font-size:var(--text-3xs); font-weight:700; text-transform:uppercase; letter-spacing:var(--tracking-caps); color:var(--text-faint)">KSE-100</span>
+        <span class="figure" style="display:block; margin-top:6px; font-size:var(--text-display); font-weight:600; line-height:1; letter-spacing:var(--tracking-editorial)">84,912</span></span>
+        <span style="padding-bottom:6px"><span class="figure" style="display:block; font-size:var(--text-h2); font-weight:600; color:var(--text-up)">+0.49%</span>
+        <span style="display:block; margin-top:2px; font-size:var(--text-sm); color:var(--text-muted)">across 26 covered</span></span>
+      </div>
+    </div>
+  </div>
+  <div style="display:flex; flex-wrap:wrap; gap:44px; margin-top:28px; padding-top:22px; border-top:1px solid var(--rule)">
+    <div><p style="margin:0; font-size:var(--text-3xs); font-weight:700; text-transform:uppercase; letter-spacing:var(--tracking-caps); color:var(--text-faint)">Companies covered</p>
+      <p class="figure" style="margin:6px 0 0; font-size:var(--text-h1); font-weight:600; color:var(--text-strong)">26</p>
+      <p class="figure" style="margin:2px 0 0; font-size:var(--text-2xs); color:var(--text-faint)">in this snapshot</p></div>
+    <div><p style="margin:0; font-size:var(--text-3xs); font-weight:700; text-transform:uppercase; letter-spacing:var(--tracking-caps); color:var(--text-faint)">Advancing</p>
+      <p class="figure" style="margin:6px 0 0; font-size:var(--text-h1); font-weight:600; color:var(--text-up)">15</p>
+      <p class="figure" style="margin:2px 0 0; font-size:var(--text-2xs); color:var(--text-faint)">11 declining</p></div>
+    <div><p style="margin:0; font-size:var(--text-3xs); font-weight:700; text-transform:uppercase; letter-spacing:var(--tracking-caps); color:var(--text-faint)">In your book</p>
+      <p class="figure" style="margin:6px 0 0; font-size:var(--text-h1); font-weight:600; color:var(--text-strong)">9</p>
+      <p class="figure" style="margin:2px 0 0; font-size:var(--text-2xs); color:var(--text-faint)">3 watched</p></div>
+    <div><p style="margin:0; font-size:var(--text-3xs); font-weight:700; text-transform:uppercase; letter-spacing:var(--tracking-caps); color:var(--text-faint)">Sectors</p>
+      <p class="figure" style="margin:6px 0 0; font-size:var(--text-h1); font-weight:600; color:var(--text-strong)">14</p>
+      <p class="figure" style="margin:2px 0 0; font-size:var(--text-2xs); color:var(--text-faint)">PSX classification</p></div>
+  </div>
+</section>
+
+<section style="background:var(--surface-page); color:var(--text-strong); padding:var(--band-pad-y) var(--gutter-page); border-bottom:var(--border-rule); background-image:radial-gradient(color-mix(in oklab, var(--ink-4) 26%, transparent) 1px, transparent 1px); background-size:22px 22px; background-position:-1px -1px">
+  <div style="margin-bottom:18px">
+    <p class="eyebrow" style="margin:0">The whole board</p>
+    <h2 style="margin:6px 0 0; font-family:var(--font-display); font-size:var(--text-h1); font-weight:400; letter-spacing:var(--tracking-editorial)">Every company, one screen</h2>
+  </div>
+  <div style="display:flex; flex-wrap:wrap; align-items:center; gap:14px; margin-bottom:16px">
+    <input id="q" oninput="filter()" placeholder="Filter by ticker, company or sector" style="max-width:280px; flex:1 1 240px; border:1px solid var(--rule-strong); border-radius:var(--radius-sm); background:var(--surface-raised); padding:9px 12px; font-family:var(--font-ui); font-size:var(--text-sm); color:var(--text-strong)">
+    <span id="count" class="figure" style="font-size:var(--text-2xs); color:var(--text-faint)"></span>
+  </div>
+  <div style="display:flex; flex-wrap:wrap; gap:7px; margin-bottom:20px">
+    <button type="button" data-sector="all" onclick="pickSector(this.dataset.sector)" style="border:1px solid var(--rule); border-radius:var(--radius-pill); background:var(--surface-raised); padding:4px 12px; font-size:var(--text-2xs); font-weight:500; color:var(--text-muted); white-space:nowrap; cursor:pointer">All sectors</button>
+    <button type="button" data-sector="Automobile Assemblers" onclick="pickSector(this.dataset.sector)" style="border:1px solid var(--rule); border-radius:var(--radius-pill); background:var(--surface-raised); padding:4px 12px; font-size:var(--text-2xs); font-weight:500; color:var(--text-muted); white-space:nowrap; cursor:pointer">Automobile Assemblers</button>
+    <button type="button" data-sector="Cement" onclick="pickSector(this.dataset.sector)" style="border:1px solid var(--rule); border-radius:var(--radius-pill); background:var(--surface-raised); padding:4px 12px; font-size:var(--text-2xs); font-weight:500; color:var(--text-muted); white-space:nowrap; cursor:pointer">Cement</button>
+    <button type="button" data-sector="Chemicals" onclick="pickSector(this.dataset.sector)" style="border:1px solid var(--rule); border-radius:var(--radius-pill); background:var(--surface-raised); padding:4px 12px; font-size:var(--text-2xs); font-weight:500; color:var(--text-muted); white-space:nowrap; cursor:pointer">Chemicals</button>
+    <button type="button" data-sector="Commercial Banks" onclick="pickSector(this.dataset.sector)" style="border:1px solid var(--rule); border-radius:var(--radius-pill); background:var(--surface-raised); padding:4px 12px; font-size:var(--text-2xs); font-weight:500; color:var(--text-muted); white-space:nowrap; cursor:pointer">Banks</button>
+    <button type="button" data-sector="Fertiliser" onclick="pickSector(this.dataset.sector)" style="border:1px solid var(--rule); border-radius:var(--radius-pill); background:var(--surface-raised); padding:4px 12px; font-size:var(--text-2xs); font-weight:500; color:var(--text-muted); white-space:nowrap; cursor:pointer">Fertiliser</button>
+    <button type="button" data-sector="Glass &amp; Ceramics" onclick="pickSector(this.dataset.sector)" style="border:1px solid var(--rule); border-radius:var(--radius-pill); background:var(--surface-raised); padding:4px 12px; font-size:var(--text-2xs); font-weight:500; color:var(--text-muted); white-space:nowrap; cursor:pointer">Glass &amp; Ceramics</button>
+    <button type="button" data-sector="Insurance" onclick="pickSector(this.dataset.sector)" style="border:1px solid var(--rule); border-radius:var(--radius-pill); background:var(--surface-raised); padding:4px 12px; font-size:var(--text-2xs); font-weight:500; color:var(--text-muted); white-space:nowrap; cursor:pointer">Insurance</button>
+    <button type="button" data-sector="Oil &amp; Gas Exploration Companies" onclick="pickSector(this.dataset.sector)" style="border:1px solid var(--rule); border-radius:var(--radius-pill); background:var(--surface-raised); padding:4px 12px; font-size:var(--text-2xs); font-weight:500; color:var(--text-muted); white-space:nowrap; cursor:pointer">E&amp;P</button>
+    <button type="button" data-sector="Oil &amp; Gas Marketing Companies" onclick="pickSector(this.dataset.sector)" style="border:1px solid var(--rule); border-radius:var(--radius-pill); background:var(--surface-raised); padding:4px 12px; font-size:var(--text-2xs); font-weight:500; color:var(--text-muted); white-space:nowrap; cursor:pointer">OMC</button>
+    <button type="button" data-sector="Pharmaceuticals" onclick="pickSector(this.dataset.sector)" style="border:1px solid var(--rule); border-radius:var(--radius-pill); background:var(--surface-raised); padding:4px 12px; font-size:var(--text-2xs); font-weight:500; color:var(--text-muted); white-space:nowrap; cursor:pointer">Pharma</button>
+    <button type="button" data-sector="Power Generation &amp; Distribution" onclick="pickSector(this.dataset.sector)" style="border:1px solid var(--rule); border-radius:var(--radius-pill); background:var(--surface-raised); padding:4px 12px; font-size:var(--text-2xs); font-weight:500; color:var(--text-muted); white-space:nowrap; cursor:pointer">Power Generation &amp; Distribution</button>
+    <button type="button" data-sector="Refinery" onclick="pickSector(this.dataset.sector)" style="border:1px solid var(--rule); border-radius:var(--radius-pill); background:var(--surface-raised); padding:4px 12px; font-size:var(--text-2xs); font-weight:500; color:var(--text-muted); white-space:nowrap; cursor:pointer">Refinery</button>
+    <button type="button" data-sector="Technology &amp; Communication" onclick="pickSector(this.dataset.sector)" style="border:1px solid var(--rule); border-radius:var(--radius-pill); background:var(--surface-raised); padding:4px 12px; font-size:var(--text-2xs); font-weight:500; color:var(--text-muted); white-space:nowrap; cursor:pointer">Tech</button>
+    <button type="button" data-sector="Textile Composite" onclick="pickSector(this.dataset.sector)" style="border:1px solid var(--rule); border-radius:var(--radius-pill); background:var(--surface-raised); padding:4px 12px; font-size:var(--text-2xs); font-weight:500; color:var(--text-muted); white-space:nowrap; cursor:pointer">Textile Composite</button>
+  </div>
+  <div style="display:grid; grid-template-columns:104px minmax(0,1fr) 88px 74px 66px 82px 84px; gap:16px; padding-bottom:9px; border-bottom:1px solid var(--rule-strong)">
+    <span style="font-size:var(--text-3xs); font-weight:700; text-transform:uppercase; letter-spacing:var(--tracking-caps); color:var(--text-faint)">Ticker</span><span style="font-size:var(--text-3xs); font-weight:700; text-transform:uppercase; letter-spacing:var(--tracking-caps); color:var(--text-faint)">Company</span><span style="text-align:right; font-size:var(--text-3xs); font-weight:700; text-transform:uppercase; letter-spacing:var(--tracking-caps); color:var(--text-faint)">Price</span><span style="text-align:right; font-size:var(--text-3xs); font-weight:700; text-transform:uppercase; letter-spacing:var(--tracking-caps); color:var(--text-faint)">Today</span><span style="text-align:right; font-size:var(--text-3xs); font-weight:700; text-transform:uppercase; letter-spacing:var(--tracking-caps); color:var(--text-faint)">P/E</span><span style="text-align:right; font-size:var(--text-3xs); font-weight:700; text-transform:uppercase; letter-spacing:var(--tracking-caps); color:var(--text-faint)">Volume</span><span style="text-align:right; font-size:var(--text-3xs); font-weight:700; text-transform:uppercase; letter-spacing:var(--tracking-caps); color:var(--text-faint)">52-week</span>
+  </div>
+  <div class="ledger" id="board">
+    <a class="ledger-row" href="company/MARI.html" data-row data-hay="mari mari petroleum oil &amp; gas exploration companies" data-sec="Oil &amp; Gas Exploration Companies" style="display:grid; grid-template-columns:104px minmax(0,1fr) 88px 74px 66px 82px 84px; align-items:center; gap:16px; color:inherit; text-decoration:none">
+      <span style="display:inline-flex; align-items:center; gap:8px; min-width:0">
+        <span style="flex-shrink:0; width:8px; height:8px; background:#cd5b2e"></span>
+        <span style="font-size:var(--text-sm); font-weight:600; color:var(--text-strong)">MARI</span>
+        <span title="On your watchlist" style="flex-shrink:0; width:5px; height:5px; border-radius:var(--radius-pill); border:1px solid var(--ink-3)"></span>
+      </span>
+      <span style="min-width:0">
+        <span style="display:block; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:var(--text-sm); color:var(--text-muted)">Mari Petroleum</span>
+        <span style="display:block; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:var(--text-3xs); color:var(--text-faint)">E&amp;P</span>
+      </span>
+      <span class="figure" style="text-align:right; font-size:var(--text-sm); color:var(--text-strong)">642.80</span>
+      <span class="figure" style="text-align:right; font-size:var(--text-sm); font-weight:600; color:var(--text-down)">−1.12%</span>
+      <span class="figure" style="text-align:right; font-size:var(--text-sm); color:var(--text-muted)">6.9x</span>
+      <span class="figure" style="text-align:right; font-size:var(--text-sm); color:var(--text-muted)">890k</span>
+      <span style="display:flex; align-items:center; justify-content:flex-end">
+        <span title="Position in the 52-week range" style="position:relative; width:74px; height:6px; background:var(--surface-inset)">
+          <span style="position:absolute; top:-2px; bottom:-2px; left:70.1%; width:2px; background:var(--ink-1)"></span>
+        </span>
+      </span>
+    </a>
+    <a class="ledger-row" href="company/OGDC.html" data-row data-hay="ogdc oil &amp; gas development company oil &amp; gas exploration companies" data-sec="Oil &amp; Gas Exploration Companies" style="display:grid; grid-template-columns:104px minmax(0,1fr) 88px 74px 66px 82px 84px; align-items:center; gap:16px; color:inherit; text-decoration:none">
+      <span style="display:inline-flex; align-items:center; gap:8px; min-width:0">
+        <span style="flex-shrink:0; width:8px; height:8px; background:#cd5b2e"></span>
+        <span style="font-size:var(--text-sm); font-weight:600; color:var(--text-strong)">OGDC</span>
+        <span title="In your book" style="flex-shrink:0; width:5px; height:5px; border-radius:var(--radius-pill); background:var(--indigo-2)"></span>
+      </span>
+      <span style="min-width:0">
+        <span style="display:block; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:var(--text-sm); color:var(--text-muted)">Oil &amp; Gas Development Company</span>
+        <span style="display:block; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:var(--text-3xs); color:var(--text-faint)">E&amp;P</span>
+      </span>
+      <span class="figure" style="text-align:right; font-size:var(--text-sm); color:var(--text-strong)">171.20</span>
+      <span class="figure" style="text-align:right; font-size:var(--text-sm); font-weight:600; color:var(--text-down)">−1.64%</span>
+      <span class="figure" style="text-align:right; font-size:var(--text-sm); color:var(--text-muted)">4.2x</span>
+      <span class="figure" style="text-align:right; font-size:var(--text-sm); color:var(--text-muted)">6.9m</span>
+      <span style="display:flex; align-items:center; justify-content:flex-end">
+        <span title="Position in the 52-week range" style="position:relative; width:74px; height:6px; background:var(--surface-inset)">
+          <span style="position:absolute; top:-2px; bottom:-2px; left:33.8%; width:2px; background:var(--ink-1)"></span>
+        </span>
+      </span>
+    </a>
+    <a class="ledger-row" href="company/FFC.html" data-row data-hay="ffc fauji fertilizer company fertiliser" data-sec="Fertiliser" style="display:grid; grid-template-columns:104px minmax(0,1fr) 88px 74px 66px 82px 84px; align-items:center; gap:16px; color:inherit; text-decoration:none">
+      <span style="display:inline-flex; align-items:center; gap:8px; min-width:0">
+        <span style="flex-shrink:0; width:8px; height:8px; background:#5e7d16"></span>
+        <span style="font-size:var(--text-sm); font-weight:600; color:var(--text-strong)">FFC</span>
+        <span title="On your watchlist" style="flex-shrink:0; width:5px; height:5px; border-radius:var(--radius-pill); border:1px solid var(--ink-3)"></span>
+      </span>
+      <span style="min-width:0">
+        <span style="display:block; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:var(--text-sm); color:var(--text-muted)">Fauji Fertilizer Company</span>
+        <span style="display:block; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:var(--text-3xs); color:var(--text-faint)">Fertiliser</span>
+      </span>
+      <span class="figure" style="text-align:right; font-size:var(--text-sm); color:var(--text-strong)">412.30</span>
+      <span class="figure" style="text-align:right; font-size:var(--text-sm); font-weight:600; color:var(--text-up)">+1.86%</span>
+      <span class="figure" style="text-align:right; font-size:var(--text-sm); color:var(--text-muted)">9.1x</span>
+      <span class="figure" style="text-align:right; font-size:var(--text-sm); color:var(--text-muted)">2.5m</span>
+      <span style="display:flex; align-items:center; justify-content:flex-end">
+        <span title="Position in the 52-week range" style="position:relative; width:74px; height:6px; background:var(--surface-inset)">
+          <span style="position:absolute; top:-2px; bottom:-2px; left:85.3%; width:2px; background:var(--ink-1)"></span>
+        </span>
+      </span>
+    </a>
+    <a class="ledger-row" href="company/MEBL.html" data-row data-hay="mebl meezan bank commercial banks" data-sec="Commercial Banks" style="display:grid; grid-template-columns:104px minmax(0,1fr) 88px 74px 66px 82px 84px; align-items:center; gap:16px; color:inherit; text-decoration:none">
+      <span style="display:inline-flex; align-items:center; gap:8px; min-width:0">
+        <span style="flex-shrink:0; width:8px; height:8px; background:#3450c8"></span>
+        <span style="font-size:var(--text-sm); font-weight:600; color:var(--text-strong)">MEBL</span>
+        
+      </span>
+      <span style="min-width:0">
+        <span style="display:block; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:var(--text-sm); color:var(--text-muted)">Meezan Bank</span>
+        <span style="display:block; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:var(--text-3xs); color:var(--text-faint)">Banks</span>
+      </span>
+      <span class="figure" style="text-align:right; font-size:var(--text-sm); color:var(--text-strong)">286.40</span>
+      <span class="figure" style="text-align:right; font-size:var(--text-sm); font-weight:600; color:var(--text-up)">+0.94%</span>
+      <span class="figure" style="text-align:right; font-size:var(--text-sm); color:var(--text-muted)">6.8x</span>
+      <span class="figure" style="text-align:right; font-size:var(--text-sm); color:var(--text-muted)">3.3m</span>
+      <span style="display:flex; align-items:center; justify-content:flex-end">
+        <span title="Position in the 52-week range" style="position:relative; width:74px; height:6px; background:var(--surface-inset)">
+          <span style="position:absolute; top:-2px; bottom:-2px; left:81.7%; width:2px; background:var(--ink-1)"></span>
+        </span>
+      </span>
+    </a>
+    <a class="ledger-row" href="company/PPL.html" data-row data-hay="ppl pakistan petroleum oil &amp; gas exploration companies" data-sec="Oil &amp; Gas Exploration Companies" style="display:grid; grid-template-columns:104px minmax(0,1fr) 88px 74px 66px 82px 84px; align-items:center; gap:16px; color:inherit; text-decoration:none">
+      <span style="display:inline-flex; align-items:center; gap:8px; min-width:0">
+        <span style="flex-shrink:0; width:8px; height:8px; background:#cd5b2e"></span>
+        <span style="font-size:var(--text-sm); font-weight:600; color:var(--text-strong)">PPL</span>
+        
+      </span>
+      <span style="min-width:0">
+        <span style="display:block; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:var(--text-sm); color:var(--text-muted)">Pakistan Petroleum</span>
+        <span style="display:block; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:var(--text-3xs); color:var(--text-faint)">E&amp;P</span>
+      </span>
+      <span class="figure" style="text-align:right; font-size:var(--text-sm); color:var(--text-strong)">182.40</span>
+      <span class="figure" style="text-align:right; font-size:var(--text-sm); font-weight:600; color:var(--text-down)">−1.38%</span>
+      <span class="figure" style="text-align:right; font-size:var(--text-sm); color:var(--text-muted)">4.6x</span>
+      <span class="figure" style="text-align:right; font-size:var(--text-sm); color:var(--text-muted)">5.8m</span>
+      <span style="display:flex; align-items:center; justify-content:flex-end">
+        <span title="Position in the 52-week range" style="position:relative; width:74px; height:6px; background:var(--surface-inset)">
+          <span style="position:absolute; top:-2px; bottom:-2px; left:48.6%; width:2px; background:var(--ink-1)"></span>
+        </span>
+      </span>
+    </a>
+    <a class="ledger-row" href="company/UBL.html" data-row data-hay="ubl united bank commercial banks" data-sec="Commercial Banks" style="display:grid; grid-template-columns:104px minmax(0,1fr) 88px 74px 66px 82px 84px; align-items:center; gap:16px; color:inherit; text-decoration:none">
+      <span style="display:inline-flex; align-items:center; gap:8px; min-width:0">
+        <span style="flex-shrink:0; width:8px; height:8px; background:#3450c8"></span>
+        <span style="font-size:var(--text-sm); font-weight:600; color:var(--text-strong)">UBL</span>
+        <span title="On your watchlist" style="flex-shrink:0; width:5px; height:5px; border-radius:var(--radius-pill); border:1px solid var(--ink-3)"></span>
+      </span>
+      <span style="min-width:0">
+        <span style="display:block; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:var(--text-sm); color:var(--text-muted)">United Bank</span>
+        <span style="display:block; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:var(--text-3xs); color:var(--text-faint)">Banks</span>
+      </span>
+      <span class="figure" style="text-align:right; font-size:var(--text-sm); color:var(--text-strong)">342.70</span>
+      <span class="figure" style="text-align:right; font-size:var(--text-sm); font-weight:600; color:var(--text-up)">+0.62%</span>
+      <span class="figure" style="text-align:right; font-size:var(--text-sm); color:var(--text-muted)">5.4x</span>
+      <span class="figure" style="text-align:right; font-size:var(--text-sm); color:var(--text-muted)">2.9m</span>
+      <span style="display:flex; align-items:center; justify-content:flex-end">
+        <span title="Position in the 52-week range" style="position:relative; width:74px; height:6px; background:var(--surface-inset)">
+          <span style="position:absolute; top:-2px; bottom:-2px; left:82.8%; width:2px; background:var(--ink-1)"></span>
+        </span>
+      </span>
+    </a>
+    <a class="ledger-row" href="company/MCB.html" data-row data-hay="mcb mcb bank commercial banks" data-sec="Commercial Banks" style="display:grid; grid-template-columns:104px minmax(0,1fr) 88px 74px 66px 82px 84px; align-items:center; gap:16px; color:inherit; text-decoration:none">
+      <span style="display:inline-flex; align-items:center; gap:8px; min-width:0">
+        <span style="flex-shrink:0; width:8px; height:8px; background:#3450c8"></span>
+        <span style="font-size:var(--text-sm); font-weight:600; color:var(--text-strong)">MCB</span>
+        <span title="In your book" style="flex-shrink:0; width:5px; height:5px; border-radius:var(--radius-pill); background:var(--indigo-2)"></span>
+      </span>
+      <span style="min-width:0">
+        <span style="display:block; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:var(--text-sm); color:var(--text-muted)">MCB Bank</span>
+        <span style="display:block; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:var(--text-3xs); color:var(--text-faint)">Banks</span>
+      </span>
+      <span class="figure" style="text-align:right; font-size:var(--text-sm); color:var(--text-strong)">268.90</span>
+      <span class="figure" style="text-align:right; font-size:var(--text-sm); font-weight:600; color:var(--text-up)">+0.74%</span>
+      <span class="figure" style="text-align:right; font-size:var(--text-sm); color:var(--text-muted)">6.1x</span>
+      <span class="figure" style="text-align:right; font-size:var(--text-sm); color:var(--text-muted)">3.1m</span>
+      <span style="display:flex; align-items:center; justify-content:flex-end">
+        <span title="Position in the 52-week range" style="position:relative; width:74px; height:6px; background:var(--surface-inset)">
+          <span style="position:absolute; top:-2px; bottom:-2px; left:81.3%; width:2px; background:var(--ink-1)"></span>
+        </span>
+      </span>
+    </a>
+    <a class="ledger-row" href="company/LUCK.html" data-row data-hay="luck lucky cement cement" data-sec="Cement" style="display:grid; grid-template-columns:104px minmax(0,1fr) 88px 74px 66px 82px 84px; align-items:center; gap:16px; color:inherit; text-decoration:none">
+      <span style="display:inline-flex; align-items:center; gap:8px; min-width:0">
+        <span style="flex-shrink:0; width:8px; height:8px; background:#8a7a66"></span>
+        <span style="font-size:var(--text-sm); font-weight:600; color:var(--text-strong)">LUCK</span>
+        <span title="In your book" style="flex-shrink:0; width:5px; height:5px; border-radius:var(--radius-pill); background:var(--indigo-2)"></span>
+      </span>
+      <span style="min-width:0">
+        <span style="display:block; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:var(--text-sm); color:var(--text-muted)">Lucky Cement</span>
+        <span style="display:block; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:var(--text-3xs); color:var(--text-faint)">Cement</span>
+      </span>
+      <span class="figure" style="text-align:right; font-size:var(--text-sm); color:var(--text-strong)">903.50</span>
+      <span class="figure" style="text-align:right; font-size:var(--text-sm); font-weight:600; color:var(--text-up)">+0.86%</span>
+      <span class="figure" style="text-align:right; font-size:var(--text-sm); color:var(--text-muted)">11.8x</span>
+      <span class="figure" style="text-align:right; font-size:var(--text-sm); color:var(--text-muted)">1.2m</span>
+      <span style="display:flex; align-items:center; justify-content:flex-end">
+        <span title="Position in the 52-week range" style="position:relative; width:74px; height:6px; background:var(--surface-inset)">
+          <span style="position:absolute; top:-2px; bottom:-2px; left:81.1%; width:2px; background:var(--ink-1)"></span>
+        </span>
+      </span>
+    </a>
+    <a class="ledger-row" href="company/EFERT.html" data-row data-hay="efert engro fertilizers fertiliser" data-sec="Fertiliser" style="display:grid; grid-template-columns:104px minmax(0,1fr) 88px 74px 66px 82px 84px; align-items:center; gap:16px; color:inherit; text-decoration:none">
+      <span style="display:inline-flex; align-items:center; gap:8px; min-width:0">
+        <span style="flex-shrink:0; width:8px; height:8px; background:#5e7d16"></span>
+        <span style="font-size:var(--text-sm); font-weight:600; color:var(--text-strong)">EFERT</span>
+        <span title="In your book" style="flex-shrink:0; width:5px; height:5px; border-radius:var(--radius-pill); background:var(--indigo-2)"></span>
+      </span>
+      <span style="min-width:0">
+        <span style="display:block; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:var(--text-sm); color:var(--text-muted)">Engro Fertilizers</span>
+        <span style="display:block; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:var(--text-3xs); color:var(--text-faint)">Fertiliser</span>
+      </span>
+      <span class="figure" style="text-align:right; font-size:var(--text-sm); color:var(--text-strong)">189.60</span>
+      <span class="figure" style="text-align:right; font-size:var(--text-sm); font-weight:600; color:var(--text-up)">+1.42%</span>
+      <span class="figure" style="text-align:right; font-size:var(--text-sm); color:var(--text-muted)">7.2x</span>
+      <span class="figure" style="text-align:right; font-size:var(--text-sm); color:var(--text-muted)">3.8m</span>
+      <span style="display:flex; align-items:center; justify-content:flex-end">
+        <span title="Position in the 52-week range" style="position:relative; width:74px; height:6px; background:var(--surface-inset)">
+          <span style="position:absolute; top:-2px; bottom:-2px; left:80.3%; width:2px; background:var(--ink-1)"></span>
+        </span>
+      </span>
+    </a>
+    <a class="ledger-row" href="company/HUBC.html" data-row data-hay="hubc hub power company power generation &amp; distribution" data-sec="Power Generation &amp; Distribution" style="display:grid; grid-template-columns:104px minmax(0,1fr) 88px 74px 66px 82px 84px; align-items:center; gap:16px; color:inherit; text-decoration:none">
+      <span style="display:inline-flex; align-items:center; gap:8px; min-width:0">
+        <span style="flex-shrink:0; width:8px; height:8px; background:#c79a1e"></span>
+        <span style="font-size:var(--text-sm); font-weight:600; color:var(--text-strong)">HUBC</span>
+        
+      </span>
+      <span style="min-width:0">
+        <span style="display:block; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:var(--text-sm); color:var(--text-muted)">Hub Power Company</span>
+        <span style="display:block; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:var(--text-3xs); color:var(--text-faint)">Power Generation &amp; Distribution</span>
+      </span>
+      <span class="figure" style="text-align:right; font-size:var(--text-sm); color:var(--text-strong)">168.90</span>
+      <span class="figure" style="text-align:right; font-size:var(--text-sm); font-weight:600; color:var(--text-up)">+0.48%</span>
+      <span class="figure" style="text-align:right; font-size:var(--text-sm); color:var(--text-muted)">4.4x</span>
+      <span class="figure" style="text-align:right; font-size:var(--text-sm); color:var(--text-muted)">4.2m</span>
+      <span style="display:flex; align-items:center; justify-content:flex-end">
+        <span title="Position in the 52-week range" style="position:relative; width:74px; height:6px; background:var(--surface-inset)">
+          <span style="position:absolute; top:-2px; bottom:-2px; left:70.1%; width:2px; background:var(--ink-1)"></span>
+        </span>
+      </span>
+    </a>
+    <a class="ledger-row" href="company/HBL.html" data-row data-hay="hbl habib bank commercial banks" data-sec="Commercial Banks" style="display:grid; grid-template-columns:104px minmax(0,1fr) 88px 74px 66px 82px 84px; align-items:center; gap:16px; color:inherit; text-decoration:none">
+      <span style="display:inline-flex; align-items:center; gap:8px; min-width:0">
+        <span style="flex-shrink:0; width:8px; height:8px; background:#3450c8"></span>
+        <span style="font-size:var(--text-sm); font-weight:600; color:var(--text-strong)">HBL</span>
+        <span title="In your book" style="flex-shrink:0; width:5px; height:5px; border-radius:var(--radius-pill); background:var(--indigo-2)"></span>
+      </span>
+      <span style="min-width:0">
+        <span style="display:block; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:var(--text-sm); color:var(--text-muted)">Habib Bank</span>
+        <span style="display:block; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:var(--text-3xs); color:var(--text-faint)">Banks</span>
+      </span>
+      <span class="figure" style="text-align:right; font-size:var(--text-sm); color:var(--text-strong)">148.30</span>
+      <span class="figure" style="text-align:right; font-size:var(--text-sm); font-weight:600; color:var(--text-up)">+0.41%</span>
+      <span class="figure" style="text-align:right; font-size:var(--text-sm); color:var(--text-muted)">4.9x</span>
+      <span class="figure" style="text-align:right; font-size:var(--text-sm); color:var(--text-muted)">5.0m</span>
+      <span style="display:flex; align-items:center; justify-content:flex-end">
+        <span title="Position in the 52-week range" style="position:relative; width:74px; height:6px; background:var(--surface-inset)">
+          <span style="position:absolute; top:-2px; bottom:-2px; left:67.9%; width:2px; background:var(--ink-1)"></span>
+        </span>
+      </span>
+    </a>
+    <a class="ledger-row" href="company/ENGRO.html" data-row data-hay="engro engro corporation fertiliser" data-sec="Fertiliser" style="display:grid; grid-template-columns:104px minmax(0,1fr) 88px 74px 66px 82px 84px; align-items:center; gap:16px; color:inherit; text-decoration:none">
+      <span style="display:inline-flex; align-items:center; gap:8px; min-width:0">
+        <span style="flex-shrink:0; width:8px; height:8px; background:#5e7d16"></span>
+        <span style="font-size:var(--text-sm); font-weight:600; color:var(--text-strong)">ENGRO</span>
+        <span title="In your book" style="flex-shrink:0; width:5px; height:5px; border-radius:var(--radius-pill); background:var(--indigo-2)"></span>
+      </span>
+      <span style="min-width:0">
+        <span style="display:block; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:var(--text-sm); color:var(--text-muted)">Engro Corporation</span>
+        <span style="display:block; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:var(--text-3xs); color:var(--text-faint)">Fertiliser</span>
+      </span>
+      <span class="figure" style="text-align:right; font-size:var(--text-sm); color:var(--text-strong)">341.80</span>
+      <span class="figure" style="text-align:right; font-size:var(--text-sm); font-weight:600; color:var(--text-up)">+2.41%</span>
+      <span class="figure" style="text-align:right; font-size:var(--text-sm); color:var(--text-muted)">8.4x</span>
+      <span class="figure" style="text-align:right; font-size:var(--text-sm); color:var(--text-muted)">4.8m</span>
+      <span style="display:flex; align-items:center; justify-content:flex-end">
+        <span title="Position in the 52-week range" style="position:relative; width:74px; height:6px; background:var(--surface-inset)">
+          <span style="position:absolute; top:-2px; bottom:-2px; left:78.3%; width:2px; background:var(--ink-1)"></span>
+        </span>
+      </span>
+    </a>
+    <a class="ledger-row" href="company/PSO.html" data-row data-hay="pso pakistan state oil oil &amp; gas marketing companies" data-sec="Oil &amp; Gas Marketing Companies" style="display:grid; grid-template-columns:104px minmax(0,1fr) 88px 74px 66px 82px 84px; align-items:center; gap:16px; color:inherit; text-decoration:none">
+      <span style="display:inline-flex; align-items:center; gap:8px; min-width:0">
+        <span style="flex-shrink:0; width:8px; height:8px; background:#cd5b2e"></span>
+        <span style="font-size:var(--text-sm); font-weight:600; color:var(--text-strong)">PSO</span>
+        <span title="In your book" style="flex-shrink:0; width:5px; height:5px; border-radius:var(--radius-pill); background:var(--indigo-2)"></span>
+      </span>
+      <span style="min-width:0">
+        <span style="display:block; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:var(--text-sm); color:var(--text-muted)">Pakistan State Oil</span>
+        <span style="display:block; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:var(--text-3xs); color:var(--text-faint)">OMC</span>
+      </span>
+      <span class="figure" style="text-align:right; font-size:var(--text-sm); color:var(--text-strong)">412.60</span>
+      <span class="figure" style="text-align:right; font-size:var(--text-sm); font-weight:600; color:var(--text-up)">+1.05%</span>
+      <span class="figure" style="text-align:right; font-size:var(--text-sm); color:var(--text-muted)">5.6x</span>
+      <span class="figure" style="text-align:right; font-size:var(--text-sm); color:var(--text-muted)">2.6m</span>
+      <span style="display:flex; align-items:center; justify-content:flex-end">
+        <span title="Position in the 52-week range" style="position:relative; width:74px; height:6px; background:var(--surface-inset)">
+          <span style="position:absolute; top:-2px; bottom:-2px; left:69.9%; width:2px; background:var(--ink-1)"></span>
+        </span>
+      </span>
+    </a>
+    <a class="ledger-row" href="company/POL.html" data-row data-hay="pol pakistan oilfields oil &amp; gas exploration companies" data-sec="Oil &amp; Gas Exploration Companies" style="display:grid; grid-template-columns:104px minmax(0,1fr) 88px 74px 66px 82px 84px; align-items:center; gap:16px; color:inherit; text-decoration:none">
+      <span style="display:inline-flex; align-items:center; gap:8px; min-width:0">
+        <span style="flex-shrink:0; width:8px; height:8px; background:#cd5b2e"></span>
+        <span style="font-size:var(--text-sm); font-weight:600; color:var(--text-strong)">POL</span>
+        
+      </span>
+      <span style="min-width:0">
+        <span style="display:block; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:var(--text-sm); color:var(--text-muted)">Pakistan Oilfields</span>
+        <span style="display:block; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:var(--text-3xs); color:var(--text-faint)">E&amp;P</span>
+      </span>
+      <span class="figure" style="text-align:right; font-size:var(--text-sm); color:var(--text-strong)">528.40</span>
+      <span class="figure" style="text-align:right; font-size:var(--text-sm); font-weight:600; color:var(--text-down)">−0.84%</span>
+      <span class="figure" style="text-align:right; font-size:var(--text-sm); color:var(--text-muted)">5.1x</span>
+      <span class="figure" style="text-align:right; font-size:var(--text-sm); color:var(--text-muted)">640k</span>
+      <span style="display:flex; align-items:center; justify-content:flex-end">
+        <span title="Position in the 52-week range" style="position:relative; width:74px; height:6px; background:var(--surface-inset)">
+          <span style="position:absolute; top:-2px; bottom:-2px; left:59.5%; width:2px; background:var(--ink-1)"></span>
+        </span>
+      </span>
+    </a>
+    <a class="ledger-row" href="company/INDU.html" data-row data-hay="indu indus motor company automobile assemblers" data-sec="Automobile Assemblers" style="display:grid; grid-template-columns:104px minmax(0,1fr) 88px 74px 66px 82px 84px; align-items:center; gap:16px; color:inherit; text-decoration:none">
+      <span style="display:inline-flex; align-items:center; gap:8px; min-width:0">
+        <span style="flex-shrink:0; width:8px; height:8px; background:#4a6fa5"></span>
+        <span style="font-size:var(--text-sm); font-weight:600; color:var(--text-strong)">INDU</span>
+        
+      </span>
+      <span style="min-width:0">
+        <span style="display:block; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:var(--text-sm); color:var(--text-muted)">Indus Motor Company</span>
+        <span style="display:block; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:var(--text-3xs); color:var(--text-faint)">Automobile Assemblers</span>
+      </span>
+      <span class="figure" style="text-align:right; font-size:var(--text-sm); color:var(--text-strong)">1,842.00</span>
+      <span class="figure" style="text-align:right; font-size:var(--text-sm); font-weight:600; color:var(--text-up)">+0.34%</span>
+      <span class="figure" style="text-align:right; font-size:var(--text-sm); color:var(--text-muted)">8.7x</span>
+      <span class="figure" style="text-align:right; font-size:var(--text-sm); color:var(--text-muted)">210k</span>
+      <span style="display:flex; align-items:center; justify-content:flex-end">
+        <span title="Position in the 52-week range" style="position:relative; width:74px; height:6px; background:var(--surface-inset)">
+          <span style="position:absolute; top:-2px; bottom:-2px; left:74.9%; width:2px; background:var(--ink-1)"></span>
+        </span>
+      </span>
+    </a>
+    <a class="ledger-row" href="company/SYS.html" data-row data-hay="sys systems limited technology &amp; communication" data-sec="Technology &amp; Communication" style="display:grid; grid-template-columns:104px minmax(0,1fr) 88px 74px 66px 82px 84px; align-items:center; gap:16px; color:inherit; text-decoration:none">
+      <span style="display:inline-flex; align-items:center; gap:8px; min-width:0">
+        <span style="flex-shrink:0; width:8px; height:8px; background:#6a4fd0"></span>
+        <span style="font-size:var(--text-sm); font-weight:600; color:var(--text-strong)">SYS</span>
+        <span title="In your book" style="flex-shrink:0; width:5px; height:5px; border-radius:var(--radius-pill); background:var(--indigo-2)"></span>
+      </span>
+      <span style="min-width:0">
+        <span style="display:block; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:var(--text-sm); color:var(--text-muted)">Systems Limited</span>
+        <span style="display:block; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:var(--text-3xs); color:var(--text-faint)">Tech</span>
+      </span>
+      <span class="figure" style="text-align:right; font-size:var(--text-sm); color:var(--text-strong)">366.40</span>
+      <span class="figure" style="text-align:right; font-size:var(--text-sm); font-weight:600; color:var(--text-up)">+3.12%</span>
+      <span class="figure" style="text-align:right; font-size:var(--text-sm); color:var(--text-muted)">21.6x</span>
+      <span class="figure" style="text-align:right; font-size:var(--text-sm); color:var(--text-muted)">2.2m</span>
+      <span style="display:flex; align-items:center; justify-content:flex-end">
+        <span title="Position in the 52-week range" style="position:relative; width:74px; height:6px; background:var(--surface-inset)">
+          <span style="position:absolute; top:-2px; bottom:-2px; left:30.9%; width:2px; background:var(--ink-1)"></span>
+        </span>
+      </span>
+    </a>
+    <a class="ledger-row" href="company/DGKC.html" data-row data-hay="dgkc d.g. khan cement cement" data-sec="Cement" style="display:grid; grid-template-columns:104px minmax(0,1fr) 88px 74px 66px 82px 84px; align-items:center; gap:16px; color:inherit; text-decoration:none">
+      <span style="display:inline-flex; align-items:center; gap:8px; min-width:0">
+        <span style="flex-shrink:0; width:8px; height:8px; background:#8a7a66"></span>
+        <span style="font-size:var(--text-sm); font-weight:600; color:var(--text-strong)">DGKC</span>
+        
+      </span>
+      <span style="min-width:0">
+        <span style="display:block; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:var(--text-sm); color:var(--text-muted)">D.G. Khan Cement</span>
+        <span style="display:block; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:var(--text-3xs); color:var(--text-faint)">Cement</span>
+      </span>
+      <span class="figure" style="text-align:right; font-size:var(--text-sm); color:var(--text-strong)">142.60</span>
+      <span class="figure" style="text-align:right; font-size:var(--text-sm); font-weight:600; color:var(--text-down)">−0.62%</span>
+      <span class="figure" style="text-align:right; font-size:var(--text-sm); color:var(--text-muted)">12.4x</span>
+      <span class="figure" style="text-align:right; font-size:var(--text-sm); color:var(--text-muted)">3.2m</span>
+      <span style="display:flex; align-items:center; justify-content:flex-end">
+        <span title="Position in the 52-week range" style="position:relative; width:74px; height:6px; background:var(--surface-inset)">
+          <span style="position:absolute; top:-2px; bottom:-2px; left:63.2%; width:2px; background:var(--ink-1)"></span>
+        </span>
+      </span>
+    </a>
+    <a class="ledger-row" href="company/CHCC.html" data-row data-hay="chcc cherat cement cement" data-sec="Cement" style="display:grid; grid-template-columns:104px minmax(0,1fr) 88px 74px 66px 82px 84px; align-items:center; gap:16px; color:inherit; text-decoration:none">
+      <span style="display:inline-flex; align-items:center; gap:8px; min-width:0">
+        <span style="flex-shrink:0; width:8px; height:8px; background:#8a7a66"></span>
+        <span style="font-size:var(--text-sm); font-weight:600; color:var(--text-strong)">CHCC</span>
+        
+      </span>
+      <span style="min-width:0">
+        <span style="display:block; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:var(--text-sm); color:var(--text-muted)">Cherat Cement</span>
+        <span style="display:block; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:var(--text-3xs); color:var(--text-faint)">Cement</span>
+      </span>
+      <span class="figure" style="text-align:right; font-size:var(--text-sm); color:var(--text-strong)">264.30</span>
+      <span class="figure" style="text-align:right; font-size:var(--text-sm); font-weight:600; color:var(--text-down)">−0.28%</span>
+      <span class="figure" style="text-align:right; font-size:var(--text-sm); color:var(--text-muted)">9.8x</span>
+      <span class="figure" style="text-align:right; font-size:var(--text-sm); color:var(--text-muted)">1.1m</span>
+      <span style="display:flex; align-items:center; justify-content:flex-end">
+        <span title="Position in the 52-week range" style="position:relative; width:74px; height:6px; background:var(--surface-inset)">
+          <span style="position:absolute; top:-2px; bottom:-2px; left:70.0%; width:2px; background:var(--ink-1)"></span>
+        </span>
+      </span>
+    </a>
+    <a class="ledger-row" href="company/EPCL.html" data-row data-hay="epcl engro polymer &amp; chemicals chemicals" data-sec="Chemicals" style="display:grid; grid-template-columns:104px minmax(0,1fr) 88px 74px 66px 82px 84px; align-items:center; gap:16px; color:inherit; text-decoration:none">
+      <span style="display:inline-flex; align-items:center; gap:8px; min-width:0">
+        <span style="flex-shrink:0; width:8px; height:8px; background:#0f7e96"></span>
+        <span style="font-size:var(--text-sm); font-weight:600; color:var(--text-strong)">EPCL</span>
+        
+      </span>
+      <span style="min-width:0">
+        <span style="display:block; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:var(--text-sm); color:var(--text-muted)">Engro Polymer &amp; Chemicals</span>
+        <span style="display:block; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:var(--text-3xs); color:var(--text-faint)">Chemicals</span>
+      </span>
+      <span class="figure" style="text-align:right; font-size:var(--text-sm); color:var(--text-strong)">52.80</span>
+      <span class="figure" style="text-align:right; font-size:var(--text-sm); font-weight:600; color:var(--text-up)">+0.21%</span>
+      <span class="figure" style="text-align:right; font-size:var(--text-sm); color:var(--text-muted)">10.6x</span>
+      <span class="figure" style="text-align:right; font-size:var(--text-sm); color:var(--text-muted)">4.6m</span>
+      <span style="display:flex; align-items:center; justify-content:flex-end">
+        <span title="Position in the 52-week range" style="position:relative; width:74px; height:6px; background:var(--surface-inset)">
+          <span style="position:absolute; top:-2px; bottom:-2px; left:59.7%; width:2px; background:var(--ink-1)"></span>
+        </span>
+      </span>
+    </a>
+    <a class="ledger-row" href="company/ATRL.html" data-row data-hay="atrl attock refinery refinery" data-sec="Refinery" style="display:grid; grid-template-columns:104px minmax(0,1fr) 88px 74px 66px 82px 84px; align-items:center; gap:16px; color:inherit; text-decoration:none">
+      <span style="display:inline-flex; align-items:center; gap:8px; min-width:0">
+        <span style="flex-shrink:0; width:8px; height:8px; background:#b5532a"></span>
+        <span style="font-size:var(--text-sm); font-weight:600; color:var(--text-strong)">ATRL</span>
+        
+      </span>
+      <span style="min-width:0">
+        <span style="display:block; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:var(--text-sm); color:var(--text-muted)">Attock Refinery</span>
+        <span style="display:block; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:var(--text-3xs); color:var(--text-faint)">Refinery</span>
+      </span>
+      <span class="figure" style="text-align:right; font-size:var(--text-sm); color:var(--text-strong)">388.15</span>
+      <span class="figure" style="text-align:right; font-size:var(--text-sm); font-weight:600; color:var(--text-down)">−1.92%</span>
+      <span class="figure" style="text-align:right; font-size:var(--text-sm); color:var(--text-muted)">3.8x</span>
+      <span class="figure" style="text-align:right; font-size:var(--text-sm); color:var(--text-muted)">1.4m</span>
+      <span style="display:flex; align-items:center; justify-content:flex-end">
+        <span title="Position in the 52-week range" style="position:relative; width:74px; height:6px; background:var(--surface-inset)">
+          <span style="position:absolute; top:-2px; bottom:-2px; left:61.6%; width:2px; background:var(--ink-1)"></span>
+        </span>
+      </span>
+    </a>
+    <a class="ledger-row" href="company/TRG.html" data-row data-hay="trg trg pakistan technology &amp; communication" data-sec="Technology &amp; Communication" style="display:grid; grid-template-columns:104px minmax(0,1fr) 88px 74px 66px 82px 84px; align-items:center; gap:16px; color:inherit; text-decoration:none">
+      <span style="display:inline-flex; align-items:center; gap:8px; min-width:0">
+        <span style="flex-shrink:0; width:8px; height:8px; background:#6a4fd0"></span>
+        <span style="font-size:var(--text-sm); font-weight:600; color:var(--text-strong)">TRG</span>
+        
+      </span>
+      <span style="min-width:0">
+        <span style="display:block; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:var(--text-sm); color:var(--text-muted)">TRG Pakistan</span>
+        <span style="display:block; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:var(--text-3xs); color:var(--text-faint)">Tech</span>
+      </span>
+      <span class="figure" style="text-align:right; font-size:var(--text-sm); color:var(--text-strong)">68.40</span>
+      <span class="figure" style="text-align:right; font-size:var(--text-sm); font-weight:600; color:var(--text-up)">+2.86%</span>
+      <span class="figure" style="text-align:right; font-size:var(--text-sm); color:var(--text-muted)">—</span>
+      <span class="figure" style="text-align:right; font-size:var(--text-sm); color:var(--text-muted)">12.4m</span>
+      <span style="display:flex; align-items:center; justify-content:flex-end">
+        <span title="Position in the 52-week range" style="position:relative; width:74px; height:6px; background:var(--surface-inset)">
+          <span style="position:absolute; top:-2px; bottom:-2px; left:54.7%; width:2px; background:var(--ink-1)"></span>
+        </span>
+      </span>
+    </a>
+    <a class="ledger-row" href="company/NML.html" data-row data-hay="nml nishat mills textile composite" data-sec="Textile Composite" style="display:grid; grid-template-columns:104px minmax(0,1fr) 88px 74px 66px 82px 84px; align-items:center; gap:16px; color:inherit; text-decoration:none">
+      <span style="display:inline-flex; align-items:center; gap:8px; min-width:0">
+        <span style="flex-shrink:0; width:8px; height:8px; background:#c23a6b"></span>
+        <span style="font-size:var(--text-sm); font-weight:600; color:var(--text-strong)">NML</span>
+        
+      </span>
+      <span style="min-width:0">
+        <span style="display:block; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:var(--text-sm); color:var(--text-muted)">Nishat Mills</span>
+        <span style="display:block; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:var(--text-3xs); color:var(--text-faint)">Textile Composite</span>
+      </span>
+      <span class="figure" style="text-align:right; font-size:var(--text-sm); color:var(--text-strong)">84.60</span>
+      <span class="figure" style="text-align:right; font-size:var(--text-sm); font-weight:600; color:var(--text-down)">−0.44%</span>
+      <span class="figure" style="text-align:right; font-size:var(--text-sm); color:var(--text-muted)">6.2x</span>
+      <span class="figure" style="text-align:right; font-size:var(--text-sm); color:var(--text-muted)">2.0m</span>
+      <span style="display:flex; align-items:center; justify-content:flex-end">
+        <span title="Position in the 52-week range" style="position:relative; width:74px; height:6px; background:var(--surface-inset)">
+          <span style="position:absolute; top:-2px; bottom:-2px; left:62.0%; width:2px; background:var(--ink-1)"></span>
+        </span>
+      </span>
+    </a>
+    <a class="ledger-row" href="company/SEARL.html" data-row data-hay="searl the searle company pharmaceuticals" data-sec="Pharmaceuticals" style="display:grid; grid-template-columns:104px minmax(0,1fr) 88px 74px 66px 82px 84px; align-items:center; gap:16px; color:inherit; text-decoration:none">
+      <span style="display:inline-flex; align-items:center; gap:8px; min-width:0">
+        <span style="flex-shrink:0; width:8px; height:8px; background:#0f8a8a"></span>
+        <span style="font-size:var(--text-sm); font-weight:600; color:var(--text-strong)">SEARL</span>
+        <span title="In your book" style="flex-shrink:0; width:5px; height:5px; border-radius:var(--radius-pill); background:var(--indigo-2)"></span>
+      </span>
+      <span style="min-width:0">
+        <span style="display:block; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:var(--text-sm); color:var(--text-muted)">The Searle Company</span>
+        <span style="display:block; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:var(--text-3xs); color:var(--text-faint)">Pharma</span>
+      </span>
+      <span class="figure" style="text-align:right; font-size:var(--text-sm); color:var(--text-strong)">54.20</span>
+      <span class="figure" style="text-align:right; font-size:var(--text-sm); font-weight:600; color:var(--text-down)">−2.18%</span>
+      <span class="figure" style="text-align:right; font-size:var(--text-sm); color:var(--text-muted)">14.3x</span>
+      <span class="figure" style="text-align:right; font-size:var(--text-sm); color:var(--text-muted)">2.9m</span>
+      <span style="display:flex; align-items:center; justify-content:flex-end">
+        <span title="Position in the 52-week range" style="position:relative; width:74px; height:6px; background:var(--surface-inset)">
+          <span style="position:absolute; top:-2px; bottom:-2px; left:20.1%; width:2px; background:var(--ink-1)"></span>
+        </span>
+      </span>
+    </a>
+    <a class="ledger-row" href="company/AICL.html" data-row data-hay="aicl adamjee insurance insurance" data-sec="Insurance" style="display:grid; grid-template-columns:104px minmax(0,1fr) 88px 74px 66px 82px 84px; align-items:center; gap:16px; color:inherit; text-decoration:none">
+      <span style="display:inline-flex; align-items:center; gap:8px; min-width:0">
+        <span style="flex-shrink:0; width:8px; height:8px; background:#8f3fae"></span>
+        <span style="font-size:var(--text-sm); font-weight:600; color:var(--text-strong)">AICL</span>
+        
+      </span>
+      <span style="min-width:0">
+        <span style="display:block; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:var(--text-sm); color:var(--text-muted)">Adamjee Insurance</span>
+        <span style="display:block; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:var(--text-3xs); color:var(--text-faint)">Insurance</span>
+      </span>
+      <span class="figure" style="text-align:right; font-size:var(--text-sm); color:var(--text-strong)">58.70</span>
+      <span class="figure" style="text-align:right; font-size:var(--text-sm); font-weight:600; color:var(--text-down)">−0.12%</span>
+      <span class="figure" style="text-align:right; font-size:var(--text-sm); color:var(--text-muted)">7.4x</span>
+      <span class="figure" style="text-align:right; font-size:var(--text-sm); color:var(--text-muted)">820k</span>
+      <span style="display:flex; align-items:center; justify-content:flex-end">
+        <span title="Position in the 52-week range" style="position:relative; width:74px; height:6px; background:var(--surface-inset)">
+          <span style="position:absolute; top:-2px; bottom:-2px; left:59.9%; width:2px; background:var(--ink-1)"></span>
+        </span>
+      </span>
+    </a>
+    <a class="ledger-row" href="company/NETSOL.html" data-row data-hay="netsol netsol technologies technology &amp; communication" data-sec="Technology &amp; Communication" style="display:grid; grid-template-columns:104px minmax(0,1fr) 88px 74px 66px 82px 84px; align-items:center; gap:16px; color:inherit; text-decoration:none">
+      <span style="display:inline-flex; align-items:center; gap:8px; min-width:0">
+        <span style="flex-shrink:0; width:8px; height:8px; background:#6a4fd0"></span>
+        <span style="font-size:var(--text-sm); font-weight:600; color:var(--text-strong)">NETSOL</span>
+        
+      </span>
+      <span style="min-width:0">
+        <span style="display:block; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:var(--text-sm); color:var(--text-muted)">NetSol Technologies</span>
+        <span style="display:block; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:var(--text-3xs); color:var(--text-faint)">Tech</span>
+      </span>
+      <span class="figure" style="text-align:right; font-size:var(--text-sm); color:var(--text-strong)">212.30</span>
+      <span class="figure" style="text-align:right; font-size:var(--text-sm); font-weight:600; color:var(--text-up)">+2.28%</span>
+      <span class="figure" style="text-align:right; font-size:var(--text-sm); color:var(--text-muted)">18.2x</span>
+      <span class="figure" style="text-align:right; font-size:var(--text-sm); color:var(--text-muted)">1.7m</span>
+      <span style="display:flex; align-items:center; justify-content:flex-end">
+        <span title="Position in the 52-week range" style="position:relative; width:74px; height:6px; background:var(--surface-inset)">
+          <span style="position:absolute; top:-2px; bottom:-2px; left:54.8%; width:2px; background:var(--ink-1)"></span>
+        </span>
+      </span>
+    </a>
+    <a class="ledger-row" href="company/GHGL.html" data-row data-hay="ghgl ghani glass glass &amp; ceramics" data-sec="Glass &amp; Ceramics" style="display:grid; grid-template-columns:104px minmax(0,1fr) 88px 74px 66px 82px 84px; align-items:center; gap:16px; color:inherit; text-decoration:none">
+      <span style="display:inline-flex; align-items:center; gap:8px; min-width:0">
+        <span style="flex-shrink:0; width:8px; height:8px; background:#2f9e8f"></span>
+        <span style="font-size:var(--text-sm); font-weight:600; color:var(--text-strong)">GHGL</span>
+        
+      </span>
+      <span style="min-width:0">
+        <span style="display:block; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:var(--text-sm); color:var(--text-muted)">Ghani Glass</span>
+        <span style="display:block; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:var(--text-3xs); color:var(--text-faint)">Glass &amp; Ceramics</span>
+      </span>
+      <span class="figure" style="text-align:right; font-size:var(--text-sm); color:var(--text-strong)">128.40</span>
+      <span class="figure" style="text-align:right; font-size:var(--text-sm); font-weight:600; color:var(--text-down)">−2.41%</span>
+      <span class="figure" style="text-align:right; font-size:var(--text-sm); color:var(--text-muted)">8.9x</span>
+      <span class="figure" style="text-align:right; font-size:var(--text-sm); color:var(--text-muted)">480k</span>
+      <span style="display:flex; align-items:center; justify-content:flex-end">
+        <span title="Position in the 52-week range" style="position:relative; width:74px; height:6px; background:var(--surface-inset)">
+          <span style="position:absolute; top:-2px; bottom:-2px; left:56.9%; width:2px; background:var(--ink-1)"></span>
+        </span>
+      </span>
+    </a>
+  </div>
+  <p style="margin:20px 0 0; font-size:var(--text-2xs); color:var(--text-faint)">Official PSX market watch. A filled dot marks a holding, an outlined dot a watchlist entry. Missing values are labelled, never invented.</p>
+</section>
+<div style="background:var(--surface-page); color:var(--text-strong); padding:var(--band-pad-y) var(--gutter-page); border-bottom:var(--border-rule); border-bottom:none">
+  <div style="display:flex; align-items:center; gap:10px">
+    <span style="width:6px; height:6px; border-radius:var(--radius-pill); background:var(--up-2)"></span>
+    <span class="figure" style="font-size:var(--text-2xs); color:var(--text-faint)">As of 25 Jul 2026, 15:30 PKT</span>
+  </div>
+</div>
+<script>
+  var sector = 'all';
+  function pickSector(s) { sector = s; document.querySelectorAll('[data-sector]').forEach(function (b) {
+      var on = b.dataset.sector === s; b.style.borderColor = on ? 'var(--ink-1)' : 'var(--rule)';
+      b.style.color = on ? 'var(--text-strong)' : 'var(--text-muted)'; b.style.fontWeight = on ? 600 : 500; }); filter(); }
+  function filter() {
+    var q = (document.getElementById('q').value || '').trim().toLowerCase(), n = 0;
+    document.querySelectorAll('[data-row]').forEach(function (r) {
+      var ok = (sector === 'all' || r.dataset.sec === sector) && (!q || r.dataset.hay.indexOf(q) >= 0);
+      r.hidden = !ok; if (ok) n++;
+    });
+    document.getElementById('count').textContent = n + ' of 26 companies';
+  }
+  pickSector('all');
+</script>
+</body>
+</html>

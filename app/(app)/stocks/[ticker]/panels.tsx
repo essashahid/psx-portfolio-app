@@ -9,7 +9,6 @@ import { METRIC_HINTS } from "@/lib/market/glossary";
 import { getCompanyDividends } from "@/lib/company/dividends";
 import { getCompanyFilings } from "@/lib/company/filings";
 import { computeRatios, type RatioRow } from "@/lib/engine/ratios";
-import { verificationStatus, latestPeriodLabel } from "@/lib/engine/verified";
 import { getPortfolio } from "@/lib/portfolio/positions";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -18,13 +17,10 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { SectionMeta } from "@/components/features/stocks/section-meta";
 import { ActionButton } from "@/components/ui/action-button";
 import { WatchlistButton } from "@/components/features/stocks/watchlist-button";
-import { CompanyAiActions } from "@/components/features/stocks/company-ai-actions";
-import { Markdown } from "@/components/ui/markdown";
 import { StockPriceChart } from "@/components/features/stocks/price-chart-lazy";
 import { TechnicalWorkstation } from "@/components/features/technicals/workstation";
 import { FinancialsWorkspace, type FinancialWorkspaceRow } from "@/components/features/stocks/financials-workspace";
 import { EarningsWorkspace } from "@/components/features/stocks/earnings-workspace";
-import { RatiosWorkspace, type RatioHistoryRow, type RatiosPeerRow, type RatiosQuoteRow } from "@/components/features/stocks/ratios-workspace";
 import { formatMoney, formatNumber, formatSignedPct, formatFinancialPeriod, cn } from "@/lib/shared/format";
 import {
   AlertTriangle, Banknote, BriefcaseBusiness, FileText, Info, Newspaper, Sparkles, TrendingUp,
@@ -781,140 +777,6 @@ export async function EarningsPanel({ ticker, readOnly = false }: { ticker: stri
 }
 
 // ---------------------------------------------------------------------------
-// 4. Ratios
-// ---------------------------------------------------------------------------
-
-const RATIO_PEER_METRICS = [
-  "P/E",
-  "P/B",
-  "P/S",
-  "EV/Sales",
-  "EV/EBIT",
-  "FCF yield",
-  "Dividend yield (TTM)",
-  "Gross margin",
-  "Net margin",
-  "ROE",
-  "ROA",
-  "ROIC",
-  "Revenue growth",
-  "EPS growth",
-  "Debt-to-equity",
-  "Net debt-to-equity",
-  "Interest coverage",
-  "Current ratio",
-  "OCF / PAT",
-] as const;
-
-export async function RatiosPanel({ ticker, readOnly = false }: { ticker: string; readOnly?: boolean }) {
-  const supabase = await createClient();
-
-  // Always compute live from stored inputs — the engine is pure reads, so the
-  // tab reflects the newest extracted financials and quote without waiting on
-  // a persisted snapshot.
-  const [ratios, metadata, quoteRes, historyRes, periodsRes] = await Promise.all([
-    computeRatios(supabase, ticker),
-    getCompanyMetadata(supabase, ticker),
-    supabase
-      .from("market_quotes")
-      .select("price, as_of, last_fetched_at")
-      .eq("ticker", ticker.toUpperCase())
-      .maybeSingle(),
-    supabase
-      .from("company_ratio_history")
-      .select("ticker, ratio_name, as_of_date, ratio_value, source_period, computed_at")
-      .eq("ticker", ticker.toUpperCase())
-      .not("ratio_value", "is", null)
-      .order("as_of_date", { ascending: false })
-      .limit(500),
-    // Income statements only: a balance sheet alone does not move the earnings
-    // chain forward, so counting one would tell the user newer data exists
-    // when the EPS series has not actually advanced.
-    supabase
-      .from("company_financials")
-      .select("fiscal_year, fiscal_period")
-      .eq("ticker", ticker.toUpperCase())
-      .eq("statement_type", "income_statement"),
-  ]);
-
-  const quote = (quoteRes.data ?? null) as RatiosQuoteRow | null;
-  let peers: RatiosPeerRow[] = [];
-
-  if (metadata.sector) {
-    const { data: peerMasters } = await supabase
-      .from("stock_master")
-      .select("ticker, company_name, sector")
-      .eq("sector", metadata.sector)
-      .neq("ticker", ticker.toUpperCase());
-    const peerRows = (peerMasters ?? []) as { ticker: string; company_name: string | null; sector: string | null }[];
-    const peerTickers = peerRows.map((row) => row.ticker).filter(Boolean);
-    if (peerTickers.length) {
-      const { data: peerRatioRows } = await supabase
-        .from("company_ratios")
-        .select("ticker, ratio_name, ratio_value, source_period, computed_at")
-        .in("ticker", peerTickers)
-        .in("ratio_name", [...RATIO_PEER_METRICS]);
-      const grouped = new Map<string, RatiosPeerRow["ratios"]>();
-      for (const row of (peerRatioRows ?? []) as { ticker: string; ratio_name: string; ratio_value: number | null; source_period: string | null; computed_at: string | null }[]) {
-        grouped.set(row.ticker, [...(grouped.get(row.ticker) ?? []), {
-          ratio_name: row.ratio_name,
-          ratio_value: row.ratio_value,
-          source_period: row.source_period,
-          computed_at: row.computed_at,
-        }]);
-      }
-      peers = peerRows.map((row) => ({
-        ticker: row.ticker,
-        companyName: row.company_name,
-        sector: row.sector,
-        ratios: grouped.get(row.ticker) ?? [],
-      }));
-    }
-  }
-
-  const usableRatios = ratios.filter((row) => row.ratio_value !== null && Number.isFinite(row.ratio_value));
-
-  // Verification provenance. Three distinct states, and the middle one is the
-  // reason this exists: an entry can be genuinely checked AND no longer cover
-  // the newest filing. Showing that as plain "verified" would tell the user a
-  // stale figure had been checked against current data.
-  const latestHeld = latestPeriodLabel(
-    (periodsRes.data ?? []) as { fiscal_year: number | null; fiscal_period: string | null }[]
-  );
-  const verification = verificationStatus(ticker, latestHeld);
-
-  return (
-    <div className="space-y-3">
-      {verification ? (
-        <p className="text-xs text-slate-500">
-          {verification.status === "stale" ? (
-            <>
-              Checked against the filing through {verification.verification.throughPeriod}. A newer
-              filing ({latestHeld}) has since been loaded, so these ratios reflect the newer data but
-              have not been re-checked against it.
-            </>
-          ) : (
-            <>
-              Checked against the filing through {verification.verification.throughPeriod}, on a{" "}
-              {verification.verification.basis} basis.
-            </>
-          )}
-        </p>
-      ) : null}
-      <RatiosWorkspace
-        ticker={ticker.toUpperCase()}
-        ratios={usableRatios}
-        history={(historyRes.data ?? []) as RatioHistoryRow[]}
-        metadata={metadata}
-        quote={quote}
-        peers={peers}
-        readOnly={readOnly}
-      />
-    </div>
-  );
-}
-
-// ---------------------------------------------------------------------------
 // 5. Technicals
 // ---------------------------------------------------------------------------
 
@@ -1084,52 +946,6 @@ export async function NewsFilingsPanel({ ticker }: { ticker: string }) {
                 <p className="mt-0.5 text-[11px] text-muted-foreground">{n.source} {n.published_at ? `· ${String(n.published_at).slice(0, 10)}` : ""}</p>
                 {n.ai_summary && <p className="mt-1 text-xs">{n.ai_summary}</p>}
               </div>
-            ))
-          )}
-        </CardContent>
-      </Card>
-    </div>
-  );
-}
-
-// ---------------------------------------------------------------------------
-// 8. AI Analysis
-// ---------------------------------------------------------------------------
-
-export async function AiAnalysisPanel({ ticker }: { ticker: string }) {
-  const supabase = await createClient();
-  const user = await getUser();
-  if (!user) return null;
-
-  const { data: briefings } = await supabase
-    .from("ai_briefings")
-    .select("id, title, content, created_at")
-    .eq("user_id", user.id)
-    .eq("ticker", ticker)
-    .order("created_at", { ascending: false })
-    .limit(6);
-
-  return (
-    <div className="space-y-4">
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2"><Sparkles className="h-4 w-4" /> AI research assistant</CardTitle>
-          <CardDescription>Grounded in the data on this page. Never invents numbers.</CardDescription>
-        </CardHeader>
-        <CardContent><CompanyAiActions ticker={ticker} /></CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader><CardTitle>Saved analyses</CardTitle></CardHeader>
-        <CardContent className="space-y-2">
-          {(briefings ?? []).length === 0 ? (
-            <p className="py-3 text-center text-xs text-muted-foreground">No saved analyses yet. Run an action above.</p>
-          ) : (
-            (briefings ?? []).map((b) => (
-              <details key={b.id} className="rounded-md border border-border p-3">
-                <summary className="cursor-pointer text-xs font-medium">{b.title} <span className="text-muted-foreground">· {b.created_at.slice(0, 10)}</span></summary>
-                <div className="mt-2 max-h-72 overflow-y-auto"><Markdown content={b.content} /></div>
-              </details>
             ))
           )}
         </CardContent>

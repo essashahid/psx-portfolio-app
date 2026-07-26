@@ -1,0 +1,26 @@
+/* ── Shape, borders, elevation ────────────────────────────────────────────
+   The redesign is ruled, not boxed: hairlines and colour fields do the work
+   that drop shadows and rounded cards used to. Radii stay small; shadow is
+   reserved for things that genuinely float (dialogs, tooltips, mobile nav). */
+:root {
+  --radius-xs: 4px;
+  --radius-sm: 6px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --radius-xl: 16px;
+  --radius-pill: 9999px;
+
+  --border-hair: 1px;
+  --border-accent: 3px;   /* directional edge on a metric */
+  --border-rule: 1px solid var(--rule);
+
+  /* Soft layered lift, straight from the product. Use on raised surfaces only. */
+  --shadow-raised: 0 1px 2px rgba(13, 18, 15, 0.035), 0 14px 30px -20px rgba(13, 18, 15, 0.18);
+  --shadow-tooltip: 0 2px 6px rgba(0, 0, 0, 0.05), 0 16px 40px -16px rgba(0, 0, 0, 0.22);
+  --shadow-dialog: 0 8px 24px -8px rgba(0, 0, 0, 0.18), 0 40px 80px -40px rgba(0, 0, 0, 0.4);
+  --shadow-nav: 0 -12px 36px -28px rgba(0, 0, 0, 0.55);
+  --shadow-inset-rule: inset 0 -1px 0 var(--rule);
+
+  --blur-glass: blur(10px) saturate(1.3); /* @kind other */
+  --blur-bar: blur(8px); /* @kind other */
+}

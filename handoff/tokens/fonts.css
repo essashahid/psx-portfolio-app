@@ -1,0 +1,14 @@
+/* Webfonts.
+   Manrope (UI) and Geist Mono (numerals) are the fonts the product already
+   loads via next/font. Newsreader is an ADDITION made for this redesign — the
+   editorial display serif that carries the brand voice. No binaries were
+   supplied with the source, so all three are served from Google Fonts.
+   If licensed binaries exist, drop them in assets/fonts/ and replace the
+   @import below with local @font-face rules. */
+@import url("https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Newsreader:ital,opsz,wght@0,6..72,300..700;1,6..72,300..600&family=Geist+Mono:wght@400;500;600&display=swap");
+
+:root {
+  --font-ui: "Manrope", ui-sans-serif, system-ui, sans-serif;
+  --font-display: "Newsreader", "Iowan Old Style", Georgia, serif;
+  --font-mono: "Geist Mono", ui-monospace, "SF Mono", Menlo, monospace;
+}

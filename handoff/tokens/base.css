@@ -1,0 +1,86 @@
+/* ── Base & shared primitives ─────────────────────────────────────────────
+   Element defaults plus the handful of utility classes the design language
+   depends on (.eyebrow, .rule, .band, .ledger, .rise). */
+* { box-sizing: border-box; }
+
+html { min-height: 100%; overflow-x: hidden; }
+
+body {
+  margin: 0;
+  background: var(--surface-page);
+  color: var(--text-strong);
+  font-family: var(--font-ui);
+  font-size: var(--text-body);
+  font-weight: var(--weight-medium);
+  line-height: var(--leading-normal);
+  letter-spacing: var(--tracking-ui);
+  font-feature-settings: var(--numeric-features);
+  font-kerning: normal;
+  -webkit-font-smoothing: antialiased;
+  -webkit-tap-highlight-color: transparent;
+}
+
+a { color: var(--text-link); text-decoration: none; }
+a:hover { color: var(--text-link-hover); text-decoration: underline; text-underline-offset: 2px; }
+
+button, input, select, textarea { font: inherit; font-weight: var(--weight-medium); }
+button { letter-spacing: -0.01em; cursor: pointer; }
+button, a { -webkit-user-select: none; user-select: none; }
+button, a, input, select, textarea { touch-action: manipulation; }
+input::placeholder, textarea::placeholder { color: color-mix(in oklab, var(--text-muted) 78%, transparent); }
+:focus-visible { outline: 2px solid var(--focus-ring); outline-offset: 2px; }
+::selection { background: var(--selection-bg); }
+
+table { font-variant-numeric: tabular-nums; border-collapse: collapse; }
+thead { box-shadow: var(--shadow-inset-rule); }
+
+h1, h2, h3, h4 { margin: 0; letter-spacing: var(--tracking-tight); font-weight: var(--weight-semibold); }
+p { margin: 0; text-wrap: pretty; }
+
+/* Tracked uppercase micro-label that sits above a heading. The single most
+   recognisable typographic mark in the system. */
+.eyebrow {
+  font-size: var(--text-2xs);
+  font-weight: var(--weight-bold);
+  letter-spacing: var(--tracking-eyebrow);
+  text-transform: uppercase;
+  color: color-mix(in oklab, var(--text-muted) 65%, var(--accent-primary));
+}
+.eyebrow-on-dark { color: color-mix(in oklab, var(--text-on-dark) 66%, var(--indigo-3)); }
+
+/* Faded first line of a two-tone editorial headline. */
+.text-ghost { color: var(--text-ghost); }
+.tracking-editorial { letter-spacing: var(--tracking-editorial); }
+
+/* Every figure a reader might compare down a column. */
+.figure { font-family: var(--font-mono); font-variant-numeric: tabular-nums; letter-spacing: var(--tracking-none); }
+
+/* Full-bleed colour field. The redesign's structural unit: sections are
+   separated by rules and by broad tinted bands, not by stacked cards. */
+.band { padding: var(--band-pad-y) var(--gutter-page); }
+.band-ink { background: var(--surface-field-ink); color: var(--text-on-dark); }
+.band-indigo { background: var(--surface-field-indigo); }
+.band-saffron { background: var(--surface-field-saffron); }
+.band-clay { background: var(--surface-field-clay); }
+.band-sunken { background: var(--surface-sunken); }
+
+/* Ruled data list — the alternative to a grid of cards. */
+.ledger > * + * { border-top: var(--border-rule); }
+.ledger-row { padding: var(--row-pad-y) 0; transition: background var(--dur-fast) var(--ease-ui); }
+.ledger-row:hover { background: color-mix(in oklab, var(--surface-sunken) 60%, transparent); }
+
+/* Staggered blur-up entrance — the platform's signature cascade. */
+@keyframes rise-blur {
+  from { opacity: 0; transform: translateY(18px); filter: blur(8px); }
+  to { opacity: 1; transform: translateY(0); filter: blur(0); }
+}
+.rise { animation: rise-blur var(--dur-slow) var(--ease-ui) both; }
+.rise-1 { animation-delay: 80ms; }
+.rise-2 { animation-delay: 200ms; }
+.rise-3 { animation-delay: 320ms; }
+.rise-4 { animation-delay: 450ms; }
+.rise-5 { animation-delay: 580ms; }
+@media (prefers-reduced-motion: reduce) { .rise { animation: none; } }
+
+.scroll-touch { -webkit-overflow-scrolling: touch; overscroll-behavior: contain; scrollbar-width: none; }
+.scroll-touch::-webkit-scrollbar { display: none; }

@@ -1,0 +1,29 @@
+/* ── Spacing & layout ─────────────────────────────────────────────────────
+   4px base, inherited from the product's Tailwind scale. Bands and gutters are
+   named separately because the redesign leans on full-bleed horizontal fields
+   rather than nested boxes. */
+:root {
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-10: 40px;
+  --space-12: 48px;
+  --space-16: 64px;
+  --space-20: 80px;
+  --space-24: 96px;
+
+  --gutter-page: var(--space-8);      /* desktop page padding */
+  --gutter-page-sm: var(--space-4);   /* phone page padding */
+  --band-pad-y: var(--space-10);      /* full-bleed colour field padding */
+  --band-pad-y-sm: var(--space-6);
+  --section-gap: var(--space-8);      /* between ruled sections */
+  --row-pad-y: 10px;                  /* ledger row */
+  --nav-width: 224px;                 /* 14rem desktop rail */
+  --content-max: 1180px;
+  --measure: 68ch;                    /* prose measure */
+  --hit-min: 44px;                    /* touch target floor */
+}
