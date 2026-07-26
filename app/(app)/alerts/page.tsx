@@ -1,12 +1,6 @@
 import Link from "next/link";
 import { createClient, getUser } from "@/lib/supabase/server";
-import { PageHeader } from "@/components/ui/page-header";
-import { ActionButton } from "@/components/ui/action-button";
 import { DismissAlertButton } from "@/components/features/alerts/alert-actions";
-import { EmptyState } from "@/components/ui/empty-state";
-import { Card, CardContent } from "@/components/ui/card";
-import { Badge, severityVariant } from "@/components/ui/badge";
-import { Bell, RefreshCw } from "lucide-react";
 import { cn } from "@/lib/shared/format";
 
 export const dynamic = "force-dynamic";
@@ -23,6 +17,24 @@ const TYPE_LABEL: Record<string, string> = {
   result_news: "Financial result",
   concentration_risk: "Concentration risk",
   import_issue: "Import issue",
+};
+
+/**
+ * Severity reads as a coloured edge on the row rather than a pill, so a long
+ * list scans down its left margin instead of through a field of badges.
+ */
+const SEVERITY_EDGE: Record<string, string> = {
+  critical: "var(--down-1)",
+  high: "var(--down-1)",
+  medium: "var(--saffron-2)",
+  low: "var(--sp-steel)",
+  info: "var(--sp-steel)",
+};
+
+const DATE_FMT = new Intl.DateTimeFormat("en-PK", { day: "2-digit", month: "short", year: "numeric" });
+const shortDate = (iso: string) => {
+  const t = Date.parse(iso);
+  return Number.isFinite(t) ? DATE_FMT.format(new Date(t)) : String(iso).slice(0, 10);
 };
 
 export default async function AlertsPage({
@@ -45,73 +57,87 @@ export default async function AlertsPage({
   if (view === "open") query = query.eq("status", "open");
   else query = query.neq("status", "open");
   const { data: alerts } = await query;
+  const rows = alerts ?? [];
 
   return (
-    <div className="mx-auto w-full max-w-(--content-max) space-y-4">
-      <PageHeader
-        eyebrow="Signals"
-        title="Alerts"
-        description="Rule-based signals about what needs your attention — recomputed on every import, price update and news refresh."
-        actions={
-          <ActionButton
-            endpoint="/api/alerts/refresh"
-            label={<><RefreshCw className="h-3.5 w-3.5" /> Re-check now</>}
-            variant="outline"
-            size="sm"
-          />
-        }
-      />
-
-      <div className="flex gap-1.5">
-        {(["open", "history"] as const).map((v) => (
-          <Link
-            key={v}
-            href={`/alerts${v === "history" ? "?view=history" : ""}`}
-            className={cn(
-              "rounded-full border px-3 py-1 text-[11px] font-medium",
-              view === v ? "border-primary bg-primary text-primary-foreground" : "border-border bg-card text-muted-foreground"
-            )}
-          >
-            {v === "open" ? "Open" : "Dismissed / resolved"}
-          </Link>
-        ))}
-      </div>
-
-      {(alerts ?? []).length === 0 ? (
-        <EmptyState
-          icon={Bell}
-          title={view === "open" ? "No open alerts" : "No alert history"}
-          description={
-            view === "open"
-              ? "Everything that has a rule is currently within bounds. Alerts appear for missing theses, allocation drift, review dates, target/review price levels, concentration, negative news and import issues."
-              : "Dismissed and resolved alerts will appear here."
-          }
-        />
-      ) : (
-        <div className="space-y-2">
-          {(alerts ?? []).map((a) => (
-            <Card key={a.id}>
-              <CardContent className="flex items-start justify-between gap-3 p-4">
-                <div className="min-w-0">
-                  <div className="flex flex-wrap items-center gap-2">
-                    <Badge variant={severityVariant(a.severity)}>{a.severity}</Badge>
-                    <Badge variant="outline">{TYPE_LABEL[a.alert_type] ?? a.alert_type}</Badge>
-                    {a.ticker && (
-                      <Link href={`/stocks/${a.ticker}`}>
-                        <Badge variant="blue">{a.ticker}</Badge>
-                      </Link>
-                    )}
-                    <span className="text-[11px] text-muted-foreground">{a.created_at.slice(0, 10)}</span>
-                    {a.status !== "open" && <Badge variant="secondary">{a.status}</Badge>}
-                  </div>
-                  <h3 className="mt-1.5 text-sm font-medium">{a.title}</h3>
-                  {a.message && <p className="mt-0.5 break-words text-xs text-muted-foreground">{a.message}</p>}
-                </div>
-                {a.status === "open" && <DismissAlertButton alertId={a.id} />}
-              </CardContent>
-            </Card>
-          ))}
+    <div className="settle mx-auto w-full max-w-(--content-max)">
+      <section>
+        <div className="flex flex-wrap items-end justify-between gap-5">
+          <div>
+            <p className="eyebrow">Signals</p>
+            <h1 className="mt-1.5 font-display text-(length:--text-title) font-normal tracking-editorial text-text-strong">
+              Alerts
+            </h1>
+          </div>
+          <div className="flex gap-5 pb-1">
+            {(["open", "history"] as const).map((v) => (
+              <Link
+                key={v}
+                href={`/alerts${v === "history" ? "?view=history" : ""}`}
+                className={cn(
+                  "whitespace-nowrap border-b-2 pb-1.5 text-sm transition-colors",
+                  view === v
+                    ? "border-indigo font-semibold text-text-strong"
+                    : "border-transparent font-medium text-text-muted hover:text-text-strong"
+                )}
+              >
+                {v === "open" ? "Open" : "Dismissed and resolved"}
+              </Link>
+            ))}
+          </div>
         </div>
+      </section>
+
+      {rows.length === 0 ? (
+        <section className="mt-8 border-t border-rule pt-10">
+          <p className="max-w-(--measure) text-sm leading-relaxed text-text-muted">
+            {view === "open"
+              ? "Nothing needs your attention. Alerts appear here when a thesis is missing, an allocation drifts from its target, a review date passes, a price crosses a level you set, a position grows concentrated, or an import needs checking."
+              : "Alerts you have dismissed, or that resolved themselves, will appear here."}
+          </p>
+        </section>
+      ) : (
+        <section className="mt-8 border-t border-rule">
+          {rows.map((a) => (
+            <article
+              key={a.id}
+              className="flex items-start justify-between gap-6 border-b border-rule py-3 pl-3.5"
+              style={{ boxShadow: `inset 3px 0 0 ${SEVERITY_EDGE[a.severity] ?? "var(--sp-steel)"}` }}
+            >
+              <div className="min-w-0">
+                <p className="text-sm font-semibold text-text-strong">{a.title}</p>
+                {a.message && (
+                  <p className="mt-1 max-w-(--measure) break-words text-sm leading-relaxed text-text-muted">
+                    {a.message}
+                  </p>
+                )}
+                <p className="mt-1.5 flex flex-wrap items-center gap-x-2.5 gap-y-1 text-(length:--text-2xs) text-text-faint">
+                  <span>{TYPE_LABEL[a.alert_type] ?? a.alert_type}</span>
+                  {a.ticker && (
+                    <>
+                      <span aria-hidden>·</span>
+                      <Link
+                        href={`/stocks/${a.ticker}`}
+                        className="figure font-semibold text-indigo transition-colors hover:underline"
+                      >
+                        {a.ticker}
+                      </Link>
+                    </>
+                  )}
+                  <span aria-hidden>·</span>
+                  <span className="figure">{shortDate(a.created_at)}</span>
+                  {a.status !== "open" && (
+                    <>
+                      <span aria-hidden>·</span>
+                      <span>{a.status}</span>
+                    </>
+                  )}
+                </p>
+              </div>
+              {a.status === "open" && <DismissAlertButton alertId={a.id} />}
+            </article>
+          ))}
+        </section>
       )}
     </div>
   );

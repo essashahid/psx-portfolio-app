@@ -14,11 +14,20 @@ import {
   Search,
   ShieldCheck,
   ChevronDown,
+  Settings,
 } from "lucide-react";
 import { NAV, NAV_SECTIONS } from "@/lib/config/navigation";
 
 /** The design's 4 inline primary tabs. Everything else lives in "Research ∨". */
 const PRIMARY_HREFS = ["/dashboard", "/holdings", "/dividends", "/performance"];
+
+/**
+ * Destinations the desktop header already owns: the bell goes to alerts, the
+ * account menu goes to settings. Listing them in the Research dropdown as well
+ * would be a third route to two pages. The mobile "More" sheet still carries
+ * them, because it has no bell-and-avatar row of its own.
+ */
+const CHROME_HREFS = ["/alerts", "/settings"];
 
 function primaryTabs(visibleHrefs: string[]) {
   const allowed = new Set(visibleHrefs);
@@ -83,7 +92,7 @@ export function TopNav({
   const menuRef = useRef<HTMLDivElement>(null);
 
   const tabs = primaryTabs(visibleHrefs);
-  const overflowSections = visibleSections(visibleHrefs, PRIMARY_HREFS);
+  const overflowSections = visibleSections(visibleHrefs, [...PRIMARY_HREFS, ...CHROME_HREFS]);
   const activeOverflow = overflowSections
     .flatMap((s) => s.items)
     .find((item) => pathname === item.href || pathname.startsWith(item.href + "/"));
@@ -222,17 +231,86 @@ export function TopNav({
               </span>
             )}
           </Link>
-          <button
-            type="button"
-            onClick={() => void signOutAndRedirect(router)}
-            title={`Sign out (${email})`}
-            className="flex h-[1.625rem] w-[1.625rem] items-center justify-center rounded-full bg-ink-1 text-[10px] font-semibold tracking-[0.02em] text-white transition-opacity hover:opacity-85"
-          >
-            {(email || "?").slice(0, 2).toUpperCase()}
-          </button>
+          <AccountMenu email={email} onSignOut={() => void signOutAndRedirect(router)} />
         </div>
       </div>
     </header>
+  );
+}
+
+/**
+ * The account avatar and its menu.
+ *
+ * The avatar used to sign you out on a single click, with no menu and no
+ * confirmation — the one control in the header whose obvious reading (open my
+ * account) and actual behaviour (end my session) were opposites. It opens a
+ * menu now, and signing out is a deliberate second click.
+ */
+function AccountMenu({ email, onSignOut }: { email: string; onSignOut: () => void }) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    const onClick = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    };
+    const onEscape = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setOpen(false);
+    };
+    document.addEventListener("mousedown", onClick);
+    document.addEventListener("keydown", onEscape);
+    return () => {
+      document.removeEventListener("mousedown", onClick);
+      document.removeEventListener("keydown", onEscape);
+    };
+  }, [open]);
+
+  return (
+    <div ref={ref} className="relative">
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        aria-haspopup="menu"
+        aria-expanded={open}
+        title={email}
+        className="flex h-[1.625rem] w-[1.625rem] items-center justify-center rounded-full bg-ink-1 text-[10px] font-semibold tracking-[0.02em] text-white transition-opacity hover:opacity-85"
+      >
+        {(email || "?").slice(0, 2).toUpperCase()}
+      </button>
+
+      {open && (
+        <div
+          role="menu"
+          className="absolute right-0 top-[calc(100%+0.625rem)] z-40 min-w-[13.75rem] border border-rule bg-surface-raised py-1.5 shadow-(--shadow-raised)"
+        >
+          <p className="truncate px-3.5 pb-2 pt-1 text-(length:--text-2xs) text-text-faint" title={email}>
+            {email}
+          </p>
+          <Link
+            href="/settings"
+            role="menuitem"
+            onClick={() => setOpen(false)}
+            className="flex items-center gap-2.5 px-3.5 py-2 text-sm text-text-body transition-colors hover:bg-surface-sunken hover:text-text-strong"
+          >
+            <Settings className="h-[15px] w-[15px]" />
+            Settings
+          </Link>
+          <button
+            type="button"
+            role="menuitem"
+            onClick={() => {
+              setOpen(false);
+              onSignOut();
+            }}
+            className="flex w-full items-center gap-2.5 border-t border-rule px-3.5 py-2 text-left text-sm text-text-body transition-colors hover:bg-surface-sunken hover:text-text-strong"
+          >
+            <LogOut className="h-[15px] w-[15px]" />
+            Sign out
+          </button>
+        </div>
+      )}
+    </div>
   );
 }
 

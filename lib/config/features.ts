@@ -49,6 +49,22 @@ const APP_FEATURE_SET = new Set<string>(ALL_APP_FEATURES);
 const ACCOUNT_FEATURE_SET = new Set<string>(ALL_ACCOUNT_FEATURES);
 const ADMIN_ONLY_FEATURE_SET = new Set<string>(ADMIN_ONLY_FEATURES);
 
+/**
+ * Destinations every account can always reach, whatever its stored feature
+ * list says.
+ *
+ * These are not optional tabs — they are where the app's own chrome sends you.
+ * The header renders an alert bell with a live count for everyone, and the
+ * account menu offers settings for everyone; a stored list that omits them
+ * leaves those controls pointing at a redirect. That is exactly what happened:
+ * no account had /alerts enabled, so clicking the bell bounced to /dashboard,
+ * and two accounts could not open their own settings.
+ *
+ * /dashboard was already forced in for the same reason — it is the redirect
+ * target itself, so losing it would loop.
+ */
+const ALWAYS_ENABLED: AccountFeature[] = ["/dashboard", "/alerts", "/settings"];
+
 export function normalizeEnabledFeatures(value: unknown): AccountFeature[] {
   const source = Array.isArray(value) ? value : LAUNCH_DEFAULT_FEATURES;
   const seen = new Set<string>();
@@ -58,7 +74,7 @@ export function normalizeEnabledFeatures(value: unknown): AccountFeature[] {
     seen.add(href);
     enabled.push(href as AccountFeature);
   }
-  if (!enabled.includes("/dashboard")) enabled.unshift("/dashboard");
+  for (const href of ALWAYS_ENABLED) if (!enabled.includes(href)) enabled.unshift(href);
   return enabled;
 }
 
