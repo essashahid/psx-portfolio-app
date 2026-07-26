@@ -2,10 +2,11 @@ import { unstable_cache } from "next/cache";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 /**
- * Extra readings for the ticker tape: investor flows, gold and the rupee.
+ * Extra readings for the ticker tape: the secondary PSX indices, investor
+ * flows, gold, Bitcoin and the rupee.
  *
  * These sit outside the PSX snapshot — flows come from the NCCPL tables and the
- * other two from the macro history the allocation forecaster maintains — so
+ * macro assets from the history the allocation forecaster maintains — so
  * they are read here rather than threaded through the market snapshot. Global
  * for every user, so the read is cached alongside it.
  */
@@ -37,10 +38,36 @@ export interface TickerExtra {
 const fmt = (v: number, d = 0) =>
   v.toLocaleString("en-PK", { minimumFractionDigits: d, maximumFractionDigits: d });
 
-/** Latest two closes for a macro asset, newest first. */
+/**
+ * The percentage move between two closes, as tape text and direction.
+ *
+ * A move too small to survive rounding is reported as unchanged rather than as
+ * a signed zero. Without this, two closes a fraction apart render "−0.00%" in
+ * loss red — which is what Bitcoin's own last two closes do today, sitting less
+ * than a dollar apart on a sixty-five-thousand-dollar price.
+ */
+function pctChange(value: number, prev: number | null): Pick<TickerExtra, "change" | "tone"> {
+  if (!prev) return { change: undefined, tone: "flat" };
+  const pct = ((value - prev) / prev) * 100;
+  if (Math.abs(pct) < 0.005) return { change: "steady", tone: "flat" };
+  return {
+    change: `${pct >= 0 ? "+" : "−"}${Math.abs(pct).toFixed(2)}%`,
+    tone: pct > 0 ? "up" : "down",
+  };
+}
+
+/**
+ * Latest two closes for a macro asset, newest first.
+ *
+ * The unit is passed in rather than inferred from the asset: the same row
+ * carries both a native and a PKR close, and which one belongs on the tape is a
+ * presentation choice. Gold reads in rupees because that is how it is priced
+ * locally; Bitcoin reads in dollars because that is how it is quoted everywhere.
+ */
 async function lastTwo(
   supabase: ReturnType<typeof createAdminClient>,
-  asset: "GOLD" | "USDPKR"
+  asset: "BTC" | "GOLD" | "USDPKR",
+  unit: "native" | "pkr"
 ): Promise<{ value: number; prev: number | null } | null> {
   const { data } = await supabase
     .from("macro_asset_history")
@@ -48,7 +75,7 @@ async function lastTwo(
     .eq("asset", asset)
     .order("asof_date", { ascending: false })
     .limit(2);
-  const usePkr = asset === "GOLD";
+  const usePkr = unit === "pkr";
   const points = (data ?? [])
     .map((r) => Number(usePkr ? r.close_pkr : r.close_native))
     .filter((v) => Number.isFinite(v) && v > 0);
@@ -69,12 +96,10 @@ async function indexReading(
     .limit(2);
   const closes = (data ?? []).map((r) => Number(r.close)).filter((v) => Number.isFinite(v) && v > 0);
   if (closes.length === 0) return null;
-  const pct = closes.length === 2 ? ((closes[0] - closes[1]) / closes[1]) * 100 : null;
   return {
     label: INDEX_LABEL[symbol] ?? symbol,
     value: fmt(closes[0], 0),
-    change: pct !== null ? `${pct >= 0 ? "+" : "−"}${Math.abs(pct).toFixed(2)}%` : undefined,
-    tone: pct === null ? "flat" : pct > 0 ? "up" : pct < 0 ? "down" : "flat",
+    ...pctChange(closes[0], closes[1] ?? null),
   };
 }
 
@@ -85,7 +110,7 @@ async function build(): Promise<TickerExtra[]> {
   const indices = await Promise.all(SECONDARY_INDEX_SYMBOLS.map((sym) => indexReading(supabase, sym)));
   for (const i of indices) if (i) out.push(i);
 
-  const [flowRes, gold, rupee] = await Promise.all([
+  const [flowRes, gold, rupee, btc] = await Promise.all([
     supabase
       .from("foreign_flow_days")
       .select("flow_date, currency, fipi_net, lipi_net")
@@ -93,8 +118,9 @@ async function build(): Promise<TickerExtra[]> {
       .order("flow_date", { ascending: false })
       .limit(1)
       .maybeSingle(),
-    lastTwo(supabase, "GOLD"),
-    lastTwo(supabase, "USDPKR"),
+    lastTwo(supabase, "GOLD", "pkr"),
+    lastTwo(supabase, "USDPKR", "native"),
+    lastTwo(supabase, "BTC", "native"),
   ]);
 
   const flow = flowRes.data;
@@ -124,12 +150,20 @@ async function build(): Promise<TickerExtra[]> {
   if (gold) {
     const perTola = gold.value * (TOLA_G / OUNCE_G);
     const prevTola = gold.prev !== null ? gold.prev * (TOLA_G / OUNCE_G) : null;
-    const pct = prevTola ? ((perTola - prevTola) / prevTola) * 100 : null;
     out.push({
       label: "Gold / tola",
       value: fmt(perTola, 0),
-      change: pct !== null ? `${pct >= 0 ? "+" : "−"}${Math.abs(pct).toFixed(2)}%` : undefined,
-      tone: pct === null ? "flat" : pct > 0 ? "up" : pct < 0 ? "down" : "flat",
+      ...pctChange(perTola, prevTola),
+    });
+  }
+
+  // Quoted in dollars, the unit it trades in worldwide. The leading $ also
+  // stops a bare five-figure number reading as rupees beside gold.
+  if (btc) {
+    out.push({
+      label: "Bitcoin",
+      value: `$${fmt(btc.value, 0)}`,
+      ...pctChange(btc.value, btc.prev),
     });
   }
 
@@ -150,7 +184,7 @@ async function build(): Promise<TickerExtra[]> {
 export const TICKER_EXTRAS_TAG = "ticker-extras";
 
 /** End-of-day series; an hour keeps the tape current without re-reading per request. */
-export const getCachedTickerExtras = unstable_cache(build, ["ticker-extras-v1"], {
+export const getCachedTickerExtras = unstable_cache(build, ["ticker-extras-v2"], {
   revalidate: 3600,
   tags: [TICKER_EXTRAS_TAG],
 });

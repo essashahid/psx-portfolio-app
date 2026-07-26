@@ -5,6 +5,7 @@ import { refreshMarketEvents } from "@/lib/market/events";
 import { generateMarketBrief } from "@/lib/market/brief";
 import { MARKET_SNAPSHOT_TAG } from "@/lib/market/read";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { isPsxWeekday } from "@/lib/market/trading-day";
 import { fetchAndIngestForeignFlows, foreignFlowsAutoConfigured } from "@/lib/market/foreign-flows-ingest";
 import { buildMacroAssetRows, writeMacroAssetRows } from "@/lib/market-data/macro-assets";
 import { ensureEodCached } from "@/lib/market-data/eod-cache";
@@ -63,7 +64,11 @@ export async function GET(request: Request) {
       report.macro = { error: err instanceof Error ? err.message : "macro refresh failed" };
     }
   }
-  if (task === "all" || task === "macro") {
+  // The macro assets above are global and trade on their own calendars, so
+  // that block is safe to run any day. The PSX indices below are not, and this
+  // task is now reached daily by /api/cron/market/macro to keep Bitcoin current
+  // at weekends — hence the explicit weekday guard here.
+  if ((task === "all" || task === "macro") && isPsxWeekday()) {
     // The secondary PSX indices. Only the outlook capture wrote these, and it
     // is gated on KSE-100 already holding today's close, so a lag there froze
     // them for days while the tape presented them as current. Topping them up
