@@ -8,10 +8,15 @@ export const maxDuration = 300;
  * and the T-bill path.
  *
  * Separate from the weekday market cron because these follow their own
- * calendars rather than the exchange's. Bitcoin in particular trades every day
- * of the week, so leaving it on the Monday-to-Friday schedule would have shown
- * a Friday price on the ticker tape all weekend, on the one asset a reader is
- * most likely to check then.
+ * calendars rather than the exchange's. Bitcoin trades every day of the week,
+ * so it is refreshed every day of the week — from here, on one schedule, rather
+ * than split across the weekday market job and a weekend top-up. Splitting a
+ * 24/7 asset over two schedules works until one of them moves, and then it
+ * fails silently and invisibly: a stale price still renders as a price.
+ *
+ * The weekday market cron reaches this same task through ?task=all, so on
+ * Monday to Friday the assets get a second attempt. That redundancy is cheap
+ * and is the reason a failure here does not go straight to a stale tape.
  *
  * A dedicated path because vercel.json cron paths carry no query string;
  * delegates to /api/cron/market?task=macro. The PSX index top-up inside that

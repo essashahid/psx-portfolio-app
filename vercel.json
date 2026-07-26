@@ -30,7 +30,7 @@
     },
     {
       "path": "/api/cron/market/macro",
-      "schedule": "20 12 * * 6,0"
+      "schedule": "20 12 * * *"
     }
   ]
 }
