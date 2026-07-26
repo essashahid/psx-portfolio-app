@@ -1,17 +1,16 @@
 import { createClient, getUser } from "@/lib/supabase/server";
 import { getScreenerData } from "@/lib/market/screener";
 import { fmtPct, fmtInt, tone } from "@/lib/market/format";
-import { PageHeader } from "@/components/ui/page-header";
-import { StockSearch } from "@/components/features/stocks/stock-search";
-import { StockScreener } from "@/components/features/market/stock-screener";
-import { Card, CardContent } from "@/components/ui/card";
+import { ScreenerTable } from "@/components/features/stocks/screener-table";
 import { EmptyState } from "@/components/ui/empty-state";
 import { ActionButton } from "@/components/ui/action-button";
-import { cn } from "@/lib/shared/format";
-import { normalizeEnabledFeatures } from "@/lib/config/features";
-import { Activity, RefreshCw, DatabaseZap, Layers } from "lucide-react";
+import { Band } from "@/components/ui/band";
+import { cn, formatNumber } from "@/lib/shared/format";
+import { Activity, RefreshCw, DatabaseZap } from "lucide-react";
 
 export const dynamic = "force-dynamic";
+
+const GUTTER = "px-3 sm:px-4 md:px-(--gutter-page)";
 
 export default async function StockResearchPage() {
   const supabase = await createClient();
@@ -20,93 +19,140 @@ export default async function StockResearchPage() {
 
   const [d, profileRes] = await Promise.all([
     getScreenerData(supabase, user.id),
-    supabase.from("profiles").select("enabled_features, demo_mode").eq("id", user.id).maybeSingle(),
+    supabase.from("profiles").select("demo_mode").eq("id", user.id).maybeSingle(),
   ]);
   const isDemo = Boolean(profileRes.data?.demo_mode);
-  const companyReportsEnabled = normalizeEnabledFeatures(profileRes.data?.enabled_features).includes("company_reports");
   const indexTone = tone(d.index?.changePercent);
   const coveragePct = d.coverage.total ? Math.round((d.coverage.withSpark / d.coverage.total) * 100) : 0;
 
   const actions = isDemo ? null : (
-    <div className="flex items-center gap-2">
+    <div className="flex flex-wrap items-center gap-2">
       <ActionButton endpoint="/api/market/refresh" body={{ section: "snapshot" }} label={<><RefreshCw className="h-3.5 w-3.5" /> Refresh prices</>} variant="outline" size="sm" />
       <ActionButton endpoint="/api/market/backfill" body={{ limit: 60 }} label={<><DatabaseZap className="h-3.5 w-3.5" /> Build deep data</>} variant="outline" size="sm" />
     </div>
   );
 
-  return (
-    <div className="space-y-5">
-      <PageHeader
-        eyebrow="Company intelligence"
-        title="Stock Research"
-        description="Screen the whole PSX — prices, trends, 52-week range, volume and your positions in one fast view. Open any company for its full cockpit."
-        actions={actions}
-      />
-
-
-
-      {!d.snapshotDate ? (
-        <EmptyState
-          icon={Activity}
-          title="No market data yet"
-          description="The screener is powered by the daily market snapshot. Refresh prices to pull the whole PSX, then build deep data for sparklines and 52-week ranges."
-          action={actions ?? undefined}
-        />
-      ) : (
-        <>
-          {/* Summary strip */}
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-            <Card className="rise">
-              <CardContent className="p-4">
-                <p className="text-[10px] uppercase tracking-wide text-muted-foreground">{d.index?.name ?? "Index"}</p>
-                {d.index?.value != null ? (
-                  <>
-                    <p className="text-lg font-semibold tabular-nums">{d.index.value.toLocaleString("en-PK", { maximumFractionDigits: 0 })}</p>
-                    <p className={cn("text-[11px] font-medium tabular-nums", indexTone === "positive" ? "text-up" : indexTone === "negative" ? "text-down" : "text-muted-foreground")}>{fmtPct(d.index.changePercent)}</p>
-                  </>
-                ) : (
-                  <p className="mt-1 text-xs text-muted-foreground">Unavailable</p>
-                )}
-              </CardContent>
-            </Card>
-            <Card className="rise rise-1">
-              <CardContent className="p-4">
-                <p className="text-[10px] uppercase tracking-wide text-muted-foreground">Breadth</p>
-                <p className="text-lg font-semibold tabular-nums">
-                  <span className="text-up">{d.breadth?.advancers ?? 0}</span>
-                  <span className="mx-1 text-muted-foreground">/</span>
-                  <span className="text-down">{d.breadth?.decliners ?? 0}</span>
-                </p>
-                <p className="text-[11px] text-muted-foreground">advancing / declining</p>
-              </CardContent>
-            </Card>
-            <Card className="rise rise-2">
-              <CardContent className="p-4">
-                <p className="text-[10px] uppercase tracking-wide text-muted-foreground">Stocks</p>
-                <p className="text-lg font-semibold tabular-nums">{fmtInt(d.coverage.total)}</p>
-                <p className="text-[11px] text-muted-foreground">traded today</p>
-              </CardContent>
-            </Card>
-            <Card className="rise rise-3">
-              <CardContent className="p-4">
-                <p className="flex items-center gap-1 text-[10px] uppercase tracking-wide text-muted-foreground"><Layers className="h-3 w-3" /> Deep data</p>
-                <p className="text-lg font-semibold tabular-nums">{coveragePct}%</p>
-                <p className="text-[11px] text-muted-foreground">{fmtInt(d.coverage.withSpark)} with trends</p>
-              </CardContent>
-            </Card>
+  if (!d.snapshotDate) {
+    return (
+      <div className="-mx-3 sm:-mx-4 md:-mx-(--gutter-page)">
+        <Band tone="paper" rule="none" className={GUTTER}>
+          <span className="mb-3.5 block h-0.75 w-11 bg-(--sp-violet)" />
+          <h1 className="font-display text-(length:--text-title) font-normal tracking-editorial text-text-strong">Stock Research</h1>
+          <div className="mt-6">
+            <EmptyState
+              icon={Activity}
+              title="No market data yet"
+              description="The screener is powered by the daily market snapshot. Refresh prices to pull the whole PSX, then build deep data for trends and 52-week ranges."
+              action={actions ?? undefined}
+            />
           </div>
+        </Band>
+      </div>
+    );
+  }
 
-          <Card className="rise">
-            <CardContent className="p-4 sm:p-5">
-              <StockScreener stocks={d.stocks} />
-            </CardContent>
-          </Card>
+  const owned = d.stocks.filter((s) => s.owned).length;
+  const watched = d.stocks.filter((s) => s.watched).length;
+  const advancers = d.breadth?.advancers ?? 0;
+  const decliners = d.breadth?.decliners ?? 0;
 
-          <p className="text-center text-[11px] text-muted-foreground">
-            Source: official PSX market-watch via {d.source} · snapshot {d.snapshotDate}{d.updatedLabel ? ` · updated ${d.updatedLabel} PKT` : ""}. Sparklines &amp; 52-week ranges fill in as deep data is built. Data is cached and served fast; missing values are labelled, never invented.
-          </p>
-        </>
+  return (
+    <div className="-mx-3 sm:-mx-4 md:-mx-(--gutter-page)">
+      {/* ── Hero ── */}
+      <Band
+        tone="paper"
+        className={GUTTER}
+        style={{ background: "color-mix(in oklab, var(--sp-violet) 11%, var(--surface-page))" }}
+      >
+        <div className="flex flex-wrap items-end justify-between gap-7">
+          <div>
+            <span className="mb-3.5 block h-0.75 w-11 bg-(--sp-violet)" />
+            <h1 className="font-display text-(length:--text-title) font-normal tracking-editorial text-text-strong">Stock Research</h1>
+            <div className="mt-4 flex items-end gap-5">
+              <span>
+                <span className="block text-(length:--text-3xs) font-bold uppercase tracking-(--tracking-caps) text-text-faint">
+                  {d.index?.name ?? "KSE-100"}
+                </span>
+                <span className="figure mt-1.5 block text-(length:--text-display) font-semibold leading-none tracking-editorial text-text-strong">
+                  {d.index?.value != null ? formatNumber(d.index.value, 0) : "—"}
+                </span>
+              </span>
+              <span className="pb-1.5">
+                <span className={cn("figure block text-(length:--text-h2) font-semibold", indexTone === "positive" ? "text-up" : indexTone === "negative" ? "text-down" : "text-text-muted")}>
+                  {fmtPct(d.index?.changePercent)}
+                </span>
+                <span className="mt-0.5 block text-sm text-text-muted">across {fmtInt(d.coverage.total)} traded</span>
+              </span>
+            </div>
+          </div>
+          <div className="flex flex-col items-end gap-3 pb-1">
+            {actions}
+            <p className="text-(length:--text-2xs) text-text-faint">
+              Snapshot {d.snapshotDate}{d.updatedLabel ? ` · updated ${d.updatedLabel} PKT` : ""} · via {d.source ?? "PSX"}
+            </p>
+          </div>
+        </div>
+
+        <p className="mt-6 max-w-(--measure) text-(length:--text-h3) leading-relaxed text-text-muted">
+          <strong className="figure font-semibold text-up">{advancers}</strong> companies advanced against{" "}
+          <strong className="figure font-semibold text-down">{decliners}</strong> that declined.{" "}
+          <strong className="figure font-semibold text-text-strong">{owned}</strong> of them sit in your book
+          {watched > 0 && <>, and <strong className="figure font-semibold text-text-strong">{watched}</strong> more on your watchlist</>}.
+        </p>
+
+        <div className="mt-7 grid border-t border-rule sm:grid-cols-2 lg:grid-cols-4">
+          <HeroMetric label="Companies traded" value={fmtInt(d.coverage.total)} sub="in this snapshot" first />
+          <HeroMetric label="Advancing" value={fmtInt(advancers)} sub={`${fmtInt(decliners)} declining`} tone="up" />
+          <HeroMetric label="In your book" value={fmtInt(owned)} sub={watched > 0 ? `${fmtInt(watched)} watched` : "held positions"} />
+          <HeroMetric label="Deep data" value={`${coveragePct}%`} sub={`${fmtInt(d.coverage.withSpark)} with trends`} last />
+        </div>
+      </Band>
+
+      {/* ── Screener ── */}
+      <Band tone="paper" rule="none" className={cn("dot-grid", GUTTER)}>
+        <div className="mb-6">
+          <p className="eyebrow">The whole board</p>
+          <h2 className="mt-1.5 font-display text-(length:--text-h1) font-normal tracking-editorial text-text-strong">
+            Every company, one screen
+          </h2>
+        </div>
+        <ScreenerTable stocks={d.stocks} sectors={d.sectors} />
+        <p className="mt-8 text-(length:--text-2xs) text-text-faint">
+          Official PSX market-watch via {d.source ?? "PSX"}. Trends and 52-week ranges fill in as deep data is built; missing values are labelled, never invented.
+        </p>
+      </Band>
+    </div>
+  );
+}
+
+function HeroMetric({
+  label,
+  value,
+  sub,
+  tone: metricTone,
+  first,
+  last,
+}: {
+  label: string;
+  value: string;
+  sub?: string;
+  tone?: "up" | "down";
+  first?: boolean;
+  last?: boolean;
+}) {
+  return (
+    <div
+      className={cn(
+        "border-t border-rule py-4 first:border-t-0 sm:border-t-0 sm:border-l sm:px-5 sm:first:border-l-0",
+        first && "sm:pl-0",
+        last && "sm:pr-0"
       )}
+    >
+      <p className="text-(length:--text-2xs) font-bold uppercase tracking-(--tracking-caps) text-text-faint">{label}</p>
+      <p className={cn("figure mt-1.5 text-(length:--text-h1) font-semibold", metricTone === "up" ? "text-up" : metricTone === "down" ? "text-down" : "text-text-strong")}>
+        {value}
+      </p>
+      {sub && <p className="figure mt-0.5 text-xs text-text-muted">{sub}</p>}
     </div>
   );
 }

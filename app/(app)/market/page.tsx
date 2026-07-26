@@ -41,7 +41,9 @@ export default async function MarketPulsePage() {
   const user = await getUser();
   if (!user) return null;
   const supabase = await createClient();
-  const foreignFlow = await getForeignFlowSnapshot(supabase, 90);
+  // allowStale: the design always draws the participation band, so render the
+  // most recent flow day we hold and label its age rather than showing nothing.
+  const foreignFlow = await getForeignFlowSnapshot(supabase, 90, { allowStale: true });
   const [market, profileRes, yearRange] = await Promise.all([
     getMarketDashboard(supabase, user.id),
     supabase.from("profiles").select("demo_mode").eq("id", user.id).maybeSingle(),
@@ -55,16 +57,9 @@ export default async function MarketPulsePage() {
   }
 
   const snapshot = market.snapshot;
-  const breadthTotal = snapshot.total_advancers + snapshot.total_decliners + snapshot.total_unchanged || 1;
-  const advancingPct = snapshot.total_advancers / breadthTotal * 100;
-  const decliningPct = snapshot.total_decliners / breadthTotal * 100;
-  const unchangedPct = Math.max(0, 100 - advancingPct - decliningPct);
   const ratio = snapshot.total_decliners ? snapshot.total_advancers / snapshot.total_decliners : snapshot.total_advancers;
   const indexTone = tone(snapshot.index_change_percent);
   const leaders = market.sectors.filter((sector) => sector.average_return !== null).sort((a, b) => (b.average_return ?? 0) - (a.average_return ?? 0));
-  const strongest = leaders[0];
-  const weakest = leaders.at(-1);
-  const relevantEvents = market.events.filter((event) => market.ownedTickers.has(event.ticker));
 
   // Design-band inputs, all derived from the snapshot already in hand.
   const ownedSectors = new Set(market.owned.map((h) => h.sector).filter(Boolean));
@@ -162,7 +157,11 @@ export default async function MarketPulsePage() {
             <p className="eyebrow">Participation</p>
             <h2 className="mt-1.5 font-display text-(length:--text-h1) font-normal tracking-editorial text-text-strong">Whose money changed hands</h2>
           </div>
-          {foreignFlow?.day.date && <span className="figure text-(length:--text-2xs) text-text-faint">flow data {foreignFlow.day.date}</span>}
+          {foreignFlow?.day.date && (
+            <span className="figure text-(length:--text-2xs) text-text-faint">
+              flow data {foreignFlow.day.date}{foreignFlow.day.isStale && foreignFlow.day.ageDays !== null ? ` · ${foreignFlow.day.ageDays} days old` : ""}
+            </span>
+          )}
         </div>
         {participantRows.length > 0 ? (
           <ParticipantFlowBar rows={participantRows} unit={foreignFlow ? `${foreignFlow.day.currency} mn` : "mn"} />

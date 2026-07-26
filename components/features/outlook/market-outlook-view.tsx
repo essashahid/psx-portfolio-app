@@ -9,7 +9,7 @@ import { SegmentedControl } from "@/components/ui/segmented-control";
 import { Disclosure } from "@/components/features/outlook/outlook-primitives";
 import { cn } from "@/lib/shared/format";
 import { Sparkline } from "@/components/shared/sparkline";
-import type { CustomerOutlook, CustomerLevel, SectorBasis, Tone } from "@/lib/engine/outlook/customer-outlook";
+import type { CustomerOutlook, CustomerLevel, SectorBasis } from "@/lib/engine/outlook/customer-outlook";
 import type { OutlookDriver } from "@/lib/engine/outlook/drivers";
 import type { WfHorizon } from "@/lib/engine/outlook/walkforward";
 
@@ -23,24 +23,8 @@ import type { WfHorizon } from "@/lib/engine/outlook/walkforward";
  * validation appears in any form.
  */
 
-const TONE_TEXT: Record<Tone, string> = {
-  positive: "text-up",
-  neutral: "text-foreground",
-  negative: "text-down",
-};
-
 const fmt = (v: number) => Math.round(v).toLocaleString("en-US");
 const pct = (v: number, d = 0) => `${(v * 100).toFixed(d)}%`;
-
-function Stat({ label, value, sub, tone }: { label: string; value: string; sub: string; tone?: Tone }) {
-  return (
-    <div className="rounded-lg border border-border bg-card p-4">
-      <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">{label}</p>
-      <p className={cn("mt-1 text-xl font-semibold tabular-nums tracking-editorial", tone ? TONE_TEXT[tone] : "text-foreground")}>{value}</p>
-      <p className="mt-0.5 text-xs text-muted-foreground">{sub}</p>
-    </div>
-  );
-}
 
 /** Where the current level sits inside the expected range. */
 function RangeBar({ lo, hi, current }: { lo: number; hi: number; current: number }) {
@@ -204,31 +188,6 @@ export function MarketOutlookView({ outlook, isAdmin = false }: { outlook: Custo
 
   return (
     <div className="space-y-4">
-      {/* A frozen input is worse than a missing one, so it leads the page. */}
-      {outlook.staleWarning && (
-        <Card className="rise border-l-[3px] border-l-amber-500">
-          <CardContent className="p-4">
-            <p className="text-xs font-medium text-amber-700">Data may be out of date</p>
-            <p className="mt-1 text-xs leading-relaxed text-foreground">{outlook.staleWarning}</p>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Where we are, and which way it leans. */}
-      <div className="rise grid gap-3 sm:grid-cols-3">
-        <Stat label="KSE-100" value={fmt(outlook.close)} sub={`Close, ${outlook.asOf}`} />
-        <Stat label="Market outlook" value={outlook.stance.label} sub={outlook.stance.sub} tone={outlook.stance.tone} />
-        <Stat label="Evidence quality" value={outlook.evidenceQuality.level} sub="How much of this has been validated" />
-      </div>
-
-      {/* The headline reconciled against the risk readings, in one sentence. */}
-      <Card className="rise rise-1">
-        <CardContent className="p-4">
-          <p className="text-sm leading-relaxed text-foreground">{outlook.stance.explanation}</p>
-          <p className="mt-2 text-[11px] leading-relaxed text-muted-foreground">{outlook.evidenceQuality.note}</p>
-        </CardContent>
-      </Card>
-
       {/* The three outcomes, which is what a probability actually says. */}
       {outlook.scenarios && (
         <Card className="rise rise-1">
