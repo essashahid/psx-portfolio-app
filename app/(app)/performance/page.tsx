@@ -16,7 +16,6 @@ import { BenchmarkGrowthChart } from "@/components/features/performance/benchmar
 import { cn, formatMoney, formatNumber, formatSignedPct } from "@/lib/shared/format";
 import {
   AlertTriangle,
-  CheckCircle2,
   ChevronDown,
   Download,
   RefreshCw,
@@ -101,10 +100,6 @@ export default async function PerformancePage() {
     platformTotalQuantity === expectedTotalQuantity &&
     portfolio.pricedHoldings > 0;
   const currentWorth = usePlatformCurrent ? portfolio.totalValue + portfolio.cashBalance : returns.netWorth;
-  const currentUnrealized = usePlatformCurrent ? portfolio.unrealizedPl : returns.unrealizedPl;
-  const currentWorthSource = usePlatformCurrent
-    ? "Platform current holdings and latest prices"
-    : "Adjusted AKD ledger endpoint";
   const currentUpdate = usePlatformCurrent ? currentWorth - returns.netWorth : 0;
   const bridge = usePlatformCurrent && Math.abs(currentUpdate) >= 0.01
     ? [
@@ -142,7 +137,6 @@ export default async function PerformancePage() {
   const ledger = buildLedgerRows(transactions, cashMovements);
 
   const sourceComplete = analytics.source.status === "complete" || analytics.source.status === "reconciled";
-  const sourceReconciled = analytics.source.status === "reconciled";
 
   return (
     <div className="pb-6">
@@ -153,10 +147,6 @@ export default async function PerformancePage() {
             <span className="mb-3.5 block h-0.75 w-11 bg-indigo" />
             <p className="eyebrow">Portfolio</p>
             <h1 className="mt-1.5 font-display text-(length:--text-title) font-normal tracking-editorial text-text-strong">Performance</h1>
-            <div className="mt-3 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
-              <Badge variant={sourceReconciled ? "green" : sourceComplete ? "blue" : "amber"}>{analytics.source.label}</Badge>
-              <span>{analytics.source.detail}</span>
-            </div>
           </div>
           <div className="flex flex-wrap items-start gap-2">
             <ActionButton
@@ -191,12 +181,6 @@ export default async function PerformancePage() {
               Full AKD statement data is unavailable. This page is intentionally marked incomplete instead of
               presenting the old partial counts as final performance.
             </p>
-          </div>
-        )}
-        {sourceReconciled && (
-          <div className="mt-4 flex gap-2 border-l-2 border-emerald-600 pl-3 text-sm text-up">
-            <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0" />
-            <p>{analytics.source.detail}</p>
           </div>
         )}
       </header>
@@ -439,25 +423,6 @@ export default async function PerformancePage() {
   );
 }
 
-function Metric({
-  label,
-  value,
-  sub,
-  tone,
-}: {
-  label: string;
-  value: string;
-  sub: string;
-  tone?: "positive" | "negative";
-}) {
-  return (
-    <div className="min-w-0 border-l border-border pl-3">
-      <p className="text-[10px] uppercase tracking-wide text-muted-foreground">{label}</p>
-      <p className={cn("mt-1 truncate text-lg font-semibold tabular-nums", tone === "positive" ? "text-up" : tone === "negative" ? "text-down" : "")}>{value}</p>
-      <p className="mt-0.5 text-[11px] text-muted-foreground">{sub}</p>
-    </div>
-  );
-}
 
 function Mini({ label, value }: { label: string; value: string }) {
   return (
@@ -468,28 +433,6 @@ function Mini({ label, value }: { label: string; value: string }) {
   );
 }
 
-function StatusBlock({
-  title,
-  available,
-  reason,
-  methodology,
-}: {
-  title: string;
-  available: boolean;
-  reason: string;
-  methodology: string;
-}) {
-  return (
-    <div className="border-l border-border pl-3">
-      <div className="flex items-center gap-2">
-        {available ? <CheckCircle2 className="h-4 w-4 text-up" /> : <AlertTriangle className="h-4 w-4 text-amber-600" />}
-        <h3 className="text-sm font-semibold">{title}</h3>
-      </div>
-      <p className="mt-2 text-xs text-muted-foreground">{reason}</p>
-      <p className="mt-2 text-xs text-muted-foreground">{methodology}</p>
-    </div>
-  );
-}
 
 function Count({
   label,

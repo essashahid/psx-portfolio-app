@@ -93,13 +93,6 @@ export default async function StockResearchPage() {
           </div>
         </div>
 
-        <p className="mt-6 max-w-(--measure) text-(length:--text-h3) leading-relaxed text-text-muted">
-          <strong className="figure font-semibold text-up">{advancers}</strong> companies advanced against{" "}
-          <strong className="figure font-semibold text-down">{decliners}</strong> that declined.{" "}
-          <strong className="figure font-semibold text-text-strong">{owned}</strong> of them sit in your book
-          {watched > 0 && <>, and <strong className="figure font-semibold text-text-strong">{watched}</strong> more on your watchlist</>}.
-        </p>
-
         <div className="mt-7 grid border-t border-rule sm:grid-cols-2 lg:grid-cols-4">
           <HeroMetric label="Companies traded" value={fmtInt(d.coverage.total)} sub="in this snapshot" first />
           <HeroMetric label="Advancing" value={fmtInt(advancers)} sub={`${fmtInt(decliners)} declining`} tone="up" />
