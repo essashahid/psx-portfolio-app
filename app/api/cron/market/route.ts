@@ -7,6 +7,8 @@ import { MARKET_SNAPSHOT_TAG } from "@/lib/market/read";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { fetchAndIngestForeignFlows, foreignFlowsAutoConfigured } from "@/lib/market/foreign-flows-ingest";
 import { buildMacroAssetRows, writeMacroAssetRows } from "@/lib/market-data/macro-assets";
+import { ensureEodCached } from "@/lib/market-data/eod-cache";
+import { SECONDARY_INDEX_SYMBOLS } from "@/lib/market/ticker-extras";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 300;
@@ -59,6 +61,18 @@ export async function GET(request: Request) {
       report.macro = { written, fetched };
     } catch (err) {
       report.macro = { error: err instanceof Error ? err.message : "macro refresh failed" };
+    }
+  }
+  if (task === "all" || task === "macro") {
+    // The secondary PSX indices. Only the outlook capture wrote these, and it
+    // is gated on KSE-100 already holding today's close, so a lag there froze
+    // them for days while the tape presented them as current. Topping them up
+    // here keeps them on the same daily footing as everything else.
+    try {
+      const idx = await ensureEodCached([...SECONDARY_INDEX_SYMBOLS]);
+      report.indices = { refreshed: idx.refreshed, skipped: idx.skipped };
+    } catch (err) {
+      report.indices = { error: err instanceof Error ? err.message : "index refresh failed" };
     }
   }
   if (task === "all" || task === "brief") {

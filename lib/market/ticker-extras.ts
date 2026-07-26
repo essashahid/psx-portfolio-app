@@ -10,6 +10,19 @@ import { createAdminClient } from "@/lib/supabase/admin";
  * for every user, so the read is cached alongside it.
  */
 
+/**
+ * The PSX indices beside KSE-100. KSE-100 itself is kept current by the EOD
+ * cache on every portfolio read; these three have no such incidental writer,
+ * so the market cron tops them up explicitly.
+ */
+export const SECONDARY_INDEX_SYMBOLS = ["KSE30", "KMI30", "ALLSHR"] as const;
+
+const INDEX_LABEL: Record<string, string> = {
+  KSE30: "KSE-30",
+  KMI30: "KMI-30",
+  ALLSHR: "All Share",
+};
+
 /** Grams in a tola, and in a troy ounce. Gold is quoted per ounce upstream. */
 const TOLA_G = 11.6638;
 const OUNCE_G = 31.1034768;
@@ -43,9 +56,34 @@ async function lastTwo(
   return { value: points[0], prev: points[1] ?? null };
 }
 
+/** Latest close and the one before it, for a symbol in the price history. */
+async function indexReading(
+  supabase: ReturnType<typeof createAdminClient>,
+  symbol: string
+): Promise<TickerExtra | null> {
+  const { data } = await supabase
+    .from("company_price_history")
+    .select("close")
+    .eq("ticker", symbol)
+    .order("price_date", { ascending: false })
+    .limit(2);
+  const closes = (data ?? []).map((r) => Number(r.close)).filter((v) => Number.isFinite(v) && v > 0);
+  if (closes.length === 0) return null;
+  const pct = closes.length === 2 ? ((closes[0] - closes[1]) / closes[1]) * 100 : null;
+  return {
+    label: INDEX_LABEL[symbol] ?? symbol,
+    value: fmt(closes[0], 0),
+    change: pct !== null ? `${pct >= 0 ? "+" : "−"}${Math.abs(pct).toFixed(2)}%` : undefined,
+    tone: pct === null ? "flat" : pct > 0 ? "up" : pct < 0 ? "down" : "flat",
+  };
+}
+
 async function build(): Promise<TickerExtra[]> {
   const supabase = createAdminClient();
   const out: TickerExtra[] = [];
+
+  const indices = await Promise.all(SECONDARY_INDEX_SYMBOLS.map((sym) => indexReading(supabase, sym)));
+  for (const i of indices) if (i) out.push(i);
 
   const [flowRes, gold, rupee] = await Promise.all([
     supabase
