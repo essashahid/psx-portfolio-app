@@ -8,6 +8,8 @@ import { computeSignals, findSwings, detectSupportResistanceZones, toCanonicalOH
 import { METRIC_HINTS } from "@/lib/market/glossary";
 import { getCompanyDividends } from "@/lib/company/dividends";
 import { getCompanyFilings } from "@/lib/company/filings";
+import { getFundamentals } from "@/lib/company/fundamentals";
+import { sectorColor } from "@/lib/shared/sector-colors";
 import { computeRatios, type RatioRow } from "@/lib/engine/ratios";
 import { getPortfolio } from "@/lib/portfolio/positions";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -19,7 +21,8 @@ import { ActionButton } from "@/components/ui/action-button";
 import { WatchlistButton } from "@/components/features/stocks/watchlist-button";
 import { StockPriceChart } from "@/components/features/stocks/price-chart-lazy";
 import { TechnicalWorkstation } from "@/components/features/technicals/workstation";
-import { FinancialsWorkspace, type FinancialWorkspaceRow } from "@/components/features/stocks/financials-workspace";
+import { FundamentalsGrid } from "@/components/features/stocks/fundamentals-grid";
+import type { FinancialWorkspaceRow } from "@/components/features/stocks/financials-workspace";
 import { EarningsWorkspace } from "@/components/features/stocks/earnings-workspace";
 import { formatMoney, formatNumber, formatSignedPct, formatFinancialPeriod, cn } from "@/lib/shared/format";
 import {
@@ -691,9 +694,16 @@ function FetchFinancialsButton({ ticker, readOnly = false }: { ticker: string; r
   );
 }
 
+/**
+ * Fundamentals: the six metrics as small multiples over their filed years.
+ *
+ * The old statement browser is gone. The design asks for a reading of how the
+ * business earns, against its own history and its sector, rather than a table
+ * of every line item ever extracted.
+ */
 export async function FinancialsPanel({ ticker, readOnly = false }: { ticker: string; readOnly?: boolean }) {
   const supabase = await createClient();
-  const [{ data }, { data: lastLog }] = await Promise.all([
+  const [{ data }, { data: lastLog }, fundamentals, { data: master }] = await Promise.all([
     supabase
       .from("company_financials")
       .select("ticker, period_type, fiscal_year, fiscal_period, statement_type, data, reported_date, source_type, source_url, reporting_basis, review_status, confidence, updated_at")
@@ -709,6 +719,8 @@ export async function FinancialsPanel({ ticker, readOnly = false }: { ticker: st
       .order("created_at", { ascending: false })
       .limit(1)
       .maybeSingle(),
+    getFundamentals(supabase, ticker),
+    supabase.from("stock_master").select("sector").eq("ticker", ticker).maybeSingle(),
   ]);
 
   const rows = (data ?? []) as FinancialRow[];
@@ -730,7 +742,19 @@ export async function FinancialsPanel({ ticker, readOnly = false }: { ticker: st
     );
   }
 
-  return <FinancialsWorkspace ticker={ticker} rows={rows as FinancialWorkspaceRow[]} readOnly={readOnly} />;
+  return (
+    <div>
+      <p className="eyebrow">Filed years</p>
+      <h2 className="mt-1.5 font-display text-(length:--text-h1) font-normal tracking-editorial text-text-strong">
+        How the business earns
+      </h2>
+      <p className="mt-1 mb-7 max-w-(--measure) text-sm leading-relaxed text-text-muted">
+        The shaded band is this company&apos;s own filed range and the dashed hairline is the sector median.
+        Select a chart to read the years and the sector ranking.
+      </p>
+      <FundamentalsGrid data={fundamentals} hue={sectorColor(master?.sector)} />
+    </div>
+  );
 }
 
 // ---------------------------------------------------------------------------
