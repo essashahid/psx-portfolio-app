@@ -10,14 +10,18 @@ import { CommandPalette } from "@/components/shared/command-palette";
 import { formatNumber, formatSignedPct } from "@/lib/shared/format";
 import { NAV, resolveVisibleHrefs } from "@/lib/config/navigation";
 import { getCachedMarketGlobal } from "@/lib/market/read";
+import { getCachedTickerExtras } from "@/lib/market/ticker-extras";
 import type { ExperienceLevel } from "@/lib/shared/types";
 
 const fmtCompactNum = (v: number) =>
   v >= 1e9 ? `${formatNumber(v / 1e9, 1)}bn` : v >= 1e6 ? `${formatNumber(v / 1e6, 0)}m` : formatNumber(v, 0);
 
 async function getTickerItems(): Promise<TickerItem[]> {
-  const { snapshot, movers } = await getCachedMarketGlobal();
-  if (!snapshot) return [];
+  const [{ snapshot, movers }, extras] = await Promise.all([
+    getCachedMarketGlobal(),
+    getCachedTickerExtras().catch(() => []),
+  ]);
+  if (!snapshot) return extras;
   const items: TickerItem[] = [];
   const total = snapshot.total_advancers + snapshot.total_decliners + snapshot.total_unchanged || 1;
   if (snapshot.snapshot_time) {
@@ -45,6 +49,7 @@ async function getTickerItems(): Promise<TickerItem[]> {
   if (loser?.change_percent != null) items.push({ label: "Top loser", value: loser.ticker, change: formatSignedPct(loser.change_percent), tone: "down" });
   if (snapshot.top_sector) items.push({ label: "Top sector", value: snapshot.top_sector, tone: "up" });
   if (snapshot.bottom_sector) items.push({ label: "Bottom sector", value: snapshot.bottom_sector, tone: "down" });
+  items.push(...extras);
   return items;
 }
 
