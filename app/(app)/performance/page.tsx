@@ -88,7 +88,6 @@ export default async function PerformancePage() {
             : ("Difference" as const),
     };
   });
-  const platformReconciled = quantityRows.filter((row) => row.status === "Reconciled").length;
   const platformDifferences = quantityRows.filter((row) => row.status === "Difference");
   const expectedTotalQuantity = quantityRows.reduce((sum, row) => sum + row.expectedQuantity, 0);
   const platformTotalQuantity = platformHasHoldings
@@ -159,9 +158,6 @@ export default async function PerformancePage() {
               variant="outline"
               size="sm"
             />
-            <a href="#reconciliation">
-              <Button variant="outline" size="sm">Reconcile</Button>
-            </a>
             <details className="relative">
               <summary className="inline-flex h-10 cursor-pointer list-none items-center gap-1.5 rounded-md border border-border bg-card px-3 text-xs font-medium md:h-8">
                 More <ChevronDown className="h-3.5 w-3.5" />
@@ -231,9 +227,6 @@ export default async function PerformancePage() {
           <div>
             <p className="eyebrow">Wealth creation bridge</p>
             <h2 className="mt-1.5 font-display text-(length:--text-h1) font-normal tracking-editorial text-text-strong">From capital in to net worth</h2>
-            <p className="mt-1 max-w-3xl text-xs text-muted-foreground">
-              Trade commission, SST and CDC are already embedded in realised/unrealised P/L. Account charges and CGT are deducted separately.
-            </p>
           </div>
           <div className={cn("text-xs", Math.abs(bridgeDifference) < 0.01 ? "text-up" : "text-down")}>
             {Math.abs(bridgeDifference) < 0.01
@@ -311,81 +304,6 @@ export default async function PerformancePage() {
         ]}
       />
 
-      <details id="reconciliation" className="group border-t border-border pt-5">
-        <summary className="flex cursor-pointer flex-wrap items-center justify-between gap-3 list-none">
-          <div className="flex items-center gap-2">
-            <ChevronDown className="h-4 w-4 text-muted-foreground transition-transform group-open:rotate-180" />
-            <div>
-              <h2 className="font-display text-(length:--text-h1) font-normal tracking-editorial text-text-strong">Data quality and reconciliation</h2>
-              <p className="mt-0.5 text-xs text-muted-foreground">
-                {platformDifferences.length === 0
-                  ? "Ledger reconciled: every holding's quantity matches the imported statement."
-                  : `${platformDifferences.length} holding${platformDifferences.length === 1 ? "" : "s"} with an unexplained quantity difference.`}
-                {Math.abs(bridgeDifference) < 0.01 ? " Wealth bridge balances." : ` Wealth-bridge difference ${formatMoney(bridgeDifference)}.`}
-              </p>
-            </div>
-          </div>
-          <div className="text-xs text-muted-foreground">
-            Expected total quantity {formatNumber(expectedTotalQuantity, 0)}
-            {platformTotalQuantity !== null ? ` · platform ${formatNumber(platformTotalQuantity, 0)}` : ""}
-          </div>
-        </summary>
-        <div className="mt-4 grid gap-x-8 gap-y-2 text-sm md:grid-cols-2 xl:grid-cols-3">
-          <Count label="External broker deposits imported" value={checkpoints.externalBrokerDepositsImported} expected={62} />
-          <Count label="Broker buy lines imported" value={checkpoints.brokerBuyLinesImported} expected={110} />
-          <Count label="Broker buy orders imported" value={checkpoints.brokerBuyOrdersImported} expected={73} />
-          <Count label="Broker sell lines imported" value={checkpoints.brokerSellLinesImported} expected={8} />
-          <Count label="Broker sell orders imported" value={checkpoints.brokerSellOrdersImported} expected={5} />
-          <Count label="Manual purchases applied" value={checkpoints.manualPurchasesApplied} expected={2} />
-          <Count label="IPO acquisitions applied" value={checkpoints.ipoAcquisitionsApplied} expected={2} />
-          <Count label="Stock splits applied" value={checkpoints.stockSplitsApplied} expected={1} />
-          <Count label="Merger conversions applied" value={checkpoints.mergerConversionsApplied} expected={1} />
-          <Count label="Current holdings reconciled" value={platformHasHoldings ? platformReconciled : checkpoints.currentHoldingsReconciled} expected={16} />
-          <Count label="Unexplained quantity differences" value={platformHasHoldings ? platformDifferences.length : checkpoints.unexplainedQuantityDifferences} expected={0} />
-          <Count label="Unknown transaction-fee fields" value={checkpoints.unknownTransactionFeeFields} expected={6} neutral />
-          <Count label="XIRR cash-flow count" value={checkpoints.xirrCashFlowCount} neutral />
-          <Count label="Trading fees extracted" value={friction.tradeFeesTotal} money neutral />
-          <Count label="Wealth-bridge difference" value={bridgeDifference} money expected={0} />
-        </div>
-        <div className="mt-5 overflow-x-auto">
-          <table className="w-full min-w-[980px] text-xs">
-            <thead>
-              <tr className="border-b border-border text-left text-[10px] uppercase tracking-wide text-muted-foreground">
-                <th className="py-2 pr-4">Ticker</th>
-                <th className="px-2 py-2 text-right">Broker net</th>
-                <th className="px-2 py-2 text-right">Corporate action</th>
-                <th className="px-2 py-2 text-right">External acquisition</th>
-                <th className="px-2 py-2 text-right">Manual purchase</th>
-                <th className="px-2 py-2 text-right">Expected</th>
-                <th className="px-2 py-2 text-right">Platform</th>
-                <th className="px-2 py-2 text-right">Difference</th>
-                <th className="px-2 py-2">Status</th>
-              </tr>
-            </thead>
-            <tbody>
-              {quantityRows.map((row) => (
-                <tr key={row.ticker} className="border-b border-border last:border-0">
-                  <td className="py-2 pr-4 font-semibold">{row.ticker}</td>
-                  <td className="px-2 py-2 text-right tabular-nums">{formatNumber(row.brokerNetQuantity, 0)}</td>
-                  <td className="px-2 py-2 text-right tabular-nums">{formatNumber(row.corporateActionAdjustment, 0)}</td>
-                  <td className="px-2 py-2 text-right tabular-nums">{formatNumber(row.externalAcquisitionQuantity, 0)}</td>
-                  <td className="px-2 py-2 text-right tabular-nums">{formatNumber(row.manualPurchaseQuantity, 0)}</td>
-                  <td className="px-2 py-2 text-right tabular-nums font-medium">{formatNumber(row.expectedQuantity, 0)}</td>
-                  <td className="px-2 py-2 text-right tabular-nums">{formatNumber(row.currentPlatformQuantity, 0)}</td>
-                  <td className={cn("px-2 py-2 text-right tabular-nums", row.difference ? "text-down" : "text-muted-foreground")}>
-                    {row.difference === null ? "—" : formatNumber(row.difference, 0)}
-                  </td>
-                  <td className="px-2 py-2">
-                    <Badge variant={row.status === "Reconciled" ? "green" : row.status === "Difference" ? "red" : "amber"}>
-                      {row.status}
-                    </Badge>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </details>
 
       <LedgerTable rows={ledger.rows} transactions={transactions} cashMovements={cashMovements} />
       </div>
@@ -404,37 +322,11 @@ function Mini({ label, value }: { label: string; value: string }) {
 }
 
 
-function Count({
-  label,
-  value,
-  expected,
-  money = false,
-  neutral = false,
-}: {
-  label: string;
-  value: number;
-  expected?: number;
-  money?: boolean;
-  neutral?: boolean;
-}) {
-  const ok = expected === undefined || Math.abs(value - expected) < 0.01;
-  return (
-    <div className="flex items-center justify-between gap-3 border-b border-border py-2">
-      <span className="text-muted-foreground">{label}</span>
-      <span className={cn("font-medium tabular-nums", !neutral && (ok ? "text-up" : "text-down"))}>
-        {money ? formatMoney(value) : formatNumber(value, 2)}
-      </span>
-    </div>
-  );
-}
 
 function RealisedTable({ sales }: { sales: NonNullable<Awaited<ReturnType<typeof getPerformanceAnalytics>>>["sales"] }) {
   return (
     <section className="border-t border-border pt-5">
       <h2 className="font-display text-(length:--text-h1) font-normal tracking-editorial text-text-strong">Realised performance</h2>
-      <p className="mt-1 text-xs text-muted-foreground">
-        Weighted-average cost allocated to each sale line. PPL remains partially realised because shares remain.
-      </p>
       <div className="mt-4 overflow-x-auto">
         <table className="w-full min-w-[1040px] text-xs">
           <thead>

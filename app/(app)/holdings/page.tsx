@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { createClient, getUser } from "@/lib/supabase/server";
 import { getPortfolio } from "@/lib/portfolio/positions";
 import { getDailyHoldingPerformance } from "@/lib/portfolio/daily-performance";
@@ -12,7 +11,7 @@ import { normalizeEnabledFeatures } from "@/lib/config/features";
 import { Band } from "@/components/ui/band";
 import { PanelHeader } from "@/components/ui/panel-header";
 import { SectorWeightBar, SectorTreemap, BelowCostPlot } from "@/components/features/holdings/holdings-visuals";
-import { Briefcase, ChevronDown, Download, Eye, RefreshCw, Sparkles } from "lucide-react";
+import { Briefcase, Eye } from "lucide-react";
 
 export const dynamic = "force-dynamic";
 
@@ -64,21 +63,6 @@ export default async function HoldingsPage() {
               <AsOf date={latestPriceDate} label="Prices" />
               <span>· {summary.pricedHoldings} of {summary.holdingsCount} priced{unpriced ? ` · ${unpriced} valued at cost` : ""}</span>
             </p>
-          </div>
-          <div className="flex flex-wrap items-start gap-2">
-            {!isDemo && <AddTransactionDialog variant="default" />}
-            {!isDemo && <ActionButton endpoint="/api/prices" body={{ refresh: true }} label={<><RefreshCw className="h-3.5 w-3.5" /> Refresh prices</>} variant="outline" size="sm" />}
-            <details className="relative">
-              <summary className="inline-flex h-10 cursor-pointer list-none items-center justify-center gap-1.5 rounded-md border border-rule bg-card px-3 text-xs font-medium transition-colors hover:bg-accent md:h-8"><span>More</span><ChevronDown className="h-3.5 w-3.5" /></summary>
-              <div className="absolute right-0 z-10 mt-1 flex w-52 flex-col gap-1 rounded-md border border-rule bg-card p-1.5 shadow-card">
-                <Link href="/dividends" className="rounded px-2.5 py-2 text-xs hover:bg-muted">Record dividend</Link>
-                {companyEnrichmentEnabled && !isDemo && (
-                  <ActionButton endpoint="/api/holdings/enrich" label={<><Sparkles className="h-3.5 w-3.5" /> Update company details</>} variant="ghost" size="sm" className="w-full justify-start px-2.5" />
-                )}
-                {/* eslint-disable-next-line @next/next/no-html-link-for-pages -- CSV download, not a page navigation */}
-                <a href="/api/export/holdings" className="rounded px-2.5 py-2 text-xs hover:bg-muted"><Download className="mr-1.5 inline h-3.5 w-3.5" /> Export CSV</a>
-              </div>
-            </details>
           </div>
         </div>
 

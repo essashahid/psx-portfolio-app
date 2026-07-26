@@ -171,7 +171,6 @@ export function DividendYieldTable({ dividends, holdings, asOf }: { dividends: D
           ))}
         </tbody>
       </table>
-      <p className="mt-2 text-[11px] text-muted-foreground">Yield on cost is trailing-12-month net income divided by your invested cost. Yield on value uses current market value.</p>
     </div>
   );
 }

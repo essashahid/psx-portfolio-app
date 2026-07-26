@@ -83,7 +83,6 @@ export default async function DividendsPage() {
         <section className="mt-10 border-t border-rule pt-7">
           <p className="eyebrow">Statement</p>
           <h2 className="mt-1.5 font-display text-(length:--text-h1) font-normal tracking-editorial text-text-strong">Tax-year statement</h2>
-          <p className="mt-1.5 text-xs text-text-muted">A Pakistan tax year runs 1 July to 30 June.</p>
           <div className="mt-5">
             <TaxYearStatement dividends={dividends} defaultYear={taxSettings.tax_year ?? null} />
           </div>
