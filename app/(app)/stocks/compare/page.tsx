@@ -112,7 +112,7 @@ export default async function CompareStocksPage({ searchParams }: { searchParams
 
       <Card>
         <CardContent className="overflow-x-auto p-0">
-          <table className="w-full min-w-[640px] border-collapse text-sm">
+          <table className="w-full min-w-[40rem] border-collapse text-sm">
             <thead>
               <tr className="border-b border-border">
                 <th className="p-3 text-left text-xs font-medium text-muted-foreground">Metric</th>

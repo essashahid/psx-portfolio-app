@@ -138,7 +138,7 @@ export default async function CoveragePage() {
                       )}
                     </TD>
                     <TD className="text-[11px] text-muted-foreground">{s?.last_success_at ? String(s.last_success_at).slice(0, 16).replace("T", " ") : "—"}</TD>
-                    <TD className="max-w-[220px] truncate text-[11px] text-muted-foreground" title={s?.last_error ?? undefined}>
+                    <TD className="max-w-[13.75rem] truncate text-[11px] text-muted-foreground" title={s?.last_error ?? undefined}>
                       {s?.last_error ? `${String(s.last_error_at ?? "").slice(0, 10)} — ${s.last_error}` : "—"}
                     </TD>
                   </TR>
@@ -184,7 +184,7 @@ export default async function CoveragePage() {
                         {l.status}
                       </span>
                     </TD>
-                    <TD className="max-w-[260px] truncate text-[11px] text-muted-foreground" title={l.detail ?? undefined}>{l.detail ?? "—"}</TD>
+                    <TD className="max-w-[16.25rem] truncate text-[11px] text-muted-foreground" title={l.detail ?? undefined}>{l.detail ?? "—"}</TD>
                   </TR>
                 ))}
               </TBody>

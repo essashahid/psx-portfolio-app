@@ -55,12 +55,12 @@ export function TechnicalState({ signals, volatility }: TechnicalStateProps) {
           <TBody>
             {rows.map((r, i) => (
               <TR key={i} className="border-b border-border last:border-0 hover:bg-slate-50/50">
-                <TD className="w-[140px] py-3 pl-4 align-top font-medium text-slate-900">{r.dimension}</TD>
-                <TD className="w-[120px] py-3 align-top">
+                <TD className="w-[8.75rem] py-3 pl-4 align-top font-medium text-slate-900">{r.dimension}</TD>
+                <TD className="w-[7.5rem] py-3 align-top">
                   <Badge variant={r.tone as any} className="whitespace-nowrap">{r.state}</Badge>
                 </TD>
                 <TD className="py-3 align-top text-xs text-slate-600 leading-relaxed">{r.evidence}</TD>
-                <TD className="w-[100px] py-3 pr-4 text-right align-top text-xs text-muted-foreground">{r.confidence} confidence</TD>
+                <TD className="w-[6.25rem] py-3 pr-4 text-right align-top text-xs text-muted-foreground">{r.confidence} confidence</TD>
               </TR>
             ))}
           </TBody>

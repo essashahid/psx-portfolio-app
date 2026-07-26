@@ -7,7 +7,7 @@ import type { CostBasisRow } from "@/lib/engine/ledger-analytics";
 export function CostBasisTable({ rows }: { rows: CostBasisRow[] }) {
   return (
     <div className="scroll-touch -mx-4 overflow-x-auto px-4 sm:mx-0 sm:px-0">
-      <table className="w-full min-w-[720px] text-sm">
+      <table className="w-full min-w-[45rem] text-sm">
         <thead>
           <tr className="border-b border-border text-left text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
             <th className="pb-2 pr-4">Ticker</th>

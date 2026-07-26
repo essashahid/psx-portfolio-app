@@ -159,7 +159,7 @@ export default async function StockCockpitPage({ params }: { params: Promise<{ t
           </div>
 
           <div className="mt-5 overflow-x-auto border-t border-slate-200 pt-4">
-            <div className="grid min-w-[760px] grid-cols-6 gap-4">
+            <div className="grid min-w-[47.5rem] grid-cols-6 gap-4">
               <HeaderMetric label="Market cap" value={compactMoney(metadata.marketCap)} />
               <HeaderMetric label="P/E" value={pe !== null ? `${pe.toFixed(1)}x` : "—"} sub={pe !== null && epsPeriod ? `Based on ${epsPeriod} EPS` : pe === null ? "needs financials" : undefined} />
               <HeaderMetric label="EPS" value={eps !== null ? `PKR ${formatNumber(eps)}` : "—"} sub={eps !== null ? epsPeriod ?? undefined : "needs financials"} />

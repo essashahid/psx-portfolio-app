@@ -1097,7 +1097,7 @@ function RatioExplorer({
 
       <div className="rounded-lg border border-slate-200 bg-white p-3">
         <div className="flex flex-wrap items-center gap-3">
-          <div className="relative flex-1 min-w-[200px] max-w-sm">
+          <div className="relative flex-1 min-w-[12.5rem] max-w-sm">
             <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
             <Input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search ratios" className="pl-9 h-9" />
           </div>
@@ -1128,7 +1128,7 @@ function RatioExplorer({
                 {filtered.map((row) => {
                   return (
                     <TR key={row.ratio_name}>
-                      <TD className="min-w-[220px]">
+                      <TD className="min-w-[13.75rem]">
                         <div className="flex items-center gap-2">
                           <div>
                             <span className="text-left text-xs font-semibold text-slate-950">{ratioDisplayName(row)}</span>

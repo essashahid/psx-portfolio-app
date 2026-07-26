@@ -151,7 +151,7 @@ export function DividendReceivables({
                   type="button"
                   onClick={() => setExpanded(open ? null : e.id)}
                   className="grid w-full items-center gap-4 py-1.5 text-left"
-                  style={{ gridTemplateColumns: "58px minmax(0,1fr) 96px 128px 104px 18px" }}
+                  style={{ gridTemplateColumns: "3.625rem minmax(0,1fr) 6rem 8rem 6.5rem 1.125rem" }}
                 >
                   <span className="border-r border-rule text-center">
                     <span className="figure block text-sm font-semibold leading-tight text-text-strong">{date ? date.slice(8, 10) : "—"}</span>
@@ -243,7 +243,7 @@ export function DividendReceivables({
             <div
               key={e.id}
               className="ledger-row grid items-center gap-4"
-              style={{ gridTemplateColumns: "minmax(0,1fr) 150px 150px 104px" }}
+              style={{ gridTemplateColumns: "minmax(0,1fr) 9.375rem 9.375rem 6.5rem" }}
             >
               <span className="inline-flex min-w-0 items-center gap-2">
                 <SectorDot sector={sectorFor(e.ticker)} />
@@ -341,7 +341,7 @@ export function DividendReceivables({
                 <div
                   key={e.id}
                   className="ledger-row grid items-center gap-4"
-                  style={{ gridTemplateColumns: "minmax(0,104px) 108px minmax(0,1fr) 104px" }}
+                  style={{ gridTemplateColumns: "minmax(0,6.5rem) 6.75rem minmax(0,1fr) 6.5rem" }}
                 >
                   <span className="inline-flex min-w-0 items-center gap-2 text-sm font-semibold text-text-strong">
                     <SectorDot sector={sectorFor(e.ticker)} />

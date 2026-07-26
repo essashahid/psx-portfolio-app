@@ -60,7 +60,7 @@ export function LedgerTable({
       </div>
 
       <div className="mt-4 overflow-x-auto">
-        <table className="w-full min-w-[980px] text-xs">
+        <table className="w-full min-w-[61.25rem] text-xs">
           <thead>
             <tr className="border-b border-border text-left text-[10px] uppercase tracking-wide text-muted-foreground">
               <th className="py-2 pr-4">Date</th>

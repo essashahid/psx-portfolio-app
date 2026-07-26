@@ -734,7 +734,7 @@ export function FinancialsWorkspace({
               </div>
               <label className="flex items-center gap-2">
                 <span className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">Display</span>
-                <Select value={valueMode} onChange={(e) => setValueMode(e.target.value as ValueMode)} className="w-full sm:w-[170px]">
+                <Select value={valueMode} onChange={(e) => setValueMode(e.target.value as ValueMode)} className="w-full sm:w-[10.625rem]">
                   <option value="compact">Compact values</option>
                   <option value="exact">Exact values</option>
                   <option value="thousands">PKR thousands</option>
@@ -804,7 +804,7 @@ export function FinancialsWorkspace({
                     if (next) runExport(next);
                     e.currentTarget.value = "";
                   }}
-                  className="w-full sm:w-[125px]"
+                  className="w-full sm:w-[7.8125rem]"
                 >
                   <option value="">Export</option>
                   <option value="csv">CSV</option>
@@ -956,7 +956,7 @@ export function FinancialsWorkspace({
         <CardContent className="p-0">
           {visiblePeriods.length ? (
             <div className="scroll-touch overflow-x-auto">
-              <Table className="min-w-[760px]">
+              <Table className="min-w-[47.5rem]">
                 <THead>
                   <TR>
                     <TH className="sticky left-0 z-[1] bg-white">Line item</TH>
@@ -1071,7 +1071,7 @@ function TrendTooltip({
   if (!active || !payload?.length) return null;
   const row = payload[0]?.payload;
   return (
-    <div className="chart-tooltip min-w-[230px]">
+    <div className="chart-tooltip min-w-[14.375rem]">
       <p className="chart-tooltip-label">{String(label)}</p>
       <div className="space-y-1">
         {payload.filter((p) => typeof p.value === "number").map((p) => {

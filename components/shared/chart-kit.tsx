@@ -137,7 +137,7 @@ export function FadeDefs({ defs }: { defs: { id: string; color: string; from?: n
 export function ChartEmpty({ note, height = 240 }: { note?: string; height?: number }) {
   return (
     <div className="flex items-center justify-center" style={{ height }}>
-      <p className="max-w-[280px] text-center text-xs text-muted-foreground">
+      <p className="max-w-[17.5rem] text-center text-xs text-muted-foreground">
         {note ?? "No data to chart yet."}
       </p>
     </div>

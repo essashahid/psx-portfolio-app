@@ -336,7 +336,7 @@ export function ImportWizard() {
               {[...Array(6)].map((_, i) => <Skeleton key={i} className="h-8 w-full" />)}
             </div>
           ) : (
-            <div className="scroll-touch max-h-[420px] overflow-y-auto">
+            <div className="scroll-touch max-h-[26.25rem] overflow-y-auto">
               <div className="space-y-2 md:hidden">
                 {rows.map((r) => {
                   const committable = r.status === "valid" || r.status === "warning";
@@ -405,14 +405,14 @@ export function ImportWizard() {
                           </TD>
                           <TD className="text-muted-foreground">{r.row_index + 1}</TD>
                           {previewCols.map((c) => (
-                            <TD key={c} className="max-w-[160px] truncate text-xs">
+                            <TD key={c} className="max-w-[10rem] truncate text-xs">
                               {r.normalized?.[c] !== null && r.normalized?.[c] !== undefined
                                 ? String(r.normalized[c])
                                 : "—"}
                             </TD>
                           ))}
                           <TD><Badge variant={STATUS_BADGE[r.status] ?? "secondary"}>{r.status}</Badge></TD>
-                          <TD className="max-w-[240px] truncate text-xs text-muted-foreground" title={r.issues.join("; ")}>
+                          <TD className="max-w-[15rem] truncate text-xs text-muted-foreground" title={r.issues.join("; ")}>
                             {r.issues.join("; ") || "—"}
                           </TD>
                         </TR>

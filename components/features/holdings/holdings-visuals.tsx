@@ -147,7 +147,7 @@ export function BelowCostPlot({ rows }: { rows: BelowCostRow[] }) {
             <div
               key={r.ticker}
               className="ledger-row grid items-center gap-3"
-              style={{ gridTemplateColumns: "62px 62px 1fr 62px 64px" }}
+              style={{ gridTemplateColumns: "3.875rem 3.875rem 1fr 3.875rem 4rem" }}
             >
               <span className="text-sm font-semibold text-text-strong">{r.ticker}</span>
               <span className="figure text-right text-xs text-down">{formatNumber(r.last, 2)}</span>

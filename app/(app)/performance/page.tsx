@@ -328,7 +328,7 @@ function RealisedTable({ sales }: { sales: NonNullable<Awaited<ReturnType<typeof
     <section className="border-t border-border pt-5">
       <h2 className="font-display text-(length:--text-h1) font-normal tracking-editorial text-text-strong">Realised performance</h2>
       <div className="mt-4 overflow-x-auto">
-        <table className="w-full min-w-[1040px] text-xs">
+        <table className="w-full min-w-[65rem] text-xs">
           <thead>
             <tr className="border-b border-border text-left text-[10px] uppercase tracking-wide text-muted-foreground">
               <th className="py-2 pr-4">Ticker</th>
@@ -350,7 +350,7 @@ function RealisedTable({ sales }: { sales: NonNullable<Awaited<ReturnType<typeof
                 <td className="py-2 pr-4 font-semibold">
                   <details>
                     <summary className="cursor-pointer list-none">{sale.ticker}</summary>
-                    <p className="mt-2 max-w-[260px] text-[11px] leading-snug text-muted-foreground">
+                    <p className="mt-2 max-w-[16.25rem] text-[11px] leading-snug text-muted-foreground">
                       {sale.formula}. Source entries: {sale.sourceEntryNos.join(", ")}.
                     </p>
                   </details>
@@ -380,7 +380,7 @@ function YearTable({ rows }: { rows: NonNullable<Awaited<ReturnType<typeof getPe
       <h2 className="font-display text-(length:--text-h1) font-normal tracking-editorial text-text-strong">Performance by year</h2>
       <p className="mt-1 text-xs text-muted-foreground">Gross purchases are separate from external contributions. Benchmark and real-return columns stay unavailable until their series exist.</p>
       <div className="mt-4 overflow-x-auto">
-        <table className="w-full min-w-[1260px] text-xs">
+        <table className="w-full min-w-[78.75rem] text-xs">
           <thead>
             <tr className="border-b border-border text-left text-[10px] uppercase tracking-wide text-muted-foreground">
               <th className="py-2 pr-4">Year</th>
@@ -445,7 +445,7 @@ function PositionTable({ rows }: { rows: NonNullable<Awaited<ReturnType<typeof g
       <h2 className="font-display text-(length:--text-h1) font-normal tracking-editorial text-text-strong">Position build-up analysis</h2>
       <p className="mt-1 text-xs text-muted-foreground">Current holdings are aggregated under weighted-average accounting; purchase lots are not shown as separate holdings. Per-holding XIRR is the money-weighted annual return of each position&apos;s own buys, sells and current value; it excludes dividends.</p>
       <div className="mt-4 overflow-x-auto">
-        <table className="w-full min-w-[1280px] text-xs">
+        <table className="w-full min-w-[80rem] text-xs">
           <thead>
             <tr className="border-b border-border text-left text-[10px] uppercase tracking-wide text-muted-foreground">
               <th className="py-2 pr-4">Ticker</th>
@@ -510,7 +510,7 @@ function CostWorkspace({ friction }: { friction: NonNullable<Awaited<ReturnType<
           </div>
           <h3 className="mt-4 text-sm font-semibold">Order-size analysis</h3>
           <div className="mt-2 overflow-x-auto">
-            <table className="w-full min-w-[560px] text-xs">
+            <table className="w-full min-w-[35rem] text-xs">
               <thead>
                 <tr className="border-b border-border text-left text-[10px] uppercase tracking-wide text-muted-foreground">
                   <th className="py-2 pr-4">Band</th>
@@ -565,7 +565,7 @@ function AuditWorkspace({
       <details className="mt-3 border-l border-border pl-3">
         <summary className="cursor-pointer text-sm font-medium">View XIRR cash flows</summary>
         <div className="mt-3 overflow-x-auto">
-          <table className="w-full min-w-[560px] text-xs">
+          <table className="w-full min-w-[35rem] text-xs">
             <thead>
               <tr className="border-b border-border text-left text-[10px] uppercase tracking-wide text-muted-foreground">
                 <th className="py-2 pr-4">Date</th>
@@ -592,8 +592,8 @@ function AuditWorkspace({
         <p className="mt-2 text-xs text-muted-foreground">
           Includes broker entries, confirmed manual/corporate adjustments and original narrations. Dividend module linked amount: {formatMoney(dividendIncome)}.
         </p>
-        <div className="mt-3 max-h-[560px] overflow-auto">
-          <table className="w-full min-w-[980px] text-xs">
+        <div className="mt-3 max-h-[35rem] overflow-auto">
+          <table className="w-full min-w-[61.25rem] text-xs">
             <thead>
               <tr className="sticky top-0 border-b border-border bg-background text-left text-[10px] uppercase tracking-wide text-muted-foreground">
                 <th className="py-2 pr-4">Event</th>
@@ -621,7 +621,7 @@ function AuditWorkspace({
                   <td className="px-2 py-2">
                     <details>
                       <summary className="cursor-pointer text-muted-foreground">Show</summary>
-                      <p className="mt-1 max-w-[420px] leading-snug text-muted-foreground">{event.originalNarration}</p>
+                      <p className="mt-1 max-w-[26.25rem] leading-snug text-muted-foreground">{event.originalNarration}</p>
                     </details>
                   </td>
                 </tr>

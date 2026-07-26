@@ -57,7 +57,7 @@ export default async function ImportPage() {
                   return (
                     <TR key={b.id}>
                       <TD className="text-xs">{b.created_at.slice(0, 16).replace("T", " ")}</TD>
-                      <TD className="max-w-[220px] truncate text-xs">{stmt?.file_name ?? "—"}</TD>
+                      <TD className="max-w-[13.75rem] truncate text-xs">{stmt?.file_name ?? "—"}</TD>
                       <TD><Badge variant="outline">{b.statement_type}</Badge></TD>
                       <TD>
                         <Badge variant={b.status === "committed" ? "green" : b.status === "preview" ? "amber" : "secondary"}>

@@ -26,7 +26,7 @@ export function ContributionLedger({ rows }: { rows: ContributionRow[] }) {
       {sorted.map((r) => {
         const w = (Math.abs(r.contrib) / max) * 48;
         return (
-          <div key={r.ticker} className="ledger-row grid items-center gap-3.5" style={{ gridTemplateColumns: "96px 1fr 92px" }}>
+          <div key={r.ticker} className="ledger-row grid items-center gap-3.5" style={{ gridTemplateColumns: "6rem 1fr 5.75rem" }}>
             <span>
               <span className="block text-sm font-semibold text-text-strong">{r.ticker}</span>
               <span className="figure block text-(length:--text-3xs) text-text-faint">
@@ -114,8 +114,8 @@ export function AllocationPanel({
             <span className="flex items-baseline gap-2.5">
               <span title={r.fullLabel} className="min-w-0 flex-1 truncate text-xs text-text-strong">{r.label}</span>
               <span className="figure text-xs text-text-muted">{formatNumber(r.value, 0)}</span>
-              <span className="figure w-[46px] text-right text-xs font-semibold text-text-strong">{formatNumber(r.weight, 1)}%</span>
-              <span className="w-[78px] text-right text-(length:--text-3xs) text-text-faint">{r.meta}</span>
+              <span className="figure w-[2.875rem] text-right text-xs font-semibold text-text-strong">{formatNumber(r.weight, 1)}%</span>
+              <span className="w-[4.875rem] text-right text-(length:--text-3xs) text-text-faint">{r.meta}</span>
             </span>
             <span className="block h-[5px] bg-surface-inset">
               <span className="block h-[5px]" style={{ width: `${(r.value / top) * 100}%`, background: sectorColor(r.sector) }} />
@@ -138,7 +138,7 @@ export function AllocationPanel({
                   key={r.sector}
                   title={`${shortSector(r.sector)} · you ${formatNumber(r.mineW, 1)}% against ${formatNumber(r.idxW, 1)}% of the index`}
                   className="grid items-center gap-3"
-                  style={{ gridTemplateColumns: "78px 1fr 62px" }}
+                  style={{ gridTemplateColumns: "4.875rem 1fr 3.875rem" }}
                 >
                   <span className="truncate text-xs text-text-muted">{shortSector(r.sector)}</span>
                   <span className="relative h-4">

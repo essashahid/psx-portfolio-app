@@ -94,7 +94,7 @@ export function AllocationPie({
       </ResponsiveContainer>
       {/* Center readout — total at rest, slice share on hover */}
       <div className="pointer-events-none absolute inset-x-0 top-[86px] flex flex-col items-center">
-        <p className="max-w-[110px] truncate text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+        <p className="max-w-[6.875rem] truncate text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
           {focused ? focused.name : "Total"}
         </p>
         <p className="text-sm font-semibold tabular-nums">
@@ -251,7 +251,7 @@ export function RatioSnapshotChart({
                       <span className="text-muted-foreground">Score</span>
                       <span className="font-semibold tabular-nums">{row.score.toFixed(0)} / 100</span>
                     </div>
-                    <p className="max-w-[260px] leading-snug text-muted-foreground">{row.summary}</p>
+                    <p className="max-w-[16.25rem] leading-snug text-muted-foreground">{row.summary}</p>
                   </div>
                 </div>
               );
@@ -600,7 +600,7 @@ export function PerformanceTimeline({
                       ))}
                   </div>
                   {!!row?.eventLabels.length && (
-                    <p className="mt-2 max-w-[240px] text-[11px] text-muted-foreground">{row.eventLabels.join(" · ")}</p>
+                    <p className="mt-2 max-w-[15rem] text-[11px] text-muted-foreground">{row.eventLabels.join(" · ")}</p>
                   )}
                 </div>
               );
@@ -667,7 +667,7 @@ export function CostFrictionBars({
                     <span className="text-muted-foreground">Recorded</span>
                     <span className="font-semibold tabular-nums">{fmtPkr(row.amount)}</span>
                   </div>
-                  <p className="mt-2 max-w-[240px] text-[11px] text-muted-foreground">{row.note}</p>
+                  <p className="mt-2 max-w-[15rem] text-[11px] text-muted-foreground">{row.note}</p>
                 </div>
               );
             }}

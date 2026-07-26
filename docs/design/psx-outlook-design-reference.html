@@ -1,0 +1,359 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>PSX Market Outlook — Design Reference</title>
+<style>
+  /* ============================================================
+     DESIGN TOKENS
+     These are starting values matched to the existing cream/
+     terracotta look already used on the platform (see the
+     "Research" tab screenshots). If the codebase already has a
+     theme/token system, MAP these roles onto it rather than
+     hardcoding these hex values — the roles (accent, danger,
+     warning, success, surface, text-secondary, etc.) matter more
+     than the exact hex.
+     ============================================================ */
+  :root {
+    /* surfaces */
+    --color-bg: #F5F1EA;
+    --color-surface: #FFFFFF;
+    --color-surface-alt: #FAF7F1;
+    --color-border: #E7E2D8;
+    --color-border-strong: #D6CFC0;
+
+    /* text */
+    --color-text-primary: #292524;
+    --color-text-secondary: #78716C;
+    --color-text-muted: #A8A29E;
+
+    /* brand accent (matches existing terracotta) */
+    --color-accent: #C1652E;
+    --color-accent-bg: #F5E4D8;
+    --color-accent-text: #8A4620;
+
+    /* semantic — risk / confidence signaling */
+    --color-danger: #C0392B;
+    --color-danger-bg: #FBEAE7;
+    --color-danger-text: #963226;
+    --color-warning: #B8791A;
+    --color-warning-bg: #FBF0DC;
+    --color-warning-text: #8A5C13;
+    --color-success: #4A7A3D;
+    --color-success-bg: #EAF1E4;
+    --color-success-text: #3A6030;
+
+    /* shape + motion */
+    --radius-card: 12px;
+    --radius-control: 8px;
+    --dur-fast: 150ms;
+    --dur-base: 300ms;
+    --ease: ease;
+
+    --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, Roboto, sans-serif;
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    padding: 3rem 1.5rem 6rem;
+    background: var(--color-bg);
+    font-family: var(--font-sans);
+    color: var(--color-text-primary);
+  }
+  .page { max-width: 720px; margin: 0 auto; }
+
+  h1 { font-size: 22px; font-weight: 600; margin: 0 0 4px; }
+  .subtitle { font-size: 14px; color: var(--color-text-secondary); margin: 0 0 3rem; }
+  h2 { font-size: 15px; font-weight: 600; margin: 0 0 4px; }
+  .section-note { font-size: 13px; color: var(--color-text-secondary); margin: 0 0 1rem; }
+  section { margin-bottom: 3rem; }
+
+  /* token swatches */
+  .swatch-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 10px; }
+  .swatch { border-radius: var(--radius-control); overflow: hidden; border: 0.5px solid var(--color-border); }
+  .swatch-color { height: 44px; }
+  .swatch-label { font-size: 11px; padding: 6px 8px; background: var(--color-surface); }
+  .swatch-label code { font-size: 10px; color: var(--color-text-secondary); display: block; margin-top: 2px; }
+
+  /* shared card */
+  .card { background: var(--color-surface); border-radius: var(--radius-card); border: 0.5px solid var(--color-border); padding: 1.25rem; }
+  .card-flat { background: var(--color-surface-alt); border-radius: var(--radius-card); padding: 1.25rem; }
+
+  /* toggle group */
+  .toggle-group { display: flex; gap: 8px; margin-bottom: 1rem; }
+  .toggle-btn {
+    flex: 1; height: 36px; border-radius: var(--radius-control);
+    border: 0.5px solid var(--color-border-strong); background: var(--color-surface);
+    color: var(--color-text-primary); font-size: 13px; font-family: var(--font-sans);
+    cursor: pointer; transition: background var(--dur-fast) var(--ease), color var(--dur-fast) var(--ease);
+  }
+  .toggle-btn:hover { background: var(--color-surface-alt); }
+  .toggle-btn.active { background: var(--color-text-primary); color: #fff; border-color: var(--color-text-primary); }
+
+  /* hero stat */
+  .hero-label { font-size: 13px; color: var(--color-text-secondary); margin: 0 0 6px; }
+  .hero-stat-row { display: flex; align-items: baseline; gap: 8px; margin-bottom: 18px; flex-wrap: wrap; }
+  .hero-stat { font-size: 32px; font-weight: 600; color: var(--color-danger); }
+  .hero-stat-label { font-size: 14px; color: var(--color-text-secondary); }
+
+  /* bar rows */
+  .bar-row { margin-bottom: 12px; }
+  .bar-row:last-child { margin-bottom: 0; }
+  .bar-row-head { display: flex; justify-content: space-between; font-size: 13px; margin-bottom: 4px; }
+  .bar-row-head .label { color: var(--color-text-secondary); }
+  .bar-row-head .value { font-weight: 600; }
+  .bar-track { height: 8px; border-radius: 4px; background: var(--color-surface-alt); }
+  .bar-fill { height: 8px; border-radius: 4px; transition: width var(--dur-base) var(--ease); }
+
+  /* range indicator */
+  .range-track { position: relative; height: 8px; border-radius: 4px; background: var(--color-border); margin: 0 4px; }
+  .range-fill { position: absolute; top: 0; height: 8px; border-radius: 4px; background: var(--color-accent-bg); transition: left var(--dur-base) var(--ease), width var(--dur-base) var(--ease); }
+  .range-dot { position: absolute; top: -4px; width: 16px; height: 16px; border-radius: 50%; background: var(--color-accent); border: 2px solid var(--color-surface-alt); transform: translateX(-8px); transition: left var(--dur-base) var(--ease); }
+  .range-labels { display: flex; justify-content: space-between; margin-top: 10px; font-size: 12px; color: var(--color-text-muted); }
+  .range-labels .median { color: var(--color-accent-text); font-weight: 600; }
+
+  /* confidence chip */
+  .chip { display: inline-flex; align-items: center; font-size: 12px; padding: 4px 10px; border-radius: var(--radius-control); font-weight: 600; }
+  .chip-success { background: var(--color-success-bg); color: var(--color-success-text); }
+  .chip-warning { background: var(--color-warning-bg); color: var(--color-warning-text); }
+  .chip-danger { background: var(--color-danger-bg); color: var(--color-danger-text); }
+  .sample-note { font-size: 12px; color: var(--color-text-muted); margin-left: 8px; }
+
+  /* collapsible detail */
+  .detail-toggle {
+    width: 100%; display: flex; align-items: center; justify-content: center; gap: 6px;
+    height: 36px; border-radius: var(--radius-control); border: 0.5px solid var(--color-border-strong);
+    background: transparent; color: var(--color-text-secondary); font-size: 13px; font-family: var(--font-sans);
+    cursor: pointer; margin-top: 12px;
+  }
+  .detail-chevron { transition: transform var(--dur-fast) var(--ease); }
+  .detail-chevron.open { transform: rotate(180deg); }
+  .detail-panel { display: none; margin-top: 10px; background: var(--color-surface-alt); border-radius: var(--radius-card); padding: 1rem 1.25rem; font-size: 13px; }
+  .detail-panel table { width: 100%; border-collapse: collapse; }
+  .detail-panel td { padding: 6px 0; }
+  .detail-panel td:first-child { color: var(--color-text-secondary); }
+  .detail-panel td:last-child { text-align: right; font-weight: 600; }
+
+  /* comparison cards */
+  .compare-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .compare-card { background: var(--color-surface-alt); border-radius: var(--radius-card); padding: 1rem; }
+  .compare-card-head { display: flex; align-items: center; gap: 6px; margin-bottom: 10px; font-size: 13px; color: var(--color-text-secondary); }
+  .compare-bar-well { height: 80px; display: flex; align-items: flex-end; margin-bottom: 8px; }
+  .compare-bar { width: 100%; border-radius: 6px 6px 0 0; transition: height var(--dur-base) var(--ease); }
+  .compare-value { font-size: 20px; font-weight: 600; }
+  .ratio-headline { text-align: center; font-size: 20px; font-weight: 600; margin-bottom: 1.25rem; }
+
+  .usage-list { font-size: 13px; line-height: 1.7; color: var(--color-text-secondary); padding-left: 1.2rem; }
+  .usage-list li { margin-bottom: 6px; }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <h1>PSX Market Outlook — design reference</h1>
+  <p class="subtitle">Reference for the early-warning tab redesign. Static HTML/CSS/JS — not production code. Hand this to the implementing agent as a target for look, feel, and interaction; adapt to the real component library and token system.</p>
+
+  <section>
+    <h2>Design tokens</h2>
+    <p class="section-note">Roles matter more than exact hex values — reuse the platform's existing tokens for these same roles if they exist.</p>
+    <div class="swatch-grid">
+      <div class="swatch"><div class="swatch-color" style="background:var(--color-bg)"></div><div class="swatch-label">bg<code>--color-bg</code></div></div>
+      <div class="swatch"><div class="swatch-color" style="background:var(--color-surface)"></div><div class="swatch-label">surface<code>--color-surface</code></div></div>
+      <div class="swatch"><div class="swatch-color" style="background:var(--color-accent)"></div><div class="swatch-label" style="color:#fff;background:var(--color-accent)">accent<code style="color:#fff">--color-accent</code></div></div>
+      <div class="swatch"><div class="swatch-color" style="background:var(--color-danger)"></div><div class="swatch-label" style="color:#fff;background:var(--color-danger)">danger<code style="color:#fff">--color-danger</code></div></div>
+      <div class="swatch"><div class="swatch-color" style="background:var(--color-warning)"></div><div class="swatch-label" style="color:#fff;background:var(--color-warning)">warning<code style="color:#fff">--color-warning</code></div></div>
+      <div class="swatch"><div class="swatch-color" style="background:var(--color-success)"></div><div class="swatch-label" style="color:#fff;background:var(--color-success)">success<code style="color:#fff">--color-success</code></div></div>
+    </div>
+  </section>
+
+  <section>
+    <h2>Pattern: toggle-driven hero stat</h2>
+    <p class="section-note">Replaces raw data tables. One headline number, one bar comparison, one confidence signal. Switching the toggle animates the change instead of jumping.</p>
+    <div class="card">
+      <div class="toggle-group">
+        <button class="toggle-btn" data-win="week">1 week</button>
+        <button class="toggle-btn active" data-win="month">1 month</button>
+        <button class="toggle-btn" data-win="quarter">3 months</button>
+      </div>
+      <div class="card-flat">
+        <p class="hero-label">Chance of a notable drop</p>
+        <div class="hero-stat-row">
+          <span class="hero-stat" id="headline-stat">38%</span>
+          <span class="hero-stat-label" id="headline-label">chance the market falls 5% or more sometime in the next month</span>
+        </div>
+        <div id="bars"></div>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2>Pattern: range indicator</h2>
+    <p class="section-note">Replaces a percentile table. The filled segment is the 10th–90th percentile range, the dot is the median.</p>
+    <div class="card-flat">
+      <p class="hero-label">Where the market usually lands</p>
+      <div class="range-track">
+        <div class="range-fill" id="range-fill"></div>
+        <div class="range-dot" id="range-dot"></div>
+      </div>
+      <div class="range-labels">
+        <span id="p10-label"></span>
+        <span class="median" id="median-label"></span>
+        <span id="p90-label"></span>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2>Pattern: confidence chip + progressive disclosure</h2>
+    <p class="section-note">Translates raw sample size into a plain-language confidence label. Technical numbers live behind a toggle, not in the default view.</p>
+    <div class="card-flat">
+      <span class="chip chip-warning" id="confidence-chip">Moderate evidence</span>
+      <span class="sample-note" id="sample-note">based on 59 historical periods since 2021</span>
+      <button class="detail-toggle" id="toggle-detail">
+        <span id="toggle-text">Show the detailed numbers</span>
+        <span class="detail-chevron" id="toggle-chevron">▾</span>
+      </button>
+      <div class="detail-panel" id="detail-panel">
+        <table>
+          <tr><td>Worst historical drop in this window</td><td id="detail-worst">-20.4%</td></tr>
+          <tr><td>Finished this window higher</td><td id="detail-higher">64.2%</td></tr>
+          <tr><td>Historical periods measured</td><td id="detail-sample">59 non-overlapping periods</td></tr>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2>Pattern: calm vs. turbulent comparison</h2>
+    <p class="section-note">Replaces a 20+ row table with one comparison. Bar heights animate on toggle change.</p>
+    <div class="card">
+      <div class="toggle-group">
+        <button class="toggle-btn" data-t="5">5% drop</button>
+        <button class="toggle-btn active" data-t="7">7% drop</button>
+        <button class="toggle-btn" data-t="10">10% drop</button>
+      </div>
+      <div class="ratio-headline" id="ratio-headline"></div>
+      <div class="compare-grid">
+        <div class="compare-card">
+          <div class="compare-card-head">After a calm market</div>
+          <div class="compare-bar-well"><div class="compare-bar" id="calm-bar" style="background:var(--color-success)"></div></div>
+          <span class="compare-value" id="calm-value"></span>
+        </div>
+        <div class="compare-card">
+          <div class="compare-card-head">After a turbulent market</div>
+          <div class="compare-bar-well"><div class="compare-bar" id="turb-bar" style="background:var(--color-danger)"></div></div>
+          <span class="compare-value" id="turb-value"></span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2>Notes for implementation</h2>
+    <ul class="usage-list">
+      <li>Inspect the platform's existing design tokens/component library first. If tokens for surface, border, text-secondary, danger, warning, success already exist, map onto those instead of the hex values here.</li>
+      <li>Keep interactions smooth: 150ms for hover/toggle state changes, 300ms ease for bar width/height and range position changes. Nothing should snap instantly.</li>
+      <li>Confidence chip thresholds used here: 100+ independent periods = strong evidence, 30–99 = moderate, under 30 = limited. Adjust thresholds if the actual data availability differs.</li>
+      <li>Detailed/technical numbers (raw sample sizes, percentile tables, data-source gaps) belong behind a "show details" toggle or a separate advanced view, not in the default beginner view.</li>
+      <li>Replace the font stack with the platform's actual brand font.</li>
+      <li>This file is a static reference, not a component to paste in directly — rebuild these patterns in the app's actual framework and component system.</li>
+    </ul>
+  </section>
+
+</div>
+
+<script>
+  const WIN = {
+    week: { fell5: 13.9, fell7: 3.6, fell10: 1.3, worst: -10.0, sample: 250, p10: -2.7, median: 0.4, p90: 4.0, higher: 58.6, phrase: 'sometime in the next week' },
+    month: { fell5: 38.2, fell7: 20.0, fell10: 8.9, worst: -20.4, sample: 59, p10: -4.5, median: 1.9, p90: 10.1, higher: 64.2, phrase: 'sometime in the next month' },
+    quarter: { fell5: 58.2, fell7: 40.0, fell10: 25.5, worst: -22.6, sample: 19, p10: -5.6, median: 5.4, p90: 25.3, higher: 68.5, phrase: 'sometime in the next 3 months' }
+  };
+  const TRACK_MIN = -15, TRACK_MAX = 30;
+
+  function confidenceFor(sample) {
+    if (sample >= 100) return { text: 'Strong evidence', cls: 'chip-success' };
+    if (sample >= 30) return { text: 'Moderate evidence', cls: 'chip-warning' };
+    return { text: 'Limited evidence', cls: 'chip-danger' };
+  }
+
+  function renderWindow(win) {
+    const d = WIN[win];
+    document.getElementById('headline-stat').textContent = d.fell5.toFixed(1) + '%';
+    document.getElementById('headline-label').textContent = 'chance the market falls 5% or more ' + d.phrase;
+
+    const rows = [
+      { label: 'Drops 5% or more', value: d.fell5, color: 'var(--color-danger-bg)' },
+      { label: 'Drops 7% or more', value: d.fell7, color: '#E9A99C' },
+      { label: 'Drops 10% or more', value: d.fell10, color: 'var(--color-danger)' }
+    ];
+    document.getElementById('bars').innerHTML = rows.map(r => {
+      const width = Math.min(r.value / 70 * 100, 100);
+      return '<div class="bar-row"><div class="bar-row-head"><span class="label">' + r.label + '</span><span class="value">' + r.value.toFixed(1) + '%</span></div>' +
+        '<div class="bar-track"><div class="bar-fill" style="width:' + width + '%;background:' + r.color + '"></div></div></div>';
+    }).join('');
+
+    const leftPct = (d.p10 - TRACK_MIN) / (TRACK_MAX - TRACK_MIN) * 100;
+    const widthPct = (d.p90 - d.p10) / (TRACK_MAX - TRACK_MIN) * 100;
+    const medianPct = (d.median - TRACK_MIN) / (TRACK_MAX - TRACK_MIN) * 100;
+    document.getElementById('range-fill').style.left = leftPct + '%';
+    document.getElementById('range-fill').style.width = widthPct + '%';
+    document.getElementById('range-dot').style.left = medianPct + '%';
+    document.getElementById('p10-label').textContent = d.p10.toFixed(1) + '%';
+    document.getElementById('median-label').textContent = 'Typical: ' + (d.median > 0 ? '+' : '') + d.median.toFixed(1) + '%';
+    document.getElementById('p90-label').textContent = '+' + d.p90.toFixed(1) + '%';
+
+    const conf = confidenceFor(d.sample);
+    const chip = document.getElementById('confidence-chip');
+    chip.textContent = conf.text;
+    chip.className = 'chip ' + conf.cls;
+    document.getElementById('sample-note').textContent = 'based on ' + d.sample + ' historical periods since 2021';
+    document.getElementById('detail-worst').textContent = d.worst.toFixed(1) + '%';
+    document.getElementById('detail-higher').textContent = d.higher.toFixed(1) + '%';
+    document.getElementById('detail-sample').textContent = d.sample + ' non-overlapping periods';
+
+    document.querySelectorAll('[data-win]').forEach(btn => {
+      btn.classList.toggle('active', btn.dataset.win === win);
+    });
+  }
+
+  const TURB = {
+    5: { calm: 2.9, turb: 15.7, ratio: 1.58 },
+    7: { calm: 0.0, turb: 6.9, ratio: 2.05 },
+    10: { calm: 0.0, turb: 2.7, ratio: 2.06 }
+  };
+
+  function renderTurbulence(t) {
+    const d = TURB[t];
+    const max = Math.max(d.calm, d.turb, 1);
+    document.getElementById('calm-bar').style.height = Math.max(d.calm / max * 60, 4) + 'px';
+    document.getElementById('turb-bar').style.height = Math.max(d.turb / max * 60, 4) + 'px';
+    document.getElementById('calm-value').textContent = d.calm.toFixed(1) + '%';
+    document.getElementById('turb-value').textContent = d.turb.toFixed(1) + '%';
+    const ratioText = d.ratio >= 1.5 ? d.ratio.toFixed(1) + ' times more likely' : 'somewhat more likely';
+    document.getElementById('ratio-headline').textContent = 'A ' + t + '% drop is ' + ratioText + ' after turbulence';
+
+    document.querySelectorAll('[data-t]').forEach(btn => {
+      btn.classList.toggle('active', btn.dataset.t === String(t));
+    });
+  }
+
+  document.querySelectorAll('[data-win]').forEach(btn => btn.addEventListener('click', () => renderWindow(btn.dataset.win)));
+  document.querySelectorAll('[data-t]').forEach(btn => btn.addEventListener('click', () => renderTurbulence(Number(btn.dataset.t))));
+
+  const detailToggle = document.getElementById('toggle-detail');
+  const detailPanel = document.getElementById('detail-panel');
+  const chevron = document.getElementById('toggle-chevron');
+  const toggleText = document.getElementById('toggle-text');
+  detailToggle.addEventListener('click', () => {
+    const showing = detailPanel.style.display === 'block';
+    detailPanel.style.display = showing ? 'none' : 'block';
+    chevron.classList.toggle('open', !showing);
+    toggleText.textContent = showing ? 'Show the detailed numbers' : 'Hide the detailed numbers';
+  });
+
+  renderWindow('month');
+  renderTurbulence(7);
+</script>
+</body>
+</html>

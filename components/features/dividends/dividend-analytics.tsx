@@ -222,7 +222,7 @@ export function TaxYearStatement({ dividends, defaultYear }: { dividends: Divide
         <a href={`/api/export/tax_statement?year=${encodeURIComponent(year)}`} className="inline-flex h-8 items-center gap-1.5 rounded-md border border-border px-3 text-xs font-medium hover:bg-muted">Export CSV</a>
       </div>
       <div className="mt-3 overflow-x-auto">
-        <table className="w-full min-w-[520px] border-collapse text-sm">
+        <table className="w-full min-w-[32.5rem] border-collapse text-sm">
           <thead>
             <tr className="border-b border-border text-xs text-muted-foreground">
               <th className="py-2 pr-3 text-left">Holding</th>

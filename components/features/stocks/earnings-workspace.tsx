@@ -260,7 +260,7 @@ function Segment<T extends string>({ value, options, onChange }: { value: T; opt
 function SummaryCard({ label, metricKey, val, isMargin, priorVal, priorLabel, valueMode, comparison }: { label: string; metricKey: string; val: number | null; isMargin?: boolean; priorVal: number | null; priorLabel: string; valueMode: ValueMode; comparison: "YoY" | "QoQ" }) {
     const chg = changeInfo(val, priorVal, isMargin ?? false);
     return (
-        <Card className="border-slate-200 bg-white shadow-sm flex flex-col justify-between min-h-[104px]">
+        <Card className="border-slate-200 bg-white shadow-sm flex flex-col justify-between min-h-[6.5rem]">
             <CardContent className="p-4 flex flex-col h-full justify-between">
                 <div>
                     <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">{label}</p>
@@ -633,7 +633,7 @@ export function EarningsWorkspace({
                                 </Badge>
                             </div>
                         </div>
-                        <div className="h-[240px]">
+                        <div className="h-[15rem]">
                             <ResponsiveContainer width="100%" height="100%">
                                 <BarChart data={chartData} onClick={selectChartPeriod} margin={{ top: 8, right: 12, bottom: 8, left: 6 }}>
                                     <CartesianGrid vertical={false} strokeDasharray="4 4" stroke="#e2e8f0" />
@@ -655,7 +655,7 @@ export function EarningsWorkspace({
                 ))}
             </div>
           ) : (
-          <div className="h-[320px] w-full p-4 pb-0 pl-0">
+          <div className="h-[20rem] w-full p-4 pb-0 pl-0">
               <ResponsiveContainer width="100%" height="100%">
                   <ComposedChart data={chartData} onClick={selectChartPeriod}>
                       <CartesianGrid vertical={false} strokeDasharray="4 4" stroke="#e2e8f0" />
@@ -798,7 +798,7 @@ export function EarningsWorkspace({
                            </CardDescription>
                        </div>
                        <label className="flex items-center gap-2">
-                            <Select value={valueMode} onChange={(e) => setValueMode(e.target.value as ValueMode)} className="h-7 text-[11px] w-[130px]">
+                            <Select value={valueMode} onChange={(e) => setValueMode(e.target.value as ValueMode)} className="h-7 text-[11px] w-[8.125rem]">
                                 <option value="compact">Compact values</option>
                                 <option value="exact">Exact values</option>
                             </Select>

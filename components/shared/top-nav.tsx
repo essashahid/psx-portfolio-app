@@ -226,7 +226,7 @@ export function TopNav({
             type="button"
             onClick={() => void signOutAndRedirect(router)}
             title={`Sign out (${email})`}
-            className="flex h-[26px] w-[26px] items-center justify-center rounded-full bg-ink-1 text-[10px] font-semibold tracking-[0.02em] text-white transition-opacity hover:opacity-85"
+            className="flex h-[1.625rem] w-[1.625rem] items-center justify-center rounded-full bg-ink-1 text-[10px] font-semibold tracking-[0.02em] text-white transition-opacity hover:opacity-85"
           >
             {(email || "?").slice(0, 2).toUpperCase()}
           </button>

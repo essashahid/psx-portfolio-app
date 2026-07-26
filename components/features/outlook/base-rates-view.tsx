@@ -136,7 +136,7 @@ export function BaseRatesView({ data }: { data: OutlookBaseRates }) {
         <div className="mt-7">
           <div
             className="grid items-baseline gap-x-6 border-b border-rule pb-2.5"
-            style={{ gridTemplateColumns: "72px minmax(0,1fr) 64px minmax(0,1fr) 72px" }}
+            style={{ gridTemplateColumns: "4.5rem minmax(0,1fr) 4rem minmax(0,1fr) 4.5rem" }}
           >
             <span />
             <span className="text-right text-(length:--text-3xs) font-bold uppercase tracking-(--tracking-caps) text-down">
@@ -157,7 +157,7 @@ export function BaseRatesView({ data }: { data: OutlookBaseRates }) {
               <div
                 key={row.movePct}
                 className="grid items-center gap-x-6 border-b border-rule py-3 last:border-0"
-                style={{ gridTemplateColumns: "72px minmax(0,1fr) 64px minmax(0,1fr) 72px" }}
+                style={{ gridTemplateColumns: "4.5rem minmax(0,1fr) 4rem minmax(0,1fr) 4.5rem" }}
               >
                 <span className="figure text-right text-sm font-semibold text-down">
                   {row.fell !== null ? pct(row.fell) : "—"}

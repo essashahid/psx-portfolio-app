@@ -182,9 +182,12 @@
   --band-pad-y: 2.5rem;
   --band-pad-y-sm: 1.5rem;
   --section-gap: 2rem;
-  --row-pad-y: 10px;
-  --nav-height: 96px;
-  --content-max: 1180px;
+  /* rem so they track the interface scale set on html. --hit-min stays in px:
+     it is an accessibility floor for a finger, a physical size, not a
+     typographic one. */
+  --row-pad-y: 0.625rem;
+  --nav-height: 6rem;
+  --content-max: 73.75rem;
   --measure: 68ch;
   --hit-min: 44px;
 
@@ -306,6 +309,34 @@ html {
   min-height: 100%;
   overflow-x: hidden;
   scroll-padding-bottom: calc(5rem + env(safe-area-inset-bottom));
+}
+
+/* ── Interface scale ─────────────────────────────────────────────────────
+   The design reads better a size up, so the default interface scale is 125%
+   rather than the browser's 100%. Because the type, spacing, gutter and band
+   tokens are all rem-based, moving the root font size scales the whole
+   interface proportionally — real layout at a larger size, not a `zoom`
+   transform (which would trap fixed-position descendants the way the entrance
+   animations already do, and blur nothing crisply).
+
+   Expressed as a percentage, not a pixel value, so a reader who has raised
+   their browser's default font size for legibility keeps that gain — 125% of
+   their size, not a fixed 20px that overrides it.
+
+   Deliberately desktop-only. A phone viewport has no width to spare and its
+   type is already sized for arm's length; scaling there would force horizontal
+   overflow in the ledger tables. The breakpoint matches the `md` gutter switch
+   in the app shell.
+
+   Note this is not identical to browser zoom at 125%: zoom also shrinks the
+   effective viewport, so a wide screen can drop to a narrower column layout.
+   Media queries resolve rem against the initial root size, so here the columns
+   stay put and only the contents grow. That keeps the wide layout he designed
+   for, which is the better half of the trade. */
+@media (min-width: 768px) {
+  html {
+    font-size: 125%;
+  }
 }
 
 button,
@@ -575,7 +606,7 @@ thead {
   padding: 0.55rem 0.7rem;
 }
 .chart-tooltip-label {
-  font-size: 10px;
+  font-size: 0.625rem;
   font-weight: 600;
   letter-spacing: 0.08em;
   text-transform: uppercase;

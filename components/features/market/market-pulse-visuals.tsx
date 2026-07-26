@@ -124,7 +124,7 @@ export function SectorTileBoard({ tiles }: { tiles: SectorTile[] }) {
           ))}
         </div>
       </div>
-      <div className="mt-5 grid gap-0.5" style={{ gridTemplateColumns: "repeat(auto-fill, minmax(150px, 1fr))" }}>
+      <div className="mt-5 grid gap-0.5" style={{ gridTemplateColumns: "repeat(auto-fill, minmax(9.375rem, 1fr))" }}>
         {shown.map((t) => {
           const strength = Math.min(1, Math.abs(t.ret) / 3);
           const base = t.ret >= 0 ? "var(--up-2)" : "var(--down-2)";
@@ -268,7 +268,7 @@ export function MarketInternals({ gauges }: { gauges: Gauge[] }) {
   return (
     <div
       className="mt-9 grid gap-7 border-t border-rule pt-7"
-      style={{ gridTemplateColumns: "repeat(auto-fit, minmax(190px, 1fr))" }}
+      style={{ gridTemplateColumns: "repeat(auto-fit, minmax(11.875rem, 1fr))" }}
     >
       {gauges.map((g) => {
         const colour = g.tone === "up" ? "var(--up-1)" : g.tone === "down" ? "var(--down-1)" : "var(--flat-2)";
