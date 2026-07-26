@@ -1,821 +1,307 @@
 "use client";
 
-import { Fragment, useMemo, useState } from "react";
-import type { ReactNode } from "react";
+import { useMemo, useState } from "react";
 import Link from "next/link";
-import {
-  useReactTable,
-  getCoreRowModel,
-  getSortedRowModel,
-  flexRender,
-  createColumnHelper,
-  type SortingState,
-  type VisibilityState,
-} from "@tanstack/react-table";
 import type { EnrichedHolding, PortfolioSummary } from "@/lib/shared/types";
-import { formatMoney, formatNumber, formatSignedPct, cn } from "@/lib/shared/format";
-import { Badge } from "@/components/ui/badge";
-import { SectorChip } from "@/components/shared/sector-chip";
-import { sectorColor, shortSector } from "@/lib/shared/sector-colors";
-import { ActionButton } from "@/components/ui/action-button";
-import { AddTransactionDialog } from "@/components/features/holdings/add-transaction-dialog";
-import { GenerateReportDialog } from "@/components/features/stocks/generate-report-dialog";
+import { cn, formatNumber } from "@/lib/shared/format";
 import { Input } from "@/components/ui/input";
-import { ArrowUpDown, MoreHorizontal, Search, X } from "lucide-react";
+import { SegmentedControl } from "@/components/ui/segmented-control";
+import { AddTransactionDialog } from "@/components/features/holdings/add-transaction-dialog";
+import { SectorDot } from "@/components/shared/sector-chip";
+import { sectorColor, shortSector } from "@/lib/shared/sector-colors";
 
-type ViewTab = "performance" | "income" | "allocation";
-type QuickFilter =
-  | "in_profit"
-  | "below_cost"
-  | "positive_today"
-  | "negative_today"
-  | "dividend_payers"
-  | "big_loss";
+type SortKey = "ticker" | "qty" | "price" | "value" | "pl";
+type Grouping = "flat" | "sector";
 
-const col = createColumnHelper<EnrichedHolding>();
+interface Row {
+  ticker: string;
+  name: string | null;
+  sector: string | null;
+  qty: number;
+  avg: number | null;
+  price: number | null;
+  day: number | null;
+  value: number;
+  pl: number;
+  ret: number | null;
+  weight: number;
+}
 
-const PERFORMANCE_FILTERS: { key: QuickFilter; label: string }[] = [
-  { key: "in_profit", label: "In profit" },
-  { key: "below_cost", label: "Below cost" },
-  { key: "big_loss", label: "Loss greater than 10%" },
-  { key: "positive_today", label: "Positive today" },
-  { key: "negative_today", label: "Negative today" },
-  { key: "dividend_payers", label: "Dividend payers" },
+const COLUMNS: { key: SortKey; label: string; sortName: string; align: "left" | "right" }[] = [
+  { key: "ticker", label: "Holding", sortName: "ticker", align: "left" },
+  { key: "qty", label: "Position", sortName: "quantity", align: "right" },
+  { key: "price", label: "Price · day", sortName: "price", align: "right" },
+  { key: "value", label: "Value · weight", sortName: "value", align: "right" },
+  { key: "pl", label: "Unrealised · return", sortName: "unrealised", align: "right" },
 ];
 
-const TABS: { key: ViewTab; label: string }[] = [
-  { key: "performance", label: "Performance" },
-  { key: "income", label: "Income" },
-  { key: "allocation", label: "Allocation" },
-];
+const signed = (v: number, d = 0) => `${v < 0 ? "−" : "+"}${formatNumber(Math.abs(v), d)}`;
 
-function allocationStatus(
-  weight: number | null,
-  target: number | null
-): { label: string; variant: "green" | "amber" | "blue" } | null {
-  if (weight === null || target === null) return null;
-  const drift = weight - target;
-  if (drift > 3) return { label: "Overweight", variant: "amber" };
-  if (drift < -3) return { label: "Underweight", variant: "blue" };
-  return { label: "On target", variant: "green" };
-}
-
-function MobileMetric({
-  label,
-  value,
-  tone,
-}: {
-  label: string;
-  value: ReactNode;
-  tone?: "positive" | "negative" | "muted" | "accent";
-}) {
-  return (
-    <div className="min-w-0 rounded-md border border-border bg-background/55 px-2.5 py-2">
-      <p className="truncate text-[10px] font-medium uppercase text-muted-foreground">{label}</p>
-      <p
-        className={cn(
-          "mt-0.5 min-w-0 truncate text-sm font-semibold tabular-nums",
-          tone === "positive" && "text-up",
-          tone === "negative" && "text-down",
-          tone === "muted" && "text-muted-foreground",
-          tone === "accent" && "text-amber-600"
-        )}
-      >
-        {value}
-      </p>
-    </div>
-  );
-}
-
-function MobileHoldingCard({
-  holding,
-  tab,
-  companyReportsEnabled,
-  companyEnrichmentEnabled,
-  readOnly,
-}: {
-  holding: EnrichedHolding;
-  tab: ViewTab;
-  companyReportsEnabled: boolean;
-  companyEnrichmentEnabled: boolean;
-  readOnly: boolean;
-}) {
-  const pl = holding.unrealized_pl;
-  const plPct = holding.unrealized_pl_pct;
-  const plTone = pl === null ? "muted" : pl > 0 ? "positive" : pl < 0 ? "negative" : undefined;
-  const yoc =
-    holding.dividend_income && holding.total_cost
-      ? `${((holding.dividend_income / holding.total_cost) * 100).toFixed(2)}%`
-      : "—";
-  const yov =
-    holding.dividend_income && holding.market_value
-      ? `${((holding.dividend_income / holding.market_value) * 100).toFixed(2)}%`
-      : "—";
-  const drift =
-    holding.weight !== null && holding.target_allocation !== null
-      ? holding.weight - holding.target_allocation
-      : null;
-  const allocStatus = allocationStatus(holding.weight, holding.target_allocation);
-  return (
-    <article className="rounded-lg border border-border bg-card p-3 shadow-[var(--shadow-card)]">
-      <div className="flex items-start justify-between gap-3">
-        <div className="min-w-0">
-          <div className="flex min-w-0 flex-wrap items-center gap-1.5">
-            <Link
-              href={`/stocks/${holding.ticker}`}
-              className="text-base font-bold leading-tight text-foreground"
-            >
-              {holding.ticker}
-            </Link>
-          </div>
-          <p className="mt-0.5 truncate text-xs text-muted-foreground">
-            {holding.company_name ?? "—"}
-          </p>
-          <div className="mt-1">
-            <SectorChip sector={holding.sector} size="xs" />
-          </div>
-        </div>
-        <HoldingActionMenu
-          holding={holding}
-          companyReportsEnabled={companyReportsEnabled}
-          companyEnrichmentEnabled={companyEnrichmentEnabled}
-          readOnly={readOnly}
-        />
-      </div>
-
-      {tab === "performance" && (
-        <div className="mt-3 grid grid-cols-2 gap-2">
-          <MobileMetric label="Market value" value={holding.market_value !== null ? formatMoney(holding.market_value) : "—"} />
-          <MobileMetric label="Unrealised P/L" value={pl !== null ? `${formatMoney(pl)}${plPct !== null ? ` · ${formatSignedPct(plPct)}` : ""}` : "—"} tone={plTone} />
-          <MobileMetric label="Price" value={holding.latest_price !== null ? formatNumber(holding.latest_price) : "no price"} tone={holding.latest_price === null ? "accent" : undefined} />
-          <MobileMetric label="Weight" value={holding.weight !== null ? `${holding.weight.toFixed(1)}%` : "—"} />
-        </div>
-      )}
-
-      {tab === "income" && (
-        <div className="mt-3 grid grid-cols-2 gap-2">
-          <MobileMetric label="Dividends" value={holding.dividend_income > 0 ? formatMoney(holding.dividend_income) : "—"} tone={holding.dividend_income > 0 ? "accent" : "muted"} />
-          <MobileMetric label="Yield cost" value={yoc} />
-          <MobileMetric label="Yield value" value={yov} />
-          <MobileMetric label="Quantity" value={formatNumber(holding.quantity, 0)} />
-        </div>
-      )}
-
-      {tab === "allocation" && (
-        <div className="mt-3 grid grid-cols-2 gap-2">
-          <MobileMetric label="Weight" value={holding.weight !== null ? `${holding.weight.toFixed(1)}%` : "—"} />
-          <MobileMetric label="Target" value={holding.target_allocation !== null ? `${holding.target_allocation}%` : "—"} />
-          <MobileMetric
-            label="Drift"
-            value={drift !== null ? `${drift > 0 ? "+" : ""}${drift.toFixed(1)}%` : "—"}
-            tone={drift === null || Math.abs(drift) <= 3 ? "muted" : drift > 0 ? "accent" : undefined}
-          />
-          <div className="min-w-0 rounded-md border border-border bg-background/55 px-2.5 py-2">
-            <p className="truncate text-[10px] font-medium uppercase text-muted-foreground">Status</p>
-            <div className="mt-1">
-              {allocStatus ? (
-                <Badge variant={allocStatus.variant}>{allocStatus.label}</Badge>
-              ) : (
-                <span className="text-xs text-muted-foreground">no target</span>
-              )}
-            </div>
-          </div>
-        </div>
-      )}
-    </article>
-  );
-}
-
-function HoldingActionMenu({
-  holding,
-  companyReportsEnabled = false,
-  companyEnrichmentEnabled = false,
-  readOnly = false,
-}: {
-  holding: EnrichedHolding;
-  companyReportsEnabled?: boolean;
-  companyEnrichmentEnabled?: boolean;
-  readOnly?: boolean;
-}) {
-  return (
-    <details className="relative">
-      <summary
-        className="flex h-9 w-9 cursor-pointer list-none items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground"
-        aria-label={`Actions for ${holding.ticker}`}
-        title="Holding actions"
-      >
-        <MoreHorizontal className="h-4 w-4" />
-      </summary>
-      <div className="absolute right-0 z-20 mt-1 flex w-48 flex-col gap-1 rounded-md border border-border bg-card p-1.5 text-xs shadow-[var(--shadow-card)]">
-        <Link href={`/stocks/${holding.ticker}`} className="rounded px-2 py-1.5 hover:bg-muted">View company research</Link>
-        <Link href={`/chat?q=${encodeURIComponent(`What should I know about my ${holding.ticker} position right now?`)}`} className="rounded px-2 py-1.5 hover:bg-muted">Ask Copilot</Link>
-        {companyReportsEnabled && (
-          <GenerateReportDialog
-            ticker={holding.ticker}
-            companyName={holding.company_name}
-            label="Generate company report"
-            triggerVariant="ghost"
-            triggerSize="sm"
-            triggerClassName="h-auto justify-start px-2 py-1.5 text-xs font-normal"
-          />
-        )}
-        {!readOnly && <AddTransactionDialog defaultTicker={holding.ticker} label="Add transaction" />}
-        <Link href="/dividends" className="rounded px-2 py-1.5 hover:bg-muted">Record dividend</Link>
-        {!readOnly && <Link href={`/stocks/${holding.ticker}`} className="rounded px-2 py-1.5 hover:bg-muted">Edit target</Link>}
-        {!readOnly && <Link href={`/stocks/${holding.ticker}`} className="rounded px-2 py-1.5 hover:bg-muted">Edit thesis</Link>}
-        {!readOnly && (
-          <ActionButton
-            endpoint={`/api/holdings/${holding.ticker}`}
-            method="PATCH"
-            body={{ hidden: true }}
-            label="Hide from analysis"
-            confirmText={`Hide ${holding.ticker}? It stays in your ledger but is excluded from totals, performance, dividends and Copilot until you unhide it.`}
-            variant="ghost"
-            size="sm"
-            className="h-auto justify-start px-2 py-1.5 text-xs font-normal"
-          />
-        )}
-        {companyEnrichmentEnabled && (
-          <Link href={`/stocks/${holding.ticker}`} className="rounded px-2 py-1.5 hover:bg-muted">Update company information</Link>
-        )}
-      </div>
-    </details>
-  );
-}
-
+/**
+ * Holdings ledger, exactly as the design draws it: five columns of two-line
+ * cells, sortable heads, optional sector grouping under tinted collapsible
+ * headers, and a ruled totals row.
+ */
 export function HoldingsTable({
   holdings,
   summary,
-  dailyRows = [],
-  companyReportsEnabled = false,
-  companyEnrichmentEnabled = false,
+  dailyRows,
   readOnly = false,
 }: {
   holdings: EnrichedHolding[];
   summary: PortfolioSummary;
-  dailyRows?: { ticker: string; dayChangePct: number | null; dayPnl: number | null }[];
-  companyReportsEnabled?: boolean;
-  companyEnrichmentEnabled?: boolean;
+  dailyRows: { ticker: string; dayChangePct: number | null; dayPnl: number | null }[];
   readOnly?: boolean;
 }) {
-  const [tab, setTab] = useState<ViewTab>("performance");
-  const [search, setSearch] = useState("");
-  const [sectorFilter, setSectorFilter] = useState<string | null>(null);
-  const [activeFilters, setActiveFilters] = useState(new Set<QuickFilter>());
-  const [sorting, setSorting] = useState<SortingState>([{ id: "weight", desc: true }]);
-  const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({});
-  const [density, setDensity] = useState<"compact" | "comfortable">("comfortable");
-  const [grouping, setGrouping] = useState<"flat" | "sector">("flat");
+  const [query, setQuery] = useState("");
+  const [grouping, setGrouping] = useState<Grouping>("flat");
+  const [sortKey, setSortKey] = useState<SortKey>("value");
+  const [sortDir, setSortDir] = useState<-1 | 1>(-1);
   const [collapsed, setCollapsed] = useState<Set<string>>(new Set());
 
-  const dailyByTicker = useMemo(() => new Map(dailyRows.map((row) => [row.ticker, row])), [dailyRows]);
-
-  const latestPriceDate =
-    holdings
-      .map((h) => h.price_date)
-      .filter((d): d is string => !!d)
-      .sort()
-      .at(-1) ?? null;
-
-  // Shared ticker+company cell used in every tab.
-  const makeTickerCell = (h: EnrichedHolding) => {
-    return (
-      <div className="min-w-32">
-        <div className="flex items-center gap-1">
-          <Link
-            href={`/stocks/${h.ticker}`}
-            className="text-sm font-bold text-foreground hover:underline"
-          >
-            {h.ticker}
-          </Link>
-        </div>
-        <p
-          className="mt-0.5 max-w-44 truncate text-[11px] text-muted-foreground"
-          title={h.company_name ?? ""}
-        >
-          {h.company_name ?? "—"}
-        </p>
-      </div>
-    );
-  };
-
-  // Column sets are task-specific so the table stays readable at normal desktop widths.
-  const allColumns = useMemo(() => {
-    const tickerCol = col.accessor("ticker", {
-      header: "Holding",
-      cell: (c) => makeTickerCell(c.row.original),
-    });
-    const actionsCol = col.display({
-      id: "actions",
-      header: "",
-      cell: (c) => (
-        <HoldingActionMenu
-          holding={c.row.original}
-          companyReportsEnabled={companyReportsEnabled}
-          companyEnrichmentEnabled={companyEnrichmentEnabled}
-          readOnly={readOnly}
-        />
-      ),
-    });
-    const sectorCol = col.accessor("sector", {
-      header: "Sector",
-      cell: (c) => <SectorChip sector={c.getValue()} />,
-    });
-    const mktValueCol = col.accessor("market_value", {
-      id: "market_value",
-      header: "Market value",
-      cell: (c) => (
-        <span className="tabular-nums text-sm">
-          {c.getValue() !== null ? formatMoney(c.getValue()) : "—"}
-        </span>
-      ),
-    });
-
-    const performance = [
-      tickerCol,
-      sectorCol,
-      col.accessor("quantity", {
-        header: "Qty",
-        cell: (c) => <span className="tabular-nums text-sm">{formatNumber(c.getValue(), 0)}</span>,
-      }),
-      col.accessor("avg_cost", {
-        header: "Average cost",
-        cell: (c) => <span className="tabular-nums text-sm">{formatNumber(c.getValue())}</span>,
-      }),
-      col.accessor("latest_price", {
-        header: "Price",
-        cell: (c) => {
-          const h = c.row.original;
-          return c.getValue() !== null ? (
-            <span
-              className="tabular-nums text-sm"
-              title={`${h.price_date ?? ""} · ${h.price_source ?? ""}`}
-            >
-              {formatNumber(c.getValue())}
-            </span>
-          ) : (
-            <span className="text-xs text-amber-600" title="No price — import or refresh">
-              no price
-            </span>
-          );
-        },
-      }),
-      col.display({
-        id: "today",
-        header: "Today",
-        cell: (c) => {
-          const daily = dailyByTicker.get(c.row.original.ticker);
-          if (!daily || daily.dayChangePct === null) return <span className="text-sm text-muted-foreground">—</span>;
-          const tone = daily.dayChangePct > 0 ? "text-up" : daily.dayChangePct < 0 ? "text-down" : "text-muted-foreground";
-          return <span title={daily.dayPnl !== null ? `Portfolio contribution ${formatMoney(daily.dayPnl)}` : "Daily price movement"} className={cn("tabular-nums text-sm font-medium", tone)}>{formatSignedPct(daily.dayChangePct)}</span>;
-        },
-      }),
-      col.accessor("total_cost", {
-        header: "Cost basis",
-        cell: (c) => <span className="tabular-nums text-sm">{formatMoney(c.getValue())}</span>,
-      }),
-      mktValueCol,
-      col.accessor("unrealized_pl", {
-        id: "pl",
-        header: "Unrealised P/L",
-        cell: (c) => {
-          const pl = c.getValue();
-          if (pl === null) return <span className="text-sm text-muted-foreground">—</span>;
-          const tone = pl > 0 ? "text-up" : pl < 0 ? "text-down" : "";
-          return <span className={cn("tabular-nums text-sm font-medium", tone)}>{formatMoney(pl)}</span>;
-        },
-      }),
-      col.display({
-        id: "total_return",
-        header: "Total return",
-        cell: (c) => {
-          const h = c.row.original;
-          if (!h.total_cost) return <span className="text-sm text-muted-foreground">—</span>;
-          const totalReturn = ((h.unrealized_pl ?? 0) + h.dividend_income) / h.total_cost * 100;
-          return <span className={cn("tabular-nums text-sm", totalReturn > 0 ? "text-up" : totalReturn < 0 ? "text-down" : "")}>{formatSignedPct(totalReturn)}</span>;
-        },
-      }),
-      col.accessor("weight", {
-        id: "weight",
-        header: "Weight",
-        cell: (c) => (
-          <span className="tabular-nums text-sm">
-            {c.getValue() !== null ? `${c.getValue()!.toFixed(1)}%` : "—"}
-          </span>
-        ),
-      }),
-      actionsCol,
-    ];
-
-    const income = [
-      tickerCol,
-      col.accessor("quantity", {
-        id: "qty_income",
-        header: "Qty",
-        cell: (c) => <span className="tabular-nums text-sm">{formatNumber(c.getValue(), 0)}</span>,
-      }),
-      mktValueCol,
-      col.accessor("dividend_income", {
-        header: "Dividends received",
-        cell: (c) => {
-          const v = c.getValue();
-          return (
-            <span
-              className={cn(
-                "tabular-nums text-sm",
-                v > 0 ? "font-medium" : "text-muted-foreground"
-              )}
-            >
-              {v > 0 ? formatNumber(v, 0) : "—"}
-            </span>
-          );
-        },
-      }),
-      col.display({
-        id: "yield_on_cost",
-        header: "Yield on cost",
-        cell: (c) => {
-          const h = c.row.original;
-          if (!h.dividend_income || !h.total_cost)
-            return <span className="text-sm text-muted-foreground">—</span>;
-          const yoc = (h.dividend_income / h.total_cost) * 100;
-          return <span className="tabular-nums text-sm text-amber-600">{yoc.toFixed(2)}%</span>;
-        },
-      }),
-      col.display({
-        id: "yield_on_value",
-        header: "Yield on value",
-        cell: (c) => {
-          const h = c.row.original;
-          if (!h.dividend_income || !h.market_value)
-            return <span className="text-sm text-muted-foreground">—</span>;
-          const yov = (h.dividend_income / h.market_value) * 100;
-          return <span className="tabular-nums text-sm text-amber-600">{yov.toFixed(2)}%</span>;
-        },
-      }),
-      actionsCol,
-    ];
-
-    const allocation = [
-      tickerCol,
-      col.display({
-        id: "allocation_rank",
-        header: "Rank",
-        cell: (c) => <span className="tabular-nums text-sm text-muted-foreground">#{[...holdings].sort((a, b) => (b.weight ?? 0) - (a.weight ?? 0)).findIndex((h) => h.ticker === c.row.original.ticker) + 1}</span>,
-      }),
-      sectorCol,
-      mktValueCol,
-      col.accessor("weight", {
-        id: "weight_alloc",
-        header: "Weight",
-        cell: (c) => c.getValue() === null ? <span className="text-sm text-muted-foreground">—</span> : <div className="flex min-w-36 items-center gap-2"><span className="w-11 tabular-nums text-sm font-medium">{c.getValue()!.toFixed(1)}%</span><span className="h-1.5 flex-1 overflow-hidden rounded-full bg-muted"><span className="block h-full rounded-full bg-brand" style={{ width: `${Math.min(c.getValue()! / Math.max(summary.largestHolding?.weight ?? 1, 1) * 100, 100)}%` }} /></span></div>,
-      }),
-      col.accessor("target_allocation", {
-        header: "Target %",
-        cell: (c) => (
-          <span className="tabular-nums text-sm">
-            {c.getValue() !== null ? `${c.getValue()}%` : "—"}
-          </span>
-        ),
-      }),
-      col.display({
-        id: "drift",
-        header: "Drift",
-        cell: (c) => {
-          const h = c.row.original;
-          if (h.weight === null || h.target_allocation === null)
-            return <span className="text-sm text-muted-foreground">—</span>;
-          const drift = h.weight - h.target_allocation;
-          const cls =
-            Math.abs(drift) <= 3
-              ? "text-muted-foreground"
-              : drift > 0
-              ? "text-amber-600"
-              : "text-blue-600";
-          return (
-            <span className={cn("tabular-nums text-sm", cls)}>
-              {drift > 0 ? "+" : ""}
-              {drift.toFixed(1)}%
-            </span>
-          );
-        },
-      }),
-      actionsCol,
-    ];
-
-    return { performance, income, allocation };
-    // Cells use the latest daily quote map and holding render helper.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [dailyByTicker, companyReportsEnabled, companyEnrichmentEnabled, readOnly]);
-
-  const columns =
-    tab === "performance"
-      ? allColumns.performance
-      : tab === "income"
-      ? allColumns.income
-      : allColumns.allocation;
-
-  // Unique sectors for dropdown
-  const sectors = useMemo(
-    () => [...new Set(holdings.map((h) => h.sector).filter(Boolean))].sort() as string[],
-    [holdings]
+  const dayByTicker = useMemo(
+    () => new Map(dailyRows.map((r) => [r.ticker, r.dayChangePct])),
+    [dailyRows]
   );
 
-  const filtered = useMemo(() => {
-    let rows = holdings;
-    if (search.trim()) {
-      const q = search.trim().toLowerCase();
-      rows = rows.filter(
-        (h) =>
-          h.ticker.toLowerCase().includes(q) ||
-          (h.company_name ?? "").toLowerCase().includes(q)
-      );
+  const rows: Row[] = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    return holdings
+      .map((h) => ({
+        ticker: h.ticker,
+        name: h.company_name ?? null,
+        sector: h.sector ?? null,
+        qty: h.quantity ?? 0,
+        avg: h.avg_cost ?? null,
+        price: h.latest_price,
+        day: dayByTicker.get(h.ticker) ?? null,
+        value: h.market_value ?? h.total_cost ?? 0,
+        pl: h.unrealized_pl ?? 0,
+        ret: h.unrealized_pl_pct,
+        weight: h.weight ?? 0,
+      }))
+      .filter((r) => !q || `${r.ticker} ${r.name ?? ""} ${r.sector ?? ""}`.toLowerCase().includes(q));
+  }, [holdings, query, dayByTicker]);
+
+  const sorted = useMemo(() => {
+    const copy = [...rows];
+    copy.sort((a, b) => {
+      if (sortKey === "ticker") return a.ticker.localeCompare(b.ticker) * -sortDir;
+      const av = sortKey === "qty" ? a.qty : sortKey === "price" ? (a.price ?? 0) : sortKey === "value" ? a.value : a.pl;
+      const bv = sortKey === "qty" ? b.qty : sortKey === "price" ? (b.price ?? 0) : sortKey === "value" ? b.value : b.pl;
+      return (av - bv) * sortDir;
+    });
+    return copy;
+  }, [rows, sortKey, sortDir]);
+
+  const groups = useMemo(() => {
+    if (grouping !== "sector") {
+      return [{ labelled: false as const, sector: "", rows: sorted, value: 0, pl: 0, weight: 0 }];
     }
-    if (sectorFilter) rows = rows.filter((h) => h.sector === sectorFilter);
-    if (activeFilters.has("in_profit")) rows = rows.filter((h) => (h.unrealized_pl ?? 0) > 0);
-    if (activeFilters.has("below_cost")) rows = rows.filter((h) => (h.unrealized_pl ?? 0) < 0);
-    if (activeFilters.has("positive_today")) rows = rows.filter((h) => (dailyByTicker.get(h.ticker)?.dayChangePct ?? 0) > 0);
-    if (activeFilters.has("negative_today")) rows = rows.filter((h) => (dailyByTicker.get(h.ticker)?.dayChangePct ?? 0) < 0);
-    if (activeFilters.has("dividend_payers")) rows = rows.filter((h) => h.dividend_income > 0);
-    if (activeFilters.has("big_loss")) rows = rows.filter((h) => (h.unrealized_pl_pct ?? 0) < -10);
-    return rows;
-  }, [holdings, search, sectorFilter, activeFilters, dailyByTicker]);
-
-  // eslint-disable-next-line react-hooks/incompatible-library -- TanStack Table is the app's table engine; mobile cards consume the same row model.
-  const table = useReactTable({
-    data: filtered,
-    columns,
-    state: { sorting, columnVisibility },
-    onSortingChange: setSorting,
-    onColumnVisibilityChange: setColumnVisibility,
-    getCoreRowModel: getCoreRowModel(),
-    getSortedRowModel: getSortedRowModel(),
-  });
-
-  const tableRows = table.getRowModel().rows;
-
-  // Sector grouping. Rows keep the order the active sort produced; the group a
-  // sector gets is decided by where its first row lands, so grouping never
-  // fights the column sort.
-  const groupedRows = useMemo(() => {
-    if (grouping !== "sector") return null;
     const order: string[] = [];
-    const bySector = new Map<string, typeof tableRows>();
-    for (const row of tableRows) {
-      const sector = row.original.sector?.trim() || "Unclassified";
-      if (!bySector.has(sector)) {
-        bySector.set(sector, []);
-        order.push(sector);
+    const bySector = new Map<string, Row[]>();
+    for (const r of sorted) {
+      const s = r.sector?.trim() || "Unclassified";
+      if (!bySector.has(s)) {
+        bySector.set(s, []);
+        order.push(s);
       }
-      bySector.get(sector)!.push(row);
+      bySector.get(s)!.push(r);
     }
     return order.map((sector) => {
-      const rows = bySector.get(sector)!;
+      const items = bySector.get(sector)!;
       return {
+        labelled: true as const,
         sector,
-        rows,
-        value: rows.reduce((n, r) => n + (r.original.market_value ?? 0), 0),
-        pl: rows.reduce((n, r) => n + (r.original.unrealized_pl ?? 0), 0),
+        rows: items,
+        value: items.reduce((n, r) => n + r.value, 0),
+        pl: items.reduce((n, r) => n + r.pl, 0),
+        weight: items.reduce((n, r) => n + r.weight, 0),
       };
     });
-  }, [grouping, tableRows]);
+  }, [sorted, grouping]);
 
-  const activeFilterCount = activeFilters.size + Number(!!sectorFilter) + Number(!!search);
-  const selectedPerformance = PERFORMANCE_FILTERS.find((item) => activeFilters.has(item.key))?.key ?? "";
-  const footerPl = tableRows.reduce((n, r) => n + (r.original.unrealized_pl ?? 0), 0);
-  const footerCost = tableRows.reduce((n, r) => n + (r.original.total_cost ?? 0), 0);
-  const footerPlPct = footerCost > 0 ? (footerPl / footerCost) * 100 : null;
-
-  function selectPerformance(value: string) {
-    setActiveFilters((previous) => {
-      const next = new Set(previous);
-      PERFORMANCE_FILTERS.forEach((item) => next.delete(item.key));
-      if (value) next.add(value as QuickFilter);
-      return next;
-    });
+  function sortBy(key: SortKey) {
+    if (key === sortKey) setSortDir((d) => (d === -1 ? 1 : -1));
+    else {
+      setSortKey(key);
+      setSortDir(-1);
+    }
   }
 
+  const totalValue = sorted.reduce((n, r) => n + r.value, 0);
+  const totalPl = sorted.reduce((n, r) => n + r.pl, 0);
+  const totalCost = totalValue - totalPl;
+  const totalRet = totalCost > 0 ? (totalPl / totalCost) * 100 : null;
+  const sortLabel = COLUMNS.find((c) => c.key === sortKey)?.sortName ?? "value";
+
+  const TH = "whitespace-nowrap pb-2.5 text-(length:--text-3xs) font-bold uppercase tracking-(--tracking-caps)";
+  const TD = "px-3 py-3 align-middle";
+
   return (
-    <div className="space-y-4">
-      {/* Search + filter bar */}
-      <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center">
-        <div className="relative w-full sm:max-w-60">
-          <Search className="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
-          <Input
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search ticker or company…"
-            className="pl-9 md:h-8 md:text-xs"
-          />
-          {search && (
-            <button
-              onClick={() => setSearch("")}
-              className="absolute right-1 top-1/2 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-md text-muted-foreground hover:text-foreground"
-              aria-label="Clear search"
-            >
-              <X className="h-3 w-3" />
-            </button>
-          )}
-        </div>
-
-        {sectors.length > 1 && (
-          <select
-            value={sectorFilter ?? ""}
-            onChange={(e) => setSectorFilter(e.target.value || null)}
-            className="h-10 rounded-md border border-border bg-background px-2 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-ring md:h-8 md:text-xs"
-          >
-            <option value="">All sectors</option>
-            {sectors.map((s) => (
-              <option key={s} value={s}>
-                {s}
-              </option>
-            ))}
-          </select>
-        )}
-        <select value={selectedPerformance} onChange={(event) => selectPerformance(event.target.value)} className="h-10 rounded-md border border-border bg-background px-2 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-ring md:h-8 md:text-xs"><option value="">Performance</option>{PERFORMANCE_FILTERS.map((filter) => <option key={filter.key} value={filter.key}>{filter.label}</option>)}</select>
+    <div>
+      <div className="mb-5 flex flex-wrap items-center gap-4">
+        <Input
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          placeholder="Filter by ticker, name or sector"
+          aria-label="Filter holdings"
+          className="h-9 max-w-70"
+        />
+        <SegmentedControl
+          label="Grouping"
+          value={grouping}
+          onChange={setGrouping}
+          options={[
+            { value: "flat", label: "All positions" },
+            { value: "sector", label: "By sector" },
+          ]}
+          className="w-55 shrink-0"
+        />
+        <span className="ml-auto text-xs text-text-muted">
+          {sorted.length} position{sorted.length === 1 ? "" : "s"} · sorted by {sortLabel}
+        </span>
+        {!readOnly && <AddTransactionDialog variant="outline" />}
       </div>
 
-      {activeFilterCount > 0 && <div className="flex items-center justify-between text-xs text-muted-foreground"><span>{activeFilterCount} filter{activeFilterCount === 1 ? "" : "s"} active · {filtered.length} holding{filtered.length === 1 ? "" : "s"} shown</span><button onClick={() => { setSearch(""); setSectorFilter(null); setActiveFilters(new Set()); }} className="underline underline-offset-2 hover:text-foreground">Clear filters</button></div>}
-
-      {/* Tab bar + table */}
-      <div className="overflow-hidden rounded-lg border border-border bg-card">
-        {/* Tab header */}
-        <div className="flex flex-col gap-2 border-b border-border bg-muted/20 px-3 py-2.5 sm:flex-row sm:items-center sm:justify-between sm:px-4">
-          <div className="scroll-touch -mx-1 flex gap-1 overflow-x-auto px-1 sm:mx-0 sm:overflow-visible sm:px-0">
-            {TABS.map((t) => (
-              <button
-                key={t.key}
-                onClick={() => setTab(t.key)}
-                className={cn(
-                  "h-9 shrink-0 border-b-2 px-3 text-xs font-medium transition-colors sm:h-auto sm:py-1.5",
-                  tab === t.key
-                    ? "border-foreground text-foreground"
-                    : "border-transparent text-muted-foreground hover:text-foreground"
-                )}
-              >
-                {t.label}
-              </button>
-            ))}
-          </div>
-          <div className="flex items-center gap-2 text-[11px] text-muted-foreground sm:ml-auto">
-            {latestPriceDate && <span>Prices as of {latestPriceDate}</span>}
-            <select value={grouping} onChange={(event) => setGrouping(event.target.value as "flat" | "sector")} className="hidden rounded border border-border bg-card px-1.5 py-1 text-[11px] text-foreground md:block" aria-label="Grouping"><option value="flat">All positions</option><option value="sector">By sector</option></select>
-            <select value={density} onChange={(event) => setDensity(event.target.value as "compact" | "comfortable")} className="rounded border border-border bg-card px-1.5 py-1 text-[11px] text-foreground"><option value="comfortable">Comfortable</option><option value="compact">Compact</option></select>
-            <details className="relative hidden md:block">
-              <summary className="cursor-pointer list-none rounded border border-border bg-card px-1.5 py-1 text-[11px] text-foreground">Columns</summary>
-              <div className="absolute right-0 z-20 mt-1 w-44 rounded-md border border-border bg-card p-1.5 shadow-[var(--shadow-card)]">{table.getAllLeafColumns().filter((column) => !["ticker", "actions"].includes(column.id)).map((column) => <label key={column.id} className="flex cursor-pointer items-center gap-2 rounded px-2 py-1 text-xs hover:bg-muted"><input type="checkbox" checked={column.getIsVisible()} onChange={column.getToggleVisibilityHandler()} />{typeof column.columnDef.header === "string" ? column.columnDef.header : column.id}</label>)}</div>
-            </details>
-          </div>
-        </div>
-
-        {/* Mobile cards */}
-        <div className="space-y-2.5 p-2.5 md:hidden">
-          {tableRows.length === 0 ? (
-            <p className="rounded-lg border border-border bg-background py-10 text-center text-sm text-muted-foreground">
-              No holdings match the current filters.
-            </p>
-          ) : (
-            tableRows.map((row) => (
-              <MobileHoldingCard
-                key={row.id}
-                holding={row.original}
-                tab={tab}
-                companyReportsEnabled={companyReportsEnabled}
-                companyEnrichmentEnabled={companyEnrichmentEnabled}
-                readOnly={readOnly}
-              />
-            ))
-          )}
-        </div>
-
-        {/* Table */}
-        <div className="scroll-touch hidden w-full overflow-x-auto md:block">
-          <table className="w-full text-sm">
-            <thead>
-              {table.getHeaderGroups().map((hg) => (
-                <tr key={hg.id} className="border-b border-border bg-muted/10">
-                  {hg.headers.map((header) => (
-                    <th
-                      key={header.id}
-                      className={cn("sticky top-0 z-10 h-9 cursor-pointer select-none whitespace-nowrap bg-card px-3 align-middle text-[11px] font-semibold uppercase tracking-wide text-muted-foreground hover:text-foreground", header.column.id === "ticker" ? "left-0 z-20 text-left" : ["sector", "actions"].includes(header.column.id) ? "text-left" : "text-right")}
-                      onClick={header.column.getToggleSortingHandler()}
-                    >
-                      <span className="inline-flex items-center gap-1">
-                        {flexRender(header.column.columnDef.header, header.getContext())}
-                        {header.column.getCanSort() && (
-                          <ArrowUpDown className="h-3 w-3 opacity-40" />
-                        )}
-                      </span>
-                    </th>
-                  ))}
-                </tr>
+      <div className="scroll-touch w-full overflow-x-auto">
+        <table className="w-full min-w-2xl text-sm">
+          <thead>
+            <tr className="border-b border-rule-strong">
+              {COLUMNS.map((col) => (
+                <th
+                  key={col.key}
+                  onClick={() => sortBy(col.key)}
+                  className={cn(
+                    TH,
+                    "cursor-pointer select-none px-3 transition-colors first:pl-0 last:pr-0",
+                    col.align === "right" ? "text-right" : "text-left",
+                    sortKey === col.key ? "text-text-strong" : "text-text-faint hover:text-text-muted"
+                  )}
+                >
+                  {col.label}
+                  {sortKey === col.key ? (sortDir === -1 ? " ↓" : " ↑") : ""}
+                </th>
               ))}
-            </thead>
-            <tbody>
-              {tableRows.length === 0 ? (
-                <tr>
-                  <td
-                    colSpan={columns.length}
-                    className="py-12 text-center text-sm text-muted-foreground"
-                  >
-                    No holdings match the current filters.
-                  </td>
-                </tr>
-              ) : groupedRows ? (
-                groupedRows.map((group) => {
-                  const open = !collapsed.has(group.sector);
-                  const colour = sectorColor(group.sector);
-                  return (
-                    <Fragment key={group.sector}>
-                      <tr
-                        onClick={() =>
-                          setCollapsed((prev) => {
-                            const next = new Set(prev);
-                            if (next.has(group.sector)) next.delete(group.sector);
-                            else next.add(group.sector);
-                            return next;
-                          })
-                        }
-                        className="cursor-pointer border-b border-rule"
-                        style={{ background: `color-mix(in oklab, ${colour} 9%, var(--surface-page))` }}
-                      >
-                        <td
-                          colSpan={Math.max(1, table.getVisibleLeafColumns().length - 2)}
-                          className="px-3 py-2.5 text-left"
-                          style={{ borderLeft: `3px solid ${colour}` }}
-                        >
-                          <span className="inline-flex items-center gap-2.5">
-                            <span className="text-sm font-bold text-text-strong">{shortSector(group.sector)}</span>
-                            <span className="text-(length:--text-2xs) text-text-muted">
-                              {group.rows.length} position{group.rows.length === 1 ? "" : "s"}
-                            </span>
-                            <span className="text-(length:--text-2xs) text-text-faint">{open ? "▾" : "▸"}</span>
-                          </span>
-                        </td>
-                        <td className="figure px-3 py-2.5 text-right font-semibold text-text-strong">
-                          {formatMoney(group.value)}
-                        </td>
-                        <td className={cn("figure px-3 py-2.5 text-right font-semibold", group.pl >= 0 ? "text-up" : "text-down")}>
-                          {formatMoney(group.pl)}
-                        </td>
-                      </tr>
-                      {open &&
-                        group.rows.map((row) => (
-                          <tr key={row.id} className="border-b border-border last:border-0 transition-colors hover:bg-muted/40">
-                            {row.getVisibleCells().map((cell) => (
-                              <td key={cell.id} className={cn("whitespace-nowrap px-3 align-middle", density === "compact" ? "py-1.5" : "py-2.5", cell.column.id === "ticker" ? "sticky left-0 z-10 bg-card text-left group-hover:bg-muted/40" : ["sector", "actions"].includes(cell.column.id) ? "text-left" : "text-right")}>
-                                {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                              </td>
-                            ))}
-                          </tr>
-                        ))}
-                    </Fragment>
-                  );
-                })
-              ) : (
-                tableRows.map((row) => (
-                  <tr
-                    key={row.id}
-                    className="border-b border-border last:border-0 transition-colors hover:bg-muted/40"
-                  >
-                    {row.getVisibleCells().map((cell) => (
-                      <td key={cell.id} className={cn("whitespace-nowrap px-3 align-middle", density === "compact" ? "py-1.5" : "py-2.5", cell.column.id === "ticker" ? "sticky left-0 z-10 bg-card text-left group-hover:bg-muted/40" : ["sector", "actions"].includes(cell.column.id) ? "text-left" : "text-right")}>
-                        {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                      </td>
-                    ))}
-                  </tr>
-                ))
-              )}
-            </tbody>
-            {tableRows.length > 0 && (
-              <tfoot>
-                <tr className="border-t-2 border-rule-strong">
-                  <td colSpan={Math.max(1, table.getVisibleLeafColumns().length - 2)} className="px-3 py-2.5 text-left text-sm font-bold text-text-strong">
-                    Total · {tableRows.length} position{tableRows.length === 1 ? "" : "s"}
-                  </td>
-                  <td className="figure px-3 py-2.5 text-right text-sm font-bold text-text-strong">
-                    {formatMoney(tableRows.reduce((n, r) => n + (r.original.market_value ?? 0), 0))}
-                  </td>
-                  <td className={cn("figure px-3 py-2.5 text-right text-sm font-bold", footerPl >= 0 ? "text-up" : "text-down")}>
-                    {formatMoney(footerPl)}
-                    <span className="figure block text-(length:--text-2xs) font-semibold">{formatSignedPct(footerPlPct)}</span>
-                  </td>
-                </tr>
-              </tfoot>
-            )}
-          </table>
-        </div>
+            </tr>
+          </thead>
 
-        {/* Footer */}
-        <div className="flex flex-col gap-1 border-t border-border px-3 py-2 text-[11px] text-muted-foreground sm:flex-row sm:items-center sm:justify-between sm:px-4">
-          <span>
-            {filtered.length !== holdings.length
-              ? `${filtered.length} of ${holdings.length} holdings`
-              : `${holdings.length} holding${holdings.length !== 1 ? "s" : ""}`}
-          </span>
-          <span>Cost basis {formatMoney(summary.totalCost)} · Market value {formatMoney(summary.totalValue)} · Unrealised P/L {formatMoney(summary.unrealizedPl)} · Portfolio weight 100.0%</span>
-        </div>
+          {groups.map((group) => {
+            const open = !group.labelled || !collapsed.has(group.sector);
+            const colour = group.labelled ? sectorColor(group.sector) : "transparent";
+            return (
+              <tbody key={group.labelled ? group.sector : "all"}>
+                {group.labelled && (
+                  <tr
+                    onClick={() =>
+                      setCollapsed((prev) => {
+                        const next = new Set(prev);
+                        if (next.has(group.sector)) next.delete(group.sector);
+                        else next.add(group.sector);
+                        return next;
+                      })
+                    }
+                    className="cursor-pointer"
+                    style={{ background: `color-mix(in oklab, ${colour} 9%, var(--surface-page))` }}
+                  >
+                    <td colSpan={3} className="px-3 py-2.5 pl-0" style={{ borderLeft: `3px solid ${colour}` }}>
+                      <span className="inline-flex items-center gap-2.5 pl-3">
+                        <span className="text-sm font-bold text-text-strong">{shortSector(group.sector)}</span>
+                        <span className="text-(length:--text-2xs) text-text-muted">
+                          {group.rows.length} position{group.rows.length === 1 ? "" : "s"}
+                        </span>
+                        <span className="text-(length:--text-2xs) text-text-faint">{open ? "▾" : "▸"}</span>
+                      </span>
+                    </td>
+                    <td className="px-3 py-2.5 text-right">
+                      <span className="figure font-semibold text-text-strong">{formatNumber(group.value, 0)}</span>
+                      <span className="ml-auto mt-1 block h-1 w-16 bg-surface-inset">
+                        <span className="block h-1" style={{ width: `${Math.min(100, group.weight)}%`, background: colour }} />
+                      </span>
+                    </td>
+                    <td className={cn("px-3 py-2.5 pr-0 text-right font-semibold", group.pl >= 0 ? "text-up" : "text-down")}>
+                      <span className="figure">{signed(group.pl, 0)}</span>
+                    </td>
+                  </tr>
+                )}
+
+                {open &&
+                  group.rows.map((r) => (
+                    <tr key={r.ticker} className="border-b border-rule transition-colors last:border-0 hover:bg-surface-sunken/50">
+                      <td className={cn(TD, "pl-0")}>
+                        <span className="flex items-center gap-2.5">
+                          <SectorDot sector={r.sector} />
+                          <span className="min-w-0">
+                            <Link href={`/stocks/${r.ticker}`} className="font-semibold text-text-strong hover:underline">
+                              {r.ticker}
+                            </Link>
+                            <span className="block truncate text-(length:--text-2xs) text-text-muted">
+                              {r.name ?? r.ticker} · {shortSector(r.sector)}
+                            </span>
+                          </span>
+                        </span>
+                      </td>
+                      <td className={cn(TD, "text-right")}>
+                        <span className="figure">{formatNumber(r.qty, 0)}</span>
+                        <span className="figure block text-(length:--text-2xs) text-text-muted">
+                          @ {r.avg !== null ? formatNumber(r.avg, 2) : "—"}
+                        </span>
+                      </td>
+                      <td className={cn(TD, "text-right")}>
+                        <span className="figure">{r.price !== null ? formatNumber(r.price, 2) : "—"}</span>
+                        <span
+                          className={cn(
+                            "figure block text-(length:--text-2xs) font-semibold",
+                            (r.day ?? 0) > 0 ? "text-up" : (r.day ?? 0) < 0 ? "text-down" : "text-text-muted"
+                          )}
+                        >
+                          {r.day !== null ? `${signed(r.day, 2)}%` : "—"}
+                        </span>
+                      </td>
+                      <td className={cn(TD, "text-right")}>
+                        <span className="figure">{formatNumber(r.value, 0)}</span>
+                        <span className="figure block text-(length:--text-2xs) text-text-muted">
+                          {formatNumber(r.weight, 1)}% of book
+                        </span>
+                      </td>
+                      <td className={cn(TD, "pr-0 text-right", r.pl >= 0 ? "text-up" : "text-down")}>
+                        <span className="figure font-semibold">{signed(r.pl, 0)}</span>
+                        <span className="figure block text-(length:--text-2xs) font-semibold">
+                          {r.ret !== null ? `${signed(r.ret, 2)}%` : "—"}
+                        </span>
+                      </td>
+                    </tr>
+                  ))}
+              </tbody>
+            );
+          })}
+
+          {sorted.length > 0 && (
+            <tfoot>
+              <tr className="border-t border-rule-strong">
+                <td colSpan={3} className="px-3 py-3 pl-0 text-sm font-bold text-text-strong">
+                  Total · {sorted.length} position{sorted.length === 1 ? "" : "s"}
+                </td>
+                <td className="figure px-3 py-3 text-right text-sm font-bold text-text-strong">
+                  {formatNumber(totalValue, 0)}
+                </td>
+                <td className={cn("px-3 py-3 pr-0 text-right text-sm font-bold", totalPl >= 0 ? "text-up" : "text-down")}>
+                  <span className="figure">{signed(totalPl, 0)}</span>
+                  {totalRet !== null && <span className="figure block text-(length:--text-2xs)">{signed(totalRet, 2)}%</span>}
+                </td>
+              </tr>
+            </tfoot>
+          )}
+        </table>
       </div>
+
+      {sorted.length === 0 && (
+        <p className="py-12 text-center text-sm text-text-muted">No holdings match this filter.</p>
+      )}
+
+      <p className="mt-4 text-(length:--text-2xs) text-text-faint">
+        Cost basis {formatNumber(summary.totalCost, 0)} · market value {formatNumber(summary.totalValue, 0)}
+      </p>
     </div>
   );
 }
