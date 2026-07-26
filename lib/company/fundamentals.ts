@@ -166,6 +166,16 @@ export interface FundamentalsData {
   /** Sector peers ranked on each metric, best first. */
   ranking: Record<MetricKey, PeerRank[]>;
   sector: string | null;
+  /**
+   * Median P/E across sector peers, on the same rule as every other median: at
+   * least five companies must contribute, otherwise it is null and the caller
+   * says so rather than quoting the midpoint of two.
+   *
+   * Computed here because the peers' filed EPS is already loaded; only their
+   * latest prices need fetching. Peers with a loss are excluded, since a
+   * negative multiple is not a valuation and would drag the median down.
+   */
+  sectorPe: { median: number | null; contributors: number };
 }
 
 type Row = {
@@ -378,5 +388,40 @@ export async function getFundamentals(
     ranking[def.key] = peerLatest;
   }
 
-  return { series, ranking, sector };
+  return { series, ranking, sector, sectorPe: await sectorPeOf(supabase, byTicker, peerTickers) };
+}
+
+/** Median P/E across peers that filed a positive EPS and have a live price. */
+async function sectorPeOf(
+  supabase: SupabaseClient,
+  byTicker: Map<string, Map<number, Record<string, unknown>>>,
+  peerTickers: string[]
+): Promise<{ median: number | null; contributors: number }> {
+  const { data: snap } = await supabase
+    .from("market_snapshot_items")
+    .select("ticker, price, snapshot_id")
+    .in("ticker", peerTickers)
+    .order("snapshot_id", { ascending: false })
+    .limit(2000);
+
+  const price = new Map<string, number>();
+  for (const r of snap ?? []) {
+    const v = Number(r.price);
+    if (!price.has(r.ticker) && Number.isFinite(v) && v > 0) price.set(r.ticker, v);
+  }
+
+  const pes: number[] = [];
+  for (const [t, years] of byTicker) {
+    const p = price.get(t);
+    if (!p) continue;
+    const epsYears = [...years.entries()]
+      .map(([year, d]) => ({ year, value: num(d, "eps") }))
+      .filter((x): x is { year: number; value: number } => x.value !== null)
+      .sort((a, b) => b.year - a.year);
+    const eps = epsYears[0]?.value;
+    if (eps === undefined || eps <= 0) continue;
+    pes.push(p / eps);
+  }
+
+  return { median: pes.length >= MIN_MEDIAN_PEERS ? median(pes) : null, contributors: pes.length };
 }

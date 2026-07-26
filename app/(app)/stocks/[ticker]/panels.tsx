@@ -1,80 +1,25 @@
-import Link from "next/link";
 import { createClient, getUser } from "@/lib/supabase/server";
 import { getCompanyMetadata } from "@/lib/company/metadata";
 import { getTechnicals } from "@/lib/company/technicals";
-import type { Candle } from "@/lib/company/types";
-import { getCachedEod, KSE_SYMBOL } from "@/lib/market-data/eod-cache";
 import { computeSignals, findSwings, detectSupportResistanceZones, toCanonicalOHLCV } from "@/lib/market/technicals";
-import { METRIC_HINTS } from "@/lib/market/glossary";
 import { getCompanyDividends } from "@/lib/company/dividends";
 import { getCompanyFilings } from "@/lib/company/filings";
 import { getFundamentals } from "@/lib/company/fundamentals";
 import { sectorColor } from "@/lib/shared/sector-colors";
 import { computeRatios, type RatioRow } from "@/lib/engine/ratios";
-import { getPortfolio } from "@/lib/portfolio/positions";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Table, THead, TBody, TR, TH, TD } from "@/components/ui/table";
 import { EmptyState } from "@/components/ui/empty-state";
-import { SectionMeta } from "@/components/features/stocks/section-meta";
 import { ActionButton } from "@/components/ui/action-button";
-import { WatchlistButton } from "@/components/features/stocks/watchlist-button";
-import { StockPriceChart } from "@/components/features/stocks/price-chart-lazy";
 import { TechnicalWorkstation } from "@/components/features/technicals/workstation";
 import { FundamentalsGrid } from "@/components/features/stocks/fundamentals-grid";
 import type { FinancialWorkspaceRow } from "@/components/features/stocks/financials-workspace";
 import { EarningsWorkspace } from "@/components/features/stocks/earnings-workspace";
-import { formatMoney, formatNumber, formatSignedPct, formatFinancialPeriod, cn } from "@/lib/shared/format";
+import { formatNumber, formatFinancialPeriod } from "@/lib/shared/format";
 import {
-  AlertTriangle, Banknote, BriefcaseBusiness, FileText, Info, Newspaper, Sparkles, TrendingUp,
+  Banknote, FileText, TrendingUp,
 } from "lucide-react";
-
-// ---------------------------------------------------------------------------
-// Small shared bits
-// ---------------------------------------------------------------------------
-
-function InlineNotice({ note }: { note: string }) {
-  return (
-    <div className="flex items-center gap-2 rounded-lg border border-dashed border-border bg-muted/30 px-3 py-2 text-[11px] text-muted-foreground">
-      <Info className="h-3.5 w-3.5 shrink-0" /> {note}
-    </div>
-  );
-}
-
-/** Whole-rupee money for receipts/dividends where sub-rupee precision is noise. */
-const wholeMoney = (v: number | null | undefined) =>
-  v === null || v === undefined || Number.isNaN(v) ? "—" : `PKR ${formatNumber(v, 0)}`;
-
-function compactNumber(value: number | null | undefined, digits = 1): string {
-  if (value === null || value === undefined || Number.isNaN(value)) return "—";
-  return new Intl.NumberFormat("en-PK", {
-    notation: "compact",
-    maximumFractionDigits: digits,
-  }).format(value);
-}
-
-function compactMoney(value: number | null | undefined): string {
-  if (value === null || value === undefined || Number.isNaN(value)) return "—";
-  return `PKR ${compactNumber(value)}`;
-}
-
-function StatusBadge({
-  label,
-  tone = "secondary",
-}: {
-  label: string;
-  tone?: "green" | "amber" | "red" | "blue" | "secondary";
-}) {
-  return <Badge variant={tone}>{label}</Badge>;
-}
-
-function freshnessBadge(freshness: string | null | undefined) {
-  if (freshness === "fresh") return <StatusBadge label="Fresh" tone="green" />;
-  if (freshness === "partial") return <StatusBadge label="Partial" tone="amber" />;
-  if (freshness === "stale") return <StatusBadge label="Stale" tone="amber" />;
-  if (freshness === "needs_review") return <StatusBadge label="Review" tone="amber" />;
-  return <StatusBadge label="Pending" tone="amber" />;
-}
 
 function shortDescription(description: string | null): string | null {
   if (!description) return null;
@@ -95,173 +40,8 @@ function isOfficialPsxProfileSource(source: string | null | undefined): boolean 
   return source === "psx-company-page" || source === "psx-portal";
 }
 
-/** Neutral one-line description of a filing, derived from its category alone
- *  (no fabricated specifics, no positive/negative impact assumed). */
-function filingSummary(category: string): string {
-  switch (category) {
-    case "result": return "Periodic financial results or accounts filed with the PSX.";
-    case "dividend": return "Payout-related announcement (dividend, bonus, or entitlement).";
-    case "board_meeting": return "Notice of a board of directors meeting.";
-    case "material": return "Material or price-sensitive information disclosed to the exchange.";
-    default: return "Official corporate announcement filed with the PSX.";
-  }
-}
-
 function ratioByName(rows: RatioRow[], name: string): RatioRow | null {
   return rows.find((r) => r.ratio_name === name) ?? null;
-}
-
-function ratioText(row: RatioRow | null, kind: "multiple" | "percent" | "number" = "number"): string {
-  if (!row || row.ratio_value === null) return "—";
-  if (kind === "multiple") return `${row.ratio_value.toFixed(1)}x`;
-  if (kind === "percent") return `${row.ratio_value.toFixed(1)}%`;
-  return formatNumber(row.ratio_value);
-}
-
-function latestRatioYear(rows: RatioRow[]): number | null {
-  const years = rows
-    .map((r) => r.source_period?.match(/\b(20\d{2})\b/)?.[1])
-    .filter((v): v is string => Boolean(v))
-    .map(Number);
-  return years.length ? Math.max(...years) : null;
-}
-
-function OverviewMetric({
-  label,
-  value,
-  sub,
-  tone,
-  hint,
-}: {
-  label: string;
-  value: string;
-  sub?: string;
-  tone?: "positive" | "negative" | "warning";
-  hint?: string;
-}) {
-  return (
-    <div className="min-w-0">
-      <p
-        className={cn(
-          "text-[11px] text-muted-foreground",
-          hint && "cursor-help underline decoration-dotted decoration-muted-foreground/40 underline-offset-2"
-        )}
-        title={hint}
-      >
-        {label}
-      </p>
-      <p
-        className={cn(
-          "mt-0.5 truncate text-sm font-semibold tabular-nums text-slate-950",
-          tone === "positive" && "text-up",
-          tone === "negative" && "text-down",
-          tone === "warning" && "text-amber-700"
-        )}
-      >
-        {value}
-      </p>
-      {sub ? <p className="mt-0.5 truncate text-[10px] text-slate-500">{sub}</p> : null}
-    </div>
-  );
-}
-
-function RangeBar({ position }: { position: number }) {
-  return (
-    <div className="relative mt-1 h-1.5 rounded-full bg-slate-100">
-      <span className="absolute top-1/2 h-3 w-3 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-white bg-slate-900 shadow-sm" style={{ left: `${position}%` }} />
-    </div>
-  );
-}
-
-/**
- * Where today's price sits within its ranges, for a long-term buyer timing
- * accumulation. Deliberately descriptive, not a signal: no buy/sell verdict,
- * just position within the 52-week and full-history ranges, plus how the price
- * compares with the user's own average cost when held.
- */
-function AccumulationContext({
-  price,
-  low52,
-  high52,
-  history,
-  avgCost,
-}: {
-  price: number | null;
-  low52: number | null;
-  high52: number | null;
-  history: Candle[];
-  avgCost: number | null;
-}) {
-  if (price === null) return null;
-  const closes = history.map((c) => c.close).filter((v) => Number.isFinite(v) && v > 0);
-  const histLow = closes.length ? Math.min(...closes) : null;
-  const histHigh = closes.length ? Math.max(...closes) : null;
-  const years = history.length
-    ? Math.max(1, Math.round((new Date(history[history.length - 1].date).getTime() - new Date(history[0].date).getTime()) / (365 * 86400_000)))
-    : null;
-
-  const pct = (lo: number | null, hi: number | null): number | null =>
-    lo !== null && hi !== null && hi > lo ? Math.min(100, Math.max(0, ((price - lo) / (hi - lo)) * 100)) : null;
-  const pos52 = pct(low52, high52);
-  const posHist = pct(histLow, histHigh);
-  const vsCost = avgCost !== null && avgCost > 0 ? ((price - avgCost) / avgCost) * 100 : null;
-
-  return (
-    <div className="rounded-xl border border-slate-200 bg-slate-50/60 p-3">
-      <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">Accumulation context</p>
-      <div className="mt-2 space-y-3">
-        {pos52 !== null && (
-          <div>
-            <div className="flex items-center justify-between text-[11px] text-slate-600">
-              <span>52-week range</span>
-              <span className="tabular-nums">{pos52.toFixed(0)}% of range</span>
-            </div>
-            <RangeBar position={pos52} />
-            <div className="mt-0.5 flex justify-between text-[10px] text-slate-400 tabular-nums">
-              <span>{low52 !== null ? formatNumber(low52) : "—"}</span>
-              <span>{high52 !== null ? formatNumber(high52) : "—"}</span>
-            </div>
-          </div>
-        )}
-        {posHist !== null && years && years >= 2 && (
-          <div>
-            <div className="flex items-center justify-between text-[11px] text-slate-600">
-              <span>{years}-year range</span>
-              <span className="tabular-nums">{posHist.toFixed(0)}% of range</span>
-            </div>
-            <RangeBar position={posHist} />
-          </div>
-        )}
-        {vsCost !== null && (
-          <p className="text-[11px] text-slate-600">
-            Current price is <span className={cn("font-semibold tabular-nums", vsCost >= 0 ? "text-up" : "text-down")}>{formatSignedPct(vsCost)}</span> versus your average cost.
-          </p>
-        )}
-      </div>
-    </div>
-  );
-}
-
-function SignalGroup({
-  title,
-  items,
-}: {
-  title: string;
-  items: { label: string; value: string; sub?: string; tone?: "positive" | "negative" | "warning"; hint?: string }[];
-}) {
-  const visible = items.filter((item) => item.value !== "—");
-  if (visible.length === 0) return null;
-  // Flat group: a subtle top divider instead of a bordered card-within-a-card.
-  return (
-    <div className="border-t border-slate-100 pt-3 first:border-t-0 first:pt-0">
-      <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">{title}</p>
-      <div className="mt-2 grid gap-3 sm:grid-cols-3 lg:grid-cols-1 xl:grid-cols-3">
-        {visible.map((item) => (
-          <OverviewMetric key={item.label} {...item} />
-        ))}
-      </div>
-    </div>
-  );
 }
 
 // ---------------------------------------------------------------------------
@@ -270,8 +50,6 @@ function SignalGroup({
 
 export async function OverviewPanel({
   ticker,
-  companyEnrichmentEnabled = false,
-  readOnly = false,
 }: {
   ticker: string;
   companyEnrichmentEnabled?: boolean;
@@ -281,381 +59,92 @@ export async function OverviewPanel({
   const user = await getUser();
   if (!user) return null;
 
-  const [metadata, technicals, dividends, portfolio, ratios, filings, eod] = await Promise.all([
+  const [metadata, technicals, ratios, fundamentals] = await Promise.all([
     getCompanyMetadata(supabase, ticker),
     getTechnicals(supabase, ticker),
-    getCompanyDividends(supabase, user.id, ticker),
-    getPortfolio(supabase, user.id),
     computeRatios(supabase, ticker),
-    getCompanyFilings(ticker, 12),
-    getCachedEod(supabase, []),
+    getFundamentals(supabase, ticker),
   ]);
-  const holding = portfolio.holdings.find((h) => h.ticker === ticker);
-  const latestDiv = dividends[0];
-  // Use the market quote (technicals.latestPrice) as the single canonical price
-  // so the position panel shows exactly the same value as the page header and
-  // chart endpoint. The portfolio weight denominator still comes from getPortfolio
-  // (other holdings use their own prices table entries), which is labelled clearly.
-  const currentPrice = technicals.latestPrice ?? null;
-  const totalCost = holding?.total_cost ?? null;
-  const marketValue = holding && currentPrice !== null ? holding.quantity * currentPrice : null;
-  const positionPl = marketValue !== null && totalCost !== null ? marketValue - totalCost : null;
-  const positionReturn = positionPl !== null && totalCost && totalCost > 0 ? (positionPl / totalCost) * 100 : null;
-  const positionTone = positionPl === null ? undefined : positionPl >= 0 ? "positive" : "negative";
-  const hasReceipt = Boolean(holding && holding.dividend_income > 0);
-  const dividendComplete = Boolean(latestDiv?.perShare !== null && latestDiv?.perShare !== undefined && (latestDiv.exDate || latestDiv.payDate || latestDiv.announcementDate));
-  const dividendIncomplete = Boolean((latestDiv && !dividendComplete) || (!latestDiv && hasReceipt));
-  const officialDescription = isOfficialPsxProfileSource(metadata.meta.source) ? metadata.description : null;
-  const companySummary = shortDescription(officialDescription);
-  // Precise company fields: surface Products from extracted business lines, and
-  // only show Industry when it actually differs from Sector (avoids the vague
-  // "Business: Cement" duplicate of the sector).
-  // Keep Products clean and short: the two leading business lines joined with
-  // "and" (e.g. "Cement and clinker"), falling back to one if the pair runs long.
-  const productLines = metadata.businessLines.map((l) => l.trim()).filter(Boolean).slice(0, 2);
-  const productsPair = productLines.length === 2 ? `${productLines[0]} and ${productLines[1]}` : productLines[0] ?? null;
-  const products = productsPair && productsPair.length > 38 ? productLines[0] : productsPair;
-  const industryLabel =
-    metadata.industry && metadata.industry.trim().toLowerCase() !== (metadata.sector ?? "").trim().toLowerCase()
-      ? metadata.industry
-      : null;
-  // "Products" only makes sense when we have 2+ distinct business lines that
-  // represent actual product categories. A single entry such as "Cement
-  // manufacturing" is industry-level and should use the "Industry" label so it
-  // doesn't read as a vague repeat of the sector.
-  const showAsProducts = productLines.length >= 2;
-  const companyFields: { label: string; value: string; sub?: string; tone?: "warning" }[] = [
-    { label: "Sector", value: metadata.sector ?? "—" },
-  ];
-  if (products) companyFields.push({ label: showAsProducts ? "Products" : "Industry", value: products });
-  else if (industryLabel) companyFields.push({ label: "Industry", value: industryLabel });
-  companyFields.push({ label: "Exchange", value: metadata.exchange ?? "PSX" });
-  const signals = computeSignals(technicals.history);
-  const benchmark = (eod.get(KSE_SYMBOL) ?? []).map((p) => ({ date: p.date, close: p.close }));
-  const latestDevelopment =
-    filings.find((f) => f.category === "material") ??
-    filings.find((f) => f.category === "result") ??
-    filings[0] ??
-    null;
 
-  const pe = ratioByName(ratios, "P/E");
-  const pb = ratioByName(ratios, "P/B");
-  const earningsYield = ratioByName(ratios, "Earnings yield");
-  const eps = ratios.find((r) => r.ratio_name === "P/E")?.inputs.eps;
-  const epsValue = typeof eps === "number" && Number.isFinite(eps) ? eps : null;
-  const roe = ratioByName(ratios, "ROE");
-  const netMargin = ratioByName(ratios, "Net margin");
-  const debtEquity = ratioByName(ratios, "Debt-to-equity");
-  const interestCoverage = ratioByName(ratios, "Interest coverage");
-  const cashQuality = ratioByName(ratios, "OCF / PAT");
-  const marketDivYield = ratioByName(ratios, "Dividend yield (TTM)");
-  const ratioYear = latestRatioYear(ratios);
-  const currentYear = new Date().getFullYear();
-  const financialTone = ratioYear === null ? "amber" : ratioYear < currentYear - 1 ? "amber" : "green";
-  const financialStatus = ratioYear === null ? "Pending" : ratioYear < currentYear - 1 ? "Stale" : "Fresh";
+  // Only the official PSX profile is quoted as the business description. An
+  // inferred summary would read as fact in the one place on the page that is
+  // prose rather than a figure.
+  const officialDescription = isOfficialPsxProfileSource(metadata.meta.source) ? metadata.description : null;
+  const summary = shortDescription(officialDescription);
+
+  const peRow = ratioByName(ratios, "P/E");
+  const pe = peRow?.ratio_value ?? null;
+  const divYield = ratioByName(ratios, "Dividend yield (TTM)")?.ratio_value ?? null;
+  const sectorPe = fundamentals.sectorPe;
+
+  const price = technicals.latestPrice ?? null;
+  const high52 = technicals.fiftyTwoWeekHigh ?? null;
+  const fromHigh = price !== null && high52 ? ((price - high52) / high52) * 100 : null;
+
+  const closes = (technicals.history ?? []).map((c) => Number(c.close)).filter((c) => Number.isFinite(c) && c > 0);
+  const ma50 = closes.length >= 50 ? closes.slice(-50).reduce((a, b) => a + b, 0) / 50 : null;
+
+  const signals: { label: string; sub: string; value: string }[] = [];
+
+  signals.push({
+    label: "Valuation against the sector",
+    sub: peRow?.source_period ? `P/E, ${formatFinancialPeriod(peRow.source_period)}` : "P/E",
+    value:
+      pe === null
+        ? // The engine withholds a multiple on a loss and says why; that reason
+          // belongs here rather than a bare dash.
+            peRow?.missing?.startsWith("Loss-making")
+            ? "No multiple — loss-making period"
+            : "Not enough filed data"
+        : sectorPe.median !== null
+          ? `${pe.toFixed(1)}x against ${sectorPe.median.toFixed(1)}x`
+          : `${pe.toFixed(1)}x · only ${sectorPe.contributors} peer${sectorPe.contributors === 1 ? "" : "s"} priced`,
+  });
+
+  signals.push({
+    label: "Distance from the 52-week high",
+    sub: high52 !== null ? `high ${formatNumber(high52)}` : "no 52-week high on file",
+    value: fromHigh === null ? "—" : `${fromHigh >= 0 ? "+" : "−"}${Math.abs(fromHigh).toFixed(1)}%`,
+  });
+
+  signals.push({
+    label: "Momentum",
+    sub: ma50 !== null ? `50-session ${formatNumber(ma50)}` : "fewer than 50 sessions on file",
+    value:
+      ma50 === null || price === null
+        ? "Not enough sessions"
+        : price >= ma50
+          ? "Above the 50-session average"
+          : "Below the 50-session average",
+  });
+
+  signals.push({
+    label: "Payout",
+    sub: "trailing twelve months",
+    value: divYield === null ? "No verified dividend per share" : `${divYield.toFixed(2)}% on the current price`,
+  });
 
   return (
-    <div className="space-y-4">
-      <div className="grid gap-4 lg:grid-cols-[minmax(0,2fr)_minmax(320px,1fr)]">
-        <Card className="border-slate-200 bg-white shadow-sm">
-          <CardHeader className="flex-row items-start justify-between gap-3 p-5 pb-2">
-            <div>
-              <CardTitle className="text-base">Price performance</CardTitle>
-              <CardDescription>
-                Historical price and volume with average cost. Optional benchmark and technical overlays available.
-              </CardDescription>
-            </div>
-            <div className="flex flex-wrap justify-end gap-1.5">
-              {technicals.meta.freshness !== "fresh" ? freshnessBadge(technicals.meta.freshness) : null}
-              {technicals.asOfDate ? <Badge variant="secondary">Latest close {technicals.asOfDate}</Badge> : null}
-            </div>
-          </CardHeader>
-          <CardContent className="p-5 pt-3">
-            {technicals.history.length > 0 ? (
-              <StockPriceChart
-                candles={technicals.history}
-                signals={signals}
-                benchmark={benchmark}
-                ticker={ticker}
-                averageCostLine={holding?.avg_cost ?? null}
-                showCurrentPriceLine
-              />
-            ) : (
-              <InlineNotice note="No price history loaded from the PSX portal." />
-            )}
-            <div className="mt-3">
-              <SectionMeta meta={technicals.meta} ticker={ticker} refreshSection={readOnly ? undefined : "technicals"} />
-            </div>
-          </CardContent>
-        </Card>
+    <div>
+      <p className="eyebrow">The business</p>
+      <p className="mt-3 max-w-(--measure) text-sm leading-relaxed text-text-muted">
+        {summary ??
+          `No description on file. PSX company data carries no business summary for ${ticker} yet, so nothing is shown rather than inferred.`}
+      </p>
 
-        <Card className="border-slate-200 bg-white shadow-sm">
-          <CardHeader className="p-5 pb-2">
-            <div className="flex items-center justify-between gap-3">
-              <CardTitle className="text-base">Your position</CardTitle>
-              {holding ? <StatusBadge label="Owned" tone="green" /> : <StatusBadge label="Not held" />}
-            </div>
-            {technicals.asOfDate
-              ? <CardDescription>Market close {technicals.asOfDate}</CardDescription>
-              : holding?.price_date
-              ? <CardDescription>Price as of {holding.price_date}</CardDescription>
-              : null}
-          </CardHeader>
-          <CardContent className="space-y-4 p-5 pt-3">
-            {holding ? (
-              <>
-                <div>
-                  <p className="text-xs text-muted-foreground">Market value</p>
-                  <p className="mt-1 text-3xl font-semibold tabular-nums text-slate-950">{compactMoney(marketValue)}</p>
-                  <div
-                    className={cn(
-                      "mt-3 rounded-xl px-3 py-2",
-                      positionTone === "positive" && "bg-emerald-50 text-up",
-                      positionTone === "negative" && "bg-red-50 text-down",
-                      !positionTone && "bg-slate-50 text-slate-700"
-                    )}
-                  >
-                    <p className="text-sm font-semibold tabular-nums">
-                      {positionPl !== null ? formatMoney(positionPl) : "—"}
-                      {positionReturn !== null ? ` · ${formatSignedPct(positionReturn)}` : ""}
-                    </p>
-                    <p className="text-[11px] opacity-80">Total unrealized return</p>
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-2 gap-x-4 gap-y-3">
-                  <OverviewMetric label="Average cost" value={holding.avg_cost !== null ? `PKR ${formatNumber(holding.avg_cost)}` : "—"} hint="Weighted average price you paid per share." />
-                  <OverviewMetric label="Current price" value={currentPrice !== null ? `PKR ${formatNumber(currentPrice)}` : "—"} />
-                  <OverviewMetric label="Portfolio weight" value={holding.weight !== null ? `${holding.weight.toFixed(1)}%` : "—"} hint={`${ticker} market value divided by total portfolio market value at the snapshot date.`} />
-                  <OverviewMetric label="Quantity" value={formatNumber(holding.quantity, 0)} />
-                  <OverviewMetric label="Dividends received" value={wholeMoney(holding.dividend_income)} hint={`Total cash dividends recorded against your ${ticker} holding.`} />
-                </div>
-
-                <AccumulationContext
-                  price={currentPrice}
-                  low52={technicals.fiftyTwoWeekLow}
-                  high52={technicals.fiftyTwoWeekHigh}
-                  history={technicals.history}
-                  avgCost={holding.avg_cost ?? null}
-                />
-
-                <Link
-                  href={`/holdings?ticker=${encodeURIComponent(ticker)}`}
-                  className="inline-flex h-9 items-center justify-center rounded-md border border-slate-200 px-3 text-xs font-medium hover:bg-slate-50"
-                >
-                  View transactions
-                </Link>
-              </>
-            ) : (
-              <div className="space-y-3 py-2">
-                <p className="text-sm text-muted-foreground">This stock is not currently in your portfolio.</p>
-                <AccumulationContext
-                  price={currentPrice}
-                  low52={technicals.fiftyTwoWeekLow}
-                  high52={technicals.fiftyTwoWeekHigh}
-                  history={technicals.history}
-                  avgCost={null}
-                />
-                {!readOnly && <WatchlistButton ticker={ticker} initialWatched={false} />}
-              </div>
-            )}
-          </CardContent>
-        </Card>
-      </div>
-
-      <div className="grid gap-4 lg:grid-cols-2">
-        <Card className="border-slate-200 bg-white shadow-sm">
-          <CardHeader className="p-5 pb-2">
-            <div className="flex items-start justify-between gap-3">
-              <div>
-                <CardTitle className="flex items-center gap-2 text-base"><BriefcaseBusiness className="h-4 w-4" /> Company at a glance</CardTitle>
-                <CardDescription>
-                  Profile, sector and listing reference data{metadata.meta.lastUpdated ? ` · updated ${metadata.meta.lastUpdated.slice(0, 10)}` : ""}
-                </CardDescription>
-              </div>
-              {metadata.meta.freshness !== "fresh" ? freshnessBadge(metadata.meta.freshness) : null}
-            </div>
-          </CardHeader>
-          <CardContent className="space-y-4 p-5 pt-3">
-            {companySummary ? (
-              <p className="text-sm leading-relaxed text-slate-800">{companySummary}</p>
-            ) : companyEnrichmentEnabled ? (
-              <div className="space-y-2">
-                <InlineNotice note="No official PSX company profile on file yet." />
-                <ActionButton
-                  endpoint={`/api/stocks/${ticker}/refresh`}
-                  body={{ section: "description" }}
-                  label={<><Sparkles className="h-3.5 w-3.5" /> Fetch official profile</>}
-                  variant="outline"
-                  size="sm"
-                />
-              </div>
-            ) : (
-              <InlineNotice note="No company profile on file yet." />
-            )}
-
-            <div className="grid grid-cols-2 gap-3">
-              {companyFields.map((field) => (
-                <OverviewMetric key={field.label} {...field} />
-              ))}
-            </div>
-
-            {officialDescription && officialDescription.replace(/\s+/g, " ").trim() !== companySummary ? (
-              <details className="rounded-xl border border-slate-200 bg-slate-50/60 p-3 text-xs">
-                <summary className="cursor-pointer font-medium text-slate-900">Read full profile</summary>
-                <p className="mt-2 leading-relaxed text-muted-foreground">{officialDescription}</p>
-              </details>
-            ) : null}
-
-            <SectionMeta
-              meta={metadata.meta}
-              ticker={ticker}
-              refreshSection={companyEnrichmentEnabled ? "description" : undefined}
-            />
-          </CardContent>
-        </Card>
-
-        <Card className="border-slate-200 bg-white shadow-sm">
-          <CardHeader className="p-5 pb-2">
-            <div className="flex items-start justify-between gap-3">
-              <div>
-                <CardTitle className="text-base">Key signals</CardTitle>
-                <CardDescription>
-                  Select ratios only. Full tables and technical indicators remain in their dedicated tabs.
-                </CardDescription>
-              </div>
-              {financialStatus !== "Fresh" ? <StatusBadge label={financialStatus} tone={financialTone} /> : null}
-            </div>
-          </CardHeader>
-          <CardContent className="space-y-3 p-5 pt-3">
-            <SignalGroup
-              title="Valuation"
-              items={[
-                { label: "P/E", value: ratioText(pe, "multiple"), sub: formatFinancialPeriod(pe?.source_period) ?? undefined, hint: METRIC_HINTS["P/E"] },
-                { label: "P/B", value: ratioText(pb, "multiple"), sub: formatFinancialPeriod(pb?.source_period) ?? undefined, hint: METRIC_HINTS["P/B"] },
-                { label: "Earnings yield", value: ratioText(earningsYield, "percent"), sub: formatFinancialPeriod(earningsYield?.source_period) ?? undefined, hint: METRIC_HINTS["Earnings yield"] },
-              ]}
-            />
-            <SignalGroup
-              title="Profitability"
-              items={[
-                { label: "EPS", value: epsValue !== null ? `PKR ${formatNumber(epsValue)}` : "—", sub: formatFinancialPeriod(pe?.source_period) ?? undefined, hint: "Earnings per share for the reporting period." },
-                { label: "ROE", value: ratioText(roe, "percent"), sub: formatFinancialPeriod(roe?.source_period) ?? undefined, hint: METRIC_HINTS["ROE"] },
-                { label: "Net margin", value: ratioText(netMargin, "percent"), sub: formatFinancialPeriod(netMargin?.source_period) ?? undefined, hint: METRIC_HINTS["Net margin"] },
-              ]}
-            />
-            <SignalGroup
-              title="Financial strength"
-              items={[
-                { label: "Debt/equity", value: ratioText(debtEquity), sub: formatFinancialPeriod(debtEquity?.source_period) ?? undefined, hint: METRIC_HINTS["Debt-to-equity"] },
-                { label: "Interest coverage", value: ratioText(interestCoverage, "multiple"), sub: formatFinancialPeriod(interestCoverage?.source_period) ?? undefined, hint: METRIC_HINTS["Interest coverage"] },
-                { label: "OCF / profit", value: ratioText(cashQuality, "multiple"), sub: formatFinancialPeriod(cashQuality?.source_period) ?? undefined, hint: METRIC_HINTS["OCF / PAT"] },
-              ]}
-            />
-            {ratioYear !== null && ratioYear < currentYear - 1 ? (
-              <div className="flex items-start gap-2 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800">
-                <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
-                Financial ratios include FY{ratioYear} inputs while price data is from {technicals.asOfDate ?? "the latest available quote"}.
-              </div>
-            ) : null}
-            {ratios.every((r) => r.ratio_value === null) ? (
-              <InlineNotice note="Key financial signals will appear after sourced financials are loaded." />
-            ) : null}
-          </CardContent>
-        </Card>
-      </div>
-
-      <div className="grid gap-4 lg:grid-cols-2 lg:items-start">
-        <Card className="border-slate-200 bg-white shadow-sm">
-          <CardHeader className="p-5 pb-2">
-            <div className="flex items-start justify-between gap-3">
-              <div>
-                <CardTitle className="flex items-center gap-2 text-base"><Newspaper className="h-4 w-4" /> Latest development</CardTitle>
-                <CardDescription>Most recent material filing, result, or announcement found for {ticker}.</CardDescription>
-              </div>
-              {latestDevelopment ? <Badge variant={latestDevelopment.category === "material" ? "amber" : "blue"}>{latestDevelopment.category.replace(/_/g, " ")}</Badge> : null}
-            </div>
-          </CardHeader>
-          <CardContent className="p-4 pt-2">
-            {latestDevelopment ? (
-              <div className="space-y-2.5">
-                <a href={latestDevelopment.url} target="_blank" rel="noopener noreferrer" className="block text-sm font-semibold leading-snug text-slate-950 hover:underline">
-                  {latestDevelopment.title}
-                </a>
-                <p className="text-xs leading-relaxed text-slate-600">{filingSummary(latestDevelopment.category)}</p>
-                <p className="text-[11px] text-muted-foreground">
-                  {latestDevelopment.date ?? "Date not captured"} · {latestDevelopment.source}
-                </p>
-                <a
-                  href={latestDevelopment.url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex h-8 items-center gap-1 rounded-md border border-slate-200 px-2.5 text-xs font-medium hover:bg-slate-50"
-                >
-                  <FileText className="h-3.5 w-3.5" /> View filing
-                </a>
-              </div>
-            ) : (
-              <InlineNotice note="No recent PSX filings retrieved for this company." />
-            )}
-          </CardContent>
-        </Card>
-
-        <Card className="border-slate-200 bg-white shadow-sm">
-          <CardHeader className="p-5 pb-2">
-            <div className="flex items-start justify-between gap-3">
-              <div>
-                <CardTitle className="flex items-center gap-2 text-base"><Banknote className="h-4 w-4" /> Dividend status</CardTitle>
-                <CardDescription>Market payout yield versus your personal dividend receipts.</CardDescription>
-              </div>
-              {dividendIncomplete ? <StatusBadge label="Incomplete" tone="amber" /> : dividendComplete ? <StatusBadge label="Verified" tone="green" /> : <StatusBadge label="No records" tone="secondary" />}
-            </div>
-          </CardHeader>
-          <CardContent className="space-y-3 p-4 pt-2">
-            {dividendComplete && latestDiv ? (
-              <>
-                <div>
-                  <p className="text-xs text-muted-foreground">Latest dividend</p>
-                  <p className="mt-1 text-xl font-semibold tabular-nums text-slate-950">
-                    PKR {formatNumber(latestDiv.perShare)} per share
-                  </p>
-                  <p className="mt-1 text-[11px] text-muted-foreground">
-                    {latestDiv.exDate ? `Ex-date ${latestDiv.exDate}` : "Ex-date unverified"}
-                    {latestDiv.payDate ? ` · Payment ${latestDiv.payDate}` : ""}
-                  </p>
-                </div>
-                {holding ? <OverviewMetric label="Amount received" value={wholeMoney(holding.dividend_income)} /> : null}
-                <a href="#dividends" className="inline-flex h-8 items-center rounded-md border border-slate-200 px-2.5 text-xs font-medium hover:bg-slate-50">
-                  View dividend history
-                </a>
-              </>
-            ) : dividendIncomplete ? (
-              <>
-                {marketDivYield?.ratio_value !== null && marketDivYield?.ratio_value !== undefined ? (
-                  <div>
-                    <p className="text-xs text-slate-600">Market dividend yield</p>
-                    <p className="mt-1 text-xl font-semibold tabular-nums text-slate-950">{marketDivYield.ratio_value.toFixed(2)}%</p>
-                    <p className="mt-1 text-[11px] text-slate-600">
-                      Trailing 12-month announced cash dividend per share ÷ current price, from company payout announcements. Your personal receipts below are reconciled separately and are still incomplete.
-                    </p>
-                  </div>
-                ) : null}
-                {holding && holding.dividend_income > 0 ? (
-                  <OverviewMetric label="Your recorded receipts" value={wholeMoney(holding.dividend_income)} />
-                ) : null}
-                <div className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-amber-900">
-                  <p className="text-xs font-semibold">Personal receipts: missing or unverified</p>
-                  <p className="mt-0.5 text-[11px] leading-relaxed text-amber-800">Dividend per share · Ex-date mapping · Entitlement reconciliation</p>
-                </div>
-                <a href="#dividends" className="inline-flex h-8 items-center rounded-md border border-slate-200 px-2.5 text-xs font-medium hover:bg-slate-50">
-                  View dividend history
-                </a>
-              </>
-            ) : (
-              <InlineNotice note="No verified dividend records or user receipts are loaded yet." />
-            )}
-          </CardContent>
-        </Card>
+      <div className="mt-8">
+        <p className="border-b border-rule-strong pb-2 text-(length:--text-3xs) font-bold uppercase tracking-(--tracking-caps) text-text-faint">
+          Key signals
+        </p>
+        {signals.map((s) => (
+          <div key={s.label} className="grid grid-cols-[minmax(0,1fr)_auto] items-baseline gap-5 border-b border-rule py-3">
+            <span>
+              <span className="block text-sm text-text-strong">{s.label}</span>
+              <span className="figure mt-0.5 block text-(length:--text-2xs) text-text-faint">{s.sub}</span>
+            </span>
+            <span className="figure text-right text-sm font-semibold text-text-strong">{s.value}</span>
+          </div>
+        ))}
       </div>
     </div>
   );
