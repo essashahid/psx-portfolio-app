@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { cn } from "@/lib/shared/format";
-import { METRICS, type FundamentalsData, type MetricDef, type MetricKey } from "@/lib/company/fundamentals";
+import { METRICS, METRIC_PRIORITY, MIN_MEDIAN_PEERS, type FundamentalsData, type MetricDef, type MetricKey } from "@/lib/company/fundamentals";
 
 /**
  * The Fundamentals centrepiece: six metrics as small multiples, one selected at
@@ -17,17 +17,41 @@ import { METRICS, type FundamentalsData, type MetricDef, type MetricKey } from "
  * empty frame, and a single filed year draws a dot instead of pretending to a
  * trend.
  */
+/**
+ * Choose which metrics the grid shows.
+ *
+ * Six fixed cells with three reading "not filed" is a wall of absence where the
+ * design promised a quick read, so the grid fills from a fixed priority list
+ * with what the company has actually filed, backed by derived metrics, and
+ * shows at most two absent cells. If fewer than four metrics have anything, it
+ * drops to a 2x2 rather than padding out to six.
+ */
+function chooseMetrics(data: FundamentalsData): { shown: MetricDef[]; columns: 2 | 3 } {
+  const byKey = new Map(METRICS.map((m) => [m.key, m]));
+  const ordered = METRIC_PRIORITY.map((k) => byKey.get(k)!).filter(Boolean);
+
+  const present = ordered.filter((m) => data.series[m.key].points.length > 0);
+  const absent = ordered.filter((m) => data.series[m.key].points.length === 0);
+
+  const target = present.length >= 4 ? 6 : 4;
+  const columns: 2 | 3 = target === 6 ? 3 : 2;
+  const shown = present.slice(0, target);
+  const gaps = Math.min(2, target - shown.length);
+  return { shown: [...shown, ...absent.slice(0, gaps)], columns };
+}
+
 export function FundamentalsGrid({ data, hue }: { data: FundamentalsData; hue: string }) {
-  const withData = METRICS.filter((m) => data.series[m.key].points.length > 0);
-  const [selected, setSelected] = useState<MetricKey>(withData[0]?.key ?? "revenue");
+  const { shown, columns } = chooseMetrics(data);
+  const withData = shown.filter((m) => data.series[m.key].points.length > 0);
+  const [selected, setSelected] = useState<MetricKey>(withData[0]?.key ?? shown[0]?.key ?? "revenue");
 
   const def = METRICS.find((m) => m.key === selected)!;
   const series = data.series[selected];
 
   return (
     <div>
-      <div className="grid gap-px bg-rule sm:grid-cols-2 lg:grid-cols-3">
-        {METRICS.map((m) => (
+      <div className={cn("grid gap-px bg-rule sm:grid-cols-2", columns === 3 && "lg:grid-cols-3")}>
+        {shown.map((m) => (
           <MetricCell
             key={m.key}
             def={m}
@@ -138,7 +162,18 @@ function MetricCell({
             {def.format(latest!.value)}
           </span>
           <span className="mt-1 block text-(length:--text-2xs) text-text-faint">{def.unit}</span>
-          <Spark points={pts} median={s.sectorMedian} hue={hue} />
+          {pts.length > 1 ? (
+            <Spark points={pts} median={s.sectorMedian} hue={hue} />
+          ) : (
+            // A single filed year is a point, not a trend. It keeps the frame
+            // height so the grid stays even, but draws no axis and no median.
+            <span className="mt-3.5 flex h-[4.125rem] items-center gap-2.5">
+              <span className="block h-1.5 w-1.5 rounded-full" style={{ background: hue }} />
+              <span className="figure text-(length:--text-2xs) text-text-faint">
+                FY{latest!.year} only — one filed year cannot show a trend
+              </span>
+            </span>
+          )}
           <span className="mt-2.5 flex items-baseline justify-between gap-3">
             <span className="figure text-(length:--text-2xs) text-text-faint">
               {pts.length > 1
@@ -146,7 +181,11 @@ function MetricCell({
                 : `one filed year, FY${latest!.year}`}
             </span>
             <span className="figure text-(length:--text-2xs) text-text-muted">
-              {s.sectorMedian !== null ? `median ${def.format(s.sectorMedian)}` : "no sector median"}
+              {s.sectorMedian !== null
+                ? `median ${def.format(s.sectorMedian)}`
+                : s.peerCount > 0
+                  ? `only ${s.peerCount} peer${s.peerCount === 1 ? "" : "s"} filed`
+                  : "no sector median"}
             </span>
           </span>
         </>
@@ -154,8 +193,10 @@ function MetricCell({
         <>
           <span className="mt-2 block text-(length:--text-h1) font-normal leading-none text-text-faint">Not filed</span>
           <span className="mt-1 block text-(length:--text-2xs) text-text-faint">{def.unit}</span>
-          <span className="mt-4 block max-w-(--measure) text-(length:--text-2xs) leading-relaxed text-text-faint">
-            No filed accounts carry the figures this needs. It appears once they are extracted.
+          <span className="mt-3.5 flex h-[4.125rem] items-start">
+            <span className="max-w-(--measure) text-(length:--text-2xs) leading-relaxed text-text-faint">
+              No filed accounts carry the figures this needs. It appears once they are extracted.
+            </span>
           </span>
         </>
       )}

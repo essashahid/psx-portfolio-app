@@ -166,7 +166,22 @@ export default async function StockCockpitPage({ params }: { params: Promise<{ t
 
         <div className="mt-7 grid border-t border-rule sm:grid-cols-3 lg:grid-cols-6">
           <HeaderMetric label="Market cap" value={metadata.marketCap !== null ? compactNumber(metadata.marketCap) : "—"} sub="PKR" />
-          <HeaderMetric label="P/E" value={pe !== null ? `${pe.toFixed(1)}x` : "—"} sub={pe !== null && epsPeriod ? `based on ${epsPeriod} EPS` : "needs financials"} />
+          <HeaderMetric
+            label="P/E"
+            value={pe !== null ? `${pe.toFixed(1)}x` : "—"}
+            sub={
+              pe !== null
+                ? epsPeriod
+                  ? `based on ${epsPeriod} EPS`
+                  : undefined
+                : // The engine withholds the multiple on a loss and says why, so
+                  // the reason travels with the dash instead of "needs financials"
+                  // implying the data is merely absent.
+                  eps !== null && eps < 0
+                  ? "loss-making period"
+                  : "needs financials"
+            }
+          />
           <HeaderMetric label="EPS" value={eps !== null ? formatNumber(eps) : "—"} sub={eps !== null ? epsPeriod ?? "PKR" : "needs financials"} />
           <HeaderMetric label="Dividend yield" value={divYield !== null ? `${divYield.toFixed(2)}%` : "—"} sub={divYield !== null ? "announced DPS · TTM" : "DPS unverified"} />
           <HeaderMetric label="Volume" value={quote.volume !== null ? compactNumber(quote.volume) : "—"} sub="shares today" />

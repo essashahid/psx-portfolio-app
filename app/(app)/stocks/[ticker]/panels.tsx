@@ -742,6 +742,10 @@ export async function FinancialsPanel({ ticker, readOnly = false }: { ticker: st
     );
   }
 
+  // Only promise the median hairline when at least one cell actually draws one;
+  // sectors with too few filers show none.
+  const hasAnyMedian = Object.values(fundamentals.series).some((v) => v.sectorMedian !== null);
+
   return (
     <div>
       <p className="eyebrow">Filed years</p>
@@ -749,7 +753,7 @@ export async function FinancialsPanel({ ticker, readOnly = false }: { ticker: st
         How the business earns
       </h2>
       <p className="mt-1 mb-7 max-w-(--measure) text-sm leading-relaxed text-text-muted">
-        The shaded band is this company&apos;s own filed range and the dashed hairline is the sector median.
+        The shaded band is this company&apos;s own filed range{hasAnyMedian ? ", and the dashed hairline is the sector median" : ""}.
         Select a chart to read the years and the sector ranking.
       </p>
       <FundamentalsGrid data={fundamentals} hue={sectorColor(master?.sector)} />

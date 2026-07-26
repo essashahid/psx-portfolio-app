@@ -18,7 +18,13 @@ import type { SupabaseClient } from "@supabase/supabase-js";
  * gap — a metric with no data is reported as absent and the grid says so.
  */
 
-export type MetricKey = "revenue" | "margin" | "eps" | "roe" | "de" | "cc";
+export type MetricKey =
+  | "revenue" | "margin" | "eps" | "roe" | "de" | "cc"
+  // Derived backfills. The ideal six leave gaps because balance sheets and cash
+  // flow statements are extracted far less often than income statements; these
+  // are computable from what is actually filed, so the grid can stay full of
+  // real figures rather than half full of absences.
+  | "revenue_growth" | "gross_margin" | "eps_growth";
 
 export interface MetricDef {
   key: MetricKey;
@@ -29,13 +35,30 @@ export interface MetricDef {
   /** True when a falling value is the good direction. */
   lowerIsBetter?: boolean;
   format: (v: number) => string;
+  /**
+   * The band outside which the figure is not believable as this metric.
+   *
+   * A ratio can be arithmetically fine and economically meaningless. TRG is a
+   * holding company whose standalone revenue is a rounding error against
+   * profit from associates, so profit ÷ revenue came out at 201,436% and its
+   * filed range read "−1,204,063% to 201,436%". Nobody can act on that. Values
+   * outside the band are dropped from the series and the metric reports what
+   * it has left, exactly as it would for a year that was never filed.
+   */
+  plausible?: [number, number];
 }
 
 const compact = (v: number) =>
   new Intl.NumberFormat("en-PK", { notation: "compact", maximumFractionDigits: 1 }).format(v);
-const pct1 = (v: number) => `${v.toFixed(1)}%`;
-const num2 = (v: number) => v.toLocaleString("en-PK", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-const mult2 = (v: number) => `${v.toFixed(2)}x`;
+/**
+ * Rounding can carry a sign onto a zero: TRG's cash conversion is a hair below
+ * zero and printed as "-0.00x", which reads as a real negative. Anything that
+ * rounds to nothing is shown unsigned.
+ */
+const unsigned = (v: number, digits: number) => (Math.abs(v) < 0.5 / 10 ** digits ? 0 : v);
+const pct1 = (v: number) => `${unsigned(v, 1).toFixed(1)}%`;
+const num2 = (v: number) => unsigned(v, 2).toLocaleString("en-PK", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+const mult2 = (v: number) => `${unsigned(v, 2).toFixed(2)}x`;
 
 export const METRICS: MetricDef[] = [
   {
@@ -51,6 +74,7 @@ export const METRICS: MetricDef[] = [
     unit: "profit after tax ÷ revenue",
     note: "The share of every rupee of sales that survives to profit. Compare it with the sector median, since margins are a property of the business model.",
     format: pct1,
+    plausible: [-200, 200],
   },
   {
     key: "eps",
@@ -65,6 +89,7 @@ export const METRICS: MetricDef[] = [
     unit: "profit ÷ equity",
     note: "What the company earns on the capital shareholders have left in it. A high figure on thin equity can flatter a heavily borrowed balance sheet, so read it with debt to equity.",
     format: pct1,
+    plausible: [-200, 200],
   },
   {
     key: "de",
@@ -73,6 +98,7 @@ export const METRICS: MetricDef[] = [
     note: "How much of the balance sheet is borrowed. Falling is the good direction, and what counts as high is set by the sector.",
     lowerIsBetter: true,
     format: mult2,
+    plausible: [0, 25],
   },
   {
     key: "cc",
@@ -80,8 +106,45 @@ export const METRICS: MetricDef[] = [
     unit: "operating cash flow ÷ profit",
     note: "How much reported profit arrives as cash. Persistently below 1.0x means profit is being booked faster than it is collected.",
     format: mult2,
+    plausible: [-20, 20],
+  },
+  {
+    key: "revenue_growth",
+    label: "Revenue growth",
+    unit: "year on year",
+    note: "The pace of the top line. One good year is not a trend, so read the run of years rather than the latest figure.",
+    format: (v) => `${v >= 0 ? "+" : "−"}${Math.abs(v).toFixed(1)}%`,
+    plausible: [-100, 1000],
+  },
+  {
+    key: "gross_margin",
+    label: "Gross margin",
+    unit: "gross profit ÷ revenue",
+    note: "What survives the direct cost of sales, before overheads and financing. It moves with input costs and pricing power.",
+    format: pct1,
+    plausible: [-200, 200],
+  },
+  {
+    key: "eps_growth",
+    label: "EPS growth",
+    unit: "year on year",
+    note: "Earnings per share against the prior year. It can diverge from profit growth when the share count changes.",
+    format: (v) => `${v >= 0 ? "+" : "−"}${Math.abs(v).toFixed(1)}%`,
+    plausible: [-1000, 1000],
   },
 ];
+
+/**
+ * Fixed priority. The grid fills from the top of this list with whatever the
+ * company has actually filed, so the order of the cells is the same on every
+ * company page even when the contents differ.
+ */
+export const METRIC_PRIORITY: MetricKey[] = [
+  "revenue", "margin", "eps", "roe", "de", "cc", "revenue_growth", "gross_margin", "eps_growth",
+];
+
+/** A sector median drawn from fewer contributors than this is not a median. */
+export const MIN_MEDIAN_PEERS = 5;
 
 export interface MetricSeries {
   key: MetricKey;
@@ -126,19 +189,31 @@ const num = (d: Record<string, unknown>, k: string): number | null => {
  */
 const MONEY_FIELDS = new Set(["revenue", "profit_after_tax", "equity", "borrowings", "operating_cash_flow"]);
 
-function unitScale(d: Record<string, unknown>): number {
+/**
+ * The declared scale, or null when the row does not declare one.
+ *
+ * Null is refused rather than defaulted. Assuming thousands for an undeclared
+ * row is a 1000x error in a figure someone may act on, and it fails silently —
+ * the number still looks like a number. Ratios and per-share figures are
+ * unaffected, so only money is withheld.
+ */
+function unitScale(d: Record<string, unknown>): number | null {
   const u = String(d._units ?? "").toLowerCase();
+  if (!u) return null;
   if (u.includes("thousand")) return 1_000;
   if (u.includes("million")) return 1_000_000;
   if (u.includes("billion")) return 1_000_000_000;
-  return 1;
+  if (u.includes("pkr") || u.includes("rupee")) return 1;
+  return null;
 }
 
 /** A money field in its true rupee amount; other fields unchanged. */
 const amount = (d: Record<string, unknown>, k: string): number | null => {
   const v = num(d, k);
   if (v === null) return null;
-  return MONEY_FIELDS.has(k) ? v * unitScale(d) : v;
+  if (!MONEY_FIELDS.has(k)) return v;
+  const scale = unitScale(d);
+  return scale === null ? null : v * scale;
 };
 
 /** Derive one metric from a fully merged fiscal year. */
@@ -167,7 +242,29 @@ function derive(key: MetricKey, d: Record<string, unknown>): number | null {
       const ocf = amount(d, "operating_cash_flow");
       return ocf !== null && pat ? ocf / pat : null;
     }
+    case "gross_margin": {
+      const filed = num(d, "gross_profit_margin_pct");
+      if (filed !== null) return filed;
+      const gp = amount(d, "gross_profit");
+      return gp !== null && revenue ? (gp / revenue) * 100 : null;
+    }
+    // Growth metrics are differences between years, so they cannot be read from
+    // a single year. They are built from their base series after the fact.
+    case "revenue_growth":
+    case "eps_growth":
+      return null;
   }
+}
+
+/** Year-on-year change of a base series, as its own series. */
+function growthOf(points: { year: number; value: number }[]): { year: number; value: number }[] {
+  const out: { year: number; value: number }[] = [];
+  for (let i = 1; i < points.length; i++) {
+    const prev = points[i - 1].value;
+    if (prev === 0) continue;
+    out.push({ year: points[i].year, value: ((points[i].value - prev) / Math.abs(prev)) * 100 });
+  }
+  return out;
 }
 
 /**
@@ -235,29 +332,48 @@ export async function getFundamentals(
   const series = {} as Record<MetricKey, MetricSeries>;
   const ranking = {} as Record<MetricKey, PeerRank[]>;
 
-  for (const def of METRICS) {
-    const points = [...selfYears.entries()]
-      .map(([year, d]) => ({ year, value: derive(def.key, d) }))
-      .filter((p): p is { year: number; value: number } => p.value !== null)
-      .sort((a, b) => a.year - b.year);
+  const defOf = new Map(METRICS.map((m) => [m.key, m]));
+  const seriesFor = (key: MetricKey, years: Map<number, Record<string, unknown>>): { year: number; value: number }[] => {
+    const raw =
+      key === "revenue_growth"
+        ? growthOf(seriesFor("revenue", years))
+        : key === "eps_growth"
+          ? growthOf(seriesFor("eps", years))
+          : [...years.entries()]
+              .map(([year, d]) => ({ year, value: derive(key, d) }))
+              .filter((p): p is { year: number; value: number } => p.value !== null)
+              .sort((a, b) => a.year - b.year);
 
-    // One figure per peer: its own latest filed year for this metric.
+    const band = defOf.get(key)?.plausible;
+    if (!band) return raw;
+    return raw.filter((p) => p.value >= band[0] && p.value <= band[1]);
+  };
+
+  for (const def of METRICS) {
+    const points = seriesFor(def.key, selfYears);
+
+    // One figure per peer: its own latest filed year for this metric. A company
+    // that has not filed the metric is left out of the ranking entirely rather
+    // than entered at zero, which would read as the worst performer.
     const peerLatest: PeerRank[] = [];
     for (const [t, years] of byTicker) {
-      const withValue = [...years.entries()]
-        .map(([year, d]) => ({ year, value: derive(def.key, d) }))
-        .filter((p): p is { year: number; value: number } => p.value !== null)
-        .sort((a, b) => b.year - a.year);
-      if (withValue.length) peerLatest.push({ ticker: t, value: withValue[0].value, isSelf: t === ticker });
+      const withValue = seriesFor(def.key, years);
+      if (withValue.length) {
+        const latest = withValue[withValue.length - 1];
+        peerLatest.push({ ticker: t, value: latest.value, isSelf: t === ticker });
+      }
     }
 
     peerLatest.sort((a, b) => (def.lowerIsBetter ? a.value - b.value : b.value - a.value));
 
+    // Below the threshold there is no median worth drawing — the midpoint of
+    // two companies is not a sector. The caption says so instead.
+    const contributors = peerLatest.filter((p) => !p.isSelf).map((p) => p.value);
     series[def.key] = {
       key: def.key,
       points,
-      sectorMedian: median(peerLatest.filter((p) => !p.isSelf).map((p) => p.value)),
-      peerCount: peerLatest.filter((p) => !p.isSelf).length,
+      sectorMedian: contributors.length >= MIN_MEDIAN_PEERS ? median(contributors) : null,
+      peerCount: contributors.length,
     };
     ranking[def.key] = peerLatest;
   }
