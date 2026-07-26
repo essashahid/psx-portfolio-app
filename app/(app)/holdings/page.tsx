@@ -45,7 +45,7 @@ export default async function HoldingsPage() {
     .sort((a, b) => a.last / a.avg - b.last / b.avg);
 
   return (
-    <div className="-mx-3 sm:-mx-4 md:-mx-(--gutter-page)">
+    <div className="settle -mx-3 sm:-mx-4 md:-mx-(--gutter-page)">
       <Band tone="paper" className="px-3 sm:px-4 md:px-(--gutter-page)">
         <div className="flex flex-wrap items-end justify-between gap-6 border-b border-rule pb-5">
           <div>
@@ -87,7 +87,7 @@ export default async function HoldingsPage() {
         )
       ) : (
         <>
-          <Band tone="paper" className="px-3 sm:px-4 md:px-(--gutter-page)">
+          <Band tone="paper" className="dot-grid px-3 sm:px-4 md:px-(--gutter-page)">
             <HoldingsTable holdings={summary.holdings} summary={summary} dailyRows={dailyPerformance.rows.map((row) => ({ ticker: row.ticker, dayChangePct: row.dayChangePct, dayPnl: row.dayPnl }))} readOnly={isDemo} />
           </Band>
 

@@ -137,7 +137,7 @@ export default async function MarketPulsePage() {
   ].filter((r): r is { label: string; net: number } => r.net !== null);
 
   return (
-    <div className="-mx-3 sm:-mx-4 md:-mx-(--gutter-page)">
+    <div className="settle -mx-3 sm:-mx-4 md:-mx-(--gutter-page)">
       <Band tone="paper" className="px-3 sm:px-4 md:px-(--gutter-page)" style={{ background: "color-mix(in oklab, var(--sp-plum) 15%, var(--surface-page))" }}>
         <div className="flex flex-wrap items-end justify-between gap-7">
           <div>
@@ -185,7 +185,7 @@ export default async function MarketPulsePage() {
         <SectorTileBoard tiles={sectorTiles} />
       </Band>
 
-      <Band tone="paper" className="px-3 sm:px-4 md:px-(--gutter-page)">
+      <Band tone="paper" className="dot-grid px-3 sm:px-4 md:px-(--gutter-page)">
         <div className="mb-8 flex flex-wrap items-end justify-between gap-5">
           <div>
             <p className="eyebrow">Distribution</p>

@@ -235,7 +235,7 @@ export default async function DashboardPage() {
   const dayTone = dayPnl !== null && dayPnl > 0 ? "text-up" : dayPnl !== null && dayPnl < 0 ? "text-down" : "text-text-strong";
 
   return (
-    <div className="-mx-3 sm:-mx-4 md:-mx-(--gutter-page)">
+    <div className="settle -mx-3 sm:-mx-4 md:-mx-(--gutter-page)">
       {/* ── Hero: tinted band, motif, sparkline, KSE rail, metric strip ── */}
       <Band
         tone="paper"

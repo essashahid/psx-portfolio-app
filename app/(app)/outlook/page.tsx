@@ -34,7 +34,7 @@ export default async function OutlookPage() {
   const stanceTone = STANCE_TONE[String(outlook.stance.tone)] ?? "text-text-strong";
 
   return (
-    <div className="-mx-3 sm:-mx-4 md:-mx-(--gutter-page)">
+    <div className="settle -mx-3 sm:-mx-4 md:-mx-(--gutter-page)">
       {/* ── Hero ── */}
       <Band
         tone="paper"

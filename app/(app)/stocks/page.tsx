@@ -24,7 +24,7 @@ export default async function StockResearchPage() {
 
   if (!d.snapshotDate) {
     return (
-      <div className="-mx-3 sm:-mx-4 md:-mx-(--gutter-page)">
+      <div className="settle -mx-3 sm:-mx-4 md:-mx-(--gutter-page)">
         <Band tone="paper" rule="none" className={GUTTER}>
           <span className="mb-3.5 block h-0.75 w-11 bg-(--sp-violet)" />
           <h1 className="font-display text-(length:--text-title) font-normal tracking-editorial text-text-strong">Stock Research</h1>
@@ -46,7 +46,7 @@ export default async function StockResearchPage() {
   const decliners = d.breadth?.decliners ?? 0;
 
   return (
-    <div className="-mx-3 sm:-mx-4 md:-mx-(--gutter-page)">
+    <div className="settle -mx-3 sm:-mx-4 md:-mx-(--gutter-page)">
       {/* ── Hero ── */}
       <Band
         tone="paper"

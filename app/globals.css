@@ -377,6 +377,27 @@ a {
   .om-tape { animation: none; }
 }
 
+/* Band cascade: a page of full-bleed bands settles top to bottom rather than
+   appearing all at once. One class on the page root staggers its own bands,
+   so nothing has to be hand-numbered. */
+.settle > * {
+  animation: rise-blur var(--dur-slow) var(--ease-ui) both;
+}
+.settle > *:nth-child(1) { animation-delay: 0ms; }
+.settle > *:nth-child(2) { animation-delay: 70ms; }
+.settle > *:nth-child(3) { animation-delay: 140ms; }
+.settle > *:nth-child(4) { animation-delay: 210ms; }
+.settle > *:nth-child(5) { animation-delay: 280ms; }
+.settle > *:nth-child(n + 6) { animation-delay: 340ms; }
+
+@media (prefers-reduced-motion: reduce) {
+  .settle > * { animation: none; }
+}
+/* Phone navigation should feel immediate, like a native app shell. */
+@media (max-width: 767px) {
+  .settle > * { animation: none; }
+}
+
 /* Dotted-paper field behind data-dense bands, straight from the design. */
 .dot-grid {
   background-image: radial-gradient(color-mix(in oklab, var(--ink-4) 26%, transparent) 1px, transparent 1px);

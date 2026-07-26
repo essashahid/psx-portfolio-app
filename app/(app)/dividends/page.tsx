@@ -7,7 +7,6 @@ import { DividendManager } from "@/components/features/dividends/dividend-form";
 import { DividendIncomeWorkspace } from "@/components/features/dividends/dividend-income-workspace";
 import { DividendTrajectory, DividendYieldTable, TaxYearStatement } from "@/components/features/dividends/dividend-analytics";
 import { Band } from "@/components/ui/band";
-import { ChevronDown, Download } from "lucide-react";
 
 export const dynamic = "force-dynamic";
 
@@ -31,7 +30,7 @@ export default async function DividendsPage() {
 
 
   return (
-    <div className="-mx-3 sm:-mx-4 md:-mx-(--gutter-page)">
+    <div className="settle -mx-3 sm:-mx-4 md:-mx-(--gutter-page)">
       <Band tone="paper" className="px-3 sm:px-4 md:px-(--gutter-page)" style={{ background: "color-mix(in oklab, var(--saffron-4) 40%, var(--surface-page))" }}>
         <div className="flex flex-wrap items-end justify-between gap-6">
           <div>
@@ -41,13 +40,6 @@ export default async function DividendsPage() {
           </div>
           <div className="flex flex-wrap items-center gap-2">
             {!isDemo && <DividendManager dividends={dividends} holdings={summary.holdings} triggerOnly />}
-            <details className="relative">
-              <summary className="inline-flex h-10 cursor-pointer list-none items-center justify-center gap-1.5 rounded-md border border-rule bg-card px-3 text-xs font-medium transition-colors hover:bg-accent md:h-8"><span>More</span><ChevronDown className="h-3.5 w-3.5" /></summary>
-              <div className="absolute right-0 z-20 mt-1 flex w-52 flex-col gap-1 rounded-md border border-rule bg-card p-1.5 shadow-card">
-                {/* eslint-disable-next-line @next/next/no-html-link-for-pages -- CSV download, not a page navigation */}
-                <a href="/api/export/dividends" className="rounded px-2.5 py-2 text-xs hover:bg-muted"><Download className="mr-1.5 inline h-3.5 w-3.5" /> Export CSV</a>
-              </div>
-            </details>
           </div>
         </div>
 
@@ -58,7 +50,7 @@ export default async function DividendsPage() {
         </div>
       </Band>
 
-      <Band tone="paper" rule="none" className="px-3 sm:px-4 md:px-(--gutter-page)">
+      <Band tone="paper" rule="none" className="dot-grid px-3 sm:px-4 md:px-(--gutter-page)">
         <div className="mt-2 grid gap-12 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.3fr)]">
           <section>
             <p className="eyebrow">Income trajectory</p>
