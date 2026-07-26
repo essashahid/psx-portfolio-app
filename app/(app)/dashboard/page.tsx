@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { Suspense } from "react";
 import { createClient, getUser } from "@/lib/supabase/server";
 import { getPortfolio } from "@/lib/portfolio/positions";
@@ -17,35 +16,16 @@ import { ContributionLedger } from "@/components/features/dashboard/dashboard-ba
 import { AllocationPanel, type ActiveWeightRow } from "@/components/features/dashboard/dashboard-bands";
 import { PositionsTable, type PositionRow } from "@/components/features/dashboard/positions-table";
 import { getClustersForTickers } from "@/lib/news/global-store";
-import { getPrefs, type UserPrefs } from "@/lib/user/preferences";
 import { AsOf } from "@/components/shared/as-of";
 import { MarkSeen } from "@/components/shared/mark-seen";
 import { Sparkline } from "@/components/shared/sparkline";
-import { DismissCheckButton } from "@/components/features/dashboard/dashboard-checks";
 import { shortSector } from "@/lib/shared/sector-colors";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { Briefcase } from "lucide-react";
 
 export const dynamic = "force-dynamic";
 
-const CHECK_THRESHOLDS = {
-  holdingWeight: 20,
-  sectorWeight: 40,
-  belowCost: -10,
-  dailyMove: 5,
-} as const;
-
 const GUTTER = "px-3 sm:px-4 md:px-(--gutter-page)";
-
-function dismissedCheckIds(map: Record<string, string> | undefined): Set<string> {
-  const out = new Set<string>();
-  if (!map) return out;
-  const cutoff = Date.now() - 14 * 86_400_000;
-  for (const [id, at] of Object.entries(map)) {
-    if (new Date(at).getTime() >= cutoff) out.add(id);
-  }
-  return out;
-}
 
 /** SVG area path for the hero's faint portfolio motif, viewBox 1000×220. */
 function motifPath(values: number[]): string | null {
@@ -130,11 +110,10 @@ export default async function DashboardPage() {
   const user = await getUser();
   if (!user) return null;
 
-  const [summary, dailyPerformance, profileRes, prefs, marketGlobal] = await Promise.all([
+  const [summary, dailyPerformance, profileRes, marketGlobal] = await Promise.all([
     getPortfolio(supabase, user.id),
     getDailyHoldingPerformance(supabase, user.id),
     supabase.from("profiles").select("demo_mode, full_name").eq("id", user.id).maybeSingle(),
-    getPrefs(supabase, user.id).catch(() => ({}) as UserPrefs),
     getCachedMarketGlobal().catch(() => null),
   ]);
 
@@ -252,25 +231,6 @@ export default async function DashboardPage() {
     }));
   })();
 
-  // ── Checks (dismissible; kept from the product, styled quietly) ─────────
-  const allChecks = [
-    ...(summary.largestHolding && (summary.largestHolding.weight ?? 0) >= CHECK_THRESHOLDS.holdingWeight
-      ? [{ id: `holding:${summary.largestHolding.ticker}`, title: "Large holding", detail: `${summary.largestHolding.ticker} represents ${summary.largestHolding.weight!.toFixed(1)}% of portfolio value.`, href: `/stocks/${summary.largestHolding.ticker}` }]
-      : []),
-    ...(summary.largestSector && summary.largestSector.weight >= CHECK_THRESHOLDS.sectorWeight
-      ? [{ id: `sector:${summary.largestSector.sector}`, title: "Sector concentration", detail: `${summary.largestSector.sector} represents ${summary.largestSector.weight.toFixed(1)}% of portfolio value.`, href: "/holdings" }]
-      : []),
-    ...summary.holdings
-      .filter((h) => (h.unrealized_pl_pct ?? 0) <= CHECK_THRESHOLDS.belowCost)
-      .slice(0, 2)
-      .map((h) => ({ id: `belowcost:${h.ticker}`, title: "Below cost", detail: `${h.ticker} is ${formatSignedPct(h.unrealized_pl_pct)} below its average cost.`, href: `/stocks/${h.ticker}` })),
-    ...dailyPerformance.rows
-      .filter((r) => Math.abs(r.dayChangePct ?? 0) >= CHECK_THRESHOLDS.dailyMove)
-      .slice(0, 2)
-      .map((r) => ({ id: `move:${r.ticker}:${dailyPerformance.asOf ?? "today"}`, title: "Large daily move", detail: `${r.ticker} moved ${formatSignedPct(r.dayChangePct)} today.`, href: `/stocks/${r.ticker}` })),
-  ];
-  const dismissed = dismissedCheckIds(prefs.dismissed_checks);
-  const checks = allChecks.filter((c) => !dismissed.has(c.id)).slice(0, 4);
 
   const dayTone = dayPnl !== null && dayPnl > 0 ? "text-up" : dayPnl !== null && dayPnl < 0 ? "text-down" : "text-text-strong";
 
@@ -390,23 +350,6 @@ export default async function DashboardPage() {
             <DashboardEvents tickers={tickers} userId={user.id} />
           </Suspense>
         </div>
-
-        {checks.length > 0 && (
-          <div className="mt-9 border-t border-rule pt-7">
-            <PanelHeader title="Portfolio checks" />
-            <div className="ledger">
-              {checks.map((check) => (
-                <div key={check.id} className="ledger-row flex items-start justify-between gap-2 hover:bg-surface-sunken/50">
-                  <Link href={check.href} className="min-w-0 flex-1">
-                    <p className="text-sm font-medium text-text-strong">{check.title}</p>
-                    <p className="mt-0.5 text-xs text-text-muted">{check.detail}</p>
-                  </Link>
-                  {!isDemo && <DismissCheckButton checkId={check.id} />}
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
       </Band>
       <MarkSeen surface="dashboard" />
     </div>
