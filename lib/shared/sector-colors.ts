@@ -18,9 +18,15 @@ export const UNCLASSIFIED_COLOR = "#9b9b92";
 const ANCHORS: { match: RegExp; color: string }[] = [
   { match: /bank|microfinance/, color: "#3450c8" },           // banks — editorial indigo
   { match: /fertiliz|fertili/, color: "#5e7d16" },            // fertiliser — olive
-  { match: /oil.*(explorat|gas)|exploration/, color: "#cd5b2e" }, // E&P — terracotta
+  // Marketing is tested before exploration and the exploration pattern no
+  // longer accepts a bare "oil...gas". Ordered the other way round — as this
+  // was — "Oil & Gas Marketing Companies" satisfies /oil.*gas/ and every OMC on
+  // the exchange took exploration's terracotta. Anchors are first-match, so a
+  // more specific sector must always precede the broader one it sits inside.
   { match: /oil.*market|gas.*market|marketing/, color: "#d9920b" }, // OMC — amber
+  { match: /explorat/, color: "#cd5b2e" },                    // E&P — terracotta
   { match: /refiner/, color: "#b5532a" },                     // refinery — burnt orange
+  { match: /engineering|steel|cable|electrical goods/, color: "#9a6a2e" }, // engineering — bronze
   { match: /power|electric|energy/, color: "#c79a1e" },       // power — gold
   { match: /cement/, color: "#8a7a66" },                      // cement — stone
   { match: /tech|communicat|software|telecom/, color: "#6a4fd0" }, // tech — violet
@@ -30,7 +36,6 @@ const ANCHORS: { match: RegExp; color: string }[] = [
   { match: /automobile part|auto.*part|tyre|tractor/, color: "#6f8bb5" }, // auto parts — light slate
   { match: /textile|spinning|weaving|synthetic|rayon/, color: "#c23a6b" }, // textile — rose
   { match: /food|personal care|sugar|vanaspati|dairy/, color: "#0b8a5c" }, // food — emerald
-  { match: /engineering|steel|cable|electrical goods/, color: "#9a6a2e" }, // engineering — bronze
   { match: /insurance|takaful/, color: "#8f3fae" },           // insurance — plum
   { match: /invest|leasing|modaraba|mutual fund/, color: "#4060b0" }, // financials — muted blue
   { match: /glass|ceramic/, color: "#2f9e8f" },               // glass — aqua
