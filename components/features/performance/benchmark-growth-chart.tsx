@@ -9,7 +9,7 @@ import {
   YAxis,
   CartesianGrid,
   Tooltip,
-  Legend,
+ 
 } from "recharts";
 import {
   INK,
@@ -41,10 +41,10 @@ const MODES = [
 type Mode = (typeof MODES)[number]["key"];
 
 const LINES = [
-  { key: "portfolio", name: "Your portfolio", color: INK.line, width: 2.6, dash: undefined },
-  { key: "kse100", name: "KSE-100 equivalent", color: INK.up, width: 1.8, dash: undefined },
-  { key: "inflation", name: "Inflation-protected", color: INK.amber, width: 1.8, dash: undefined },
-  { key: "contributed", name: "Contributed capital", color: INK.neutral, width: 1.6, dash: "5 4" },
+  { key: "portfolio", name: "Your portfolio", color: "var(--chart-line)", width: 2.25, dash: undefined },
+  { key: "kse100", name: "KSE-100 equivalent", color: "var(--up-1)", width: 1.75, dash: undefined },
+  { key: "inflation", name: "Inflation-protected", color: "var(--saffron-2)", width: 1.5, dash: undefined },
+  { key: "contributed", name: "Contributed capital", color: "var(--flat-2)", width: 1.5, dash: "4 4" },
 ] as const;
 
 const MODE_CAPTION: Record<Mode, string> = {
@@ -109,84 +109,51 @@ export function BenchmarkGrowthChart({ data }: { data: BenchmarkPointRow[] }) {
     });
   }, [ranged, mode]);
 
-  const latest = data[data.length - 1];
-  const headline = useMemo(() => {
-    if (!latest) return null;
-    const gainVsContrib = latest.portfolio - latest.contributed;
-    return {
-      portfolio: latest.portfolio,
-      gainVsContrib,
-      gainPct: latest.contributed > 0 ? (gainVsContrib / latest.contributed) * 100 : null,
-      vsKse: latest.portfolio - latest.kse100,
-      vsInflation: latest.portfolio - latest.inflation,
-    };
-  }, [latest]);
-
   if (data.length < 2) {
-    return (
-      <section className="border-y border-border py-5">
-        <h2 className="text-base font-semibold">Growth of invested capital</h2>
-        <div className="pt-4"><ChartEmpty note="Benchmark history appears once the portfolio series has been built." /></div>
-      </section>
-    );
+    return <ChartEmpty note="Benchmark history appears once the portfolio series has been built." />;
   }
 
   const valueFmt = (v: number) =>
     mode === "indexed" ? v.toLocaleString("en-US", { maximumFractionDigits: 1 }) : fmtCompact(v);
   const tooltipFmt = (v: number) =>
     mode === "indexed" ? v.toLocaleString("en-US", { maximumFractionDigits: 1 }) : formatMoney(v);
+  const latestRow = series[series.length - 1] as Record<string, number | string> | undefined;
+  const pill = (selected: boolean) =>
+    cn(
+      "whitespace-nowrap rounded-full px-[13px] py-[5px] text-xs font-semibold transition-colors",
+      selected ? "bg-surface-raised text-text-strong shadow-[0_1px_2px_rgba(13,18,15,0.08)]" : "text-text-muted hover:text-text-strong"
+    );
 
   return (
-    <section className="border-y border-border py-5">
-      <div className="flex flex-wrap items-start justify-between gap-3 pb-1">
-        <div>
-          <h2 className="text-base font-semibold">Growth of invested capital</h2>
-          <p className="mt-1 text-xs text-muted-foreground">Your portfolio (holdings plus broker cash) against the KSE-100 (total return) and inflation, using your real contribution schedule.</p>
+    <section>
+      <div className="flex flex-wrap items-center justify-end gap-3.5 pb-4">
+        <div role="radiogroup" aria-label="Time range" className="inline-flex gap-0.5 rounded-full border border-rule bg-surface-inset p-[3px]">
+          {RANGES.map((item) => (
+            <button key={item.key} type="button" role="radio" aria-checked={range === item.key} onClick={() => setRange(item.key)} className={pill(range === item.key)}>
+              {item.label}
+            </button>
+          ))}
         </div>
-        <div className="flex flex-wrap gap-2">
-          <div className="flex rounded-md bg-muted p-0.5" aria-label="Time range">
-            {RANGES.map((item) => (
-              <button
-                key={item.key}
-                onClick={() => setRange(item.key)}
-                className={cn(
-                  "rounded px-2.5 py-1 text-[11px] font-medium transition-colors",
-                  range === item.key ? "bg-card text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
-                )}
-              >
-                {item.label}
-              </button>
-            ))}
-          </div>
-          <div className="flex rounded-md bg-muted p-0.5" aria-label="Display mode">
-            {MODES.map((item) => (
-              <button
-                key={item.key}
-                onClick={() => setMode(item.key)}
-                className={cn(
-                  "rounded px-2.5 py-1 text-[11px] font-medium transition-colors",
-                  mode === item.key ? "bg-card text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
-                )}
-              >
-                {item.label}
-              </button>
-            ))}
-          </div>
+        <div role="radiogroup" aria-label="Basis" className="inline-flex gap-0.5 rounded-full border border-rule bg-surface-inset p-[3px]">
+          {MODES.map((item) => (
+            <button key={item.key} type="button" role="radio" aria-checked={mode === item.key} onClick={() => setMode(item.key)} className={pill(mode === item.key)}>
+              {item.label}
+            </button>
+          ))}
         </div>
       </div>
 
-      {headline && mode !== "indexed" && (
-        <div className="flex flex-wrap items-baseline gap-x-7 gap-y-1 pb-3 pt-1">
-          <div>
-            <span className="text-2xl font-semibold tabular-nums">{formatMoney(headline.portfolio)}</span>
-            <span className={cn("ml-2 text-xs font-medium tabular-nums", headline.gainVsContrib >= 0 ? "text-up" : "text-down")}>
-              {formatMoney(headline.gainVsContrib)} ({formatSignedPct(headline.gainPct)}) on capital
+      <div className="mb-4 flex flex-wrap gap-x-5 gap-y-2">
+        {LINES.map((line) => (
+          <span key={line.key} className="inline-flex items-baseline gap-2">
+            <span className="h-[2.5px] w-3.5 self-center rounded-sm" style={{ background: line.color }} />
+            <span className="text-xs text-text-muted">{line.name}</span>
+            <span className={cn("figure text-sm font-semibold", line.key === "portfolio" ? "text-text-strong" : "text-text-muted")}>
+              {latestRow ? valueFmt(Number(latestRow[line.key])) : "—"}
             </span>
-          </div>
-          <MetricInline label="vs KSE-100" value={headline.vsKse} />
-          <MetricInline label="vs inflation" value={headline.vsInflation} />
-        </div>
-      )}
+          </span>
+        ))}
+      </div>
 
       <div className="pt-1">
         <div className="chart-reveal">
@@ -196,7 +163,6 @@ export function BenchmarkGrowthChart({ data }: { data: BenchmarkPointRow[] }) {
               <XAxis dataKey="date" tickFormatter={monthLabel} tick={AXIS_TICK} axisLine={false} tickLine={false} minTickGap={36} />
               <YAxis tickFormatter={valueFmt} tick={AXIS_TICK} domain={["auto", "auto"]} axisLine={false} tickLine={false} width={48} />
               <Tooltip content={<GlassTooltip format={tooltipFmt} labelFormat={(l) => monthLabel(String(l))} />} cursor={CURSOR} />
-              <Legend wrapperStyle={{ fontSize: 11, paddingTop: 6 }} iconType="plainline" iconSize={14} />
               {LINES.map((line) => (
                 <Line
                   key={line.key}
@@ -222,11 +188,3 @@ export function BenchmarkGrowthChart({ data }: { data: BenchmarkPointRow[] }) {
   );
 }
 
-function MetricInline({ label, value }: { label: string; value: number }) {
-  return (
-    <div className="text-sm">
-      <span className="text-muted-foreground">{label} </span>
-      <span className={cn("font-semibold tabular-nums", value >= 0 ? "text-up" : "text-down")}>{formatMoney(value)}</span>
-    </div>
-  );
-}

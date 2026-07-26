@@ -55,7 +55,7 @@ export function Tabs({ tabs, initial }: { tabs: TabDef[]; initial?: string }) {
           >
             {t.label}
             {active === t.id && (
-              <span className="absolute inset-x-2 -bottom-px h-0.5 rounded-full bg-emerald-600" />
+              <span className="absolute inset-x-2 -bottom-px h-0.5 bg-ink-1" />
             )}
           </button>
         ))}

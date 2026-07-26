@@ -10,7 +10,8 @@ import { LedgerTable } from "@/components/features/performance/ledger-table";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs } from "@/components/ui/tabs";
-import { CostFrictionBars, PerformanceTimeline, PerformanceWaterfall } from "@/components/shared/charts-lazy";
+import { CostFrictionBars } from "@/components/shared/charts-lazy";
+import { BridgeBars } from "@/components/features/performance/bridge-bars";
 import { BenchmarkGrowthChart } from "@/components/features/performance/benchmark-growth-chart";
 import { cn, formatMoney, formatNumber, formatSignedPct } from "@/lib/shared/format";
 import {
@@ -152,9 +153,6 @@ export default async function PerformancePage() {
             <span className="mb-3.5 block h-0.75 w-11 bg-indigo" />
             <p className="eyebrow">Portfolio</p>
             <h1 className="mt-1.5 font-display text-(length:--text-title) font-normal tracking-editorial text-text-strong">Performance</h1>
-            <p className="mt-1 max-w-3xl text-sm text-muted-foreground">
-              Ledger-backed capital, realised return, unrealised return, costs and reconciliation.
-            </p>
             <div className="mt-3 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
               <Badge variant={sourceReconciled ? "green" : sourceComplete ? "blue" : "amber"}>{analytics.source.label}</Badge>
               <span>{analytics.source.detail}</span>
@@ -235,7 +233,7 @@ export default async function PerformancePage() {
       <div className="space-y-8 pt-8">
 
       {analytics.benchmark && analytics.benchmark.series.length >= 2 && (
-        <section>
+        <section className="dot-grid -mx-3 border-b border-rule px-3 pb-8 sm:-mx-4 sm:px-4 md:-mx-8 md:px-8">
           <p className="eyebrow">Growth of invested capital</p>
           <h2 className="mt-1.5 font-display text-(length:--text-h1) font-normal tracking-editorial text-text-strong">Your contribution schedule, four ways</h2>
           <div className="mt-5">
@@ -260,7 +258,7 @@ export default async function PerformancePage() {
           </div>
         </div>
         <div className="mt-4">
-          <PerformanceWaterfall data={bridge} />
+          <BridgeBars rows={bridge} />
         </div>
         <div className="mt-3 overflow-x-auto">
           <table className="w-full min-w-[760px] text-xs">
