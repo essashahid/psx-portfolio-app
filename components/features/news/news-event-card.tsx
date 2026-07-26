@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import Link from "next/link";
 import { Bookmark, EyeOff, ExternalLink, X } from "lucide-react";
 import type { NewsEvent } from "@/lib/news/events";
@@ -348,8 +349,11 @@ function EventDetailDrawer({
     return () => window.removeEventListener("keydown", onKey);
   }, [onClose]);
 
-  return (
-    <div className="palette-overlay fixed inset-0 z-50 bg-background/60 backdrop-blur-sm" role="dialog" aria-modal="true" onClick={onClose}>
+  // Portalled to <body>: a fixed overlay rendered inside the feed would be
+  // trapped by any ancestor that carries a transform or filter.
+  if (typeof document === "undefined") return null;
+  return createPortal(
+    <div className="palette-overlay fixed inset-0 z-100 bg-background/60 backdrop-blur-sm" role="dialog" aria-modal="true" onClick={onClose}>
       <div
         className="palette-panel absolute right-0 top-0 flex h-full w-full max-w-xl flex-col overflow-y-auto border-l border-border bg-card shadow-2xl"
         onClick={(e) => e.stopPropagation()}
@@ -459,7 +463,8 @@ function EventDetailDrawer({
           </div>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }
 
