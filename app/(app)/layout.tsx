@@ -120,10 +120,10 @@ export default async function AppLayout({ children }: { children: React.ReactNod
         </div>
       )}
       <main className="scroll-touch flex-1 px-3 py-3 pb-[calc(5.75rem+env(safe-area-inset-bottom))] sm:px-4 sm:py-4 md:px-(--gutter-page) md:py-8 md:pb-8">
-        <div className="mx-auto w-full max-w-7xl">{children}</div>
+        <div className="w-full">{children}</div>
       </main>
       <footer className="hidden border-t border-border bg-card px-6 py-2 md:block">
-        <p className="mx-auto max-w-7xl text-[11px] text-muted-foreground">{DISCLAIMER}</p>
+        <p className="text-[11px] text-muted-foreground">{DISCLAIMER}</p>
       </footer>
       {user.email === "demo@example.com" && <FeedbackWidget isDemo={isDemo} />}
       <MobileBottomNav email={user.email ?? ""} openAlerts={count ?? 0} visibleHrefs={visibleHrefs} isAdmin={isAdmin} />

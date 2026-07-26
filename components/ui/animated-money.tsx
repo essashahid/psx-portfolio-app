@@ -3,9 +3,13 @@
 import { useEffect, useState } from "react";
 import { cn } from "@/lib/shared/format";
 
-function money(value: number, signed: boolean) {
-  const prefix = signed && value > 0 ? "+" : "";
-  return `${prefix}PKR ${value.toLocaleString("en-PK", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+function money(value: number, signed: boolean, currency: boolean, decimals: number) {
+  const sign = signed ? (value < 0 ? "−" : "+") : value < 0 ? "−" : "";
+  const magnitude = Math.abs(value).toLocaleString("en-PK", {
+    minimumFractionDigits: decimals,
+    maximumFractionDigits: decimals,
+  });
+  return `${sign}${currency ? "PKR " : ""}${magnitude}`;
 }
 
 /** A mount-only numeric transition for high-priority dashboard figures. */
@@ -14,12 +18,17 @@ export function AnimatedMoney({
   signed = false,
   delay = 0,
   duration = 1100,
+  /** Off where a label already says PKR, so the unit is never printed twice. */
+  currency = true,
+  decimals = 2,
   className,
 }: {
   value: number | null | undefined;
   signed?: boolean;
   delay?: number;
   duration?: number;
+  currency?: boolean;
+  decimals?: number;
   className?: string;
 }) {
   const target = value ?? 0;
@@ -51,5 +60,5 @@ export function AnimatedMoney({
     };
   }, [target, delay, duration]);
 
-  return <span className={cn("tabular-nums", className)}>{money(display, signed)}</span>;
+  return <span className={cn("tabular-nums", className)}>{money(display, signed, currency, decimals)}</span>;
 }

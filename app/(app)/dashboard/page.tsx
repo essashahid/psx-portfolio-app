@@ -254,7 +254,7 @@ export default async function DashboardPage() {
             <div className="flex flex-wrap items-end gap-5">
               <h1 className="text-[2.25rem] font-semibold leading-none tracking-editorial text-text-strong sm:text-(length:--text-display)">
                 <span className="mr-3 align-[0.48em] text-[0.36em] font-semibold tracking-(--tracking-caps) text-text-faint">PKR</span>
-                <span className="figure font-semibold"><AnimatedMoney value={summary.totalValue} duration={1300} /></span>
+                <span className="figure font-semibold"><AnimatedMoney value={summary.totalValue} duration={1300} currency={false} decimals={0} /></span>
               </h1>
               {heroSpark.length >= 2 && (
                 <span className="inline-flex items-center gap-2.5 pb-2">
@@ -270,7 +270,7 @@ export default async function DashboardPage() {
               <span>
                 Today{" "}
                 <strong className={cn("figure font-semibold", dayTone)}>
-                  <AnimatedMoney value={dayPnl} signed delay={100} duration={900} /> ({formatSignedPct(dailyPerformance.weightedDayChangePct)})
+                  <AnimatedMoney value={dayPnl} signed delay={100} duration={900} currency={false} decimals={0} /> ({formatSignedPct(dailyPerformance.weightedDayChangePct)})
                 </strong>
               </span>
               {bench && (
@@ -306,10 +306,10 @@ export default async function DashboardPage() {
 
         <div className="relative z-2 -mx-3 mt-7 sm:-mx-4 md:-mx-(--gutter-page)">
           <div className="grid border-y border-rule sm:grid-cols-2 lg:grid-cols-4">
-            <HeroMetric label="Total cost" value={<AnimatedMoney value={summary.totalCost} delay={120} />} sub="PKR" first />
-            <HeroMetric label="Unrealised P/L" value={<AnimatedMoney value={summary.unrealizedPl} signed delay={180} />} sub={formatSignedPct(summary.unrealizedPlPct)} tone={summary.unrealizedPl > 0 ? "up" : summary.unrealizedPl < 0 ? "down" : undefined} />
-            <HeroMetric label="Dividends received" value={<AnimatedMoney value={summary.dividendIncome} delay={240} />} sub="Since first transaction" />
-            <HeroMetric label="Broker cash" value={<AnimatedMoney value={summary.cashBalance} delay={300} />} sub="Uninvested" last />
+            <HeroMetric label="Total cost" value={<AnimatedMoney value={summary.totalCost} delay={120} currency={false} decimals={0} />} sub="PKR" first />
+            <HeroMetric label="Unrealised P/L" value={<AnimatedMoney value={summary.unrealizedPl} signed delay={180} currency={false} decimals={0} />} sub={formatSignedPct(summary.unrealizedPlPct)} tone={summary.unrealizedPl > 0 ? "up" : summary.unrealizedPl < 0 ? "down" : undefined} />
+            <HeroMetric label="Dividends received" value={<AnimatedMoney value={summary.dividendIncome} delay={240} currency={false} decimals={0} />} sub="Since first transaction" />
+            <HeroMetric label="Broker cash" value={<AnimatedMoney value={summary.cashBalance} delay={300} currency={false} decimals={0} />} sub="Uninvested" last />
           </div>
         </div>
         <p className="relative z-2 py-3 pb-5 text-xs text-text-muted">

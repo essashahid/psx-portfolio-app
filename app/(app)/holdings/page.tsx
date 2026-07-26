@@ -85,10 +85,10 @@ export default async function HoldingsPage() {
         {summary.holdings.length > 0 && (
           <>
             <p className="mt-5 max-w-(--measure) text-(length:--text-h3) leading-relaxed text-text-muted">
-              Market value <strong className="figure font-semibold text-text-strong">{formatMoney(summary.totalValue)}</strong> against a cost basis of{" "}
-              <strong className="figure font-semibold text-text-strong">{formatMoney(summary.totalCost)}</strong>. Unrealised{" "}
-              <strong className={`figure font-semibold ${summary.unrealizedPl >= 0 ? "text-up" : "text-down"}`}>{formatMoney(summary.unrealizedPl)}</strong>
-              {dayPnl !== null && <>, with <strong className={`figure font-semibold ${dayPnl >= 0 ? "text-up" : "text-down"}`}>{formatMoney(dayPnl)}</strong> of it today</>}.
+              Market value <strong className="figure font-semibold text-text-strong">{formatNumber(summary.totalValue, 0)}</strong> against a cost basis of{" "}
+              <strong className="figure font-semibold text-text-strong">{formatNumber(summary.totalCost, 0)}</strong>. Unrealised{" "}
+              <strong className={`figure font-semibold ${summary.unrealizedPl >= 0 ? "text-up" : "text-down"}`}>{formatNumber(summary.unrealizedPl, 0)}</strong>
+              {dayPnl !== null && <>, with <strong className={`figure font-semibold ${dayPnl >= 0 ? "text-up" : "text-down"}`}>{formatNumber(dayPnl, 0)}</strong> of it today</>}.
             </p>
             <SectorWeightBar slices={summary.sectorWeights} total={summary.totalValue} />
           </>
