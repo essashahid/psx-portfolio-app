@@ -23,6 +23,16 @@ export const dynamic = "force-dynamic";
 
 const GUTTER = "px-3 sm:px-4 md:px-(--gutter-page)";
 
+/**
+ * A price, always to two decimals.
+ *
+ * The shared formatNumber sets no minimum, so a round average cost prints as
+ * "275" beside a quoted "188.75". Prices carry two decimals throughout, and a
+ * cost basis is a price.
+ */
+const price2 = (v: number) =>
+  v.toLocaleString("en-PK", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
 function compactNumber(value: number | null | undefined, digits = 1): string {
   if (value === null || value === undefined || Number.isNaN(value)) return "—";
   return new Intl.NumberFormat("en-PK", { notation: "compact", maximumFractionDigits: digits }).format(value);
@@ -57,7 +67,7 @@ export default async function StockCockpitPage({ params }: { params: Promise<{ t
   const [header, { data: holding }, { data: watch }, ratios, profileRes, { data: closesRows }] =
     await Promise.all([
       getCompanyHeader(supabase, ticker),
-      supabase.from("holdings").select("quantity").eq("user_id", user.id).eq("ticker", ticker).eq("hidden", false).gt("quantity", 0).maybeSingle(),
+      supabase.from("holdings").select("quantity, avg_cost").eq("user_id", user.id).eq("ticker", ticker).eq("hidden", false).gt("quantity", 0).maybeSingle(),
       supabase.from("stock_watchlist").select("ticker").eq("user_id", user.id).eq("ticker", ticker).maybeSingle(),
       computeRatios(supabase, ticker),
       supabase.from("profiles").select("enabled_features, demo_mode").eq("id", user.id).maybeSingle(),
@@ -129,9 +139,19 @@ export default async function StockCockpitPage({ params }: { params: Promise<{ t
             <span className="mb-3.5 block h-0.75 w-11" style={{ background: hue }} />
             <div className="flex flex-wrap items-baseline gap-3.5">
               <h1 className="font-display text-(length:--text-title) font-normal tracking-editorial text-text-strong">{ticker}</h1>
-              {holding && (
-                <span className="text-(length:--text-2xs) font-semibold uppercase tracking-(--tracking-caps) text-text-muted">
-                  In your book
+              {/*
+                The owned marker states the position rather than the fact of
+                one: how many shares, at what average cost. It is the only place
+                the page carries your holding, so a bare "In your book" would
+                make you go and look the numbers up elsewhere.
+              */}
+              {holding && holding.quantity > 0 && (
+                <span className="inline-flex items-center gap-2.5 rounded-(--radius-pill) border border-rule px-3.5 py-1.5">
+                  <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-indigo" />
+                  <span className="figure text-(length:--text-2xs) text-text-muted">
+                    {formatNumber(holding.quantity, 0)} share{holding.quantity === 1 ? "" : "s"}
+                    {holding.avg_cost ? ` at an average cost of ${price2(holding.avg_cost)}` : ""}
+                  </span>
                 </span>
               )}
             </div>
