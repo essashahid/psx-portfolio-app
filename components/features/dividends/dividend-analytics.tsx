@@ -1,12 +1,11 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Bar, BarChart, CartesianGrid, Cell, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import type { Dividend, EnrichedHolding } from "@/lib/shared/types";
 import type { DividendEvent } from "@/lib/dividends/engine";
-import { INK } from "@/components/shared/chart-kit";
 import { taxYearOf } from "@/lib/dividends/tax-year";
-import { formatMoney, cn } from "@/lib/shared/format";
+import { formatMoney, formatNumber, cn } from "@/lib/shared/format";
+import { SectorDot } from "@/components/shared/sector-chip";
 
 function receivedDate(record: Dividend): string {
   return record.payment_date ?? record.pay_date ?? record.announcement_date ?? record.created_at.slice(0, 10);
@@ -46,43 +45,29 @@ export function DividendTrajectory({ dividends, events }: { dividends: Dividend[
 
   const hasForecast = data.some((row) => row.forecast > 0);
   if (data.length === 0) {
-    return <p className="py-12 text-center text-sm text-muted-foreground">No dividend history recorded yet.</p>;
+    return <p className="py-12 text-center text-sm text-text-muted">No dividend history recorded yet.</p>;
   }
+
+  const peak = Math.max(...data.map((r) => r.received + r.forecast), 1);
+  const compact = (v: number) => (v >= 1000 ? `${formatNumber(v / 1000, 0)}k` : formatNumber(v, 0));
 
   return (
     <div>
-      <div className="h-64">
-        <ResponsiveContainer width="100%" height="100%">
-          <BarChart data={data} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
-            <CartesianGrid vertical={false} stroke={INK.grid} strokeDasharray="3 3" />
-            <XAxis dataKey="year" tick={{ fontSize: 11, fill: INK.neutral }} axisLine={false} tickLine={false} />
-            <YAxis tick={{ fontSize: 10, fill: INK.neutral }} tickFormatter={(v) => `PKR ${(v / 1000).toFixed(0)}k`} axisLine={false} tickLine={false} width={55} />
-            <Tooltip content={<TrajectoryTooltip />} />
-            <Bar dataKey="received" name="Received (net)" stackId="a" fill="var(--saffron-1)" radius={[0, 0, 0, 0]} />
-            <Bar dataKey="forecast" name="Forecast / confirmed" stackId="a" fill="var(--saffron-3)" radius={[3, 3, 0, 0]}>
-              {data.map((row) => (
-                <Cell key={row.year} />
-              ))}
-            </Bar>
-          </BarChart>
-        </ResponsiveContainer>
+      <div className="flex h-45 items-end gap-4.5">
+        {data.map((row) => (
+          <span key={row.year} className="flex flex-1 flex-col items-center gap-2">
+            <span className="flex h-35 w-full flex-col justify-end" title={`${row.year} · received ${formatMoney(row.received)}${row.forecast ? ` · forecast ${formatMoney(row.forecast)}` : ""}`}>
+              {row.forecast > 0 && (
+                <span className="w-full bg-[var(--saffron-3)]" style={{ height: `${(row.forecast / peak) * 100}%` }} />
+              )}
+              <span className="w-full bg-[var(--saffron-1)]" style={{ height: `${(row.received / peak) * 100}%` }} />
+            </span>
+            <span className="figure text-(length:--text-2xs) text-text-muted">{compact(row.received + row.forecast)}</span>
+            <span className="text-(length:--text-3xs) font-bold tracking-(--tracking-caps) text-text-faint">{row.year}</span>
+          </span>
+        ))}
       </div>
-      {hasForecast && <p className="mt-2 text-[11px] text-muted-foreground">Lighter segments are forecast or announced-but-unpaid income, not yet received.</p>}
-    </div>
-  );
-}
-
-function TrajectoryTooltip({ active, payload, label }: { active?: boolean; payload?: { name: string; value: number }[]; label?: string }) {
-  if (!active || !payload?.length) return null;
-  return (
-    <div className="chart-tooltip">
-      <p className="chart-tooltip-label">{label}</p>
-      {payload.filter((p) => p.value > 0).map((item) => (
-        <p key={item.name} className="flex justify-between gap-5 text-xs">
-          <span>{item.name}</span>
-          <span className="font-medium tabular-nums">{formatMoney(item.value)}</span>
-        </p>
-      ))}
+      {hasForecast && <p className="mt-4 text-(length:--text-2xs) text-text-faint">Lighter segments are forecast or announced-but-unpaid income, not yet received.</p>}
     </div>
   );
 }
@@ -111,6 +96,10 @@ function YieldSortButton({ id, label, sort, setSort }: { id: YieldSort; label: s
 
 export function DividendYieldTable({ dividends, holdings, asOf }: { dividends: Dividend[]; holdings: EnrichedHolding[]; asOf: string }) {
   const [sort, setSort] = useState<YieldSort>("yoc");
+  const sectorByTicker = useMemo(
+    () => Object.fromEntries(holdings.map((h) => [h.ticker, h.sector ?? null])),
+    [holdings]
+  );
 
   const rows = useMemo(() => {
     const cutoff = new Date(`${asOf}T12:00:00`);
@@ -155,26 +144,29 @@ export function DividendYieldTable({ dividends, holdings, asOf }: { dividends: D
   }
 
   return (
-    <div className="overflow-x-auto">
-      <table className="w-full min-w-[560px] border-collapse text-sm">
+    <div className="scroll-touch w-full overflow-x-auto">
+      <table className="w-full min-w-[34rem] text-sm">
         <thead>
-          <tr className="border-b border-border text-xs">
-            <th className="py-2 pr-3 text-left"><YieldSortButton id="ticker" label="Holding" sort={sort} setSort={setSort} /></th>
-            <th className="px-3 py-2 text-right"><YieldSortButton id="ttm" label="TTM income (net)" sort={sort} setSort={setSort} /></th>
-            <th className="px-3 py-2 text-right"><YieldSortButton id="yoc" label="Yield on cost" sort={sort} setSort={setSort} /></th>
-            <th className="px-3 py-2 text-right"><YieldSortButton id="yov" label="Yield on value" sort={sort} setSort={setSort} /></th>
+          <tr className="border-b border-rule-strong">
+            <th className="pb-2.5 pr-3 text-left"><YieldSortButton id="ticker" label="Holding" sort={sort} setSort={setSort} /></th>
+            <th className="px-3 pb-2.5 text-right"><YieldSortButton id="ttm" label="TTM income" sort={sort} setSort={setSort} /></th>
+            <th className="px-3 pb-2.5 text-right"><YieldSortButton id="yoc" label="On cost" sort={sort} setSort={setSort} /></th>
+            <th className="pb-2.5 pl-3 text-right"><YieldSortButton id="yov" label="On value" sort={sort} setSort={setSort} /></th>
           </tr>
         </thead>
         <tbody>
           {sorted.map((row) => (
-            <tr key={row.ticker} className="border-b border-border last:border-0">
-              <td className="py-2 pr-3">
-                <span className="font-semibold">{row.ticker}</span>
-                {row.companyName && <span className="ml-2 hidden text-xs text-muted-foreground sm:inline">{row.companyName}</span>}
+            <tr key={row.ticker} className="border-b border-rule last:border-0">
+              <td className="py-2.5 pr-3">
+                <span className="inline-flex min-w-0 items-center gap-2">
+                  <SectorDot sector={sectorByTicker[row.ticker] ?? null} />
+                  <span className="font-semibold text-text-strong">{row.ticker}</span>
+                  {row.companyName && <span className="hidden truncate text-(length:--text-2xs) text-text-muted sm:inline">{row.companyName}</span>}
+                </span>
               </td>
-              <td className="px-3 py-2 text-right tabular-nums">{formatMoney(row.ttmNet)}</td>
-              <td className="px-3 py-2 text-right tabular-nums">{row.yieldOnCost !== null ? `${row.yieldOnCost.toFixed(2)}%` : "—"}</td>
-              <td className="px-3 py-2 text-right tabular-nums text-muted-foreground">{row.yieldOnValue !== null ? `${row.yieldOnValue.toFixed(2)}%` : "—"}</td>
+              <td className="figure px-3 py-2.5 text-right">{row.ttmNet > 0 ? formatMoney(row.ttmNet) : "—"}</td>
+              <td className="figure px-3 py-2.5 text-right">{row.yieldOnCost !== null ? `${row.yieldOnCost.toFixed(2)}%` : "—"}</td>
+              <td className="figure py-2.5 pl-3 text-right text-text-muted">{row.yieldOnValue !== null ? `${row.yieldOnValue.toFixed(2)}%` : "—"}</td>
             </tr>
           ))}
         </tbody>

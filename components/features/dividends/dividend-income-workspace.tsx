@@ -118,6 +118,10 @@ export function DividendIncomeWorkspace({
   }, [received]);
   const maxHolding = Math.max(...byHolding.map((row) => row.net), 1);
 
+  const sectorByTicker = useMemo(
+    () => Object.fromEntries(holdings.map((h) => [h.ticker, h.sector ?? null])),
+    [holdings]
+  );
   const effectiveRate = gross > 0 ? ((tax / gross) * 100).toFixed(1) : null;
   const nextUpcoming = upcoming
     .filter((event) => event.ex_date)
@@ -230,7 +234,7 @@ export function DividendIncomeWorkspace({
 
       {/* ── Records (third band) ── */}
       <div className="mt-8 border-t border-rule pt-7">
-        <DividendReceivables events={periodEvents} received={received} showLowConfidence={false} readOnly={readOnly} />
+        <DividendReceivables events={periodEvents} received={received} showLowConfidence={false} sectors={sectorByTicker} readOnly={readOnly} />
       </div>
 
       {!readOnly && <details className="mt-8 border-t border-rule pt-5"><summary className="cursor-pointer text-sm font-semibold text-text-strong">Manage recorded dividends</summary><p className="mt-1 text-xs text-text-muted">Add, edit or remove manual and imported dividend records.</p><div className="mt-4"><DividendManager dividends={received} holdings={holdings} /></div></details>}
