@@ -244,36 +244,6 @@ export default async function PerformancePage() {
         <div className="mt-4">
           <BridgeBars rows={bridge} />
         </div>
-        <div className="mt-3 overflow-x-auto">
-          <table className="w-full min-w-[760px] text-xs">
-            <thead>
-              <tr className="border-b border-border text-left text-[10px] uppercase tracking-wide text-muted-foreground">
-                <th className="py-2 pr-4">Component</th>
-                <th className="px-2 py-2 text-right">Value</th>
-                <th className="px-2 py-2">Treatment</th>
-                <th className="px-2 py-2">Note</th>
-              </tr>
-            </thead>
-            <tbody>
-              {bridge.map((row) => (
-                <tr key={row.label} className="border-b border-border last:border-0">
-                  <td className="py-2 pr-4 font-medium">{row.label}</td>
-                  <td className={cn("px-2 py-2 text-right tabular-nums", row.value < 0 ? "text-down" : row.value > 0 ? "text-up" : "")}>
-                    {formatMoney(row.value)}
-                  </td>
-                  <td className="px-2 py-2">{row.includedInReconciliation ? "Included" : "Audit only"}</td>
-                  <td className="px-2 py-2 text-muted-foreground">{row.note}</td>
-                </tr>
-              ))}
-              <tr className="border-b border-border last:border-0">
-                <td className="py-2 pr-4 font-medium">Net dividend income</td>
-                <td className="px-2 py-2 text-right tabular-nums text-up">{formatMoney(portfolio.dividendIncome)}</td>
-                <td className="px-2 py-2">Displayed separately</td>
-                <td className="px-2 py-2 text-muted-foreground">Included in total-return review without adding it twice to current cash or net worth.</td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
       </section>
 
       <section className="border-t border-border pt-5">
@@ -285,21 +255,21 @@ export default async function PerformancePage() {
             <p className={cn("figure mt-2.5 text-(length:--text-h1) font-semibold", analytics.benchmark && analytics.benchmark.excessVsKse100 < 0 ? "text-down" : "text-up")}>
               {analytics.benchmark ? `${analytics.benchmark.excessVsKse100 < 0 ? "−" : "+"}${formatNumber(Math.abs(analytics.benchmark.excessVsKse100), 0)}` : "—"}
             </p>
-            <p className="mt-2 text-xs text-text-muted">{analytics.benchmark ? `The same contributions tracked to the index would be worth ${formatMoney(analytics.benchmark.kse100Equivalent)}.` : analytics.benchmarkStatus.kse100.reason ?? "Requires the benchmark series."}</p>
+            {!analytics.benchmark && <p className="mt-2 text-xs text-text-muted">{analytics.benchmarkStatus.kse100.reason ?? "Requires the benchmark series."}</p>}
           </div>
           <div className="border-l-[3px] border-saffron pl-5 sm:pr-7">
             <p className="text-sm font-semibold text-text-strong">Against inflation</p>
             <p className={cn("figure mt-2.5 text-(length:--text-h1) font-semibold", analytics.benchmark && analytics.benchmark.excessVsInflation < 0 ? "text-down" : "text-up")}>
               {analytics.benchmark ? `${analytics.benchmark.excessVsInflation < 0 ? "−" : "+"}${formatNumber(Math.abs(analytics.benchmark.excessVsInflation), 0)}` : "—"}
             </p>
-            <p className="mt-2 text-xs text-text-muted">{analytics.benchmark ? `Contributions kept at PBS CPI would be worth ${formatMoney(analytics.benchmark.inflationEquivalent)}.` : analytics.benchmarkStatus.inflation.reason ?? "Requires Pakistan CPI history."}</p>
+            {!analytics.benchmark && <p className="mt-2 text-xs text-text-muted">{analytics.benchmarkStatus.inflation.reason ?? "Requires Pakistan CPI history."}</p>}
           </div>
           <div className="border-l-[3px] border-down pl-5">
             <p className="text-sm font-semibold text-text-strong">Worst drawdown</p>
             <p className="figure mt-2.5 text-(length:--text-h1) font-semibold text-down">
               {analytics.benchmark?.maxDrawdownPct !== null && analytics.benchmark?.maxDrawdownPct !== undefined ? `${analytics.benchmark.maxDrawdownPct}%` : "—"}
             </p>
-            <p className="mt-2 text-xs text-text-muted">{analytics.benchmark?.maxDrawdownPct != null ? `${formatMoney(analytics.benchmark.maxDrawdownValue ?? 0)} peak to trough, ${analytics.benchmark.drawdownPeakDate ?? "—"} to ${analytics.benchmark.drawdownTroughDate ?? "—"}.` : analytics.benchmarkStatus.drawdown.reason ?? "Requires a complete value series."}</p>
+            {analytics.benchmark?.maxDrawdownPct == null && <p className="mt-2 text-xs text-text-muted">{analytics.benchmarkStatus.drawdown.reason ?? "Requires a complete value series."}</p>}
           </div>
         </div>
       </section>

@@ -66,7 +66,6 @@ export default async function DividendsPage() {
           <section>
             <p className="eyebrow">Income trajectory</p>
             <h2 className="mt-1.5 font-display text-(length:--text-h1) font-normal tracking-editorial text-text-strong">By calendar year</h2>
-            <p className="mt-1.5 text-xs text-text-muted">Net income received, with the current and next year&apos;s forecast extended on top.</p>
             <div className="mt-5">
               <DividendTrajectory dividends={dividends} events={events} />
             </div>
@@ -75,7 +74,6 @@ export default async function DividendsPage() {
           <section>
             <p className="eyebrow">Yield by holding</p>
             <h2 className="mt-1.5 font-display text-(length:--text-h1) font-normal tracking-editorial text-text-strong">Trailing twelve months</h2>
-            <p className="mt-1.5 text-xs text-text-muted">TTM income against what each position cost and what it is worth today.</p>
             <div className="mt-5">
               <DividendYieldTable dividends={dividends} holdings={summary.holdings} asOf={asOf} />
             </div>
@@ -85,7 +83,7 @@ export default async function DividendsPage() {
         <section className="mt-10 border-t border-rule pt-7">
           <p className="eyebrow">Statement</p>
           <h2 className="mt-1.5 font-display text-(length:--text-h1) font-normal tracking-editorial text-text-strong">Tax-year statement</h2>
-          <p className="mt-1.5 text-xs text-text-muted">Gross, withheld and net dividend income per holding for a Pakistan tax year (1 July to 30 June).</p>
+          <p className="mt-1.5 text-xs text-text-muted">A Pakistan tax year runs 1 July to 30 June.</p>
           <div className="mt-5">
             <TaxYearStatement dividends={dividends} defaultYear={taxSettings.tax_year ?? null} />
           </div>

@@ -83,8 +83,8 @@ export function BaseRatesView({ data }: { data: OutlookBaseRates }) {
             </div>
 
             <p className="mt-5 max-w-(--measure) text-sm leading-relaxed text-text-muted">
-              Eight windows in ten landed between {signedPct(h.band.p10)} and {signedPct(h.band.p90)}. The scale is shared
-              across horizons, so a longer window visibly widens the band rather than rescaling beneath it.
+              The scale is shared across horizons, so a longer window visibly widens the band rather than rescaling
+              beneath it.
             </p>
 
             <div className="mt-7 grid gap-6 border-t border-rule pt-6 sm:grid-cols-3">
@@ -120,8 +120,7 @@ export function BaseRatesView({ data }: { data: OutlookBaseRates }) {
               <Row label="Confidence" value={h.confidence} className={CONFIDENCE_TONE[h.confidence]} mono={false} />
             </div>
             <p className="mt-4 text-(length:--text-2xs) leading-relaxed text-text-faint">
-              Based on {h.independentWindows} separate historical periods. Overlapping windows are excluded, so this count
-              is the real sample size.
+              Overlapping windows are excluded, so this count is the real sample size.
             </p>
           </div>
         </div>

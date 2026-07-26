@@ -408,7 +408,6 @@ export default async function NewsPage({ searchParams }: { searchParams: Promise
               <div className="flex items-center justify-between gap-3">
                 <div>
                   <h2 className="text-lg font-semibold tracking-editorial">Suggested for you</h2>
-                  <p className="text-xs text-muted-foreground">Best current event clusters based on your holdings, watchlist and portfolio sectors.</p>
                 </div>
                 <Link href={buildHref({ filter: "suggested" })} className="text-xs font-medium text-muted-foreground hover:text-foreground">
                   View all suggested events
@@ -446,7 +445,6 @@ export default async function NewsPage({ searchParams }: { searchParams: Promise
               <div className="flex flex-wrap items-end justify-between gap-2">
                 <div>
                   <h2 className="text-lg font-semibold tracking-editorial">{tab === "suggested" ? "Event feed" : TABS.find((t) => t.id === tab)?.label}</h2>
-                  <p className="text-xs text-muted-foreground">Clustered events. Related reports are grouped under one primary event.</p>
                 </div>
                 {activeTicker && (
                   <Link
@@ -488,7 +486,6 @@ export default async function NewsPage({ searchParams }: { searchParams: Promise
           {sectorPulse.length > 0 && (
             <section className="rounded-lg border border-border bg-card p-4">
               <h2 className="text-sm font-semibold">Sector pulse</h2>
-              <p className="mt-0.5 text-xs text-muted-foreground">Today&apos;s average move in your portfolio sectors.</p>
               <div className="mt-3 space-y-1">
                 {sectorPulse.map((row) => (
                   <Link
