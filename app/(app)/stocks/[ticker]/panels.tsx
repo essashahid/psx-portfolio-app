@@ -2,23 +2,20 @@ import { createClient, getUser } from "@/lib/supabase/server";
 import { getCompanyMetadata } from "@/lib/company/metadata";
 import { getTechnicals } from "@/lib/company/technicals";
 import { computeSignals, findSwings, detectSupportResistanceZones, toCanonicalOHLCV } from "@/lib/market/technicals";
-import { getCompanyDividends } from "@/lib/company/dividends";
 import { getCompanyFilings } from "@/lib/company/filings";
 import { getFundamentals } from "@/lib/company/fundamentals";
 import { sectorColor } from "@/lib/shared/sector-colors";
 import { computeRatios, type RatioRow } from "@/lib/engine/ratios";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Table, THead, TBody, TR, TH, TD } from "@/components/ui/table";
 import { EmptyState } from "@/components/ui/empty-state";
 import { ActionButton } from "@/components/ui/action-button";
 import { TechnicalWorkstation } from "@/components/features/technicals/workstation";
 import { FundamentalsGrid } from "@/components/features/stocks/fundamentals-grid";
+import { FilingsSpine, type SpineEntry } from "@/components/features/stocks/filings-spine";
 import type { FinancialWorkspaceRow } from "@/components/features/stocks/financials-workspace";
 import { EarningsWorkspace } from "@/components/features/stocks/earnings-workspace";
 import { formatNumber, formatFinancialPeriod } from "@/lib/shared/format";
 import {
-  Banknote, FileText, TrendingUp,
+  FileText, TrendingUp,
 } from "lucide-react";
 
 function shortDescription(description: string | null): string | null {
@@ -332,141 +329,198 @@ export async function TechnicalsPanel({ ticker }: { ticker: string }) {
 // 6. Dividends
 // ---------------------------------------------------------------------------
 
+/**
+ * Dividends: what the company declared.
+ *
+ * Reads the announcement feed, not the user's own dividend receipts — the
+ * design is explicit that this is the company's record and that what you were
+ * actually paid is reconciled on the Dividends page. The two disagree often
+ * enough (timing, withholding, partial holdings) that showing receipts here
+ * would quietly answer a different question than the one asked.
+ *
+ * PSX publishes a book-closure window rather than an ex-date, and no pay date
+ * at all, so those columns say what they are instead of borrowing the names of
+ * fields we do not have.
+ */
 export async function DividendsPanel({ ticker }: { ticker: string }) {
   const supabase = await createClient();
-  const user = await getUser();
-  if (!user) return null;
 
-  const [dividends, filings] = await Promise.all([
-    getCompanyDividends(supabase, user.id, ticker),
-    getCompanyFilings(ticker, 25),
-  ]);
-  const divFilings = filings.filter((f) => f.category === "dividend");
+  const { data } = await supabase
+    .from("company_payouts")
+    .select("kind, term, percentage, dividend_per_share, announcement_date, book_closure_start, book_closure_end")
+    .eq("ticker", ticker)
+    .order("announcement_date", { ascending: false })
+    .limit(40);
+  const rows = data ?? [];
 
   return (
-    <div className="space-y-4">
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2"><Banknote className="h-4 w-4" /> Dividend history</CardTitle>
-          <CardDescription>Recorded cash dividends, bonus and rights for {ticker}.</CardDescription>
-        </CardHeader>
-        <CardContent className="overflow-x-auto">
-          {dividends.length === 0 ? (
-            <p className="py-4 text-center text-xs text-muted-foreground">No dividends recorded yet. Dividend announcements appear under filings below as they are detected.</p>
-          ) : (
-            <Table>
-              <THead>
-                <TR><TH>Announced</TH><TH>Type</TH><TH className="text-right">Per share</TH><TH>Ex-date</TH><TH>Pay date</TH><TH>Source</TH></TR>
-              </THead>
-              <TBody>
-                {dividends.map((d, i) => (
-                  <TR key={i}>
-                    <TD className="text-xs">{d.announcementDate ?? d.date ?? "—"}</TD>
-                    <TD><Badge variant={d.kind === "cash" ? "green" : d.kind === "bonus" ? "blue" : "amber"}>{d.kind}</Badge></TD>
-                    <TD className="text-right text-xs tabular-nums">{d.perShare !== null ? formatNumber(d.perShare) : "—"}</TD>
-                    <TD className="text-xs">{d.exDate ?? "—"}</TD>
-                    <TD className="text-xs">{d.payDate ?? "—"}</TD>
-                    <TD className="text-[11px] text-muted-foreground">{d.source}</TD>
-                  </TR>
-                ))}
-              </TBody>
-            </Table>
-          )}
-        </CardContent>
-      </Card>
+    <div>
+      <p className="eyebrow">Announced payouts</p>
+      <h2 className="mt-1.5 font-display text-(length:--text-h1) font-normal tracking-editorial text-text-strong">
+        What the company declared
+      </h2>
 
-      {divFilings.length > 0 && (
-        <Card>
-          <CardHeader><CardTitle>Dividend & entitlement filings</CardTitle></CardHeader>
-          <CardContent>
-            <ul className="space-y-2">
-              {divFilings.map((f, i) => (
-                <li key={i} className="border-b border-border pb-2 last:border-0">
-                  <a href={f.url} target="_blank" rel="noopener noreferrer" className="text-sm font-medium hover:underline">{f.title}</a>
-                  <p className="text-[11px] text-muted-foreground">{f.date ?? ""} · {f.source}</p>
-                </li>
+      {rows.length === 0 ? (
+        <p className="mt-6 max-w-(--measure) text-sm leading-relaxed text-text-muted">
+          No payout announcements on file for {ticker}. They appear here as the exchange publishes them.
+        </p>
+      ) : (
+        <>
+          <div className="mt-7 overflow-x-auto">
+            <div className="min-w-[38rem]">
+              <div className="grid grid-cols-[7rem_minmax(0,1fr)_9rem_7rem_6rem] gap-4 border-b border-rule-strong pb-2 text-(length:--text-3xs) font-bold uppercase tracking-(--tracking-caps) text-text-faint">
+                <span>Announced</span>
+                <span>Kind</span>
+                <span>Book closure</span>
+                <span className="text-right">Per share</span>
+                <span className="text-right">Of face</span>
+              </div>
+              {rows.map((r, i) => (
+                <div
+                  key={`${r.announcement_date}-${i}`}
+                  className="grid grid-cols-[7rem_minmax(0,1fr)_9rem_7rem_6rem] items-baseline gap-4 border-b border-rule py-3"
+                >
+                  <span className="figure text-sm text-text-strong">{r.announcement_date ?? "—"}</span>
+                  <span className="text-sm text-text-muted">
+                    {[r.term, r.kind].filter(Boolean).join(" ") || "cash"}
+                  </span>
+                  <span className="figure text-sm text-text-muted">
+                    {r.book_closure_start
+                      ? r.book_closure_end && r.book_closure_end !== r.book_closure_start
+                        ? `${r.book_closure_start} to ${r.book_closure_end}`
+                        : r.book_closure_start
+                      : "—"}
+                  </span>
+                  <span className="figure text-right text-sm font-semibold text-text-strong">
+                    {typeof r.dividend_per_share === "number" ? formatNumber(r.dividend_per_share) : "—"}
+                  </span>
+                  <span className="figure text-right text-sm text-text-muted">
+                    {typeof r.percentage === "number" ? `${formatNumber(r.percentage, 0)}%` : "—"}
+                  </span>
+                </div>
               ))}
-            </ul>
-          </CardContent>
-        </Card>
+            </div>
+          </div>
+          <p className="mt-5 max-w-(--measure) text-(length:--text-2xs) leading-relaxed text-text-faint">
+            Company announcements, not your receipts. Dividends you were actually paid are reconciled on the
+            Dividends page. PSX publishes a book-closure window rather than an ex-date, and does not publish a
+            pay date.
+          </p>
+        </>
       )}
     </div>
   );
 }
 
+
 // ---------------------------------------------------------------------------
 // 7. News & Filings
 // ---------------------------------------------------------------------------
 
-const FILING_VARIANT: Record<string, "green" | "blue" | "amber" | "secondary"> = {
-  result: "blue", dividend: "green", board_meeting: "amber", material: "amber", corporate_announcement: "secondary",
-};
-
+/**
+ * Filings and news on one dated spine.
+ *
+ * The "one figure it moved" line is only drawn where it can be established from
+ * our own records: a dividend announcement is matched to the payout row that
+ * carries its per-share figure. A board meeting called to approve accounts is
+ * known to have moved nothing yet, so it says that. Anything else says nothing,
+ * because a line claiming to name the figure that moved is worthless the moment
+ * it starts guessing.
+ */
 export async function NewsFilingsPanel({ ticker }: { ticker: string }) {
   const supabase = await createClient();
   const user = await getUser();
   if (!user) return null;
 
-  const [filings, newsRes] = await Promise.all([
+  const [filings, newsRes, payoutsRes] = await Promise.all([
     getCompanyFilings(ticker, 30),
     supabase
       .from("news_articles")
-      .select("id, title, url, source, published_at, ai_summary, sentiment, relevance_score, category")
+      .select("title, url, source, published_at")
       .eq("user_id", user.id)
       .eq("ticker", ticker)
       .eq("ignored", false)
-      .order("created_at", { ascending: false })
+      .order("published_at", { ascending: false })
       .limit(15),
+    supabase
+      .from("company_payouts")
+      .select("dividend_per_share, kind, term, announcement_date")
+      .eq("ticker", ticker)
+      .limit(60),
   ]);
-  const news = newsRes.data ?? [];
+
+  const payouts = payoutsRes.data ?? [];
+
+  /**
+   * The payout this filing announced, when that can be established without
+   * guessing.
+   *
+   * The two dates are not the same event: PSX dates the notice, while the
+   * payout row carries the board's decision date, and they sit anywhere from a
+   * few days to three weeks apart — Mari 11 days, OGDC 23. A tight window
+   * matched almost nothing. So the nearest payout within a month wins, but only
+   * if it is the only candidate in that month; two payouts in range means the
+   * filing cannot be attributed to one of them, and nothing is claimed.
+   */
+  const WINDOW_DAYS = 32;
+  function payoutNear(date: string | null) {
+    if (!date) return null;
+    const t = Date.parse(date);
+    if (!Number.isFinite(t)) return null;
+    const inRange = payouts
+      .filter((p) => p.announcement_date && typeof p.dividend_per_share === "number")
+      .map((p) => ({ p, gap: Math.abs(Date.parse(p.announcement_date as string) - t) / 86400000 }))
+      .filter((x) => x.gap <= WINDOW_DAYS)
+      .sort((a, b) => a.gap - b.gap);
+    if (inRange.length !== 1) return null;
+    return inRange[0].p;
+  }
+
+  const entries: SpineEntry[] = [
+    ...filings.map((f) => {
+      const payout = f.category === "dividend" ? payoutNear(f.date) : null;
+      return {
+        date: f.date,
+        title: f.title,
+        category: f.category,
+        url: f.url,
+        source: "PSX announcement",
+        moved: payout
+          ? `Dividend per share ${(payout.dividend_per_share as number).toLocaleString("en-PK", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}${payout.term ? ` · ${payout.term}` : ""}`
+          : null,
+        pending:
+          f.category === "board_meeting" ? "Nothing filed yet. The figure arrives with the accounts." : null,
+      };
+    }),
+    ...(newsRes.data ?? []).map((n) => ({
+      date: (n.published_at as string | null)?.slice(0, 10) ?? null,
+      title: n.title as string,
+      category: "news",
+      url: (n.url as string | null) ?? null,
+      source: (n.source as string | null) ?? "Press",
+      moved: null,
+      pending: null,
+    })),
+  ].sort((a, b) => (b.date ?? "").localeCompare(a.date ?? ""));
 
   return (
-    <div className="grid gap-4 lg:grid-cols-2">
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2"><FileText className="h-4 w-4" /> PSX filings</CardTitle>
-          <CardDescription>Official company announcements — results, board meetings, dividends, material info.</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-2">
-          {filings.length === 0 ? (
-            <p className="py-4 text-center text-xs text-muted-foreground">No filings retrieved from the PSX portal for {ticker}.</p>
-          ) : (
-            filings.map((f, i) => (
-              <div key={i} className="flex items-start justify-between gap-2 border-b border-border pb-2 last:border-0">
-                <div className="min-w-0">
-                  <a href={f.url} target="_blank" rel="noopener noreferrer" className="text-sm font-medium leading-snug hover:underline">{f.title}</a>
-                  <p className="text-[11px] text-muted-foreground">{f.date ?? ""} · {f.source}</p>
-                </div>
-                <Badge variant={FILING_VARIANT[f.category] ?? "secondary"}>{f.category.replace(/_/g, " ")}</Badge>
-              </div>
-            ))
-          )}
-        </CardContent>
-      </Card>
+    <div>
+      <p className="eyebrow">Primary sources</p>
+      <h2 className="mt-1.5 font-display text-(length:--text-h1) font-normal tracking-editorial text-text-strong">
+        Everything filed or reported
+      </h2>
+      <p className="mb-7 mt-1 max-w-(--measure) text-sm leading-relaxed text-text-muted">
+        In date order, newest first. Where an entry moved a figure we hold, it names it, so an accounting event
+        reads differently from an announcement that changed nothing.
+      </p>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>News</CardTitle>
-          <CardDescription>Relevant stored news. Low-confidence / off-target items are hidden by default.</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-3">
-          {news.length === 0 ? (
-            <p className="py-4 text-center text-xs text-muted-foreground">No stored news for {ticker}. Use the News Center to refresh.</p>
-          ) : (
-            news.map((n) => (
-              <div key={n.id} className="border-b border-border pb-2 last:border-0">
-                <div className="flex items-center gap-2">
-                  {n.relevance_score && <Badge variant="outline">{n.relevance_score}/10</Badge>}
-                  {n.category && n.category !== "general" && <Badge variant="blue">{n.category}</Badge>}
-                  <a href={n.url} target="_blank" rel="noopener noreferrer" className="text-sm font-medium leading-snug hover:underline">{n.title}</a>
-                </div>
-                <p className="mt-0.5 text-[11px] text-muted-foreground">{n.source} {n.published_at ? `· ${String(n.published_at).slice(0, 10)}` : ""}</p>
-                {n.ai_summary && <p className="mt-1 text-xs">{n.ai_summary}</p>}
-              </div>
-            ))
-          )}
-        </CardContent>
-      </Card>
+      {entries.length === 0 ? (
+        <p className="max-w-(--measure) text-sm leading-relaxed text-text-muted">
+          No filings or coverage on file for {ticker}. Announcements appear here as the exchange publishes them.
+        </p>
+      ) : (
+        <FilingsSpine entries={entries} />
+      )}
     </div>
   );
 }
