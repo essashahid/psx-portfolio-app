@@ -1,22 +1,49 @@
 import { createClient, getUser } from "@/lib/supabase/server";
 import { getCompanyMetadata } from "@/lib/company/metadata";
 import { getTechnicals } from "@/lib/company/technicals";
-import { computeSignals, findSwings, detectSupportResistanceZones, toCanonicalOHLCV } from "@/lib/market/technicals";
 import { getCompanyFilings } from "@/lib/company/filings";
 import { getFundamentals } from "@/lib/company/fundamentals";
 import { sectorColor } from "@/lib/shared/sector-colors";
 import { computeRatios, type RatioRow } from "@/lib/engine/ratios";
 import { EmptyState } from "@/components/ui/empty-state";
 import { ActionButton } from "@/components/ui/action-button";
-import { TechnicalWorkstation } from "@/components/features/technicals/workstation";
 import { FundamentalsGrid } from "@/components/features/stocks/fundamentals-grid";
 import { FilingsSpine, type SpineEntry } from "@/components/features/stocks/filings-spine";
-import type { FinancialWorkspaceRow } from "@/components/features/stocks/financials-workspace";
-import { EarningsWorkspace } from "@/components/features/stocks/earnings-workspace";
-import { formatNumber, formatFinancialPeriod } from "@/lib/shared/format";
+import { formatNumber, formatFinancialPeriod, cn } from "@/lib/shared/format";
 import {
-  FileText, TrendingUp,
+  FileText,
 } from "lucide-react";
+
+/**
+ * Neutralise unadjusted corporate actions in a close series, for display.
+ *
+ * PSX price history is stored raw, so a split lands as a single enormous
+ * session: Mari reads 3,536.83 to 415.90 overnight on 16 September 2024, an
+ * apparent 88% collapse that never happened. Drawn unadjusted, the chart shows
+ * a crash and the shape of five years of trading is destroyed by one artefact.
+ *
+ * A single-session move beyond 40% is treated as a corporate action rather than
+ * a trade — PSX applies daily price limits far tighter than that, so a real
+ * move of this size cannot happen in one session. Everything before it is
+ * scaled by the ratio, which is the standard back-adjustment.
+ *
+ * This is a display fix on a data problem. The right answer is a corporate
+ * actions table applied at ingest, which is recorded in the pipeline gaps note.
+ */
+function splitAdjust(closes: number[]): number[] {
+  if (closes.length < 2) return closes;
+  const out = [...closes];
+  for (let i = out.length - 1; i > 0; i--) {
+    const ratio = out[i] / out[i - 1];
+    if (ratio > 1.4 || ratio < 0.6) {
+      for (let j = 0; j < i; j++) out[j] *= ratio;
+    }
+  }
+  return out;
+}
+
+const compactShares = (v: number) =>
+  new Intl.NumberFormat("en-PK", { notation: "compact", maximumFractionDigits: 1 }).format(v);
 
 function shortDescription(description: string | null): string | null {
   if (!description) return null;
@@ -251,42 +278,129 @@ export async function FinancialsPanel({ ticker, readOnly = false }: { ticker: st
 // 3. Earnings
 // ---------------------------------------------------------------------------
 
-export async function EarningsPanel({ ticker, readOnly = false }: { ticker: string; readOnly?: boolean }) {
+/**
+ * Earnings: reported EPS by quarter, against the same quarter a year earlier.
+ *
+ * The design draws this as reported-against-expected, with surprise bars. We
+ * have no expected figure — PSX publishes no consensus and we source none, and
+ * the handoff's own surprises were generated for the demo. Rather than invent
+ * an estimate to subtract from, the bars compare each quarter with the same
+ * quarter of the prior year, which is the comparison a PSX reader makes anyway
+ * and needs no data we do not hold. The shape is the design's; the baseline is
+ * honest.
+ */
+export async function EarningsPanel({ ticker }: { ticker: string; readOnly?: boolean }) {
   const supabase = await createClient();
-  const [filings, { data: finData }] = await Promise.all([
-    getCompanyFilings(ticker, 120),
-    supabase
-      .from("company_financials")
-      .select("period_type, fiscal_year, fiscal_period, statement_type, data, reported_date, source_type, source_url, reporting_basis, review_status")
-      .eq("ticker", ticker)
-      .eq("statement_type", "income_statement")
-      .eq("review_status", "published")
-      .order("reported_date", { ascending: false })
-      .limit(120),
-  ]);
-  
-  const incomes = (finData ?? []) as FinancialWorkspaceRow[];
+  const { data } = await supabase
+    .from("company_financials")
+    .select("fiscal_year, fiscal_period, data, updated_at")
+    .eq("ticker", ticker)
+    .eq("period_type", "quarterly")
+    .eq("review_status", "published")
+    .order("fiscal_year", { ascending: true })
+    .limit(60);
 
-  if (incomes.length === 0) {
+  // One row per fiscal quarter, newest extraction winning, same rule as the
+  // annual merge: a company can hold two extractions that disagree.
+  const byQuarter = new Map<string, { year: number; period: string; eps: number }>();
+  for (const r of [...(data ?? [])].sort((a, b) => String(a.updated_at).localeCompare(String(b.updated_at)))) {
+    const eps = (r.data as Record<string, unknown> | null)?.eps;
+    if (typeof eps !== "number" || !Number.isFinite(eps)) continue;
+    if (!r.fiscal_period) continue;
+    byQuarter.set(`${r.fiscal_year}-${r.fiscal_period}`, { year: r.fiscal_year, period: r.fiscal_period, eps });
+  }
+
+  const quarters = [...byQuarter.values()]
+    .sort((a, b) => a.year - b.year || a.period.localeCompare(b.period))
+    .slice(-8);
+
+  if (quarters.length === 0) {
     return (
-      <div className="space-y-3">
-        <EmptyState
-          icon={TrendingUp}
-          title="No earnings loaded yet"
-          description={`Load ${ticker}'s revenue, profit, and EPS from the official PSX company page. Numbers are echoed from PSX, never invented.`}
-          action={<FetchFinancialsButton ticker={ticker} readOnly={readOnly} />}
-        />
+      <div>
+        <p className="eyebrow">Quarterly earnings</p>
+        <h2 className="mt-1.5 font-display text-(length:--text-h1) font-normal tracking-editorial text-text-strong">
+          Reported against the year before
+        </h2>
+        <p className="mt-4 max-w-(--measure) text-sm leading-relaxed text-text-muted">
+          No quarterly accounts have been extracted for {ticker} yet. They appear here as the filings are read.
+        </p>
       </div>
     );
   }
 
+  const rows = quarters.map((q) => {
+    const prior = byQuarter.get(`${q.year - 1}-${q.period}`) ?? null;
+    const change = prior && prior.eps !== 0 ? ((q.eps - prior.eps) / Math.abs(prior.eps)) * 100 : null;
+    return { ...q, prior: prior?.eps ?? null, change };
+  });
+
+  const withChange = rows.filter((r) => r.change !== null);
+  const maxAbs = Math.max(1, ...withChange.map((r) => Math.abs(r.change as number)));
+
   return (
-    <EarningsWorkspace
-      ticker={ticker}
-      rows={incomes}
-      filings={filings}
-      readOnly={readOnly}
-    />
+    <div>
+      <p className="eyebrow">Quarterly earnings</p>
+      <h2 className="mt-1.5 font-display text-(length:--text-h1) font-normal tracking-editorial text-text-strong">
+        Reported against the year before
+      </h2>
+      <p className="mb-8 mt-1 max-w-(--measure) text-sm leading-relaxed text-text-muted">
+        Each quarter&apos;s reported earnings per share against the same quarter a year earlier, which controls for
+        the seasonality most PSX businesses carry. No analyst estimate is involved — none is published for this
+        market.
+      </p>
+
+      {/*
+        The bars only earn their space once there are a few of them to compare.
+        With one or two year-on-year pairs the chart is mostly empty slots
+        labelled "no prior year", which reads as broken rather than sparse — the
+        ledger below says the same thing without the holes.
+      */}
+      {withChange.length >= 3 && (
+        <div className="flex items-end gap-3 overflow-x-auto pb-1" style={{ minHeight: "11rem" }}>
+          {rows.map((r) => {
+            const pct = r.change;
+            const h = pct === null ? 0 : Math.max(4, (Math.abs(pct) / maxAbs) * 96);
+            const up = (pct ?? 0) >= 0;
+            return (
+              <div key={`${r.year}-${r.period}`} className="flex min-w-[5.5rem] flex-1 flex-col items-stretch">
+                <div className="flex h-24 items-end">
+                  {pct !== null && (
+                    <span className={cn("block w-full", up ? "bg-up" : "bg-down")} style={{ height: `${h}px` }} />
+                  )}
+                </div>
+                <span className={cn("figure mt-2 block text-center text-(length:--text-2xs) font-semibold", pct === null ? "text-text-faint" : up ? "text-up" : "text-down")}>
+                  {pct === null ? "no prior year" : `${up ? "+" : "−"}${Math.abs(pct).toFixed(1)}%`}
+                </span>
+                <span className="figure mt-0.5 block text-center text-(length:--text-2xs) text-text-faint">
+                  {r.period} FY{r.year}
+                </span>
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      <div className="mt-9 overflow-x-auto">
+        <div className="min-w-[34rem]">
+          <div className="grid grid-cols-[minmax(0,1fr)_8rem_8rem_7rem] gap-4 border-b border-rule-strong pb-2 text-(length:--text-3xs) font-bold uppercase tracking-(--tracking-caps) text-text-faint">
+            <span>Quarter</span>
+            <span className="text-right">Reported EPS</span>
+            <span className="text-right">Year before</span>
+            <span className="text-right">Change</span>
+          </div>
+          {[...rows].reverse().map((r) => (
+            <div key={`row-${r.year}-${r.period}`} className="grid grid-cols-[minmax(0,1fr)_8rem_8rem_7rem] items-baseline gap-4 border-b border-rule py-2.5">
+              <span className="figure text-sm text-text-strong">{r.period} FY{r.year}</span>
+              <span className="figure text-right text-sm font-semibold text-text-strong">{formatNumber(r.eps)}</span>
+              <span className="figure text-right text-sm text-text-muted">{r.prior === null ? "—" : formatNumber(r.prior)}</span>
+              <span className={cn("figure text-right text-sm font-semibold", r.change === null ? "text-text-faint" : r.change >= 0 ? "text-up" : "text-down")}>
+                {r.change === null ? "—" : `${r.change >= 0 ? "+" : "−"}${Math.abs(r.change).toFixed(1)}%`}
+              </span>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
   );
 }
 
@@ -294,36 +408,142 @@ export async function EarningsPanel({ ticker, readOnly = false }: { ticker: stri
 // 5. Technicals
 // ---------------------------------------------------------------------------
 
+/**
+ * Technicals: price structure, placed after the fundamental tabs on purpose.
+ *
+ * The design's own heading says it — for timing, not for forming the view. The
+ * chart is here to answer "is this a reasonable moment to add", not to make the
+ * case for owning the company, which is what the tabs above it are for.
+ */
 export async function TechnicalsPanel({ ticker }: { ticker: string }) {
   const supabase = await createClient();
-  const technicals = await getTechnicals(supabase, ticker);
-  const signals = computeSignals(technicals.history);
+  const [technicals, { data: master }] = await Promise.all([
+    getTechnicals(supabase, ticker),
+    supabase.from("stock_master").select("sector").eq("ticker", ticker).maybeSingle(),
+  ]);
+  const hue = sectorColor(master?.sector);
 
   if (technicals.history.length === 0) {
     return (
-      <EmptyState
-        icon={TrendingUp}
-        title="No price history available"
-        description={`The PSX portal returned no daily history for ${ticker}. This is normal for newly listed, suspended, or illiquid symbols.`}
-      />
+      <div>
+        <p className="eyebrow">Price structure</p>
+        <h2 className="mt-1.5 font-display text-(length:--text-h1) font-normal tracking-editorial text-text-strong">
+          For timing, not for forming the view
+        </h2>
+        <p className="mt-4 max-w-(--measure) text-sm leading-relaxed text-text-muted">
+          The exchange returned no daily history for {ticker}. That is normal for a newly listed, suspended or
+          illiquid counter.
+        </p>
+      </div>
     );
   }
 
-  const swings = findSwings(technicals.history);
-  const zones = detectSupportResistanceZones(technicals.history, swings, signals.lastClose ?? 0);
-  const ohlcvData = toCanonicalOHLCV(ticker, technicals.history);
+  const closes = splitAdjust(
+    technicals.history.map((c) => Number(c.close)).filter((c) => Number.isFinite(c) && c > 0)
+  );
+  const price = technicals.latestPrice;
+  const low52 = technicals.fiftyTwoWeekLow;
+  const high52 = technicals.fiftyTwoWeekHigh;
+  const hasRange = low52 !== null && high52 !== null && high52 > low52;
+  const pos = hasRange && price !== null ? Math.min(100, Math.max(0, ((price - low52) / (high52 - low52)) * 100)) : null;
+
+  const fmt = (v: number | null, digits = 2) => (v === null ? "—" : formatNumber(v, digits));
+  const indicators: { label: string; value: string; tone?: "up" | "down" }[] = [
+    { label: "20-session average", value: fmt(technicals.ma20), tone: price !== null && technicals.ma20 !== null ? (price >= technicals.ma20 ? "up" : "down") : undefined },
+    { label: "50-session average", value: fmt(technicals.ma50), tone: price !== null && technicals.ma50 !== null ? (price >= technicals.ma50 ? "up" : "down") : undefined },
+    { label: "100-session average", value: fmt(technicals.ma100), tone: price !== null && technicals.ma100 !== null ? (price >= technicals.ma100 ? "up" : "down") : undefined },
+    { label: "200-session average", value: fmt(technicals.ma200), tone: price !== null && technicals.ma200 !== null ? (price >= technicals.ma200 ? "up" : "down") : undefined },
+    { label: "RSI, 14 sessions", value: technicals.rsi === null ? "—" : technicals.rsi.toFixed(0) },
+    { label: "Annualised volatility", value: technicals.volatility === null ? "—" : `${technicals.volatility.toFixed(1)}%` },
+    { label: "Average volume, 30 sessions", value: technicals.averageVolume === null ? "—" : compactShares(technicals.averageVolume) },
+  ];
+
+  // Stated in words, so the reader is not left to compare four averages to a
+  // price themselves. Only claims what the numbers actually support.
+  const chips: string[] = [];
+  if (price !== null && technicals.ma20 !== null && technicals.ma50 !== null) {
+    const above = [technicals.ma20, technicals.ma50].filter((m) => price >= m).length;
+    chips.push(
+      above === 2 ? "Above the 20 and 50-session averages"
+        : above === 0 ? "Below the 20 and 50-session averages"
+          : "Between the 20 and 50-session averages"
+    );
+  }
+  if (technicals.volume !== null && technicals.averageVolume) {
+    chips.push(
+      technicals.volume >= technicals.averageVolume
+        ? "Volume above its 30-session average"
+        : "Volume below its 30-session average"
+    );
+  }
+
+  const W = 620, H = 240;
+  const lo = Math.min(...closes), hi = Math.max(...closes);
+  const span = hi - lo || 1;
+  const x = (i: number) => (i / Math.max(1, closes.length - 1)) * W;
+  const y = (v: number) => H - ((v - lo) / span) * H;
+  const line = `M${closes.map((c, i) => `${x(i).toFixed(1)} ${y(c).toFixed(1)}`).join(" L")}`;
 
   return (
-    <TechnicalWorkstation
-      ticker={ticker}
-      ohlcvData={ohlcvData}
-      signals={signals}
-      supportResistanceZones={zones}
-      changePct={technicals.dayChangePct}
-      volatility={technicals.volatility}
-    />
+    <div>
+      <p className="eyebrow">Price structure</p>
+      <h2 className="mt-1.5 font-display text-(length:--text-h1) font-normal tracking-editorial text-text-strong">
+        For timing, not for forming the view
+      </h2>
+
+      <div className="mt-7 grid gap-10 lg:grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)]">
+        <div>
+          <svg viewBox={`0 0 ${W} ${H}`} width="100%" height={H} preserveAspectRatio="none" className="block overflow-visible" aria-hidden="true">
+            <path d={`${line} L${W} ${H} L0 ${H} Z`} fill={hue} fillOpacity="0.08" />
+            <path d={line} fill="none" stroke={hue} strokeWidth="2" strokeLinejoin="round" strokeLinecap="round" vectorEffect="non-scaling-stroke" />
+          </svg>
+
+          {hasRange && (
+            <div className="mt-6">
+              <div className="flex items-baseline justify-between text-(length:--text-2xs) text-text-faint">
+                <span className="figure">{formatNumber(low52)}</span>
+                <span className="font-bold uppercase tracking-(--tracking-caps)">52-week range</span>
+                <span className="figure">{formatNumber(high52)}</span>
+              </div>
+              <div className="relative mt-2 h-1.5 bg-surface-inset">
+                <span className="absolute -top-1 bottom-[-0.25rem] w-0.5 bg-ink-1" style={{ left: `${pos}%` }} />
+              </div>
+            </div>
+          )}
+
+          {chips.length > 0 && (
+            <div className="mt-6 flex flex-wrap gap-2">
+              {chips.map((c) => (
+                <span key={c} className="rounded-(--radius-pill) border border-rule px-3.5 py-1.5 text-(length:--text-2xs) text-text-muted">
+                  {c}
+                </span>
+              ))}
+            </div>
+          )}
+        </div>
+
+        <div>
+          <p className="border-b border-rule-strong pb-2 text-(length:--text-3xs) font-bold uppercase tracking-(--tracking-caps) text-text-faint">
+            Indicators
+          </p>
+          {indicators.map((ind) => (
+            <div key={ind.label} className="flex items-baseline justify-between gap-5 border-b border-rule py-2.5">
+              <span className="text-sm text-text-muted">{ind.label}</span>
+              <span className={cn("figure text-sm font-semibold", ind.tone === "up" ? "text-up" : ind.tone === "down" ? "text-down" : "text-text-strong")}>
+                {ind.value}
+              </span>
+            </div>
+          ))}
+          <p className="mt-3.5 max-w-(--measure) text-(length:--text-2xs) leading-relaxed text-text-faint">
+            A green figure means the last price sits above that average, not that the share is a buy. Averages
+            describe where the price has been.
+          </p>
+        </div>
+      </div>
+    </div>
   );
 }
+
 
 // ---------------------------------------------------------------------------
 // 6. Dividends

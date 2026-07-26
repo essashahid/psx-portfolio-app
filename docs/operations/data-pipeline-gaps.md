@@ -180,14 +180,33 @@ carries bank-specific measures (ADR, cost-to-income, markup income).
 **Company type should be a first-class field** driving which metrics are
 computed at all.
 
-### 5.4 A review backlog nothing surfaces
+### 5.4 Price history is not adjusted for corporate actions
+
+Prices are stored as the exchange prints them, with no split or bonus
+adjustment. Mari reads **3,536.83 on 12 September 2024 and 415.90 on the 16th**
+— an 88% collapse that never happened, and the largest single-session move in
+its five-year history by a wide margin.
+
+Anything drawn or computed over a window spanning a corporate action is wrong:
+a long-range chart shows a crash, and a moving average, a volatility figure or
+a return calculated across the boundary is meaningless. Short windows are
+unaffected, which is why the 60-session header track and the 20- and 50-session
+averages look right while a five-year chart does not.
+
+The Technicals chart back-adjusts for display, treating any single-session move
+beyond 40% as a corporate action, since PSX daily price limits make a real move
+of that size impossible. That is a patch over the gap, not a fix. The fix is a
+corporate actions table applied at ingest, so every consumer — charts,
+averages, returns, the outlook engine — reads the same adjusted series.
+
+### 5.5 A review backlog nothing surfaces
 
 **555 rows sit at `needs_review`.** They are excluded from every read path, so
 they are invisible: no queue, no count, no page. Whatever is wrong with them is
 not being worked off, and their absence looks identical to data that was never
 fetched.
 
-### 5.5 No history depth beyond about four years
+### 5.6 No history depth beyond about four years
 
 Independent of the statement gap, nothing reaches five years. Any feature that
 wants a cycle — a five-year range, a CAGR, a through-cycle margin — cannot be
@@ -205,14 +224,16 @@ built. The `/outlook` engine already hit this as a five-year data ceiling.
    conflicts today, growing with volume.
 3. **Payout freshness.** 27 days stale on 47% coverage, and it drives a headline
    yield. A daily announcement sweep would fix both.
-4. **Units validated at write time**, rejecting or quarantining undeclared rows
+4. **Corporate actions applied at ingest**, so no consumer has to guess which
+   price discontinuities were real.
+5. **Units validated at write time**, rejecting or quarantining undeclared rows
    at the source rather than at every reader.
-5. **Company-type classification**, so holding companies, banks and insurers get
+6. **Company-type classification**, so holding companies, banks and insurers get
    metrics that mean something instead of a plausibility filter hiding the ones
    that do not.
-6. **Work off the 555-row review backlog**, and give it a visible queue so it
+7. **Work off the 555-row review backlog**, and give it a visible queue so it
    cannot silently regrow.
-7. **History depth to five-plus years**, which makes the design's grid buildable
+8. **History depth to five-plus years**, which makes the design's grid buildable
    as drawn and lets the backfilled derived metrics be retired.
 
 ---
