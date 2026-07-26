@@ -45,20 +45,35 @@ function splitAdjust(closes: number[]): number[] {
 const compactShares = (v: number) =>
   new Intl.NumberFormat("en-PK", { notation: "compact", maximumFractionDigits: 1 }).format(v);
 
+/**
+ * The business description, trimmed only when it is genuinely long.
+ *
+ * The old limit was 300 characters, which cut more than half of them: the
+ * median PSX description is 316 and OGDC's is 405, so it lost the sentence
+ * saying what the company actually does and kept only the one about when it
+ * was incorporated. These are short factual profiles and the column has room
+ * for them, so the limit is now 700 — past the 90th percentile, leaving 16 of
+ * 643 to trim at all.
+ *
+ * When it does trim, it stops on a sentence boundary and adds no ellipsis: a
+ * complete sentence needs no trailing dots, and appending them produced ").…".
+ * A mid-word cut still gets one, because there the reader should know.
+ */
+const DESCRIPTION_LIMIT = 700;
+
 function shortDescription(description: string | null): string | null {
   if (!description) return null;
   const cleaned = description.replace(/\s+/g, " ").trim();
-  if (cleaned.length <= 300) return cleaned;
-  // Prefer a clean sentence boundary (as close to the limit as possible); otherwise truncate on a word boundary
-  const firstSentence = cleaned.match(/^.{40,300}[.!?](?=\s|$)/)?.[0]?.trim();
-  if (firstSentence && firstSentence.length < cleaned.length) {
-    return `${firstSentence}…`;
-  }
-  if (firstSentence) return firstSentence;
-  const slice = cleaned.slice(0, 290);
+  if (cleaned.length <= DESCRIPTION_LIMIT) return cleaned;
+
+  const sentences = cleaned.match(new RegExp(`^.{40,${DESCRIPTION_LIMIT}}[.!?](?=\\s|$)`))?.[0]?.trim();
+  if (sentences) return sentences;
+
+  const slice = cleaned.slice(0, DESCRIPTION_LIMIT - 10);
   const lastSpace = slice.lastIndexOf(" ");
   return `${(lastSpace > 80 ? slice.slice(0, lastSpace) : slice).trim()}…`;
 }
+
 
 /**
  * Whether a stored profile came from the exchange's own company page.
