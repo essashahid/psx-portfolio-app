@@ -60,7 +60,18 @@ function shortDescription(description: string | null): string | null {
   return `${(lastSpace > 80 ? slice.slice(0, lastSpace) : slice).trim()}…`;
 }
 
-function isOfficialPsxProfileSource(source: string | null | undefined): boolean {
+/**
+ * Whether a stored profile came from the exchange's own company page.
+ *
+ * Judged on the source URL, not the source label. The label is unreliable:
+ * identity.ts stamps "stock-universe" over it whenever it fills in a name or
+ * sector, so genuine PSX prose for OGDC, Mari, UBL, MCB, Hub Power and others
+ * was being suppressed and their Overview read "no description on file" while
+ * the description sat in the row. The URL records where the text actually came
+ * from and nothing overwrites it.
+ */
+function isOfficialPsxProfileSource(source: string | null | undefined, sourceUrl?: string | null): boolean {
+  if (sourceUrl && /dps\.psx\.com\.pk\/company\//i.test(sourceUrl)) return true;
   return source === "psx-company-page" || source === "psx-portal";
 }
 
@@ -93,7 +104,9 @@ export async function OverviewPanel({
   // Only the official PSX profile is quoted as the business description. An
   // inferred summary would read as fact in the one place on the page that is
   // prose rather than a figure.
-  const officialDescription = isOfficialPsxProfileSource(metadata.meta.source) ? metadata.description : null;
+  const officialDescription = isOfficialPsxProfileSource(metadata.meta.source, metadata.meta.sourceUrl)
+    ? metadata.description
+    : null;
   const summary = shortDescription(officialDescription);
 
   const peRow = ratioByName(ratios, "P/E");
