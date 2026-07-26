@@ -4,6 +4,7 @@ import { getForeignFlowSnapshot } from "@/lib/market/foreign-flows";
 import { fmtCompact, fmtInt, fmtPct, tone } from "@/lib/market/format";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Band } from "@/components/ui/band";
+import { AsOf } from "@/components/shared/as-of";
 import {
   BreadthStrip,
   FiftyTwoWeekStrip,
@@ -160,7 +161,7 @@ export default async function MarketPulsePage() {
             </div>
           </div>
           <div className="flex flex-col items-end gap-3 pb-1">
-            <p className="text-(length:--text-2xs) text-text-faint">Updated {market.updatedLabel ?? snapshot.snapshot_date} PKT · {snapshot.freshness === "fresh" ? "current" : snapshot.freshness} · flows {foreignFlow?.day.date ?? "n/a"}</p>
+            <AsOf date={snapshot.snapshot_date} time={snapshot.snapshot_time} label="Prices" />
           </div>
         </div>
 
@@ -223,9 +224,6 @@ export default async function MarketPulsePage() {
         <MarketInternals gauges={gauges} />
       </Band>
 
-      <div className="px-3 py-6 sm:px-4 md:px-(--gutter-page)">
-        <p className="text-center text-[10px] text-muted-foreground">Source: official PSX market-watch and index feeds via {snapshot.source_provider} · snapshot {snapshot.snapshot_date} · traded value is volume × price where applicable.</p>
-      </div>
     </div>
   );
 }

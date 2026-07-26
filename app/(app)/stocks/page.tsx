@@ -4,6 +4,7 @@ import { fmtPct, fmtInt, tone } from "@/lib/market/format";
 import { ScreenerTable } from "@/components/features/stocks/screener-table";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Band } from "@/components/ui/band";
+import { AsOf } from "@/components/shared/as-of";
 import { cn, formatNumber } from "@/lib/shared/format";
 import { Activity } from "lucide-react";
 
@@ -32,7 +33,7 @@ export default async function StockResearchPage() {
             <EmptyState
               icon={Activity}
               title="No market data yet"
-              description="The screener is powered by the daily market snapshot. Refresh prices to pull the whole PSX, then build deep data for trends and 52-week ranges."
+              description="Company data has not loaded yet. It arrives with the daily market update."
             />
           </div>
         </Band>
@@ -75,9 +76,7 @@ export default async function StockResearchPage() {
             </div>
           </div>
           <div className="flex flex-col items-end gap-3 pb-1">
-            <p className="text-(length:--text-2xs) text-text-faint">
-              Snapshot {d.snapshotDate}{d.updatedLabel ? ` · updated ${d.updatedLabel} PKT` : ""} · via {d.source ?? "PSX"}
-            </p>
+            <AsOf date={d.snapshotDate} label="Prices" />
           </div>
         </div>
 
@@ -85,7 +84,7 @@ export default async function StockResearchPage() {
           <HeroMetric label="Companies traded" value={fmtInt(d.coverage.total)} sub="in this snapshot" first />
           <HeroMetric label="Advancing" value={fmtInt(advancers)} sub={`${fmtInt(decliners)} declining`} tone="up" />
           <HeroMetric label="In your book" value={fmtInt(owned)} sub={watched > 0 ? `${fmtInt(watched)} watched` : "held positions"} />
-          <HeroMetric label="Deep data" value={`${coveragePct}%`} sub={`${fmtInt(d.coverage.withSpark)} with trends`} last />
+          <HeroMetric label="With price history" value={`${coveragePct}%`} sub={`${fmtInt(d.coverage.withSpark)} of ${fmtInt(d.coverage.total)}`} last />
         </div>
       </Band>
 
@@ -98,9 +97,6 @@ export default async function StockResearchPage() {
           </h2>
         </div>
         <ScreenerTable stocks={d.stocks} sectors={d.sectors} />
-        <p className="mt-8 text-(length:--text-2xs) text-text-faint">
-          Official PSX market-watch via {d.source ?? "PSX"}. Trends and 52-week ranges fill in as deep data is built; missing values are labelled, never invented.
-        </p>
       </Band>
     </div>
   );

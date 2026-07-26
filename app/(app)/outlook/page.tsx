@@ -77,8 +77,7 @@ export default async function OutlookPage() {
         {baseRates && (
           <p className="mt-2 max-w-(--measure) text-(length:--text-2xs) leading-relaxed text-text-faint">
             {formatNumber(baseRates.sample.sessions, 0)} trading sessions from {monthYear(baseRates.sample.firstSession)} to{" "}
-            {monthYear(baseRates.sample.lastSession)}, with no gap longer than {baseRates.sample.longestGapSessions} sessions.
-            Every rate below counts non-overlapping windows only.
+            {monthYear(baseRates.sample.lastSession)}. Every rate below counts non-overlapping windows only.
           </p>
         )}
 

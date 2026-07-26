@@ -1,4 +1,5 @@
 import { createClient, getUser } from "@/lib/supabase/server";
+import { getAdminContext } from "@/lib/admin/guard";
 import { getPortfolio } from "@/lib/portfolio/positions";
 import { PageHeader } from "@/components/ui/page-header";
 import { ActionButton } from "@/components/ui/action-button";
@@ -69,6 +70,7 @@ export default async function SettingsPage() {
     allowed_llm_providers: ["claude", "deepseek"],
   };
   const importEnabled = profile.enabled_features.includes("/import");
+  const { isAdmin } = await getAdminContext();
 
   const keyStatus = [
     { name: "Supabase", ok: !!process.env.NEXT_PUBLIC_SUPABASE_URL, note: "database, auth, storage" },
@@ -145,6 +147,7 @@ export default async function SettingsPage() {
         <CardContent><TaxProfileForm settings={taxSettings} /></CardContent>
       </Card>
 
+      {isAdmin && (
       <Card>
         <CardHeader>
           <CardTitle>Foreign flows — FIPI / LIPI</CardTitle>
@@ -156,7 +159,9 @@ export default async function SettingsPage() {
         </CardHeader>
         <CardContent><ForeignFlowsForm lastDate={latestFlowDate} autoConfigured={flowsAuto} /></CardContent>
       </Card>
+      )}
 
+      {isAdmin && (
       <Card>
         <CardHeader>
           <CardTitle>Latest prices</CardTitle>
@@ -181,6 +186,7 @@ export default async function SettingsPage() {
           )}
         </CardContent>
       </Card>
+      )}
 
       <div className="grid gap-4 lg:grid-cols-2">
         <Card>
@@ -191,6 +197,7 @@ export default async function SettingsPage() {
           <CardContent><BrokerAccounts accounts={accountsRes.data ?? []} /></CardContent>
         </Card>
 
+        {isAdmin && (
         <Card>
           <CardHeader><CardTitle>Integration status</CardTitle></CardHeader>
           <CardContent className="space-y-2">
@@ -208,6 +215,7 @@ export default async function SettingsPage() {
             </p>
           </CardContent>
         </Card>
+        )}
 
         {importEnabled && (
           <Card>
