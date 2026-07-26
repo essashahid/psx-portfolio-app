@@ -84,7 +84,18 @@ export async function GET(request: Request) {
   // Cheap fundamentals (PSX page + payouts + ratios, no LLM) — run broadly so
   // ~13 of 18 ratios cover the universe fast.
   if (task === "fundamentals" || task === "financials" || task === "all") {
-    const queue = await staleFirst(db, companies, "company_payouts", finLimit * 3);
+    // Held tickers first, in full, then the stale-first rotation fills the rest
+    // of the budget with the wider universe.
+    const companySet = new Set(companies);
+    const held = (await heldTickers(db)).filter((t) => companySet.has(t));
+    const heldSet = new Set(held);
+    const rotation = await staleFirst(
+      db,
+      companies.filter((t) => !heldSet.has(t)),
+      "company_payouts",
+      finLimit * 3
+    );
+    const queue = [...held, ...rotation];
     let loaded = 0;
     let withPayouts = 0;
     await runPool(queue, Math.min(concurrency, 5), async (ticker) => {
@@ -92,7 +103,7 @@ export async function GET(request: Request) {
       if (r.pagePeriods > 0) loaded++;
       if (r.payouts > 0) withPayouts++;
     });
-    report.fundamentals = { attempted: queue.length, loaded, withPayouts };
+    report.fundamentals = { attempted: queue.length, held: held.length, rotation: rotation.length, loaded, withPayouts };
   }
 
   // Deep statement extraction (LLM, cached per filing) — narrow rotating slice,
@@ -175,6 +186,28 @@ async function staleFirst(db: ReturnType<typeof createAdminClient>, tickers: str
       return ua.localeCompare(ub);
     })
     .slice(0, limit);
+}
+
+/**
+ * Every ticker some user actually holds.
+ *
+ * These deserve priority over the rest of the universe in the payout refresh.
+ * The dividend forecaster projects the next payout from `company_payouts`, so a
+ * held ticker whose calendar is three weeks stale — which is what the plain
+ * stale-first rotation gave it across ~490 companies at 36 per run — can miss a
+ * freshly declared payout the user is about to be paid. The held set is small
+ * (tens of tickers, not hundreds), so putting it at the front of every run costs
+ * almost nothing and is the difference between a current forecast and a guess.
+ */
+async function heldTickers(db: ReturnType<typeof createAdminClient>): Promise<string[]> {
+  const seen = new Set<string>();
+  for (let from = 0; ; from += 1000) {
+    const { data } = await db.from("holdings").select("ticker").gt("quantity", 0).range(from, from + 999);
+    if (!data?.length) break;
+    for (const r of data) if (r.ticker) seen.add(String(r.ticker).toUpperCase());
+    if (data.length < 1000) break;
+  }
+  return [...seen];
 }
 
 /**
