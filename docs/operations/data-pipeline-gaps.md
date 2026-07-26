@@ -10,6 +10,10 @@ roughly half the universe, reach about four years at best, and are missing the
 balance sheet three times out of four. Almost every gap in the company page
 traces back to that.
 
+Not every gap is missing data, though. Two of the items below — the quarterly
+holes in 5.5 and the split artefacts in 5.4 — are arithmetic we hold the inputs
+for and simply do not do.
+
 ---
 
 ## 1. Freshness
@@ -199,14 +203,68 @@ of that size impossible. That is a patch over the gap, not a fix. The fix is a
 corporate actions table applied at ingest, so every consumer — charts,
 averages, returns, the outlook engine — reads the same adjusted series.
 
-### 5.5 A review backlog nothing surfaces
+### 5.5 Discrete quarters are never derived from cumulative filings
+
+A PSX company does not file four quarters. It files Q1, a half year, a nine
+month statement, and the annual accounts. **There is no standalone Q4 filing at
+all**, and Q2 and Q3 exist only inside the cumulative statements unless the
+company happens to break them out.
+
+We store both shapes and never do the arithmetic between them, so the Earnings
+tab shows a ledger full of holes. Counted across published interim rows:
+
+| Period | Rows stored |
+|---|---|
+| Q1 | 1,528 |
+| Q3 | 1,147 |
+| Q2 | 738 |
+| **Q4** | **5** |
+| 9M (cumulative) | 1,262 |
+| H1 (cumulative) | 913 |
+
+Across 561 tickers over FY2024–FY2026:
+
+| Quarter | Stored | Additionally derivable from what we already hold |
+|---|---|---|
+| Q1 | 622 | 33 |
+| Q2 | 547 | 42 |
+| **Q4** | **3** | **176** |
+
+OGDC is the worked example, and every gap on its Earnings tab is arithmetic we
+are simply not doing:
+
+```
+FY2026   9M 26.80,  Q1 8.91,  Q3 9.82   ->  Q2 = 9M − Q1 − Q3 = 8.07
+FY2025   FY 39.50,  9M 30.13            ->  Q4 = FY − 9M      = 9.37
+FY2025   9M 30.13,  Q2 9.63,  Q3 10.96  ->  Q1 = 9M − Q2 − Q3 = 9.54
+```
+
+So the missing quarters are not missing data. They are missing derivation, and
+Q4 in particular is invisible for almost every company on the exchange.
+
+**One warning before building this.** Derivation multiplies the conflict problem
+in 5.1, because a wrong input silently produces a wrong quarter rather than an
+obviously absent one. Lucky Cement's stored quarters sum to 25.08 against a
+stored nine-month figure of 43.47 — the two came from extractions that disagree,
+and nothing reconciles them. Any derivation should therefore:
+
+- resolve conflicting extractions first, so the inputs are known-good
+- check that the parts reconcile with the whole before writing a derived row,
+  and quarantine the year when they do not
+- mark derived quarters as derived, so a reader can tell a filed figure from a
+  computed one
+
+Doing the arithmetic on top of unresolved conflicts would turn a visible gap
+into an invisible error, which is the worse failure.
+
+### 5.6 A review backlog nothing surfaces
 
 **555 rows sit at `needs_review`.** They are excluded from every read path, so
 they are invisible: no queue, no count, no page. Whatever is wrong with them is
 not being worked off, and their absence looks identical to data that was never
 fetched.
 
-### 5.6 No history depth beyond about four years
+### 5.7 No history depth beyond about four years
 
 Independent of the statement gap, nothing reaches five years. Any feature that
 wants a cycle — a five-year range, a CAGR, a through-cycle margin — cannot be
@@ -226,14 +284,17 @@ built. The `/outlook` engine already hit this as a five-year data ceiling.
    yield. A daily announcement sweep would fix both.
 4. **Corporate actions applied at ingest**, so no consumer has to guess which
    price discontinuities were real.
-5. **Units validated at write time**, rejecting or quarantining undeclared rows
+5. **Derive the missing quarters** — Q4 above all, invisible for all but three
+   companies — but only after 2, and only with a reconciliation check and a
+   derived-figure marker.
+6. **Units validated at write time**, rejecting or quarantining undeclared rows
    at the source rather than at every reader.
-6. **Company-type classification**, so holding companies, banks and insurers get
+7. **Company-type classification**, so holding companies, banks and insurers get
    metrics that mean something instead of a plausibility filter hiding the ones
    that do not.
-7. **Work off the 555-row review backlog**, and give it a visible queue so it
+8. **Work off the 555-row review backlog**, and give it a visible queue so it
    cannot silently regrow.
-8. **History depth to five-plus years**, which makes the design's grid buildable
+9. **History depth to five-plus years**, which makes the design's grid buildable
    as drawn and lets the backfilled derived metrics be retired.
 
 ---
