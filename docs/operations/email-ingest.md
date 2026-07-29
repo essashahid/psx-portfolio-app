@@ -19,11 +19,35 @@ the transactions ledger automatically, without a Gmail API integration.
    inserts each fill into `transactions` with `source = "email_confirmation"`,
    then recomputes holdings.
 
-Failure handling: a PDF whose table cannot be parsed is still stored, with
-`uploaded_statements.status = 'email_review'`, so nothing is lost; the Apps
-Script leaves the thread unlabelled on non-2xx responses and retries on the
-next run. Everything is idempotent (file hash + per-fill row hash), so retries
-and re-forwards never double-count.
+## Schedule
+
+The Apps Script installs its own recurring trigger: run `installTriggers` once
+from the editor and it schedules itself every `RUN_EVERY_HOURS` (4 by default;
+set to 24 for a single nightly run) and does an immediate run so setup is
+verified rather than assumed. `showStatus` prints the schedule, the last run
+and how many threads are still waiting. `uninstallTriggers` stops it.
+
+## Failure handling
+
+Nothing is dropped silently:
+
+- A thread is labelled `akd-ingested` only when every attachment committed, was
+  already present, or was a document that is not a trade confirmation at all.
+  A 200 response is not treated as success on its own, because the endpoint
+  reports per-file outcomes and `needs_review` means nothing was committed.
+- A confirmation that fails to parse is stored with
+  `uploaded_statements.status = 'email_review'` and its thread stays unlabelled,
+  so a later parser fix picks it up automatically on the next run.
+- AKD sends other documents (CGT deduction reports) from the same address.
+  Those parse as `ignored`, are stored with status `email_ignored`, and their
+  threads are labelled so they are not retried forever.
+- The script emails a summary whenever anything needs attention.
+
+Duplicate protection works at three levels: the file hash, a deterministic
+per-fill row hash, and a cross-source check that recognises a fill already in
+the ledger from a statement import or manual entry. That last one matters
+because statement imports date trades by settlement while confirmations date
+them by execution, a gap of several days across a weekend.
 
 Email-ingested statements use statuses `email_committed` / `email_review`
 (not `committed`) deliberately: `/api/import/sync-cash` scans the five newest
@@ -56,6 +80,15 @@ This prints the raw extracted text plus every parsed fill (side, ticker,
 quantity, rate, gross, charges) and the rows it refused to reconcile. A fill's
 `gross` must reconcile with `quantity * rate` within 1% for the row to be
 accepted; unreconciled rows are reported as warnings, never guessed at.
+
+## Cash
+
+Confirmations cover fills only. A buy debits cash for its full net amount the
+moment it is ingested, and nothing clamps the balance at zero, so it goes
+negative until the matching deposit is recorded. Deposits and account charges
+have to be read off the AKD app's Account Statement screen and entered in
+`scripts/maintenance/apply-akd-cash-movements.ts`, which is idempotent and
+prints the resulting closing balance next to the broker's ledger balance.
 
 ## Interaction with statement imports
 
