@@ -237,10 +237,13 @@ export async function POST(request: Request) {
 
       // Cross-source duplicate guard: the same fill may already be in the
       // ledger from a statement import or manual entry, under a different
-      // row-hash scheme and sometimes a settlement date instead of the trade
-      // date. Snapshot candidates once before inserting, so identical fills
-      // within this file don't suppress each other.
-      const FUZZY_DAYS = 4;
+      // row-hash scheme and dated by settlement rather than execution. That
+      // gap runs to several days across a weekend, so the window is generous.
+      // It is only applied against those legacy sources, which are a fixed
+      // historical set, so a wide window cannot suppress a genuine future
+      // trade that happens to repeat an earlier size and price.
+      const FUZZY_DAYS = 10;
+      const LEGACY_SOURCES = ["import", "manual", "adjustment"];
       const shiftDate = (iso: string, days: number) => {
         const d = new Date(`${iso}T00:00:00Z`);
         d.setUTCDate(d.getUTCDate() + days);
@@ -252,6 +255,7 @@ export async function POST(request: Request) {
           .from("transactions")
           .select("ticker, type, quantity, price, trade_date")
           .eq("user_id", userId)
+          .in("source", LEGACY_SOURCES)
           .in("ticker", [...new Set(confirmation!.trades.map((t) => t.ticker))])
           .gte("trade_date", shiftDate(tradeDate, -FUZZY_DAYS))
           .lte("trade_date", shiftDate(tradeDate, FUZZY_DAYS));
