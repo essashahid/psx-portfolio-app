@@ -130,7 +130,7 @@ export async function POST(request: Request) {
       }
       if (!confirmation?.trades.length) {
         try {
-          await ensurePdfGlobals();
+          ensurePdfGlobals();
           const { PDFParse } = await import("pdf-parse");
           const parser = new PDFParse({ data: new Uint8Array(buffer) });
           const parsed = await parser.getText();

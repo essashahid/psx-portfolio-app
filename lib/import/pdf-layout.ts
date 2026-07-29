@@ -20,7 +20,7 @@ interface TextFragment {
 const ROW_Y_TOLERANCE = 2.5;
 
 export async function extractPdfLayoutText(buffer: Buffer | Uint8Array): Promise<string> {
-  await ensurePdfGlobals();
+  ensurePdfGlobals();
   const pdfjs = await import("pdfjs-dist/legacy/build/pdf.mjs");
   const doc = await pdfjs.getDocument({
     data: new Uint8Array(buffer),

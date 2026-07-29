@@ -6,9 +6,11 @@
 // silently falls back to needs_review. Installing the globals ourselves before
 // the import removes the dependency on that detection entirely.
 //
-// The real implementations come from @napi-rs/canvas (already a dependency of
-// pdf-parse) when its native binary is available. The pure-JS fallbacks below
-// are enough for text extraction, which never rasterizes a page.
+// The shims are pure JS on purpose. Borrowing the real classes from
+// @napi-rs/canvas pulls a native binding into the import graph, which Turbopack
+// cannot place in an ESM chunk and which fails the production build outright.
+// Text extraction never rasterizes a page, so these are sufficient: verified by
+// scripts/verification/verify-pdf-globals.ts against a real confirmation.
 
 let installed = false;
 
@@ -60,22 +62,11 @@ class MinimalPath2D {
  * Installs DOMMatrix / Path2D / ImageData on globalThis when missing. Safe to
  * call repeatedly and never overwrites globals a runtime already provides.
  */
-export async function ensurePdfGlobals(): Promise<void> {
+export function ensurePdfGlobals(): void {
   if (installed) return;
   installed = true;
 
   const g = globalThis as Record<string, unknown>;
-  if (g.DOMMatrix && g.Path2D && g.ImageData) return;
-
-  try {
-    const canvas = (await import("@napi-rs/canvas")) as unknown as Record<string, unknown>;
-    if (!g.DOMMatrix && canvas.DOMMatrix) g.DOMMatrix = canvas.DOMMatrix;
-    if (!g.Path2D && canvas.Path2D) g.Path2D = canvas.Path2D;
-    if (!g.ImageData && canvas.ImageData) g.ImageData = canvas.ImageData;
-  } catch {
-    // Native binary unavailable for this platform; fall through to the shims.
-  }
-
   if (!g.DOMMatrix) g.DOMMatrix = MinimalDOMMatrix;
   if (!g.Path2D) g.Path2D = MinimalPath2D;
   if (!g.ImageData) {
