@@ -76,7 +76,7 @@ export async function POST(request: Request) {
   const admin = createAdminClient();
   const results: {
     filename: string;
-    status: "committed" | "duplicate_file" | "needs_review" | "error";
+    status: "committed" | "duplicate_file" | "needs_review" | "ignored" | "error";
     trades?: number;
     duplicates?: number;
     warnings?: string[];
@@ -107,7 +107,7 @@ export async function POST(request: Request) {
         .select("id")
         .eq("user_id", userId)
         .eq("file_hash", fileHash)
-        .in("status", ["committed", "email_committed"])
+        .in("status", ["committed", "email_committed", "email_ignored"])
         .maybeSingle();
       if (dupe) {
         results.push({ filename, status: "duplicate_file" });
@@ -142,6 +142,38 @@ export async function POST(request: Request) {
             `stream extraction: ${err instanceof Error ? err.message : String(err)}`
           );
         }
+      }
+
+      // Not a trade confirmation at all (AKD also mails CGT deduction reports
+      // and similar from the same address). Recorded for the audit trail and
+      // reported as ignored, so the sender labels the thread done instead of
+      // retrying a document that can never yield a trade.
+      if (confirmation === null && !extractionErrors.length) {
+        const ignoredPath = `${userId}/email/${fileHash.slice(0, 12)}_${filename}`;
+        const { error: upErr } = await admin.storage
+          .from("statements")
+          .upload(ignoredPath, buffer, { contentType: "application/pdf", upsert: true });
+        await admin
+          .from("uploaded_statements")
+          .delete()
+          .eq("user_id", userId)
+          .eq("file_hash", fileHash)
+          .eq("status", "email_review");
+        await admin.from("uploaded_statements").insert({
+          user_id: userId,
+          file_name: filename,
+          file_type: "pdf",
+          file_hash: fileHash,
+          storage_path: upErr ? null : ignoredPath,
+          statement_type: "generic",
+          status: "email_ignored",
+        });
+        results.push({
+          filename,
+          status: "ignored",
+          warnings: ["Not a trade confirmation; stored for reference only."],
+        });
+        continue;
       }
 
       const storagePath = `${userId}/email/${fileHash.slice(0, 12)}_${filename}`;

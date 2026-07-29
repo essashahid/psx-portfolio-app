@@ -95,7 +95,7 @@ function ingestAkdConfirmations() {
   var label = GmailApp.getUserLabelByName(PROCESSED_LABEL) || GmailApp.createLabel(PROCESSED_LABEL);
   var threads = GmailApp.search(SEARCH_QUERY, 0, MAX_THREADS_PER_RUN);
 
-  var stat = { threads: threads.length, trades: 0, duplicates: 0, review: 0, failed: 0, notes: [] };
+  var stat = { threads: threads.length, trades: 0, duplicates: 0, ignored: 0, review: 0, failed: 0, notes: [] };
 
   threads.forEach(function (thread) {
     var threadClean = true;
@@ -160,6 +160,10 @@ function ingestAkdConfirmations() {
           stat.duplicates += r.duplicates || 0;
         } else if (r.status === 'duplicate_file') {
           stat.duplicates++;
+        } else if (r.status === 'ignored') {
+          // AKD sends CGT reports and similar from the same address. Nothing
+          // to import, but the thread is done and must not be retried.
+          stat.ignored++;
         } else {
           threadClean = false;
           if (r.status === 'needs_review') stat.review++;
@@ -180,8 +184,8 @@ function ingestAkdConfirmations() {
 
   var summary =
     stat.threads + ' thread(s), ' + stat.trades + ' trade(s) imported, ' +
-    stat.duplicates + ' already present, ' + stat.review + ' needing review, ' +
-    stat.failed + ' failed';
+    stat.duplicates + ' already present, ' + stat.ignored + ' not confirmations, ' +
+    stat.review + ' needing review, ' + stat.failed + ' failed';
   Logger.log(summary);
 
   props.setProperty('LAST_RUN', new Date().toISOString());
