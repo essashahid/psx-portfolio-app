@@ -8,6 +8,8 @@
 // table row comes back as one line in column order. Parsers get real rows
 // like "SYS 70 133.6100 9,369.18 14.03 ..." instead of the scrambled stream.
 
+import { ensurePdfGlobals } from "@/lib/import/pdf-globals";
+
 interface TextFragment {
   x: number;
   y: number;
@@ -18,6 +20,7 @@ interface TextFragment {
 const ROW_Y_TOLERANCE = 2.5;
 
 export async function extractPdfLayoutText(buffer: Buffer | Uint8Array): Promise<string> {
+  await ensurePdfGlobals();
   const pdfjs = await import("pdfjs-dist/legacy/build/pdf.mjs");
   const doc = await pdfjs.getDocument({
     data: new Uint8Array(buffer),

@@ -7,6 +7,7 @@ import {
   type AkdConfirmationTrade,
 } from "@/lib/import/akd-confirmation";
 import { extractPdfLayoutText } from "@/lib/import/pdf-layout";
+import { ensurePdfGlobals } from "@/lib/import/pdf-globals";
 import { recomputeHoldingsFromTransactions } from "@/lib/portfolio/positions";
 
 export const dynamic = "force-dynamic";
@@ -129,6 +130,7 @@ export async function POST(request: Request) {
       }
       if (!confirmation?.trades.length) {
         try {
+          await ensurePdfGlobals();
           const { PDFParse } = await import("pdf-parse");
           const parser = new PDFParse({ data: new Uint8Array(buffer) });
           const parsed = await parser.getText();
