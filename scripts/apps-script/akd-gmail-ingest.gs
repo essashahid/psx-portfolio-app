@@ -24,7 +24,11 @@
 
 var SEARCH_QUERY = 'from:confirmation@akdsl.com has:attachment -label:akd-ingested';
 var PROCESSED_LABEL = 'akd-ingested';
-var MAX_THREADS_PER_RUN = 10;
+// Per-run cap. Day to day only one confirmation arrives, so this only matters
+// for the initial backfill: each run drains this many unlabelled threads, so
+// re-run until the log stops reporting sends. Keep it well under the Apps
+// Script six-minute execution limit (each PDF is a base64 upload).
+var MAX_THREADS_PER_RUN = 25;
 
 function ingestAkdConfirmations() {
   var props = PropertiesService.getScriptProperties();

@@ -1,7 +1,11 @@
 import { createHash, timingSafeEqual } from "crypto";
 import { NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { parseAkdConfirmation, parseDayMonthNameYear } from "@/lib/import/akd-confirmation";
+import {
+  parseAkdConfirmation,
+  parseDayMonthNameYear,
+  type AkdConfirmationTrade,
+} from "@/lib/import/akd-confirmation";
 import { extractPdfLayoutText } from "@/lib/import/pdf-layout";
 import { recomputeHoldingsFromTransactions } from "@/lib/portfolio/positions";
 
@@ -197,10 +201,42 @@ export async function POST(request: Request) {
         .in("row_hash", rows.map((r) => r.row_hash));
       const seen = new Set((existing ?? []).map((e) => e.row_hash as string));
 
+      // Cross-source duplicate guard: the same fill may already be in the
+      // ledger from a statement import or manual entry, under a different
+      // row-hash scheme and sometimes a settlement date instead of the trade
+      // date. Snapshot candidates once before inserting, so identical fills
+      // within this file don't suppress each other.
+      const FUZZY_DAYS = 4;
+      const shiftDate = (iso: string, days: number) => {
+        const d = new Date(`${iso}T00:00:00Z`);
+        d.setUTCDate(d.getUTCDate() + days);
+        return d.toISOString().slice(0, 10);
+      };
+      let prior: { ticker: string; type: string; quantity: number | null; price: number | null; trade_date: string | null }[] = [];
+      if (tradeDate) {
+        const { data } = await admin
+          .from("transactions")
+          .select("ticker, type, quantity, price, trade_date")
+          .eq("user_id", userId)
+          .in("ticker", [...new Set(confirmation!.trades.map((t) => t.ticker))])
+          .gte("trade_date", shiftDate(tradeDate, -FUZZY_DAYS))
+          .lte("trade_date", shiftDate(tradeDate, FUZZY_DAYS));
+        prior = data ?? [];
+      }
+      const fuzzyDupe = (t: AkdConfirmationTrade) =>
+        prior.some(
+          (p) =>
+            p.ticker === t.ticker &&
+            p.type === t.side &&
+            Number(p.quantity) === t.quantity &&
+            p.price !== null &&
+            Math.abs(Number(p.price) - t.rate) <= Math.max(0.05, t.rate * 0.01)
+        );
+
       let committed = 0;
       let duplicates = 0;
       for (const { row_hash, trade } of rows) {
-        if (seen.has(row_hash)) {
+        if (seen.has(row_hash) || fuzzyDupe(trade)) {
           duplicates++;
           continue;
         }
