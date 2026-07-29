@@ -9,7 +9,7 @@ const withSerwist = withSerwistInit({
 });
 
 const nextConfig: NextConfig = {
-  serverExternalPackages: ["pdf-parse"],
+  serverExternalPackages: ["pdf-parse", "pdfjs-dist"],
   turbopack: { root: __dirname },
   images: {
     remotePatterns: [{ protocol: "https", hostname: "qclay.design" }],

@@ -111,12 +111,17 @@ export async function POST(request: Request) {
 
       // Layout-aware extraction rebuilds the table's visual rows; the plain
       // pdf-parse stream (scrambled column blocks) is the second attempt.
+      // Extraction failures are carried into the response so a needs_review
+      // outcome always says why.
+      const extractionErrors: string[] = [];
       let confirmation: ReturnType<typeof parseAkdConfirmation> = null;
       try {
         const layoutText = await extractPdfLayoutText(buffer);
         confirmation = parseAkdConfirmation(layoutText, subjectDate);
-      } catch {
-        confirmation = null;
+      } catch (err) {
+        extractionErrors.push(
+          `layout extraction: ${err instanceof Error ? err.message : String(err)}`
+        );
       }
       if (!confirmation?.trades.length) {
         try {
@@ -126,8 +131,10 @@ export async function POST(request: Request) {
           await parser.destroy();
           const streamParsed = parseAkdConfirmation(parsed.text ?? "", subjectDate);
           if (streamParsed?.trades.length || !confirmation) confirmation = streamParsed;
-        } catch {
-          // keep whatever the layout pass produced (possibly null)
+        } catch (err) {
+          extractionErrors.push(
+            `stream extraction: ${err instanceof Error ? err.message : String(err)}`
+          );
         }
       }
 
@@ -137,6 +144,14 @@ export async function POST(request: Request) {
         .upload(storagePath, buffer, { contentType: "application/pdf", upsert: true });
 
       const parsedOk = !!confirmation && confirmation.trades.length > 0;
+      // Each attempt supersedes earlier needs-review records of the same file,
+      // so the review queue holds one row per file and none once it commits.
+      await admin
+        .from("uploaded_statements")
+        .delete()
+        .eq("user_id", userId)
+        .eq("file_hash", fileHash)
+        .eq("status", "email_review");
       const { error: stmtErr } = await admin.from("uploaded_statements").insert({
         user_id: userId,
         file_name: filename,
@@ -152,7 +167,13 @@ export async function POST(request: Request) {
         results.push({
           filename,
           status: "needs_review",
-          warnings: confirmation?.warnings ?? ["PDF text did not match the trade-confirmation layout"],
+          warnings: [
+            ...(confirmation?.warnings ?? []),
+            ...extractionErrors,
+            ...(!confirmation && !extractionErrors.length
+              ? ["PDF text did not match the trade-confirmation layout"]
+              : []),
+          ],
         });
         continue;
       }
