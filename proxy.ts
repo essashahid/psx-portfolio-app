@@ -46,7 +46,7 @@ export default async function proxy(request: NextRequest) {
 
   const path = request.nextUrl.pathname;
   const isPublic =
-    path === "/login" || path.startsWith("/auth") || path === "/favicon.ico" || path === "/manifest.webmanifest" || path.startsWith("/sw.js") || path.startsWith("/workbox-");
+    path === "/login" || path === "/demo" || path.startsWith("/auth") || path === "/favicon.ico" || path === "/manifest.webmanifest" || path.startsWith("/sw.js") || path.startsWith("/workbox-");
 
   if (!user && !isPublic && !path.startsWith("/api")) {
     const url = request.nextUrl.clone();

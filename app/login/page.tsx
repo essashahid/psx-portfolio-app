@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { Input } from "@/components/ui/input";
@@ -30,6 +30,13 @@ export default function LoginPage() {
   const [loginLoading, setLoginLoading] = useState(false);
   const [demoLoading, setDemoLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // /demo redirects here when the shared demo workspace cannot be opened.
+  useEffect(() => {
+    if (new URLSearchParams(window.location.search).get("demo") === "unavailable") {
+      setError("The read-only demo could not be opened. Please try the button below.");
+    }
+  }, []);
 
   async function signIn(e: React.FormEvent) {
     e.preventDefault();
