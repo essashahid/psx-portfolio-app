@@ -12,6 +12,19 @@ export const maxDuration = 300;
 const BATCH = 5;
 
 /**
+ * Wall-clock budget, comfortably inside maxDuration.
+ *
+ * The five stages below grew past what fits in one invocation, and the run was
+ * being killed by the platform partway through with a 504: whatever stage the
+ * axe happened to fall on was left half done and the report that would have
+ * said so never came back. Stopping ourselves a little early instead means the
+ * earlier stages always finish, the later ones degrade to "skipped", and the
+ * response says which — the stages are already ordered by how much the app
+ * depends on them, prices first.
+ */
+const TIME_BUDGET_MS = 250_000;
+
+/**
  * Daily Stock Data Engine job (after PSX close). One composite run keeps us
  * within hosting cron limits:
  *  1. Universe sync (when older than 6 days)
@@ -32,6 +45,8 @@ export async function GET(request: Request) {
 
   const db = createAdminClient();
   const report: Record<string, unknown> = {};
+  const startedAt = Date.now();
+  const outOfTime = () => Date.now() - startedAt > TIME_BUDGET_MS;
 
   // 1. Universe sync (weekly cadence) + listing-status reconciliation (every
   //    run — it's two cheap reads and keeps dead counters out of rotations).
@@ -63,29 +78,37 @@ export async function GET(request: Request) {
 
   let quotesOk = 0;
   let techOk = 0;
+  let attempted = 0;
   for (let i = 0; i < active.length; i += BATCH) {
+    if (outOfTime()) break;
     const batch = active.slice(i, i + BATCH);
     const [qs, ts] = await Promise.all([
       Promise.all(batch.map((t) => refreshQuote(t).catch(() => null))),
       Promise.all(batch.map((t) => refreshTechnicals(t).catch(() => null))),
     ]);
+    attempted += batch.length;
     quotesOk += qs.filter(Boolean).length;
     techOk += ts.filter((t) => t?.asOfDate).length;
   }
-  report.activeSet = { tickers: active.length, quotes: quotesOk, technicals: techOk };
+  report.activeSet = { tickers: active.length, attempted, quotes: quotesOk, technicals: techOk };
 
   // 3. Rotating universe slice (oldest quotes first), quotable instruments only
-  try {
+  if (outOfTime()) report.universeSlice = { skipped: "time budget" };
+  else try {
     const all = (await activeUniverseTickers(db, "quotable")).filter((t) => !active.includes(t));
     const { data: quotes } = await db.from("market_quotes").select("ticker, last_fetched_at");
     const fetchedAt = new Map((quotes ?? []).map((q) => [q.ticker as string, q.last_fetched_at as string]));
     const slice = all.sort((a, b) => (fetchedAt.get(a) ?? "").localeCompare(fetchedAt.get(b) ?? "")).slice(0, 40);
     let ok = 0;
+    let tried = 0;
     for (let i = 0; i < slice.length; i += BATCH) {
-      const results = await Promise.all(slice.slice(i, i + BATCH).map((t) => refreshQuote(t).catch(() => null)));
+      if (outOfTime()) break;
+      const chunk = slice.slice(i, i + BATCH);
+      const results = await Promise.all(chunk.map((t) => refreshQuote(t).catch(() => null)));
+      tried += chunk.length;
       ok += results.filter(Boolean).length;
     }
-    report.universeSlice = { attempted: slice.length, refreshed: ok };
+    report.universeSlice = { attempted: tried, refreshed: ok };
   } catch (e) {
     report.universeSlice = { error: e instanceof Error ? e.message : String(e) };
   }
@@ -93,7 +116,8 @@ export async function GET(request: Request) {
   // 4. Financials from the official PSX company page (one cheap HTTP request
   //    each, no LLM). Refresh the whole active set every run, then top up a
   //    rotating slice of the universe that has no financials yet.
-  try {
+  if (outOfTime()) report.financials = { skipped: "time budget" };
+  else try {
     const { data: have } = await db.from("company_financials").select("ticker").eq("review_status", "published");
     const covered = new Set((have ?? []).map((r) => r.ticker as string));
     const topUp = (await activeUniverseTickers(db, "companies"))
@@ -101,7 +125,10 @@ export async function GET(request: Request) {
       .slice(0, 30);
     const queue = [...new Set([...active, ...topUp])];
     let loaded = 0;
+    let tried = 0;
     for (let i = 0; i < queue.length; i += BATCH) {
+      if (outOfTime()) break;
+      tried += Math.min(BATCH, queue.length - i);
       const results = await Promise.all(
         queue.slice(i, i + BATCH).map(async (t) => {
           const r = await populateFinancials(t).catch(() => null);
@@ -111,17 +138,19 @@ export async function GET(request: Request) {
       );
       loaded += results.filter((n) => n > 0).length;
     }
-    report.financials = { attempted: queue.length, loaded };
+    report.financials = { attempted: tried, loaded };
   } catch (e) {
     report.financials = { error: e instanceof Error ? e.message : String(e) };
   }
 
   // 5. Ratios for everything that has financials (cheap, pure reads + upsert)
-  try {
+  if (outOfTime()) report.ratios = { skipped: "time budget" };
+  else try {
     const { data: have } = await db.from("company_financials").select("ticker").eq("review_status", "published");
     const tickers = [...new Set((have ?? []).map((r) => r.ticker as string))];
     let ok = 0;
     for (const t of tickers.slice(0, 50)) {
+      if (outOfTime()) break;
       const r = await refreshRatios(db, t).catch(() => null);
       if (r) ok++;
     }
@@ -130,5 +159,5 @@ export async function GET(request: Request) {
     report.ratios = { error: e instanceof Error ? e.message : String(e) };
   }
 
-  return NextResponse.json({ ok: true, ...report });
+  return NextResponse.json({ ok: true, elapsedMs: Date.now() - startedAt, ranOutOfTime: outOfTime(), ...report });
 }

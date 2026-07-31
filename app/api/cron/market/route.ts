@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { revalidateTag } from "next/cache";
-import { buildMarketSnapshot } from "@/lib/market/snapshot";
+import { buildMarketSnapshot, ensureMarketSnapshot } from "@/lib/market/snapshot";
 import { refreshMarketEvents } from "@/lib/market/events";
 import { generateMarketBrief } from "@/lib/market/brief";
 import { MARKET_SNAPSHOT_TAG } from "@/lib/market/read";
@@ -69,6 +69,19 @@ export async function GET(request: Request) {
   // task is now reached daily by /api/cron/market/macro to keep Bitcoin current
   // at weekends — hence the explicit weekday guard here.
   if ((task === "all" || task === "macro") && isPsxWeekday()) {
+    // This task is reached every weekday by /api/cron/market/macro, on a later
+    // schedule than the snapshot job, which makes it the natural place to
+    // notice that the snapshot job never landed and build the day's snapshot
+    // late rather than not at all. A no-op on the normal day.
+    if (task === "macro") {
+      try {
+        const caught = await ensureMarketSnapshot();
+        if (caught.built) report.snapshotCatchUp = { date: caught.date, items: caught.items, errors: caught.errors };
+      } catch (err) {
+        report.snapshotCatchUp = { error: err instanceof Error ? err.message : "snapshot catch-up failed" };
+      }
+    }
+
     // The secondary PSX indices. Only the outlook capture wrote these, and it
     // is gated on KSE-100 already holding today's close, so a lag there froze
     // them for days while the tape presented them as current. Topping them up

@@ -67,6 +67,17 @@ export async function buildMarketSnapshot(client?: SupabaseClient): Promise<Buil
   ]);
 
   if (watch.length === 0) {
+    // Record the miss. This path used to return silently, so a day lost to a
+    // dead feed looked identical to a day the job never ran at all, and the
+    // only visible symptom was a dashboard quietly showing yesterday.
+    await db.from("data_fetch_logs").insert({
+      ticker: null,
+      section: "market_snapshot",
+      source: "psx-market-watch+indices",
+      status: "empty",
+      rows: 0,
+      detail: "PSX market-watch feed returned no rows.",
+    }).then(() => {}, () => {});
     return { snapshotId: null, date, items: 0, advancers: 0, decliners: 0, index: null, errors: ["PSX market-watch feed returned no rows."] };
   }
 
@@ -255,6 +266,45 @@ export async function buildMarketSnapshot(client?: SupabaseClient): Promise<Buil
   }).then(() => {}, () => {});
 
   return { snapshotId, date, items: items.length, advancers, decliners, index: idx?.name ?? null, errors };
+}
+
+/**
+ * Build today's snapshot only if it is missing — the catch-up every later job
+ * runs before it trusts the snapshot.
+ *
+ * The snapshot is the spine of the day: prices, breadth, sectors and the
+ * mirrored quotes that give the dashboard its "today" numbers all come from
+ * it. It is written by one scheduled run, and this project's host makes no
+ * hard guarantee that a given cron fires, so one skipped invocation left every
+ * downstream reader on yesterday's close with nothing to signal it. Calling
+ * this at the top of the other daily jobs turns a missed run into a late run.
+ *
+ * Cheap when there is nothing to do: one indexed read of the newest row.
+ */
+export async function ensureMarketSnapshot(client?: SupabaseClient): Promise<BuildResult & { built: boolean }> {
+  const db = client ?? createAdminClient();
+  const date = pktDate();
+  const { data: latest } = await db
+    .from("market_snapshots")
+    .select("id, snapshot_date, item_count")
+    .eq("market", "PSX")
+    .order("snapshot_date", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  if (latest?.snapshot_date === date) {
+    return {
+      built: false,
+      snapshotId: (latest.id as string) ?? null,
+      date,
+      items: Number(latest.item_count ?? 0),
+      advancers: 0,
+      decliners: 0,
+      index: null,
+      errors: [],
+    };
+  }
+  return { built: true, ...(await buildMarketSnapshot(db)) };
 }
 
 function buildMovers(snapshotId: string, items: EnrichedItem[]) {

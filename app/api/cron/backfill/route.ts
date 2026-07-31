@@ -3,6 +3,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { refreshTechnicalsDetailed } from "@/lib/company/technicals";
 import { populateCheapFundamentals, populateDeepFundamentals } from "@/lib/engine/fundamentals";
 import { activeUniverseTickers, COMPANY_TYPES } from "@/lib/engine/universe";
+import { ensureMarketSnapshot } from "@/lib/market/snapshot";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 300;
@@ -51,6 +52,17 @@ export async function GET(request: Request) {
   const deepLimit = Math.max(0, Math.min(40, Number(url.searchParams.get("deeplimit") ?? 8)));
   const concurrency = Math.max(1, Math.min(10, Number(url.searchParams.get("concurrency") ?? 6)));
   const report: Record<string, unknown> = {};
+
+  // The working set below is drawn from the latest market snapshot, so a
+  // snapshot job that never fired silently costs this run a day as well: it
+  // would refresh yesterday's traded set and record it as today's. Build the
+  // snapshot first when it is missing; a no-op when the earlier job did land.
+  try {
+    const caught = await ensureMarketSnapshot(db);
+    if (caught.built) report.snapshotCatchUp = { date: caught.date, items: caught.items, errors: caught.errors };
+  } catch (e) {
+    report.snapshotCatchUp = { error: e instanceof Error ? e.message : String(e) };
+  }
 
   const universe = await workingSet(db);
   report.workingSet = universe.length;

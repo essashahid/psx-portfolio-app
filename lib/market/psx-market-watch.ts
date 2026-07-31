@@ -13,6 +13,8 @@
 
 const BASE = "https://dps.psx.com.pk";
 const REQUEST_TIMEOUT_MS = 15_000;
+const FETCH_ATTEMPTS = 3;
+const RETRY_BACKOFF_MS = 2_000;
 
 const BROWSER_HEADERS = {
   "User-Agent":
@@ -78,14 +80,29 @@ function num(raw: string | undefined): number | null {
   return neg ? -n : n;
 }
 
+/**
+ * One GET against the data portal, retried before giving up.
+ *
+ * A single miss here costs a whole trading day: the snapshot builder writes
+ * nothing when the market-watch table comes back empty, and the next scheduled
+ * run is tomorrow, so the dashboard sits on yesterday's close with no sign that
+ * anything went wrong. The portal is occasionally slow or briefly 5xx right
+ * after the close, which is exactly when this runs, so spending a few seconds
+ * on a second and third attempt is much cheaper than losing the day.
+ */
 async function fetchHtml(path: string): Promise<string | null> {
-  try {
-    const res = await fetch(`${BASE}${path}`, { headers: BROWSER_HEADERS, signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS), cache: "no-store" });
-    if (!res.ok) return null;
-    return await res.text();
-  } catch {
-    return null;
+  for (let attempt = 0; attempt < FETCH_ATTEMPTS; attempt++) {
+    if (attempt > 0) await new Promise((r) => setTimeout(r, RETRY_BACKOFF_MS * attempt));
+    try {
+      const res = await fetch(`${BASE}${path}`, { headers: BROWSER_HEADERS, signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS), cache: "no-store" });
+      if (!res.ok) continue;
+      const html = await res.text();
+      if (html.trim()) return html;
+    } catch {
+      // Timeout or network error — fall through to the next attempt.
+    }
   }
+  return null;
 }
 
 /**

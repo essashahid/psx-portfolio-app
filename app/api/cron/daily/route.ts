@@ -8,6 +8,17 @@ export const dynamic = "force-dynamic";
 export const maxDuration = 300;
 
 /**
+ * How long the per-user loop may run before it stops taking new accounts.
+ *
+ * Overrunning maxDuration is not a slow run, it is a lost one: the platform
+ * kills the invocation, so the account being processed is left half updated,
+ * the shared news-cluster sync at the end never happens, and nothing records
+ * that any of it was skipped. Stopping early and saying so is strictly better,
+ * and the ordering below makes the remainder the next run's first work.
+ */
+const USER_BUDGET_MS = 220_000;
+
+/**
  * Daily scheduled update for every user.
  *
  * Triggered by a scheduled job (Vercel Cron, an OS cron `curl`, or Supabase
@@ -32,6 +43,7 @@ export async function GET(request: Request) {
   }
 
   const admin = createAdminClient();
+  const startedAt = Date.now();
 
   // News and dividend announcements keep arriving at the weekend; PSX prices do
   // not. The run happens either way, without the pointless price fetch.
@@ -42,8 +54,30 @@ export async function GET(request: Request) {
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
   const userIds = [...new Set((holders ?? []).map((h) => String(h.user_id)))];
 
+  // Stalest account first. A run costs price fetches, announcement PDF reads
+  // and a news sweep per user, so the whole set does not always fit in one
+  // invocation; ordering by the last completed run means the budget below
+  // rotates through everyone over successive days instead of always spending
+  // itself on the same few accounts and starving the rest.
+  const { data: lastRuns } = await admin.from("portfolio_changelog").select("user_id, run_date");
+  const lastRunByUser = new Map<string, string>();
+  for (const row of lastRuns ?? []) {
+    const uid = String(row.user_id);
+    const seen = lastRunByUser.get(uid);
+    const at = String(row.run_date);
+    if (!seen || at > seen) lastRunByUser.set(uid, at);
+  }
+  userIds.sort((a, b) => (lastRunByUser.get(a) ?? "").localeCompare(lastRunByUser.get(b) ?? ""));
+
   const results: { user_id: string; ok: boolean; highlights?: string[]; error?: string }[] = [];
+  let skipped = 0;
   for (const userId of userIds) {
+    // Leave enough of the budget for the cluster sync below, which is shared by
+    // every user and must not be the step that gets cut.
+    if (Date.now() - startedAt > USER_BUDGET_MS) {
+      skipped++;
+      continue;
+    }
     try {
       const summary = await runDailyUpdate(admin, userId, { skipPrices: !tradingDay });
       results.push({ user_id: userId, ok: true, highlights: summary.highlights });
@@ -62,6 +96,8 @@ export async function GET(request: Request) {
     trading_day: tradingDay,
     prices_refreshed: tradingDay,
     users_processed: results.length,
+    users_deferred: skipped,
+    elapsed_ms: Date.now() - startedAt,
     clusters_synced: clusters,
     results,
   });
