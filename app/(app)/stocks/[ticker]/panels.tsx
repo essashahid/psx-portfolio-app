@@ -338,9 +338,14 @@ export async function EarningsPanel({ ticker }: { ticker: string; readOnly?: boo
     byQuarter.set(`${r.fiscal_year}-${r.fiscal_period}`, { year: r.fiscal_year, period: r.fiscal_period, eps });
   }
 
+  // Five fiscal years where the filings support it. Eight quarters only ever
+  // showed two years, which is one year-on-year comparison per quarter and no
+  // sense of whether a move is a trend or a wobble; the whole point of the
+  // year-earlier baseline is lost if the reader cannot see the year before
+  // that. Companies whose history is thinner simply render fewer rows.
   const quarters = [...byQuarter.values()]
     .sort((a, b) => a.year - b.year || a.period.localeCompare(b.period))
-    .slice(-8);
+    .slice(-20);
 
   if (quarters.length === 0) {
     return (
@@ -363,7 +368,16 @@ export async function EarningsPanel({ ticker }: { ticker: string; readOnly?: boo
   });
 
   const withChange = rows.filter((r) => r.change !== null);
-  const maxAbs = Math.max(1, ...withChange.map((r) => Math.abs(r.change as number)));
+
+  // The ledger carries the full five years; the bars carry the recent shape.
+  // Twenty bars at a legible width is a chart nobody can see the end of
+  // without scrolling, and the older ones are the least interesting — the
+  // reader who wants FY2022 wants the figure, which is in the table.
+  const chartRows = rows.slice(-12);
+  // Scaled to the tallest bar actually drawn. Scaling to the full history lets
+  // a swing that is no longer on screen (OGDC's +199% in Q4 FY2023) flatten
+  // every visible bar against the floor.
+  const maxAbs = Math.max(1, ...chartRows.filter((r) => r.change !== null).map((r) => Math.abs(r.change as number)));
 
   return (
     <div>
@@ -385,7 +399,7 @@ export async function EarningsPanel({ ticker }: { ticker: string; readOnly?: boo
       */}
       {withChange.length >= 3 && (
         <div className="flex items-end gap-3 overflow-x-auto pb-1" style={{ minHeight: "11rem" }}>
-          {rows.map((r) => {
+          {chartRows.map((r) => {
             const pct = r.change;
             const h = pct === null ? 0 : Math.max(4, (Math.abs(pct) / maxAbs) * 96);
             const up = (pct ?? 0) >= 0;

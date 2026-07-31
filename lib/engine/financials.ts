@@ -859,8 +859,19 @@ function validStatement(s: ExtractedStatement): boolean {
  * Process the latest result filings for a ticker: download PDFs, extract
  * structured statements with Gemini, validate, and upsert company_financials.
  * Skips filings already extracted (matched by source_url).
+ *
+ * `only` hands in an explicit list of filings instead of discovering the
+ * latest ones. The history backfill needs it: discovery reads a single portal
+ * page and ranks by recency, so there is no argument to this function that
+ * means "the accounts from four years ago". Filings passed this way skip the
+ * title filter, because the caller has already decided what each one is.
  */
-export async function extractFinancials(ticker: string, maxFilings = 2, force = false): Promise<ExtractionResult> {
+export async function extractFinancials(
+  ticker: string,
+  maxFilings = 2,
+  force = false,
+  only?: { url: string; title: string; date: string | null }[]
+): Promise<ExtractionResult> {
   const t = ticker.toUpperCase();
   const out: ExtractionResult = { ticker: t, processed: 0, saved: 0, skipped: [], errors: [] };
 
@@ -915,8 +926,8 @@ export async function extractFinancials(ticker: string, maxFilings = 2, force = 
   // the figures look entirely reasonable until they are reconciled.
   const isAnnualTitle = (title: string) => /annual report|annual account|annual financial statement/i.test(title);
 
-  let filings = await getCompanyFilings(t, 40);
-  if (!filings.some((f) => isReport(f.title) && isAnnualTitle(f.title))) {
+  let filings = only ?? (await getCompanyFilings(t, 40));
+  if (!only && !filings.some((f) => isReport(f.title) && isAnnualTitle(f.title))) {
     filings = await getCompanyFilings(t, 200);
   }
   // Annual reports first: they carry the full balance sheet AND cash flow, and
@@ -936,10 +947,15 @@ export async function extractFinancials(ticker: string, maxFilings = 2, force = 
     const n = d ? Date.parse(d) : NaN;
     return Number.isFinite(n) ? n : 0;
   };
-  const resultPdfs = filings
-    .filter((f) => f.url.toLowerCase().includes(".pdf") && isReport(f.title))
-    .sort((a, b) => rank(a.title) - rank(b.title) || dateMs(b.date) - dateMs(a.date))
-    .slice(0, maxFilings * 3); // candidates; we stop after maxFilings successful extractions
+  // A caller-supplied list is taken as given, in its own order: it was chosen
+  // per reporting period, so re-ranking it by recency would just process the
+  // newest period three times and drop the rest at the maxFilings cut.
+  const resultPdfs = only
+    ? only.filter((f) => f.url.toLowerCase().includes(".pdf"))
+    : filings
+        .filter((f) => f.url.toLowerCase().includes(".pdf") && isReport(f.title))
+        .sort((a, b) => rank(a.title) - rank(b.title) || dateMs(b.date) - dateMs(a.date))
+        .slice(0, maxFilings * 3); // candidates; we stop after maxFilings successful extractions
 
   if (resultPdfs.length === 0) {
     out.errors.push("No result filings with PDF documents found on the PSX portal.");

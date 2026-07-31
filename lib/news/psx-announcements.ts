@@ -2,6 +2,8 @@ import type { DiscoveredNewsArticle, NewsCategory, NewsHolding } from "@/lib/new
 
 const BASE_URL = "https://dps.psx.com.pk";
 const REQUEST_TIMEOUT_MS = 12_000;
+/** The portal's own per-response ceiling; asking for more returns 100 anyway. */
+const PAGE_SIZE = 100;
 
 const BROWSER_HEADERS = {
   "User-Agent":
@@ -24,6 +26,55 @@ export type PsxAnnouncement = {
 /** Raw company announcements for one ticker (newest first). Reused by the dividend engine. */
 export async function getCompanyAnnouncements(ticker: string, count: number): Promise<PsxAnnouncement[]> {
   return fetchCompanyAnnouncements(ticker, count);
+}
+
+/**
+ * The full announcement archive for one ticker, newest first, walked page by
+ * page.
+ *
+ * The portal caps a single response at 100 rows however large `count` is, so
+ * every caller asking for more than that silently got the most recent 100 and
+ * no indication there was more. For a busy filer that is barely eighteen
+ * months: OGDC's 100th row is Feb 2025, which put its own FY2022 accounts out
+ * of reach of the extractor while the portal was in fact still serving them.
+ * The endpoint does honour `offset`, so paging reaches back to 2014.
+ *
+ * Pages are fetched in sequence, not in parallel, because this walks a public
+ * portal that nothing obliges to serve us.
+ */
+export async function getCompanyAnnouncementArchive(
+  ticker: string,
+  opts: { maxPages?: number; notBefore?: Date } = {}
+): Promise<PsxAnnouncement[]> {
+  const maxPages = opts.maxPages ?? 20;
+  const symbol = ticker.toUpperCase();
+  const out: PsxAnnouncement[] = [];
+  const seen = new Set<string>();
+
+  for (let page = 0; page < maxPages; page++) {
+    const rows = await fetchCompanyAnnouncements(symbol, PAGE_SIZE, page * PAGE_SIZE);
+    if (rows.length === 0) break;
+
+    // Pages overlap by one row at these offsets, and a portal that ignored
+    // `offset` would hand back the same page forever. Stopping on "this page
+    // added nothing new" covers both without assuming which.
+    let added = 0;
+    for (const row of rows) {
+      const key = `${row.date}|${row.time}|${row.title}`;
+      if (seen.has(key)) continue;
+      seen.add(key);
+      out.push(row);
+      added++;
+    }
+    if (added === 0) break;
+
+    if (opts.notBefore) {
+      const oldest = parsePsxDateTime(rows[rows.length - 1].date, rows[rows.length - 1].time);
+      if (oldest && new Date(oldest) < opts.notBefore) break;
+    }
+  }
+
+  return out;
 }
 
 export function psxAnnouncementsConfigured(): boolean {
@@ -81,13 +132,13 @@ export async function psxAnnouncementSearchHoldings(
   return { articles, errors };
 }
 
-async function fetchCompanyAnnouncements(ticker: string, count: number): Promise<PsxAnnouncement[]> {
+async function fetchCompanyAnnouncements(ticker: string, count: number, offset = 0): Promise<PsxAnnouncement[]> {
   const body = new URLSearchParams({
     type: "C",
     symbol: ticker,
     query: "",
     count: String(count),
-    offset: "0",
+    offset: String(offset),
     date_from: "",
     date_to: "",
   });

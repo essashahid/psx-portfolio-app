@@ -1,4 +1,4 @@
-import { getCompanyAnnouncements } from "@/lib/news/psx-announcements";
+import { getCompanyAnnouncements, getCompanyAnnouncementArchive } from "@/lib/news/psx-announcements";
 import type { Filing } from "@/lib/company/types";
 
 /** Map a PSX announcement title to a cockpit filing category. */
@@ -19,6 +19,29 @@ export function categorizeFiling(title: string): string {
 export async function getCompanyFilings(ticker: string, count = 25): Promise<Filing[]> {
   try {
     const rows = await getCompanyAnnouncements(ticker.toUpperCase(), count);
+    return rows.map((r) => ({
+      date: r.date || null,
+      title: r.title,
+      category: categorizeFiling(r.title),
+      url: r.url,
+      source: "PSX Company Announcements",
+    }));
+  } catch {
+    return [];
+  }
+}
+
+/**
+ * The whole filing archive for one company, not just the newest page. Used by
+ * the history backfill, which needs filings from several years back — beyond
+ * the 100 rows a single portal response will ever return.
+ */
+export async function getCompanyFilingArchive(
+  ticker: string,
+  opts: { maxPages?: number; notBefore?: Date } = {}
+): Promise<Filing[]> {
+  try {
+    const rows = await getCompanyAnnouncementArchive(ticker.toUpperCase(), opts);
     return rows.map((r) => ({
       date: r.date || null,
       title: r.title,
