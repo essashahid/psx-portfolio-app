@@ -189,5 +189,31 @@ export async function GET(request: Request) {
     report.ratios = { error: e instanceof Error ? e.message : String(e) };
   }
 
+  // 7. Dated ratios per fiscal period, for the active set.
+  //
+  //    Step 6 keeps the current snapshot fresh. This keeps the SERIES fresh,
+  //    which is a different thing: when a new filing lands, that period gains
+  //    its own margins, returns and period-end valuation rather than only
+  //    shifting what "latest" points at. Same reasoning as the quarters above —
+  //    a history that only a manual script maintains stops being a history.
+  //
+  //    Reads and upserts only, no LLM.
+  if (outOfTime()) report.ratioHistory = { skipped: "time budget" };
+  else try {
+    const { computeRatioHistory } = await import("@/lib/engine/ratio-history");
+    let periods = 0;
+    let ran = 0;
+    for (const t of active) {
+      if (outOfTime()) break;
+      const r = await computeRatioHistory(db, t).catch(() => null);
+      if (!r) continue;
+      ran++;
+      periods += r.periods;
+    }
+    report.ratioHistory = { companies: ran, periods };
+  } catch (e) {
+    report.ratioHistory = { error: e instanceof Error ? e.message : String(e) };
+  }
+
   return NextResponse.json({ ok: true, elapsedMs: Date.now() - startedAt, ranOutOfTime: outOfTime(), ...report });
 }
