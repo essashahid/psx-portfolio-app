@@ -330,13 +330,61 @@ async function main() {
     return null;
   };
 
-  const publishedQuarters = new Map<string, Record<string, unknown>>();
+  /**
+   * Rows whose EPS and profit come from different columns of the same table.
+   *
+   * A filing's interim statement prints the cumulative period beside the
+   * discrete quarter, and the extractor can take profit from one column and
+   * EPS from the other. The row then looks entirely reasonable: both figures
+   * are real, both appear in the document, and nothing about their
+   * combination is obviously wrong. FCCL's H1 FY2026 carried profit of
+   * 7,316,529 against EPS of 1.64, which is the quarter's EPS, not the half
+   * year's.
+   *
+   * Profit divided by EPS is the company's share count, and that is close to
+   * constant across periods. So a row whose implied share count is nowhere
+   * near the company's own median is mixing columns, and subtracting it
+   * produces a quarter that never happened. Bonus issues and splits do move
+   * the real count, which is why this only excludes a row from arithmetic and
+   * reports it, rather than trying to correct it.
+   */
+  const impliedShares = (d: Record<string, unknown>): number | null => {
+    const pat = num(d, "profit_after_tax");
+    const eps = num(d, "eps");
+    if (pat === null || eps === null || Math.abs(eps) < 0.01) return null;
+    return pat / eps;
+  };
+  const shareCounts = stored
+    .map((r) => impliedShares((r.data ?? {}) as Record<string, unknown>))
+    .filter((n): n is number => n !== null && n > 0)
+    .sort((a, b) => a - b);
+  const medianShares = shareCounts.length ? shareCounts[Math.floor(shareCounts.length / 2)] : null;
+  const SHARE_TOLERANCE = 0.1;
+  const columnMixed = (d: Record<string, unknown>): boolean => {
+    if (medianShares === null) return false;
+    const s = impliedShares(d);
+    if (s === null || s <= 0) return false;
+    return Math.abs(s / medianShares - 1) > SHARE_TOLERANCE;
+  };
 
+  // Keyed by basis as well as period. NML files a consolidated and an
+  // unconsolidated set, and collapsing them meant the cross-check compared a
+  // derived unconsolidated quarter against whichever consolidated row happened
+  // to be read last, reporting a 55% discrepancy between two figures that were
+  // both correct and simply describe different reporting entities.
+  const publishedQuarters = new Map<string, Record<string, unknown>>();
   for (const r of stored) {
     if (r.period_type === "quarterly" && /^Q[1-4]$/.test(String(r.fiscal_period))) {
-      publishedQuarters.set(`${r.fiscal_year}-${r.fiscal_period}`, (r.data ?? {}) as Record<string, unknown>);
+      const basis = (r.reporting_basis as string | null) ?? "unlabelled";
+      publishedQuarters.set(`${r.fiscal_year}-${r.fiscal_period}-${basis}`, (r.data ?? {}) as Record<string, unknown>);
     }
   }
+
+  /** The directly-reported quarter a derived one should be checked against: same basis, else an unlabelled reading. */
+  const reportedQuarter = (fy: number, q: string, basis: string | null): Record<string, unknown> | null =>
+    publishedQuarters.get(`${fy}-${q}-${basis ?? "unlabelled"}`) ??
+    publishedQuarters.get(`${fy}-${q}-unlabelled`) ??
+    null;
 
   // Q1 is already a standalone quarter; the other three are differences.
   const RECIPES: { quarter: string; cumulative: Period; prior: Period }[] = [
@@ -367,6 +415,15 @@ async function main() {
       }
       const { cum, prior, mixed } = pair;
 
+      if (columnMixed(cum.data) || columnMixed(prior.data)) {
+        const which = columnMixed(cum.data) ? recipe.cumulative : recipe.prior;
+        const bad = columnMixed(cum.data) ? cum.data : prior.data;
+        gaps.push(
+          `FY${fy} ${recipe.quarter}: ${which} FY${fy} implies ${(impliedShares(bad)! / 1000).toFixed(0)}m shares against a median of ${(medianShares! / 1000).toFixed(0)}m — its EPS and profit come from different columns, not subtracting it`
+        );
+        continue;
+      }
+
       const data: Record<string, number | null> = {};
       let any = false;
       for (const k of FLOW_KEYS) {
@@ -381,7 +438,7 @@ async function main() {
         continue;
       }
 
-      const existing = publishedQuarters.get(`${fy}-${recipe.quarter}`);
+      const existing = reportedQuarter(fy, recipe.quarter, mixed ? null : cum.basis);
       if (existing) {
         // The PSX company page publishes some discrete quarters directly. Where
         // it does, it is an independent check on the arithmetic rather than
@@ -390,8 +447,15 @@ async function main() {
         const ours = data.eps;
         if (theirs !== null && ours !== null) {
           const off = Math.abs(theirs) > 0.01 ? Math.abs((ours - theirs) / theirs) * 100 : Math.abs(ours - theirs);
+          // Flagged only when the gap is both proportionally and absolutely
+          // material. EPS is published to two decimals, so a cement company
+          // earning 0.62 a share against a stored 0.64 is one rounding step
+          // apart and reads as a 3% discrepancy; chasing those buries the
+          // handful of real ones. A quarter has to miss by a whole paisa-and-a
+          // -half AND by more than 2% to be worth anyone's attention.
+          const material = off > 2 && Math.abs(ours - theirs) >= 0.05;
           crossChecks.push(
-            `FY${fy} ${recipe.quarter}: stored ${theirs.toFixed(2)} vs derived ${ours.toFixed(2)} (${off.toFixed(1)}% apart)${off > 2 ? "  <-- CHECK" : ""}`
+            `FY${fy} ${recipe.quarter}: stored ${theirs.toFixed(2)} vs derived ${ours.toFixed(2)} (${off.toFixed(1)}% apart)${material ? "  <-- CHECK" : ""}`
           );
         }
         continue; // never overwrite a directly-reported quarter

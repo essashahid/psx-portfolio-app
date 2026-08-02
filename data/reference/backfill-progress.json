@@ -1,0 +1,64 @@
+{
+  "_note": "Phase 1 progress. A company listed 'ok' is not revisited on a re-run. Delete an entry, or pass --retry-failed, to redo one. crossChecksOff counts quarters where the value derived from the cumulative chain disagreed by more than 2% with a quarter PSX reports directly: those are the rows worth a human look.",
+  "_asOf": "2026-08-02T14:17:27.052Z",
+  "summary": {
+    "companies": 4,
+    "ok": 4,
+    "failed": 0,
+    "timeout": 0,
+    "statementsSaved": 52,
+    "quartersDerived": 4,
+    "bleedRepaired": 0,
+    "crossChecksNeedingReview": 0
+  },
+  "results": {
+    "NML": {
+      "ticker": "NML",
+      "status": "ok",
+      "startedAt": "2026-08-02T14:15:00.507Z",
+      "finishedAt": "2026-08-02T14:15:04.683Z",
+      "seconds": 4,
+      "exitCode": 0,
+      "saved": 0,
+      "quartersWritten": 0,
+      "bleedRepaired": 0,
+      "crossChecksOff": 0
+    },
+    "FCCL": {
+      "ticker": "FCCL",
+      "status": "ok",
+      "startedAt": "2026-08-02T14:15:00.496Z",
+      "finishedAt": "2026-08-02T14:15:06.287Z",
+      "seconds": 6,
+      "exitCode": 0,
+      "saved": 0,
+      "quartersWritten": 1,
+      "bleedRepaired": 0,
+      "crossChecksOff": 0
+    },
+    "OGDC": {
+      "ticker": "OGDC",
+      "status": "ok",
+      "startedAt": "2026-08-02T14:15:00.509Z",
+      "finishedAt": "2026-08-02T14:15:07.074Z",
+      "seconds": 7,
+      "exitCode": 0,
+      "saved": 0,
+      "quartersWritten": 1,
+      "bleedRepaired": 0,
+      "crossChecksOff": 0
+    },
+    "SYS": {
+      "ticker": "SYS",
+      "status": "ok",
+      "startedAt": "2026-08-02T14:15:00.512Z",
+      "finishedAt": "2026-08-02T14:17:27.052Z",
+      "seconds": 147,
+      "exitCode": 0,
+      "saved": 52,
+      "quartersWritten": 2,
+      "bleedRepaired": 0,
+      "crossChecksOff": 0
+    }
+  }
+}

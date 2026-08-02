@@ -61,3 +61,7 @@ tree.txt
 # Real personal brokerage/CDC documents. Never commit these — point
 # AKD_LEDGER_PDF_PATH at a copy outside the repository instead.
 data/private/
+
+# Per-company backfill run logs. Rebuilt by scripts/backfills/run-batch-backfill.ts
+# on every run; the durable record is data/reference/backfill-progress.json.
+logs/
