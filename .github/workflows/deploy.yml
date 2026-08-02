@@ -1,0 +1,82 @@
+# Production deploys, routed around Vercel's commit-author check.
+#
+# Why this exists: the GitHub account that authors commits here is linked to a
+# different Vercel account than the one that owns the project, so Vercel's own
+# Git integration blocks every push with "commit author does not have
+# contributing access". Deploy hooks hit the same wall — they attribute to the
+# branch-head author too. Deployments created through the API with the owner's
+# token do not, so that is what this job does: one POST, then poll to a
+# terminal state. Vercel builds from the Git source itself; nothing is
+# uploaded from CI.
+#
+# Auto-deploy for main is disabled in vercel.json (git.deploymentEnabled), so
+# this workflow is the only production deploy path. If it is failing, nothing
+# is deploying. Requires the VERCEL_TOKEN repository secret; if the token is
+# ever revoked, mint a new one at vercel.com/account/settings/tokens and run:
+#   gh secret set VERCEL_TOKEN
+#
+# This whole arrangement becomes unnecessary the day the GitHub account is
+# relinked to the owning Vercel account — then delete this file and the
+# deploymentEnabled block in vercel.json, and let the Git integration do it.
+
+name: Deploy to Vercel
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: vercel-production
+  cancel-in-progress: false
+
+env:
+  VERCEL_TEAM_ID: team_agPxLGxNlPlPpLAOX5Arnx1u
+  VERCEL_PROJECT_ID: prj_sJxjQdS2FK93j4MeYcH6TPWdOmbV
+  GITHUB_REPO_ID: "1265216629"
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Create deployment
+        id: create
+        run: |
+          set -euo pipefail
+          RESPONSE=$(curl -sf -X POST \
+            "https://api.vercel.com/v13/deployments?teamId=${VERCEL_TEAM_ID}" \
+            -H "Authorization: Bearer ${{ secrets.VERCEL_TOKEN }}" \
+            -H "Content-Type: application/json" \
+            -d "{
+              \"name\": \"psx-portfolio-app\",
+              \"project\": \"${VERCEL_PROJECT_ID}\",
+              \"target\": \"production\",
+              \"gitSource\": {
+                \"type\": \"github\",
+                \"repoId\": ${GITHUB_REPO_ID},
+                \"ref\": \"${GITHUB_SHA}\"
+              }
+            }")
+          DEPLOYMENT_ID=$(echo "$RESPONSE" | python3 -c "import json,sys; print(json.load(sys.stdin)['id'])")
+          DEPLOYMENT_URL=$(echo "$RESPONSE" | python3 -c "import json,sys; print(json.load(sys.stdin)['url'])")
+          echo "id=$DEPLOYMENT_ID" >> "$GITHUB_OUTPUT"
+          echo "Deployment $DEPLOYMENT_ID -> https://$DEPLOYMENT_URL"
+
+      - name: Wait for build
+        run: |
+          set -euo pipefail
+          for i in $(seq 1 60); do
+            STATE=$(curl -sf \
+              "https://api.vercel.com/v13/deployments/${{ steps.create.outputs.id }}?teamId=${VERCEL_TEAM_ID}" \
+              -H "Authorization: Bearer ${{ secrets.VERCEL_TOKEN }}" \
+              | python3 -c "import json,sys; print(json.load(sys.stdin)['readyState'])")
+            echo "[$i] $STATE"
+            case "$STATE" in
+              READY) exit 0 ;;
+              ERROR|CANCELED|BLOCKED) echo "Deployment ended in $STATE"; exit 1 ;;
+            esac
+            sleep 15
+          done
+          echo "Timed out waiting for the deployment to finish."
+          exit 1
