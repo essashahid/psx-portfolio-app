@@ -141,7 +141,39 @@ export async function GET(request: Request) {
     report.financials = { error: e instanceof Error ? e.message : String(e) };
   }
 
-  // 5. Ratios for everything that has financials (cheap, pure reads + upsert)
+  // 5. Discrete quarters from the cumulative rows.
+  //
+  //    PSX companies file 3M, 6M and 9M, then a full year, and never file Q2,
+  //    Q3 or Q4 standalone, so three of every four quarters have to be
+  //    differenced out of the cumulative series. Without this step a new set of
+  //    results lands as another cumulative row and the quarterly history simply
+  //    stops growing — the five-year backfill would decay from the day it ran.
+  //
+  //    Cheap: pure reads and upserts, no LLM and no PDF. Runs for the active
+  //    set only, since that is where new filings actually arrive; the wider
+  //    universe is handled by the backfill script.
+  if (outOfTime()) report.quarters = { skipped: "time budget" };
+  else try {
+    const { deriveQuarters } = await import("@/lib/engine/quarterly-derivation");
+    let written = 0;
+    let repaired = 0;
+    let flagged = 0;
+    let ran = 0;
+    for (const t of active) {
+      if (outOfTime()) break;
+      const r = await deriveQuarters(db, t).catch(() => null);
+      if (!r) continue;
+      ran++;
+      written += r.written;
+      repaired += r.bleedRepaired + r.bleedQuarantined;
+      flagged += r.crossChecks.filter((c) => c.material).length;
+    }
+    report.quarters = { companies: ran, derived: written, bleedHandled: repaired, crossChecksFlagged: flagged };
+  } catch (e) {
+    report.quarters = { error: e instanceof Error ? e.message : String(e) };
+  }
+
+  // 6. Ratios for everything that has financials (cheap, pure reads + upsert)
   if (outOfTime()) report.ratios = { skipped: "time budget" };
   else try {
     const { data: have } = await db.from("company_financials").select("ticker").eq("review_status", "published");

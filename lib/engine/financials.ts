@@ -698,7 +698,12 @@ Return JSON:
   "data": {
     // income_statement keys (use exactly these, null when absent):
     // revenue, cost_of_sales, gross_profit, operating_expenses, operating_profit,
-    // finance_cost, profit_before_tax, tax, profit_after_tax, eps
+    // finance_cost, profit_before_tax, tax, profit_after_tax, eps,
+    //   dividend_per_share (cash dividend PER SHARE declared for this period, in
+    //     rupees like eps, from the statement or the appropriations note. PSX
+    //     filings often state a percentage of face value instead: "cash dividend
+    //     @ 30%" on a face value of 10 is 3.00 per share. Convert only when the
+    //     face value is stated in the document; otherwise null.)
     // BANK income_statement extra keys (only for banks/DFIs, else null):
     //   markup_earned (interest/markup/return earned), markup_expensed (interest expense),
     //   net_markup_income (markup earned − expensed, "net markup/interest income"),
@@ -722,7 +727,9 @@ Return JSON:
     // INSURANCE balance_sheet extra key (only for insurers/takaful, else null):
     //   technical_reserves (insurance/technical reserves, outstanding claims + unearned premium)
     // cash_flow keys:
-    // operating_cash_flow, investing_cash_flow, financing_cash_flow, capex, cash_balance
+    // operating_cash_flow, investing_cash_flow, financing_cash_flow, capex, cash_balance,
+    //   dividends_paid (dividend/profit distribution paid to ordinary shareholders,
+    //     a financing outflow - as printed, so normally negative)
   }
 }]}
 
@@ -835,6 +842,9 @@ const MONETARY_KEYS = new Set([
   "total_assets", "current_assets", "cash_and_equivalents", "inventory", "receivables",
   "total_liabilities", "current_liabilities", "borrowings", "equity", "retained_earnings",
   "operating_cash_flow", "investing_cash_flow", "financing_cash_flow", "capex", "cash_balance",
+  // dividends_paid is a cash amount and rescales; dividend_per_share is per
+  // share and must NOT be listed here, for the same reason eps is not.
+  "dividends_paid",
   // Banks and DFIs
   "markup_earned", "markup_expensed", "net_markup_income", "non_markup_income", "provisions",
   "deposits", "advances", "gross_advances", "non_performing_loans", "investments",
