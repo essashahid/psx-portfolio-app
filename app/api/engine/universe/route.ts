@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { isCronAuthorized } from "@/lib/shared/cron-auth";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { requireUser, errorResponse } from "@/lib/shared/api";
 import { rejectDemoWrite } from "@/lib/demo/mode";
@@ -6,20 +7,12 @@ import { syncUniverseDirectory, reconcileListingStatus } from "@/lib/engine/univ
 
 export const maxDuration = 120;
 
-function cronAuthorized(request: Request): boolean {
-  const secret = process.env.CRON_SECRET;
-  if (!secret) return false;
-  const url = new URL(request.url);
-  const provided = request.headers.get("authorization")?.replace(/^Bearer\s+/i, "") ?? url.searchParams.get("key");
-  return provided === secret;
-}
-
 /**
  * Sync the PSX stock universe from the official symbol directory
  * (~1,050 listings). Callable by a logged-in user or by cron with CRON_SECRET.
  */
 export async function POST(request: Request) {
-  if (!cronAuthorized(request)) {
+  if (!isCronAuthorized(request)) {
     const { supabase, user, error } = await requireUser();
     if (error) return error;
     const demoError = await rejectDemoWrite(supabase, user.id);
@@ -29,7 +22,7 @@ export async function POST(request: Request) {
 }
 
 export async function GET(request: Request) {
-  if (!cronAuthorized(request)) {
+  if (!isCronAuthorized(request)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
   return syncUniverse();

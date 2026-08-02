@@ -127,7 +127,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
       <main className="scroll-touch flex-1 px-3 py-3 pb-[calc(5.75rem+env(safe-area-inset-bottom))] sm:px-4 sm:py-4 md:px-(--gutter-page) md:py-8 md:pb-8">
         <div className="w-full">{children}</div>
       </main>
-      {user.email === "demo@example.com" && <FeedbackWidget isDemo={isDemo} />}
+      {isDemo && <FeedbackWidget isDemo={isDemo} />}
       <MobileBottomNav email={user.email ?? ""} openAlerts={count ?? 0} visibleHrefs={visibleHrefs} isAdmin={isAdmin} />
     </div>
   );

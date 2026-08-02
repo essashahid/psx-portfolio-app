@@ -40,9 +40,43 @@ export async function requireUser(): Promise<
   return { supabase, user, error: null };
 }
 
+/**
+ * An error whose message is safe to show the caller.
+ *
+ * Throw this when the text is something the user can act on ("That file has no
+ * recognisable columns"). Anything else reaching errorResponse is treated as
+ * internal.
+ */
+export class PublicError extends Error {
+  readonly status: number;
+  constructor(message: string, status = 400) {
+    super(message);
+    this.name = "PublicError";
+    this.status = status;
+  }
+}
+
+/**
+ * Turn a thrown value into a response.
+ *
+ * Server faults never echo `err.message` back: these handlers sit on top of
+ * Postgres, and its errors name columns, constraints and relations. That is a
+ * free schema read for anyone who can reach the route. The detail goes to the
+ * server log instead, which is also the only place most of these failures were
+ * ever recorded.
+ */
 export function errorResponse(err: unknown, status = 500): NextResponse {
-  const message = err instanceof Error ? err.message : "Something went wrong";
-  return NextResponse.json({ error: message }, { status });
+  if (err instanceof PublicError) {
+    return NextResponse.json({ error: err.message }, { status: err.status });
+  }
+  // Deliberate 4xx from a caller that passed its own status: the message is the
+  // handler's own text, not a leaked internal one.
+  if (status < 500) {
+    const message = err instanceof Error ? err.message : "Something went wrong";
+    return NextResponse.json({ error: message }, { status });
+  }
+  console.error("[api] unhandled error:", err);
+  return NextResponse.json({ error: "Something went wrong. Please try again." }, { status });
 }
 
 export async function logAgentRun(

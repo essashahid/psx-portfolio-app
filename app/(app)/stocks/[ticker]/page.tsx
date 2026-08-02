@@ -114,7 +114,7 @@ export default async function StockCockpitPage({ params }: { params: Promise<{ t
   const tabs = [
     { id: "overview", label: "Overview", content: panel(<Suspense fallback={<CardSkeleton lines={8} />}><OverviewPanel ticker={ticker} companyEnrichmentEnabled={companyEnrichmentEnabled} readOnly={isDemo} /></Suspense>) },
     { id: "fundamentals", label: "Fundamentals", content: panel(<Suspense fallback={<TableSkeleton />}><FinancialsPanel ticker={ticker} readOnly={isDemo} /></Suspense>) },
-    { id: "earnings", label: "Earnings", content: panel(<Suspense fallback={<CardSkeleton lines={6} />}><EarningsPanel ticker={ticker} readOnly={isDemo} /></Suspense>) },
+    { id: "earnings", label: "Earnings", content: panel(<Suspense fallback={<CardSkeleton lines={6} />}><EarningsPanel ticker={ticker} /></Suspense>) },
     { id: "dividends", label: "Dividends", content: panel(<Suspense fallback={<TableSkeleton />}><DividendsPanel ticker={ticker} /></Suspense>) },
     // Placed after the fundamental tabs on purpose: the chart is for timing an
     // accumulation, not for forming the view.

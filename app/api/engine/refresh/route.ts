@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { isCronAuthorized } from "@/lib/shared/cron-auth";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { refreshQuote } from "@/lib/engine/market-data";
 import { refreshTechnicals } from "@/lib/company/technicals";
@@ -9,14 +10,6 @@ import { activeUniverseTickers } from "@/lib/engine/universe";
 export const maxDuration = 300;
 
 const BATCH = 5;
-
-function authorized(request: Request): boolean {
-  const secret = process.env.CRON_SECRET;
-  if (!secret) return false;
-  const url = new URL(request.url);
-  const provided = request.headers.get("authorization")?.replace(/^Bearer\s+/i, "") ?? url.searchParams.get("key");
-  return provided === secret;
-}
 
 /**
  * Background refresh worker (cron-protected).
@@ -32,7 +25,7 @@ function authorized(request: Request): boolean {
  * tickers people actually look at, refreshed most often.
  */
 export async function GET(request: Request) {
-  if (!authorized(request)) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  if (!isCronAuthorized(request)) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
     return NextResponse.json({ error: "SUPABASE_SERVICE_ROLE_KEY missing." }, { status: 503 });
   }

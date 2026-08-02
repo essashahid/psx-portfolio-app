@@ -7,17 +7,21 @@
 //   EVAL_USER_ID=<uuid> npx tsx scripts/evaluations/eval-chat-live.ts
 //   EVAL_MODEL=claude-sonnet npx tsx scripts/evaluations/eval-chat-live.ts
 //
-// Defaults to the demo user and the DeepSeek V4 Flash model. Exits non-zero if
-// any case fails.
+// Defaults to the demo user and the Copilot's own default model, so a plain run
+// scores what users actually get. Exits non-zero if any case fails.
 
 import { config } from "dotenv";
 import { resolve } from "path";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { runLiveEvals, formatLiveReport } from "@/lib/chat/evals/live";
+import { DEFAULT_MODEL_ID } from "@/lib/ai/models";
 
 config({ path: resolve(process.cwd(), ".env.local") });
 
-const DEFAULT_MODEL = "deepseek-flash";
+// Track the Copilot's default rather than naming a model here. The old literal
+// was "deepseek-flash", an id that no longer exists on its own: getModelDef
+// silently remapped it, so the report named a model the run had not used.
+const DEFAULT_MODEL = DEFAULT_MODEL_ID;
 
 async function resolveUserId(supabase: ReturnType<typeof createAdminClient>): Promise<string | null> {
   if (process.env.EVAL_USER_ID) return process.env.EVAL_USER_ID;

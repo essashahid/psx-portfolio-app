@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { requireCronAuth } from "@/lib/shared/cron-auth";
 import { requireUser, errorResponse } from "@/lib/shared/api";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { fetchAndIngestForeignFlows, foreignFlowsAutoConfigured } from "@/lib/market/foreign-flows-ingest";
@@ -14,11 +15,8 @@ export const maxDuration = 60;
  * schedule on weekdays after PSX close.
  */
 export async function GET(request: Request) {
-  const secret = process.env.CRON_SECRET;
-  if (!secret) return NextResponse.json({ error: "CRON_SECRET is not configured." }, { status: 503 });
-  const url = new URL(request.url);
-  const provided = request.headers.get("authorization")?.replace(/^Bearer\s+/i, "") ?? url.searchParams.get("key");
-  if (provided !== secret) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const denied = requireCronAuth(request);
+  if (denied) return denied;
   if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
     return NextResponse.json({ error: "SUPABASE_SERVICE_ROLE_KEY missing." }, { status: 503 });
   }

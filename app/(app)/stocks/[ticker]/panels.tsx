@@ -317,7 +317,7 @@ export async function FinancialsPanel({ ticker, readOnly = false }: { ticker: st
  * and needs no data we do not hold. The shape is the design's; the baseline is
  * honest.
  */
-export async function EarningsPanel({ ticker }: { ticker: string; readOnly?: boolean }) {
+export async function EarningsPanel({ ticker }: { ticker: string }) {
   const supabase = await createClient();
   const { data } = await supabase
     .from("company_financials")

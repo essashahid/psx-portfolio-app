@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { requireCronAuth } from "@/lib/shared/cron-auth";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { refreshQuote } from "@/lib/engine/market-data";
 import { refreshTechnicals } from "@/lib/company/technicals";
@@ -34,11 +35,8 @@ const TIME_BUDGET_MS = 250_000;
  *  5. Ratio recompute for tickers with financials
  */
 export async function GET(request: Request) {
-  const secret = process.env.CRON_SECRET;
-  if (!secret) return NextResponse.json({ error: "CRON_SECRET is not configured." }, { status: 503 });
-  const url = new URL(request.url);
-  const provided = request.headers.get("authorization")?.replace(/^Bearer\s+/i, "") ?? url.searchParams.get("key");
-  if (provided !== secret) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const denied = requireCronAuth(request);
+  if (denied) return denied;
   if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
     return NextResponse.json({ error: "SUPABASE_SERVICE_ROLE_KEY missing." }, { status: 503 });
   }

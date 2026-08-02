@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { requireCronAuth } from "@/lib/shared/cron-auth";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { runDailyUpdate } from "@/lib/dividends/daily";
 import { syncNewsClusters } from "@/lib/news/global-store";
@@ -28,19 +29,8 @@ const USER_BUDGET_MS = 220_000;
  * writes each user's "what changed" digest.
  */
 export async function GET(request: Request) {
-  const secret = process.env.CRON_SECRET;
-  if (!secret) {
-    return NextResponse.json(
-      { error: "CRON_SECRET is not configured on the server." },
-      { status: 503 }
-    );
-  }
-  const url = new URL(request.url);
-  const provided =
-    request.headers.get("authorization")?.replace(/^Bearer\s+/i, "") ?? url.searchParams.get("key");
-  if (provided !== secret) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
+  const denied = requireCronAuth(request);
+  if (denied) return denied;
 
   const admin = createAdminClient();
   const startedAt = Date.now();

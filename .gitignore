@@ -57,3 +57,7 @@ tree.txt
 /public/sw.js
 /public/sw.js.map
 /public/swe-worker-*.js
+
+# Real personal brokerage/CDC documents. Never commit these — point
+# AKD_LEDGER_PDF_PATH at a copy outside the repository instead.
+data/private/

@@ -338,10 +338,12 @@ async function getPdfAnalytics(
 }
 
 async function getLocalPdfAnalytics(): Promise<LedgerAnalytics | null> {
-  const candidates = [
-    process.env.AKD_LEDGER_PDF_PATH,
-    path.join(process.cwd(), "data/private/akd-account-statement-COAF5632.PDF"),
-  ].filter((p): p is string => !!p);
+  // Env-only on purpose. This used to fall back to a hard-coded path inside
+  // data/private/, which meant the feature worked by way of a real brokerage
+  // statement living in the repository. Point AKD_LEDGER_PDF_PATH at a file
+  // outside the working tree instead; with it unset this path is simply skipped
+  // and the database-derived analytics are used.
+  const candidates = [process.env.AKD_LEDGER_PDF_PATH].filter((p): p is string => !!p);
 
   for (const candidate of candidates) {
     if (!existsSync(candidate)) continue;

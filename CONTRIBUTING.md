@@ -94,4 +94,6 @@ them at build time. `data/README.md` explains why.
   and nothing fails loudly.
 - Importing a server-only module (`lib/supabase/admin.ts`) from a client
   component leaks the service-role key. `npm run build` is what catches this.
-- Adding a file to `data/private/` adds real personal data to Git history.
+- `data/private/` holds real personal financial documents and is git-ignored.
+  Never force-add anything from it: a commit there is not recoverable from,
+  short of rewriting history.

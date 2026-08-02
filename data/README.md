@@ -55,17 +55,29 @@ passed to scripts that accept `--from-file`, plus `remediation-progress.json`,
 which `scripts/maintenance/fix-divergent-universe.ts` uses to resume. These are
 scratch work-tracking files with no schema and no application consumer.
 
-## `private/` — contains real personal data
+## `private/` — real personal data, never committed
 
-`akd-account-statement-COAF5632.PDF` is a **real AKD Securities account
-statement belonging to the repository owner**. It holds actual holdings, trades,
-and cash balances.
+Holds **real financial documents belonging to the repository owner**: an AKD
+Securities account statement and a CDC holdings export, with actual holdings,
+trades, and cash balances.
 
-`lib/engine/performance.ts` reads it as a local development fallback when no
-statement has been uploaded to Supabase Storage, after first checking the
-`AKD_LEDGER_PDF_PATH` environment variable. Set that variable to a path outside
-the repository if you would rather it not be read from here.
+The directory is git-ignored. Nothing in it should ever be added to a commit.
 
-It is tracked in Git and is present in the repository history. Removing it from
-history would require a history rewrite, which has not been done. Treat this
-repository as private.
+`lib/engine/performance.ts` can read a statement as a local development
+fallback when none has been uploaded to Supabase Storage, but only from the path
+in the `AKD_LEDGER_PDF_PATH` environment variable. It no longer falls back to a
+hard-coded path inside this directory, so the feature no longer depends on a
+personal document sitting in the working tree. Point that variable at a copy
+outside the repository.
+
+### Still outstanding: the Git history
+
+These files were tracked until 2 August 2026 and **remain in the repository
+history**. Untracking them stops future commits from carrying them; it does not
+remove the existing blobs. Anyone with a clone, and anyone who gains access to
+one later, can still recover them.
+
+Clearing that requires a history rewrite (`git filter-repo --path data/private
+--invert-paths`) followed by a force push, which rewrites every commit hash and
+invalidates existing clones. Until that is done, treat this repository as
+private and do not publish it or grant read access.

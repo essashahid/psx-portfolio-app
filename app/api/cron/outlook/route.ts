@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { requireCronAuth } from "@/lib/shared/cron-auth";
 import { revalidateTag } from "next/cache";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { refreshOutlookData } from "@/lib/engine/outlook/refresh";
@@ -24,11 +25,9 @@ export const maxDuration = 300;
  *   ?force=1 captures closes even when the index has no new session yet.
  */
 export async function GET(request: Request) {
-  const secret = process.env.CRON_SECRET;
-  if (!secret) return NextResponse.json({ error: "CRON_SECRET is not configured." }, { status: 503 });
+  const denied = requireCronAuth(request);
+  if (denied) return denied;
   const url = new URL(request.url);
-  const provided = request.headers.get("authorization")?.replace(/^Bearer\s+/i, "") ?? url.searchParams.get("key");
-  if (provided !== secret) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
     return NextResponse.json({ error: "SUPABASE_SERVICE_ROLE_KEY is not configured." }, { status: 503 });
   }
