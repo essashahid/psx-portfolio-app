@@ -36,86 +36,23 @@ import { loadEnvLocal } from "../lib/load-env";
  *   --force         re-extract filings already read once
  */
 
-type Period = "Q1" | "H1" | "9M" | "FY";
-type Target = { fiscalYear: number; period: Period };
-type Candidate = Target & { title: string; url: string; date: string | null; rank: number };
+import {
+  classifyTitle,
+  filingDateMs as dateMs,
+  inferFiscalYearEndMonth,
+  isReportTitle,
+  rankReportTitle as rankTitle,
+  type FilingPeriod as Period,
+  type FilingTarget as Target,
+} from "@/lib/company/filing-periods";
 
-const CUMULATIVE_MONTHS: Record<Period, number> = { Q1: 3, H1: 6, "9M": 9, FY: 12 };
+type Candidate = Target & { title: string; url: string; date: string | null; rank: number };
 
 /** Income-statement figures that accumulate through a fiscal year, so they subtract. */
 const FLOW_KEYS = [
   "revenue", "cost_of_sales", "gross_profit", "operating_expenses", "operating_profit",
   "finance_cost", "profit_before_tax", "tax", "profit_after_tax", "eps",
 ] as const;
-
-const MONTHS: Record<string, number> = {
-  jan: 1, feb: 2, mar: 3, apr: 4, may: 5, jun: 6,
-  jul: 7, aug: 8, sep: 9, oct: 10, nov: 11, dec: 12,
-};
-
-/**
- * The period-end date a filing title is reporting on — "for the period ended
- * March 31, 2026", "for the year ended June 30, 2025", "quarter ended
- * 2019-12-31". This is the filing's own statement of what it covers, and it is
- * far more reliable than the date it happened to be submitted: companies file
- * late, refile, and transmit the report weeks after the results notice.
- */
-function periodEndFromTitle(title: string): { year: number; month: number } | null {
-  const iso = title.match(/(\d{4})-(\d{2})-(\d{2})/);
-  if (iso) return { year: Number(iso[1]), month: Number(iso[2]) };
-
-  const named = title.match(
-    /\b(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*\.?\s+\d{1,2}\s*,?\s*(\d{4})\b/i
-  );
-  if (named) return { year: Number(named[2]), month: MONTHS[named[1].toLowerCase()] };
-
-  // Day-first, which is the Pakistani convention: "30.06.2023" is 30 June.
-  const numeric = title.match(/\b(\d{1,2})[./-](\d{1,2})[./-](\d{4})\b/);
-  if (numeric) return { year: Number(numeric[3]), month: Number(numeric[2]) };
-
-  return null;
-}
-
-/**
- * Which cumulative period a set of accounts ending in `month` represents, for a
- * company whose fiscal year ends in `fyEndMonth`. PSX labels a fiscal year by
- * the calendar year it ENDS in, so OGDC's September 2025 quarter is Q1 FY2026.
- */
-function classifyPeriod(
-  end: { year: number; month: number },
-  fyEndMonth: number
-): Target | null {
-  const elapsed = ((end.month - fyEndMonth + 12) % 12) || 12;
-  const period = (Object.keys(CUMULATIVE_MONTHS) as Period[]).find((p) => CUMULATIVE_MONTHS[p] === elapsed);
-  if (!period) return null; // an off-cycle date: a name change, a 15-month transition year
-  // Past the year-end month, the fiscal year has rolled over to the next label.
-  const fiscalYear = end.month > fyEndMonth ? end.year + 1 : end.year;
-  return { fiscalYear, period };
-}
-
-const isReportTitle = (title: string): boolean => {
-  const x = title.toLowerCase();
-  if (/shariah|video|briefing|presentation|clarification|notice of|proxy|agm|egm|book closure|circular|postal ballot|auditor|pattern of shareholding|advertisement|intimation|credit of|unclaim|revoked|withdrawn|cancelled|canceled/.test(x)) return false;
-  return /transmission|quarterly report|half[\s-]?year|annual report|annual account|financial result|financial statement|accounts for|condensed interim/.test(x);
-};
-
-/**
- * Full reports before brief notices. A "Transmission of Quarterly Report"
- * carries the condensed balance sheet and cash flow; a "Financial Results"
- * notice is usually a one-page P&L. Both state the same EPS, but only the
- * former is worth the extraction if we are paying for one either way.
- */
-const rankTitle = (title: string): number => {
-  const x = title.toLowerCase();
-  if (/annual report|annual account|annual financial statement/.test(x)) return 0;
-  if (/transmission|quarterly report|half[\s-]?year|condensed interim/.test(x)) return 1;
-  return 2;
-};
-
-const dateMs = (d: string | null): number => {
-  const n = d ? Date.parse(d) : NaN;
-  return Number.isFinite(n) ? n : 0;
-};
 
 const num = (data: Record<string, unknown> | null, key: string): number | null => {
   const v = data?.[key];
@@ -161,11 +98,7 @@ async function main() {
 
   if (!fyEndMonth) {
     // Read it off the annual filings: their period-end month IS the year end.
-    const annualEnds = reports
-      .filter((f) => /annual|year ended|year end/i.test(f.title))
-      .map((f) => periodEndFromTitle(f.title)?.month)
-      .filter((m): m is number => typeof m === "number");
-    fyEndMonth = annualEnds.sort((a, b) => annualEnds.filter((x) => x === a).length - annualEnds.filter((x) => x === b).length).pop() ?? null;
+    fyEndMonth = inferFiscalYearEndMonth(reports.map((f) => f.title));
     if (!fyEndMonth) {
       console.error(`${ticker}: fiscal year end unknown and not inferable from filing titles. Aborting rather than guessing.`);
       process.exit(1);
@@ -181,10 +114,8 @@ async function main() {
   const byTarget = new Map<string, Candidate>();
   const unclassified: string[] = [];
   for (const f of reports) {
-    const end = periodEndFromTitle(f.title);
-    if (!end) { unclassified.push(`${f.date} | ${f.title}`); continue; }
-    const target = classifyPeriod(end, fyEndMonth!);
-    if (!target) { unclassified.push(`${f.date} | ${f.title} (period end ${end.month}/${end.year} is not a quarter boundary)`); continue; }
+    const target = classifyTitle(f.title, fyEndMonth!);
+    if (!target) { unclassified.push(`${f.date} | ${f.title}`); continue; }
 
     const cand: Candidate = { ...target, title: f.title, url: f.url, date: f.date, rank: rankTitle(f.title) };
     const held = byTarget.get(key(target));

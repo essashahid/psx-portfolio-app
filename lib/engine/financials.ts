@@ -704,6 +704,13 @@ Return JSON:
     //   net_markup_income (markup earned − expensed, "net markup/interest income"),
     //   non_markup_income (fee/commission/FX/dividend/other non-markup income - total),
     //   provisions (provisions/credit loss/reversal against advances & investments - as printed, negative if a charge)
+    // INSURANCE income_statement extra keys (only for insurers/takaful, else null):
+    //   gross_premium_written (gross written premium/contribution),
+    //   net_premium_revenue (net insurance premium/contribution earned),
+    //   net_claims (net insurance claims/benefits expense - as printed),
+    //   underwriting_result (underwriting result/profit before investment income),
+    //   investment_income (investment income - total),
+    //   management_expenses (management/administrative expenses of the insurance operation)
     // balance_sheet keys:
     // total_assets, current_assets, cash_and_equivalents, inventory, receivables,
     // total_liabilities, current_liabilities, borrowings, equity, retained_earnings
@@ -712,12 +719,14 @@ Return JSON:
     //   gross_advances (gross advances before provision, from the advances note if on the face),
     //   non_performing_loans (non-performing advances/loans, from the advances note if shown),
     //   investments (total investments)
+    // INSURANCE balance_sheet extra key (only for insurers/takaful, else null):
+    //   technical_reserves (insurance/technical reserves, outstanding claims + unearned premium)
     // cash_flow keys:
     // operating_cash_flow, investing_cash_flow, financing_cash_flow, capex, cash_balance
   }
 }]}
 
-Include a statement object only when the document actually contains that statement. Banks: treat markup/interest income as revenue. If the document is not a financial result (e.g. a notice), return {"statements": []}.`;
+Include a statement object only when the document actually contains that statement. Banks: treat markup/interest income as revenue. Insurers: treat net premium revenue as revenue. If the document is not a financial result (e.g. a notice), return {"statements": []}.`;
 
 // Chunked vision extraction: large filings are split into consecutive
 // page-range sub-PDFs and read in order until every statement type has been
@@ -812,12 +821,26 @@ async function extractViaVision(buf: Buffer, filingTitle: string, filingDate: st
 
 // Monetary line items that must share a unit scale; eps is per-share (rupees)
 // and *_pct fields are ratios, so both are left untouched.
+// Every key whose value is an amount of money and therefore has to be rescaled
+// when a filing prints in millions or billions. A key missing from this set is
+// stored at the document's own scale while everything beside it is converted,
+// which is a 1000x error that looks like a plausible number: a bank's deposits
+// sitting at 0.07% of its assets rather than 70%. The bank and insurance keys
+// were added to the extraction prompt without being added here, so they were
+// exposed to exactly that until now. Anything added to the prompt's data
+// schema that is not a ratio, a per-share figure or a percentage belongs here.
 const MONETARY_KEYS = new Set([
   "revenue", "cost_of_sales", "gross_profit", "operating_expenses", "operating_profit",
   "finance_cost", "profit_before_tax", "tax", "profit_after_tax",
   "total_assets", "current_assets", "cash_and_equivalents", "inventory", "receivables",
   "total_liabilities", "current_liabilities", "borrowings", "equity", "retained_earnings",
   "operating_cash_flow", "investing_cash_flow", "financing_cash_flow", "capex", "cash_balance",
+  // Banks and DFIs
+  "markup_earned", "markup_expensed", "net_markup_income", "non_markup_income", "provisions",
+  "deposits", "advances", "gross_advances", "non_performing_loans", "investments",
+  // Insurance
+  "gross_premium_written", "net_premium_revenue", "net_claims", "underwriting_result",
+  "investment_income", "management_expenses", "technical_reserves",
 ]);
 
 /**
