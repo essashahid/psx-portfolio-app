@@ -76,9 +76,12 @@ export function DividendIncomeWorkspace({
   const range = periodRange(period, asOf, customStart, customEnd);
   const received = useMemo(() => dividends.filter((record) => record.status === "received" && inRange(recordDate(record), range.start, range.end)), [dividends, range.start, range.end]);
   const periodEvents = useMemo(() => events.filter((event) => {
+    if (event.status === "received") return false;
     const eventDate = event.payment_date ?? event.estimated_payment_end ?? event.announcement_date ?? event.created_at.slice(0, 10);
-    return event.status !== "received" && inRange(eventDate, range.start, range.end);
-  }), [events, range.start, range.end]);
+    // Future-dated events (upcoming announcements, forecasts) are current state,
+    // not history: the period selector must never hide them.
+    return eventDate >= asOf || inRange(eventDate, range.start, range.end);
+  }), [events, range.start, range.end, asOf]);
   const gross = received.reduce((sum, record) => sum + record.amount, 0);
   const tax = received.reduce((sum, record) => sum + (record.tax ?? 0), 0);
   const net = received.reduce((sum, record) => sum + (record.net_amount ?? record.amount - (record.tax ?? 0)), 0);

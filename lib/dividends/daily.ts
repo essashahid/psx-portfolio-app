@@ -151,17 +151,7 @@ export async function runDailyUpdate(
     .filter((r) => newlyOverdueKeys.includes(String(r.dedupe_key)))
     .map((r) => r.ticker);
 
-  // 7. News refresh
-  let news_inserted = 0;
-  try {
-    const nr = await refreshNewsForUser(supabase, userId);
-    news_inserted = nr.inserted;
-    errors.push(...nr.errors);
-  } catch (e) {
-    errors.push(`news: ${e instanceof Error ? e.message : String(e)}`);
-  }
-
-  // 8. Build human-readable highlights
+  // 7. Build human-readable highlights
   const highlights: string[] = [];
   if (events_staged > 0) highlights.push(`${events_staged} new dividend event(s) detected from PSX filings`);
   if (events_upgraded > 0) highlights.push(`${events_upgraded} event(s) updated with values read from announcement PDFs`);
@@ -171,10 +161,8 @@ export async function runDailyUpdate(
   if (newlyOverdueTickers.length > 0) highlights.push(`Now overdue: ${[...new Set(newlyOverdueTickers)].join(", ")}`);
   if (forecasts_generated > 0) highlights.push(`${forecasts_generated} forecast(s) refreshed`);
   if (prices_updated > 0) highlights.push(`${prices_updated} live price(s) refreshed`);
-  if (news_inserted > 0) highlights.push(`${news_inserted} new article(s) added to news feed`);
-  if (highlights.length === 0) highlights.push("No new activity since the last run.");
 
-  const summary: DailyUpdateSummary = {
+  const buildSummary = (news_inserted: number): DailyUpdateSummary => ({
     run_date: runDate,
     prices_updated,
     events_staged,
@@ -189,20 +177,43 @@ export async function runDailyUpdate(
     overdue_total,
     needs_eligibility,
     news_inserted,
-    highlights,
+    highlights: highlights.length ? highlights : ["No new activity since the last run."],
     errors: errors.slice(0, 10),
+  });
+
+  const persist = async (summary: DailyUpdateSummary) => {
+    await supabase.from("portfolio_changelog").upsert(
+      {
+        user_id: userId,
+        run_date: runDate,
+        summary: summary as unknown as Record<string, unknown>,
+        highlights: summary.highlights,
+      },
+      { onConflict: "user_id,run_date" }
+    );
   };
 
-  // 8. Persist the daily "what changed" record (one row per user per day)
-  await supabase.from("portfolio_changelog").upsert(
-    {
-      user_id: userId,
-      run_date: runDate,
-      summary: summary as unknown as Record<string, unknown>,
-      highlights,
-    },
-    { onConflict: "user_id,run_date" }
-  );
+  // 8. Persist the digest BEFORE the news sweep. The sweep talks to slow,
+  // flaky external feeds and is the step most likely to blow the invocation's
+  // time limit; if that kill lands before the changelog row exists, the cron's
+  // stalest-first ordering treats this account as never-run and re-selects it
+  // first every day, starving every other account. The dividend work above is
+  // what this record gates, so it is written as soon as that work is done.
+  await persist(buildSummary(0));
+
+  // 9. News refresh, then fold its result into the already-persisted record.
+  let news_inserted = 0;
+  try {
+    const nr = await refreshNewsForUser(supabase, userId);
+    news_inserted = nr.inserted;
+    errors.push(...nr.errors);
+  } catch (e) {
+    errors.push(`news: ${e instanceof Error ? e.message : String(e)}`);
+  }
+  if (news_inserted > 0) highlights.push(`${news_inserted} new article(s) added to news feed`);
+
+  const summary = buildSummary(news_inserted);
+  await persist(summary);
 
   return summary;
 }

@@ -23,7 +23,7 @@ export async function POST() {
     return NextResponse.json({
       ok: true,
       ...result,
-      message: `${parts.join(" · ")}. Forecasts are estimates only — not announced dividends.`,
+      message: `${parts.join(" · ")}. Forecasts are estimates only, not announced dividends.`,
     });
   } catch (err) {
     return errorResponse(err);

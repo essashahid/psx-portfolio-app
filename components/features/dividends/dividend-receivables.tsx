@@ -70,6 +70,22 @@ export function DividendReceivables({
   const forecasts = useMemo(() => events.filter((e) => e.is_forecast && e.status === "forecasted"), [events]);
   const review = useMemo(() => events.filter((e) => e.status === "needs_review" || e.status === "overdue" || e.is_possible_duplicate || e.needs_tax_review), [events]);
 
+  async function estimate() {
+    setBusyId("forecast");
+    setMsg(null);
+    try {
+      const res = await fetch("/api/dividends/forecast", { method: "POST" });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error ?? "Could not generate estimates");
+      setMsg(data.message ?? "Estimates updated.");
+      router.refresh();
+    } catch (e) {
+      setMsg(e instanceof Error ? e.message : "Could not generate estimates");
+    } finally {
+      setBusyId(null);
+    }
+  }
+
   async function act(id: string, body: Record<string, unknown>, done?: () => void) {
     setBusyId(id);
     setMsg(null);
@@ -122,6 +138,12 @@ export function DividendReceivables({
             </button>
           ))}
         </div>
+        {tab === "estimated" && !readOnly && (
+          <Button size="sm" variant="outline" disabled={busyId !== null} onClick={estimate}>
+            {busyId === "forecast" && <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />}
+            Estimate dividends
+          </Button>
+        )}
         {tab === "upcoming" && hiddenCount > 0 && (
           <button
             onClick={() => setShowHidden((s) => !s)}
@@ -236,7 +258,7 @@ export function DividendReceivables({
         <div className="ledger">
           {forecasts.length === 0 && (
             <p className="max-w-(--measure) py-6 text-sm text-text-muted">
-              No estimates in this period. An estimate appears when a holding has a payment history but no announcement yet.
+              No estimates yet. Press Estimate dividends to project the next payout for each holding from its declared payout calendar. An estimate appears when a company has a payout history but no announcement for the upcoming period.
             </p>
           )}
           {forecasts.map((e) => (

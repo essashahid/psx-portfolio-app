@@ -300,13 +300,18 @@ export async function generateDividendForecasts(
       sourceQuality = "medium";
     }
 
-    // A confirmed/staged announcement near this window makes the forecast redundant.
+    // A confirmed/staged announcement near this window makes the forecast
+    // redundant. An announced/expected event with no dates yet still refers to
+    // the company's next payout (dates simply have not been filed), so it
+    // suppresses too — otherwise the same payout shows as both an upcoming
+    // record and an estimate.
     const hasConfirmed = (openEvents ?? []).some(
       (e) =>
         e.ticker === ticker &&
         !e.is_forecast &&
-        e.estimated_payment_end !== null &&
-        e.estimated_payment_end >= announceStart
+        (e.estimated_payment_end === null
+          ? ["announced", "expected"].includes(String(e.status))
+          : e.estimated_payment_end >= announceStart)
     );
     if (hasConfirmed) continue;
 
