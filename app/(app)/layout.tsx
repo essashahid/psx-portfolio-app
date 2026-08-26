@@ -4,6 +4,7 @@ import { MobileBottomNav, MobileTopBar, TopNav } from "@/components/shared/top-n
 import { MarketTickerTape, type TickerItem } from "@/components/shared/market-ticker-tape";
 import { AutoRefreshPrices } from "@/components/shared/auto-refresh-prices";
 import { NavProgress } from "@/components/shared/nav-progress";
+import { PlumbSplash } from "@/components/shared/plumb-splash";
 import { ImpersonationBanner } from "@/components/shared/impersonation-banner";
 import { FeedbackWidget } from "@/components/shared/feedback-widget";
 import { CommandPalette } from "@/components/shared/command-palette";
@@ -106,6 +107,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
 
   return (
     <div className="flex min-h-dvh flex-col bg-background">
+      <PlumbSplash />
       <div aria-hidden className="om-grain" />
       <NavProgress />
       <AutoRefreshPrices />
