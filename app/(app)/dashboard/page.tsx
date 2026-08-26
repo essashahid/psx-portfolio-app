@@ -297,7 +297,7 @@ export default async function DashboardPage() {
                 <span>Portfolio <strong className="figure font-semibold text-text-strong">{formatSignedPct(bench.portfolioPct)}</strong></span>
                 <span>KSE-100 <strong className="figure font-semibold text-text-strong">{formatSignedPct(bench.ksePct)}</strong></span>
               </span>
-              <AsOf date={latestMarketDate} time={dailyPerformance.snapshotTime} label="Last updated" />
+              <AsOf date={latestMarketDate} time={dailyPerformance.snapshotTime} label="Last updated" live />
             </div>
           )}
         </div>

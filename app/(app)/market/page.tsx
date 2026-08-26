@@ -161,7 +161,7 @@ export default async function MarketPulsePage() {
             </div>
           </div>
           <div className="flex flex-col items-end gap-3 pb-1">
-            <AsOf date={snapshot.snapshot_date} time={snapshot.snapshot_time} label="Prices" />
+            <AsOf date={snapshot.snapshot_date} time={snapshot.snapshot_time} label="Prices" live />
           </div>
         </div>
 
