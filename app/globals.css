@@ -250,6 +250,7 @@
      stopped by name here. This is the only place motion is disabled: a
      component that needs its own reduced-motion branch has the wrong animation. */
   .plumb-splash *,
+  .cascade > *,
   .sk-shimmer,
   .spin,
   .pulse-live::before {
@@ -519,14 +520,16 @@ thead {
     filter: blur(0);
   }
 }
-/* NOTE: the motion handoff also defines a cascade, but as `.rise > *` with
-   automatic nth-child delays — a container class. This `.rise` is a self
-   class: the element carrying it animates, and `.rise-1`..`.rise-5` stagger
-   siblings by hand. The delays are identical in both, but the semantics are
-   not, and this version is on ~49 elements across bulls-bears, news, outlook
-   and onboarding. Adopting the handoff's version would stop every one of those
-   animating and start animating their children instead, so it is held back for
-   the commit that actually wires up the Home cascade. */
+/* Two ways to run the same entrance, kept apart on purpose.
+   `.rise` is a SELF class: the element carrying it animates, and `.rise-1`..
+   `.rise-5` stagger siblings by hand. ~49 elements across bulls-bears, news,
+   outlook and onboarding rely on that.
+   `.cascade` below is a CONTAINER class from the motion handoff, which spells
+   the same choreography as `.cascade > *` with automatic delays. The handoff
+   calls it `.rise`; that name was taken, and pointing it at the children of 49
+   existing elements would have stopped every one of them animating and started
+   animating their contents instead. Same keyframe, same delays, different
+   subject. */
 .rise {
   animation: rise-blur 0.7s cubic-bezier(0.22, 1, 0.36, 1) both;
 }
@@ -572,6 +575,26 @@ thead {
   .rise {
     animation-duration: 0.32s;
   }
+}
+
+/* The cascade: the Home band stack arriving on the hand-off from the splash.
+   Reuses rise-blur rather than declaring a second identical keyframe. Runs
+   once per session — the class is applied by the shell, not by the page, so a
+   re-render cannot restage it. */
+.cascade > * { animation: rise-blur 520ms var(--ease-out) both; }
+.cascade > *:nth-child(1) { animation-delay: 80ms; }
+.cascade > *:nth-child(2) { animation-delay: 200ms; }
+.cascade > *:nth-child(3) { animation-delay: 320ms; }
+.cascade > *:nth-child(4) { animation-delay: 450ms; }
+.cascade > *:nth-child(5) { animation-delay: 580ms; }
+/* Past the fifth the stagger stops growing: a tenth child arriving a second
+   after the first reads as a stall, not choreography. */
+.cascade > *:nth-child(n+6) { animation-delay: 580ms; }
+
+/* Dropped entirely on a phone, where a cascade reads as lag rather than
+   polish. This is why .cascade shortens nothing here — it simply does not run. */
+@media (pointer: coarse) {
+  .cascade > * { animation: none; }
 }
 
 @media (max-width: 767px) {
@@ -712,9 +735,9 @@ thead {
    the reduced-motion collapse live with the other tokens at the top of this
    file rather than being redeclared here.
 
-   Section 2 of the source file (the .rise cascade) is deliberately NOT
-   included: this file already defines .rise with different semantics, and it
-   is in use across the app. See the note above the existing .rise rule.
+   Section 2 of the source file (the cascade) lives with the other entrance
+   animations above, as `.cascade`, because the handoff's `.rise` name was
+   already taken by a class with different semantics. See the note there.
    ═════════════════════════════════════════════════════════════════════════ */
 
 /* ── 1 · Launch sequence ──────────────────────────────────────────────────
