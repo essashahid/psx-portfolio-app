@@ -30,7 +30,10 @@ function ScoreBar({ value }: { value: number | null }) {
   if (value == null) return <div className="h-1.5 w-full rounded-full bg-muted" title="No data" />;
   return (
     <div className="h-1.5 w-full overflow-hidden rounded-full bg-muted" title={value.toFixed(0)}>
-      <div className={cn("h-full rounded-full transition-all", scoreColor(value))} style={{ width: `${value}%` }} />
+      <div
+        className={cn("h-full rounded-full", scoreColor(value))}
+        style={{ width: `${value}%`, transition: "width var(--dur-base) var(--ease-out)" }}
+      />
     </div>
   );
 }
