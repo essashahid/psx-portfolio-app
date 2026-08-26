@@ -17,6 +17,7 @@ import {
   Settings,
 } from "lucide-react";
 import { NAV, NAV_SECTIONS } from "@/lib/config/navigation";
+import { PlumbMark } from "@/components/shared/plumb-mark";
 
 /** The design's 4 inline primary tabs. Everything else lives in "Research ∨". */
 const PRIMARY_HREFS = ["/dashboard", "/holdings", "/dividends", "/performance"];
@@ -120,11 +121,7 @@ export function TopNav({
     <header className="sticky top-0 z-30 hidden border-b border-rule bg-surface-page/94 backdrop-blur-(--blur-bar) md:block">
       <div className="flex items-center gap-8 px-(--gutter-page) py-3.5">
         <Link href="/dashboard" className="flex shrink-0 items-center gap-2.5" aria-label="PortfolioOS home">
-          <svg width="19" height="19" viewBox="0 0 64 64" aria-hidden="true" className="block shrink-0">
-            <rect x="14" y="14" width="36" height="36" fill="none" stroke="var(--text-strong)" strokeWidth="3.55" />
-            <path d="M32 4 V60" stroke="var(--indigo-2)" strokeWidth="3.55" />
-            <circle cx="32" cy="60" r="3.6" fill="var(--indigo-2)" />
-          </svg>
+          <PlumbMark size={19} className="block shrink-0 text-text-strong" />
           <span className="font-display text-[15px] tracking-editorial text-text-strong">Plumb</span>
         </Link>
 
@@ -366,10 +363,7 @@ export function MobileTopBar({ openAlerts }: { openAlerts: number }) {
     <header className="sticky top-0 z-40 flex h-[calc(3.5rem+env(safe-area-inset-top))] items-center justify-between border-b border-rule bg-surface-page/95 px-3 pt-[env(safe-area-inset-top)] backdrop-blur md:hidden">
       <Link href="/dashboard" className="flex min-w-0 items-center gap-2.5" aria-label="PortfolioOS home">
         <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-ink-1 text-white">
-          <svg width="14" height="14" viewBox="0 0 64 64" aria-hidden="true">
-            <rect x="14" y="14" width="36" height="36" fill="none" stroke="currentColor" strokeWidth="4.2" />
-            <path d="M32 4 V60" stroke="currentColor" strokeWidth="4.2" />
-          </svg>
+          <PlumbMark size={14} tone="mono" />
         </span>
         <span className="truncate text-base font-semibold text-text-strong">{active.label}</span>
       </Link>

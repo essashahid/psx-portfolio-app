@@ -9,7 +9,6 @@ import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/shared/format";
 import type { ExperienceLevel, Objective, RiskProfile } from "@/lib/shared/types";
 import {
-  CandlestickChart,
   Loader2,
   Check,
   Sprout,
@@ -25,6 +24,7 @@ import {
   ArrowRight,
   ArrowLeft,
 } from "lucide-react";
+import { PlumbMark } from "@/components/shared/plumb-mark";
 
 type ChoiceCardProps = {
   icon: React.ComponentType<{ className?: string }>;
@@ -269,8 +269,8 @@ function Step({ title, subtitle, children }: { title: string; subtitle: string; 
 export function OnboardingBrand() {
   return (
     <div className="mb-8 flex items-center gap-2.5">
-      <CandlestickChart className="h-6 w-6 text-up" />
-      <span className="text-[15px] font-semibold tracking-tight">PortfolioOS PK</span>
+      <PlumbMark size={24} className="text-text-strong" />
+      <span className="text-[15px] font-semibold tracking-tight">Plumb</span>
     </div>
   );
 }
