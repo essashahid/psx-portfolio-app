@@ -7,6 +7,7 @@ import { cn, formatNumber, formatSignedPct } from "@/lib/shared/format";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Skeleton } from "@/components/ui/skeleton";
 import { AnimatedMoney } from "@/components/ui/animated-money";
+import { Cascade } from "@/components/shared/cascade";
 import { Band } from "@/components/ui/band";
 import { PanelHeader } from "@/components/ui/panel-header";
 import { AddTransactionDialog } from "@/components/features/holdings/add-transaction-dialog";
@@ -249,7 +250,11 @@ export default async function DashboardPage() {
   const dayTone = dayPnl !== null && dayPnl > 0 ? "text-up" : dayPnl !== null && dayPnl < 0 ? "text-down" : "text-text-strong";
 
   return (
-    <div className="settle -mx-3 sm:-mx-4 md:-mx-(--gutter-page)">
+    // Staggers the direct children — the bands — as the page arrives, once per
+    // session. Applied to the stack rather than to each band, so adding or
+    // reordering a band needs no delay class and cannot end up with two the
+    // same.
+    <Cascade className="settle -mx-3 sm:-mx-4 md:-mx-(--gutter-page)">
       {/* ── Hero: tinted band, motif, sparkline, KSE rail, metric strip ── */}
       <Band
         tone="paper"
@@ -366,7 +371,7 @@ export default async function DashboardPage() {
         </div>
       </Band>
       <MarkSeen surface="dashboard" />
-    </div>
+    </Cascade>
   );
 }
 

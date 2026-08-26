@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { cn } from "@/lib/shared/format";
 import type { ReactNode } from "react";
 
@@ -32,6 +32,9 @@ export function CompanyTabs({
   accent: string;
 }) {
   const [active, setActive] = useState(() => initial ?? tabs[0]?.id);
+  const stripRef = useRef<HTMLDivElement | null>(null);
+  const tabRefs = useRef<Record<string, HTMLButtonElement | null>>({});
+  const [underline, setUnderline] = useState<{ left: number; width: number }>({ left: 0, width: 0 });
 
   useEffect(() => {
     function fromHash() {
@@ -48,32 +51,66 @@ export function CompanyTabs({
     history.replaceState(null, "", `#${id}`);
   }
 
+  // Measured from the rendered tabs rather than computed from label lengths,
+  // which would drift with the font and break on a wrapped or scrolled strip.
+  const measure = useCallback(() => {
+    const el = active ? tabRefs.current[active] : null;
+    if (!el) return;
+    setUnderline({ left: el.offsetLeft, width: el.offsetWidth });
+  }, [active]);
+
+  // Layout effect so the bar is in place on the first paint after a tab change;
+  // in a plain effect it would visibly jump from its old position.
+  useLayoutEffect(() => {
+    measure();
+  }, [measure]);
+
+  useEffect(() => {
+    // Fonts landing late and the container resizing both move the tabs under
+    // a bar that has already been positioned.
+    const onResize = () => measure();
+    window.addEventListener("resize", onResize);
+    document.fonts?.ready.then(measure).catch(() => {});
+    return () => window.removeEventListener("resize", onResize);
+  }, [measure]);
+
   return (
     <div>
       <div
+        ref={stripRef}
         role="tablist"
         aria-label="Company sections"
-        className="scroll-touch flex gap-6 overflow-x-auto border-b border-rule px-(--gutter-page) pt-4"
+        className="tabstrip scroll-touch flex gap-6 overflow-x-auto border-b border-rule px-(--gutter-page) pt-4"
       >
         {tabs.map((t) => {
           const on = t.id === active;
           return (
             <button
               key={t.id}
+              ref={(el) => {
+                tabRefs.current[t.id] = el;
+              }}
               type="button"
               role="tab"
               aria-selected={on}
               onClick={() => select(t.id)}
               className={cn(
-                "whitespace-nowrap border-b-2 pb-1.5 text-sm transition-colors",
-                on ? "font-semibold text-text-strong" : "border-transparent font-medium text-text-muted hover:text-text-strong"
+                "whitespace-nowrap pb-1.5 text-sm transition-colors",
+                on ? "font-semibold text-text-strong" : "font-medium text-text-muted hover:text-text-strong"
               )}
-              style={on ? { borderBottomColor: accent } : undefined}
             >
               {t.label}
             </button>
           );
         })}
+        {/* One underline that slides, rather than a border appearing on the new
+            tab and vanishing from the old. It carries --tab-hue, the sector's
+            own colour, which is the only place colour enters this strip. */}
+        <span
+          className="tabstrip__underline"
+          style={{ ...({ "--tab-hue": accent } as React.CSSProperties), left: underline.left, width: underline.width }}
+          aria-hidden
+        />
       </div>
       {tabs.map((t) => (
         <div key={t.id} role="tabpanel" hidden={t.id !== active}>
