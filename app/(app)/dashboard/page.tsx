@@ -27,6 +27,20 @@ export const dynamic = "force-dynamic";
 
 const GUTTER = "px-3 sm:px-4 md:px-(--gutter-page)";
 
+/**
+ * A gain or a loss with its sign and a true minus, so the direction is legible
+ * without reading the colour. U+2212 rather than a hyphen: a hyphen is narrower
+ * than a digit and the column stops lining up.
+ *
+ * An unknown value prints a dash. The component this replaced coerced null to
+ * zero and rendered "+0", which claims the book did not move when the truth is
+ * that nothing here is priced.
+ */
+const fmtSigned = (v: number | null | undefined) =>
+  v === null || v === undefined || Number.isNaN(v)
+    ? "—"
+    : `${v > 0 ? "+" : v < 0 ? "\u2212" : ""}${formatNumber(Math.abs(v), 0)}`;
+
 /** SVG area path for the hero's faint portfolio motif, viewBox 1000×220. */
 function motifPath(values: number[]): string | null {
   if (values.length < 2) return null;
@@ -254,7 +268,7 @@ export default async function DashboardPage() {
             <div className="flex flex-wrap items-end gap-5">
               <h1 className="text-[2.25rem] font-semibold leading-none tracking-editorial text-text-strong sm:text-(length:--text-display)">
                 <span className="mr-3 align-[0.48em] text-[0.36em] font-semibold tracking-(--tracking-caps) text-text-faint">PKR</span>
-                <span className="figure font-semibold"><AnimatedMoney value={summary.totalValue} duration={1300} currency={false} decimals={0} /></span>
+                <span className="figure font-semibold"><AnimatedMoney value={summary.totalValue} currency={false} decimals={0} /></span>
               </h1>
               {heroSpark.length >= 2 && (
                 <span className="inline-flex items-center gap-2.5 pb-2">
@@ -270,7 +284,7 @@ export default async function DashboardPage() {
               <span>
                 Today{" "}
                 <strong className={cn("figure font-semibold", dayTone)}>
-                  <AnimatedMoney value={dayPnl} signed delay={100} duration={900} currency={false} decimals={0} /> ({formatSignedPct(dailyPerformance.weightedDayChangePct)})
+                  {fmtSigned(dayPnl)} ({formatSignedPct(dailyPerformance.weightedDayChangePct)})
                 </strong>
               </span>
               {bench && (
@@ -306,10 +320,10 @@ export default async function DashboardPage() {
 
         <div className="relative z-2 -mx-3 mt-7 sm:-mx-4 md:-mx-(--gutter-page)">
           <div className="grid border-y border-rule sm:grid-cols-2 lg:grid-cols-4">
-            <HeroMetric label="Total cost" value={<AnimatedMoney value={summary.totalCost} delay={120} currency={false} decimals={0} />} sub="PKR" first />
-            <HeroMetric label="Unrealised P/L" value={<AnimatedMoney value={summary.unrealizedPl} signed delay={180} currency={false} decimals={0} />} sub={formatSignedPct(summary.unrealizedPlPct)} tone={summary.unrealizedPl > 0 ? "up" : summary.unrealizedPl < 0 ? "down" : undefined} />
-            <HeroMetric label="Dividends received" value={<AnimatedMoney value={summary.dividendIncome} delay={240} currency={false} decimals={0} />} sub="Since first transaction" />
-            <HeroMetric label="Broker cash" value={<AnimatedMoney value={summary.cashBalance} delay={300} currency={false} decimals={0} />} sub="Uninvested" last />
+            <HeroMetric label="Total cost" value={formatNumber(summary.totalCost, 0)} sub="PKR" first />
+            <HeroMetric label="Unrealised P/L" value={fmtSigned(summary.unrealizedPl)} sub={formatSignedPct(summary.unrealizedPlPct)} tone={summary.unrealizedPl > 0 ? "up" : summary.unrealizedPl < 0 ? "down" : undefined} />
+            <HeroMetric label="Dividends received" value={formatNumber(summary.dividendIncome, 0)} sub="Since first transaction" />
+            <HeroMetric label="Broker cash" value={formatNumber(summary.cashBalance, 0)} sub="Uninvested" last />
           </div>
         </div>
         <p className="relative z-2 py-3 pb-5 text-xs text-text-muted">
