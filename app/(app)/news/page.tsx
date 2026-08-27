@@ -11,6 +11,23 @@ import { getUserNewsFeed, type FeedNewsArticle } from "@/lib/news/global-store";
 import { getPrefs, type UserPrefs } from "@/lib/user/preferences";
 import { MarkSeen } from "@/components/shared/mark-seen";
 import { buildNewsEvents, eventMatchesSearch, type NewsEvent } from "@/lib/news/events";
+import {
+  NEWS_FILTERS,
+  NEWS_TABS,
+  NEWS_WINDOWS,
+  buildUpcomingItems,
+  dateHeading,
+  eventsForTab,
+  filterEvent,
+  groupEventsByDate,
+  pktDateKey,
+  windowCutoff,
+  type DividendEventRow,
+  type MarketEventRow,
+  type NewsFilterId,
+  type NewsTabId,
+  type UpcomingItem,
+} from "@/lib/news/feed";
 import { getPortfolio } from "@/lib/portfolio/positions";
 import { getDailyHoldingPerformance } from "@/lib/portfolio/daily-performance";
 import { getCachedMarketGlobal } from "@/lib/market/read";
@@ -26,79 +43,15 @@ type SearchParams = {
   view?: string;
 };
 
-type TabId = "suggested" | "market" | "companies" | "policy" | "upcoming" | "saved";
-type FilterId = "owned" | "watchlist" | "suggested" | "official" | "high";
-
-const TABS: { id: TabId; label: string }[] = [
-  { id: "suggested", label: "Suggested" },
-  { id: "market", label: "Market" },
-  { id: "companies", label: "Companies" },
-  { id: "policy", label: "Policy & Economy" },
-  { id: "upcoming", label: "Upcoming" },
-  { id: "saved", label: "Saved" },
-];
-
-const WINDOWS: { id: string; label: string; hours: number | null; today?: boolean }[] = [
-  { id: "today", label: "Today", hours: null, today: true },
-  { id: "24h", label: "Last 24 hours", hours: 24 },
-  { id: "week", label: "This week", hours: 24 * 7 },
-  { id: "7d", label: "Last 7 days", hours: 24 * 7 },
-  { id: "month", label: "This month", hours: 24 * 30 },
-  { id: "all", label: "All", hours: null },
-];
-
-const FILTERS: { id: FilterId; label: string }[] = [
-  { id: "owned", label: "Owned" },
-  { id: "watchlist", label: "Watchlist" },
-  { id: "suggested", label: "Suggested" },
-  { id: "official", label: "Official only" },
-  { id: "high", label: "High importance" },
-];
-
-type UpcomingItem = {
-  id: string;
-  date: string;
-  title: string;
-  topic: string;
-  relevance: string;
-  href: string | null;
-};
-
-type DividendEventRow = {
-  id: string;
-  ticker: string | null;
-  company_name: string | null;
-  event_type: string | null;
-  status: string | null;
-  announcement_date: string | null;
-  ex_date: string | null;
-  payment_date: string | null;
-  estimated_payment_start: string | null;
-  estimated_payment_end: string | null;
-  source_url: string | null;
-  is_forecast: boolean | null;
-};
-
-type MarketEventRow = {
-  ticker: string | null;
-  company_name: string | null;
-  sector: string | null;
-  event_type: string;
-  title: string;
-  source_url: string | null;
-  event_date: string;
-  event_time: string | null;
-};
-
 export default async function NewsPage({ searchParams }: { searchParams: Promise<SearchParams> }) {
   const sp = await searchParams;
   const supabase = await createClient();
   const user = await getUser();
   if (!user) return null;
 
-  const tab: TabId = (TABS.find((t) => t.id === sp.tab)?.id ?? "suggested") as TabId;
-  const windowId = WINDOWS.find((w) => w.id === sp.window)?.id ?? "week";
-  const activeFilter = FILTERS.find((f) => f.id === sp.filter)?.id ?? null;
+  const tab: NewsTabId = (NEWS_TABS.find((t) => t.id === sp.tab)?.id ?? "suggested") as NewsTabId;
+  const windowId = NEWS_WINDOWS.find((w) => w.id === sp.window)?.id ?? "week";
+  const activeFilter = NEWS_FILTERS.find((f) => f.id === sp.filter)?.id ?? null;
   const query = sp.q?.trim() ?? "";
   const activeTicker = sp.ticker?.trim().toUpperCase() || null;
   const view: "cards" | "compact" = sp.view === "compact" ? "compact" : "cards";
@@ -264,7 +217,7 @@ export default async function NewsPage({ searchParams }: { searchParams: Promise
       )}
 
       <nav className="sticky top-0 z-20 -mx-1 flex gap-1 overflow-x-auto border-b border-border bg-background/90 px-1 backdrop-blur">
-        {TABS.map((item) => {
+        {NEWS_TABS.map((item) => {
           const active = item.id === tab;
           const label = tabLabel(item.id, { importantCount, newToday, saved: events.filter((event) => event.saved).length, upcoming: upcoming.length });
           return (
@@ -317,7 +270,7 @@ export default async function NewsPage({ searchParams }: { searchParams: Promise
       <section className="space-y-3">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div className="inline-flex max-w-full overflow-x-auto rounded-lg border border-border bg-card p-0.5">
-            {WINDOWS.map((window) => (
+            {NEWS_WINDOWS.map((window) => (
               <Link
                 key={window.id}
                 href={buildHref({ window: window.id })}
@@ -375,7 +328,7 @@ export default async function NewsPage({ searchParams }: { searchParams: Promise
         </div>
 
         <div className="flex flex-wrap gap-1.5">
-          {FILTERS.map((filter) => {
+          {NEWS_FILTERS.map((filter) => {
             const active = activeFilter === filter.id;
             return (
               <Link
@@ -444,7 +397,7 @@ export default async function NewsPage({ searchParams }: { searchParams: Promise
             <section className="space-y-5">
               <div className="flex flex-wrap items-end justify-between gap-2">
                 <div>
-                  <h2 className="text-lg font-semibold tracking-editorial">{tab === "suggested" ? "Event feed" : TABS.find((t) => t.id === tab)?.label}</h2>
+                  <h2 className="text-lg font-semibold tracking-editorial">{tab === "suggested" ? "Event feed" : NEWS_TABS.find((t) => t.id === tab)?.label}</h2>
                 </div>
                 {activeTicker && (
                   <Link
@@ -458,7 +411,7 @@ export default async function NewsPage({ searchParams }: { searchParams: Promise
               {groups.map((group, groupIndex) => (
                 <section key={group.date} className={cn("space-y-3 rise", groupIndex < 5 && `rise-${groupIndex + 1}`)}>
                   <div className="flex items-center gap-3">
-                    <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{formatHeading(group.date)}</h3>
+                    <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{dateHeading(group.date)}</h3>
                     <div className="h-px flex-1 bg-border" />
                   </div>
                   {view === "compact" ? (
@@ -548,89 +501,16 @@ export default async function NewsPage({ searchParams }: { searchParams: Promise
   );
 }
 
-function eventsForTab(events: NewsEvent[], tab: TabId): NewsEvent[] {
-  switch (tab) {
-    case "suggested":
-      return events.filter((event) => event.suggested);
-    case "market":
-      return events.filter((event) => ["market", "commodity", "forex", "crypto", "international", "geopolitics"].includes(event.category));
-    case "companies":
-      return events.filter((event) => event.affectedHoldings.length > 0 || ["company", "earnings", "result", "dividend", "corporate_announcement"].includes(event.category));
-    case "policy":
-      return events.filter((event) => ["policy", "economy", "regulatory"].includes(event.category));
-    case "saved":
-      return events.filter((event) => event.saved);
-    case "upcoming":
-      return [];
-  }
-}
 
-function filterEvent(event: NewsEvent, filter: FilterId | null): boolean {
-  if (!filter) return true;
-  if (filter === "owned") return event.affectedHoldings.length > 0;
-  if (filter === "watchlist") return event.whySuggested?.includes("watchlist") ?? false;
-  if (filter === "suggested") return event.suggested;
-  if (filter === "official") return event.verification === "Official";
-  if (filter === "high") return event.importance === "Critical" || event.importance === "High";
-  return true;
-}
 
-function groupEventsByDate(events: NewsEvent[]): { date: string; events: NewsEvent[] }[] {
-  const map = new Map<string, NewsEvent[]>();
-  for (const event of events) (map.get(event.dateKey) ?? map.set(event.dateKey, []).get(event.dateKey)!).push(event);
-  return [...map.entries()]
-    .map(([date, rows]) => ({ date, events: rows.sort((a, b) => b.timestamp - a.timestamp) }))
-    .sort((a, b) => b.date.localeCompare(a.date));
-}
 
-function windowCutoff(windowId: string): number | null {
-  const window = WINDOWS.find((w) => w.id === windowId);
-  if (!window || window.id === "all") return null;
-  if (window.today) return pktStartOfToday();
-  if (window.id === "month") return pktStartOfMonth();
-  if (window.id === "week") return pktStartOfWeek();
-  return window.hours ? Date.now() - window.hours * 3600000 : null;
-}
 
-function pktStartOfToday(): number {
-  const ymd = pktDateKey(new Date());
-  return new Date(`${ymd}T00:00:00+05:00`).getTime();
-}
 
-function pktStartOfMonth(): number {
-  const ymd = pktDateKey(new Date());
-  return new Date(`${ymd.slice(0, 8)}01T00:00:00+05:00`).getTime();
-}
 
-function pktStartOfWeek(): number {
-  const now = new Date();
-  const pkt = new Date(`${pktDateKey(now)}T00:00:00+05:00`);
-  const day = pkt.getUTCDay();
-  const diff = day === 0 ? 6 : day - 1;
-  pkt.setUTCDate(pkt.getUTCDate() - diff);
-  return pkt.getTime();
-}
 
-function pktDateKey(date: Date): string {
-  return new Intl.DateTimeFormat("en-CA", {
-    timeZone: "Asia/Karachi",
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-  }).format(date);
-}
 
-function formatHeading(date: string): string {
-  const today = pktDateKey(new Date());
-  if (date === today) return "Today";
-  const yesterday = new Date(`${today}T00:00:00+05:00`);
-  yesterday.setDate(yesterday.getDate() - 1);
-  if (date === pktDateKey(yesterday)) return "Yesterday";
-  const parsed = new Date(`${date}T00:00:00+05:00`);
-  return parsed.toLocaleDateString("en-PK", { weekday: "long", month: "long", day: "numeric" });
-}
 
-function tabLabel(tab: TabId, counts: { importantCount: number; newToday: number; saved: number; upcoming: number }): string | null {
+function tabLabel(tab: NewsTabId, counts: { importantCount: number; newToday: number; saved: number; upcoming: number }): string | null {
   if (tab === "suggested" && counts.importantCount > 0) return `${counts.importantCount} important`;
   if (tab === "market" && counts.newToday > 0) return `${counts.newToday} new`;
   if (tab === "upcoming" && counts.upcoming > 0) return `${counts.upcoming} upcoming`;
@@ -659,45 +539,6 @@ function formatAgo(value: string): string {
   return date.toLocaleDateString("en-PK", { day: "numeric", month: "short" });
 }
 
-function buildUpcomingItems(input: {
-  dividends: DividendEventRow[];
-  marketEvents: MarketEventRow[];
-  holdings: { ticker: string; sector: string | null }[];
-  watchlist: string[];
-  todayKey: string;
-}): UpcomingItem[] {
-  const owned = new Set(input.holdings.map((h) => h.ticker));
-  const watch = new Set(input.watchlist);
-  const items: UpcomingItem[] = [];
-
-  for (const event of input.dividends) {
-    const date = event.ex_date ?? event.payment_date ?? event.estimated_payment_start ?? event.announcement_date;
-    if (!date || date < input.todayKey) continue;
-    const ticker = event.ticker ?? "Portfolio";
-    items.push({
-      id: `dividend-${event.id}`,
-      date,
-      title: `${ticker} ${event.is_forecast ? "forecast payout" : event.event_type ?? "dividend event"}`,
-      topic: event.company_name ?? ticker,
-      relevance: owned.has(ticker) ? "Owned holding" : watch.has(ticker) ? "Watchlist" : "Portfolio income",
-      href: event.source_url,
-    });
-  }
-
-  for (const event of input.marketEvents) {
-    const ticker = event.ticker ?? "";
-    items.push({
-      id: `market-${event.ticker ?? event.title}-${event.event_date}`,
-      date: event.event_date,
-      title: event.title,
-      topic: event.company_name ?? event.sector ?? event.event_type,
-      relevance: owned.has(ticker) ? "Owned holding" : watch.has(ticker) ? "Watchlist" : "Official PSX event",
-      href: event.source_url,
-    });
-  }
-
-  return items.sort((a, b) => a.date.localeCompare(b.date)).slice(0, 12);
-}
 
 function UpcomingPanel({ upcoming, large = false }: { upcoming: UpcomingItem[]; large?: boolean }) {
   return (
@@ -736,7 +577,7 @@ function formatUpcomingDate(value: string): string {
   return parsed.toLocaleDateString("en-PK", { day: "numeric", month: "short" });
 }
 
-function EmptyForTab({ tab, windowId, buildHref }: { tab: TabId; windowId: string; buildHref: (patch: Partial<SearchParams>) => string }) {
+function EmptyForTab({ tab, windowId, buildHref }: { tab: NewsTabId; windowId: string; buildHref: (patch: Partial<SearchParams>) => string }) {
   const title =
     tab === "saved"
       ? "You have not saved any events yet."

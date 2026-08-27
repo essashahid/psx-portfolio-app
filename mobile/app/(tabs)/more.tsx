@@ -140,7 +140,7 @@ export default function MoreScreen() {
             { icon: Search, label: "Stock Research", href: "/research" },
             { icon: FileText, label: "Saved reports", web: "/research" },
             { icon: Radar, label: "PSX Market Outlook", web: "/outlook" },
-            { icon: Newspaper, label: "News Center", web: "/news" },
+            { icon: Newspaper, label: "News Centre", href: "/news" },
           ]}
         />
 
