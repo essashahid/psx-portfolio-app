@@ -159,7 +159,7 @@ export default function MoreScreen() {
           entries={[
             { icon: Upload, label: "Import Center", web: "/import" },
             { icon: Database, label: "Data Engine", web: "/coverage" },
-            { icon: Settings, label: "Settings", web: "/settings" },
+            { icon: Settings, label: "Settings", href: "/settings" },
           ]}
         />
 

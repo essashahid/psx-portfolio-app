@@ -29,14 +29,15 @@ export async function GET(
   _request: Request,
   { params }: { params: Promise<{ ticker: string }> }
 ) {
-  const { supabase, error } = await requireUser();
+  const { supabase, user, error } = await requireUser();
   if (error) return error;
 
   try {
     const { ticker: raw } = await params;
     const ticker = decodeURIComponent(raw).toUpperCase();
 
-    const [{ data: master }, { data: quote }, card, { data: payouts }] = await Promise.all([
+    const [{ data: master }, { data: quote }, card, { data: payouts }, { data: holding }, { data: watched }] =
+      await Promise.all([
       supabase.from("stock_master").select("company_name, sector").eq("ticker", ticker).maybeSingle(),
       supabase
         .from("market_quotes")
@@ -50,13 +51,47 @@ export async function GET(
         .eq("ticker", ticker)
         .order("announcement_date", { ascending: false })
         .limit(12),
+      // The caller's own relationship to this company, so a screen can offer to
+      // edit the position or watch the ticker without a second round trip.
+      supabase
+        .from("holdings")
+        .select("quantity, avg_cost, total_cost, notes, hidden")
+        .eq("user_id", user.id)
+        .eq("ticker", ticker)
+        .maybeSingle(),
+      supabase
+        .from("stock_watchlist")
+        .select("ticker")
+        .eq("user_id", user.id)
+        .eq("ticker", ticker)
+        .maybeSingle(),
     ]);
 
     if (!master && !quote && (card?.rows.length ?? 0) === 0) {
-      return NextResponse.json({ error: `No data for ${ticker}.` }, { status: 404 });
+      return NextResponse.json({
+      position: holding
+        ? {
+            quantity: Number(holding.quantity),
+            avgCost: holding.avg_cost === null ? null : Number(holding.avg_cost),
+            totalCost: holding.total_cost === null ? null : Number(holding.total_cost),
+            notes: holding.notes ?? null,
+            hidden: Boolean(holding.hidden),
+          }
+        : null,
+      watched: Boolean(watched), error: `No data for ${ticker}.` }, { status: 404 });
     }
 
     return NextResponse.json({
+      position: holding
+        ? {
+            quantity: Number(holding.quantity),
+            avgCost: holding.avg_cost === null ? null : Number(holding.avg_cost),
+            totalCost: holding.total_cost === null ? null : Number(holding.total_cost),
+            notes: holding.notes ?? null,
+            hidden: Boolean(holding.hidden),
+          }
+        : null,
+      watched: Boolean(watched),
       ticker,
       name: master?.company_name ?? null,
       sector: master?.sector ?? null,

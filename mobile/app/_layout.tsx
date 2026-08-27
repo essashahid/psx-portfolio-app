@@ -59,6 +59,7 @@ function RootNavigator() {
         <Stack.Screen name="performance" />
         <Stack.Screen name="ledger" />
         <Stack.Screen name="news" />
+        <Stack.Screen name="settings" />
         <Stack.Screen name="research" />
         <Stack.Screen name="company/[ticker]" />
       </Stack.Protected>

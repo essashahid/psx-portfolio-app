@@ -76,6 +76,16 @@ export interface CompanyPayout {
   percentage: number | null;
 }
 
+/** The caller's own position, when they hold the company. */
+export interface CompanyPosition {
+  quantity: number;
+  avgCost: number | null;
+  totalCost: number | null;
+  notes: string | null;
+  /** Hidden positions are excluded from every analysis surface. */
+  hidden: boolean;
+}
+
 export interface CompanyResponse {
   ticker: string;
   name: string | null;
@@ -86,4 +96,6 @@ export interface CompanyResponse {
   priceUsed: number | null;
   ratios: CompanyRatio[];
   payouts: CompanyPayout[];
+  position: CompanyPosition | null;
+  watched: boolean;
 }

@@ -2,7 +2,7 @@ import { useMemo, useState } from "react";
 import { Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import { ChevronLeft, MessageSquare } from "lucide-react-native";
+import { ChevronLeft, MessageSquare, Pencil, Star } from "lucide-react-native";
 import * as Haptics from "expo-haptics";
 import type { CompanyResponse } from "@psx/shared/api/stocks";
 import { formatCompact, formatNumber, formatPctSigned } from "@psx/shared/format";
@@ -13,6 +13,8 @@ import { Band, Ledger, LedgerRow } from "@/components/ui/layout";
 import { Caps, Figure, PageTitle } from "@/components/ui/text";
 import { ErrorNote } from "@/components/status";
 import { PageSkeleton } from "@/components/skeleton";
+import { PositionSheet } from "@/components/features/position-sheet";
+import { apiWrite } from "@/lib/api";
 import {
   colors,
   directionColor,
@@ -48,6 +50,9 @@ export default function CompanyScreen() {
   const [tab, setTab] = useState<Tab>("Overview");
   const symbol = (ticker ?? "").toUpperCase();
 
+  const [editing, setEditing] = useState(false);
+  const [watchBusy, setWatchBusy] = useState(false);
+
   const { data, error, loading, refreshing, refresh } = useApi<CompanyResponse>(
     `/api/stocks/${encodeURIComponent(symbol)}`,
     "Could not load this company."
@@ -58,6 +63,20 @@ export default function CompanyScreen() {
     const by = new Map(data.ratios.map((r) => [r.name, r]));
     return HEADLINE.map((name) => ({ name, row: by.get(name) })).filter((entry) => entry.row);
   }, [data]);
+
+  async function toggleWatch() {
+    void Haptics.selectionAsync();
+    setWatchBusy(true);
+    try {
+      await apiWrite("/api/stocks/watchlist", "POST", { ticker: symbol, action: "toggle" });
+      refresh();
+    } catch {
+      // The star is a preference, not a figure. A failed toggle leaves the
+      // screen readable and is repeatable, so it does not deserve an alert.
+    } finally {
+      setWatchBusy(false);
+    }
+  }
 
   if (loading) return <PageSkeleton rows={6} />;
 
@@ -88,17 +107,46 @@ export default function CompanyScreen() {
               <ChevronLeft size={20} color={colors.textMuted} />
               <Text style={styles.backLabel}>Back</Text>
             </Pressable>
-            <Pressable
-              onPress={() => {
-                void Haptics.selectionAsync();
-                router.push({ pathname: "/(tabs)/copilot", params: { q: `Tell me about ${symbol}` } });
-              }}
-              hitSlop={12}
-              accessibilityLabel="Ask the Copilot about this company"
-              accessibilityRole="button"
-            >
-              <MessageSquare size={19} color={colors.textMuted} />
-            </Pressable>
+            <View style={styles.headerActions}>
+              {data?.position ? (
+                <Pressable
+                  onPress={() => {
+                    void Haptics.selectionAsync();
+                    setEditing(true);
+                  }}
+                  hitSlop={12}
+                  accessibilityLabel={`Edit your ${symbol} position`}
+                  accessibilityRole="button"
+                >
+                  <Pencil size={18} color={colors.textMuted} />
+                </Pressable>
+              ) : null}
+              <Pressable
+                onPress={toggleWatch}
+                disabled={watchBusy}
+                hitSlop={12}
+                accessibilityLabel={data?.watched ? `Stop watching ${symbol}` : `Watch ${symbol}`}
+                accessibilityRole="button"
+                accessibilityState={{ selected: !!data?.watched }}
+              >
+                <Star
+                  size={19}
+                  color={data?.watched ? colors.accentSecondary : colors.textMuted}
+                  fill={data?.watched ? colors.accentSecondary : "transparent"}
+                />
+              </Pressable>
+              <Pressable
+                onPress={() => {
+                  void Haptics.selectionAsync();
+                  router.push({ pathname: "/(tabs)/copilot", params: { q: `Tell me about ${symbol}` } });
+                }}
+                hitSlop={12}
+                accessibilityLabel="Ask the Copilot about this company"
+                accessibilityRole="button"
+              >
+                <MessageSquare size={19} color={colors.textMuted} />
+              </Pressable>
+            </View>
           </View>
 
           <View style={styles.identity}>
@@ -189,6 +237,15 @@ export default function CompanyScreen() {
           ) : null}
         </Band>
       </ScrollView>
+
+      <PositionSheet
+        open={editing}
+        ticker={symbol}
+        initial={data?.position ?? null}
+        onClose={() => setEditing(false)}
+        onSaved={refresh}
+        onRemoved={() => router.back()}
+      />
     </SafeAreaView>
   );
 }
@@ -196,6 +253,7 @@ export default function CompanyScreen() {
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: colors.surfacePage },
   header: { paddingHorizontal: layout.gutter, paddingBottom: space.md },
+  headerActions: { flexDirection: "row", alignItems: "center", gap: space.lg },
   headerBar: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", minHeight: 36 },
   back: { flexDirection: "row", alignItems: "center", gap: 2, marginLeft: -4 },
   backLabel: { fontFamily: fontFamily.uiMedium, fontSize: fontSize.sm, color: colors.textMuted },

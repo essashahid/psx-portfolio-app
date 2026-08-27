@@ -65,6 +65,27 @@ export async function PATCH(
   }
 
   const notes = parsed.data.notes?.trim() || `Holding edit for ${symbol}`;
+
+  /**
+   * The note belongs on the position, not only on the adjustment.
+   *
+   * It used to be attached to the ledger entry alone, so a notes-only edit
+   * matched neither branch below, wrote nothing, and still answered "adjusted
+   * through the ledger" — a silent no-op reported as a save. Where there is
+   * also a quantity or cost change the note travels with both: it explains the
+   * position now and the entry that changed it.
+   */
+  if (parsed.data.notes !== undefined) {
+    if (!existing) return NextResponse.json({ error: `No holding for ${symbol}` }, { status: 404 });
+    const { error: noteErr } = await supabase
+      .from("holdings")
+      .update({ notes: parsed.data.notes.trim() || null })
+      .eq("user_id", user.id)
+      .eq("ticker", symbol);
+    if (noteErr) return errorResponse(noteErr);
+  }
+
+  const adjusts = Math.abs(qtyDelta) >= 0.0001 || avgChanged;
   if (Math.abs(qtyDelta) >= 0.0001) {
     const price = qtyDelta > 0 ? targetAvg : currentAvg;
     const netAmount = qtyDelta > 0 ? Math.abs(qtyDelta) * price : null;
@@ -106,7 +127,11 @@ export async function PATCH(
   }
 
   await recomputeAll(supabase, user.id, { changedTickers: [symbol] });
-  return NextResponse.json({ message: `${symbol} adjusted through the ledger.` });
+  // Say which of the two actually happened, rather than claiming a ledger
+  // entry for an edit that only changed a note.
+  return NextResponse.json({
+    message: adjusts ? `${symbol} adjusted through the ledger.` : `${symbol} note saved.`,
+  });
 }
 
 export async function DELETE(

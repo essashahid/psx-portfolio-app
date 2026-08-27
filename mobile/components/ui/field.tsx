@@ -85,6 +85,33 @@ export function Choice<T extends string>({
 }
 
 const styles = StyleSheet.create({
+  toggleRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: space.lg,
+    minHeight: layout.hitMin,
+    paddingVertical: space.sm,
+  },
+  togglePressed: { backgroundColor: colors.surfaceSunken },
+  toggleText: { flex: 1, gap: 2 },
+  toggleLabel: { fontFamily: fontFamily.ui, fontSize: fontSize.body, color: colors.textStrong },
+  toggleDim: { color: colors.textFaint },
+  toggleHint: { fontFamily: fontFamily.ui, fontSize: fontSize.xxs, lineHeight: 17, color: colors.textFaint },
+  track: {
+    width: 46,
+    height: 28,
+    borderRadius: layout.radiusPill,
+    backgroundColor: colors.surfaceInset,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: colors.rule,
+    padding: 3,
+    justifyContent: "center",
+  },
+  trackOn: { backgroundColor: colors.ink, borderColor: colors.ink },
+  knob: { width: 20, height: 20, borderRadius: layout.radiusPill, backgroundColor: colors.surfaceRaised },
+  knobOn: { alignSelf: "flex-end" },
+
   field: { gap: space.sm - 2 },
   input: {
     minHeight: layout.hitMin,
@@ -121,3 +148,47 @@ const styles = StyleSheet.create({
   },
   choiceLabelOn: { color: colors.textOnDark },
 });
+
+/**
+ * A setting that is on or off.
+ *
+ * The row is the target rather than a small track on the right, because a
+ * 32-pixel switch beside a full-width label is a miss waiting to happen. The
+ * track still carries the state, so it reads the way a switch should.
+ */
+export function Toggle({
+  label,
+  hint,
+  value,
+  onChange,
+  disabled,
+}: {
+  label: string;
+  hint?: string;
+  value: boolean;
+  onChange: (next: boolean) => void;
+  disabled?: boolean;
+}) {
+  return (
+    <Pressable
+      onPress={() => {
+        if (disabled) return;
+        void Haptics.selectionAsync();
+        onChange(!value);
+      }}
+      disabled={disabled}
+      accessibilityRole="switch"
+      accessibilityState={{ checked: value, disabled: !!disabled }}
+      accessibilityLabel={label}
+      style={({ pressed }) => [styles.toggleRow, pressed && !disabled && styles.togglePressed]}
+    >
+      <View style={styles.toggleText}>
+        <Text style={[styles.toggleLabel, disabled && styles.toggleDim]}>{label}</Text>
+        {hint ? <Text style={styles.toggleHint}>{hint}</Text> : null}
+      </View>
+      <View style={[styles.track, value && styles.trackOn]}>
+        <View style={[styles.knob, value && styles.knobOn]} />
+      </View>
+    </Pressable>
+  );
+}
