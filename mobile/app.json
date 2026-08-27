@@ -1,0 +1,43 @@
+{
+  "expo": {
+    "name": "Plumb",
+    "slug": "plumb",
+    "scheme": "plumb",
+    "version": "0.1.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "backgroundColor": "#161716",
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "pk.plumb.app"
+    },
+    "android": {
+      "package": "pk.plumb.app",
+      "adaptiveIcon": {
+        "backgroundColor": "#161716",
+        "foregroundImage": "./assets/android-icon-foreground.png",
+        "backgroundImage": "./assets/android-icon-background.png",
+        "monochromeImage": "./assets/android-icon-monochrome.png"
+      },
+      "predictiveBackGestureEnabled": false
+    },
+    "plugins": [
+      "expo-router",
+      "expo-secure-store",
+      "expo-status-bar",
+      [
+        "expo-splash-screen",
+        {
+          "image": "./assets/splash-icon.png",
+          "resizeMode": "contain",
+          "backgroundColor": "#161716"
+        }
+      ],
+      "expo-font"
+    ],
+    "experiments": {
+      "typedRoutes": true
+    }
+  }
+}

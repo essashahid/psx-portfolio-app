@@ -24,6 +24,12 @@ name: Deploy to Vercel
 on:
   push:
     branches: [main]
+    # The mobile app is a separate workspace that Vercel never builds, so a
+    # mobile-only commit should not spend a production deploy. packages/** is
+    # deliberately absent: the web app compiles that code, so it must deploy.
+    # A push touching both still deploys, and workflow_dispatch forces one.
+    paths-ignore:
+      - "mobile/**"
   workflow_dispatch:
 
 concurrency:

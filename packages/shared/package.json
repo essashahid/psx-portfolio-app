@@ -1,0 +1,24 @@
+{
+  "name": "@psx/shared",
+  "version": "0.0.1",
+  "private": true,
+  "description": "Types, formatters and domain constants shared by the web app and the mobile app.",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "exports": {
+    ".": "./src/index.ts",
+    "./*": "./src/*.ts"
+  },
+  "sideEffects": false,
+  "scripts": {
+    "typecheck": "tsc --noEmit"
+  },
+  "peerDependencies": {
+    "@supabase/supabase-js": ">=2"
+  },
+  "peerDependenciesMeta": {
+    "@supabase/supabase-js": {
+      "optional": true
+    }
+  }
+}
