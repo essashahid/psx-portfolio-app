@@ -49,9 +49,24 @@ export interface CompanyQuote {
 export interface CompanyRatio {
   name: string;
   value: number | string | null;
+  /** The period the ratio is struck on, e.g. "TTM to 2026 9M". */
+  period?: string | null;
   unit?: string | null;
-  source_period?: string | null;
   [key: string]: unknown;
+}
+
+/**
+ * Hand-verification metadata. This is an object, not a bare status string: the
+ * note explains why a figure was accepted or demoted, and the basis says
+ * whether it is struck on consolidated or standalone accounts, which can move a
+ * P/E by a factor of two.
+ */
+export interface CompanyVerification {
+  status: VerificationStatus;
+  throughPeriod?: string | null;
+  source?: string | null;
+  basis?: string | null;
+  note?: string | null;
 }
 
 export interface CompanyPayout {
@@ -66,7 +81,7 @@ export interface CompanyResponse {
   name: string | null;
   sector: string | null;
   quote: CompanyQuote | null;
-  verified: VerificationStatus | null;
+  verified: CompanyVerification | null;
   periods: { latestAnnual: string | null; latestInterim: string | null };
   priceUsed: number | null;
   ratios: CompanyRatio[];

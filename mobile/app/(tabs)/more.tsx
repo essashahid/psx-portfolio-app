@@ -1,6 +1,7 @@
+import { useCallback } from "react";
 import { Alert, Linking, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { useRouter, type Href } from "expo-router";
+import { useFocusEffect, useRouter, type Href } from "expo-router";
 import Constants from "expo-constants";
 import * as Haptics from "expo-haptics";
 import {
@@ -83,7 +84,17 @@ function Group({ title, entries }: { title: string; entries: Entry[] }) {
 
 export default function MoreScreen() {
   const { session, signOut } = useAuth();
-  const { data: alerts } = useApi<AlertsResponse>("/api/alerts", "");
+  const { data: alerts, refresh: refreshAlerts } = useApi<AlertsResponse>("/api/alerts", "");
+
+  // This tab stays mounted, so a fetch on mount alone leaves the badge showing
+  // whatever the count was when the app started. There is no pull-to-refresh
+  // here either — it is a list of links, not data — so re-reading on focus is
+  // the only thing keeping the number honest.
+  useFocusEffect(
+    useCallback(() => {
+      void refreshAlerts();
+    }, [refreshAlerts])
+  );
 
   const email = session?.user.email ?? "";
   const initial = email.slice(0, 1).toUpperCase() || "?";

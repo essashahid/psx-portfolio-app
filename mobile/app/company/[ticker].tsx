@@ -27,7 +27,14 @@ const TABS = ["Overview", "Fundamentals", "Payouts"] as const;
 type Tab = (typeof TABS)[number];
 
 /** The handful of ratios worth the first screen, in reading order. */
-const HEADLINE = ["P/E", "P/B", "Dividend yield", "ROE", "Debt to equity", "Current ratio"];
+const HEADLINE = [
+  "P/E",
+  "P/B",
+  "Dividend yield (TTM)",
+  "ROE",
+  "Debt-to-equity",
+  "Current ratio",
+];
 
 function ratioText(value: number | string | null): string {
   if (value === null || value === undefined) return "—";
@@ -54,6 +61,17 @@ export default function CompanyScreen() {
   if (loading) return <Loading />;
 
   const quote = data?.quote;
+  // What the figures rest on, and a warning when they are not hand-verified.
+  // "stale" and "mismatch" are worth saying out loud; "verified" is the quiet
+  // default and does not need announcing.
+  const period = data?.verified?.throughPeriod ?? data?.periods.latestInterim ?? data?.periods.latestAnnual;
+  const status = data?.verified?.status;
+  // A trailing period already reads as a phrase ("TTM to 2026 9M"), so it takes
+  // no preposition; a bare one ("2026 FY") does.
+  const periodPhrase = period ? (/^TTM/i.test(period) ? period : `Figures to ${period}`) : null;
+  const basisLine = periodPhrase
+    ? `${periodPhrase}${status && status !== "verified" ? ` · ${status}` : ""}`
+    : null;
 
   return (
     <SafeAreaView style={styles.screen} edges={["top"]}>
@@ -103,12 +121,7 @@ export default function CompanyScreen() {
 
           {/* Say what the valuation rests on. A ratio from a single old period
               is a different claim from a trailing twelve months. */}
-          {data?.periods.latestInterim || data?.periods.latestAnnual ? (
-            <Figure style={styles.basis}>
-              Figures to {data.periods.latestInterim ?? data.periods.latestAnnual}
-              {data.verified && data.verified !== "verified" ? ` · ${data.verified}` : ""}
-            </Figure>
-          ) : null}
+          {basisLine ? <Figure style={styles.basis}>{basisLine}</Figure> : null}
 
           <View style={styles.tabs}>
             <Segmented options={TABS} value={tab} onChange={setTab} />

@@ -30,8 +30,8 @@ function Payment({ row }: { row: DividendRow }) {
         </Figure>
       </View>
       <View style={styles.paymentRight}>
-        <Figure style={styles.amount}>{formatCompact(row.netAmount ?? row.amount)}</Figure>
-        {row.tax ? <Figure style={styles.meta}>{formatCompact(row.tax)} tax</Figure> : null}
+        <Figure style={styles.amount}>{formatNumber(row.netAmount ?? row.amount, 0)}</Figure>
+        {row.tax ? <Figure style={styles.meta}>{formatNumber(row.tax, 0)} tax</Figure> : null}
       </View>
     </LedgerRow>
   );
