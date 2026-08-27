@@ -50,9 +50,25 @@ export interface LedgerRow {
 const fmtQty = (n: number) => (Number.isInteger(n) ? String(n) : n.toFixed(2));
 const fmtPrice = (n: number | null) => (n == null ? "" : n.toLocaleString("en-PK", { maximumFractionDigits: 2 }));
 
+/**
+ * What the trade actually cost or returned in cash.
+ *
+ * net_amount is optional on the transaction routes, so a trade entered without
+ * it would otherwise read as a zero-rupee row: the statement shows a buy that
+ * moved no money and the closing balance overstates cash on hand. Consideration
+ * is the honest floor when the stored figure is missing; charges are not known
+ * here, so it is quantity times price and nothing more.
+ */
+function netOf(t: LedgerTxnInput): number {
+  if (t.net_amount !== null && t.net_amount !== undefined) return Number(t.net_amount);
+  const qty = Math.abs(Number(t.quantity ?? 0));
+  const price = Number(t.price ?? 0);
+  return qty > 0 && price > 0 ? qty * price : 0;
+}
+
 function txnRow(t: LedgerTxnInput): Omit<LedgerRow, "balance"> {
   const qty = Number(t.quantity ?? 0);
-  const net = Number(t.net_amount ?? 0);
+  const net = netOf(t);
   const tk = t.ticker ?? "";
   switch (t.type) {
     case "BUY":

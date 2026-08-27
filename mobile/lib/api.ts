@@ -76,6 +76,25 @@ export async function api<T>(path: string, init: RequestInit = {}): Promise<T> {
   return (await response.json()) as T;
 }
 
+/**
+ * A write. Separate from api() only to make call sites read as what they are —
+ * the transport is identical, including the 401 refresh-and-retry.
+ *
+ * The API answers a refused write with { error } carrying text meant for the
+ * user (the demo workspace being read-only, a validation message naming the
+ * field), so ApiError.message is safe to show as-is.
+ */
+export async function apiWrite<T>(
+  path: string,
+  method: "POST" | "PATCH" | "DELETE",
+  body?: unknown
+): Promise<T> {
+  return api<T>(path, {
+    method,
+    body: body === undefined ? undefined : JSON.stringify(body),
+  });
+}
+
 export const apiUrl = (path: string) => `${BASE_URL}${path}`;
 
 /** The header the chat stream needs, since it does not go through api(). */

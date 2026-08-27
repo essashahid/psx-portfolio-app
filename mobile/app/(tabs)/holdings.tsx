@@ -2,7 +2,7 @@ import { useMemo, useState } from "react";
 import { Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
-import { Search } from "lucide-react-native";
+import { Plus, Search } from "lucide-react-native";
 import * as Haptics from "expo-haptics";
 import type { HoldingRow, HoldingsResponse } from "@psx/shared/api/holdings";
 import {
@@ -15,6 +15,7 @@ import { useApi } from "@/lib/use-api";
 import { Band, Ledger } from "@/components/ui/layout";
 import { Caps, Figure, PageTitle } from "@/components/ui/text";
 import { Loading, ErrorNote } from "@/components/status";
+import { TransactionSheet } from "@/components/features/transaction-sheet";
 import {
   colors,
   directionColor,
@@ -96,6 +97,7 @@ function Position({ row, largest }: { row: HoldingRow; largest: number }) {
 export default function HoldingsScreen() {
   const router = useRouter();
   const [filter, setFilter] = useState<string>(ALL);
+  const [adding, setAdding] = useState(false);
   const { data, error, loading, refreshing, refresh } = useApi<HoldingsResponse>(
     "/api/portfolio/holdings",
     "Could not load your positions."
@@ -126,14 +128,28 @@ export default function HoldingsScreen() {
         <SafeAreaView edges={["top"]} style={styles.header}>
           <View style={styles.titleRow}>
             <PageTitle>Holdings</PageTitle>
-            <Pressable
-              onPress={() => router.push("/research")}
-              hitSlop={12}
-              accessibilityLabel="Stock research"
-              accessibilityRole="button"
-            >
-              <Search size={19} color={colors.textMuted} />
-            </Pressable>
+            <View style={styles.titleActions}>
+              <Pressable
+                onPress={() => router.push("/research")}
+                hitSlop={12}
+                accessibilityLabel="Stock research"
+                accessibilityRole="button"
+              >
+                <Search size={19} color={colors.textMuted} />
+              </Pressable>
+              <Pressable
+                onPress={() => {
+                  void Haptics.selectionAsync();
+                  setAdding(true);
+                }}
+                hitSlop={12}
+                accessibilityLabel="Add transaction"
+                accessibilityRole="button"
+                style={styles.addButton}
+              >
+                <Plus size={18} color={colors.textOnDark} />
+              </Pressable>
+            </View>
           </View>
 
           <View style={styles.statGrid}>
@@ -209,6 +225,10 @@ export default function HoldingsScreen() {
           )}
         </Band>
       </ScrollView>
+
+      {/* Refetching on save is what makes the new row appear without a manual
+          pull, and the position totals above it agree with the list. */}
+      <TransactionSheet open={adding} onClose={() => setAdding(false)} onSaved={refresh} />
     </View>
   );
 }
@@ -247,6 +267,15 @@ function Chip({
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: colors.surfacePage },
   header: { paddingHorizontal: layout.gutter, paddingBottom: space.lg },
+  titleActions: { flexDirection: "row", alignItems: "center", gap: space.lg },
+  addButton: {
+    width: 34,
+    height: 34,
+    borderRadius: layout.radiusPill,
+    backgroundColor: colors.ink,
+    alignItems: "center",
+    justifyContent: "center",
+  },
   titleRow: {
     flexDirection: "row",
     alignItems: "center",

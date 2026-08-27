@@ -2,6 +2,7 @@ import { ActivityIndicator, View } from "react-native";
 import { Stack } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
+import { KeyboardProvider } from "react-native-keyboard-controller";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { useFonts } from "expo-font";
 import {
@@ -45,6 +46,7 @@ function RootNavigator() {
         <Stack.Screen name="alerts" />
         <Stack.Screen name="dividends" />
         <Stack.Screen name="performance" />
+        <Stack.Screen name="ledger" />
         <Stack.Screen name="research" />
         <Stack.Screen name="company/[ticker]" />
       </Stack.Protected>
@@ -73,12 +75,17 @@ export default function RootLayout() {
 
   return (
     <GestureHandlerRootView style={styles.fill}>
-      <SafeAreaProvider>
-        <AuthProvider>
-          <StatusBar style="light" />
-          {fontsReady ? <RootNavigator /> : <Splash />}
-        </AuthProvider>
-      </SafeAreaProvider>
+      {/* Measures the keyboard from the native side, which is the only way a
+          sheet inside a Modal can know to lift itself: a Modal is its own
+          window, so the activity's adjustResize never reaches it. */}
+      <KeyboardProvider>
+        <SafeAreaProvider>
+          <AuthProvider>
+            <StatusBar style="light" />
+            {fontsReady ? <RootNavigator /> : <Splash />}
+          </AuthProvider>
+        </SafeAreaProvider>
+      </KeyboardProvider>
     </GestureHandlerRootView>
   );
 }

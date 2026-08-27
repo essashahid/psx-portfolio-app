@@ -1,13 +1,17 @@
 import { Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { useState } from "react";
 import { useRouter } from "expo-router";
-import { ChevronLeft } from "lucide-react-native";
+import * as Haptics from "expo-haptics";
+import { ChevronLeft, Plus } from "lucide-react-native";
 import type { DividendRow, DividendsResponse } from "@psx/shared/api/dividends";
 import { formatCompact, formatNumber, formatPkr } from "@psx/shared/format";
 import { useApi } from "@/lib/use-api";
 import { Band, Ledger, LedgerRow } from "@/components/ui/layout";
 import { Caps, Figure, PageTitle } from "@/components/ui/text";
 import { Loading, ErrorNote } from "@/components/status";
+import { DividendSheet, type DividendDraft } from "@/components/features/dividend-sheet";
+import { Cta } from "@/components/ui/button";
 import {
   colors,
   fontFamily,
@@ -19,9 +23,9 @@ import {
   tracking,
 } from "@/lib/theme";
 
-function Payment({ row }: { row: DividendRow }) {
+function Payment({ row, onEdit }: { row: DividendRow; onEdit: (row: DividendRow) => void }) {
   return (
-    <LedgerRow>
+    <LedgerRow onPress={() => onEdit(row)} accessibilityLabel={`Edit ${row.ticker ?? "dividend"}`}>
       <View style={styles.paymentLeft}>
         <Text style={styles.ticker}>{row.ticker ?? "—"}</Text>
         <Figure style={styles.meta} numberOfLines={1}>
@@ -52,6 +56,29 @@ function withheldNote(data: DividendsResponse): string | null {
 
 export default function DividendsScreen() {
   const router = useRouter();
+  const [editing, setEditing] = useState<DividendDraft | undefined>(undefined);
+  const [sheetOpen, setSheetOpen] = useState(false);
+
+  function openSheet(draft?: DividendDraft) {
+    void Haptics.selectionAsync();
+    setEditing(draft);
+    setSheetOpen(true);
+  }
+
+  function editRow(row: DividendRow) {
+    openSheet({
+      id: row.id,
+      ticker: row.ticker ?? "",
+      payment_date: row.payDate,
+      ex_date: row.exDate,
+      dividend_per_share: row.perShare,
+      quantity_held: row.quantityHeld,
+      amount: row.amount,
+      tax: row.tax,
+      status: row.status,
+    });
+  }
+
   const { data, error, loading, refreshing, refresh } = useApi<DividendsResponse>(
     "/api/portfolio/dividends",
     "Could not load dividends."
@@ -71,10 +98,21 @@ export default function DividendsScreen() {
         showsVerticalScrollIndicator={false}
       >
         <View style={styles.header}>
-          <Pressable onPress={() => router.back()} hitSlop={12} style={styles.back} accessibilityRole="button">
-            <ChevronLeft size={20} color={colors.textMuted} />
-            <Text style={styles.backLabel}>Back</Text>
-          </Pressable>
+          <View style={styles.headRow}>
+            <Pressable onPress={() => router.back()} hitSlop={12} style={styles.back} accessibilityRole="button">
+              <ChevronLeft size={20} color={colors.textMuted} />
+              <Text style={styles.backLabel}>Back</Text>
+            </Pressable>
+            <Pressable
+              onPress={() => openSheet(undefined)}
+              hitSlop={12}
+              style={styles.addButton}
+              accessibilityRole="button"
+              accessibilityLabel="Record dividend"
+            >
+              <Plus size={18} color={colors.textOnDark} />
+            </Pressable>
+          </View>
           <PageTitle style={styles.title}>Dividends</PageTitle>
 
           <Caps style={styles.totalLabel}>Received after tax</Caps>
@@ -93,9 +131,13 @@ export default function DividendsScreen() {
           <ErrorNote message={error} />
           {!data || data.count === 0 ? (
             error ? null : (
-              <Text style={styles.empty}>
-                No dividends recorded yet. They appear once a payout is detected or imported.
-              </Text>
+              <View style={styles.emptyBlock}>
+                <Text style={styles.empty}>
+                  No dividends recorded yet. They appear once a payout is detected or imported, and
+                  you can enter one yourself from a broker note.
+                </Text>
+                <Cta label="Record a dividend" onPress={() => openSheet(undefined)} />
+              </View>
             )
           ) : (
             <>
@@ -130,7 +172,7 @@ export default function DividendsScreen() {
                   <Caps style={styles.blockHead}>Expected</Caps>
                   <Ledger>
                     {data.upcoming.slice(0, 10).map((row) => (
-                      <Payment key={row.id} row={row} />
+                      <Payment key={row.id} row={row} onEdit={editRow} />
                     ))}
                   </Ledger>
                 </View>
@@ -141,7 +183,7 @@ export default function DividendsScreen() {
                   <Caps style={styles.blockHead}>Recent payments</Caps>
                   <Ledger>
                     {data.recent.slice(0, 25).map((row) => (
-                      <Payment key={row.id} row={row} />
+                      <Payment key={row.id} row={row} onEdit={editRow} />
                     ))}
                   </Ledger>
                 </View>
@@ -150,6 +192,13 @@ export default function DividendsScreen() {
           )}
         </Band>
       </ScrollView>
+
+      <DividendSheet
+        open={sheetOpen}
+        initial={editing}
+        onClose={() => setSheetOpen(false)}
+        onSaved={refresh}
+      />
     </SafeAreaView>
   );
 }
@@ -157,6 +206,16 @@ export default function DividendsScreen() {
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: colors.surfacePage },
   header: { paddingHorizontal: layout.gutter, paddingBottom: space.sm },
+  headRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
+  addButton: {
+    width: 34,
+    height: 34,
+    borderRadius: layout.radiusPill,
+    backgroundColor: colors.ink,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  emptyBlock: { gap: space.lg, alignItems: "flex-start" },
   back: { flexDirection: "row", alignItems: "center", gap: 2, minHeight: 36, marginLeft: -4 },
   backLabel: { fontFamily: fontFamily.uiMedium, fontSize: fontSize.sm, color: colors.textMuted },
   title: { marginTop: space.xs },

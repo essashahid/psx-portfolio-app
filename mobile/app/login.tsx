@@ -1,5 +1,6 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
+  Keyboard,
   KeyboardAvoidingView,
   Platform,
   Pressable,
@@ -30,6 +31,20 @@ export default function LoginScreen() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [keyboardUp, setKeyboardUp] = useState(false);
+  const passwordRef = useRef<TextInput>(null);
+
+  // The headline holds the field open when there is room, but once the keyboard
+  // is up that space is what pushes the password field and the button off the
+  // screen. Collapsing it is what keeps the whole form reachable.
+  useEffect(() => {
+    const show = Keyboard.addListener("keyboardDidShow", () => setKeyboardUp(true));
+    const hide = Keyboard.addListener("keyboardDidHide", () => setKeyboardUp(false));
+    return () => {
+      show.remove();
+      hide.remove();
+    };
+  }, []);
 
   const canSubmit = email.trim().length > 0 && password.length > 0 && !busy;
 
@@ -48,7 +63,12 @@ export default function LoginScreen() {
 
   return (
     <SafeAreaView style={styles.safe} edges={["top", "bottom"]}>
-      <KeyboardAvoidingView style={styles.flex} behavior="padding">
+      {/* Android resizes the window itself (adjustResize in the manifest), so
+          padding here would double-count and push the form out of view. */}
+      <KeyboardAvoidingView
+        style={styles.flex}
+        behavior={Platform.OS === "ios" ? "padding" : undefined}
+      >
         <ScrollView
           contentContainerStyle={styles.scroll}
           keyboardShouldPersistTaps="handled"
@@ -62,7 +82,7 @@ export default function LoginScreen() {
           <Text style={styles.promise}>{APP_PROMISE}</Text>
 
           {/* The form sits at the foot of the field, thumb first. */}
-          <View style={styles.spacer} />
+          <View style={keyboardUp ? styles.spacerClosed : styles.spacer} />
 
           <View style={styles.form}>
             <View>
@@ -78,12 +98,16 @@ export default function LoginScreen() {
                 placeholder="you@example.com"
                 placeholderTextColor={colors.textOnDarkFaint}
                 editable={!busy}
+                returnKeyType="next"
+                onSubmitEditing={() => passwordRef.current?.focus()}
+                submitBehavior="submit"
               />
             </View>
 
             <View>
               <Text style={styles.fieldLabel}>PASSWORD</Text>
               <TextInput
+                ref={passwordRef}
                 style={styles.input}
                 value={password}
                 onChangeText={setPassword}
@@ -147,6 +171,7 @@ const styles = StyleSheet.create({
     color: colors.textOnDarkMuted,
   },
   spacer: { flexGrow: 1, minHeight: space.xxl },
+  spacerClosed: { height: space.xl },
   form: { gap: space.md + 2 },
   fieldLabel: {
     marginBottom: 7,

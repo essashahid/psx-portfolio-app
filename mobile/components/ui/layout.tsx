@@ -1,4 +1,4 @@
-import { StyleSheet, View, type ViewProps } from "react-native";
+import { Pressable, StyleSheet, View, type ViewProps } from "react-native";
 import { colors, layout, space } from "@/lib/theme";
 
 /** A section of the page: full-bleed rules, gutter-padded content. */
@@ -15,8 +15,24 @@ export function Ledger({ style, ...rest }: ViewProps) {
 }
 
 /** One row of a ledger. Always clears the 44pt touch minimum. */
-export function LedgerRow({ style, ...rest }: ViewProps) {
-  return <View {...rest} style={[styles.ledgerRow, style]} />;
+/**
+ * A row in a ledger. Given an onPress it becomes a target instead of a plain
+ * view, and dims while held so a tap on a dense list is visibly registered.
+ */
+export function LedgerRow({
+  style,
+  onPress,
+  ...rest
+}: ViewProps & { onPress?: () => void }) {
+  if (!onPress) return <View {...rest} style={[styles.ledgerRow, style]} />;
+  return (
+    <Pressable
+      {...rest}
+      onPress={onPress}
+      accessibilityRole="button"
+      style={({ pressed }) => [styles.ledgerRow, pressed && styles.ledgerRowPressed, style]}
+    />
+  );
 }
 
 /** A hairline the width of the content column. */
@@ -27,6 +43,7 @@ export function Rule({ style, ...rest }: ViewProps) {
 const styles = StyleSheet.create({
   band: { paddingVertical: layout.bandPadY, paddingHorizontal: layout.gutter },
   ledger: { marginTop: space.xs },
+  ledgerRowPressed: { opacity: 0.55 },
   ledgerRow: {
     minHeight: layout.hitMin,
     flexDirection: "row",

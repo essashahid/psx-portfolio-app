@@ -6,6 +6,7 @@ import Constants from "expo-constants";
 import * as Haptics from "expo-haptics";
 import {
   Bell,
+  BookOpen,
   ChevronRight,
   Database,
   ExternalLink,
@@ -129,6 +130,7 @@ export default function MoreScreen() {
           entries={[
             { icon: HandCoins, label: "Dividends", href: "/dividends" },
             { icon: TrendingUp, label: "Performance", href: "/performance" },
+            { icon: BookOpen, label: "Ledger", href: "/ledger" },
           ]}
         />
 
