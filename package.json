@@ -2,6 +2,9 @@
   "name": "psx-portfolio-app",
   "version": "0.1.0",
   "private": true,
+  "workspaces": [
+    "packages/*"
+  ],
   "scripts": {
     "dev": "next dev",
     "build": "next build",
@@ -19,7 +22,11 @@
     "backfill:index": "tsx scripts/backfills/backfill-index-history.ts",
     "check:drift": "tsx scripts/verification/check-verified-drift.ts",
     "check:freshness": "tsx scripts/verification/check-verified-freshness.ts",
-    "check:registry": "npm run check:drift && npm run check:freshness"
+    "check:registry": "npm run check:drift && npm run check:freshness",
+    "check:shared": "node scripts/verification/check-shared-purity.mjs && npm run typecheck --workspace @psx/shared",
+    "mobile": "npm run start --workspace @psx/mobile",
+    "mobile:android": "npm run android --workspace @psx/mobile",
+    "mobile:typecheck": "npm run typecheck --workspace @psx/mobile"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.104.2",

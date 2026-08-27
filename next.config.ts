@@ -9,6 +9,9 @@ const withSerwist = withSerwistInit({
 });
 
 const nextConfig: NextConfig = {
+  // @psx/shared ships raw TypeScript so the mobile app and this app read the
+  // same source. Next has to compile it rather than treat it as a built dep.
+  transpilePackages: ["@psx/shared"],
   serverExternalPackages: ["pdf-parse", "pdfjs-dist"],
   // pdfjs loads its worker through a runtime dynamic import, which file
   // tracing cannot see, so the worker is missing from the serverless bundle

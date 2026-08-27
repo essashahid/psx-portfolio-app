@@ -12,6 +12,9 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Workspaces with their own tooling. The Next rules here assume a web app.
+    "mobile/**",
+    "packages/**",
   ]),
 ]);
 
