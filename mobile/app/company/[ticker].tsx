@@ -4,6 +4,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { ChevronLeft, MessageSquare, Pencil, Star } from "lucide-react-native";
 import * as Haptics from "expo-haptics";
+import * as WebBrowser from "expo-web-browser";
 import type { CompanyResponse } from "@psx/shared/api/stocks";
 import { formatCompact, formatNumber, formatPctSigned } from "@psx/shared/format";
 import { sectorColor, shortSector } from "@psx/shared/sector-colors";
@@ -14,6 +15,12 @@ import { Caps, Figure, PageTitle } from "@/components/ui/text";
 import { ErrorNote } from "@/components/status";
 import { PageSkeleton } from "@/components/skeleton";
 import { PositionSheet } from "@/components/features/position-sheet";
+import { PriceChart, PeriodRail, type ChartPeriod } from "@/components/charts/price-chart";
+import { Rise } from "@/components/ui/motion";
+import type { ChartDataResponse } from "@psx/shared/api/chart";
+import type { NewsResponse } from "@psx/shared/api/news";
+import { groupRatios } from "@psx/shared/company/ratio-groups";
+import { formatCompactSigned } from "@psx/shared/format";
 import { apiWrite } from "@/lib/api";
 import {
   colors,
@@ -52,6 +59,18 @@ export default function CompanyScreen() {
 
   const [editing, setEditing] = useState(false);
   const [watchBusy, setWatchBusy] = useState(false);
+  const [chartPeriod, setChartPeriod] = useState<ChartPeriod>("1Y");
+
+  // The chart and the ticker's news load beside the company card rather than
+  // inside it: each is slower than the ratios and neither should hold them up.
+  const chart = useApi<ChartDataResponse>(
+    `/api/chart-data?ticker=${encodeURIComponent(symbol)}&period=${chartPeriod}`,
+    "Could not load the price history."
+  );
+  const news = useApi<NewsResponse>(
+    `/api/portfolio/news?tab=companies&window=all&ticker=${encodeURIComponent(symbol)}`,
+    "Could not load the news for this company."
+  );
 
   const { data, error, loading, refreshing, refresh } = useApi<CompanyResponse>(
     `/api/stocks/${encodeURIComponent(symbol)}`,
@@ -63,6 +82,12 @@ export default function CompanyScreen() {
     const by = new Map(data.ratios.map((r) => [r.name, r]));
     return HEADLINE.map((name) => ({ name, row: by.get(name) })).filter((entry) => entry.row);
   }, [data]);
+
+  function openStory(url: string) {
+    void WebBrowser.openBrowserAsync(url, {
+      presentationStyle: WebBrowser.WebBrowserPresentationStyle.FULL_SCREEN,
+    });
+  }
 
   async function toggleWatch() {
     void Haptics.selectionAsync();
@@ -79,6 +104,19 @@ export default function CompanyScreen() {
   }
 
   if (loading) return <PageSkeleton rows={6} />;
+
+  const position = data?.position ?? null;
+  const price = data?.quote?.price ?? data?.priceUsed ?? null;
+  const marketValue = position && price !== null ? position.quantity * price : null;
+  const unrealized =
+    marketValue !== null && position?.totalCost != null ? marketValue - position.totalCost : null;
+  const unrealizedPct =
+    unrealized !== null && position?.totalCost ? (unrealized / position.totalCost) * 100 : null;
+  // Five is what fits before the section stops being a summary of the news and
+  // starts being the news.
+  const stories = (news.data?.groups ?? []).flatMap((group) => group.events).slice(0, 5);
+
+  const grouped = groupRatios(data?.ratios ?? []);
 
   const quote = data?.quote;
   // What the figures rest on, and a warning when they are not hand-verified.
@@ -97,7 +135,17 @@ export default function CompanyScreen() {
     <SafeAreaView style={styles.screen} edges={["top"]}>
       <ScrollView
         refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={refresh} tintColor={colors.textMuted} />
+          <RefreshControl
+            refreshing={refreshing}
+            // A pull refreshes the whole screen, not only the block that owns
+            // the spinner.
+            onRefresh={() => {
+              void refresh();
+              void chart.refresh();
+              void news.refresh();
+            }}
+            tintColor={colors.textMuted}
+          />
         }
         showsVerticalScrollIndicator={false}
       >
@@ -181,32 +229,126 @@ export default function CompanyScreen() {
           <ErrorNote message={error} />
 
           {tab === "Overview" ? (
-            headline.length === 0 ? (
-              <Text style={styles.empty}>No ratios published for this company yet.</Text>
-            ) : (
-              <View style={styles.metricGrid}>
-                {headline.map(({ name, row }) => (
-                  <View key={name} style={styles.metricCell}>
-                    <Caps>{name}</Caps>
-                    <Figure style={styles.metricValue}>{ratioText(row?.value ?? null)}</Figure>
+            <>
+              <PriceChart
+                candles={chart.data?.candles ?? []}
+                avgCost={chart.data?.avgCost ?? null}
+                trades={chart.data?.transactions ?? []}
+                loading={chart.loading}
+              />
+              <PeriodRail value={chartPeriod} onChange={setChartPeriod} />
+              {chart.data && chart.data.transactions.length > 0 ? (
+                <Figure style={styles.chartKey}>
+                  dashed rule is your cost · rings are your trades
+                </Figure>
+              ) : chart.data?.avgCost ? (
+                <Figure style={styles.chartKey}>dashed rule is your cost</Figure>
+              ) : null}
+
+              {position ? (
+                <View style={styles.positionBlock}>
+                  <View style={styles.blockHead}>
+                    <Caps>Your position</Caps>
+                    <Figure style={styles.positionWeight}>
+                      {formatNumber(position.quantity, 0)} shares
+                    </Figure>
                   </View>
-                ))}
+                  <View style={styles.metricGrid}>
+                    <View style={styles.metricCell}>
+                      <Caps>At cost</Caps>
+                      <Figure style={styles.metricValue}>
+                        {position.totalCost !== null ? formatNumber(position.totalCost, 0) : "—"}
+                      </Figure>
+                    </View>
+                    <View style={styles.metricCell}>
+                      <Caps>Value now</Caps>
+                      <Figure style={styles.metricValue}>
+                        {marketValue !== null ? formatNumber(marketValue, 0) : "—"}
+                      </Figure>
+                    </View>
+                    <View style={styles.metricCell}>
+                      <Caps>Unrealised</Caps>
+                      <Figure style={[styles.metricValue, { color: directionColor(unrealized) }]}>
+                        {unrealized !== null ? formatCompactSigned(unrealized) : "—"}
+                      </Figure>
+                    </View>
+                    <View style={styles.metricCell}>
+                      <Caps>On cost</Caps>
+                      <Figure style={[styles.metricValue, { color: directionColor(unrealizedPct) }]}>
+                        {unrealizedPct !== null ? formatPctSigned(unrealizedPct) : "—"}
+                      </Figure>
+                    </View>
+                  </View>
+                  {position.notes ? <Text style={styles.positionNote}>{position.notes}</Text> : null}
+                  {position.hidden ? (
+                    <Text style={styles.hiddenNote}>
+                      Hidden from analysis. It stays in your ledger but is left out of every figure
+                      and chart.
+                    </Text>
+                  ) : null}
+                </View>
+              ) : null}
+
+              <View style={styles.ratioBlock}>
+                <Caps style={styles.blockCaps}>Key ratios</Caps>
+                {headline.length === 0 ? (
+                  <Text style={styles.empty}>No ratios published for this company yet.</Text>
+                ) : (
+                  <View style={styles.metricGrid}>
+                    {headline.map(({ name, row }) => (
+                      <View key={name} style={styles.metricCell}>
+                        <Caps>{name}</Caps>
+                        <Figure style={styles.metricValue}>{ratioText(row?.value ?? null)}</Figure>
+                      </View>
+                    ))}
+                  </View>
+                )}
               </View>
-            )
+
+              {/* News about the company you are reading about belongs here, not
+                  two taps away in another section. */}
+              {stories.length > 0 ? (
+                <View style={styles.newsBlock}>
+                  <Caps style={styles.blockCaps}>In the news</Caps>
+                  {stories.map((story, i) => (
+                    <Rise key={story.id} index={i}>
+                      <Pressable
+                        onPress={() => openStory(story.url)}
+                        style={({ pressed }) => [styles.story, pressed && styles.storyPressed]}
+                        accessibilityRole="link"
+                        accessibilityLabel={story.title}
+                      >
+                        <Figure style={styles.storyMeta} numberOfLines={1}>
+                          {story.source} · {story.timeLabel}
+                        </Figure>
+                        <Text style={styles.storyTitle}>{story.title}</Text>
+                      </Pressable>
+                    </Rise>
+                  ))}
+                </View>
+              ) : null}
+            </>
           ) : null}
 
           {tab === "Fundamentals" ? (
-            data && data.ratios.length > 0 ? (
-              <Ledger>
-                {data.ratios.map((row, i) => (
-                  <LedgerRow key={`${row.name}-${i}`}>
-                    <Text style={styles.ratioName} numberOfLines={1}>
-                      {row.name}
-                    </Text>
-                    <Figure style={styles.ratioValue}>{ratioText(row.value)}</Figure>
-                  </LedgerRow>
+            grouped.length > 0 ? (
+              <>
+                {grouped.map((group) => (
+                  <View key={group.title} style={styles.ratioGroup}>
+                    <Caps style={styles.blockCaps}>{group.title}</Caps>
+                    <Ledger>
+                      {group.rows.map((row, i) => (
+                        <LedgerRow key={`${row.name}-${i}`}>
+                          <Text style={styles.ratioName} numberOfLines={1}>
+                            {row.name}
+                          </Text>
+                          <Figure style={styles.ratioValue}>{ratioText(row.value)}</Figure>
+                        </LedgerRow>
+                      ))}
+                    </Ledger>
+                  </View>
                 ))}
-              </Ledger>
+              </>
             ) : (
               <Text style={styles.empty}>No fundamentals published for this company yet.</Text>
             )
@@ -274,6 +416,46 @@ const styles = StyleSheet.create({
   cap: { fontSize: fontSize.xxs, color: colors.textFaint },
   basis: { marginTop: space.md, fontSize: fontSize.xxs, color: colors.textFaint },
   tabs: { marginTop: space.lg },
+  chartKey: { marginTop: space.sm, fontSize: fontSize.xxs, color: colors.textFaint },
+  positionBlock: { marginTop: space.xl },
+  blockHead: {
+    flexDirection: "row",
+    alignItems: "baseline",
+    justifyContent: "space-between",
+    marginBottom: space.md,
+  },
+  blockCaps: { marginBottom: space.md },
+  positionWeight: { fontSize: fontSize.xxs, color: colors.textFaint },
+  positionNote: {
+    fontFamily: fontFamily.ui,
+    fontSize: fontSize.sm,
+    lineHeight: 20,
+    color: colors.textMuted,
+  },
+  hiddenNote: {
+    fontFamily: fontFamily.ui,
+    fontSize: fontSize.xxs,
+    lineHeight: 17,
+    color: colors.textMuted,
+    marginTop: space.sm,
+  },
+  ratioBlock: { marginTop: space.xl },
+  ratioGroup: { marginBottom: space.xl },
+  newsBlock: { marginTop: space.xl },
+  story: {
+    paddingVertical: space.md,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: colors.rule,
+    gap: 2,
+  },
+  storyPressed: { backgroundColor: colors.surfaceSunken },
+  storyMeta: { fontSize: fontSize.xxs, color: colors.textFaint },
+  storyTitle: {
+    fontFamily: fontFamily.uiMedium,
+    fontSize: fontSize.sm,
+    lineHeight: 20,
+    color: colors.textStrong,
+  },
   metricGrid: { flexDirection: "row", flexWrap: "wrap" },
   metricCell: {
     flexBasis: "50%",

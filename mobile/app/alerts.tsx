@@ -3,6 +3,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import { ChevronLeft } from "lucide-react-native";
 import type { AlertRow, AlertsResponse, AlertSeverity } from "@psx/shared/api/alerts";
+import { ALERT_KINDS } from "@psx/shared/api/alert-kinds";
 import { useApi } from "@/lib/use-api";
 import { Band } from "@/components/ui/layout";
 import { Caps, Figure, PageTitle } from "@/components/ui/text";
@@ -40,6 +41,14 @@ export default function AlertsScreen() {
 
   if (loading) return <PageSkeleton rows={4} />;
 
+  const rows = data?.rows ?? [];
+  const bySeverity = { critical: 0, warning: 0, info: 0 };
+  for (const row of rows) bySeverity[row.severity] = (bySeverity[row.severity] ?? 0) + 1;
+  const breakdown = (["critical", "warning", "info"] as const)
+    .filter((severity) => bySeverity[severity] > 0)
+    .map((severity) => `${bySeverity[severity]} ${severity}`)
+    .join(" · ");
+
   return (
     <SafeAreaView style={styles.screen} edges={["top"]}>
       <ScrollView
@@ -54,27 +63,39 @@ export default function AlertsScreen() {
             <Text style={styles.backLabel}>Back</Text>
           </Pressable>
           <PageTitle style={styles.pageTitle}>Alerts</PageTitle>
-          <Caps style={styles.count}>
-            {data ? `${data.rows.length} open` : ""}
-          </Caps>
+          <Caps style={styles.count}>{data ? `${rows.length} open` : ""}</Caps>
+          {breakdown ? <Figure style={styles.breakdown}>{breakdown}</Figure> : null}
         </View>
 
         <Band>
           <ErrorNote message={error} />
-          {(data?.rows.length ?? 0) === 0 ? (
+          {rows.length === 0 ? (
             error ? null : (
-              <Text style={styles.empty}>
-                Nothing needs your attention. Alerts appear here when a position crosses a
-                target, a thesis falls due, or the data engine finds a problem.
-              </Text>
+              <Text style={styles.empty}>Nothing needs your attention.</Text>
             )
           ) : (
-            data?.rows.map((row, i) => (
+            rows.map((row, i) => (
               <Rise key={row.id} index={i}>
                 <Alert row={row} />
               </Rise>
             ))
           )}
+        </Band>
+
+        {/* An empty screen is only reassuring if you know what would have
+            fired. This is the actual rule set, not a description of it. */}
+        <Band style={styles.watchBand}>
+          <Caps style={styles.watchHead}>What Plumb is watching</Caps>
+          {ALERT_KINDS.map((entry) => (
+            <View key={entry.kind} style={styles.watchRow}>
+              <View style={styles.watchDot} />
+              <Text style={styles.watchLabel}>{entry.label}</Text>
+            </View>
+          ))}
+          <Text style={styles.watchNote}>
+            Price targets and review levels come from what you set on a holding. Thesis reminders
+            need a thesis, which is written on the web app.
+          </Text>
         </Band>
       </ScrollView>
     </SafeAreaView>
@@ -101,5 +122,30 @@ const styles = StyleSheet.create({
   ticker: { fontFamily: fontFamily.mono, fontSize: fontSize.xs, color: colors.textMuted },
   message: { fontFamily: fontFamily.ui, fontSize: fontSize.sm, lineHeight: 20, color: colors.textBody },
   date: { fontSize: fontSize.xxs, color: colors.textFaint },
+  breakdown: { marginTop: space.xs, fontSize: fontSize.xxs, color: colors.textFaint },
+  watchBand: { paddingBottom: space.xxl },
+  watchHead: { marginBottom: space.md },
+  watchRow: { flexDirection: "row", alignItems: "flex-start", gap: space.md, paddingVertical: 7 },
+  watchDot: {
+    width: 5,
+    height: 5,
+    borderRadius: layout.radiusPill,
+    backgroundColor: colors.ruleStrong,
+    marginTop: 7,
+  },
+  watchLabel: {
+    flex: 1,
+    fontFamily: fontFamily.ui,
+    fontSize: fontSize.sm,
+    lineHeight: 20,
+    color: colors.textBody,
+  },
+  watchNote: {
+    fontFamily: fontFamily.ui,
+    fontSize: fontSize.xxs,
+    lineHeight: 17,
+    color: colors.textFaint,
+    marginTop: space.lg,
+  },
   empty: { fontFamily: fontFamily.ui, fontSize: fontSize.sm, lineHeight: 20, color: colors.textMuted },
 });
