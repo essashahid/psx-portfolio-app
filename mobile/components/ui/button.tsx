@@ -1,0 +1,99 @@
+import { ActivityIndicator, Pressable, StyleSheet, Text, type PressableProps } from "react-native";
+import * as Haptics from "expo-haptics";
+import { colors, fontFamily, fontSize, layout, space } from "@/lib/theme";
+
+type Props = Omit<PressableProps, "style"> & {
+  label: string;
+  busy?: boolean;
+  /** Sits on the ink field rather than on paper. */
+  onDark?: boolean;
+};
+
+/** The primary action: a solid pill. */
+export function Cta({ label, busy, onDark, disabled, onPress, ...rest }: Props) {
+  const inert = disabled || busy;
+  return (
+    <Pressable
+      {...rest}
+      disabled={inert}
+      onPress={(event) => {
+        void Haptics.selectionAsync();
+        onPress?.(event);
+      }}
+      accessibilityRole="button"
+      style={({ pressed }) => [
+        styles.cta,
+        onDark && styles.ctaOnDark,
+        inert && styles.inert,
+        pressed && !inert && styles.pressed,
+      ]}
+    >
+      {busy ? (
+        <ActivityIndicator color={onDark ? colors.textStrong : colors.textOnDark} />
+      ) : (
+        <Text style={[styles.ctaLabel, onDark && styles.ctaLabelOnDark]}>{label}</Text>
+      )}
+    </Pressable>
+  );
+}
+
+/** The secondary action: outlined, same height. */
+export function Ghost({ label, busy, onDark, disabled, onPress, ...rest }: Props) {
+  const inert = disabled || busy;
+  return (
+    <Pressable
+      {...rest}
+      disabled={inert}
+      onPress={(event) => {
+        void Haptics.selectionAsync();
+        onPress?.(event);
+      }}
+      accessibilityRole="button"
+      style={({ pressed }) => [
+        styles.ghost,
+        onDark && styles.ghostOnDark,
+        inert && styles.inert,
+        pressed && !inert && styles.pressed,
+      ]}
+    >
+      <Text style={[styles.ghostLabel, onDark && styles.ghostLabelOnDark]}>{label}</Text>
+    </Pressable>
+  );
+}
+
+const styles = StyleSheet.create({
+  cta: {
+    minHeight: 48,
+    borderRadius: layout.radiusPill,
+    backgroundColor: colors.ink,
+    alignItems: "center",
+    justifyContent: "center",
+    paddingHorizontal: space.xl,
+  },
+  ctaOnDark: { backgroundColor: colors.surfacePage },
+  ctaLabel: {
+    fontFamily: fontFamily.uiSemibold,
+    fontSize: fontSize.body,
+    color: colors.textOnDark,
+  },
+  ctaLabelOnDark: { color: colors.textStrong },
+  ghost: {
+    minHeight: 48,
+    borderRadius: layout.radiusPill,
+    borderWidth: 1,
+    borderColor: colors.ruleStrong,
+    backgroundColor: colors.surfaceRaised,
+    alignItems: "center",
+    justifyContent: "center",
+    paddingHorizontal: space.xl,
+  },
+  ghostOnDark: { backgroundColor: "transparent", borderColor: "rgba(255,255,255,0.22)" },
+  ghostLabel: {
+    fontFamily: fontFamily.uiSemibold,
+    fontSize: fontSize.sm,
+    color: colors.textStrong,
+  },
+  ghostLabelOnDark: { fontSize: fontSize.body, color: colors.textOnDark },
+  inert: { opacity: 0.4 },
+  pressed: { opacity: 0.85 },
+});
