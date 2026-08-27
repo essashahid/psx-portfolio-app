@@ -1,4 +1,5 @@
 import { cn } from "@/lib/shared/format";
+import { MarketPulse } from "@/components/shared/market-pulse";
 
 /**
  * One phrasing of data freshness used across the app, so "as of" reads the same
@@ -26,12 +27,21 @@ export function AsOf({
   time,
   label = "Updated",
   staleAfterDays = 4,
+  live = false,
   className,
 }: {
   date: string | null;
   time?: string | null;
   label?: string;
   staleAfterDays?: number;
+  /**
+   * Marks this stamp as standing against a live market figure, which earns the
+   * pulse while the exchange is open. Opt-in, because most things dated here —
+   * a filing, a report — are not live and a pulse beside them would claim a
+   * freshness they do not have. There is one pulse in the product and this is
+   * it.
+   */
+  live?: boolean;
   className?: string;
 }) {
   if (!date) {
@@ -50,6 +60,8 @@ export function AsOf({
   return (
     <span className={cn("inline-flex items-center gap-1.5 text-xs", stale ? "text-amber-700" : "text-muted-foreground", className)}>
       {stale && <span className="h-1.5 w-1.5 rounded-full bg-amber-500" aria-hidden />}
+      {/* Stale wins: an amber dot and a pulse together would be contradictory. */}
+      {live && !stale && <MarketPulse />}
       {label} {display}{clock} PKT
       {stale && <span className="text-amber-700">· {ageDays}d old</span>}
     </span>

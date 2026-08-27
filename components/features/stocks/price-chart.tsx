@@ -36,14 +36,21 @@ const AXIS_TICK = { fontSize: 11.5, fill: "#475467" } as const;
 // Overlay reference-line/label colour — darker than INK.neutral for readability.
 const OVERLAY_LABEL = "#475467";
 
-/** Toggle-chip styling so overlay controls read as interactive, not plain text. */
-function chipClass(active: boolean): string {
-  return cn(
-    "inline-flex items-center gap-1 rounded-md border px-2 py-1 text-[11px] font-medium transition-colors duration-200",
-    active
-      ? "border-emerald-600/30 bg-emerald-50 text-up"
-      : "border-slate-200 bg-white text-muted-foreground hover:bg-slate-50 hover:text-foreground"
-  );
+/** Range buttons keep their segmented look; the timing comes from the tokens. */
+const RANGE_TRANSITION = {
+  transition: "background-color var(--dur-fast) var(--ease-out), color var(--dur-fast) var(--ease-out)",
+} as const;
+
+/**
+ * Toggle-chip styling so overlay controls read as interactive, not plain text.
+ *
+ * .chip carries both the transition (--dur-fast) and the selected fill, keyed
+ * off the aria-pressed every call site already sets. Selected is ink rather
+ * than the previous emerald: emerald means gain, and spending it on "selected"
+ * costs the one colour that has to stay unambiguous.
+ */
+function chipClass(): string {
+  return "chip inline-flex items-center gap-1 rounded-md px-2 py-1 text-[11px] font-medium";
 }
 import type { Candle } from "@/lib/company/types";
 import type { TechnicalSignals } from "@/lib/market/technicals";
@@ -213,8 +220,9 @@ export function StockPriceChart({
               <button
                 key={r.id}
                 onClick={() => setRange(r.id)}
+                style={RANGE_TRANSITION}
                 className={cn(
-                  "rounded-md px-2.5 py-1 text-[11px] font-medium transition-all duration-200",
+                  "rounded-md px-2.5 py-1 text-[11px] font-medium",
                   range === r.id
                     ? "bg-card text-foreground shadow-sm"
                     : "text-muted-foreground hover:text-foreground"
@@ -260,7 +268,7 @@ export function StockPriceChart({
                 onClick={() => setMode((m) => (m === "price" ? "relative" : "price"))}
                 aria-pressed={relative}
                 title="Compare this stock against the KSE-100, both rebased to 100 at the start of the range."
-                className={chipClass(relative)}
+                className={chipClass()}
               >
                 {relative && <Check className="h-3 w-3" aria-hidden />} KSE-100
               </button>
@@ -274,7 +282,7 @@ export function StockPriceChart({
                   onClick={() => setShowStructure((v) => !v)}
                   aria-pressed={showStructure}
                   title="Multi-year price range, 52-week high/low, support and momentum-divergence pivots. Context only, not a trading signal."
-                  className={chipClass(showStructure)}
+                  className={chipClass()}
                 >
                   {showStructure && <Check className="h-3 w-3" aria-hidden />} Structure
                 </button>
@@ -283,7 +291,7 @@ export function StockPriceChart({
                 onClick={() => setShowMA((v) => !v)}
                 aria-pressed={showMA}
                 title="50-day and 200-day moving averages."
-                className={chipClass(showMA)}
+                className={chipClass()}
               >
                 {showMA && <Check className="h-3 w-3" aria-hidden />} MA 50/200
               </button>

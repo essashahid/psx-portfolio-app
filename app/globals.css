@@ -223,7 +223,15 @@
   --dur-draw: 850ms;
   --dur-count: 1300ms;
   --ease-ui: cubic-bezier(0.22, 1, 0.36, 1);
-  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  /* Same curve as --ease-ui. The two names coexist because --ease-ui is what
+     the older animations below reference; --ease-out is what the motion system
+     is authored against. This token previously held cubic-bezier(0.16,1,0.3,1)
+     and was referenced nowhere, so correcting it changes nothing on screen. */
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+
+  /* Launch sequence timing. Total 1180ms — it fills the cold start the PWA
+     already has; it must never be added to a warm start. */
+  --splash-total: 1180ms;
 }
 
 /* Collapsing the duration tokens is enough to disable every transition built
@@ -235,6 +243,22 @@
     --dur-slow: 0ms;
     --dur-draw: 0ms;
     --dur-count: 0ms;
+  }
+
+  /* Collapsing the tokens stops every transition built on them, but a keyframe
+     animation has its own duration, so the looping and entrance animations are
+     stopped by name here. This is the only place motion is disabled: a
+     component that needs its own reduced-motion branch has the wrong animation. */
+  .plumb-splash *,
+  .cascade > *,
+  .sk-shimmer,
+  .spin,
+  .pulse-live::before {
+    animation: none !important;
+    opacity: 1 !important;
+    transform: none !important;
+    filter: none !important;
+    stroke-dashoffset: 0 !important;
   }
 }
 
@@ -496,6 +520,16 @@ thead {
     filter: blur(0);
   }
 }
+/* Two ways to run the same entrance, kept apart on purpose.
+   `.rise` is a SELF class: the element carrying it animates, and `.rise-1`..
+   `.rise-5` stagger siblings by hand. ~49 elements across bulls-bears, news,
+   outlook and onboarding rely on that.
+   `.cascade` below is a CONTAINER class from the motion handoff, which spells
+   the same choreography as `.cascade > *` with automatic delays. The handoff
+   calls it `.rise`; that name was taken, and pointing it at the children of 49
+   existing elements would have stopped every one of them animating and started
+   animating their contents instead. Same keyframe, same delays, different
+   subject. */
 .rise {
   animation: rise-blur 0.7s cubic-bezier(0.22, 1, 0.36, 1) both;
 }
@@ -541,6 +575,26 @@ thead {
   .rise {
     animation-duration: 0.32s;
   }
+}
+
+/* The cascade: the Home band stack arriving on the hand-off from the splash.
+   Reuses rise-blur rather than declaring a second identical keyframe. Runs
+   once per session — the class is applied by the shell, not by the page, so a
+   re-render cannot restage it. */
+.cascade > * { animation: rise-blur 520ms var(--ease-out) both; }
+.cascade > *:nth-child(1) { animation-delay: 80ms; }
+.cascade > *:nth-child(2) { animation-delay: 200ms; }
+.cascade > *:nth-child(3) { animation-delay: 320ms; }
+.cascade > *:nth-child(4) { animation-delay: 450ms; }
+.cascade > *:nth-child(5) { animation-delay: 580ms; }
+/* Past the fifth the stagger stops growing: a tenth child arriving a second
+   after the first reads as a stall, not choreography. */
+.cascade > *:nth-child(n+6) { animation-delay: 580ms; }
+
+/* Dropped entirely on a phone, where a cascade reads as lag rather than
+   polish. This is why .cascade shortens nothing here — it simply does not run. */
+@media (pointer: coarse) {
+  .cascade > * { animation: none; }
 }
 
 @media (max-width: 767px) {
@@ -674,3 +728,185 @@ thead {
 .dashboard-briefing p:first-child {
   margin-top: 0;
 }
+
+/* ═════════════════════════════════════════════════════════════════════════
+   PLUMB MOTION SYSTEM
+   From handoff 3/motion/motion.css. The four duration tokens, --ease-out and
+   the reduced-motion collapse live with the other tokens at the top of this
+   file rather than being redeclared here.
+
+   Section 2 of the source file (the cascade) lives with the other entrance
+   animations above, as `.cascade`, because the handoff's `.rise` name was
+   already taken by a class with different semantics. See the note there.
+   ═════════════════════════════════════════════════════════════════════════ */
+
+/* ── 1 · Launch sequence ──────────────────────────────────────────────────
+   Aperture opens, line falls, bob settles, wordmark arrives, disclaimer last.
+   Mount only on cold start. */
+
+@keyframes plumb-aperture {
+  from { transform: scale(0.82); opacity: 0 }
+  to   { transform: scale(1);    opacity: 1 }
+}
+@keyframes plumb-line {
+  from { stroke-dashoffset: 56 }
+  to   { stroke-dashoffset: 0 }
+}
+@keyframes plumb-bob {
+  from { transform: translateY(-13px); opacity: 0 }
+  to   { transform: translateY(0);     opacity: 1 }
+}
+@keyframes plumb-word {
+  from { opacity: 0; transform: translateY(7px) }
+  to   { opacity: 1; transform: none }
+}
+@keyframes plumb-fade-in { from { opacity: 0 } to { opacity: 1 } }
+
+.plumb-splash { animation-fill-mode: both; animation-timing-function: var(--ease-out); }
+.plumb-splash__aperture { animation: plumb-aperture 300ms var(--ease-out) both; transform-origin: 32px 32px; }
+.plumb-splash__line     { stroke-dasharray: 56; animation: plumb-line 420ms 120ms var(--ease-out) both; }
+.plumb-splash__bob      { animation: plumb-bob 260ms 470ms var(--ease-out) both; }
+.plumb-splash__word     { animation: plumb-word 280ms 640ms var(--ease-out) both; }
+.plumb-splash__foot     { animation: plumb-fade-in 240ms 880ms var(--ease-out) both; }
+
+/* ── 3 · Press & interaction states ───────────────────────────────────────
+   The rule: background shifts, opacity does not, and nothing scales under a
+   thumb. A financial control that springs reads as a toy. */
+
+.btn-ink,
+.btn-outline,
+.btn-ghost,
+.chip,
+.ledger-row--interactive,
+.navslot {
+  transition: background-color var(--dur-fast) var(--ease-out),
+              border-color     var(--dur-fast) var(--ease-out),
+              color            var(--dur-fast) var(--ease-out);
+}
+
+/* Primary — the ink capsule. Press confirms in the brand accent rather than
+   by moving. */
+.btn-ink { background: var(--ink-1); color: var(--text-on-dark); }
+.btn-ink:hover  { background: var(--ink-2); }
+.btn-ink:active { background: var(--indigo-1); }
+
+.btn-outline { background: var(--surface-raised); border: 1px solid var(--rule-strong); color: var(--text-strong); }
+.btn-outline:hover  { background: var(--surface-sunken); border-color: var(--ink-3); }
+.btn-outline:active { background: var(--surface-inset); }
+
+.btn-ghost { background: transparent; color: var(--text-muted); }
+.btn-ghost:hover  { background: var(--surface-sunken); color: var(--text-strong); }
+.btn-ghost:active { background: var(--surface-inset); }
+
+/* On a dark field the fills invert. The focus ring stays indigo — a white
+   ring on navy reads as a rendering error. */
+.on-navy .btn-outline,
+.on-navy .btn-ghost { background: transparent; border-color: rgba(255,255,255,0.22); color: var(--text-on-dark); }
+.on-navy .btn-outline:hover,
+.on-navy .btn-ghost:hover  { background: rgba(255,255,255,0.08); }
+.on-navy .btn-outline:active,
+.on-navy .btn-ghost:active { background: rgba(255,255,255,0.14); }
+
+/* Selection inverts, it does not tint. Indigo and not emerald, because
+   emerald means "gain" and nothing else. */
+.chip { background: transparent; border: 1px solid var(--rule-strong); color: var(--text-muted); }
+.chip:hover { background: var(--surface-sunken); color: var(--text-strong); }
+.chip[aria-pressed="true"],
+.chip[data-selected="true"] { background: var(--ink-1); border-color: var(--ink-1); color: var(--text-on-dark); }
+
+/* Ledger row: 60% sunken tint plus a leading edge in the row's sector hue.
+   Set --row-edge per row from sectorColour(sector). */
+.ledger-row--interactive { border-left: 3px solid transparent; }
+.ledger-row--interactive:hover {
+  background: color-mix(in oklab, var(--surface-sunken) 60%, transparent);
+  border-left-color: var(--row-edge, var(--indigo-2));
+}
+
+/* Bottom bar: active is a fill, never a tint or an underline. */
+.navslot { color: var(--text-muted); border-radius: var(--radius-sm); min-height: 50px; }
+.navslot:hover { background: var(--surface-sunken); }
+.navslot[aria-current="page"] { background: var(--indigo-2); color: #fff; }
+
+/* Focus is the same everywhere, including inside dark fields. */
+:where(a, button, input, select, textarea, [tabindex]):focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
+}
+
+/* Sector rail: the bar carries the state, not a border or a capsule. */
+.rail-item__bar { opacity: 0.32; transition: opacity var(--dur-fast) var(--ease-out); }
+.rail-item[data-selected="true"] .rail-item__bar { opacity: 1; }
+.rail-item:hover .rail-item__bar { opacity: 0.6; }
+
+/* ── 4 · Waiting states ───────────────────────────────────────────────────
+   A skeleton in the shape of the thing it replaces, so nothing reflows when
+   data lands. A spinner only where the shape is genuinely unknown. */
+
+@keyframes sk-shimmer {
+  from { background-position: -180% 0 }
+  to   { background-position:  280% 0 }
+}
+.sk-shimmer {
+  background: linear-gradient(90deg,
+    var(--surface-inset)  0%,
+    var(--surface-sunken) 42%,
+    var(--surface-inset)  84%);
+  background-size: 220% 100%;
+  animation: sk-shimmer 1.6s linear infinite;
+}
+
+@keyframes spin { to { transform: rotate(360deg) } }
+.spin { animation: spin 900ms linear infinite; }
+
+/* The only pulse in the product: market open. Stop it at the close — a pulse
+   running against a stale figure is a lie about freshness. */
+@keyframes pulse-live {
+  0%        { transform: scale(1);   opacity: 0.55 }
+  70%, 100% { transform: scale(2.6); opacity: 0 }
+}
+.pulse-live::before {
+  content: ""; position: absolute; inset: 0;
+  border-radius: var(--radius-pill); background: var(--up-2);
+  animation: pulse-live 2.2s var(--ease-out) infinite;
+}
+.pulse-live { position: relative; display: inline-flex; width: 7px; height: 7px; }
+.pulse-live[data-market="closed"]::before { animation: none; opacity: 0; }
+
+/* ── 5 · Figures ──────────────────────────────────────────────────────────
+   A headline COUNTS UP once on arrival (an entrance). A live price TINTS and
+   settles on every tick (a notification). Never both on the same figure. */
+
+.tick { padding: 2px 5px; margin-left: -5px; transition: background-color var(--dur-base) var(--ease-out); background: transparent; }
+.tick[data-flash="up"]   { background: color-mix(in oklab, var(--up-2)   14%, transparent); }
+.tick[data-flash="down"] { background: color-mix(in oklab, var(--down-2) 14%, transparent); }
+
+/* Chart line drawing in. Set --draw-length from path.getTotalLength(). */
+@keyframes draw-line { from { stroke-dashoffset: var(--draw-length, 1000) } to { stroke-dashoffset: 0 } }
+.draw-line { stroke-dasharray: var(--draw-length, 1000); animation: draw-line var(--dur-draw) var(--ease-out) both; }
+.draw-area { animation: plumb-fade-in var(--dur-base) 260ms var(--ease-out) both; }
+.draw-dot  { animation: plumb-fade-in 200ms 620ms var(--ease-out) both; }
+
+/* ── 6 · Transitions — three, and no more. ────────────────────────────────
+
+   Tab underline slides in the sector's own hue. The panel below swaps with
+   NO fade: a cross-fade between two tables of figures makes both unreadable. */
+.tabstrip { position: relative; }
+.tabstrip__underline {
+  position: absolute; bottom: -1px; height: 2px;
+  background: var(--tab-hue, var(--ink-1));
+  transition: left var(--dur-fast) var(--ease-out), width var(--dur-fast) var(--ease-out);
+}
+
+/* Sheet. Dismiss takes the same duration as open — any faster and it reads as
+   cancelled rather than closed. */
+@keyframes sheet-up   { from { transform: translateY(100%) } to { transform: none } }
+@keyframes scrim-in   { from { opacity: 0 } to { opacity: 1 } }
+.sheet { animation: sheet-up var(--dur-base) var(--ease-out) both; box-shadow: var(--shadow-dialog); }
+.sheet[data-state="closing"] { animation-direction: reverse; }
+.scrim { background: rgba(16, 26, 51, 0.34); animation: scrim-in var(--dur-base) var(--ease-out) both; }
+
+/* Small-multiple selected cell: tint plus a 2px leading edge, both in the
+   company's sector hue. */
+.cell--selected { background: color-mix(in oklab, var(--cell-hue) 10%, var(--surface-page)); border-left: 2px solid var(--cell-hue); }
+.cell { border-left: 2px solid transparent; transition: background-color var(--dur-fast) var(--ease-out); }
+.cell:hover:not(.cell--selected) { background: var(--surface-sunken); }
