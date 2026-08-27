@@ -1,6 +1,6 @@
 import { ActivityIndicator, Pressable, StyleSheet, Text, type PressableProps } from "react-native";
 import * as Haptics from "expo-haptics";
-import { colors, fontFamily, fontSize, layout, space } from "@/lib/theme";
+import { colors, fontFamily, fontSize, layout, palette, space } from "@/lib/theme";
 
 type Props = Omit<PressableProps, "style"> & {
   label: string;
@@ -25,7 +25,7 @@ export function Cta({ label, busy, onDark, disabled, onPress, ...rest }: Props) 
         styles.cta,
         onDark && styles.ctaOnDark,
         inert && styles.inert,
-        pressed && !inert && styles.pressed,
+        pressed && !inert && (onDark ? styles.ctaPressedOnDark : styles.ctaPressed),
       ]}
     >
       {busy ? (
@@ -53,7 +53,7 @@ export function Ghost({ label, busy, onDark, disabled, onPress, ...rest }: Props
         styles.ghost,
         onDark && styles.ghostOnDark,
         inert && styles.inert,
-        pressed && !inert && styles.pressed,
+        pressed && !inert && (onDark ? styles.ghostPressedOnDark : styles.ghostPressed),
       ]}
     >
       <Text style={[styles.ghostLabel, onDark && styles.ghostLabelOnDark]}>{label}</Text>
@@ -95,5 +95,13 @@ const styles = StyleSheet.create({
   },
   ghostLabelOnDark: { fontSize: fontSize.body, color: colors.textOnDark },
   inert: { opacity: 0.4 },
-  pressed: { opacity: 0.85 },
+  /**
+   * Press confirms in a background shift, never in opacity and never in
+   * scale. A financial control that springs under a thumb reads as a toy, and
+   * a fading one reads as broken.
+   */
+  ctaPressed: { backgroundColor: palette.indigo1 },
+  ctaPressedOnDark: { backgroundColor: palette.paper3 },
+  ghostPressed: { backgroundColor: colors.surfaceInset, borderColor: colors.ink },
+  ghostPressedOnDark: { backgroundColor: "rgba(255,255,255,0.14)" },
 });

@@ -17,20 +17,33 @@ export function Ledger({ style, ...rest }: ViewProps) {
 /** One row of a ledger. Always clears the 44pt touch minimum. */
 /**
  * A row in a ledger. Given an onPress it becomes a target instead of a plain
- * view, and dims while held so a tap on a dense list is visibly registered.
+ * view: held, it sinks into the page and shows a leading edge in the row's own
+ * hue. Background shifts rather than opacity, so a dense list of figures stays
+ * readable while a thumb is on it.
  */
 export function LedgerRow({
   style,
   onPress,
+  edgeColor,
   ...rest
-}: ViewProps & { onPress?: () => void }) {
+}: ViewProps & {
+  onPress?: () => void;
+  /** Usually the row's sector colour, from sectorColor(). */
+  edgeColor?: string;
+}) {
   if (!onPress) return <View {...rest} style={[styles.ledgerRow, style]} />;
   return (
     <Pressable
       {...rest}
       onPress={onPress}
       accessibilityRole="button"
-      style={({ pressed }) => [styles.ledgerRow, pressed && styles.ledgerRowPressed, style]}
+      style={({ pressed }) => [
+        styles.ledgerRow,
+        styles.ledgerRowInteractive,
+        pressed && styles.ledgerRowPressed,
+        pressed && { borderLeftColor: edgeColor ?? colors.accentPrimary },
+        style,
+      ]}
     />
   );
 }
@@ -43,7 +56,8 @@ export function Rule({ style, ...rest }: ViewProps) {
 const styles = StyleSheet.create({
   band: { paddingVertical: layout.bandPadY, paddingHorizontal: layout.gutter },
   ledger: { marginTop: space.xs },
-  ledgerRowPressed: { opacity: 0.55 },
+  ledgerRowInteractive: { borderLeftWidth: 3, borderLeftColor: "transparent", paddingLeft: space.sm, marginLeft: -space.sm },
+  ledgerRowPressed: { backgroundColor: colors.surfaceSunken },
   ledgerRow: {
     minHeight: layout.hitMin,
     flexDirection: "row",

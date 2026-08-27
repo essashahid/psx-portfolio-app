@@ -9,7 +9,9 @@ import { formatCompact, formatNumber, formatPkr } from "@psx/shared/format";
 import { useApi } from "@/lib/use-api";
 import { Band, Ledger, LedgerRow } from "@/components/ui/layout";
 import { Caps, Figure, PageTitle } from "@/components/ui/text";
-import { Loading, ErrorNote } from "@/components/status";
+import { ErrorNote } from "@/components/status";
+import { Rise } from "@/components/ui/motion";
+import { PageSkeleton } from "@/components/skeleton";
 import { DividendSheet, type DividendDraft } from "@/components/features/dividend-sheet";
 import { Cta } from "@/components/ui/button";
 import {
@@ -84,7 +86,7 @@ export default function DividendsScreen() {
     "Could not load dividends."
   );
 
-  if (loading) return <Loading />;
+  if (loading) return <PageSkeleton rows={6} />;
 
   const years = data?.byTaxYear ?? [];
   const peak = Math.max(...years.map((y) => y.net), 1);
@@ -182,8 +184,10 @@ export default function DividendsScreen() {
                 <View style={styles.block}>
                   <Caps style={styles.blockHead}>Recent payments</Caps>
                   <Ledger>
-                    {data.recent.slice(0, 25).map((row) => (
-                      <Payment key={row.id} row={row} onEdit={editRow} />
+                    {data.recent.slice(0, 25).map((row, i) => (
+                      <Rise key={row.id} index={i}>
+                        <Payment row={row} onEdit={editRow} />
+                      </Rise>
                     ))}
                   </Ledger>
                 </View>

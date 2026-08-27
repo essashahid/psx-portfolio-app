@@ -1,4 +1,4 @@
-import { isMarketOpen } from "@/components/shared/market-pulse";
+import { isMarketOpen } from "@psx/shared/market/trading-day";
 
 /**
  * The pulse is the product's only claim that a figure is live. If it runs when

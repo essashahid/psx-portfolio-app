@@ -6,7 +6,9 @@ import { useApi } from "@/lib/use-api";
 import { SignedBar } from "@/components/charts/signed-bar";
 import { Band, Ledger, LedgerRow } from "@/components/ui/layout";
 import { Caps, Figure, PageTitle } from "@/components/ui/text";
-import { Loading, ErrorNote } from "@/components/status";
+import { ErrorNote } from "@/components/status";
+import { Rise, Tick } from "@/components/ui/motion";
+import { ScreenSkeleton } from "@/components/skeleton";
 import {
   colors,
   directionColor,
@@ -33,7 +35,12 @@ function Mover({ row }: { row: MarketMover }) {
           {row.companyName ?? ""}
         </Text>
       </View>
-      <Figure style={styles.price}>{formatNumber(row.price, 2)}</Figure>
+      {/* A price that moves under you says so. This is the only figure that
+          tints, and it never counts up: one is a notification, the other an
+          entrance, and a figure that does both says neither clearly. */}
+      <Tick value={row.price}>
+        <Figure style={styles.price}>{formatNumber(row.price, 2)}</Figure>
+      </Tick>
       <Figure style={[styles.moverPct, { color: directionColor(row.changePct) }]}>
         {formatPctSigned(row.changePct, 2)}
       </Figure>
@@ -47,8 +54,10 @@ function MoverBlock({ title, rows }: { title: string; rows: MarketMover[] }) {
     <Band>
       <Caps style={styles.blockHead}>{title}</Caps>
       <Ledger>
-        {rows.map((row) => (
-          <Mover key={`${title}-${row.ticker}`} row={row} />
+        {rows.map((row, i) => (
+          <Rise key={`${title}-${row.ticker}`} index={i}>
+            <Mover row={row} />
+          </Rise>
         ))}
       </Ledger>
     </Band>
@@ -61,7 +70,7 @@ export default function MarketScreen() {
     "Could not load the market."
   );
 
-  if (loading) return <Loading />;
+  if (loading) return <ScreenSkeleton dark={false} metrics={2} rows={8} />;
 
   const breadth = data?.breadth;
   const extent = Math.max(...(data?.sectors ?? []).map((s) => Math.abs(s.averageReturn ?? 0)), 0.01);

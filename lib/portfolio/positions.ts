@@ -400,6 +400,27 @@ export async function recomputeHoldingsFromTransactions(
       }
     })
   );
+
+  /**
+   * Positions whose last transaction has gone.
+   *
+   * The loop above only visits tickers that still appear in the ledger, so a
+   * ticker whose final transaction was deleted is never revisited and its
+   * holdings row survives with the old quantity — a phantom position that
+   * inflates portfolio value and every weight derived from it. Only rows this
+   * function owns are swept: a holding added by hand is not derived from the
+   * ledger and must not be deleted because the ledger is silent about it.
+   */
+  const { data: derived } = await supabase
+    .from("holdings")
+    .select("ticker")
+    .eq("user_id", userId)
+    .eq("source", "transactions");
+
+  const stale = (derived ?? []).map((row) => row.ticker).filter((ticker) => !positions.has(ticker));
+  if (stale.length > 0) {
+    await supabase.from("holdings").delete().eq("user_id", userId).in("ticker", stale);
+  }
 }
 
 /** Persists today's portfolio snapshot (used for the value-over-time chart). */

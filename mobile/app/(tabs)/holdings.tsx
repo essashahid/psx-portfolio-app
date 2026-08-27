@@ -14,7 +14,9 @@ import {
 import { useApi } from "@/lib/use-api";
 import { Band, Ledger } from "@/components/ui/layout";
 import { Caps, Figure, PageTitle } from "@/components/ui/text";
-import { Loading, ErrorNote } from "@/components/status";
+import { ErrorNote } from "@/components/status";
+import { Rise } from "@/components/ui/motion";
+import { ScreenSkeleton } from "@/components/skeleton";
 import { TransactionSheet } from "@/components/features/transaction-sheet";
 import {
   colors,
@@ -114,7 +116,7 @@ export default function HoldingsScreen() {
     [rows]
   );
 
-  if (loading) return <Loading />;
+  if (loading) return <ScreenSkeleton dark={false} metrics={4} rows={6} />;
 
   return (
     <View style={styles.screen}>
@@ -218,8 +220,10 @@ export default function HoldingsScreen() {
             </Text>
           ) : (
             <Ledger>
-              {rows.map((row) => (
-                <Position key={row.ticker} row={row} largest={largest} />
+              {rows.map((row, i) => (
+                <Rise key={row.ticker} index={i}>
+                  <Position row={row} largest={largest} />
+                </Rise>
               ))}
             </Ledger>
           )}

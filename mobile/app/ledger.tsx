@@ -9,7 +9,9 @@ import { formatNumber } from "@psx/shared/format";
 import { useApi } from "@/lib/use-api";
 import { Band, Ledger, LedgerRow } from "@/components/ui/layout";
 import { Caps, Figure, PageTitle } from "@/components/ui/text";
-import { Loading, ErrorNote } from "@/components/status";
+import { ErrorNote } from "@/components/status";
+import { Rise } from "@/components/ui/motion";
+import { PageSkeleton } from "@/components/skeleton";
 import { Cta } from "@/components/ui/button";
 import { TransactionSheet, type TransactionDraft } from "@/components/features/transaction-sheet";
 import { CashSheet, type CashDraft } from "@/components/features/cash-sheet";
@@ -137,7 +139,7 @@ export default function LedgerScreen() {
     setCashOpen(true);
   }
 
-  if (loading) return <Loading />;
+  if (loading) return <PageSkeleton rows={7} />;
 
   const empty = !data || data.count === 0;
 
@@ -227,12 +229,10 @@ export default function LedgerScreen() {
                   <View key={group.month} style={styles.block}>
                     <Caps style={styles.blockHead}>{group.month}</Caps>
                     <Ledger>
-                      {group.rows.map((entry) => (
-                        <Entry
-                          key={`${entry.refType}:${entry.id}`}
-                          entry={entry}
-                          onPress={() => openEntry(entry)}
-                        />
+                      {group.rows.map((entry, i) => (
+                        <Rise key={`${entry.refType}:${entry.id}`} index={i}>
+                          <Entry entry={entry} onPress={() => openEntry(entry)} />
+                        </Rise>
                       ))}
                     </Ledger>
                   </View>

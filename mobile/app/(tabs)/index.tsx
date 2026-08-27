@@ -16,7 +16,10 @@ import { StackedRule } from "@/components/charts/stacked-rule";
 import { Wordmark } from "@/components/ui/mark";
 import { Band, Ledger, LedgerRow } from "@/components/ui/layout";
 import { Caps, Figure, Note } from "@/components/ui/text";
-import { Loading, ErrorNote } from "@/components/status";
+import { ErrorNote } from "@/components/status";
+import { ScreenSkeleton } from "@/components/skeleton";
+import { CountUp, LivePulse, Rise } from "@/components/ui/motion";
+import { useMarketOpen } from "@/lib/use-market-open";
 import {
   colors,
   directionColor,
@@ -25,7 +28,6 @@ import {
   fontSize,
   layout,
   letterSpacing,
-  palette,
   space,
   tracking,
 } from "@/lib/theme";
@@ -62,12 +64,13 @@ function Contributor({ row }: { row: HomeContributor }) {
 
 export default function HomeScreen() {
   const router = useRouter();
+  const marketOpen = useMarketOpen();
   const { data, error, loading, refreshing, refresh } = useApi<HomeResponse>(
     "/api/portfolio/home",
     "Could not load your portfolio."
   );
 
-  if (loading) return <Loading />;
+  if (loading) return <ScreenSkeleton metrics={4} rows={7} />;
 
   const curve = data?.timeline.map((point) => point.netWorth) ?? [];
 
@@ -96,7 +99,11 @@ export default function HomeScreen() {
           </Caps>
           <Text style={styles.value}>
             <Text style={styles.valueUnit}>PKR </Text>
-            <Text style={styles.valueFigure}>{formatFigure(data?.totalValue ?? 0)}</Text>
+            <CountUp
+              value={data?.totalValue ?? 0}
+              format={formatFigure}
+              style={styles.valueFigure}
+            />
           </Text>
 
           {data && data.totalDayPnl !== null ? (
@@ -110,7 +117,7 @@ export default function HomeScreen() {
 
           {data?.asOf ? (
             <View style={styles.asOfRow}>
-              <View style={styles.liveDot} />
+              <LivePulse live={marketOpen} />
               <Figure style={styles.asOf}>As of {data.asOf.slice(0, 16).replace("T", " ")}</Figure>
             </View>
           ) : null}
@@ -171,15 +178,17 @@ export default function HomeScreen() {
             </View>
             <StackedRule segments={data.sectors.map((s) => ({ value: s.value, color: s.color }))} />
             <Ledger>
-              {data.sectors.map((s) => (
-                <LedgerRow key={s.sector}>
-                  <View style={[styles.chip, { backgroundColor: s.color }]} />
-                  <Text style={styles.sectorName} numberOfLines={1}>
-                    {shortSector(s.sector)}
-                  </Text>
-                  <Figure style={styles.sectorValue}>{formatCompact(s.value)}</Figure>
-                  <Figure style={styles.sectorWeight}>{s.weightPct.toFixed(1)}%</Figure>
-                </LedgerRow>
+              {data.sectors.map((s, i) => (
+                <Rise key={s.sector} index={i}>
+                  <LedgerRow>
+                    <View style={[styles.chip, { backgroundColor: s.color }]} />
+                    <Text style={styles.sectorName} numberOfLines={1}>
+                      {shortSector(s.sector)}
+                    </Text>
+                    <Figure style={styles.sectorValue}>{formatCompact(s.value)}</Figure>
+                    <Figure style={styles.sectorWeight}>{s.weightPct.toFixed(1)}%</Figure>
+                  </LedgerRow>
+                </Rise>
               ))}
             </Ledger>
           </Band>
@@ -241,7 +250,6 @@ const styles = StyleSheet.create({
   },
   todayFigure: { fontFamily: fontFamily.monoSemibold, fontSize: fontSize.body },
   asOfRow: { flexDirection: "row", alignItems: "center", gap: space.sm, marginTop: space.md + 2 },
-  liveDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: palette.up2 },
   asOf: { fontSize: fontSize.xxs, color: colors.textOnDarkFaint },
   chartBlock: { marginTop: space.xl - 2 },
   chartHead: {

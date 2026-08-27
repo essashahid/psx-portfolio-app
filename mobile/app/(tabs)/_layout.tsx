@@ -1,6 +1,9 @@
-import { StyleSheet, Text, View } from "react-native";
+import { useEffect } from "react";
+import { StyleSheet, Text } from "react-native";
+import Animated, { useAnimatedStyle, useSharedValue } from "react-native-reanimated";
 import { Tabs } from "expo-router";
 import { Activity, Briefcase, LayoutDashboard, Menu, MessageSquare } from "lucide-react-native";
+import { ease, useMotion } from "@/lib/motion";
 import { colors, fontFamily, layout, space } from "@/lib/theme";
 
 /**
@@ -9,7 +12,8 @@ import { colors, fontFamily, layout, space } from "@/lib/theme";
  * sheet, since it is the shortest route from a number to an explanation.
  *
  * The active slot is a filled indigo pill rather than a tinted glyph, which is
- * what the handoff specifies and what survives being glanced at.
+ * what the handoff specifies and what survives being glanced at. The fill
+ * grows in rather than appearing, so the eye can follow where it went.
  */
 const ICONS = {
   index: LayoutDashboard,
@@ -21,15 +25,25 @@ const ICONS = {
 
 function Slot({ name, label, focused }: { name: keyof typeof ICONS; label: string; focused: boolean }) {
   const Icon = ICONS[name];
+  const { ms } = useMotion();
+  const fill = useSharedValue(focused ? 1 : 0);
+
+  useEffect(() => {
+    fill.value = ease(focused ? 1 : 0, ms("fast"));
+  }, [focused, fill, ms]);
+
+  const pill = useAnimatedStyle(() => ({ opacity: fill.value }));
+
   return (
-    <View style={[styles.slot, focused && styles.slotActive]}>
+    <Animated.View style={styles.slot}>
+      <Animated.View style={[styles.slotFill, pill]} pointerEvents="none" />
       <Icon size={19} color={focused ? "#ffffff" : colors.textMuted} strokeWidth={2} />
       {/* Five labels across a phone leaves each one very little room, and a
           wrapped "Ho / ldi / ngs" is worse than a slightly tight one. */}
       <Text numberOfLines={1} style={[styles.label, focused && styles.labelActive]}>
         {label}
       </Text>
-    </View>
+    </Animated.View>
   );
 }
 
@@ -95,7 +109,17 @@ const styles = StyleSheet.create({
     paddingHorizontal: 2,
     borderRadius: layout.radiusSm,
   },
-  slotActive: { backgroundColor: colors.accentPrimary },
+  // The fill sits behind the glyph and the label so it can fade on its own
+  // without taking their colour with it.
+  slotFill: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: colors.accentPrimary,
+    borderRadius: layout.radiusSm,
+  },
   label: {
     fontFamily: fontFamily.uiSemibold,
     fontSize: 10,

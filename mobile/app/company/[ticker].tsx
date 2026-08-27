@@ -11,7 +11,8 @@ import { useApi } from "@/lib/use-api";
 import { Segmented } from "@/components/segmented";
 import { Band, Ledger, LedgerRow } from "@/components/ui/layout";
 import { Caps, Figure, PageTitle } from "@/components/ui/text";
-import { Loading, ErrorNote } from "@/components/status";
+import { ErrorNote } from "@/components/status";
+import { PageSkeleton } from "@/components/skeleton";
 import {
   colors,
   directionColor,
@@ -58,7 +59,7 @@ export default function CompanyScreen() {
     return HEADLINE.map((name) => ({ name, row: by.get(name) })).filter((entry) => entry.row);
   }, [data]);
 
-  if (loading) return <Loading />;
+  if (loading) return <PageSkeleton rows={6} />;
 
   const quote = data?.quote;
   // What the figures rest on, and a warning when they are not hand-verified.

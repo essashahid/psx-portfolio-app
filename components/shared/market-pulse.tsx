@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { isMarketOpen } from "@psx/shared/market/trading-day";
 
 /**
  * The one pulse in the product: the market is open and the figure beside it is
@@ -12,28 +13,6 @@ import { useEffect, useState } from "react";
  * attribute has to stay true for as long as the page is on screen, not just at
  * the moment it rendered.
  */
-
-/** PSX regular session, Karachi time. */
-const OPEN_MINUTES = 9 * 60 + 30;
-const CLOSE_MINUTES = 15 * 60 + 30;
-
-function isMarketOpen(now: Date): boolean {
-  const parts = new Intl.DateTimeFormat("en-GB", {
-    timeZone: "Asia/Karachi",
-    weekday: "short",
-    hour: "2-digit",
-    minute: "2-digit",
-    hour12: false,
-  }).formatToParts(now);
-
-  const get = (t: string) => parts.find((p) => p.type === t)?.value ?? "";
-  const weekday = get("weekday");
-  // The exchange does not trade at the weekend, so neither does the pulse.
-  if (weekday === "Sat" || weekday === "Sun") return false;
-
-  const minutes = Number(get("hour")) * 60 + Number(get("minute"));
-  return minutes >= OPEN_MINUTES && minutes < CLOSE_MINUTES;
-}
 
 export function MarketPulse({ className }: { className?: string }) {
   // Starts closed so the server and the first client paint agree; the effect

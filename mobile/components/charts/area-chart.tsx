@@ -1,7 +1,12 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { StyleSheet, View, type LayoutChangeEvent } from "react-native";
+import Animated, { useAnimatedProps, useSharedValue } from "react-native-reanimated";
 import Svg, { Circle, Defs, Line, LinearGradient, Path, Stop } from "react-native-svg";
+import { ease, useMotion } from "@/lib/motion";
 import { palette } from "@/lib/theme";
+
+const AnimatedPath = Animated.createAnimatedComponent(Path);
+const AnimatedCircle = Animated.createAnimatedComponent(Circle);
 
 /**
  * The value curve on the home header: a filled area, a dashed cost line, and a
@@ -9,6 +14,10 @@ import { palette } from "@/lib/theme";
  *
  * It measures its own width rather than taking a viewBox and stretching, so the
  * stroke stays one weight and the curve keeps its proportions on any screen.
+ *
+ * The line draws itself in left to right and the fill follows it, which is the
+ * one place a chart is allowed to animate: it says "this is a series read in
+ * time order" before a single figure has been read.
  */
 export function AreaChart({
   values,
@@ -48,6 +57,66 @@ export function AreaChart({
   const lastY = y(values[values.length - 1]);
 
   return (
+    <ChartBody
+      width={width}
+      height={height}
+      color={color}
+      line={line}
+      area={area}
+      lastX={lastX}
+      lastY={lastY}
+      referenceY={reference === null || reference === undefined ? null : y(reference)}
+      onLayout={onLayout}
+    />
+  );
+}
+
+function ChartBody({
+  width,
+  height,
+  color,
+  line,
+  area,
+  lastX,
+  lastY,
+  referenceY,
+  onLayout,
+}: {
+  width: number;
+  height: number;
+  color: string;
+  line: string;
+  area: string;
+  lastX: number;
+  lastY: number;
+  referenceY: number | null;
+  onLayout: (event: LayoutChangeEvent) => void;
+}) {
+  const { reduced, ms } = useMotion();
+  const draw = useSharedValue(reduced ? 1 : 0);
+  const fill = useSharedValue(reduced ? 1 : 0);
+  const dot = useSharedValue(reduced ? 1 : 0);
+
+  // A generous over-estimate of the real path length. The dash only has to be
+  // longer than the path for the mask to clear it completely, and react-native-svg
+  // gives no way to measure a path off the main thread.
+  const pathLength = (width + height) * 3;
+
+  useEffect(() => {
+    if (reduced) return;
+    draw.value = ease(1, ms("draw"));
+    fill.value = ease(1, ms("base"), 260);
+    dot.value = ease(1, 200, 620);
+    // Redrawn whenever the series itself changes, not on every re-render.
+  }, [line, reduced, ms, draw, fill, dot]);
+
+  const lineProps = useAnimatedProps(() => ({
+    strokeDashoffset: pathLength * (1 - draw.value),
+  }));
+  const areaProps = useAnimatedProps(() => ({ opacity: fill.value }));
+  const dotProps = useAnimatedProps(() => ({ opacity: dot.value }));
+
+  return (
     <View style={{ height }} onLayout={onLayout}>
       <Svg width={width} height={height}>
         <Defs>
@@ -56,20 +125,28 @@ export function AreaChart({
             <Stop offset="100%" stopColor={color} stopOpacity={0.02} />
           </LinearGradient>
         </Defs>
-        <Path d={area} fill="url(#areaFill)" />
-        <Path d={line} fill="none" stroke={color} strokeWidth={2} strokeLinejoin="round" />
-        {reference !== null && reference !== undefined ? (
+        <AnimatedPath d={area} fill="url(#areaFill)" animatedProps={areaProps} />
+        <AnimatedPath
+          d={line}
+          fill="none"
+          stroke={color}
+          strokeWidth={2}
+          strokeLinejoin="round"
+          strokeDasharray={pathLength}
+          animatedProps={lineProps}
+        />
+        {referenceY !== null ? (
           <Line
             x1={0}
-            y1={y(reference)}
+            y1={referenceY}
             x2={width}
-            y2={y(reference)}
+            y2={referenceY}
             stroke="rgba(255,255,255,0.28)"
             strokeDasharray="3 4"
             strokeWidth={1}
           />
         ) : null}
-        <Circle cx={lastX} cy={lastY} r={3.5} fill={color} />
+        <AnimatedCircle cx={lastX} cy={lastY} r={3.5} fill={color} animatedProps={dotProps} />
       </Svg>
     </View>
   );

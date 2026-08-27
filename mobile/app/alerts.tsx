@@ -6,7 +6,9 @@ import type { AlertRow, AlertsResponse, AlertSeverity } from "@psx/shared/api/al
 import { useApi } from "@/lib/use-api";
 import { Band } from "@/components/ui/layout";
 import { Caps, Figure, PageTitle } from "@/components/ui/text";
-import { Loading, ErrorNote } from "@/components/status";
+import { ErrorNote } from "@/components/status";
+import { Rise } from "@/components/ui/motion";
+import { PageSkeleton } from "@/components/skeleton";
 import { colors, fontFamily, fontSize, layout, space } from "@/lib/theme";
 
 /** Severity reads as a coloured left edge, as it does on the web rows. */
@@ -36,7 +38,7 @@ export default function AlertsScreen() {
     "Could not load alerts."
   );
 
-  if (loading) return <Loading />;
+  if (loading) return <PageSkeleton rows={4} />;
 
   return (
     <SafeAreaView style={styles.screen} edges={["top"]}>
@@ -67,7 +69,11 @@ export default function AlertsScreen() {
               </Text>
             )
           ) : (
-            data?.rows.map((row) => <Alert key={row.id} row={row} />)
+            data?.rows.map((row, i) => (
+              <Rise key={row.id} index={i}>
+                <Alert row={row} />
+              </Rise>
+            ))
           )}
         </Band>
       </ScrollView>
