@@ -1,6 +1,7 @@
 import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
 import type { Session } from "@supabase/supabase-js";
 import { supabase, startSessionAutoRefresh } from "./supabase";
+import { queryClient } from "./query";
 
 type AuthState = {
   session: Session | null;
@@ -48,6 +49,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       },
       async signOut() {
         await supabase.auth.signOut();
+        // The response cache outlives the session it was fetched under, so it
+        // has to go with it. Otherwise the next account to sign in on this
+        // device is shown the previous one's portfolio while its own loads.
+        queryClient.clear();
       },
     }),
     [session, loading]

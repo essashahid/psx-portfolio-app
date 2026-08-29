@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
-  KeyboardAvoidingView,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -9,6 +8,7 @@ import {
   TextInput,
   View,
 } from "react-native";
+import { KeyboardAvoidingView } from "react-native-keyboard-controller";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useLocalSearchParams } from "expo-router";
 import { ArrowUp, History, Plus } from "lucide-react-native";
@@ -244,6 +244,9 @@ export default function CopilotScreen() {
 
   return (
     <SafeAreaView style={styles.screen} edges={["top"]}>
+      {/* From react-native-keyboard-controller, not react-native: Android 15
+          enforces edge-to-edge, so the window no longer resizes for the
+          keyboard and the built-in one has nothing to measure. */}
       <KeyboardAvoidingView style={styles.flex} behavior="padding">
         <View style={styles.header}>
           <View style={styles.headerBar}>

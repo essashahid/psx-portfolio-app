@@ -1,4 +1,7 @@
 {
+  "regions": [
+    "syd1"
+  ],
   "git": {
     "deploymentEnabled": {
       "main": false

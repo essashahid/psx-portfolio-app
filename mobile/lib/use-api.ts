@@ -1,48 +1,67 @@
-import { useCallback, useEffect, useState } from "react";
-import { api, ApiError } from "./api";
+import { useCallback, useState } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { api } from "./api";
+import { queryClient } from "./query";
 
 type State<T> = {
   data: T | null;
   error: string | null;
+  /** True only when there is nothing to draw. A revalidation is not loading. */
   loading: boolean;
   refreshing: boolean;
   refresh: () => Promise<void>;
 };
 
 /**
- * Load one endpoint, with pull-to-refresh. Keeps the last good data on a failed
- * refresh so a dropped connection does not blank a screen the user is reading.
+ * Load one endpoint, with pull-to-refresh.
+ *
+ * Stale-while-revalidate over a persisted cache: a path fetched before returns
+ * its last answer on the first render and refetches behind it, so `loading` is
+ * false whenever there is anything to draw, however old. That is what makes a
+ * tab switch repaint instantly rather than showing a skeleton.
+ *
+ * The signature is unchanged from the hand-rolled version this replaced, so
+ * every screen reads the same; only the engine underneath is different.
  */
 export function useApi<T>(path: string, fallbackMessage: string): State<T> {
-  const [data, setData] = useState<T | null>(null);
-  const [error, setError] = useState<string | null>(null);
-  const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const client = useQueryClient();
 
-  const load = useCallback(async () => {
-    try {
-      setData(await api<T>(path));
-      setError(null);
-    } catch (err) {
-      setError(err instanceof ApiError ? err.message : fallbackMessage);
-    }
-  }, [path, fallbackMessage]);
-
-  useEffect(() => {
-    let active = true;
-    load().finally(() => {
-      if (active) setLoading(false);
-    });
-    return () => {
-      active = false;
-    };
-  }, [load]);
+  const query = useQuery<T, Error>({
+    queryKey: [path],
+    queryFn: () => api<T>(path),
+  });
 
   const refresh = useCallback(async () => {
     setRefreshing(true);
-    await load();
-    setRefreshing(false);
-  }, [load]);
+    try {
+      await client.refetchQueries({ queryKey: [path], exact: true });
+    } finally {
+      setRefreshing(false);
+    }
+  }, [client, path]);
 
-  return { data, error, loading, refreshing, refresh };
+  return {
+    data: query.data ?? null,
+    // Keep showing stale data on a failed refresh rather than blanking a
+    // screen the user is reading; the message is only surfaced when there is
+    // nothing behind it.
+    error: query.isError ? (query.error?.message ?? fallbackMessage) : null,
+    loading: query.isPending,
+    refreshing,
+    refresh,
+  };
+}
+
+/**
+ * Warms a path without rendering it. Used during launch so the fetch overlaps
+ * the splash animation rather than following it, and on navigation intent so a
+ * screen is often loaded before it mounts.
+ */
+export function prefetch<T>(path: string): Promise<void> {
+  return queryClient
+    .prefetchQuery({ queryKey: [path], queryFn: () => api<T>(path) })
+    .catch(() => {
+      // A failed warm-up is not a failure: the screen will fetch and report.
+    });
 }

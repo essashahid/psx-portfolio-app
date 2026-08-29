@@ -1,15 +1,6 @@
 import { useEffect, useRef, useState } from "react";
-import {
-  Keyboard,
-  KeyboardAvoidingView,
-  Platform,
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TextInput,
-  View,
-} from "react-native";
+import { Keyboard, Pressable, StyleSheet, Text, TextInput, View } from "react-native";
+import { KeyboardAwareScrollView } from "react-native-keyboard-controller";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useAuth } from "@/lib/auth";
 import { Wordmark } from "@/components/ui/mark";
@@ -63,17 +54,19 @@ export default function LoginScreen() {
 
   return (
     <SafeAreaView style={styles.safe} edges={["top", "bottom"]}>
-      {/* Android resizes the window itself (adjustResize in the manifest), so
-          padding here would double-count and push the form out of view. */}
-      <KeyboardAvoidingView
+      {/* Android 15 enforces edge-to-edge, which makes the manifest's
+          adjustResize a no-op: the window no longer shrinks for the keyboard,
+          so a plain KeyboardAvoidingView had nothing to react to and the
+          fields stayed underneath it. This one measures the keyboard from the
+          native side through WindowInsets, which is the only thing that still
+          reports it, and scrolls the focused field clear of the top edge. */}
+      <KeyboardAwareScrollView
         style={styles.flex}
-        behavior={Platform.OS === "ios" ? "padding" : undefined}
+        contentContainerStyle={styles.scroll}
+        keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}
+        bottomOffset={space.xl}
       >
-        <ScrollView
-          contentContainerStyle={styles.scroll}
-          keyboardShouldPersistTaps="handled"
-          showsVerticalScrollIndicator={false}
-        >
           <Wordmark size={26} textSize={fontSize.h1} />
 
           <Text style={styles.headline}>
@@ -139,8 +132,7 @@ export default function LoginScreen() {
           </View>
 
           <Text style={styles.footnote}>{DISCLAIMER_SHORT}</Text>
-        </ScrollView>
-      </KeyboardAvoidingView>
+      </KeyboardAwareScrollView>
     </SafeAreaView>
   );
 }

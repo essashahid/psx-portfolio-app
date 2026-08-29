@@ -1,6 +1,7 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Stack } from "expo-router";
 import { StatusBar } from "expo-status-bar";
+import * as SplashScreen from "expo-splash-screen";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { KeyboardProvider } from "react-native-keyboard-controller";
 import { SafeAreaProvider } from "react-native-safe-area-context";
@@ -20,9 +21,31 @@ import {
   GeistMono_500Medium,
   GeistMono_600SemiBold,
 } from "@expo-google-fonts/geist-mono";
+import { PersistQueryClientProvider } from "@tanstack/react-query-persist-client";
+import { enableFreeze } from "react-native-screens";
 import { AuthProvider, useAuth } from "@/lib/auth";
+import { persister, queryClient } from "@/lib/query";
+import { prefetch } from "@/lib/use-api";
 import { Splash } from "@/components/ui/splash";
 import { colors } from "@/lib/theme";
+
+// Hold the native splash rather than letting it drop at the first render. It
+// used to hand over before the fonts were in memory, so the animated splash
+// drew its wordmark in a fallback face and then reflowed into Newsreader: a
+// visible stutter right where the app makes its first impression.
+void SplashScreen.preventAutoHideAsync();
+
+// A screen the user has navigated away from stops re-rendering rather than
+// staying live behind the one in front. Without this every tab keeps paying
+// render cost for the whole session, which is what makes a five-tab app feel
+// heavier the longer it is open.
+enableFreeze(true);
+
+/**
+ * The screens worth having in hand before the tabs mount. Home is what the app
+ * opens on; holdings is the tab most reached for next.
+ */
+const WARM = ["/api/portfolio/home", "/api/portfolio/holdings"] as const;
 
 /**
  * Holds the first frame until the launch sequence has played AND the app is
@@ -35,7 +58,15 @@ import { colors } from "@/lib/theme";
  */
 function Launch({ ready, children }: { ready: boolean; children: React.ReactNode }) {
   const [played, setPlayed] = useState(false);
-  if (!played || !ready) return <Splash onDone={() => setPlayed(true)} />;
+
+  // The native splash comes down only once the JS one can replace it in the
+  // same frame, which is what makes the handoff invisible.
+  useEffect(() => {
+    if (ready) void SplashScreen.hideAsync();
+  }, [ready]);
+
+  if (!ready) return null;
+  if (!played) return <Splash onDone={() => setPlayed(true)} />;
   return <>{children}</>;
 }
 
@@ -74,7 +105,7 @@ function RootNavigator() {
 }
 
 function Shell() {
-  const { loading } = useAuth();
+  const { loading, session } = useAuth();
 
   // The type system carries the brand, so hold the first frame until the faces
   // are in memory rather than letting the app repaint from a fallback. The
@@ -92,6 +123,14 @@ function Shell() {
     GeistMono_600SemiBold,
   });
 
+  // Warm the first screens while the splash is on the glass. This is the point
+  // of the launch animation: it covers work that has to happen anyway, so the
+  // 1.2 seconds it takes are 1.2 seconds the network is already using.
+  useEffect(() => {
+    if (!session) return;
+    for (const path of WARM) void prefetch(path);
+  }, [session]);
+
   return (
     <Launch ready={fontsReady && !loading}>
       <RootNavigator />
@@ -106,12 +145,17 @@ export default function RootLayout() {
           sheet inside a Modal can know to lift itself: a Modal is its own
           window, so the activity's adjustResize never reaches it. */}
       <KeyboardProvider>
-        <SafeAreaProvider>
-          <AuthProvider>
-            <StatusBar style="light" />
-            <Shell />
-          </AuthProvider>
-        </SafeAreaProvider>
+        {/* Restores the last session's responses from disk before the first
+            screen mounts, so a cold start opens on the portfolio rather than
+            on a skeleton while the first request crosses two oceans. */}
+        <PersistQueryClientProvider client={queryClient} persistOptions={{ persister }}>
+          <SafeAreaProvider>
+            <AuthProvider>
+              <StatusBar style="light" />
+              <Shell />
+            </AuthProvider>
+          </SafeAreaProvider>
+        </PersistQueryClientProvider>
       </KeyboardProvider>
     </GestureHandlerRootView>
   );
