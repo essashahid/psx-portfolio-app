@@ -11,13 +11,16 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useLocalSearchParams } from "expo-router";
-import { ArrowUp, Plus } from "lucide-react-native";
+import { ArrowUp, History, Plus } from "lucide-react-native";
 import * as Haptics from "expo-haptics";
 import type { ArtifactSpec } from "@psx/shared/chat/artifacts";
 import { readableChatError } from "@psx/shared/chat/stream";
 import { streamChat } from "@/lib/chat-stream";
 import { ModelChip, ModelPicker } from "@/components/features/model-picker";
-import { api } from "@/lib/api";
+import { ThreadHistory } from "@/components/features/thread-history";
+import { splitContentWithMarkers, stripArtifactMarkers } from "@psx/shared/chat/md-table";
+import type { SavedChatMessage, ThreadDetailResponse } from "@psx/shared/api/threads";
+import { api, ApiError } from "@/lib/api";
 import {
   CHAT_MODELS,
   DEFAULT_MODEL_ID,
@@ -58,6 +61,8 @@ export default function CopilotScreen() {
   const [model, setModel] = useState<ChatModelId>(DEFAULT_MODEL_ID);
   const [providers, setProviders] = useState<ProviderStatus | null>(null);
   const [pickingModel, setPickingModel] = useState(false);
+  const [historyOpen, setHistoryOpen] = useState(false);
+  const [currentThreadId, setCurrentThreadId] = useState<string | null>(null);
 
   /**
    * Which providers this account may use. Loaded once: it changes when a key
@@ -96,6 +101,50 @@ export default function CopilotScreen() {
     });
   }, []);
 
+  /**
+   * A saved message back into the shape the screen renders.
+   *
+   * The artifacts were persisted as cards under kind "artifact", and their
+   * place in the prose as [[artifact:N]] markers. Restoring both is what makes
+   * a reopened answer read the way it did when it streamed, rather than as a
+   * wall of text with every chart dumped underneath it.
+   */
+  const restoreMessage = useCallback((row: SavedChatMessage): Message => {
+    const cards = Array.isArray(row.cards) ? row.cards : [];
+    const specs = cards
+      .filter((card) => card.kind === "artifact")
+      .map((card) => card.data as ArtifactSpec);
+    // RestoredPart has both fields optional, so each is narrowed rather than
+    // trusted: a marker pointing at a spec that is no longer there would
+    // otherwise render as an empty artifact.
+    const parts: Part[] = [];
+    for (const part of splitContentWithMarkers(row.content, specs)) {
+      if (part.type === "artifact" && part.spec) parts.push({ type: "artifact", spec: part.spec });
+      else if (part.content) parts.push({ type: "text", content: part.content });
+    }
+    return {
+      role: row.role,
+      parts: parts.length > 0 ? parts : [{ type: "text", content: stripArtifactMarkers(row.content) }],
+    };
+  }, []);
+
+  const openThread = useCallback(
+    async (id: string) => {
+      if (busy) return;
+      setHistoryOpen(false);
+      setError(null);
+      try {
+        const data = await api<ThreadDetailResponse>(`/api/chat/threads/${id}`);
+        threadId.current = data.thread.id;
+        setCurrentThreadId(data.thread.id);
+        setMessages(data.messages.map(restoreMessage));
+      } catch (err) {
+        setError(err instanceof ApiError ? err.message : "Could not open that chat.");
+      }
+    },
+    [busy, restoreMessage]
+  );
+
   const ask = useCallback(
     async (question: string) => {
       const text = question.trim();
@@ -116,6 +165,7 @@ export default function CopilotScreen() {
           switch (event.type) {
             case "thread":
               threadId.current = event.thread.id;
+              setCurrentThreadId(event.thread.id);
               break;
             case "text":
               updateLast((m) => {
@@ -204,19 +254,33 @@ export default function CopilotScreen() {
                 onPress={() => setPickingModel(true)}
               />
             </View>
-            <Pressable
-              onPress={() => {
-                void Haptics.selectionAsync();
-                threadId.current = null;
-                setMessages([]);
-                setError(null);
-              }}
-              hitSlop={12}
-              accessibilityLabel="New conversation"
-              accessibilityRole="button"
-            >
-              <Plus size={19} color={colors.textMuted} />
-            </Pressable>
+            <View style={styles.headerActions}>
+              <Pressable
+                onPress={() => {
+                  void Haptics.selectionAsync();
+                  setHistoryOpen(true);
+                }}
+                hitSlop={12}
+                accessibilityLabel="Past chats"
+                accessibilityRole="button"
+              >
+                <History size={19} color={colors.textMuted} />
+              </Pressable>
+              <Pressable
+                onPress={() => {
+                  void Haptics.selectionAsync();
+                  threadId.current = null;
+                  setCurrentThreadId(null);
+                  setMessages([]);
+                  setError(null);
+                }}
+                hitSlop={12}
+                accessibilityLabel="New conversation"
+                accessibilityRole="button"
+              >
+                <Plus size={19} color={colors.textMuted} />
+              </Pressable>
+            </View>
           </View>
           <Text style={styles.grounding}>Grounded in your holdings, dividends and PSX data</Text>
         </View>
@@ -319,6 +383,13 @@ export default function CopilotScreen() {
         </View>
       </KeyboardAvoidingView>
 
+      <ThreadHistory
+        open={historyOpen}
+        currentId={currentThreadId}
+        onClose={() => setHistoryOpen(false)}
+        onOpenThread={openThread}
+      />
+
       <ModelPicker
         open={pickingModel}
         value={model}
@@ -339,6 +410,7 @@ const styles = StyleSheet.create({
     borderBottomWidth: StyleSheet.hairlineWidth,
     borderBottomColor: colors.rule,
   },
+  headerActions: { flexDirection: "row", alignItems: "center", gap: space.lg },
   titleRow: { flexDirection: "row", alignItems: "center", gap: space.sm },
   headerBar: {
     flexDirection: "row",

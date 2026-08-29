@@ -1,0 +1,23 @@
+# What the CLI uploads when deploying by hand.
+#
+# The Git-source path (the GitHub Action) never reads this — Vercel clones the
+# repo itself. It matters only for `vercel --prod` from a laptop, where without
+# it the CLI tries to upload the whole working tree: 1.7 GB of mobile
+# node_modules, 1.3 GB of Android build output and a 520 MB .next, which trips
+# the 100 MB per-file limit long before it finishes.
+
+node_modules
+.next
+.git
+
+# The Expo app is a separate workspace Vercel never builds. packages/ is
+# deliberately absent: the web app compiles that code, so it has to ship.
+mobile
+
+# Design canvases and handoff material: source for people, not for the build.
+design
+handoff 3
+mobile copy
+
+*.log
+.DS_Store

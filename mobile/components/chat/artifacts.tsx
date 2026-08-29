@@ -1,3 +1,4 @@
+import { Component } from "react";
 import { StyleSheet, Text, View } from "react-native";
 import type {
   AllocationArtifact,
@@ -288,7 +289,43 @@ function Described({ title, description, fallback }: { title: string; descriptio
   );
 }
 
-export function Artifact({ spec }: { spec: ArtifactSpec }) {
+/**
+ * Renders one artifact, or nothing if it cannot be rendered.
+ *
+ * A saved conversation is exactly where an artifact written by an older
+ * version of the app turns up, and a spec whose shape has since changed used
+ * to throw inside its renderer and take the whole conversation down with it.
+ * One unreadable chart is a far smaller loss than the answer around it, so it
+ * is caught here and the prose survives.
+ */
+export class Artifact extends Component<{ spec: ArtifactSpec }, { failed: boolean }> {
+  state = { failed: false };
+
+  static getDerivedStateFromError() {
+    return { failed: true };
+  }
+
+  componentDidUpdate(previous: { spec: ArtifactSpec }) {
+    // A new spec deserves a fresh attempt; without this a single bad artifact
+    // would keep every later one in the same slot blank.
+    if (previous.spec !== this.props.spec && this.state.failed) this.setState({ failed: false });
+  }
+
+  render() {
+    if (this.state.failed) {
+      return (
+        <Frame title="Chart unavailable">
+          <Text style={styles.errorText}>
+            This chart was saved in a format this version cannot draw.
+          </Text>
+        </Frame>
+      );
+    }
+    return <ArtifactBody spec={this.props.spec} />;
+  }
+}
+
+function ArtifactBody({ spec }: { spec: ArtifactSpec }) {
   switch (spec.kind) {
     case "metric-strip":
       return <MetricStrip spec={spec} />;
