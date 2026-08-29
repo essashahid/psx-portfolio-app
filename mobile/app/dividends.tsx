@@ -180,6 +180,45 @@ export default function DividendsScreen() {
                 </View>
               ) : null}
 
+              {/* Yield on cost is the number that matters once a position is
+                  old: a stock bought at 150 that now pays 12 yields 8% to you
+                  whatever the screen says today. */}
+              {data.yieldOnCost.length > 0 ? (
+                <View style={styles.block}>
+                  <View style={styles.blockHead}>
+                    <Caps>Yield on cost</Caps>
+                    <Figure style={styles.note}>last twelve months</Figure>
+                  </View>
+                  <Ledger>
+                    {data.yieldOnCost.map((row, i) => (
+                      <Rise key={row.ticker} index={i}>
+                        <LedgerRow>
+                          <View style={styles.yieldLeft}>
+                            <Text style={styles.ticker}>{row.ticker}</Text>
+                            <Figure style={styles.meta} numberOfLines={1}>
+                              {formatNumber(row.ttmNet, 0)} on {formatCompact(row.cost)}
+                            </Figure>
+                          </View>
+                          <View style={styles.yieldRight}>
+                            <Figure style={styles.yieldValue}>
+                              {/* toFixed, not formatNumber: this is a column
+                                  of figures and a trimmed "7.7" breaks the
+                                  decimal alignment against "12.51". */}
+                              {row.yieldOnCost !== null ? `${row.yieldOnCost.toFixed(2)}%` : "—"}
+                            </Figure>
+                            <Figure style={styles.meta}>
+                              {row.yieldOnValue !== null
+                                ? `${row.yieldOnValue.toFixed(2)}% today`
+                                : ""}
+                            </Figure>
+                          </View>
+                        </LedgerRow>
+                      </Rise>
+                    ))}
+                  </Ledger>
+                </View>
+              ) : null}
+
               {data.recent.length > 0 ? (
                 <View style={styles.block}>
                   <Caps style={styles.blockHead}>Recent payments</Caps>
@@ -253,6 +292,9 @@ const styles = StyleSheet.create({
   yearTrack: { height: 6, backgroundColor: colors.surfaceInset },
   yearFill: { height: 6, backgroundColor: palette.up2 },
   yearMeta: { fontSize: fontSize.xxs, color: colors.textFaint },
+  yieldLeft: { flex: 1, gap: 1 },
+  yieldRight: { alignItems: "flex-end", gap: 1 },
+  yieldValue: { fontFamily: fontFamily.monoSemibold, fontSize: fontSize.body, color: colors.textStrong },
   paymentLeft: { flex: 1, gap: 1 },
   paymentRight: { alignItems: "flex-end", gap: 1 },
   ticker: { fontFamily: fontFamily.uiSemibold, fontSize: fontSize.sm, color: colors.textStrong },

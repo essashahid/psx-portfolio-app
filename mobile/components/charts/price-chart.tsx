@@ -70,12 +70,31 @@ export function PriceChart({
       })
       .filter((m) => Number.isFinite(m.cx) && Number.isFinite(m.cy));
 
-    return { line, area, x, y, min, max, plotW, marks, last: { x: x(closes.length - 1), y: y(closes[closes.length - 1]) } };
+    // The real length, not an estimate: the draw-in masks the line with a dash
+    // as long as the line, and a short estimate leaves the tail of a jagged
+    // path stuck in the gap where it never appears.
+    let length = 0;
+    for (let i = 1; i < closes.length; i += 1) {
+      length += Math.hypot(x(i) - x(i - 1), y(closes[i]) - y(closes[i - 1]));
+    }
+
+    return {
+      line,
+      area,
+      x,
+      y,
+      min,
+      max,
+      plotW,
+      marks,
+      length,
+      last: { x: x(closes.length - 1), y: y(closes[closes.length - 1]) },
+    };
   }, [candles, avgCost, trades, width, height]);
 
   const { reduced, ms } = useMotion();
   const draw = useSharedValue(reduced ? 1 : 0);
-  const dashLength = (width + height) * 3;
+  const dashLength = geometry?.length ?? 1;
 
   useEffect(() => {
     if (reduced || !geometry) return;

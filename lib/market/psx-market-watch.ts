@@ -61,11 +61,25 @@ export function parseSymbol(cell: string): string {
   return stripTags(cell).toUpperCase().split(/\s+/)[0] ?? "";
 }
 
-function stripTags(s: string): string {
+/**
+ * The entities the PSX pages actually contain. Decoded everywhere scraped text
+ * is read, not only where tags are stripped: the company name arrives from a
+ * data-title attribute, which never goes through stripTags, and so shipped
+ * "Oil &amp;amp; Gas Development Company Limited" all the way to the screen.
+ */
+function decodeEntities(s: string): string {
   return s
-    .replace(/<[^>]+>/g, " ")
     .replace(/&nbsp;/g, " ")
-    .replace(/&amp;/g, "&")
+    .replace(/&#0?39;|&apos;/g, "'")
+    .replace(/&quot;/g, '"')
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">")
+    // Ampersand last: decoding it first would let "&amp;lt;" become "<".
+    .replace(/&amp;/g, "&");
+}
+
+function stripTags(s: string): string {
+  return decodeEntities(s.replace(/<[^>]+>/g, " "))
     .replace(/\s+/g, " ")
     .trim();
 }
@@ -113,6 +127,14 @@ async function fetchHtml(path: string): Promise<string | null> {
 export async function fetchMarketWatch(): Promise<MarketWatchRow[]> {
   const html = await fetchHtml("/market-watch");
   if (!html) return [];
+  return parseMarketWatch(html);
+}
+
+/**
+ * The market-watch table, parsed. Separate from the fetch so the parsing can
+ * be tested against real page fragments rather than only in production.
+ */
+export function parseMarketWatch(html: string): MarketWatchRow[] {
   const table = html.match(/<table[\s\S]*?<\/table>/)?.[0];
   if (!table) return [];
 
@@ -128,7 +150,7 @@ export async function fetchMarketWatch(): Promise<MarketWatchRow[]> {
     const titleMatch = symbolCell.match(/data-title="([^"]+)"/);
     rows.push({
       ticker,
-      companyName: titleMatch ? titleMatch[1].trim() : null,
+      companyName: titleMatch ? decodeEntities(titleMatch[1]).trim() : null,
       sectorCode: stripTags(tds[1]) || null,
       previousClose: num(stripTags(tds[3])),
       open: num(stripTags(tds[4])),

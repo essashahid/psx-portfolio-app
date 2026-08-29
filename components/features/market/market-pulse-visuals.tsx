@@ -4,6 +4,7 @@ import { useState } from "react";
 import { cn } from "@/lib/shared/format";
 import { sectorColor, shortSector } from "@/lib/shared/sector-colors";
 import { fmtPct } from "@/lib/market/format";
+import { buildReturnDistribution } from "@psx/shared/market/return-distribution";
 
 /* ── Breadth: full-width stacked strip with square legend chips ─────────── */
 export function BreadthStrip({
@@ -180,24 +181,10 @@ export function ReturnHistogram({ changes, ownedTickers }: HistogramInput) {
   if (changes.length === 0) {
     return <p className="py-10 text-center text-sm text-text-muted">No per-company return data in this snapshot.</p>;
   }
-  const owned = new Set(ownedTickers);
-  // Fixed 1%-wide buckets from -6 to +6 with open tails, matching the design.
-  const edges = [-6, -5, -4, -3, -2, -1, 0, 1, 2, 3, 4, 5, 6];
-  const buckets = Array.from({ length: edges.length - 1 }, (_, i) => ({
-    lo: edges[i],
-    hi: edges[i + 1],
-    count: 0,
-    mine: [] as string[],
-  }));
-  for (const c of changes) {
-    const idx = Math.min(buckets.length - 1, Math.max(0, Math.floor(c.pct) + 6));
-    buckets[idx].count += 1;
-    if (owned.has(c.ticker)) buckets[idx].mine.push(c.ticker);
-  }
+  // Bucketing lives in @psx/shared so the phone draws the same distribution
+  // from the same edges rather than a second interpretation of it.
+  const { buckets, best, worst } = buildReturnDistribution(changes, ownedTickers);
   const max = Math.max(...buckets.map((b) => b.count), 1);
-  const sorted = [...changes].sort((a, b) => a.pct - b.pct);
-  const worst = sorted[0];
-  const best = sorted[sorted.length - 1];
 
   return (
     <div>
@@ -237,16 +224,18 @@ export function ReturnHistogram({ changes, ownedTickers }: HistogramInput) {
           </span>
         ))}
       </div>
-      <div className="mt-3.5 flex justify-between">
-        <span className="inline-flex items-baseline gap-2">
-          <span className="text-(length:--text-3xs) font-bold uppercase tracking-(--tracking-caps) text-down">Weakest</span>
-          <span className="figure text-sm font-semibold text-down">{worst.ticker} {fmtPct(worst.pct)}</span>
-        </span>
-        <span className="inline-flex items-baseline gap-2">
-          <span className="figure text-sm font-semibold text-up">{best.ticker} {fmtPct(best.pct)}</span>
-          <span className="text-(length:--text-3xs) font-bold uppercase tracking-(--tracking-caps) text-up">Strongest</span>
-        </span>
-      </div>
+      {worst && best && (
+        <div className="mt-3.5 flex justify-between">
+          <span className="inline-flex items-baseline gap-2">
+            <span className="text-(length:--text-3xs) font-bold uppercase tracking-(--tracking-caps) text-down">Weakest</span>
+            <span className="figure text-sm font-semibold text-down">{worst.ticker} {fmtPct(worst.pct)}</span>
+          </span>
+          <span className="inline-flex items-baseline gap-2">
+            <span className="figure text-sm font-semibold text-up">{best.ticker} {fmtPct(best.pct)}</span>
+            <span className="text-(length:--text-3xs) font-bold uppercase tracking-(--tracking-caps) text-up">Strongest</span>
+          </span>
+        </div>
+      )}
     </div>
   );
 }

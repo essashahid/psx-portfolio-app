@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { requireUser, errorResponse } from "@/lib/shared/api";
 import { getMarketDashboard } from "@/lib/market/read";
 import { sectorColor, shortSector } from "@psx/shared/sector-colors";
+import { buildReturnDistribution } from "@psx/shared/market/return-distribution";
 import type { MarketMover, MarketResponse, MarketSector } from "@psx/shared/api/market";
 
 /**
@@ -9,7 +10,9 @@ import type { MarketMover, MarketResponse, MarketSector } from "@psx/shared/api/
  *
  * getMarketDashboard() is what the web market page reads, so the index level,
  * breadth and sector table are computed once. Only the fields the phone draws
- * are forwarded; the heatmap and the generated brief stay on the desk.
+ * are forwarded. The heatmap is ~500 rows, so it is bucketed here rather than
+ * shipped: the phone draws twelve bars from it. The generated brief stays on
+ * the desk.
  */
 export async function GET() {
   const { supabase, user, error } = await requireUser();
@@ -75,6 +78,15 @@ export async function GET() {
       gainers: (dashboard.movers.gainers ?? []).map(toMover).slice(0, 8),
       losers: (dashboard.movers.losers ?? []).map(toMover).slice(0, 8),
       mostActive: (dashboard.movers.most_active ?? dashboard.movers.volume ?? []).map(toMover).slice(0, 8),
+      distribution:
+        dashboard.heatmap.length > 0
+          ? buildReturnDistribution(
+              dashboard.heatmap
+                .filter((row) => row.change_percent !== null)
+                .map((row) => ({ ticker: row.ticker, pct: Number(row.change_percent) })),
+              dashboard.ownedTickers
+            )
+          : null,
       updatedLabel: dashboard.updatedLabel,
     };
     return NextResponse.json(body);

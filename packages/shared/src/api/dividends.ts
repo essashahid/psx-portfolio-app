@@ -1,3 +1,5 @@
+import type { YieldOnCostRow } from "../dividends/yield-on-cost";
+
 /**
  * The contract for GET /api/portfolio/dividends.
  *
@@ -43,5 +45,10 @@ export interface DividendsResponse {
   /** Announced or expected, soonest first. */
   upcoming: DividendRow[];
   taxRatePct: number | null;
+  /**
+   * What each holding pays against what you paid for it. Highest first, and
+   * only holdings that actually paid in the last year.
+   */
+  yieldOnCost: YieldOnCostRow[];
   count: number;
 }

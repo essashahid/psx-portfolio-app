@@ -23,12 +23,13 @@ export async function GET() {
         friction: null,
         concentration: null,
         timeline: [],
+        benchmark: null,
         source: null,
       };
       return NextResponse.json(empty);
     }
 
-    const { returns, friction, concentration, timeline, source } = analytics;
+    const { returns, friction, concentration, timeline, source, benchmark } = analytics;
 
     const body: PerformanceResponse = {
       returns: {
@@ -67,6 +68,23 @@ export async function GET() {
       timeline: timeline
         .filter((point): point is typeof point & { netWorth: number } => point.netWorth !== null)
         .map((point) => ({ date: point.date, netWorth: point.netWorth })),
+      // Only what the curve needs: cpi rides along for the web's "real value"
+      // mode, which the phone does not offer.
+      benchmark: benchmark
+        ? {
+            asOf: benchmark.asOf,
+            excessVsKse100: benchmark.excessVsKse100,
+            excessVsInflation: benchmark.excessVsInflation,
+            maxDrawdownPct: benchmark.maxDrawdownPct,
+            series: benchmark.series.map((p) => ({
+              date: p.date,
+              contributed: p.contributed,
+              portfolio: p.portfolio,
+              kse100: p.kse100,
+              inflation: p.inflation,
+            })),
+          }
+        : null,
       source,
     };
     return NextResponse.json(body);

@@ -8,6 +8,7 @@ import { Band, Ledger, LedgerRow } from "@/components/ui/layout";
 import { Caps, Figure, PageTitle } from "@/components/ui/text";
 import { ErrorNote } from "@/components/status";
 import { Rise, Tick } from "@/components/ui/motion";
+import { ReturnHistogram } from "@/components/charts/return-histogram";
 import { ScreenSkeleton } from "@/components/skeleton";
 import {
   colors,
@@ -137,6 +138,25 @@ export default function MarketScreen() {
           <ErrorNote message={error} />
         </View>
 
+        {/* Directly after breadth, which it is the detailed version of. The
+            sector list below runs to thirty-odd rows, and burying this under
+            it would put the answer to "was that just the market?" three
+            screens from the question. */}
+        {data?.distribution && data.distribution.total > 0 ? (
+          <Band>
+            <View style={styles.histogramHead}>
+              <Caps>How the market moved</Caps>
+              <Figure style={styles.histogramCount}>
+                {data.distribution.total} companies
+              </Figure>
+            </View>
+            <ReturnHistogram distribution={data.distribution} />
+            <Figure style={styles.histogramNote}>
+              Each bar is one percent. Your holdings are marked underneath.
+            </Figure>
+          </Band>
+        ) : null}
+
         {data && data.sectors.length > 0 ? (
           <Band>
             <Caps style={styles.blockHead}>Sectors, best to worst</Caps>
@@ -199,6 +219,14 @@ const styles = StyleSheet.create({
   breadthLabel: { fontSize: fontSize.xxs, color: colors.textFaint },
   turnover: { marginTop: space.sm, fontSize: fontSize.xxs, color: colors.textFaint },
   blockHead: { marginBottom: space.md + 2 },
+  histogramHead: {
+    flexDirection: "row",
+    alignItems: "baseline",
+    justifyContent: "space-between",
+    marginBottom: space.md + 2,
+  },
+  histogramCount: { fontSize: fontSize.xxs, color: colors.textFaint },
+  histogramNote: { marginTop: space.md, fontSize: fontSize.xxs, color: colors.textFaint },
   dot: { width: 8, height: 8 },
   sectorName: { flexDirection: "row", alignItems: "center", gap: 7, width: 88 },
   sectorLabel: { flex: 1, fontFamily: fontFamily.ui, fontSize: fontSize.xxs, color: colors.textBody },

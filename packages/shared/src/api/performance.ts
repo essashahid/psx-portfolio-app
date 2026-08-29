@@ -58,6 +58,18 @@ export interface PerformanceSource {
   detail: string;
 }
 
+/** One month on the benchmark path. Every figure is in rupees. */
+export interface BenchmarkPoint {
+  date: string;
+  /** Cash you put in by this date. */
+  contributed: number;
+  portfolio: number;
+  /** What the same contributions would be worth in the index. */
+  kse100: number;
+  /** What they would need to be worth to have kept their purchasing power. */
+  inflation: number;
+}
+
 export interface PerformanceResponse {
   /** Null when there is no ledger to analyse yet, rather than a zeroed object. */
   returns: PerformanceReturns | null;
@@ -68,5 +80,20 @@ export interface PerformanceResponse {
    * dropped rather than sent as null, so a chart can read this directly.
    */
   timeline: { date: string; netWorth: number }[];
+  /**
+   * Your book against the KSE-100 and against inflation, on one path.
+   *
+   * This is the app's central claim — that you can see whether holding these
+   * companies beat simply owning the index — so it travels to the phone even
+   * though the wider audit tables do not.
+   */
+  benchmark: {
+    asOf: string;
+    /** Portfolio minus the KSE-100 equivalent. Positive means you are ahead. */
+    excessVsKse100: number;
+    excessVsInflation: number;
+    maxDrawdownPct: number | null;
+    series: BenchmarkPoint[];
+  } | null;
   source: PerformanceSource | null;
 }

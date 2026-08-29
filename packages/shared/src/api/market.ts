@@ -35,6 +35,19 @@ export interface MarketSector {
   topGainerPct: number | null;
 }
 
+/**
+ * Today's move for every company, bucketed, with your own marked.
+ *
+ * Aggregated on the server: the raw heatmap is ~500 rows and the phone only
+ * draws twelve bars from it.
+ */
+export interface MarketDistribution {
+  buckets: { lo: number; hi: number; count: number; mine: string[] }[];
+  total: number;
+  best: { ticker: string; pct: number } | null;
+  worst: { ticker: string; pct: number } | null;
+}
+
 export interface MarketMover {
   ticker: string;
   companyName: string | null;
@@ -55,5 +68,7 @@ export interface MarketResponse {
   gainers: MarketMover[];
   losers: MarketMover[];
   mostActive: MarketMover[];
+  /** Null when the snapshot carries no per-company returns. */
+  distribution: MarketDistribution | null;
   updatedLabel: string | null;
 }

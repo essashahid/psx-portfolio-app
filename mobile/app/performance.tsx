@@ -7,6 +7,7 @@ import { formatCompact, formatCompactSigned, formatNumber, formatPctSigned } fro
 import { sectorColor, shortSector } from "@psx/shared/sector-colors";
 import { useApi } from "@/lib/use-api";
 import { AreaChart } from "@/components/charts/area-chart";
+import { BenchmarkChart } from "@/components/charts/benchmark-chart";
 import { Band, Ledger, LedgerRow } from "@/components/ui/layout";
 import { Caps, Figure, PageTitle } from "@/components/ui/text";
 import { ErrorNote } from "@/components/status";
@@ -44,6 +45,7 @@ export default function PerformanceScreen() {
   const r = data?.returns;
   const f = data?.friction;
   const c = data?.concentration;
+  const bm = data?.benchmark ?? null;
   const curve = data?.timeline.map((point) => point.netWorth) ?? [];
 
   return (
@@ -86,6 +88,29 @@ export default function PerformanceScreen() {
               color={colors.chartLine}
               height={110}
             />
+          </Band>
+        ) : null}
+
+        {/* The app's whole claim, in one frame: holding these companies
+            against simply owning the index, and against doing nothing at all. */}
+        {bm && bm.series.length > 1 ? (
+          <Band>
+            <View style={styles.blockHead}>
+              <Caps>Against the index</Caps>
+              <Figure
+                style={[styles.note, { color: directionColor(bm.excessVsKse100) }]}
+              >
+                {formatCompactSigned(bm.excessVsKse100)} vs KSE-100
+              </Figure>
+            </View>
+            <BenchmarkChart series={bm.series} />
+            <Figure style={styles.benchmarkNote}>
+              What the same money would be worth in the index, and what it would
+              need to be worth to have kept its purchasing power.
+              {bm.maxDrawdownPct !== null
+                ? ` Worst fall along the way, ${formatNumber(Math.abs(bm.maxDrawdownPct), 1)}%.`
+                : ""}
+            </Figure>
           </Band>
         ) : null}
 
@@ -215,6 +240,7 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     marginBottom: space.md,
   },
+  benchmarkNote: { marginTop: space.md, fontSize: fontSize.xxs, lineHeight: 17, color: colors.textFaint },
   note: { fontSize: fontSize.xxs, color: colors.textFaint },
   statGrid: { flexDirection: "row", flexWrap: "wrap" },
   stat: {
