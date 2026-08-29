@@ -16,6 +16,7 @@ import type { NewsEventSummary, NewsResponse } from "@psx/shared/api/news";
 import { formatPctSigned } from "@psx/shared/format";
 import { useApi } from "@/lib/use-api";
 import { apiWrite } from "@/lib/api";
+import { useMarkSeen } from "@/lib/use-mark-seen";
 import { Band, Ledger, LedgerRow } from "@/components/ui/layout";
 import { Caps, Figure, PageTitle } from "@/components/ui/text";
 import { ErrorNote } from "@/components/status";
@@ -157,6 +158,11 @@ export default function NewsScreen() {
     path,
     "Could not load the news."
   );
+
+  // Stamped once the feed is actually on screen. The count above was read from
+  // this same response, so it survives the visit and the next one measures
+  // from here.
+  useMarkSeen("news", data !== null);
 
   const act = useCallback(
     async (event: NewsEventSummary, field: "saved" | "ignored", value: boolean) => {
