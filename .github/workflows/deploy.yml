@@ -50,7 +50,10 @@ jobs:
         id: create
         run: |
           set -euo pipefail
-          RESPONSE=$(curl -sf -X POST \
+          # -f alone fails with exit 22 and no body, which is what made a
+          # revoked token look like an unexplained 8-second failure for weeks.
+          # Capture the status and the body, then say which it was.
+          HTTP=$(curl -s -o /tmp/deploy.json -w "%{http_code}" -X POST \
             "https://api.vercel.com/v13/deployments?teamId=${VERCEL_TEAM_ID}" \
             -H "Authorization: Bearer ${{ secrets.VERCEL_TOKEN }}" \
             -H "Content-Type: application/json" \
@@ -64,8 +67,18 @@ jobs:
                 \"ref\": \"${GITHUB_SHA}\"
               }
             }")
-          DEPLOYMENT_ID=$(echo "$RESPONSE" | python3 -c "import json,sys; print(json.load(sys.stdin)['id'])")
-          DEPLOYMENT_URL=$(echo "$RESPONSE" | python3 -c "import json,sys; print(json.load(sys.stdin)['url'])")
+          if [ "$HTTP" != "200" ] && [ "$HTTP" != "201" ]; then
+            echo "Vercel refused the deployment with HTTP $HTTP:"
+            cat /tmp/deploy.json
+            if [ "$HTTP" = "401" ] || [ "$HTTP" = "403" ]; then
+              echo
+              echo "That is an auth failure. Mint a new token at"
+              echo "vercel.com/account/settings/tokens and run: gh secret set VERCEL_TOKEN"
+            fi
+            exit 1
+          fi
+          DEPLOYMENT_ID=$(python3 -c "import json; print(json.load(open('/tmp/deploy.json'))['id'])")
+          DEPLOYMENT_URL=$(python3 -c "import json; print(json.load(open('/tmp/deploy.json'))['url'])")
           echo "id=$DEPLOYMENT_ID" >> "$GITHUB_OUTPUT"
           echo "Deployment $DEPLOYMENT_ID -> https://$DEPLOYMENT_URL"
 
@@ -73,10 +86,10 @@ jobs:
         run: |
           set -euo pipefail
           for i in $(seq 1 60); do
-            STATE=$(curl -sf \
+            STATE=$(curl -s \
               "https://api.vercel.com/v13/deployments/${{ steps.create.outputs.id }}?teamId=${VERCEL_TEAM_ID}" \
               -H "Authorization: Bearer ${{ secrets.VERCEL_TOKEN }}" \
-              | python3 -c "import json,sys; print(json.load(sys.stdin)['readyState'])")
+              | python3 -c "import json,sys; print(json.load(sys.stdin).get('readyState','UNKNOWN'))")
             echo "[$i] $STATE"
             case "$STATE" in
               READY) exit 0 ;;

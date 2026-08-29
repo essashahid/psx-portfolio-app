@@ -16,6 +16,16 @@ import * as Haptics from "expo-haptics";
 import type { ArtifactSpec } from "@psx/shared/chat/artifacts";
 import { readableChatError } from "@psx/shared/chat/stream";
 import { streamChat } from "@/lib/chat-stream";
+import { ModelChip, ModelPicker } from "@/components/features/model-picker";
+import { api } from "@/lib/api";
+import {
+  CHAT_MODELS,
+  DEFAULT_MODEL_ID,
+  firstAvailableModel,
+  providerReady,
+  type ChatModelId,
+  type ProviderStatus,
+} from "@psx/shared/ai/models";
 import { Artifact } from "@/components/chat/artifacts";
 import { Caps, PageTitle } from "@/components/ui/text";
 import {
@@ -45,6 +55,36 @@ export default function CopilotScreen() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const threadId = useRef<string | null>(null);
+  const [model, setModel] = useState<ChatModelId>(DEFAULT_MODEL_ID);
+  const [providers, setProviders] = useState<ProviderStatus | null>(null);
+  const [pickingModel, setPickingModel] = useState(false);
+
+  /**
+   * Which providers this account may use. Loaded once: it changes when a key
+   * or an account setting changes, neither of which happens mid-conversation.
+   * The default is only overridden when it turns out to be unusable, so a
+   * working choice is never quietly swapped out from under the user.
+   */
+  useEffect(() => {
+    let live = true;
+    void api<{ providers: ProviderStatus }>("/api/chat/models")
+      .then((res) => {
+        if (!live) return;
+        setProviders(res.providers);
+        setModel((current) => {
+          const def = CHAT_MODELS.find((m) => m.id === current);
+          if (def && providerReady(res.providers, def.provider)) return current;
+          return firstAvailableModel(res.providers);
+        });
+      })
+      .catch(() => {
+        // The chat route decides for itself what it can run, so a failed
+        // lookup costs the picker its labels, not the conversation.
+      });
+    return () => {
+      live = false;
+    };
+  }, []);
   const scrollRef = useRef<ScrollView>(null);
 
   const updateLast = useCallback((fn: (m: Message) => Message) => {
@@ -72,7 +112,7 @@ export default function CopilotScreen() {
       ]);
 
       try {
-        await streamChat({ message: text, threadId: threadId.current }, (event) => {
+        await streamChat({ message: text, threadId: threadId.current, model }, (event) => {
           switch (event.type) {
             case "thread":
               threadId.current = event.thread.id;
@@ -157,7 +197,13 @@ export default function CopilotScreen() {
       <KeyboardAvoidingView style={styles.flex} behavior="padding">
         <View style={styles.header}>
           <View style={styles.headerBar}>
-            <PageTitle>Copilot</PageTitle>
+            <View style={styles.titleRow}>
+              <PageTitle>Copilot</PageTitle>
+              <ModelChip
+                label={CHAT_MODELS.find((m) => m.id === model)?.label ?? "Model"}
+                onPress={() => setPickingModel(true)}
+              />
+            </View>
             <Pressable
               onPress={() => {
                 void Haptics.selectionAsync();
@@ -272,6 +318,14 @@ export default function CopilotScreen() {
           </View>
         </View>
       </KeyboardAvoidingView>
+
+      <ModelPicker
+        open={pickingModel}
+        value={model}
+        providers={providers}
+        onClose={() => setPickingModel(false)}
+        onChange={setModel}
+      />
     </SafeAreaView>
   );
 }
@@ -285,6 +339,7 @@ const styles = StyleSheet.create({
     borderBottomWidth: StyleSheet.hairlineWidth,
     borderBottomColor: colors.rule,
   },
+  titleRow: { flexDirection: "row", alignItems: "center", gap: space.sm },
   headerBar: {
     flexDirection: "row",
     alignItems: "center",

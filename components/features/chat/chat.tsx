@@ -10,9 +10,12 @@ import type { ArtifactSpec } from "@/lib/chat/artifacts";
 import {
   CHAT_MODELS,
   DEFAULT_MODEL_ID,
+  firstAvailableModel,
   groupedModels,
+  providerReady,
   type ChatModelId,
   type ChatProvider,
+  type ProviderStatus,
 } from "@/lib/ai/models";
 import { looksLikeToolLeak, stripNarrationOpeners, tidyTypography } from "@/lib/chat/sanitize";
 import { buildSuggestions, type PromptContext } from "@/lib/chat/prompt-suggestions";
@@ -89,17 +92,6 @@ const MODEL_ICONS: Record<ChatModelId, typeof Zap> = {
   "deepseek-pro": Zap,
 };
 
-type ProviderStatus = Record<ChatProvider, { configured: boolean; allowed: boolean }>;
-
-function providerReady(providers: ProviderStatus, provider: ChatProvider): boolean {
-  return providers[provider]?.configured && providers[provider]?.allowed;
-}
-
-function firstAvailableModel(providers: ProviderStatus): ChatModelId {
-  const def = CHAT_MODELS.find((m) => m.id === DEFAULT_MODEL_ID);
-  if (def && providerReady(providers, def.provider)) return DEFAULT_MODEL_ID;
-  return CHAT_MODELS.find((m) => providerReady(providers, m.provider))?.id ?? DEFAULT_MODEL_ID;
-}
 
 type ResearchMode = "Quick answer" | "Deep research" | "Portfolio analysis" | "Company comparison" | "Filing analysis";
 const RESEARCH_MODES: ResearchMode[] = ["Quick answer", "Deep research", "Portfolio analysis", "Company comparison", "Filing analysis"];
