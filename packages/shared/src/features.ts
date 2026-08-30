@@ -42,6 +42,34 @@ export const ALL_ACCOUNT_FEATURES = [
 
 export const ADMIN_ONLY_FEATURES = ["/bulls-bears", "/allocation", "/coverage"] as const;
 
+/**
+ * Built, but not finished enough to put in front of anyone yet. Hidden from
+ * navigation on both the web and the phone; the routes still resolve, so work
+ * can continue by typing the URL.
+ *
+ * These are web hrefs. The phone matches them against an entry's `web` target,
+ * not its native route, because the two namespaces collide: /research is the
+ * saved-report viewer on the web and the stock screener on the phone. Matching
+ * blindly on path would have withdrawn a screen that is finished and in use.
+ */
+export const UNRELEASED_FEATURES = [
+  "/performance",
+  "/research",
+  "/outlook",
+  "/goals",
+  "/allocation",
+  "/journal",
+  "/import",
+  "/coverage",
+] as const;
+
+const UNRELEASED_FEATURE_SET = new Set<string>(UNRELEASED_FEATURES);
+
+/** Whether a destination should be kept out of menus for now. */
+export function isUnreleased(href: string): boolean {
+  return UNRELEASED_FEATURE_SET.has(href);
+}
+
 export type AppFeatureHref = (typeof ALL_APP_FEATURES)[number];
 export type AccountFeature = (typeof ALL_ACCOUNT_FEATURES)[number];
 

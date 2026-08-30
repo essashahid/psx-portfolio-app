@@ -32,6 +32,7 @@ import { Caps, Figure, PageTitle } from "@/components/ui/text";
 import { APP_NAME } from "@/lib/brand";
 import { colors, fontFamily, fontSize, layout, space } from "@/lib/theme";
 import { makeStyles, useColors } from "@/lib/theme-context";
+import { isUnreleased } from "@psx/shared/features";
 
 type Entry = {
   icon: LucideIcon;
@@ -73,13 +74,29 @@ function Row({ entry }: { entry: Entry }) {
   );
 }
 
+/**
+ * Not-yet-ready destinations are dropped here rather than at each call site, so
+ * one shared list governs both surfaces.
+ *
+ * Matched on the `web` target, never the native route: /research is the
+ * saved-report viewer on the web but the stock screener here, and matching on
+ * path would withdraw a screen that is finished. /performance is the one
+ * native screen being held back, so it is named directly.
+ */
+function isHidden(entry: Entry): boolean {
+  if (entry.web && isUnreleased(entry.web)) return true;
+  return entry.href === "/performance";
+}
+
 function Group({ title, entries }: { title: string; entries: Entry[] }) {
   const styles = useStyles();
+  const shown = entries.filter((entry) => !isHidden(entry));
+  if (shown.length === 0) return null;
   return (
     <Band style={styles.group}>
       <Caps>{title}</Caps>
       <Ledger>
-        {entries.map((entry) => (
+        {shown.map((entry) => (
           <Row key={entry.label} entry={entry} />
         ))}
       </Ledger>

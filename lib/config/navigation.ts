@@ -22,6 +22,7 @@ import type { ComponentType } from "react";
 import type { ExperienceLevel, Profile } from "@/lib/shared/types";
 import {
   ADMIN_ONLY_FEATURES,
+  isUnreleased,
   LAUNCH_DEFAULT_FEATURES,
   normalizeEnabledFeatures,
   type AppFeatureHref,
@@ -95,7 +96,14 @@ export const NAV_SECTIONS: { title: string; items: NavItemDef[] }[] = [
   },
 ];
 
-export const NAV = NAV_SECTIONS.flatMap((s) => s.items);
+/**
+ * Everything defined, including what is not ready to show. Menus read NAV,
+ * which has the unreleased destinations filtered out; the routes themselves
+ * still resolve so the work can carry on by typing the URL.
+ */
+export const ALL_NAV = NAV_SECTIONS.flatMap((s) => s.items);
+
+export const NAV = ALL_NAV.filter((item) => !isUnreleased(item.href));
 const LAUNCH_DEFAULT_HREFS = new Set<string>(LAUNCH_DEFAULT_FEATURES);
 export const LAUNCH_DEFAULT_NAV = NAV.filter((item) => LAUNCH_DEFAULT_HREFS.has(item.href));
 const ADMIN_ONLY_HREFS = new Set<string>(ADMIN_ONLY_FEATURES);
