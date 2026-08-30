@@ -30,6 +30,8 @@ import {
   type ProviderStatus,
 } from "@psx/shared/ai/models";
 import { Artifact } from "@/components/chat/artifacts";
+import { Markdown } from "@/components/chat/markdown";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Caps, PageTitle } from "@/components/ui/text";
 import {
   colors,
@@ -51,6 +53,8 @@ const PROMPTS = [
   "How am I doing against the KSE-100?",
 ];
 
+const MODEL_KEY = "plumb.chat.model";
+
 export default function CopilotScreen() {
   const { q } = useLocalSearchParams<{ q?: string }>();
   const [messages, setMessages] = useState<Message[]>([]);
@@ -58,7 +62,28 @@ export default function CopilotScreen() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const threadId = useRef<string | null>(null);
-  const [model, setModel] = useState<ChatModelId>(DEFAULT_MODEL_ID);
+  const [model, setModelState] = useState<ChatModelId>(DEFAULT_MODEL_ID);
+
+  // The picker choice survives restarts. Without this the state reset to the
+  // default on every launch, so a question quietly went to a model the user
+  // had moved away from, and its provider's errors made no sense to them.
+  const setModel = useCallback((next: React.SetStateAction<ChatModelId>) => {
+    setModelState((current) => {
+      const value = typeof next === "function" ? next(current) : next;
+      AsyncStorage.setItem(MODEL_KEY, value).catch(() => {});
+      return value;
+    });
+  }, []);
+
+  useEffect(() => {
+    AsyncStorage.getItem(MODEL_KEY)
+      .then((stored) => {
+        if (stored && CHAT_MODELS.some((m) => m.id === stored)) {
+          setModelState(stored as ChatModelId);
+        }
+      })
+      .catch(() => {});
+  }, []);
   const [providers, setProviders] = useState<ProviderStatus | null>(null);
   const [pickingModel, setPickingModel] = useState(false);
   const [historyOpen, setHistoryOpen] = useState(false);
@@ -222,13 +247,15 @@ export default function CopilotScreen() {
           }
         });
       } catch (err) {
-        setError(err instanceof Error ? err.message : "The Copilot could not answer.");
+        const label = CHAT_MODELS.find((m) => m.id === model)?.label ?? model;
+        const detail = err instanceof Error ? err.message : "The Copilot could not answer.";
+        setError(`${label}: ${detail}`);
         updateLast((m) => ({ ...m, status: undefined }));
       } finally {
         setBusy(false);
       }
     },
-    [busy, updateLast]
+    [busy, updateLast, model]
   );
 
   // Arriving from a company page with a question already in mind.
@@ -314,9 +341,7 @@ export default function CopilotScreen() {
                 {m.parts.map((part, pi) =>
                   part.type === "text" ? (
                     part.content ? (
-                      <Text key={pi} style={styles.answerText}>
-                        {part.content}
-                      </Text>
+                      <Markdown key={pi}>{part.content}</Markdown>
                     ) : null
                   ) : (
                     <Artifact key={pi} spec={part.spec} />

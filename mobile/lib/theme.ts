@@ -6,9 +6,16 @@
  * other; RN has no cascade, so the chains are flattened here. Keep the semantic
  * names identical to the web ones so a screen can be read against its mock.
  *
- * Light only, deliberately: the web app defines no dark palette. The dark
- * surfaces below are the ink field the header and login screen sit on, not a
- * dark theme.
+ * Two palettes. Light mirrors the web app, which is the source of truth. Dark
+ * is native to the phone: a true-black field, because an OLED panel draws no
+ * power for a black pixel and the app is read in bed as often as at a desk.
+ *
+ * In light mode the ink header is the darkest surface and lifts off paper. In
+ * dark mode that inverts: the page is black and the header is the lighter
+ * surface, so the same block still reads as raised rather than dissolving.
+ *
+ * Screens never import a palette directly. They take colours from useTheme(),
+ * so a mode change repaints without a reload.
  */
 
 export const palette = {
@@ -86,6 +93,59 @@ export const colors = {
   chartUp: palette.up2,
   chartDown: palette.down2,
 } as const;
+
+/** Every colour role, widened from the light palette's literal types. */
+export type Colors = Record<keyof typeof colors, string>;
+
+/**
+ * The dark field. Surfaces run black -> near-black rather than paper -> white,
+ * and the semantic roles are unchanged so every screen reads the same names.
+ *
+ * Accents are lifted a step (indigo2 -> indigo3, up2 -> up3) because a colour
+ * that carries on paper goes muddy on black; the up/down pair especially has
+ * to stay legible at a glance, since it is the first thing read on a holding.
+ */
+export const darkColors: Colors = {
+  surfacePage: "#000000",
+  surfaceRaised: "#121212",
+  surfaceSunken: "#0a0a0a",
+  surfaceInset: "#1c1c1c",
+
+  /** Lighter than the page here, so the header still reads as a raised block. */
+  ink: "#161716",
+  ink2: "#242523",
+
+  textStrong: "#f2f3f7",
+  textBody: "#d6d7dc",
+  textMuted: "#9fa2ae",
+  textFaint: "#6f7179",
+  textOnDark: "#f2f3f7",
+  textOnDarkMuted: "#9fa2ae",
+  textOnDarkFaint: "#7c7f8b",
+  textBrand: palette.indigo3,
+  textUp: palette.up3,
+  textDown: palette.down3,
+
+  rule: "#232323",
+  ruleStrong: "#333333",
+  ruleOnDark: "#2c2d2c",
+
+  accentPrimary: palette.indigo2,
+  accentSecondary: palette.saffron2,
+  brandSoft: "#161d33",
+
+  statusOk: palette.up3,
+  statusWarn: palette.saffron2,
+  statusDanger: palette.down3,
+  statusInfo: palette.indigo3,
+
+  chartLine: palette.indigo3,
+  chartLineSoft: palette.indigo2,
+  chartGrid: "#1e1e1e",
+  chartAxis: "#6f7179",
+  chartUp: palette.up3,
+  chartDown: palette.down3,
+};
 
 /** The web scale is rem against a 16px root. */
 export const fontSize = {

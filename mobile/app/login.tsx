@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { Keyboard, Pressable, StyleSheet, Text, TextInput, View } from "react-native";
 import { KeyboardAwareScrollView } from "react-native-keyboard-controller";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { Eye, EyeOff } from "lucide-react-native";
 import { useAuth } from "@/lib/auth";
 import { Wordmark } from "@/components/ui/mark";
 import { APP_PROMISE, DISCLAIMER_SHORT } from "@/lib/brand";
@@ -23,6 +24,7 @@ export default function LoginScreen() {
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [keyboardUp, setKeyboardUp] = useState(false);
+  const [reveal, setReveal] = useState(false);
   const passwordRef = useRef<TextInput>(null);
 
   // The headline holds the field open when there is room, but once the keyboard
@@ -99,19 +101,37 @@ export default function LoginScreen() {
 
             <View>
               <Text style={styles.fieldLabel}>PASSWORD</Text>
-              <TextInput
-                ref={passwordRef}
-                style={styles.input}
-                value={password}
-                onChangeText={setPassword}
-                secureTextEntry
-                autoCapitalize="none"
-                autoComplete="current-password"
-                placeholderTextColor={colors.textOnDarkFaint}
-                editable={!busy}
-                onSubmitEditing={onSubmit}
-                returnKeyType="go"
-              />
+              <View>
+                <TextInput
+                  ref={passwordRef}
+                  style={[styles.input, styles.inputWithAffordance]}
+                  value={password}
+                  onChangeText={setPassword}
+                  secureTextEntry={!reveal}
+                  autoCapitalize="none"
+                  autoComplete="current-password"
+                  placeholderTextColor={colors.textOnDarkFaint}
+                  editable={!busy}
+                  onSubmitEditing={onSubmit}
+                  returnKeyType="go"
+                />
+                {/* Inside the field rather than beside it, so the row still
+                    reads as one control. The tap target is padded out well
+                    past the glyph, which is small enough to miss otherwise. */}
+                <Pressable
+                  style={styles.reveal}
+                  onPress={() => setReveal((on) => !on)}
+                  accessibilityRole="button"
+                  accessibilityLabel={reveal ? "Hide password" : "Show password"}
+                  hitSlop={8}
+                >
+                  {reveal ? (
+                    <EyeOff size={19} color={colors.textOnDarkMuted} strokeWidth={1.8} />
+                  ) : (
+                    <Eye size={19} color={colors.textOnDarkFaint} strokeWidth={1.8} />
+                  )}
+                </Pressable>
+              </View>
             </View>
 
             {error ? <Text style={styles.error}>{error}</Text> : null}
@@ -182,6 +202,17 @@ const styles = StyleSheet.create({
     fontFamily: fontFamily.ui,
     fontSize: 16,
     color: colors.textOnDark,
+  },
+  // Room for the reveal control, so a long password does not run underneath it.
+  inputWithAffordance: { paddingRight: 48 },
+  reveal: {
+    position: "absolute",
+    right: 0,
+    top: 0,
+    bottom: 0,
+    width: 48,
+    alignItems: "center",
+    justifyContent: "center",
   },
   error: { fontFamily: fontFamily.ui, fontSize: fontSize.sm, color: palette.down3 },
   signIn: {
