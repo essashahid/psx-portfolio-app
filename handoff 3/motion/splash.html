@@ -1,0 +1,25 @@
+<!-- ─────────────────────────────────────────────────────────────────────
+     Plumb — cold-start splash. Mount ONLY on cold start; on a warm resume,
+     skip it and land on the last screen the user was reading.
+     Unmount after var(--splash-total) (1180ms) OR when the first real screen
+     is ready, whichever is LATER — never hold the app back for the animation.
+     Requires motion.css.
+     ───────────────────────────────────────────────────────────────────── -->
+<div class="plumb-splash" role="status" aria-label="Plumb is starting"
+     style="position:fixed; inset:0; z-index:9999; display:flex; flex-direction:column;
+            align-items:center; justify-content:center; gap:22px; background:#101a33">
+  <svg width="76" height="76" viewBox="0 0 64 64" aria-hidden="true">
+    <rect class="plumb-splash__aperture" x="14" y="14" width="36" height="36"
+          fill="none" stroke="rgba(255,255,255,0.92)" stroke-width="3.55"/>
+    <path class="plumb-splash__line" d="M32 4 V60" stroke="var(--indigo-3)" stroke-width="3.55"/>
+    <circle class="plumb-splash__bob" cx="32" cy="60" r="3.6" fill="var(--indigo-3)"/>
+  </svg>
+  <span class="plumb-splash__word"
+        style="font-family:var(--font-display); font-size:34px;
+               letter-spacing:var(--tracking-editorial); color:var(--text-on-dark)">Plumb</span>
+  <p class="plumb-splash__foot"
+     style="position:absolute; left:0; right:0; bottom:calc(34px + env(safe-area-inset-bottom));
+            margin:0; text-align:center; font-size:var(--text-2xs); color:rgba(242,243,247,0.5)">
+    Portfolio tracking and research support.<br>Not financial advice.
+  </p>
+</div>

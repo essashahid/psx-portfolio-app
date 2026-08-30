@@ -1,0 +1,10 @@
+Tokens lifted from mobile/lib/theme.ts:
+surfacePage #f6f6f4 | surfaceSunken #eeefeb | surfaceInset #e7e8e2 | surfaceRaised #fff
+ink #161716 | textStrong #161716 | textBody #3a3b38 | textMuted #6c6e68 | textFaint #9b9b92
+textOnDark #f2f3f7 | rule #dedfda | ruleStrong #c9cac3
+accentPrimary #3450c8 | saffron2 #d9920b | up1 #0b6b47 | up2 #0b8a5c | down1 #a32626 | down2 #cf3a3a
+sectors: E&P #cd5b2e, Banks #3450c8, Cement #8a7a63, Fertiliser #5f7c1f, OMC #d9920b, Pharma #0f8f8f, Tech #7a5cd6
+Newsreader 400 (display) | Manrope 400/500/600/700 (ui) | Geist Mono 400/500/600 (figures)
+gutter 16 | hitMin 44 | radiusSm 6 | bandPadY 20
+fontSize: h1 24, h2 18, h3/body 15, sm 13, xs 12, xxs 11, xxxs 10
+tracking editorial -0.035em, caps 0.08em

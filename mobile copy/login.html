@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#f6f6f4">
+<title>Sign in · Plumb</title>
+<link rel="stylesheet" href="../tokens/fonts.css">
+<link rel="stylesheet" href="../tokens/colors.css">
+<link rel="stylesheet" href="../tokens/spectrum.css">
+<link rel="stylesheet" href="../tokens/typography.css">
+<link rel="stylesheet" href="../tokens/spacing.css">
+<link rel="stylesheet" href="../tokens/shape.css">
+<link rel="stylesheet" href="../tokens/motion.css">
+<link rel="stylesheet" href="../tokens/base.css">
+<link rel="stylesheet" href="mobile.css">
+</head>
+<body>
+<div class="app">
+<main style="flex:1; display:flex; flex-direction:column; background:var(--ink-1); padding:calc(56px + env(safe-area-inset-top)) var(--g) calc(40px + env(safe-area-inset-bottom))">
+  <span style="display:flex; align-items:center; gap:11px">
+    <svg width="26" height="26" viewBox="0 0 64 64" aria-hidden="true" style="display:block">
+      <rect x="14" y="14" width="36" height="36" fill="none" stroke="rgba(255,255,255,0.92)" stroke-width="3.55"></rect>
+      <path d="M32 4 V60" stroke="var(--indigo-3)" stroke-width="3.55"></path>
+      <circle cx="32" cy="60" r="3.6" fill="var(--indigo-3)"></circle>
+    </svg>
+    <span style="font-family:var(--font-display); font-size:var(--text-h1); letter-spacing:var(--tracking-editorial); color:var(--text-on-dark)">Plumb</span>
+  </span>
+  <h1 style="margin:48px 0 0; font-family:var(--font-display); font-size:clamp(30px, 9vw, 38px); font-weight:400; line-height:1.15; letter-spacing:var(--tracking-editorial); color:var(--text-on-dark)">Your book,<br>measured against<br>the market.</h1>
+  <p style="margin:18px 0 0; max-width:34ch; font-size:var(--text-body); line-height:1.6; color:var(--text-on-dark-muted)">Import a broker statement and Plumb tracks holdings, dividends and performance against the KSE-100. It never asks for brokerage credentials and it never places orders.</p>
+  <div style="flex:1; min-height:32px"></div>
+  <form style="display:flex; flex-direction:column; gap:14px" onsubmit="event.preventDefault(); location.href='home.html'">
+    <label>
+      <span style="display:block; margin-bottom:7px; font-size:var(--text-3xs); font-weight:700; text-transform:uppercase; letter-spacing:var(--tracking-caps); color:var(--text-on-dark-muted)">Email</span>
+      <input type="email" autocomplete="email" placeholder="you@example.com" style="width:100%; min-height:50px; border:1px solid rgba(255,255,255,0.18); border-radius:var(--radius-sm); background:rgba(255,255,255,0.06); padding:0 14px; color:var(--text-on-dark)">
+    </label>
+    <label>
+      <span style="display:block; margin-bottom:7px; font-size:var(--text-3xs); font-weight:700; text-transform:uppercase; letter-spacing:var(--tracking-caps); color:var(--text-on-dark-muted)">Password</span>
+      <input type="password" autocomplete="current-password" style="width:100%; min-height:50px; border:1px solid rgba(255,255,255,0.18); border-radius:var(--radius-sm); background:rgba(255,255,255,0.06); padding:0 14px; color:var(--text-on-dark)">
+    </label>
+    <button type="submit" style="display:flex; align-items:center; justify-content:space-between; min-height:52px; border:none; border-radius:var(--radius-pill); background:var(--surface-page); padding:0 8px 0 22px; font-size:var(--text-body); font-weight:600; color:var(--text-strong); cursor:pointer">
+      <span>Sign in</span>
+      <span style="display:flex; align-items:center; justify-content:center; width:36px; height:36px; border-radius:var(--radius-pill); background:var(--ink-1)">
+        <span style="width:9px; height:9px; border-radius:var(--radius-pill); background:var(--surface-page)"></span>
+      </span>
+    </button>
+    <a href="home.html" style="display:flex; align-items:center; justify-content:center; min-height:50px; border:1px solid rgba(255,255,255,0.22); border-radius:var(--radius-pill); font-size:var(--text-body); font-weight:600; color:var(--text-on-dark)">Open the read-only demo</a>
+  </form>
+  <p style="margin:20px 0 0; font-size:var(--text-2xs); line-height:1.55; color:rgba(242,243,247,0.5)">For personal portfolio tracking and research support only. It is not financial advice.</p>
+</main>
+</div>
+</body>
+</html>

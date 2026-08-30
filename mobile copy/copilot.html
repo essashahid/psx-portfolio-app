@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#f6f6f4">
+<title>Copilot · Plumb</title>
+<link rel="stylesheet" href="../tokens/fonts.css">
+<link rel="stylesheet" href="../tokens/colors.css">
+<link rel="stylesheet" href="../tokens/spectrum.css">
+<link rel="stylesheet" href="../tokens/typography.css">
+<link rel="stylesheet" href="../tokens/spacing.css">
+<link rel="stylesheet" href="../tokens/shape.css">
+<link rel="stylesheet" href="../tokens/motion.css">
+<link rel="stylesheet" href="../tokens/base.css">
+<link rel="stylesheet" href="mobile.css">
+</head>
+<body>
+<div class="app">
+<header class="band topbar" style="padding-bottom:14px; border-bottom:1px solid var(--rule)">
+  <div style="display:flex; align-items:center; justify-content:space-between; min-height:46px">
+    <h1 class="pagetitle">Copilot</h1>
+    <button type="button" class="tap" aria-label="New conversation" style="display:flex; align-items:center; justify-content:center; width:44px; margin-right:-10px; border:none; background:none; color:var(--text-muted); cursor:pointer"><span class="i" style="--u:url(https://unpkg.com/lucide-static@0.487.0/icons/plus.svg); width:19px; height:19px" aria-hidden="true"></span></button>
+  </div>
+  <p class="eyebrow" style="margin:6px 0 0">Copilot · grounded in 9 holdings, 214 filings</p>
+</header>
+<main class="band">
+  <div style="display:flex; justify-content:flex-end; margin-bottom:22px">
+    <p style="max-width:80%; margin:0; border-radius:var(--radius-md); background:var(--ink-1); padding:12px 15px; font-size:var(--text-body); line-height:1.5; color:var(--text-on-dark)">Which of my holdings is carrying the most risk right now?</p>
+  </div>
+  <p class="caps" style="margin:0">Finding</p>
+  <p style="margin:8px 0 0; font-size:var(--text-body); line-height:1.6; text-wrap:pretty">OGDC is 22.2% of portfolio value, and E&amp;P as a whole accounts for 22.2% — the concentration sits in the sector, not the single name.</p>
+
+  <p class="caps" style="margin:24px 0 8px; padding-bottom:7px; border-bottom:1px solid var(--rule-strong)">Computed from your book</p>
+  <div class="ledger">
+    <div class="ledger-row tap" style="display:grid; grid-template-columns:minmax(0,1fr) auto; align-items:baseline; gap:12px">
+      <span style="min-width:0">
+        <span style="display:block; font-size:var(--text-sm)">OGDC weight</span>
+        <span style="display:block; margin-top:3px; font-size:var(--text-2xs); color:var(--text-faint)">582k of 2.6m</span>
+      </span>
+      <span class="figure" style="text-align:right; font-size:var(--text-sm); font-weight:600; color:var(--text-strong)">22.2%</span>
+    </div>
+    <div class="ledger-row tap" style="display:grid; grid-template-columns:minmax(0,1fr) auto; align-items:baseline; gap:12px">
+      <span style="min-width:0">
+        <span style="display:block; font-size:var(--text-sm)">E&amp;P sector weight</span>
+        <span style="display:block; margin-top:3px; font-size:var(--text-2xs); color:var(--text-faint)">1 holdings</span>
+      </span>
+      <span class="figure" style="text-align:right; font-size:var(--text-sm); font-weight:600; color:var(--text-strong)">22.2%</span>
+    </div>
+    <div class="ledger-row tap" style="display:grid; grid-template-columns:minmax(0,1fr) auto; align-items:baseline; gap:12px">
+      <span style="min-width:0">
+        <span style="display:block; font-size:var(--text-sm)">Positions below cost</span>
+        <span style="display:block; margin-top:3px; font-size:var(--text-2xs); color:var(--text-faint)">of 9 holdings</span>
+      </span>
+      <span class="figure" style="text-align:right; font-size:var(--text-sm); font-weight:600; color:var(--text-strong)">1</span>
+    </div>
+    <div class="ledger-row tap" style="display:grid; grid-template-columns:minmax(0,1fr) auto; align-items:baseline; gap:12px">
+      <span style="min-width:0">
+        <span style="display:block; font-size:var(--text-sm)">Worst drawdown from high</span>
+        <span style="display:block; margin-top:3px; font-size:var(--text-2xs); color:var(--text-faint)">SEARL</span>
+      </span>
+      <span class="figure" style="text-align:right; font-size:var(--text-sm); font-weight:600; color:var(--text-down)">−30.9%</span>
+    </div>
+  </div>
+
+  <p class="caps" style="margin:24px 0 8px">Check it yourself</p>
+  <div style="display:flex; flex-direction:column; gap:8px">
+    <a href="holdings.html" style="display:flex; align-items:center; justify-content:space-between; gap:12px; min-height:var(--hit); border:1px solid var(--rule); border-radius:var(--radius-sm); background:var(--surface-raised); padding:0 14px; color:var(--text-strong)">
+      <span style="font-size:var(--text-sm)">Holdings, sorted by weight</span><span class="i" style="--u:url(https://unpkg.com/lucide-static@0.487.0/icons/arrow-up-right.svg); width:14px; height:14px; color:var(--indigo-2)" aria-hidden="true"></span>
+    </a>
+    <a href="company.html" style="display:flex; align-items:center; justify-content:space-between; gap:12px; min-height:var(--hit); border:1px solid var(--rule); border-radius:var(--radius-sm); background:var(--surface-raised); padding:0 14px; color:var(--text-strong)">
+      <span style="font-size:var(--text-sm)">OGDC company page</span><span class="i" style="--u:url(https://unpkg.com/lucide-static@0.487.0/icons/arrow-up-right.svg); width:14px; height:14px; color:var(--indigo-2)" aria-hidden="true"></span>
+    </a>
+    <a href="home.html" style="display:flex; align-items:center; justify-content:space-between; gap:12px; min-height:var(--hit); border:1px solid var(--rule); border-radius:var(--radius-sm); background:var(--surface-raised); padding:0 14px; color:var(--text-strong)">
+      <span style="font-size:var(--text-sm)">Sector allocation on the dashboard</span><span class="i" style="--u:url(https://unpkg.com/lucide-static@0.487.0/icons/arrow-up-right.svg); width:14px; height:14px; color:var(--indigo-2)" aria-hidden="true"></span>
+    </a>
+  </div>
+
+  <p class="caps" style="margin:24px 0 8px">Assumptions</p>
+  <p style="margin:0 0 7px; font-size:var(--text-2xs); line-height:1.6; color:var(--text-muted)">Weights use today&rsquo;s last price at 15:30 PKT, not your cost basis.</p>
+  <p style="margin:0; font-size:var(--text-2xs); line-height:1.6; color:var(--text-muted)">Sector labels are PSX classifications; a diversified group like Engro Corporation is counted once, in Fertiliser.</p>
+  <p class="note">For personal portfolio tracking and research support only. It is not financial advice.</p>
+</main>
+<nav class="tabbar" aria-label="Primary navigation">
+  <div class="sticky-action"><div class="hscroll" style="margin:0 calc(var(--g) * -1) 12px">
+    <div class="rail" style="gap:8px; padding-block:0">
+      <button type="button" style="display:flex; align-items:center; min-height:38px; border:1px solid var(--rule-strong); border-radius:var(--radius-pill); background:var(--surface-page); padding:0 15px; font-size:var(--text-2xs); color:var(--text-muted); white-space:nowrap; cursor:pointer">What should I trim?</button>
+      <button type="button" style="display:flex; align-items:center; min-height:38px; border:1px solid var(--rule-strong); border-radius:var(--radius-pill); background:var(--surface-page); padding:0 15px; font-size:var(--text-2xs); color:var(--text-muted); white-space:nowrap; cursor:pointer">Dividend outlook</button>
+      <button type="button" style="display:flex; align-items:center; min-height:38px; border:1px solid var(--rule-strong); border-radius:var(--radius-pill); background:var(--surface-page); padding:0 15px; font-size:var(--text-2xs); color:var(--text-muted); white-space:nowrap; cursor:pointer">Compare MARI and PPL</button>
+    </div>
+  </div>
+  <form style="display:flex; align-items:center; gap:9px" onsubmit="event.preventDefault()">
+    <input type="text" placeholder="Ask about your book" aria-label="Ask about your book" style="flex:1; min-width:0; min-height:48px; border:1px solid var(--rule-strong); border-radius:var(--radius-pill); background:var(--surface-page); padding:0 16px; color:var(--text-strong)">
+    <button type="submit" aria-label="Send" style="display:flex; align-items:center; justify-content:center; width:48px; height:48px; flex:none; border:none; border-radius:var(--radius-pill); background:var(--ink-1); color:var(--text-on-dark); cursor:pointer"><span class="i" style="--u:url(https://unpkg.com/lucide-static@0.487.0/icons/arrow-up.svg); width:18px; height:18px" aria-hidden="true"></span></button>
+  </form></div>
+  <div class="slots">
+    <a href="home.html"><span class="i" style="--u:url(https://unpkg.com/lucide-static@0.487.0/icons/layout-dashboard.svg); width:19px; height:19px" aria-hidden="true"></span><span>Home</span></a>
+    <a href="holdings.html"><span class="i" style="--u:url(https://unpkg.com/lucide-static@0.487.0/icons/briefcase.svg); width:19px; height:19px" aria-hidden="true"></span><span>Holdings</span></a>
+    <a href="market.html"><span class="i" style="--u:url(https://unpkg.com/lucide-static@0.487.0/icons/activity.svg); width:19px; height:19px" aria-hidden="true"></span><span>Market</span></a>
+    <a href="copilot.html" aria-current="page"><span class="i" style="--u:url(https://unpkg.com/lucide-static@0.487.0/icons/message-square.svg); width:19px; height:19px" aria-hidden="true"></span><span>Copilot</span></a>
+    <a href="more.html"><span class="i" style="--u:url(https://unpkg.com/lucide-static@0.487.0/icons/menu.svg); width:19px; height:19px" aria-hidden="true"></span><span>More</span></a>
+  </div>
+</nav>
+</div>
+</body>
+</html>

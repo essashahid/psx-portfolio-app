@@ -1,0 +1,33 @@
+{
+  "artboards": [
+    { "file": "Main.dc.html",      "x": 0,    "y": 0, "w": 390, "h": 844, "title": "Market feed" },
+    { "file": "LeadStory.dc.html", "x": 490,  "y": 0, "w": 390, "h": 844, "title": "For you — lead story" },
+    { "file": "Empty.dc.html",     "x": 980,  "y": 0, "w": 390, "h": 844, "title": "Nothing to show" },
+    { "file": "Saved.dc.html",     "x": 1470, "y": 0, "w": 390, "h": 844, "title": "Saved" },
+    { "file": "Upcoming.dc.html",  "x": 1960, "y": 0, "w": 390, "h": 844, "title": "Upcoming" }
+  ],
+  "annotations": [
+    {
+      "id": "brief",
+      "x": 0,
+      "y": -190,
+      "w": 470,
+      "text": "Plumb — News Centre, Android\n\nTokens lifted from mobile/lib/theme.ts, not approximated.\nNewsreader for the brand and the lead headline, Manrope for\nthe interface, Geist Mono for anything a reader compares\ndown a column.\n\nColour is spent on two things only: the sector dot beside a\nsource, and importance. Everything else is set in type."
+    },
+    {
+      "id": "note-empty",
+      "x": 980,
+      "y": -120,
+      "w": 300,
+      "text": "An empty section is a dead end the app chose to open on.\nIt says what is missing and offers both a wider window and\nthe section that does have something."
+    },
+    {
+      "id": "note-saved",
+      "x": 1470,
+      "y": -120,
+      "w": 340,
+      "text": "Saved and Upcoming drop the date window: one holds things\nyou put there deliberately, the other is dated forwards.\nShowing a window selected would imply it applied."
+    }
+  ],
+  "launch": { "view": "canvas" }
+}

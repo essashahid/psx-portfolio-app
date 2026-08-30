@@ -1,14 +1,14 @@
 {
   "_note": "Phase 1 progress. A company listed 'ok' is not revisited on a re-run. Delete an entry, or pass --retry-failed, to redo one. crossChecksOff counts quarters where the value derived from the cumulative chain disagreed by more than 2% with a quarter PSX reports directly: those are the rows worth a human look.",
-  "_asOf": "2026-08-02T15:59:15.800Z",
+  "_asOf": "2026-08-02T19:49:36.415Z",
   "summary": {
     "companies": 114,
     "ok": 109,
     "failed": 5,
     "timeout": 0,
-    "statementsSaved": 5486,
-    "quartersDerived": 286,
-    "bleedRepaired": 17,
+    "statementsSaved": 5298,
+    "quartersDerived": 273,
+    "bleedRepaired": 16,
     "crossChecksNeedingReview": 99
   },
   "results": {
@@ -45,18 +45,6 @@
       "exitCode": 0,
       "saved": 0,
       "quartersWritten": 1,
-      "bleedRepaired": 0,
-      "crossChecksOff": 0
-    },
-    "SYS": {
-      "ticker": "SYS",
-      "status": "ok",
-      "startedAt": "2026-08-02T14:15:00.512Z",
-      "finishedAt": "2026-08-02T14:17:27.052Z",
-      "seconds": 147,
-      "exitCode": 0,
-      "saved": 52,
-      "quartersWritten": 2,
       "bleedRepaired": 0,
       "crossChecksOff": 0
     },
@@ -191,18 +179,6 @@
       "quartersWritten": 2,
       "bleedRepaired": 0,
       "crossChecksOff": 0
-    },
-    "BAFS": {
-      "ticker": "BAFS",
-      "status": "ok",
-      "startedAt": "2026-08-02T14:31:07.152Z",
-      "finishedAt": "2026-08-02T14:34:30.197Z",
-      "seconds": 203,
-      "exitCode": 0,
-      "saved": 63,
-      "quartersWritten": 5,
-      "bleedRepaired": 1,
-      "crossChecksOff": 3
     },
     "BECO": {
       "ticker": "BECO",
@@ -892,18 +868,6 @@
       "bleedRepaired": 0,
       "crossChecksOff": 0
     },
-    "NONS": {
-      "ticker": "NONS",
-      "status": "ok",
-      "startedAt": "2026-08-02T15:42:35.539Z",
-      "finishedAt": "2026-08-02T15:44:23.067Z",
-      "seconds": 108,
-      "exitCode": 0,
-      "saved": 32,
-      "quartersWritten": 1,
-      "bleedRepaired": 0,
-      "crossChecksOff": 0
-    },
     "NPL": {
       "ticker": "NPL",
       "status": "ok",
@@ -987,30 +951,6 @@
       "quartersWritten": 1,
       "bleedRepaired": 0,
       "crossChecksOff": 0
-    },
-    "PMRS": {
-      "ticker": "PMRS",
-      "status": "ok",
-      "startedAt": "2026-08-02T15:45:22.805Z",
-      "finishedAt": "2026-08-02T15:46:58.411Z",
-      "seconds": 96,
-      "exitCode": 0,
-      "saved": 8,
-      "quartersWritten": 0,
-      "bleedRepaired": 0,
-      "crossChecksOff": 0
-    },
-    "PRET": {
-      "ticker": "PRET",
-      "status": "ok",
-      "startedAt": "2026-08-02T15:46:14.633Z",
-      "finishedAt": "2026-08-02T15:47:16.897Z",
-      "seconds": 62,
-      "exitCode": 0,
-      "saved": 10,
-      "quartersWritten": 2,
-      "bleedRepaired": 0,
-      "crossChecksOff": 1
     },
     "PTC": {
       "ticker": "PTC",
@@ -1118,18 +1058,6 @@
       "saved": 6,
       "quartersWritten": 0,
       "bleedRepaired": 1,
-      "crossChecksOff": 0
-    },
-    "SHSML": {
-      "ticker": "SHSML",
-      "status": "ok",
-      "startedAt": "2026-08-02T15:50:21.708Z",
-      "finishedAt": "2026-08-02T15:51:15.379Z",
-      "seconds": 54,
-      "exitCode": 0,
-      "saved": 8,
-      "quartersWritten": 2,
-      "bleedRepaired": 0,
       "crossChecksOff": 0
     },
     "SITC": {
@@ -1277,42 +1205,6 @@
       "bleedRepaired": 0,
       "crossChecksOff": 0
     },
-    "TCORP": {
-      "ticker": "TCORP",
-      "status": "ok",
-      "startedAt": "2026-08-02T15:55:39.086Z",
-      "finishedAt": "2026-08-02T15:56:07.184Z",
-      "seconds": 28,
-      "exitCode": 0,
-      "saved": 0,
-      "quartersWritten": 0,
-      "bleedRepaired": 0,
-      "crossChecksOff": 0
-    },
-    "TSML": {
-      "ticker": "TSML",
-      "status": "ok",
-      "startedAt": "2026-08-02T15:55:49.167Z",
-      "finishedAt": "2026-08-02T15:56:59.479Z",
-      "seconds": 70,
-      "exitCode": 0,
-      "saved": 11,
-      "quartersWritten": 1,
-      "bleedRepaired": 0,
-      "crossChecksOff": 2
-    },
-    "UBL": {
-      "ticker": "UBL",
-      "status": "ok",
-      "startedAt": "2026-08-02T15:56:07.185Z",
-      "finishedAt": "2026-08-02T15:57:05.303Z",
-      "seconds": 58,
-      "exitCode": 0,
-      "saved": 4,
-      "quartersWritten": 0,
-      "bleedRepaired": 0,
-      "crossChecksOff": 0
-    },
     "WASL": {
       "ticker": "WASL",
       "status": "ok",
@@ -1384,6 +1276,114 @@
       "quartersWritten": 1,
       "bleedRepaired": 0,
       "crossChecksOff": 1
+    },
+    "BAFS": {
+      "ticker": "BAFS",
+      "status": "ok",
+      "startedAt": "2026-08-02T19:47:59.843Z",
+      "finishedAt": "2026-08-02T19:48:06.745Z",
+      "seconds": 7,
+      "exitCode": 0,
+      "saved": 0,
+      "quartersWritten": 0,
+      "bleedRepaired": 0,
+      "crossChecksOff": 3
+    },
+    "NONS": {
+      "ticker": "NONS",
+      "status": "ok",
+      "startedAt": "2026-08-02T19:47:59.848Z",
+      "finishedAt": "2026-08-02T19:48:23.471Z",
+      "seconds": 24,
+      "exitCode": 0,
+      "saved": 0,
+      "quartersWritten": 0,
+      "bleedRepaired": 0,
+      "crossChecksOff": 0
+    },
+    "PRET": {
+      "ticker": "PRET",
+      "status": "ok",
+      "startedAt": "2026-08-02T19:48:06.746Z",
+      "finishedAt": "2026-08-02T19:48:28.277Z",
+      "seconds": 22,
+      "exitCode": 0,
+      "saved": 0,
+      "quartersWritten": 0,
+      "bleedRepaired": 0,
+      "crossChecksOff": 1
+    },
+    "SYS": {
+      "ticker": "SYS",
+      "status": "ok",
+      "startedAt": "2026-08-02T19:48:28.277Z",
+      "finishedAt": "2026-08-02T19:48:33.924Z",
+      "seconds": 6,
+      "exitCode": 0,
+      "saved": 0,
+      "quartersWritten": 0,
+      "bleedRepaired": 0,
+      "crossChecksOff": 0
+    },
+    "PMRS": {
+      "ticker": "PMRS",
+      "status": "ok",
+      "startedAt": "2026-08-02T19:47:59.849Z",
+      "finishedAt": "2026-08-02T19:48:46.427Z",
+      "seconds": 47,
+      "exitCode": 0,
+      "saved": 0,
+      "quartersWritten": 0,
+      "bleedRepaired": 0,
+      "crossChecksOff": 0
+    },
+    "SHSML": {
+      "ticker": "SHSML",
+      "status": "ok",
+      "startedAt": "2026-08-02T19:48:23.472Z",
+      "finishedAt": "2026-08-02T19:48:54.978Z",
+      "seconds": 32,
+      "exitCode": 0,
+      "saved": 0,
+      "quartersWritten": 0,
+      "bleedRepaired": 0,
+      "crossChecksOff": 0
+    },
+    "TCORP": {
+      "ticker": "TCORP",
+      "status": "ok",
+      "startedAt": "2026-08-02T19:48:33.927Z",
+      "finishedAt": "2026-08-02T19:49:01.387Z",
+      "seconds": 27,
+      "exitCode": 0,
+      "saved": 0,
+      "quartersWritten": 0,
+      "bleedRepaired": 0,
+      "crossChecksOff": 0
+    },
+    "TSML": {
+      "ticker": "TSML",
+      "status": "ok",
+      "startedAt": "2026-08-02T19:48:46.428Z",
+      "finishedAt": "2026-08-02T19:49:10.459Z",
+      "seconds": 24,
+      "exitCode": 0,
+      "saved": 0,
+      "quartersWritten": 0,
+      "bleedRepaired": 0,
+      "crossChecksOff": 2
+    },
+    "UBL": {
+      "ticker": "UBL",
+      "status": "ok",
+      "startedAt": "2026-08-02T19:48:54.979Z",
+      "finishedAt": "2026-08-02T19:49:36.415Z",
+      "seconds": 41,
+      "exitCode": 0,
+      "saved": 0,
+      "quartersWritten": 0,
+      "bleedRepaired": 0,
+      "crossChecksOff": 0
     }
   }
 }

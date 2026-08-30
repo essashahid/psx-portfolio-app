@@ -1,0 +1,773 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#f6f6f4">
+<title>MARI · Mari Petroleum · Plumb</title>
+<link rel="stylesheet" href="../tokens/fonts.css">
+<link rel="stylesheet" href="../tokens/colors.css">
+<link rel="stylesheet" href="../tokens/spectrum.css">
+<link rel="stylesheet" href="../tokens/typography.css">
+<link rel="stylesheet" href="../tokens/spacing.css">
+<link rel="stylesheet" href="../tokens/shape.css">
+<link rel="stylesheet" href="../tokens/motion.css">
+<link rel="stylesheet" href="../tokens/base.css">
+<link rel="stylesheet" href="mobile.css">
+</head>
+<body>
+<div class="app">
+<header class="band topbar" style="padding-bottom:16px; background:color-mix(in oklab, #cd5b2e 13%, var(--surface-page))">
+  <div style="display:flex; align-items:center; justify-content:space-between; min-height:46px">
+    <a href="research.html" style="display:flex; align-items:center; gap:8px; font-size:var(--text-sm); color:var(--text-muted)"><span class="i" style="--u:url(https://unpkg.com/lucide-static@0.487.0/icons/arrow-left.svg); width:18px; height:18px" aria-hidden="true"></span><span>All companies</span></a>
+    <button type="button" class="tap" aria-label="Add a transaction" style="display:flex; align-items:center; justify-content:center; width:44px; margin-right:-10px; border:none; background:none; color:var(--text-muted); cursor:pointer"><span class="i" style="--u:url(https://unpkg.com/lucide-static@0.487.0/icons/plus.svg); width:19px; height:19px" aria-hidden="true"></span></button>
+  </div>
+  <span style="display:block; width:38px; height:3px; margin-top:10px; background:#cd5b2e"></span>
+  <div style="display:flex; align-items:flex-end; justify-content:space-between; gap:14px; margin-top:12px">
+    <span style="min-width:0">
+      <span style="display:block; font-family:var(--font-display); font-size:clamp(28px, 9vw, 34px); font-weight:400; line-height:1; letter-spacing:var(--tracking-editorial)">MARI</span>
+      <span style="display:block; margin-top:6px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:var(--text-sm)">Mari Petroleum</span>
+      <span style="display:block; margin-top:3px; font-size:var(--text-2xs); color:var(--text-faint)">Oil &amp; Gas Exploration Companies · PSX</span>
+    </span>
+    <span style="flex:none; text-align:right">
+      <span class="figure" style="display:block; font-size:clamp(24px, 8vw, 30px); font-weight:600; line-height:1; letter-spacing:var(--tracking-editorial)">642.80</span>
+      <span class="figure" style="display:block; margin-top:5px; font-size:var(--text-sm); font-weight:600; color:var(--text-down)">−1.12% today</span>
+    </span>
+  </div>
+  <div style="margin-top:16px">
+    <svg class="chart" viewBox="0 0 370 76" height="76" preserveAspectRatio="none" aria-hidden="true">
+      <defs><linearGradient id="ct" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0%" stop-color="#cd5b2e" stop-opacity="0.26"></stop>
+        <stop offset="100%" stop-color="#cd5b2e" stop-opacity="0.02"></stop></linearGradient></defs>
+      <line x1="0" y1="4.0" x2="370" y2="4.0" stroke="var(--rule-strong)" stroke-dasharray="3 4" vector-effect="non-scaling-stroke"></line>
+      <line x1="0" y1="72.0" x2="370" y2="72.0" stroke="var(--rule-strong)" stroke-dasharray="3 4" vector-effect="non-scaling-stroke"></line>
+      <path d="M0.0 44.3 L6.3 46.7 L12.5 47.4 L18.8 46.2 L25.1 44.9 L31.4 45.4 L37.6 45.9 L43.9 45.9 L50.2 45.7 L56.4 45.1 L62.7 44.0 L69.0 44.4 L75.3 45.0 L81.5 45.8 L87.8 44.4 L94.1 45.9 L100.3 44.0 L106.6 43.6 L112.9 45.3 L119.2 46.3 L125.4 45.1 L131.7 44.9 L138.0 44.2 L144.2 42.2 L150.5 41.8 L156.8 43.5 L163.1 41.1 L169.3 40.9 L175.6 39.3 L181.9 37.1 L188.1 37.0 L194.4 34.7 L200.7 36.2 L206.9 37.2 L213.2 36.4 L219.5 36.3 L225.8 36.6 L232.0 39.0 L238.3 40.9 L244.6 39.9 L250.8 40.4 L257.1 40.1 L263.4 38.6 L269.7 38.8 L275.9 36.5 L282.2 35.8 L288.5 34.2 L294.7 33.7 L301.0 33.1 L307.3 30.6 L313.6 28.0 L319.8 29.6 L326.1 28.7 L332.4 30.3 L338.6 27.7 L344.9 25.2 L351.2 26.1 L357.5 24.9 L363.7 26.0 L370.0 24.3 L370 76 L0 76 Z" fill="url(#ct)"></path>
+      <path d="M0.0 44.3 L6.3 46.7 L12.5 47.4 L18.8 46.2 L25.1 44.9 L31.4 45.4 L37.6 45.9 L43.9 45.9 L50.2 45.7 L56.4 45.1 L62.7 44.0 L69.0 44.4 L75.3 45.0 L81.5 45.8 L87.8 44.4 L94.1 45.9 L100.3 44.0 L106.6 43.6 L112.9 45.3 L119.2 46.3 L125.4 45.1 L131.7 44.9 L138.0 44.2 L144.2 42.2 L150.5 41.8 L156.8 43.5 L163.1 41.1 L169.3 40.9 L175.6 39.3 L181.9 37.1 L188.1 37.0 L194.4 34.7 L200.7 36.2 L206.9 37.2 L213.2 36.4 L219.5 36.3 L225.8 36.6 L232.0 39.0 L238.3 40.9 L244.6 39.9 L250.8 40.4 L257.1 40.1 L263.4 38.6 L269.7 38.8 L275.9 36.5 L282.2 35.8 L288.5 34.2 L294.7 33.7 L301.0 33.1 L307.3 30.6 L313.6 28.0 L319.8 29.6 L326.1 28.7 L332.4 30.3 L338.6 27.7 L344.9 25.2 L351.2 26.1 L357.5 24.9 L363.7 26.0 L370.0 24.3" fill="none" stroke="#cd5b2e" stroke-width="2" stroke-linejoin="round" vector-effect="non-scaling-stroke"></path>
+      <circle cx="370" cy="24.3" r="3.5" fill="#cd5b2e"></circle>
+    </svg>
+    <p style="margin:5px 0 0; font-size:var(--text-2xs); color:var(--text-faint)">60 sessions · dashed rails are the 52-week high and low · 70% of range</p>
+  </div>
+  <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(96px, 1fr)); gap:14px; margin-top:18px; padding-top:14px; border-top:1px solid var(--rule)">
+    <span>
+      <span class="caps" style="display:block">Market cap</span>
+      <span class="figure" style="display:block; margin-top:4px; font-size:var(--text-h3); font-weight:600">857.4bn</span>
+    </span>
+    <span>
+      <span class="caps" style="display:block">P/E</span>
+      <span class="figure" style="display:block; margin-top:4px; font-size:var(--text-h3); font-weight:600">6.9x</span>
+    </span>
+    <span>
+      <span class="caps" style="display:block">EPS</span>
+      <span class="figure" style="display:block; margin-top:4px; font-size:var(--text-h3); font-weight:600">93.16</span>
+    </span>
+    <span>
+      <span class="caps" style="display:block">Yield</span>
+      <span class="figure" style="display:block; margin-top:4px; font-size:var(--text-h3); font-weight:600">1.96%</span>
+    </span>
+    <span>
+      <span class="caps" style="display:block">Volume</span>
+      <span class="figure" style="display:block; margin-top:4px; font-size:var(--text-h3); font-weight:600">890k</span>
+    </span>
+    <span>
+      <span class="caps" style="display:block">52-week</span>
+      <span class="figure" style="display:block; margin-top:4px; font-size:var(--text-h3); font-weight:600">512–698</span>
+    </span>
+  </div>
+</header>
+<div role="tablist" style="display:flex; padding:0 var(--g); border-bottom:1px solid var(--rule); background:color-mix(in oklab, #cd5b2e 13%, var(--surface-page))">
+  <button type="button" role="tab" data-tab="overview" onclick="pickTab('overview')" style="flex:1; min-height:46px; border:none; border-bottom:2px solid transparent; background:none; font-size:var(--text-sm); font-weight:500; color:var(--text-muted); cursor:pointer">Overview</button>
+  <button type="button" role="tab" data-tab="fundamentals" onclick="pickTab('fundamentals')" style="flex:1; min-height:46px; border:none; border-bottom:2px solid transparent; background:none; font-size:var(--text-sm); font-weight:500; color:var(--text-muted); cursor:pointer">Fundamentals</button>
+  <button type="button" role="tab" data-tab="filings" onclick="pickTab('filings')" style="flex:1; min-height:46px; border:none; border-bottom:2px solid transparent; background:none; font-size:var(--text-sm); font-weight:500; color:var(--text-muted); cursor:pointer">Filings</button>
+</div>
+<main class="band">
+  <div data-panel="overview" hidden>
+    <p class="caps" style="margin:0">The business</p>
+    <p style="margin:10px 0 0; font-size:var(--text-body); line-height:1.65; text-wrap:pretty">Pakistan&rsquo;s second-largest gas producer, operating the Mari field in Sindh under a fixed-price arrangement that caps upside but underwrites the cash flow.</p>
+    <p class="caps" style="margin:26px 0 8px; padding-bottom:7px; border-bottom:1px solid var(--rule-strong)">Key signals</p>
+    <div class="ledger">
+      <div class="ledger-row tap" style="display:grid; grid-template-columns:minmax(0,1fr) auto; align-items:baseline; gap:14px">
+        <span><span style="display:block; font-size:var(--text-sm)">Valuation against the sector</span>
+        <span class="figure" style="display:block; margin-top:3px; font-size:var(--text-2xs); color:var(--text-faint)">P/E, FY2025</span></span>
+        <span class="figure" style="text-align:right; font-size:var(--text-sm); font-weight:600">6.9x against 10.4x</span>
+      </div>
+      <div class="ledger-row tap" style="display:grid; grid-template-columns:minmax(0,1fr) auto; align-items:baseline; gap:14px">
+        <span><span style="display:block; font-size:var(--text-sm)">Distance from the 52-week high</span>
+        <span class="figure" style="display:block; margin-top:3px; font-size:var(--text-2xs); color:var(--text-faint)">high 698.30</span></span>
+        <span class="figure" style="text-align:right; font-size:var(--text-sm); font-weight:600">−7.9%</span>
+      </div>
+      <div class="ledger-row tap" style="display:grid; grid-template-columns:minmax(0,1fr) auto; align-items:baseline; gap:14px">
+        <span><span style="display:block; font-size:var(--text-sm)">Payout</span>
+        <span class="figure" style="display:block; margin-top:3px; font-size:var(--text-2xs); color:var(--text-faint)">trailing twelve months</span></span>
+        <span class="figure" style="text-align:right; font-size:var(--text-sm); font-weight:600">1.96% on the current price</span>
+      </div>
+    </div>
+  </div>
+  <div data-panel="fundamentals" hidden>
+    <p class="caps" style="margin:0 0 3px">Five filed years</p>
+    <p style="margin:0 0 16px; font-size:var(--text-2xs); line-height:1.55; color:var(--text-faint)">Shaded band is this company&rsquo;s own range. The hairline is the sector median. Tap a chart to read the years and the sector ranking.</p>
+    <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(150px, 1fr)); gap:1px; background:var(--rule)">
+      <button type="button" data-metric="revenue" onclick="pickMetric('revenue')" style="display:block; width:100%; text-align:left; background:var(--surface-page); border:none; border-left:2px solid transparent; padding:12px; cursor:pointer">
+      <span data-mlabel class="caps" style="display:block">Revenue</span>
+      <span style="display:flex; align-items:baseline; justify-content:space-between; gap:8px; margin-top:6px">
+        <span class="figure" style="font-size:var(--text-h2); font-weight:600; line-height:1; color:var(--text-strong)">643.2bn</span>
+        <span class="figure" style="font-size:var(--text-3xs); font-weight:600; color:var(--text-up)">+17.2%</span>
+      </span>
+      <svg class="chart" viewBox="0 0 160 42" height="42" preserveAspectRatio="none" style="margin-top:10px" aria-hidden="true">
+        <rect x="0" y="6.4" width="160" height="29.2" fill="#cd5b2e" fill-opacity="0.11"></rect>
+        <line x1="0" y1="6.8" x2="160" y2="6.8" stroke="var(--ink-3)" stroke-dasharray="3 3" vector-effect="non-scaling-stroke"></line>
+        <path d="M0.0 35.6 L40.0 26.0 L80.0 26.7 L120.0 14.8 L160.0 6.4" fill="none" stroke="#cd5b2e" stroke-width="1.8" stroke-linejoin="round" vector-effect="non-scaling-stroke"></path>
+        <circle cx="160" cy="6.4" r="2.6" fill="#cd5b2e"></circle>
+      </svg>
+      <span class="figure" style="display:block; margin-top:7px; font-size:9px; color:var(--text-faint)">median 639.0bn</span>
+    </button>
+      <button type="button" data-metric="margin" onclick="pickMetric('margin')" style="display:block; width:100%; text-align:left; background:var(--surface-page); border:none; border-left:2px solid transparent; padding:12px; cursor:pointer">
+      <span data-mlabel class="caps" style="display:block">Net margin</span>
+      <span style="display:flex; align-items:baseline; justify-content:space-between; gap:8px; margin-top:6px">
+        <span class="figure" style="font-size:var(--text-h2); font-weight:600; line-height:1; color:var(--text-strong)">19.3%</span>
+        <span class="figure" style="font-size:var(--text-3xs); font-weight:600; color:var(--text-up)">+4.6%</span>
+      </span>
+      <svg class="chart" viewBox="0 0 160 42" height="42" preserveAspectRatio="none" style="margin-top:10px" aria-hidden="true">
+        <rect x="0" y="6.4" width="160" height="19.4" fill="#cd5b2e" fill-opacity="0.11"></rect>
+        <line x1="0" y1="35.6" x2="160" y2="35.6" stroke="var(--ink-3)" stroke-dasharray="3 3" vector-effect="non-scaling-stroke"></line>
+        <path d="M0.0 6.4 L40.0 19.9 L80.0 12.3 L120.0 25.8 L160.0 18.3" fill="none" stroke="#cd5b2e" stroke-width="1.8" stroke-linejoin="round" vector-effect="non-scaling-stroke"></path>
+        <circle cx="160" cy="18.3" r="2.6" fill="#cd5b2e"></circle>
+      </svg>
+      <span class="figure" style="display:block; margin-top:7px; font-size:9px; color:var(--text-faint)">median 17.4%</span>
+    </button>
+      <button type="button" data-metric="eps" onclick="pickMetric('eps')" style="display:block; width:100%; text-align:left; background:var(--surface-page); border:none; border-left:2px solid transparent; padding:12px; cursor:pointer">
+      <span data-mlabel class="caps" style="display:block">EPS</span>
+      <span style="display:flex; align-items:baseline; justify-content:space-between; gap:8px; margin-top:6px">
+        <span class="figure" style="font-size:var(--text-h2); font-weight:600; line-height:1; color:var(--text-strong)">93.16</span>
+        <span class="figure" style="font-size:var(--text-3xs); font-weight:600; color:var(--text-up)">+22.6%</span>
+      </span>
+      <svg class="chart" viewBox="0 0 160 42" height="42" preserveAspectRatio="none" style="margin-top:10px" aria-hidden="true">
+        <rect x="0" y="6.4" width="160" height="29.2" fill="#cd5b2e" fill-opacity="0.11"></rect>
+        <line x1="0" y1="23.5" x2="160" y2="23.5" stroke="var(--ink-3)" stroke-dasharray="3 3" vector-effect="non-scaling-stroke"></line>
+        <path d="M0.0 35.6 L40.0 27.8 L80.0 26.8 L120.0 17.6 L160.0 6.4" fill="none" stroke="#cd5b2e" stroke-width="1.8" stroke-linejoin="round" vector-effect="non-scaling-stroke"></path>
+        <circle cx="160" cy="6.4" r="2.6" fill="#cd5b2e"></circle>
+      </svg>
+      <span class="figure" style="display:block; margin-top:7px; font-size:9px; color:var(--text-faint)">median 66.96</span>
+    </button>
+      <button type="button" data-metric="roe" onclick="pickMetric('roe')" style="display:block; width:100%; text-align:left; background:var(--surface-page); border:none; border-left:2px solid transparent; padding:12px; cursor:pointer">
+      <span data-mlabel class="caps" style="display:block">Return on equity</span>
+      <span style="display:flex; align-items:baseline; justify-content:space-between; gap:8px; margin-top:6px">
+        <span class="figure" style="font-size:var(--text-h2); font-weight:600; line-height:1; color:var(--text-strong)">8.7%</span>
+        <span class="figure" style="font-size:var(--text-3xs); font-weight:600; color:var(--text-down)">−0.1%</span>
+      </span>
+      <svg class="chart" viewBox="0 0 160 42" height="42" preserveAspectRatio="none" style="margin-top:10px" aria-hidden="true">
+        <rect x="0" y="25.1" width="160" height="10.4" fill="#cd5b2e" fill-opacity="0.11"></rect>
+        <line x1="0" y1="6.4" x2="160" y2="6.4" stroke="var(--ink-3)" stroke-dasharray="3 3" vector-effect="non-scaling-stroke"></line>
+        <path d="M0.0 35.6 L40.0 35.1 L80.0 30.2 L120.0 25.1 L160.0 25.2" fill="none" stroke="#cd5b2e" stroke-width="1.8" stroke-linejoin="round" vector-effect="non-scaling-stroke"></path>
+        <circle cx="160" cy="25.2" r="2.6" fill="#cd5b2e"></circle>
+      </svg>
+      <span class="figure" style="display:block; margin-top:7px; font-size:9px; color:var(--text-faint)">median 11.5%</span>
+    </button>
+      <button type="button" data-metric="de" onclick="pickMetric('de')" style="display:block; width:100%; text-align:left; background:var(--surface-page); border:none; border-left:2px solid transparent; padding:12px; cursor:pointer">
+      <span data-mlabel class="caps" style="display:block">Debt to equity</span>
+      <span style="display:flex; align-items:baseline; justify-content:space-between; gap:8px; margin-top:6px">
+        <span class="figure" style="font-size:var(--text-h2); font-weight:600; line-height:1; color:var(--text-strong)">0.73x</span>
+        <span class="figure" style="font-size:var(--text-3xs); font-weight:600; color:var(--text-up)">−4.1%</span>
+      </span>
+      <svg class="chart" viewBox="0 0 160 42" height="42" preserveAspectRatio="none" style="margin-top:10px" aria-hidden="true">
+        <rect x="0" y="6.4" width="160" height="28.6" fill="#cd5b2e" fill-opacity="0.11"></rect>
+        <line x1="0" y1="35.6" x2="160" y2="35.6" stroke="var(--ink-3)" stroke-dasharray="3 3" vector-effect="non-scaling-stroke"></line>
+        <path d="M0.0 6.4 L40.0 17.4 L80.0 21.0 L120.0 31.3 L160.0 35.0" fill="none" stroke="#cd5b2e" stroke-width="1.8" stroke-linejoin="round" vector-effect="non-scaling-stroke"></path>
+        <circle cx="160" cy="35.0" r="2.6" fill="#cd5b2e"></circle>
+      </svg>
+      <span class="figure" style="display:block; margin-top:7px; font-size:9px; color:var(--text-faint)">median 0.73x</span>
+    </button>
+      <button type="button" data-metric="cc" onclick="pickMetric('cc')" style="display:block; width:100%; text-align:left; background:var(--surface-page); border:none; border-left:2px solid transparent; padding:12px; cursor:pointer">
+      <span data-mlabel class="caps" style="display:block">Cash conversion</span>
+      <span style="display:flex; align-items:baseline; justify-content:space-between; gap:8px; margin-top:6px">
+        <span class="figure" style="font-size:var(--text-h2); font-weight:600; line-height:1; color:var(--text-strong)">82%</span>
+        <span class="figure" style="font-size:var(--text-3xs); font-weight:600; color:var(--text-down)">−1.6%</span>
+      </span>
+      <svg class="chart" viewBox="0 0 160 42" height="42" preserveAspectRatio="none" style="margin-top:10px" aria-hidden="true">
+        <rect x="0" y="6.4" width="160" height="29.2" fill="#cd5b2e" fill-opacity="0.11"></rect>
+        <line x1="0" y1="7.9" x2="160" y2="7.9" stroke="var(--ink-3)" stroke-dasharray="3 3" vector-effect="non-scaling-stroke"></line>
+        <path d="M0.0 35.6 L40.0 19.7 L80.0 22.7 L120.0 6.4 L160.0 10.6" fill="none" stroke="#cd5b2e" stroke-width="1.8" stroke-linejoin="round" vector-effect="non-scaling-stroke"></path>
+        <circle cx="160" cy="10.6" r="2.6" fill="#cd5b2e"></circle>
+      </svg>
+      <span class="figure" style="display:block; margin-top:7px; font-size:9px; color:var(--text-faint)">median 83%</span>
+    </button>
+    </div>
+    <div style="margin-top:24px">
+    <div data-detail="revenue" hidden>
+      <p class="caps" style="margin:0 0 8px; padding-bottom:7px; border-bottom:1px solid var(--rule-strong)">Revenue · PKR, filed accounts</p>
+      <div class="ledger">
+      <div class="ledger-row tap" style="display:grid; grid-template-columns:minmax(0,1fr) auto auto; align-items:baseline; gap:14px">
+        <span style="font-size:var(--text-sm)">FY2021</span>
+        <span class="figure" style="min-width:88px; text-align:right; font-size:var(--text-sm); font-weight:600">313.3bn</span>
+        <span class="figure" style="min-width:64px; text-align:right; font-size:var(--text-sm); color:var(--text-faint)">—</span>
+      </div>
+      <div class="ledger-row tap" style="display:grid; grid-template-columns:minmax(0,1fr) auto auto; align-items:baseline; gap:14px">
+        <span style="font-size:var(--text-sm)">FY2022</span>
+        <span class="figure" style="min-width:88px; text-align:right; font-size:var(--text-sm); font-weight:600">421.2bn</span>
+        <span class="figure" style="min-width:64px; text-align:right; font-size:var(--text-sm); color:var(--text-up)">+34.4%</span>
+      </div>
+      <div class="ledger-row tap" style="display:grid; grid-template-columns:minmax(0,1fr) auto auto; align-items:baseline; gap:14px">
+        <span style="font-size:var(--text-sm)">FY2023</span>
+        <span class="figure" style="min-width:88px; text-align:right; font-size:var(--text-sm); font-weight:600">413.8bn</span>
+        <span class="figure" style="min-width:64px; text-align:right; font-size:var(--text-sm); color:var(--text-down)">−1.8%</span>
+      </div>
+      <div class="ledger-row tap" style="display:grid; grid-template-columns:minmax(0,1fr) auto auto; align-items:baseline; gap:14px">
+        <span style="font-size:var(--text-sm)">FY2024</span>
+        <span class="figure" style="min-width:88px; text-align:right; font-size:var(--text-sm); font-weight:600">548.7bn</span>
+        <span class="figure" style="min-width:64px; text-align:right; font-size:var(--text-sm); color:var(--text-up)">+32.6%</span>
+      </div>
+      <div class="ledger-row tap" style="display:grid; grid-template-columns:minmax(0,1fr) auto auto; align-items:baseline; gap:14px">
+        <span style="font-size:var(--text-sm)">FY2025</span>
+        <span class="figure" style="min-width:88px; text-align:right; font-size:var(--text-sm); font-weight:600">643.2bn</span>
+        <span class="figure" style="min-width:64px; text-align:right; font-size:var(--text-sm); color:var(--text-up)">+17.2%</span>
+      </div>
+      </div>
+      <p style="margin:14px 0 0; font-size:var(--text-2xs); line-height:1.6; color:var(--text-muted); text-wrap:pretty">Revenue says how much business the company did before any judgement about cost. Compare it with margin: growth that arrives with a thinner margin is bought, not earned.</p>
+      <p class="caps" style="margin:22px 0 8px; padding-bottom:7px; border-bottom:1px solid var(--rule-strong)">Revenue across E&amp;P</p>
+      <div class="ledger">
+      <div class="ledger-row" style="padding:11px 0">
+        <div style="display:grid; grid-template-columns:20px minmax(0,1fr) auto; align-items:baseline; gap:10px">
+          <span class="figure" style="font-size:var(--text-2xs); color:var(--text-faint)">1</span>
+          <span style="min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:var(--text-sm); font-weight:500; color:var(--text-muted)">OGDC · Oil &amp; Gas Development Company</span>
+          <span class="figure" style="min-width:84px; text-align:right; font-size:var(--text-sm); font-weight:500; color:var(--text-muted)">1.08tn</span>
+        </div>
+        <span style="display:block; height:3px; margin-top:7px; background:var(--surface-inset)">
+          <span style="display:block; height:100%; width:100.0%; background:var(--rule-strong)"></span>
+        </span>
+      </div>
+      <div class="ledger-row" style="padding:11px 0">
+        <div style="display:grid; grid-template-columns:20px minmax(0,1fr) auto; align-items:baseline; gap:10px">
+          <span class="figure" style="font-size:var(--text-2xs); color:var(--text-faint)">2</span>
+          <span style="min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:var(--text-sm); font-weight:600; color:var(--text-strong)">MARI · Mari Petroleum</span>
+          <span class="figure" style="min-width:84px; text-align:right; font-size:var(--text-sm); font-weight:600; color:var(--text-strong)">643.2bn</span>
+        </div>
+        <span style="display:block; height:3px; margin-top:7px; background:var(--surface-inset)">
+          <span style="display:block; height:100%; width:59.4%; background:#cd5b2e"></span>
+        </span>
+      </div>
+      <div class="ledger-row" style="padding:11px 0">
+        <div style="display:grid; grid-template-columns:20px minmax(0,1fr) auto; align-items:baseline; gap:10px">
+          <span class="figure" style="font-size:var(--text-2xs); color:var(--text-faint)">3</span>
+          <span style="min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:var(--text-sm); font-weight:500; color:var(--text-muted)">PPL · Pakistan Petroleum</span>
+          <span class="figure" style="min-width:84px; text-align:right; font-size:var(--text-sm); font-weight:500; color:var(--text-muted)">634.8bn</span>
+        </div>
+        <span style="display:block; height:3px; margin-top:7px; background:var(--surface-inset)">
+          <span style="display:block; height:100%; width:58.6%; background:var(--rule-strong)"></span>
+        </span>
+      </div>
+      <div class="ledger-row" style="padding:11px 0">
+        <div style="display:grid; grid-template-columns:20px minmax(0,1fr) auto; align-items:baseline; gap:10px">
+          <span class="figure" style="font-size:var(--text-2xs); color:var(--text-faint)">4</span>
+          <span style="min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:var(--text-sm); font-weight:500; color:var(--text-muted)">POL · Pakistan Oilfields</span>
+          <span class="figure" style="min-width:84px; text-align:right; font-size:var(--text-sm); font-weight:500; color:var(--text-muted)">165.4bn</span>
+        </div>
+        <span style="display:block; height:3px; margin-top:7px; background:var(--surface-inset)">
+          <span style="display:block; height:100%; width:15.3%; background:var(--rule-strong)"></span>
+        </span>
+      </div>
+      </div>
+    </div>
+    <div data-detail="margin" hidden>
+      <p class="caps" style="margin:0 0 8px; padding-bottom:7px; border-bottom:1px solid var(--rule-strong)">Net margin · profit after tax ÷ revenue</p>
+      <div class="ledger">
+      <div class="ledger-row tap" style="display:grid; grid-template-columns:minmax(0,1fr) auto auto; align-items:baseline; gap:14px">
+        <span style="font-size:var(--text-sm)">FY2021</span>
+        <span class="figure" style="min-width:88px; text-align:right; font-size:var(--text-sm); font-weight:600">20.6%</span>
+        <span class="figure" style="min-width:64px; text-align:right; font-size:var(--text-sm); color:var(--text-faint)">—</span>
+      </div>
+      <div class="ledger-row tap" style="display:grid; grid-template-columns:minmax(0,1fr) auto auto; align-items:baseline; gap:14px">
+        <span style="font-size:var(--text-sm)">FY2022</span>
+        <span class="figure" style="min-width:88px; text-align:right; font-size:var(--text-sm); font-weight:600">19.1%</span>
+        <span class="figure" style="min-width:64px; text-align:right; font-size:var(--text-sm); color:var(--text-down)">−7.3%</span>
+      </div>
+      <div class="ledger-row tap" style="display:grid; grid-template-columns:minmax(0,1fr) auto auto; align-items:baseline; gap:14px">
+        <span style="font-size:var(--text-sm)">FY2023</span>
+        <span class="figure" style="min-width:88px; text-align:right; font-size:var(--text-sm); font-weight:600">20.0%</span>
+        <span class="figure" style="min-width:64px; text-align:right; font-size:var(--text-sm); color:var(--text-up)">+4.4%</span>
+      </div>
+      <div class="ledger-row tap" style="display:grid; grid-template-columns:minmax(0,1fr) auto auto; align-items:baseline; gap:14px">
+        <span style="font-size:var(--text-sm)">FY2024</span>
+        <span class="figure" style="min-width:88px; text-align:right; font-size:var(--text-sm); font-weight:600">18.5%</span>
+        <span class="figure" style="min-width:64px; text-align:right; font-size:var(--text-sm); color:var(--text-down)">−7.5%</span>
+      </div>
+      <div class="ledger-row tap" style="display:grid; grid-template-columns:minmax(0,1fr) auto auto; align-items:baseline; gap:14px">
+        <span style="font-size:var(--text-sm)">FY2025</span>
+        <span class="figure" style="min-width:88px; text-align:right; font-size:var(--text-sm); font-weight:600">19.3%</span>
+        <span class="figure" style="min-width:64px; text-align:right; font-size:var(--text-sm); color:var(--text-up)">+4.6%</span>
+      </div>
+      </div>
+      <p style="margin:14px 0 0; font-size:var(--text-2xs); line-height:1.6; color:var(--text-muted); text-wrap:pretty">How much of each rupee of revenue survives to profit. Stable margin through a cost cycle is the clearest sign of pricing power.</p>
+      <p class="caps" style="margin:22px 0 8px; padding-bottom:7px; border-bottom:1px solid var(--rule-strong)">Net margin across E&amp;P</p>
+      <div class="ledger">
+      <div class="ledger-row" style="padding:11px 0">
+        <div style="display:grid; grid-template-columns:20px minmax(0,1fr) auto; align-items:baseline; gap:10px">
+          <span class="figure" style="font-size:var(--text-2xs); color:var(--text-faint)">1</span>
+          <span style="min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:var(--text-sm); font-weight:600; color:var(--text-strong)">MARI · Mari Petroleum</span>
+          <span class="figure" style="min-width:84px; text-align:right; font-size:var(--text-sm); font-weight:600; color:var(--text-strong)">19.3%</span>
+        </div>
+        <span style="display:block; height:3px; margin-top:7px; background:var(--surface-inset)">
+          <span style="display:block; height:100%; width:100.0%; background:#cd5b2e"></span>
+        </span>
+      </div>
+      <div class="ledger-row" style="padding:11px 0">
+        <div style="display:grid; grid-template-columns:20px minmax(0,1fr) auto; align-items:baseline; gap:10px">
+          <span class="figure" style="font-size:var(--text-2xs); color:var(--text-faint)">2</span>
+          <span style="min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:var(--text-sm); font-weight:500; color:var(--text-muted)">POL · Pakistan Oilfields</span>
+          <span class="figure" style="min-width:84px; text-align:right; font-size:var(--text-sm); font-weight:500; color:var(--text-muted)">17.8%</span>
+        </div>
+        <span style="display:block; height:3px; margin-top:7px; background:var(--surface-inset)">
+          <span style="display:block; height:100%; width:92.0%; background:var(--rule-strong)"></span>
+        </span>
+      </div>
+      <div class="ledger-row" style="padding:11px 0">
+        <div style="display:grid; grid-template-columns:20px minmax(0,1fr) auto; align-items:baseline; gap:10px">
+          <span class="figure" style="font-size:var(--text-2xs); color:var(--text-faint)">3</span>
+          <span style="min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:var(--text-sm); font-weight:500; color:var(--text-muted)">PPL · Pakistan Petroleum</span>
+          <span class="figure" style="min-width:84px; text-align:right; font-size:var(--text-sm); font-weight:500; color:var(--text-muted)">17.0%</span>
+        </div>
+        <span style="display:block; height:3px; margin-top:7px; background:var(--surface-inset)">
+          <span style="display:block; height:100%; width:87.9%; background:var(--rule-strong)"></span>
+        </span>
+      </div>
+      <div class="ledger-row" style="padding:11px 0">
+        <div style="display:grid; grid-template-columns:20px minmax(0,1fr) auto; align-items:baseline; gap:10px">
+          <span class="figure" style="font-size:var(--text-2xs); color:var(--text-faint)">4</span>
+          <span style="min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:var(--text-sm); font-weight:500; color:var(--text-muted)">OGDC · Oil &amp; Gas Development Company</span>
+          <span class="figure" style="min-width:84px; text-align:right; font-size:var(--text-sm); font-weight:500; color:var(--text-muted)">16.2%</span>
+        </div>
+        <span style="display:block; height:3px; margin-top:7px; background:var(--surface-inset)">
+          <span style="display:block; height:100%; width:83.8%; background:var(--rule-strong)"></span>
+        </span>
+      </div>
+      </div>
+    </div>
+    <div data-detail="eps" hidden>
+      <p class="caps" style="margin:0 0 8px; padding-bottom:7px; border-bottom:1px solid var(--rule-strong)">EPS · PKR, diluted</p>
+      <div class="ledger">
+      <div class="ledger-row tap" style="display:grid; grid-template-columns:minmax(0,1fr) auto auto; align-items:baseline; gap:14px">
+        <span style="font-size:var(--text-sm)">FY2021</span>
+        <span class="figure" style="min-width:88px; text-align:right; font-size:var(--text-sm); font-weight:600">48.49</span>
+        <span class="figure" style="min-width:64px; text-align:right; font-size:var(--text-sm); color:var(--text-faint)">—</span>
+      </div>
+      <div class="ledger-row tap" style="display:grid; grid-template-columns:minmax(0,1fr) auto auto; align-items:baseline; gap:14px">
+        <span style="font-size:var(--text-sm)">FY2022</span>
+        <span class="figure" style="min-width:88px; text-align:right; font-size:var(--text-sm); font-weight:600">60.44</span>
+        <span class="figure" style="min-width:64px; text-align:right; font-size:var(--text-sm); color:var(--text-up)">+24.6%</span>
+      </div>
+      <div class="ledger-row tap" style="display:grid; grid-template-columns:minmax(0,1fr) auto auto; align-items:baseline; gap:14px">
+        <span style="font-size:var(--text-sm)">FY2023</span>
+        <span class="figure" style="min-width:88px; text-align:right; font-size:var(--text-sm); font-weight:600">61.99</span>
+        <span class="figure" style="min-width:64px; text-align:right; font-size:var(--text-sm); color:var(--text-up)">+2.6%</span>
+      </div>
+      <div class="ledger-row tap" style="display:grid; grid-template-columns:minmax(0,1fr) auto auto; align-items:baseline; gap:14px">
+        <span style="font-size:var(--text-sm)">FY2024</span>
+        <span class="figure" style="min-width:88px; text-align:right; font-size:var(--text-sm); font-weight:600">76.00</span>
+        <span class="figure" style="min-width:64px; text-align:right; font-size:var(--text-sm); color:var(--text-up)">+22.6%</span>
+      </div>
+      <div class="ledger-row tap" style="display:grid; grid-template-columns:minmax(0,1fr) auto auto; align-items:baseline; gap:14px">
+        <span style="font-size:var(--text-sm)">FY2025</span>
+        <span class="figure" style="min-width:88px; text-align:right; font-size:var(--text-sm); font-weight:600">93.16</span>
+        <span class="figure" style="min-width:64px; text-align:right; font-size:var(--text-sm); color:var(--text-up)">+22.6%</span>
+      </div>
+      </div>
+      <p style="margin:14px 0 0; font-size:var(--text-2xs); line-height:1.6; color:var(--text-muted); text-wrap:pretty">The per-share claim on profit, and the denominator of the P/E in the header.</p>
+      <p class="caps" style="margin:22px 0 8px; padding-bottom:7px; border-bottom:1px solid var(--rule-strong)">EPS across E&amp;P</p>
+      <div class="ledger">
+      <div class="ledger-row" style="padding:11px 0">
+        <div style="display:grid; grid-template-columns:20px minmax(0,1fr) auto; align-items:baseline; gap:10px">
+          <span class="figure" style="font-size:var(--text-2xs); color:var(--text-faint)">1</span>
+          <span style="min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:var(--text-sm); font-weight:500; color:var(--text-muted)">POL · Pakistan Oilfields</span>
+          <span class="figure" style="min-width:84px; text-align:right; font-size:var(--text-sm); font-weight:500; color:var(--text-muted)">103.61</span>
+        </div>
+        <span style="display:block; height:3px; margin-top:7px; background:var(--surface-inset)">
+          <span style="display:block; height:100%; width:100.0%; background:var(--rule-strong)"></span>
+        </span>
+      </div>
+      <div class="ledger-row" style="padding:11px 0">
+        <div style="display:grid; grid-template-columns:20px minmax(0,1fr) auto; align-items:baseline; gap:10px">
+          <span class="figure" style="font-size:var(--text-2xs); color:var(--text-faint)">2</span>
+          <span style="min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:var(--text-sm); font-weight:600; color:var(--text-strong)">MARI · Mari Petroleum</span>
+          <span class="figure" style="min-width:84px; text-align:right; font-size:var(--text-sm); font-weight:600; color:var(--text-strong)">93.16</span>
+        </div>
+        <span style="display:block; height:3px; margin-top:7px; background:var(--surface-inset)">
+          <span style="display:block; height:100%; width:89.9%; background:#cd5b2e"></span>
+        </span>
+      </div>
+      <div class="ledger-row" style="padding:11px 0">
+        <div style="display:grid; grid-template-columns:20px minmax(0,1fr) auto; align-items:baseline; gap:10px">
+          <span class="figure" style="font-size:var(--text-2xs); color:var(--text-faint)">3</span>
+          <span style="min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:var(--text-sm); font-weight:500; color:var(--text-muted)">OGDC · Oil &amp; Gas Development Company</span>
+          <span class="figure" style="min-width:84px; text-align:right; font-size:var(--text-sm); font-weight:500; color:var(--text-muted)">40.76</span>
+        </div>
+        <span style="display:block; height:3px; margin-top:7px; background:var(--surface-inset)">
+          <span style="display:block; height:100%; width:39.3%; background:var(--rule-strong)"></span>
+        </span>
+      </div>
+      <div class="ledger-row" style="padding:11px 0">
+        <div style="display:grid; grid-template-columns:20px minmax(0,1fr) auto; align-items:baseline; gap:10px">
+          <span class="figure" style="font-size:var(--text-2xs); color:var(--text-faint)">4</span>
+          <span style="min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:var(--text-sm); font-weight:500; color:var(--text-muted)">PPL · Pakistan Petroleum</span>
+          <span class="figure" style="min-width:84px; text-align:right; font-size:var(--text-sm); font-weight:500; color:var(--text-muted)">39.65</span>
+        </div>
+        <span style="display:block; height:3px; margin-top:7px; background:var(--surface-inset)">
+          <span style="display:block; height:100%; width:38.3%; background:var(--rule-strong)"></span>
+        </span>
+      </div>
+      </div>
+    </div>
+    <div data-detail="roe" hidden>
+      <p class="caps" style="margin:0 0 8px; padding-bottom:7px; border-bottom:1px solid var(--rule-strong)">Return on equity · profit ÷ average equity</p>
+      <div class="ledger">
+      <div class="ledger-row tap" style="display:grid; grid-template-columns:minmax(0,1fr) auto auto; align-items:baseline; gap:14px">
+        <span style="font-size:var(--text-sm)">FY2021</span>
+        <span class="figure" style="min-width:88px; text-align:right; font-size:var(--text-sm); font-weight:600">7.1%</span>
+        <span class="figure" style="min-width:64px; text-align:right; font-size:var(--text-sm); color:var(--text-faint)">—</span>
+      </div>
+      <div class="ledger-row tap" style="display:grid; grid-template-columns:minmax(0,1fr) auto auto; align-items:baseline; gap:14px">
+        <span style="font-size:var(--text-sm)">FY2022</span>
+        <span class="figure" style="min-width:88px; text-align:right; font-size:var(--text-sm); font-weight:600">7.2%</span>
+        <span class="figure" style="min-width:64px; text-align:right; font-size:var(--text-sm); color:var(--text-up)">+1.0%</span>
+      </div>
+      <div class="ledger-row tap" style="display:grid; grid-template-columns:minmax(0,1fr) auto auto; align-items:baseline; gap:14px">
+        <span style="font-size:var(--text-sm)">FY2023</span>
+        <span class="figure" style="min-width:88px; text-align:right; font-size:var(--text-sm); font-weight:600">7.9%</span>
+        <span class="figure" style="min-width:64px; text-align:right; font-size:var(--text-sm); color:var(--text-up)">+10.1%</span>
+      </div>
+      <div class="ledger-row tap" style="display:grid; grid-template-columns:minmax(0,1fr) auto auto; align-items:baseline; gap:14px">
+        <span style="font-size:var(--text-sm)">FY2024</span>
+        <span class="figure" style="min-width:88px; text-align:right; font-size:var(--text-sm); font-weight:600">8.7%</span>
+        <span class="figure" style="min-width:64px; text-align:right; font-size:var(--text-sm); color:var(--text-up)">+9.6%</span>
+      </div>
+      <div class="ledger-row tap" style="display:grid; grid-template-columns:minmax(0,1fr) auto auto; align-items:baseline; gap:14px">
+        <span style="font-size:var(--text-sm)">FY2025</span>
+        <span class="figure" style="min-width:88px; text-align:right; font-size:var(--text-sm); font-weight:600">8.7%</span>
+        <span class="figure" style="min-width:64px; text-align:right; font-size:var(--text-sm); color:var(--text-down)">−0.1%</span>
+      </div>
+      </div>
+      <p style="margin:14px 0 0; font-size:var(--text-2xs); line-height:1.6; color:var(--text-muted); text-wrap:pretty">What the company earns on shareholders&rsquo; own capital. Read it beside debt to equity — leverage lifts return without improving the business.</p>
+      <p class="caps" style="margin:22px 0 8px; padding-bottom:7px; border-bottom:1px solid var(--rule-strong)">Return on equity across E&amp;P</p>
+      <div class="ledger">
+      <div class="ledger-row" style="padding:11px 0">
+        <div style="display:grid; grid-template-columns:20px minmax(0,1fr) auto; align-items:baseline; gap:10px">
+          <span class="figure" style="font-size:var(--text-2xs); color:var(--text-faint)">1</span>
+          <span style="min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:var(--text-sm); font-weight:500; color:var(--text-muted)">POL · Pakistan Oilfields</span>
+          <span class="figure" style="min-width:84px; text-align:right; font-size:var(--text-sm); font-weight:500; color:var(--text-muted)">20.7%</span>
+        </div>
+        <span style="display:block; height:3px; margin-top:7px; background:var(--surface-inset)">
+          <span style="display:block; height:100%; width:100.0%; background:var(--rule-strong)"></span>
+        </span>
+      </div>
+      <div class="ledger-row" style="padding:11px 0">
+        <div style="display:grid; grid-template-columns:20px minmax(0,1fr) auto; align-items:baseline; gap:10px">
+          <span class="figure" style="font-size:var(--text-2xs); color:var(--text-faint)">2</span>
+          <span style="min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:var(--text-sm); font-weight:500; color:var(--text-muted)">PPL · Pakistan Petroleum</span>
+          <span class="figure" style="min-width:84px; text-align:right; font-size:var(--text-sm); font-weight:500; color:var(--text-muted)">14.3%</span>
+        </div>
+        <span style="display:block; height:3px; margin-top:7px; background:var(--surface-inset)">
+          <span style="display:block; height:100%; width:69.2%; background:var(--rule-strong)"></span>
+        </span>
+      </div>
+      <div class="ledger-row" style="padding:11px 0">
+        <div style="display:grid; grid-template-columns:20px minmax(0,1fr) auto; align-items:baseline; gap:10px">
+          <span class="figure" style="font-size:var(--text-2xs); color:var(--text-faint)">3</span>
+          <span style="min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:var(--text-sm); font-weight:600; color:var(--text-strong)">MARI · Mari Petroleum</span>
+          <span class="figure" style="min-width:84px; text-align:right; font-size:var(--text-sm); font-weight:600; color:var(--text-strong)">8.7%</span>
+        </div>
+        <span style="display:block; height:3px; margin-top:7px; background:var(--surface-inset)">
+          <span style="display:block; height:100%; width:42.0%; background:#cd5b2e"></span>
+        </span>
+      </div>
+      <div class="ledger-row" style="padding:11px 0">
+        <div style="display:grid; grid-template-columns:20px minmax(0,1fr) auto; align-items:baseline; gap:10px">
+          <span class="figure" style="font-size:var(--text-2xs); color:var(--text-faint)">4</span>
+          <span style="min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:var(--text-sm); font-weight:500; color:var(--text-muted)">OGDC · Oil &amp; Gas Development Company</span>
+          <span class="figure" style="min-width:84px; text-align:right; font-size:var(--text-sm); font-weight:500; color:var(--text-muted)">7.8%</span>
+        </div>
+        <span style="display:block; height:3px; margin-top:7px; background:var(--surface-inset)">
+          <span style="display:block; height:100%; width:37.5%; background:var(--rule-strong)"></span>
+        </span>
+      </div>
+      </div>
+    </div>
+    <div data-detail="de" hidden>
+      <p class="caps" style="margin:0 0 8px; padding-bottom:7px; border-bottom:1px solid var(--rule-strong)">Debt to equity · total debt ÷ equity</p>
+      <div class="ledger">
+      <div class="ledger-row tap" style="display:grid; grid-template-columns:minmax(0,1fr) auto auto; align-items:baseline; gap:14px">
+        <span style="font-size:var(--text-sm)">FY2021</span>
+        <span class="figure" style="min-width:88px; text-align:right; font-size:var(--text-sm); font-weight:600">0.98x</span>
+        <span class="figure" style="min-width:64px; text-align:right; font-size:var(--text-sm); color:var(--text-faint)">—</span>
+      </div>
+      <div class="ledger-row tap" style="display:grid; grid-template-columns:minmax(0,1fr) auto auto; align-items:baseline; gap:14px">
+        <span style="font-size:var(--text-sm)">FY2022</span>
+        <span class="figure" style="min-width:88px; text-align:right; font-size:var(--text-sm); font-weight:600">0.88x</span>
+        <span class="figure" style="min-width:64px; text-align:right; font-size:var(--text-sm); color:var(--text-up)">−9.6%</span>
+      </div>
+      <div class="ledger-row tap" style="display:grid; grid-template-columns:minmax(0,1fr) auto auto; align-items:baseline; gap:14px">
+        <span style="font-size:var(--text-sm)">FY2023</span>
+        <span class="figure" style="min-width:88px; text-align:right; font-size:var(--text-sm); font-weight:600">0.85x</span>
+        <span class="figure" style="min-width:64px; text-align:right; font-size:var(--text-sm); color:var(--text-up)">−3.4%</span>
+      </div>
+      <div class="ledger-row tap" style="display:grid; grid-template-columns:minmax(0,1fr) auto auto; align-items:baseline; gap:14px">
+        <span style="font-size:var(--text-sm)">FY2024</span>
+        <span class="figure" style="min-width:88px; text-align:right; font-size:var(--text-sm); font-weight:600">0.77x</span>
+        <span class="figure" style="min-width:64px; text-align:right; font-size:var(--text-sm); color:var(--text-up)">−10.3%</span>
+      </div>
+      <div class="ledger-row tap" style="display:grid; grid-template-columns:minmax(0,1fr) auto auto; align-items:baseline; gap:14px">
+        <span style="font-size:var(--text-sm)">FY2025</span>
+        <span class="figure" style="min-width:88px; text-align:right; font-size:var(--text-sm); font-weight:600">0.73x</span>
+        <span class="figure" style="min-width:64px; text-align:right; font-size:var(--text-sm); color:var(--text-up)">−4.1%</span>
+      </div>
+      </div>
+      <p style="margin:14px 0 0; font-size:var(--text-2xs); line-height:1.6; color:var(--text-muted); text-wrap:pretty">How much of the balance sheet is borrowed. Lower is calmer.</p>
+      <p class="caps" style="margin:22px 0 8px; padding-bottom:7px; border-bottom:1px solid var(--rule-strong)">Debt to equity across E&amp;P</p>
+      <div class="ledger">
+      <div class="ledger-row" style="padding:11px 0">
+        <div style="display:grid; grid-template-columns:20px minmax(0,1fr) auto; align-items:baseline; gap:10px">
+          <span class="figure" style="font-size:var(--text-2xs); color:var(--text-faint)">1</span>
+          <span style="min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:var(--text-sm); font-weight:500; color:var(--text-muted)">OGDC · Oil &amp; Gas Development Company</span>
+          <span class="figure" style="min-width:84px; text-align:right; font-size:var(--text-sm); font-weight:500; color:var(--text-muted)">0.65x</span>
+        </div>
+        <span style="display:block; height:3px; margin-top:7px; background:var(--surface-inset)">
+          <span style="display:block; height:100%; width:85.0%; background:var(--rule-strong)"></span>
+        </span>
+      </div>
+      <div class="ledger-row" style="padding:11px 0">
+        <div style="display:grid; grid-template-columns:20px minmax(0,1fr) auto; align-items:baseline; gap:10px">
+          <span class="figure" style="font-size:var(--text-2xs); color:var(--text-faint)">2</span>
+          <span style="min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:var(--text-sm); font-weight:500; color:var(--text-muted)">PPL · Pakistan Petroleum</span>
+          <span class="figure" style="min-width:84px; text-align:right; font-size:var(--text-sm); font-weight:500; color:var(--text-muted)">0.73x</span>
+        </div>
+        <span style="display:block; height:3px; margin-top:7px; background:var(--surface-inset)">
+          <span style="display:block; height:100%; width:94.4%; background:var(--rule-strong)"></span>
+        </span>
+      </div>
+      <div class="ledger-row" style="padding:11px 0">
+        <div style="display:grid; grid-template-columns:20px minmax(0,1fr) auto; align-items:baseline; gap:10px">
+          <span class="figure" style="font-size:var(--text-2xs); color:var(--text-faint)">3</span>
+          <span style="min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:var(--text-sm); font-weight:600; color:var(--text-strong)">MARI · Mari Petroleum</span>
+          <span class="figure" style="min-width:84px; text-align:right; font-size:var(--text-sm); font-weight:600; color:var(--text-strong)">0.73x</span>
+        </div>
+        <span style="display:block; height:3px; margin-top:7px; background:var(--surface-inset)">
+          <span style="display:block; height:100%; width:95.6%; background:#cd5b2e"></span>
+        </span>
+      </div>
+      <div class="ledger-row" style="padding:11px 0">
+        <div style="display:grid; grid-template-columns:20px minmax(0,1fr) auto; align-items:baseline; gap:10px">
+          <span class="figure" style="font-size:var(--text-2xs); color:var(--text-faint)">4</span>
+          <span style="min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:var(--text-sm); font-weight:500; color:var(--text-muted)">POL · Pakistan Oilfields</span>
+          <span class="figure" style="min-width:84px; text-align:right; font-size:var(--text-sm); font-weight:500; color:var(--text-muted)">0.77x</span>
+        </div>
+        <span style="display:block; height:3px; margin-top:7px; background:var(--surface-inset)">
+          <span style="display:block; height:100%; width:100.0%; background:var(--rule-strong)"></span>
+        </span>
+      </div>
+      </div>
+    </div>
+    <div data-detail="cc" hidden>
+      <p class="caps" style="margin:0 0 8px; padding-bottom:7px; border-bottom:1px solid var(--rule-strong)">Cash conversion · operating cash flow ÷ profit</p>
+      <div class="ledger">
+      <div class="ledger-row tap" style="display:grid; grid-template-columns:minmax(0,1fr) auto auto; align-items:baseline; gap:14px">
+        <span style="font-size:var(--text-sm)">FY2021</span>
+        <span class="figure" style="min-width:88px; text-align:right; font-size:var(--text-sm); font-weight:600">74%</span>
+        <span class="figure" style="min-width:64px; text-align:right; font-size:var(--text-sm); color:var(--text-faint)">—</span>
+      </div>
+      <div class="ledger-row tap" style="display:grid; grid-template-columns:minmax(0,1fr) auto auto; align-items:baseline; gap:14px">
+        <span style="font-size:var(--text-sm)">FY2022</span>
+        <span class="figure" style="min-width:88px; text-align:right; font-size:var(--text-sm); font-weight:600">79%</span>
+        <span class="figure" style="min-width:64px; text-align:right; font-size:var(--text-sm); color:var(--text-up)">+7.0%</span>
+      </div>
+      <div class="ledger-row tap" style="display:grid; grid-template-columns:minmax(0,1fr) auto auto; align-items:baseline; gap:14px">
+        <span style="font-size:var(--text-sm)">FY2023</span>
+        <span class="figure" style="min-width:88px; text-align:right; font-size:var(--text-sm); font-weight:600">78%</span>
+        <span class="figure" style="min-width:64px; text-align:right; font-size:var(--text-sm); color:var(--text-down)">−1.2%</span>
+      </div>
+      <div class="ledger-row tap" style="display:grid; grid-template-columns:minmax(0,1fr) auto auto; align-items:baseline; gap:14px">
+        <span style="font-size:var(--text-sm)">FY2024</span>
+        <span class="figure" style="min-width:88px; text-align:right; font-size:var(--text-sm); font-weight:600">84%</span>
+        <span class="figure" style="min-width:64px; text-align:right; font-size:var(--text-sm); color:var(--text-up)">+6.8%</span>
+      </div>
+      <div class="ledger-row tap" style="display:grid; grid-template-columns:minmax(0,1fr) auto auto; align-items:baseline; gap:14px">
+        <span style="font-size:var(--text-sm)">FY2025</span>
+        <span class="figure" style="min-width:88px; text-align:right; font-size:var(--text-sm); font-weight:600">82%</span>
+        <span class="figure" style="min-width:64px; text-align:right; font-size:var(--text-sm); color:var(--text-down)">−1.6%</span>
+      </div>
+      </div>
+      <p style="margin:14px 0 0; font-size:var(--text-2xs); line-height:1.6; color:var(--text-muted); text-wrap:pretty">Whether reported profit shows up as cash. Below 100% means profit is sitting in receivables or inventory.</p>
+      <p class="caps" style="margin:22px 0 8px; padding-bottom:7px; border-bottom:1px solid var(--rule-strong)">Cash conversion across E&amp;P</p>
+      <div class="ledger">
+      <div class="ledger-row" style="padding:11px 0">
+        <div style="display:grid; grid-template-columns:20px minmax(0,1fr) auto; align-items:baseline; gap:10px">
+          <span class="figure" style="font-size:var(--text-2xs); color:var(--text-faint)">1</span>
+          <span style="min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:var(--text-sm); font-weight:500; color:var(--text-muted)">PPL · Pakistan Petroleum</span>
+          <span class="figure" style="min-width:84px; text-align:right; font-size:var(--text-sm); font-weight:500; color:var(--text-muted)">90%</span>
+        </div>
+        <span style="display:block; height:3px; margin-top:7px; background:var(--surface-inset)">
+          <span style="display:block; height:100%; width:100.0%; background:var(--rule-strong)"></span>
+        </span>
+      </div>
+      <div class="ledger-row" style="padding:11px 0">
+        <div style="display:grid; grid-template-columns:20px minmax(0,1fr) auto; align-items:baseline; gap:10px">
+          <span class="figure" style="font-size:var(--text-2xs); color:var(--text-faint)">2</span>
+          <span style="min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:var(--text-sm); font-weight:500; color:var(--text-muted)">POL · Pakistan Oilfields</span>
+          <span class="figure" style="min-width:84px; text-align:right; font-size:var(--text-sm); font-weight:500; color:var(--text-muted)">84%</span>
+        </div>
+        <span style="display:block; height:3px; margin-top:7px; background:var(--surface-inset)">
+          <span style="display:block; height:100%; width:93.6%; background:var(--rule-strong)"></span>
+        </span>
+      </div>
+      <div class="ledger-row" style="padding:11px 0">
+        <div style="display:grid; grid-template-columns:20px minmax(0,1fr) auto; align-items:baseline; gap:10px">
+          <span class="figure" style="font-size:var(--text-2xs); color:var(--text-faint)">3</span>
+          <span style="min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:var(--text-sm); font-weight:600; color:var(--text-strong)">MARI · Mari Petroleum</span>
+          <span class="figure" style="min-width:84px; text-align:right; font-size:var(--text-sm); font-weight:600; color:var(--text-strong)">82%</span>
+        </div>
+        <span style="display:block; height:3px; margin-top:7px; background:var(--surface-inset)">
+          <span style="display:block; height:100%; width:91.7%; background:#cd5b2e"></span>
+        </span>
+      </div>
+      <div class="ledger-row" style="padding:11px 0">
+        <div style="display:grid; grid-template-columns:20px minmax(0,1fr) auto; align-items:baseline; gap:10px">
+          <span class="figure" style="font-size:var(--text-2xs); color:var(--text-faint)">4</span>
+          <span style="min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:var(--text-sm); font-weight:500; color:var(--text-muted)">OGDC · Oil &amp; Gas Development Company</span>
+          <span class="figure" style="min-width:84px; text-align:right; font-size:var(--text-sm); font-weight:500; color:var(--text-muted)">76%</span>
+        </div>
+        <span style="display:block; height:3px; margin-top:7px; background:var(--surface-inset)">
+          <span style="display:block; height:100%; width:84.2%; background:var(--rule-strong)"></span>
+        </span>
+      </div>
+      </div>
+    </div>
+    </div>
+    <p class="note">Earnings, dividends and technicals are folded into the tabs above. Figures in PKR from filed statements.</p>
+  </div>
+  <div data-panel="filings" hidden>
+    <p class="caps" style="margin:0 0 3px">Primary sources</p>
+    <p style="margin:0 0 18px; font-size:var(--text-2xs); line-height:1.55; color:var(--text-faint)">Newest first. Each entry names the one figure it moved.</p>
+    <div style="display:grid; grid-template-columns:minmax(72px,auto) 1px minmax(0,1fr)">
+      <div style="padding:2px 16px 0 0; text-align:right">
+        <span class="figure" style="display:block; font-size:var(--text-sm); font-weight:600">24 Jul</span>
+        <span class="figure" style="display:block; margin-top:2px; font-size:var(--text-2xs); color:var(--text-faint)">2026</span>
+      </div>
+      <div style="position:relative; background:var(--rule)">
+        <span style="position:absolute; top:5px; left:-4px; width:9px; height:9px; border-radius:var(--radius-pill); background:var(--sp-slate)"></span>
+      </div>
+      <div style="padding:0 0 28px 20px">
+        <p style="margin:0; font-size:var(--text-3xs); font-weight:700; text-transform:uppercase; letter-spacing:var(--tracking-caps); color:var(--sp-slate)">Board meeting</p>
+        <p style="margin:6px 0 0; font-size:var(--text-body); line-height:1.5; text-wrap:pretty">Notice of board meeting to consider the accounts for the year ending 30 June 2026</p>
+        <p style="margin:9px 0 0; font-size:var(--text-xs); color:var(--text-faint)">Nothing filed yet. The figure arrives with the accounts.</p>
+        <div style="display:flex; flex-wrap:wrap; align-items:center; gap:14px; margin-top:11px">
+          <span style="font-size:var(--text-2xs); color:var(--text-faint)">PSX announcement</span>
+          <a href="#" class="tap" style="display:inline-flex; align-items:center; gap:6px; font-size:var(--text-2xs); font-weight:600">Read the notice<span class="i" style="--u:url(https://unpkg.com/lucide-static@0.487.0/icons/arrow-up-right.svg); width:12px; height:12px" aria-hidden="true"></span></a>
+        </div>
+      </div>
+    </div>
+    <div style="display:grid; grid-template-columns:minmax(72px,auto) 1px minmax(0,1fr)">
+      <div style="padding:2px 16px 0 0; text-align:right">
+        <span class="figure" style="display:block; font-size:var(--text-sm); font-weight:600">24 Apr</span>
+        <span class="figure" style="display:block; margin-top:2px; font-size:var(--text-2xs); color:var(--text-faint)">2026</span>
+      </div>
+      <div style="position:relative; background:var(--rule)">
+        <span style="position:absolute; top:5px; left:-4px; width:9px; height:9px; border-radius:var(--radius-pill); background:var(--sp-indigo)"></span>
+      </div>
+      <div style="padding:0 0 28px 20px">
+        <p style="margin:0; font-size:var(--text-3xs); font-weight:700; text-transform:uppercase; letter-spacing:var(--tracking-caps); color:var(--sp-indigo)">Result</p>
+        <p style="margin:6px 0 0; font-size:var(--text-body); line-height:1.5; text-wrap:pretty">Condensed interim financial statements for the nine months ended 31 March 2026</p>
+        <div style="display:flex; flex-wrap:wrap; align-items:baseline; gap:12px; margin-top:11px; padding:10px 0; border-top:1px solid var(--rule); border-bottom:1px solid var(--rule)">
+          <span class="caps">Earnings per share, 9M FY2026</span>
+          <span class="figure" style="font-size:var(--text-h2); font-weight:600; line-height:1">73.60</span>
+          <span class="figure" style="font-size:var(--text-xs); font-weight:600; color:var(--text-up)">+18.0% on 9M FY2025</span>
+        </div>
+        <div style="display:flex; flex-wrap:wrap; align-items:center; gap:14px; margin-top:11px">
+          <span style="font-size:var(--text-2xs); color:var(--text-faint)">Company filing · unaudited</span>
+          <a href="#" class="tap" style="display:inline-flex; align-items:center; gap:6px; font-size:var(--text-2xs); font-weight:600">Read the filing<span class="i" style="--u:url(https://unpkg.com/lucide-static@0.487.0/icons/arrow-up-right.svg); width:12px; height:12px" aria-hidden="true"></span></a>
+        </div>
+      </div>
+    </div>
+    <div style="display:grid; grid-template-columns:minmax(72px,auto) 1px minmax(0,1fr)">
+      <div style="padding:2px 16px 0 0; text-align:right">
+        <span class="figure" style="display:block; font-size:var(--text-sm); font-weight:600">27 Feb</span>
+        <span class="figure" style="display:block; margin-top:2px; font-size:var(--text-2xs); color:var(--text-faint)">2026</span>
+      </div>
+      <div style="position:relative; background:var(--rule)">
+        <span style="position:absolute; top:5px; left:-4px; width:9px; height:9px; border-radius:var(--radius-pill); background:var(--sp-indigo)"></span>
+      </div>
+      <div style="padding:0 0 28px 20px">
+        <p style="margin:0; font-size:var(--text-3xs); font-weight:700; text-transform:uppercase; letter-spacing:var(--tracking-caps); color:var(--sp-indigo)">Result</p>
+        <p style="margin:6px 0 0; font-size:var(--text-body); line-height:1.5; text-wrap:pretty">Condensed interim financial statements for the half year ended 31 December 2025</p>
+        <div style="display:flex; flex-wrap:wrap; align-items:baseline; gap:12px; margin-top:11px; padding:10px 0; border-top:1px solid var(--rule); border-bottom:1px solid var(--rule)">
+          <span class="caps">Net margin, 1H FY2026</span>
+          <span class="figure" style="font-size:var(--text-h2); font-weight:600; line-height:1">19.7%</span>
+          <span class="figure" style="font-size:var(--text-xs); font-weight:600; color:var(--text-up)">+0.3pp on FY2025</span>
+        </div>
+        <div style="display:flex; flex-wrap:wrap; align-items:center; gap:14px; margin-top:11px">
+          <span style="font-size:var(--text-2xs); color:var(--text-faint)">Company filing · unaudited</span>
+          <a href="#" class="tap" style="display:inline-flex; align-items:center; gap:6px; font-size:var(--text-2xs); font-weight:600">Read the filing<span class="i" style="--u:url(https://unpkg.com/lucide-static@0.487.0/icons/arrow-up-right.svg); width:12px; height:12px" aria-hidden="true"></span></a>
+        </div>
+      </div>
+    </div>
+    <div style="display:grid; grid-template-columns:minmax(72px,auto) 1px minmax(0,1fr)">
+      <div style="padding:2px 16px 0 0; text-align:right">
+        <span class="figure" style="display:block; font-size:var(--text-sm); font-weight:600">26 Sep</span>
+        <span class="figure" style="display:block; margin-top:2px; font-size:var(--text-2xs); color:var(--text-faint)">2025</span>
+      </div>
+      <div style="position:relative; background:var(--rule)">
+        <span style="position:absolute; top:5px; left:-4px; width:9px; height:9px; border-radius:var(--radius-pill); background:var(--sp-indigo)"></span>
+      </div>
+      <div style="padding:0 0 28px 20px">
+        <p style="margin:0; font-size:var(--text-3xs); font-weight:700; text-transform:uppercase; letter-spacing:var(--tracking-caps); color:var(--sp-indigo)">Result</p>
+        <p style="margin:6px 0 0; font-size:var(--text-body); line-height:1.5; text-wrap:pretty">Annual audited financial statements and directors&rsquo; report for FY2025</p>
+        <div style="display:flex; flex-wrap:wrap; align-items:baseline; gap:12px; margin-top:11px; padding:10px 0; border-top:1px solid var(--rule); border-bottom:1px solid var(--rule)">
+          <span class="caps">Earnings per share, FY2025</span>
+          <span class="figure" style="font-size:var(--text-h2); font-weight:600; line-height:1">93.16</span>
+          <span class="figure" style="font-size:var(--text-xs); font-weight:600; color:var(--text-up)">+23.5% on FY2024</span>
+        </div>
+        <div style="display:flex; flex-wrap:wrap; align-items:center; gap:14px; margin-top:11px">
+          <span style="font-size:var(--text-2xs); color:var(--text-faint)">Company filing · audited</span>
+          <a href="#" class="tap" style="display:inline-flex; align-items:center; gap:6px; font-size:var(--text-2xs); font-weight:600">Read the annual report<span class="i" style="--u:url(https://unpkg.com/lucide-static@0.487.0/icons/arrow-up-right.svg); width:12px; height:12px" aria-hidden="true"></span></a>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div style="margin-top:14px"><span style="display:inline-flex; align-items:center; gap:8px">
+      <span style="width:6px; height:6px; border-radius:var(--radius-pill); background:var(--up-2)"></span>
+      <span class="figure" style="font-size:var(--text-2xs); color:var(--text-faint)">As of 25 Jul 2026, 15:30 PKT</span>
+    </span></div>
+</main>
+<nav class="tabbar" aria-label="Primary navigation">
+  <div class="sticky-action"><div style="display:flex; gap:9px">
+    <button type="button" class="ghost" style="flex:1">Watch</button>
+    <a href="copilot.html" class="cta" style="flex:1.4; text-decoration:none"><span class="i" style="--u:url(https://unpkg.com/lucide-static@0.487.0/icons/message-square.svg); width:15px; height:15px" aria-hidden="true"></span><span>Ask about MARI</span></a>
+  </div></div>
+  <div class="slots">
+    <a href="home.html"><span class="i" style="--u:url(https://unpkg.com/lucide-static@0.487.0/icons/layout-dashboard.svg); width:19px; height:19px" aria-hidden="true"></span><span>Home</span></a>
+    <a href="holdings.html"><span class="i" style="--u:url(https://unpkg.com/lucide-static@0.487.0/icons/briefcase.svg); width:19px; height:19px" aria-hidden="true"></span><span>Holdings</span></a>
+    <a href="market.html"><span class="i" style="--u:url(https://unpkg.com/lucide-static@0.487.0/icons/activity.svg); width:19px; height:19px" aria-hidden="true"></span><span>Market</span></a>
+    <a href="copilot.html"><span class="i" style="--u:url(https://unpkg.com/lucide-static@0.487.0/icons/message-square.svg); width:19px; height:19px" aria-hidden="true"></span><span>Copilot</span></a>
+    <a href="more.html"><span class="i" style="--u:url(https://unpkg.com/lucide-static@0.487.0/icons/menu.svg); width:19px; height:19px" aria-hidden="true"></span><span>More</span></a>
+  </div>
+</nav>
+<script>
+  var SECTOR = "#cd5b2e";
+  function pickTab(id) {
+    document.querySelectorAll('[data-panel]').forEach(function (p) { p.hidden = p.dataset.panel !== id; });
+    document.querySelectorAll('[data-tab]').forEach(function (b) {
+      var on = b.dataset.tab === id;
+      b.setAttribute('aria-selected', on ? 'true' : 'false');
+      b.style.fontWeight = on ? 600 : 500;
+      b.style.color = on ? 'var(--text-strong)' : 'var(--text-muted)';
+      b.style.borderBottomColor = on ? SECTOR : 'transparent';
+    });
+  }
+  function pickMetric(key) {
+    document.querySelectorAll('[data-detail]').forEach(function (d) { d.hidden = d.dataset.detail !== key; });
+    document.querySelectorAll('[data-metric]').forEach(function (b) {
+      var on = b.dataset.metric === key;
+      b.style.background = on ? 'color-mix(in oklab, ' + SECTOR + ' 10%, var(--surface-page))' : 'var(--surface-page)';
+      b.style.borderLeftColor = on ? SECTOR : 'transparent';
+      b.querySelector('[data-mlabel]').style.color = on ? 'var(--text-strong)' : 'var(--text-faint)';
+    });
+  }
+  pickTab('fundamentals'); pickMetric('revenue');
+</script>
+</div>
+</body>
+</html>

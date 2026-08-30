@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#f6f6f4">
+<title>Performance · Plumb</title>
+<link rel="stylesheet" href="../tokens/fonts.css">
+<link rel="stylesheet" href="../tokens/colors.css">
+<link rel="stylesheet" href="../tokens/spectrum.css">
+<link rel="stylesheet" href="../tokens/typography.css">
+<link rel="stylesheet" href="../tokens/spacing.css">
+<link rel="stylesheet" href="../tokens/shape.css">
+<link rel="stylesheet" href="../tokens/motion.css">
+<link rel="stylesheet" href="../tokens/base.css">
+<link rel="stylesheet" href="mobile.css">
+</head>
+<body>
+<div class="app">
+<header class="band topbar" style="padding-bottom:18px; background:color-mix(in oklab, var(--sp-steel) 13%, var(--surface-page)); border-bottom:1px solid var(--rule)">
+  <div style="display:flex; align-items:center; justify-content:space-between; min-height:46px">
+    <h1 class="pagetitle">Performance</h1>
+  </div>
+  <p class="caps" style="margin:12px 0 0">Money-weighted return · XIRR</p>
+  <div style="display:flex; align-items:baseline; gap:10px; margin-top:6px">
+    <span class="figure" style="font-size:clamp(34px, 11vw, 44px); font-weight:600; line-height:1; letter-spacing:var(--tracking-editorial); color:var(--text-up)">+24.6%</span>
+    <span style="font-size:var(--text-sm); color:var(--text-muted)">a year, since Aug 2024</span>
+  </div>
+  <p style="margin:12px 0 0; max-width:46ch; font-size:var(--text-sm); line-height:1.55; color:var(--text-muted)">Weighted by when you actually put money in, so a late purchase does not flatter the whole record.</p>
+</header>
+<main>
+  <section class="band" style="padding-bottom:0">
+    <div class="hscroll" style="margin:0 calc(var(--g) * -1) 16px">
+      <div class="rail" style="gap:7px; padding-block:0">
+        <button type="button" style="display:flex; align-items:center; min-height:36px; border:1px solid var(--rule-strong); border-radius:var(--radius-pill); background:var(--surface-raised); padding:0 15px; font-size:var(--text-2xs); font-weight:600; color:var(--text-muted); white-space:nowrap; cursor:pointer">1M</button>
+        <button type="button" style="display:flex; align-items:center; min-height:36px; border:1px solid var(--rule-strong); border-radius:var(--radius-pill); background:var(--surface-raised); padding:0 15px; font-size:var(--text-2xs); font-weight:600; color:var(--text-muted); white-space:nowrap; cursor:pointer">6M</button>
+        <button type="button" style="display:flex; align-items:center; min-height:36px; border:1px solid var(--rule-strong); border-radius:var(--radius-pill); background:var(--surface-raised); padding:0 15px; font-size:var(--text-2xs); font-weight:600; color:var(--text-muted); white-space:nowrap; cursor:pointer">1Y</button>
+        <button type="button" style="display:flex; align-items:center; min-height:36px; border:1px solid var(--ink-1); border-radius:var(--radius-pill); background:var(--ink-1); padding:0 15px; font-size:var(--text-2xs); font-weight:600; color:var(--text-on-dark); white-space:nowrap; cursor:pointer">2Y</button>
+        <button type="button" style="display:flex; align-items:center; min-height:36px; border:1px solid var(--rule-strong); border-radius:var(--radius-pill); background:var(--surface-raised); padding:0 15px; font-size:var(--text-2xs); font-weight:600; color:var(--text-muted); white-space:nowrap; cursor:pointer">All</button>
+      </div>
+    </div>
+    <div style="display:flex; align-items:baseline; justify-content:space-between; margin-bottom:6px">
+      <span class="caps">Growth of capital</span>
+      <span class="figure" style="font-size:var(--text-2xs); color:var(--text-faint)">indexed to 100</span>
+    </div>
+    <svg class="chart" viewBox="0 0 370 150" height="150" preserveAspectRatio="none" aria-hidden="true">
+      <line x1="0" y1="0.0" x2="370" y2="0.0" stroke="var(--rule)" vector-effect="non-scaling-stroke"></line>
+      <line x1="0" y1="50.0" x2="370" y2="50.0" stroke="var(--rule)" vector-effect="non-scaling-stroke"></line>
+      <line x1="0" y1="100.0" x2="370" y2="100.0" stroke="var(--rule)" vector-effect="non-scaling-stroke"></line>
+      <line x1="0" y1="150.0" x2="370" y2="150.0" stroke="var(--rule)" vector-effect="non-scaling-stroke"></line>
+      <path d="M0.0 123.4 L16.1 112.9 L32.2 110.8 L48.3 116.5 L64.3 120.6 L80.4 115.7 L96.5 104.1 L112.6 95.5 L128.7 96.3 L144.8 102.6 L160.9 104.5 L177.0 97.0 L193.0 85.2 L209.1 79.0 L225.2 82.2 L241.3 88.2 L257.4 87.5 L273.5 77.9 L289.6 66.8 L305.7 63.4 L321.7 68.4 L337.8 73.3 L353.9 69.8 L370.0 58.6" fill="none" stroke="var(--ink-3)" stroke-width="1.5" stroke-dasharray="4 4" vector-effect="non-scaling-stroke"></path>
+      <path d="M0.0 123.4 L16.1 113.2 L32.2 106.2 L48.3 103.6 L64.3 104.1 L80.4 104.3 L96.5 101.1 L112.6 93.5 L128.7 83.1 L144.8 73.2 L160.9 66.9 L177.0 64.9 L193.0 65.5 L209.1 65.4 L225.2 61.6 L241.3 53.4 L257.4 42.9 L273.5 33.4 L289.6 27.7 L305.7 26.2 L321.7 27.0 L337.8 26.5 L353.9 22.0 L370.0 13.3" fill="none" stroke="var(--indigo-2)" stroke-width="2.4" stroke-linejoin="round" vector-effect="non-scaling-stroke"></path>
+      <circle cx="370" cy="13.3" r="3.5" fill="var(--indigo-2)"></circle>
+    </svg>
+    <div style="display:flex; flex-wrap:wrap; gap:18px; margin-top:10px; padding-top:11px; border-top:1px solid var(--rule)">
+      <span style="display:flex; align-items:center; gap:7px"><span style="width:14px; height:2px; background:var(--indigo-2)"></span><span style="font-size:var(--text-2xs); color:var(--text-muted)">Your book</span></span>
+      <span style="display:flex; align-items:center; gap:7px"><span style="width:14px; border-top:2px dashed var(--ink-3)"></span><span style="font-size:var(--text-2xs); color:var(--text-muted)">KSE-100</span></span>
+    </div>
+  </section>
+  <section class="band" style="padding-bottom:0">
+    <p class="caps" style="margin:0 0 4px">Against three benchmarks</p>
+    <div class="ledger">
+      <div class="ledger-row" style="padding:13px 0">
+        <div style="display:flex; align-items:baseline; justify-content:space-between; gap:12px">
+          <span style="font-size:var(--text-sm)">KSE-100</span>
+          <span class="figure" style="font-size:var(--text-sm); font-weight:600; color:var(--text-up)">+6.2pp</span>
+        </div>
+        <div style="position:relative; height:6px; margin-top:10px; background:var(--surface-inset)">
+          <span style="position:absolute; inset-block:0; left:50%; width:1px; background:var(--ink-3)"></span>
+          <span style="position:absolute; inset-block:0; left:50.0%; width:22.1%; background:var(--up-2)"></span>
+        </div>
+        <p class="figure" style="margin:7px 0 0; font-size:var(--text-2xs); color:var(--text-faint)">you 24.6% · it 18.4%</p>
+      </div>
+      <div class="ledger-row" style="padding:13px 0">
+        <div style="display:flex; align-items:baseline; justify-content:space-between; gap:12px">
+          <span style="font-size:var(--text-sm)">Six-month T-bill</span>
+          <span class="figure" style="font-size:var(--text-sm); font-weight:600; color:var(--text-up)">+12.5pp</span>
+        </div>
+        <div style="position:relative; height:6px; margin-top:10px; background:var(--surface-inset)">
+          <span style="position:absolute; inset-block:0; left:50%; width:1px; background:var(--ink-3)"></span>
+          <span style="position:absolute; inset-block:0; left:50.0%; width:44.6%; background:var(--up-2)"></span>
+        </div>
+        <p class="figure" style="margin:7px 0 0; font-size:var(--text-2xs); color:var(--text-faint)">you 24.6% · it 12.1%</p>
+      </div>
+      <div class="ledger-row" style="padding:13px 0">
+        <div style="display:flex; align-items:baseline; justify-content:space-between; gap:12px">
+          <span style="font-size:var(--text-sm)">Your own sector mix</span>
+          <span class="figure" style="font-size:var(--text-sm); font-weight:600; color:var(--text-up)">+3.4pp</span>
+        </div>
+        <div style="position:relative; height:6px; margin-top:10px; background:var(--surface-inset)">
+          <span style="position:absolute; inset-block:0; left:50%; width:1px; background:var(--ink-3)"></span>
+          <span style="position:absolute; inset-block:0; left:50.0%; width:12.1%; background:var(--up-2)"></span>
+        </div>
+        <p class="figure" style="margin:7px 0 0; font-size:var(--text-2xs); color:var(--text-faint)">you 24.6% · it 21.2%</p>
+      </div>
+    </div>
+  </section>
+  <section class="band">
+    <p class="caps" style="margin:0 0 4px">Where the gain came from</p>
+    <div class="ledger">
+      <div class="ledger-row tap" style="display:grid; grid-template-columns:minmax(0,1fr) auto; align-items:center; gap:12px">
+        <span style="min-width:0">
+          <span style="display:block; font-size:var(--text-sm)">Price appreciation</span>
+          <span style="display:block; height:4px; margin-top:7px; width:48.5%; background:var(--up-2)"></span>
+        </span>
+        <span class="figure" style="min-width:92px; text-align:right; font-size:var(--text-sm); font-weight:600; color:var(--text-up)">+200k</span>
+      </div>
+      <div class="ledger-row tap" style="display:grid; grid-template-columns:minmax(0,1fr) auto; align-items:center; gap:12px">
+        <span style="min-width:0">
+          <span style="display:block; font-size:var(--text-sm)">Dividends received</span>
+          <span style="display:block; height:4px; margin-top:7px; width:100.0%; background:var(--up-2)"></span>
+        </span>
+        <span class="figure" style="min-width:92px; text-align:right; font-size:var(--text-sm); font-weight:600; color:var(--text-up)">+413k</span>
+      </div>
+      <div class="ledger-row tap" style="display:grid; grid-template-columns:minmax(0,1fr) auto; align-items:center; gap:12px">
+        <span style="min-width:0">
+          <span style="display:block; font-size:var(--text-sm)">Tax withheld</span>
+          <span style="display:block; height:4px; margin-top:7px; width:17.6%; background:var(--down-2)"></span>
+        </span>
+        <span class="figure" style="min-width:92px; text-align:right; font-size:var(--text-sm); font-weight:600; color:var(--text-down)">−73k</span>
+      </div>
+      <div class="ledger-row tap" style="display:grid; grid-template-columns:minmax(0,1fr) auto; align-items:center; gap:12px">
+        <span style="min-width:0">
+          <span style="display:block; font-size:var(--text-sm)">Realised on sales</span>
+          <span style="display:block; height:4px; margin-top:7px; width:5.6%; background:var(--up-2)"></span>
+        </span>
+        <span class="figure" style="min-width:92px; text-align:right; font-size:var(--text-sm); font-weight:600; color:var(--text-up)">+23k</span>
+      </div>
+    </div>
+    <p class="note">Returns are after tax withheld on dividends and before brokerage.</p>
+    <div style="margin-top:14px"><span style="display:inline-flex; align-items:center; gap:8px">
+      <span style="width:6px; height:6px; border-radius:var(--radius-pill); background:var(--up-2)"></span>
+      <span class="figure" style="font-size:var(--text-2xs); color:var(--text-faint)">As of 25 Jul 2026, 15:30 PKT</span>
+    </span></div>
+  </section>
+</main>
+<nav class="tabbar" aria-label="Primary navigation">
+  <div class="slots">
+    <a href="home.html"><span class="i" style="--u:url(https://unpkg.com/lucide-static@0.487.0/icons/layout-dashboard.svg); width:19px; height:19px" aria-hidden="true"></span><span>Home</span></a>
+    <a href="holdings.html"><span class="i" style="--u:url(https://unpkg.com/lucide-static@0.487.0/icons/briefcase.svg); width:19px; height:19px" aria-hidden="true"></span><span>Holdings</span></a>
+    <a href="market.html"><span class="i" style="--u:url(https://unpkg.com/lucide-static@0.487.0/icons/activity.svg); width:19px; height:19px" aria-hidden="true"></span><span>Market</span></a>
+    <a href="copilot.html"><span class="i" style="--u:url(https://unpkg.com/lucide-static@0.487.0/icons/message-square.svg); width:19px; height:19px" aria-hidden="true"></span><span>Copilot</span></a>
+    <a href="more.html"><span class="i" style="--u:url(https://unpkg.com/lucide-static@0.487.0/icons/menu.svg); width:19px; height:19px" aria-hidden="true"></span><span>More</span></a>
+  </div>
+</nav>
+</div>
+</body>
+</html>

@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#f6f6f4">
+<title>Holdings · Plumb</title>
+<link rel="stylesheet" href="../tokens/fonts.css">
+<link rel="stylesheet" href="../tokens/colors.css">
+<link rel="stylesheet" href="../tokens/spectrum.css">
+<link rel="stylesheet" href="../tokens/typography.css">
+<link rel="stylesheet" href="../tokens/spacing.css">
+<link rel="stylesheet" href="../tokens/shape.css">
+<link rel="stylesheet" href="../tokens/motion.css">
+<link rel="stylesheet" href="../tokens/base.css">
+<link rel="stylesheet" href="mobile.css">
+</head>
+<body>
+<div class="app">
+<header class="band topbar" style="padding-bottom:18px; background:color-mix(in oklab, var(--clay-2) 12%, var(--surface-page)); border-bottom:1px solid var(--rule)">
+  <div style="display:flex; align-items:center; justify-content:space-between; min-height:46px">
+    <h1 class="pagetitle">Holdings</h1>
+    <a href="research.html" class="tap" style="display:flex; align-items:center; justify-content:center; width:44px; margin-right:-10px; color:var(--text-muted)"><span class="i" style="--u:url(https://unpkg.com/lucide-static@0.487.0/icons/search.svg); width:19px; height:19px" aria-hidden="true"></span></a>
+  </div>
+  <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(140px, 1fr)); gap:18px 12px; margin-top:14px">
+    <div>
+      <p class="caps" style="margin:0">Market value</p>
+      <p class="figure" style="margin:5px 0 0; font-size:var(--text-h1); font-weight:600; color:var(--text-strong)">2.6m</p>
+      <p style="margin:2px 0 0; font-size:var(--text-2xs); color:var(--text-faint)">PKR</p>
+    </div>
+    <div>
+      <p class="caps" style="margin:0">Unrealised</p>
+      <p class="figure" style="margin:5px 0 0; font-size:var(--text-h1); font-weight:600; color:var(--text-up)">+257k</p>
+      <p style="margin:2px 0 0; font-size:var(--text-2xs); color:var(--text-faint)">+10.8% on cost</p>
+    </div>
+    <div>
+      <p class="caps" style="margin:0">Today</p>
+      <p class="figure" style="margin:5px 0 0; font-size:var(--text-h1); font-weight:600; color:var(--text-up)">+16k</p>
+      <p style="margin:2px 0 0; font-size:var(--text-2xs); color:var(--text-faint)">+0.62%</p>
+    </div>
+    <div>
+      <p class="caps" style="margin:0">Below cost</p>
+      <p class="figure" style="margin:5px 0 0; font-size:var(--text-h1); font-weight:600; color:var(--text-strong)">1</p>
+      <p style="margin:2px 0 0; font-size:var(--text-2xs); color:var(--text-faint)">of 9 holdings</p>
+    </div>
+  </div>
+</header>
+<div class="hscroll" style="border-bottom:1px solid var(--rule)">
+  <div class="rail">
+    <button type="button" style="border:none; background:none; padding:0; text-align:left; cursor:pointer">
+      <span style="display:block; height:3px; background:var(--ink-2); opacity:1"></span>
+      <span style="display:flex; align-items:baseline; gap:6px; margin-top:6px; white-space:nowrap">
+        <span style="font-size:var(--text-2xs); font-weight:600; color:var(--text-strong)">All</span>
+        <span class="figure" style="font-size:var(--text-3xs); color:var(--text-faint)">9</span>
+      </span>
+    </button>
+    <button type="button" style="border:none; background:none; padding:0; text-align:left; cursor:pointer">
+      <span style="display:block; height:3px; background:#5e7d16; opacity:0.32"></span>
+      <span style="display:flex; align-items:baseline; gap:6px; margin-top:6px; white-space:nowrap">
+        <span style="font-size:var(--text-2xs); font-weight:500; color:var(--text-muted)">Fertiliser</span>
+        <span class="figure" style="font-size:var(--text-3xs); color:var(--text-faint)">2</span>
+      </span>
+    </button>
+    <button type="button" style="border:none; background:none; padding:0; text-align:left; cursor:pointer">
+      <span style="display:block; height:3px; background:#cd5b2e; opacity:0.32"></span>
+      <span style="display:flex; align-items:baseline; gap:6px; margin-top:6px; white-space:nowrap">
+        <span style="font-size:var(--text-2xs); font-weight:500; color:var(--text-muted)">E&amp;P</span>
+        <span class="figure" style="font-size:var(--text-3xs); color:var(--text-faint)">1</span>
+      </span>
+    </button>
+    <button type="button" style="border:none; background:none; padding:0; text-align:left; cursor:pointer">
+      <span style="display:block; height:3px; background:#3450c8; opacity:0.32"></span>
+      <span style="display:flex; align-items:baseline; gap:6px; margin-top:6px; white-space:nowrap">
+        <span style="font-size:var(--text-2xs); font-weight:500; color:var(--text-muted)">Banks</span>
+        <span class="figure" style="font-size:var(--text-3xs); color:var(--text-faint)">2</span>
+      </span>
+    </button>
+    <button type="button" style="border:none; background:none; padding:0; text-align:left; cursor:pointer">
+      <span style="display:block; height:3px; background:#6a4fd0; opacity:0.32"></span>
+      <span style="display:flex; align-items:baseline; gap:6px; margin-top:6px; white-space:nowrap">
+        <span style="font-size:var(--text-2xs); font-weight:500; color:var(--text-muted)">Tech</span>
+        <span class="figure" style="font-size:var(--text-3xs); color:var(--text-faint)">1</span>
+      </span>
+    </button>
+    <button type="button" style="border:none; background:none; padding:0; text-align:left; cursor:pointer">
+      <span style="display:block; height:3px; background:#8a7a66; opacity:0.32"></span>
+      <span style="display:flex; align-items:baseline; gap:6px; margin-top:6px; white-space:nowrap">
+        <span style="font-size:var(--text-2xs); font-weight:500; color:var(--text-muted)">Cement</span>
+        <span class="figure" style="font-size:var(--text-3xs); color:var(--text-faint)">1</span>
+      </span>
+    </button>
+    <button type="button" style="border:none; background:none; padding:0; text-align:left; cursor:pointer">
+      <span style="display:block; height:3px; background:#d9920b; opacity:0.32"></span>
+      <span style="display:flex; align-items:baseline; gap:6px; margin-top:6px; white-space:nowrap">
+        <span style="font-size:var(--text-2xs); font-weight:500; color:var(--text-muted)">OMC</span>
+        <span class="figure" style="font-size:var(--text-3xs); color:var(--text-faint)">1</span>
+      </span>
+    </button>
+    <button type="button" style="border:none; background:none; padding:0; text-align:left; cursor:pointer">
+      <span style="display:block; height:3px; background:#0f8a8a; opacity:0.32"></span>
+      <span style="display:flex; align-items:baseline; gap:6px; margin-top:6px; white-space:nowrap">
+        <span style="font-size:var(--text-2xs); font-weight:500; color:var(--text-muted)">Pharma</span>
+        <span class="figure" style="font-size:var(--text-3xs); color:var(--text-faint)">1</span>
+      </span>
+    </button>
+  </div>
+</div>
+<main class="band" style="padding-top:4px">
+  <div class="ledger">
+    <a class="ledger-row" href="company.html" style="display:block; padding:13px 0; color:inherit">
+      <span style="display:grid; grid-template-columns:minmax(0,1fr) auto; align-items:baseline; gap:12px">
+        <span style="display:flex; align-items:center; gap:9px; min-width:0">
+          <span style="flex:none; width:8px; height:8px; background:#cd5b2e"></span>
+          <span style="font-size:var(--text-body); font-weight:600">OGDC</span>
+          <span style="min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:var(--text-2xs); color:var(--text-faint)">Oil &amp; Gas Development Company</span>
+        </span>
+        <span class="figure" style="font-size:var(--text-body); font-weight:600">582k</span>
+      </span>
+      <span style="display:grid; grid-template-columns:minmax(0,1fr) auto; align-items:baseline; gap:12px; margin-top:4px">
+        <span class="figure" style="font-size:var(--text-2xs); color:var(--text-faint)">3,400 at 156.80 · now 171.20</span>
+        <span class="figure" style="font-size:var(--text-sm); font-weight:600; color:var(--text-up)">+49k · +9.2%</span>
+      </span>
+      <span style="display:flex; align-items:center; gap:9px; margin-top:9px">
+        <span style="flex:1; height:4px; background:var(--surface-inset)">
+          <span style="display:block; height:100%; width:100.0%; background:#cd5b2e"></span>
+        </span>
+        <span class="figure" style="width:44px; text-align:right; font-size:var(--text-2xs); color:var(--text-faint)">22.2%</span>
+      </span>
+    </a>
+    <a class="ledger-row" href="company.html" style="display:block; padding:13px 0; color:inherit">
+      <span style="display:grid; grid-template-columns:minmax(0,1fr) auto; align-items:baseline; gap:12px">
+        <span style="display:flex; align-items:center; gap:9px; min-width:0">
+          <span style="flex:none; width:8px; height:8px; background:#5e7d16"></span>
+          <span style="font-size:var(--text-body); font-weight:600">ENGRO</span>
+          <span style="min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:var(--text-2xs); color:var(--text-faint)">Engro Corporation</span>
+        </span>
+        <span class="figure" style="font-size:var(--text-body); font-weight:600">427k</span>
+      </span>
+      <span style="display:grid; grid-template-columns:minmax(0,1fr) auto; align-items:baseline; gap:12px; margin-top:4px">
+        <span class="figure" style="font-size:var(--text-2xs); color:var(--text-faint)">1,250 at 298.40 · now 341.80</span>
+        <span class="figure" style="font-size:var(--text-sm); font-weight:600; color:var(--text-up)">+54k · +14.5%</span>
+      </span>
+      <span style="display:flex; align-items:center; gap:9px; margin-top:9px">
+        <span style="flex:1; height:4px; background:var(--surface-inset)">
+          <span style="display:block; height:100%; width:73.4%; background:#5e7d16"></span>
+        </span>
+        <span class="figure" style="width:44px; text-align:right; font-size:var(--text-2xs); color:var(--text-faint)">16.3%</span>
+      </span>
+    </a>
+    <a class="ledger-row" href="company.html" style="display:block; padding:13px 0; color:inherit">
+      <span style="display:grid; grid-template-columns:minmax(0,1fr) auto; align-items:baseline; gap:12px">
+        <span style="display:flex; align-items:center; gap:9px; min-width:0">
+          <span style="flex:none; width:8px; height:8px; background:#5e7d16"></span>
+          <span style="font-size:var(--text-body); font-weight:600">EFERT</span>
+          <span style="min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:var(--text-2xs); color:var(--text-faint)">Engro Fertilizers</span>
+        </span>
+        <span class="figure" style="font-size:var(--text-body); font-weight:600">341k</span>
+      </span>
+      <span style="display:grid; grid-template-columns:minmax(0,1fr) auto; align-items:baseline; gap:12px; margin-top:4px">
+        <span class="figure" style="font-size:var(--text-2xs); color:var(--text-faint)">1,800 at 168.90 · now 189.60</span>
+        <span class="figure" style="font-size:var(--text-sm); font-weight:600; color:var(--text-up)">+37k · +12.3%</span>
+      </span>
+      <span style="display:flex; align-items:center; gap:9px; margin-top:9px">
+        <span style="flex:1; height:4px; background:var(--surface-inset)">
+          <span style="display:block; height:100%; width:58.6%; background:#5e7d16"></span>
+        </span>
+        <span class="figure" style="width:44px; text-align:right; font-size:var(--text-2xs); color:var(--text-faint)">13.0%</span>
+      </span>
+    </a>
+    <a class="ledger-row" href="company.html" style="display:block; padding:13px 0; color:inherit">
+      <span style="display:grid; grid-template-columns:minmax(0,1fr) auto; align-items:baseline; gap:12px">
+        <span style="display:flex; align-items:center; gap:9px; min-width:0">
+          <span style="flex:none; width:8px; height:8px; background:#3450c8"></span>
+          <span style="font-size:var(--text-body); font-weight:600">HBL</span>
+          <span style="min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:var(--text-2xs); color:var(--text-faint)">Habib Bank</span>
+        </span>
+        <span class="figure" style="font-size:var(--text-body); font-weight:600">311k</span>
+      </span>
+      <span style="display:grid; grid-template-columns:minmax(0,1fr) auto; align-items:baseline; gap:12px; margin-top:4px">
+        <span class="figure" style="font-size:var(--text-2xs); color:var(--text-faint)">2,100 at 131.60 · now 148.30</span>
+        <span class="figure" style="font-size:var(--text-sm); font-weight:600; color:var(--text-up)">+35k · +12.7%</span>
+      </span>
+      <span style="display:flex; align-items:center; gap:9px; margin-top:9px">
+        <span style="flex:1; height:4px; background:var(--surface-inset)">
+          <span style="display:block; height:100%; width:53.5%; background:#3450c8"></span>
+        </span>
+        <span class="figure" style="width:44px; text-align:right; font-size:var(--text-2xs); color:var(--text-faint)">11.9%</span>
+      </span>
+    </a>
+    <a class="ledger-row" href="company.html" style="display:block; padding:13px 0; color:inherit">
+      <span style="display:grid; grid-template-columns:minmax(0,1fr) auto; align-items:baseline; gap:12px">
+        <span style="display:flex; align-items:center; gap:9px; min-width:0">
+          <span style="flex:none; width:8px; height:8px; background:#3450c8"></span>
+          <span style="font-size:var(--text-body); font-weight:600">MCB</span>
+          <span style="min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:var(--text-2xs); color:var(--text-faint)">MCB Bank</span>
+        </span>
+        <span class="figure" style="font-size:var(--text-body); font-weight:600">242k</span>
+      </span>
+      <span style="display:grid; grid-template-columns:minmax(0,1fr) auto; align-items:baseline; gap:12px; margin-top:4px">
+        <span class="figure" style="font-size:var(--text-2xs); color:var(--text-faint)">900 at 241.20 · now 268.90</span>
+        <span class="figure" style="font-size:var(--text-sm); font-weight:600; color:var(--text-up)">+25k · +11.5%</span>
+      </span>
+      <span style="display:flex; align-items:center; gap:9px; margin-top:9px">
+        <span style="flex:1; height:4px; background:var(--surface-inset)">
+          <span style="display:block; height:100%; width:41.6%; background:#3450c8"></span>
+        </span>
+        <span class="figure" style="width:44px; text-align:right; font-size:var(--text-2xs); color:var(--text-faint)">9.2%</span>
+      </span>
+    </a>
+    <a class="ledger-row" href="company.html" style="display:block; padding:13px 0; color:inherit">
+      <span style="display:grid; grid-template-columns:minmax(0,1fr) auto; align-items:baseline; gap:12px">
+        <span style="display:flex; align-items:center; gap:9px; min-width:0">
+          <span style="flex:none; width:8px; height:8px; background:#6a4fd0"></span>
+          <span style="font-size:var(--text-body); font-weight:600">SYS</span>
+          <span style="min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:var(--text-2xs); color:var(--text-faint)">Systems Limited</span>
+        </span>
+        <span class="figure" style="font-size:var(--text-body); font-weight:600">234k</span>
+      </span>
+      <span style="display:grid; grid-template-columns:minmax(0,1fr) auto; align-items:baseline; gap:12px; margin-top:4px">
+        <span class="figure" style="font-size:var(--text-2xs); color:var(--text-faint)">640 at 302.10 · now 366.40</span>
+        <span class="figure" style="font-size:var(--text-sm); font-weight:600; color:var(--text-up)">+41k · +21.3%</span>
+      </span>
+      <span style="display:flex; align-items:center; gap:9px; margin-top:9px">
+        <span style="flex:1; height:4px; background:var(--surface-inset)">
+          <span style="display:block; height:100%; width:40.3%; background:#6a4fd0"></span>
+        </span>
+        <span class="figure" style="width:44px; text-align:right; font-size:var(--text-2xs); color:var(--text-faint)">8.9%</span>
+      </span>
+    </a>
+    <a class="ledger-row" href="company.html" style="display:block; padding:13px 0; color:inherit">
+      <span style="display:grid; grid-template-columns:minmax(0,1fr) auto; align-items:baseline; gap:12px">
+        <span style="display:flex; align-items:center; gap:9px; min-width:0">
+          <span style="flex:none; width:8px; height:8px; background:#8a7a66"></span>
+          <span style="font-size:var(--text-body); font-weight:600">LUCK</span>
+          <span style="min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:var(--text-2xs); color:var(--text-faint)">Lucky Cement</span>
+        </span>
+        <span class="figure" style="font-size:var(--text-body); font-weight:600">190k</span>
+      </span>
+      <span style="display:grid; grid-template-columns:minmax(0,1fr) auto; align-items:baseline; gap:12px; margin-top:4px">
+        <span class="figure" style="font-size:var(--text-2xs); color:var(--text-faint)">210 at 764.50 · now 903.50</span>
+        <span class="figure" style="font-size:var(--text-sm); font-weight:600; color:var(--text-up)">+29k · +18.2%</span>
+      </span>
+      <span style="display:flex; align-items:center; gap:9px; margin-top:9px">
+        <span style="flex:1; height:4px; background:var(--surface-inset)">
+          <span style="display:block; height:100%; width:32.6%; background:#8a7a66"></span>
+        </span>
+        <span class="figure" style="width:44px; text-align:right; font-size:var(--text-2xs); color:var(--text-faint)">7.2%</span>
+      </span>
+    </a>
+    <a class="ledger-row" href="company.html" style="display:block; padding:13px 0; color:inherit">
+      <span style="display:grid; grid-template-columns:minmax(0,1fr) auto; align-items:baseline; gap:12px">
+        <span style="display:flex; align-items:center; gap:9px; min-width:0">
+          <span style="flex:none; width:8px; height:8px; background:#d9920b"></span>
+          <span style="font-size:var(--text-body); font-weight:600">PSO</span>
+          <span style="min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:var(--text-2xs); color:var(--text-faint)">Pakistan State Oil</span>
+        </span>
+        <span class="figure" style="font-size:var(--text-body); font-weight:600">157k</span>
+      </span>
+      <span style="display:grid; grid-template-columns:minmax(0,1fr) auto; align-items:baseline; gap:12px; margin-top:4px">
+        <span class="figure" style="font-size:var(--text-2xs); color:var(--text-faint)">380 at 366.20 · now 412.60</span>
+        <span class="figure" style="font-size:var(--text-sm); font-weight:600; color:var(--text-up)">+18k · +12.7%</span>
+      </span>
+      <span style="display:flex; align-items:center; gap:9px; margin-top:9px">
+        <span style="flex:1; height:4px; background:var(--surface-inset)">
+          <span style="display:block; height:100%; width:26.9%; background:#d9920b"></span>
+        </span>
+        <span class="figure" style="width:44px; text-align:right; font-size:var(--text-2xs); color:var(--text-faint)">6.0%</span>
+      </span>
+    </a>
+    <a class="ledger-row" href="company.html" style="display:block; padding:13px 0; color:inherit">
+      <span style="display:grid; grid-template-columns:minmax(0,1fr) auto; align-items:baseline; gap:12px">
+        <span style="display:flex; align-items:center; gap:9px; min-width:0">
+          <span style="flex:none; width:8px; height:8px; background:#0f8a8a"></span>
+          <span style="font-size:var(--text-body); font-weight:600">SEARL</span>
+          <span style="min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:var(--text-2xs); color:var(--text-faint)">The Searle Company</span>
+        </span>
+        <span class="figure" style="font-size:var(--text-body); font-weight:600">141k</span>
+      </span>
+      <span style="display:grid; grid-template-columns:minmax(0,1fr) auto; align-items:baseline; gap:12px; margin-top:4px">
+        <span class="figure" style="font-size:var(--text-2xs); color:var(--text-faint)">2,600 at 66.40 · now 54.20</span>
+        <span class="figure" style="font-size:var(--text-sm); font-weight:600; color:var(--text-down)">−32k · −18.4%</span>
+      </span>
+      <span style="display:flex; align-items:center; gap:9px; margin-top:9px">
+        <span style="flex:1; height:4px; background:var(--surface-inset)">
+          <span style="display:block; height:100%; width:24.2%; background:#0f8a8a"></span>
+        </span>
+        <span class="figure" style="width:44px; text-align:right; font-size:var(--text-2xs); color:var(--text-faint)">5.4%</span>
+      </span>
+    </a>
+  </div>
+  <p class="note">Bars are share of portfolio value. Cost basis is your own broker statement, never a market estimate.</p>
+  <div style="margin-top:14px"><span style="display:inline-flex; align-items:center; gap:8px">
+      <span style="width:6px; height:6px; border-radius:var(--radius-pill); background:var(--up-2)"></span>
+      <span class="figure" style="font-size:var(--text-2xs); color:var(--text-faint)">As of 25 Jul 2026, 15:30 PKT</span>
+    </span></div>
+</main>
+<nav class="tabbar" aria-label="Primary navigation">
+  <div class="sticky-action"><button type="button" class="cta"><span class="i" style="--u:url(https://unpkg.com/lucide-static@0.487.0/icons/plus.svg); width:16px; height:16px" aria-hidden="true"></span><span>Add a transaction</span></button></div>
+  <div class="slots">
+    <a href="home.html"><span class="i" style="--u:url(https://unpkg.com/lucide-static@0.487.0/icons/layout-dashboard.svg); width:19px; height:19px" aria-hidden="true"></span><span>Home</span></a>
+    <a href="holdings.html" aria-current="page"><span class="i" style="--u:url(https://unpkg.com/lucide-static@0.487.0/icons/briefcase.svg); width:19px; height:19px" aria-hidden="true"></span><span>Holdings</span></a>
+    <a href="market.html"><span class="i" style="--u:url(https://unpkg.com/lucide-static@0.487.0/icons/activity.svg); width:19px; height:19px" aria-hidden="true"></span><span>Market</span></a>
+    <a href="copilot.html"><span class="i" style="--u:url(https://unpkg.com/lucide-static@0.487.0/icons/message-square.svg); width:19px; height:19px" aria-hidden="true"></span><span>Copilot</span></a>
+    <a href="more.html"><span class="i" style="--u:url(https://unpkg.com/lucide-static@0.487.0/icons/menu.svg); width:19px; height:19px" aria-hidden="true"></span><span>More</span></a>
+  </div>
+</nav>
+</div>
+</body>
+</html>

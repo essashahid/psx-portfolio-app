@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024" role="img" aria-label="Plumb app icon, maskable">
+  <title>Plumb app icon, maskable</title>
+  
+  <rect width="1024" height="1024" fill="#101a33"></rect>
+  <g transform="translate(512 512) scale(7.1) translate(-32 -32)">
+    <rect x="14" y="14" width="36" height="36" fill="none" stroke="rgba(255,255,255,0.92)" stroke-width="4.2"></rect>
+    <path d="M32 6 V58" stroke="#8ea0f0" stroke-width="4.2"></path>
+    <circle cx="32" cy="58" r="3.9" fill="#8ea0f0"></circle>
+  </g>
+</svg>

@@ -1,0 +1,137 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Newsreader:wght@400;500&family=Manrope:wght@400;500;600;700&family=Geist+Mono:wght@400;500;600&display=swap">
+  <style>
+    body { margin: 0; background: #f6f6f4; }
+    a { color: #3450c8; text-decoration: none; }
+    a:hover { color: #26399a; }
+    * { box-sizing: border-box; }
+  </style>
+</helmet>
+
+<div style="width: 390px; height: 844px; background: #f6f6f4; font-family: Manrope, system-ui, sans-serif; overflow: hidden; display: flex; flex-direction: column;">
+
+  <!-- Top bar: back and refresh. No fake status bar; the real one paints over. -->
+  <div style="padding: 12px 16px 0 16px; display: flex; align-items: center; justify-content: space-between;">
+    <div style="display: flex; align-items: center; gap: 2px; margin-left: -4px;">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#6c6e68" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+      <span style="font-family: Manrope, sans-serif; font-weight: 500; font-size: 13px; color: #6c6e68;">Back</span>
+    </div>
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#6c6e68" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-3-6.7L21 8"/><path d="M21 3v5h-5"/></svg>
+  </div>
+
+  <div style="padding: 4px 16px 12px 16px;">
+    <div style="font-family: Newsreader, Georgia, serif; font-size: 18px; letter-spacing: -0.63px; color: #161716;">News</div>
+    <div style="font-family: 'Geist Mono', ui-monospace, monospace; font-size: 11px; color: #9b9b92; margin-top: 8px;">Updated 5 minutes ago &middot; 24 of 24 sources healthy</div>
+  </div>
+
+  <!-- Section rail. Every tab reserves the count line so the labels share a baseline. -->
+  <div style="display: flex; gap: 16px; padding: 0 16px; align-items: flex-start; overflow: hidden;">
+    <div style="display: flex; flex-direction: column; align-items: center; flex-shrink: 0;">
+      <span style="font-family: Manrope, sans-serif; font-weight: 500; font-size: 13px; color: #6c6e68;">For you</span>
+      <span style="font-family: 'Geist Mono', monospace; font-size: 10px; line-height: 14px; color: #9b9b92; margin-top: 1px;">6</span>
+      <div style="height: 2px; width: 100%; margin-top: 4px; background: transparent;"></div>
+    </div>
+    <div style="display: flex; flex-direction: column; align-items: center; flex-shrink: 0;">
+      <span style="font-family: Manrope, sans-serif; font-weight: 600; font-size: 13px; color: #161716;">Market</span>
+      <span style="font-family: 'Geist Mono', monospace; font-size: 10px; line-height: 14px; color: #9b9b92; margin-top: 1px;">34</span>
+      <div style="height: 2px; width: 100%; margin-top: 4px; background: #161716;"></div>
+    </div>
+    <div style="display: flex; flex-direction: column; align-items: center; flex-shrink: 0;">
+      <span style="font-family: Manrope, sans-serif; font-weight: 500; font-size: 13px; color: #6c6e68;">Companies</span>
+      <span style="font-family: 'Geist Mono', monospace; font-size: 10px; line-height: 14px; color: #9b9b92; margin-top: 1px;">11</span>
+      <div style="height: 2px; width: 100%; margin-top: 4px; background: transparent;"></div>
+    </div>
+    <div style="display: flex; flex-direction: column; align-items: center; flex-shrink: 0;">
+      <span style="font-family: Manrope, sans-serif; font-weight: 500; font-size: 13px; color: #6c6e68;">Policy</span>
+      <span style="font-family: 'Geist Mono', monospace; font-size: 10px; line-height: 14px; color: #9b9b92; margin-top: 1px;">16</span>
+      <div style="height: 2px; width: 100%; margin-top: 4px; background: transparent;"></div>
+    </div>
+  </div>
+
+  <!-- Date window -->
+  <div style="display: flex; gap: 4px; padding: 16px 16px 4px 16px; border-top: 1px solid #dedfda;">
+    <div style="padding: 6px 12px; border-radius: 9999px; border: 1px solid #dedfda;">
+      <span style="font-family: Manrope, sans-serif; font-weight: 500; font-size: 11px; color: #6c6e68;">Today</span>
+    </div>
+    <div style="padding: 6px 12px; border-radius: 9999px; background: #161716; border: 1px solid #161716;">
+      <span style="font-family: Manrope, sans-serif; font-weight: 500; font-size: 11px; color: #f2f3f7;">This week</span>
+    </div>
+    <div style="padding: 6px 12px; border-radius: 9999px; border: 1px solid #dedfda;">
+      <span style="font-family: Manrope, sans-serif; font-weight: 500; font-size: 11px; color: #6c6e68;">All</span>
+    </div>
+  </div>
+
+  <!-- Feed -->
+  <div style="padding: 20px 16px 0 16px; flex: 1; overflow: hidden;">
+    <div style="font-family: Manrope, sans-serif; font-weight: 700; font-size: 10px; text-transform: uppercase; letter-spacing: 0.8px; color: #9b9b92; margin-bottom: 12px;">Today</div>
+
+    <div style="display: flex; flex-direction: column;">
+
+      <div style="padding: 16px 0; border-bottom: 1px solid #dedfda; display: flex; flex-direction: column; gap: 4px;">
+        <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 2px;">
+          <div style="width: 7px; height: 7px; border-radius: 2px; background: #cd5b2e;"></div>
+          <span style="font-family: 'Geist Mono', monospace; font-size: 11px; color: #6c6e68;">Business Recorder</span>
+          <span style="font-family: 'Geist Mono', monospace; font-size: 11px; color: #9b9b92;">2h ago</span>
+          <span style="font-family: Manrope, sans-serif; font-weight: 600; font-size: 10px; letter-spacing: 0.3px; color: #d9920b;">High</span>
+        </div>
+        <div style="font-family: Manrope, sans-serif; font-weight: 600; font-size: 15px; line-height: 22px; color: #161716;">OGDC raises Nashpa output after new well ties in, lifting E&amp;P sentiment</div>
+        <div style="font-family: 'Geist Mono', monospace; font-size: 11px; color: #9b9b92; margin-top: 2px;">OGDC &middot; PPL &nbsp;&middot;&nbsp; 4 sources</div>
+        <div style="display: flex; gap: 24px; margin-top: 8px;">
+          <div style="display: flex; align-items: center; gap: 5px; min-height: 44px;">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#9b9b92" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>
+            <span style="font-family: Manrope, sans-serif; font-weight: 500; font-size: 11px; color: #9b9b92;">Save</span>
+          </div>
+          <div style="display: flex; align-items: center; gap: 5px; min-height: 44px;">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#9b9b92" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9.9 4.24A9.1 9.1 0 0 1 12 4c7 0 10 8 10 8a18.5 18.5 0 0 1-2.16 3.19"/><path d="M6.61 6.61A18.9 18.9 0 0 0 2 12s3 8 10 8a9.7 9.7 0 0 0 5.39-1.61"/><path d="M2 2l20 20"/></svg>
+            <span style="font-family: Manrope, sans-serif; font-weight: 500; font-size: 11px; color: #9b9b92;">Hide</span>
+          </div>
+        </div>
+      </div>
+
+      <div style="padding: 16px 0; border-bottom: 1px solid #dedfda; display: flex; flex-direction: column; gap: 4px;">
+        <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 2px;">
+          <div style="width: 7px; height: 7px; border-radius: 2px; background: #3450c8;"></div>
+          <span style="font-family: 'Geist Mono', monospace; font-size: 11px; color: #6c6e68;">Dawn</span>
+          <span style="font-family: 'Geist Mono', monospace; font-size: 11px; color: #9b9b92;">4h ago</span>
+        </div>
+        <div style="font-family: Manrope, sans-serif; font-weight: 600; font-size: 15px; line-height: 22px; color: #161716;">SBP holds the policy rate at 11 percent, citing sticky core inflation</div>
+        <div style="font-family: 'Geist Mono', monospace; font-size: 11px; color: #9b9b92; margin-top: 2px;">MEBL &nbsp;&middot;&nbsp; 7 sources</div>
+        <div style="display: flex; gap: 24px; margin-top: 8px;">
+          <div style="display: flex; align-items: center; gap: 5px; min-height: 44px;">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="#161716" stroke="#161716" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>
+            <span style="font-family: Manrope, sans-serif; font-weight: 500; font-size: 11px; color: #161716;">Saved</span>
+          </div>
+          <div style="display: flex; align-items: center; gap: 5px; min-height: 44px;">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#9b9b92" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9.9 4.24A9.1 9.1 0 0 1 12 4c7 0 10 8 10 8a18.5 18.5 0 0 1-2.16 3.19"/><path d="M6.61 6.61A18.9 18.9 0 0 0 2 12s3 8 10 8a9.7 9.7 0 0 0 5.39-1.61"/><path d="M2 2l20 20"/></svg>
+            <span style="font-family: Manrope, sans-serif; font-weight: 500; font-size: 11px; color: #9b9b92;">Hide</span>
+          </div>
+        </div>
+      </div>
+
+      <div style="padding: 16px 0; display: flex; flex-direction: column; gap: 4px;">
+        <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 2px;">
+          <div style="width: 7px; height: 7px; border-radius: 2px; background: #8a7a63;"></div>
+          <span style="font-family: 'Geist Mono', monospace; font-size: 11px; color: #6c6e68;">The News</span>
+          <span style="font-family: 'Geist Mono', monospace; font-size: 11px; color: #9b9b92;">6h ago</span>
+        </div>
+        <div style="font-family: Manrope, sans-serif; font-weight: 600; font-size: 15px; line-height: 22px; color: #161716;">Cement dispatches climb 9 percent as northern demand recovers</div>
+      </div>
+
+    </div>
+  </div>
+</div>
+</x-dc>
+
+<script data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {}
+</script>
+</body>
+</html>

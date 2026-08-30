@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64" role="img" aria-label="Plumb">
+  <title>Plumb</title>
+  <rect x="14" y="14" width="36" height="36" fill="none" stroke="#161716" stroke-width="3.55"></rect>
+  <path d="M32 4 V60" stroke="#3450c8" stroke-width="3.55"></path>
+  <circle cx="32" cy="60" r="3.62" fill="#3450c8"></circle>
+</svg>

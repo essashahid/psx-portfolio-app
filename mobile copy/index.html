@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#f6f6f4">
+<title>Mobile screens · Plumb</title>
+<link rel="stylesheet" href="../tokens/fonts.css">
+<link rel="stylesheet" href="../tokens/colors.css">
+<link rel="stylesheet" href="../tokens/spectrum.css">
+<link rel="stylesheet" href="../tokens/typography.css">
+<link rel="stylesheet" href="../tokens/spacing.css">
+<link rel="stylesheet" href="../tokens/shape.css">
+<link rel="stylesheet" href="../tokens/motion.css">
+<link rel="stylesheet" href="../tokens/base.css">
+<link rel="stylesheet" href="mobile.css">
+</head>
+<body>
+<div class="app">
+<header class="band topbar" style="padding-bottom:18px; border-bottom:1px solid var(--rule)">
+  <p class="eyebrow" style="margin:0">Handoff · phone</p>
+  <h1 style="margin:6px 0 0; font-family:var(--font-display); font-size:var(--text-h1); font-weight:400; letter-spacing:var(--tracking-editorial)">Ten responsive screens</h1>
+  <p style="margin:12px 0 0; font-size:var(--text-sm); line-height:1.6; color:var(--text-muted); text-wrap:pretty">Real viewport implementation, not a fixed-width mock: fluid column, safe-area insets, 44pt hit targets, 16px inputs. Resize the window or open on a phone. Build notes in README.md.</p>
+</header>
+<main class="band">
+  <div class="ledger">
+    <a class="ledger-row" href="login.html" style="display:grid; grid-template-columns:28px minmax(0,1fr); gap:12px; color:inherit">
+      <span class="figure" style="font-size:var(--text-2xs); color:var(--text-faint)">01</span>
+      <span style="min-width:0">
+        <span style="display:block; font-size:var(--text-body); font-weight:600">Login</span>
+        <span style="display:block; margin-top:3px; font-size:var(--text-2xs); line-height:1.5; color:var(--text-faint)">Navy field, stacked; demo entry below the form</span>
+      </span>
+    </a>
+    <a class="ledger-row" href="home.html" style="display:grid; grid-template-columns:28px minmax(0,1fr); gap:12px; color:inherit">
+      <span class="figure" style="font-size:var(--text-2xs); color:var(--text-faint)">02</span>
+      <span style="min-width:0">
+        <span style="display:block; font-size:var(--text-body); font-weight:600">Home</span>
+        <span style="display:block; margin-top:3px; font-size:var(--text-2xs); line-height:1.5; color:var(--text-faint)">Navy hero, growth curve, allocation rule, contributors</span>
+      </span>
+    </a>
+    <a class="ledger-row" href="holdings.html" style="display:grid; grid-template-columns:28px minmax(0,1fr); gap:12px; color:inherit">
+      <span class="figure" style="font-size:var(--text-2xs); color:var(--text-faint)">03</span>
+      <span style="min-width:0">
+        <span style="display:block; font-size:var(--text-body); font-weight:600">Holdings</span>
+        <span style="display:block; margin-top:3px; font-size:var(--text-2xs); line-height:1.5; color:var(--text-faint)">Sector rail, two-line rows, sticky Add a transaction</span>
+      </span>
+    </a>
+    <a class="ledger-row" href="dividends.html" style="display:grid; grid-template-columns:28px minmax(0,1fr); gap:12px; color:inherit">
+      <span class="figure" style="font-size:var(--text-2xs); color:var(--text-faint)">04</span>
+      <span style="min-width:0">
+        <span style="display:block; font-size:var(--text-body); font-weight:600">Dividends</span>
+        <span style="display:block; margin-top:3px; font-size:var(--text-2xs); line-height:1.5; color:var(--text-faint)">Gross / tax / net equation, twelve stacked months</span>
+      </span>
+    </a>
+    <a class="ledger-row" href="performance.html" style="display:grid; grid-template-columns:28px minmax(0,1fr); gap:12px; color:inherit">
+      <span class="figure" style="font-size:var(--text-2xs); color:var(--text-faint)">05</span>
+      <span style="min-width:0">
+        <span style="display:block; font-size:var(--text-body); font-weight:600">Performance</span>
+        <span style="display:block; margin-top:3px; font-size:var(--text-2xs); line-height:1.5; color:var(--text-faint)">XIRR headline, growth of capital, benchmark dumbbells</span>
+      </span>
+    </a>
+    <a class="ledger-row" href="market.html" style="display:grid; grid-template-columns:28px minmax(0,1fr); gap:12px; color:inherit">
+      <span class="figure" style="font-size:var(--text-2xs); color:var(--text-faint)">06</span>
+      <span style="min-width:0">
+        <span style="display:block; font-size:var(--text-body); font-weight:600">Market Pulse</span>
+        <span style="display:block; margin-top:3px; font-size:var(--text-2xs); line-height:1.5; color:var(--text-faint)">Breadth bar, sector board, distribution turned on its side</span>
+      </span>
+    </a>
+    <a class="ledger-row" href="research.html" style="display:grid; grid-template-columns:28px minmax(0,1fr); gap:12px; color:inherit">
+      <span class="figure" style="font-size:var(--text-2xs); color:var(--text-faint)">07</span>
+      <span style="min-width:0">
+        <span style="display:block; font-size:var(--text-body); font-weight:600">Stock Research</span>
+        <span style="display:block; margin-top:3px; font-size:var(--text-2xs); line-height:1.5; color:var(--text-faint)">Live search and sector filter over the whole board</span>
+      </span>
+    </a>
+    <a class="ledger-row" href="company.html" style="display:grid; grid-template-columns:28px minmax(0,1fr); gap:12px; color:inherit">
+      <span class="figure" style="font-size:var(--text-2xs); color:var(--text-faint)">08</span>
+      <span style="min-width:0">
+        <span style="display:block; font-size:var(--text-body); font-weight:600">Company</span>
+        <span style="display:block; margin-top:3px; font-size:var(--text-2xs); line-height:1.5; color:var(--text-faint)">Three tabs; six small multiples at 2 columns</span>
+      </span>
+    </a>
+    <a class="ledger-row" href="copilot.html" style="display:grid; grid-template-columns:28px minmax(0,1fr); gap:12px; color:inherit">
+      <span class="figure" style="font-size:var(--text-2xs); color:var(--text-faint)">09</span>
+      <span style="min-width:0">
+        <span style="display:block; font-size:var(--text-body); font-weight:600">Copilot</span>
+        <span style="display:block; margin-top:3px; font-size:var(--text-2xs); line-height:1.5; color:var(--text-faint)">Finding, evidence, check-it-yourself links</span>
+      </span>
+    </a>
+    <a class="ledger-row" href="more.html" style="display:grid; grid-template-columns:28px minmax(0,1fr); gap:12px; color:inherit">
+      <span class="figure" style="font-size:var(--text-2xs); color:var(--text-faint)">10</span>
+      <span style="min-width:0">
+        <span style="display:block; font-size:var(--text-body); font-weight:600">More</span>
+        <span style="display:block; margin-top:3px; font-size:var(--text-2xs); line-height:1.5; color:var(--text-faint)">Everything not in the five slots</span>
+      </span>
+    </a>
+  </div>
+</main>
+</div>
+</body>
+</html>

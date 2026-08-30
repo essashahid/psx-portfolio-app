@@ -1,0 +1,69 @@
+/* Plumb — mobile shell.
+   Layout only: every colour, size and rule comes from the design tokens in
+   ../tokens/. Nothing here hardcodes a hue. */
+:root { --g: 16px; --hit: 44px; }
+html { -webkit-text-size-adjust: 100%; }
+body { margin: 0; background: var(--surface-page); font-family: var(--font-ui); color: var(--text-strong); }
+a { color: var(--indigo-2); text-decoration: none; }
+a:hover { text-decoration: underline; text-underline-offset: 2px; }
+button, input, textarea { font: inherit; }
+/* 16px stops iOS zooming the viewport on focus */
+input, textarea, select { font-size: 16px; }
+
+/* The app column. Full-bleed on a phone; a centred column with hairline edges
+   on anything wider, so the same file previews honestly on a desktop. */
+.app { width: 100%; max-width: 480px; margin-inline: auto; min-height: 100dvh;
+  display: flex; flex-direction: column; background: var(--surface-page); }
+@media (min-width: 481px) {
+  :root { --g: 20px; }
+  body { background: var(--surface-sunken); }
+  .app { border-inline: 1px solid var(--rule); }
+}
+
+/* Lucide via CSS mask, the same technique as the design system's Icon
+   component — the glyph inherits currentColor. */
+.i { display: inline-block; flex: none; background: currentColor;
+  -webkit-mask: var(--u) center / contain no-repeat; mask: var(--u) center / contain no-repeat; }
+
+.band { padding: 20px var(--g); }
+.caps { font-size: var(--text-3xs); font-weight: 700; text-transform: uppercase;
+  letter-spacing: var(--tracking-caps); color: var(--text-faint); }
+.pagetitle { margin: 0; font-family: var(--font-display); font-size: var(--text-h2);
+  font-weight: 400; letter-spacing: var(--tracking-editorial); color: var(--text-strong); }
+.note { margin: 16px 0 0; font-size: var(--text-2xs); line-height: 1.55; color: var(--text-faint); }
+
+/* Sticky chrome. Safe-area insets keep the bar clear of the notch and the
+   home indicator on a real device. */
+.topbar { padding-top: calc(12px + env(safe-area-inset-top)); }
+.tabbar { position: sticky; bottom: 0; z-index: 20; margin-top: auto;
+  border-top: 1px solid var(--rule); background: color-mix(in oklab, var(--surface-raised) 96%, transparent);
+  backdrop-filter: var(--blur-bar); box-shadow: var(--shadow-nav); }
+.tabbar .slots { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 4px;
+  padding: 7px 8px calc(10px + env(safe-area-inset-bottom)); }
+.tabbar a { display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 3px; min-height: 50px; border-radius: var(--radius-sm);
+  font-size: 10px; font-weight: 600; color: var(--text-muted); }
+.tabbar a:hover { text-decoration: none; background: var(--surface-sunken); }
+.tabbar a[aria-current="page"] { background: var(--indigo-2); color: #fff; }
+.tabbar .sticky-action { padding: 12px var(--g) 0; }
+@media (pointer: coarse) { .tabbar { backdrop-filter: none; background: var(--surface-raised); } }
+
+/* Horizontal rails — sector filters, range chips, suggested prompts */
+.hscroll { overflow-x: auto; scrollbar-width: none; -webkit-overflow-scrolling: touch; overscroll-behavior-x: contain; }
+.hscroll::-webkit-scrollbar { display: none; }
+.hscroll .rail { display: flex; gap: 18px; width: max-content; padding: 12px var(--g); }
+
+/* Every tappable row clears the 44pt minimum */
+.tap { min-height: var(--hit); }
+.cta { display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%;
+  min-height: 48px; border: none; border-radius: var(--radius-pill); background: var(--ink-1);
+  font-size: var(--text-body); font-weight: 600; color: var(--text-on-dark); cursor: pointer; }
+.ghost { display: flex; align-items: center; justify-content: center; min-height: 48px;
+  border: 1px solid var(--rule-strong); border-radius: var(--radius-pill); background: var(--surface-raised);
+  font-size: var(--text-sm); font-weight: 600; color: var(--text-strong); cursor: pointer; }
+.ghost:hover, .cta:hover { background: var(--surface-sunken); color: var(--text-strong); }
+.cta:hover { background: var(--ink-2); color: var(--text-on-dark); }
+:where(a, button, input):focus-visible { outline: 2px solid var(--focus-ring); outline-offset: 2px; }
+
+/* Fluid chart frames: the SVG scales with the column, the type never does */
+.chart { display: block; width: 100%; overflow: visible; }
