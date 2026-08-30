@@ -28,7 +28,7 @@ export function SectionMeta({
   // surface the badge for states that need attention (stale, partial, etc.).
   const showBadge = meta.freshness !== "fresh" || !meta.lastUpdated;
   return (
-    <div className="flex flex-wrap items-center gap-2 text-[11px] text-slate-500">
+    <div className="flex flex-wrap items-center gap-2 text-[11px] text-[var(--text-muted)]">
       {showBadge && <Badge variant={freshnessVariant(meta.freshness)}>{freshnessLabel(meta.freshness)}</Badge>}
       {meta.source && (
         <span>

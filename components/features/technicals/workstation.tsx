@@ -131,7 +131,7 @@ export function TechnicalWorkstation({
 
   return (
     <div className="workstation-wrapper flex flex-col gap-4 bg-background">
-      <div className="relative flex flex-col overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
+      <div className="relative flex flex-col overflow-hidden rounded-xl border border-[var(--rule)] bg-[var(--surface-raised)] shadow-sm">
         <ChartHeader
           ticker={ticker}
           price={signals.lastClose}

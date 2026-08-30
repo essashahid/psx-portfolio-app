@@ -454,7 +454,7 @@ function DataStatusDetails({
       <summary className="list-none">
         <Badge variant={statusVariant(selectedStatus)} className="cursor-pointer">Selected view: {selectedStatus}</Badge>
       </summary>
-      <div className="absolute left-0 z-20 mt-2 w-[min(340px,calc(100vw-3rem))] rounded-xl border border-slate-200 bg-white p-3 text-xs shadow-lg">
+      <div className="absolute left-0 z-20 mt-2 w-[min(340px,calc(100vw-3rem))] rounded-xl border border-[var(--rule)] bg-[var(--surface-raised)] p-3 text-xs shadow-lg">
         <p className="font-semibold text-slate-950">Data status</p>
         <p className="mt-1 leading-relaxed text-muted-foreground">
           {overallStatus === "Partial" && affected.length
@@ -465,7 +465,7 @@ function DataStatusDetails({
           {sections.map((section) => (
             <div key={section.label} className="grid grid-cols-[1fr_auto] gap-2">
               <div>
-                <p className="font-medium text-slate-900">{section.label}</p>
+                <p className="font-medium text-[var(--text-strong)]">{section.label}</p>
                 <p className="text-muted-foreground">{section.impact}</p>
               </div>
               <Badge variant={statusVariant(section.status)}>{section.status}</Badge>
@@ -535,7 +535,7 @@ function Segment<T extends string>({
   onChange: (v: T) => void;
 }) {
   return (
-    <div className="inline-flex rounded-lg border border-slate-200 bg-slate-50 p-0.5">
+    <div className="inline-flex rounded-lg border border-[var(--rule)] bg-[var(--surface-sunken)] p-0.5">
       {options.map((option) => (
         <button
           key={option.value}
@@ -543,7 +543,7 @@ function Segment<T extends string>({
           onClick={() => onChange(option.value)}
           className={cn(
             "rounded-md px-2.5 py-1.5 text-xs font-medium transition-colors",
-            value === option.value ? "bg-white text-slate-950 shadow-sm" : "text-muted-foreground hover:text-slate-950"
+            value === option.value ? "bg-[var(--surface-raised)] text-slate-950 shadow-sm" : "text-muted-foreground hover:text-slate-950"
           )}
         >
           {option.label}
@@ -697,13 +697,13 @@ export function FinancialsWorkspace({
   const callouts = buildCallouts(sortedRows, mode);
   return (
     <div className="space-y-4">
-      <Card className="border-slate-200 bg-white shadow-sm">
+      <Card className="border-[var(--rule)] bg-[var(--surface-raised)] shadow-sm">
         <CardHeader className="p-5 pb-3">
           <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
             <div>
               <CardTitle className="text-lg">Financials</CardTitle>
               <CardDescription className="mt-1">
-                <span className="font-medium text-slate-700">Selected view</span>{" "}
+                <span className="font-medium text-[var(--text-body)]">Selected view</span>{" "}
                 {activePeriod ? `${labelPeriod(activePeriod)} · ${modeLabel} · ${headerUnitLabel(valueMode)}` : `No ${modeLabel.toLowerCase()} period`}
                 {sourceUrl ? " · Official PSX source" : ""}
                 {updated ? ` · Updated ${updated}` : ""}
@@ -747,7 +747,7 @@ export function FinancialsWorkspace({
                   <summary className="inline-flex h-10 cursor-pointer list-none items-center justify-center gap-2 rounded-md border border-border bg-card px-3 text-xs font-medium hover:bg-accent">
                     <MoreHorizontal className="h-3.5 w-3.5" /> Actions
                   </summary>
-                  <div className="absolute right-0 z-20 mt-2 flex w-56 flex-col gap-2 rounded-xl border border-slate-200 bg-white p-3 shadow-lg">
+                  <div className="absolute right-0 z-20 mt-2 flex w-56 flex-col gap-2 rounded-xl border border-[var(--rule)] bg-[var(--surface-raised)] p-3 shadow-lg">
                     {!readOnly && (
                       <ActionButton
                         endpoint={`/api/stocks/${ticker}/refresh`}
@@ -823,7 +823,7 @@ export function FinancialsWorkspace({
           <Card
             key={item.key}
             className={cn(
-              "border-slate-200 bg-white shadow-sm",
+              "border-[var(--rule)] bg-[var(--surface-raised)] shadow-sm",
               ["revenue", "profit_after_tax", "net_margin"].includes(item.key) && "bg-slate-50/70"
             )}
           >
@@ -852,7 +852,7 @@ export function FinancialsWorkspace({
       </div>
 
       {activeTrend && trendOptions.length > 0 ? (
-        <Card className="border-slate-200 bg-white shadow-sm">
+        <Card className="border-[var(--rule)] bg-[var(--surface-raised)] shadow-sm">
           <CardHeader className="p-5 pb-3">
             <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
               <div>
@@ -870,7 +870,7 @@ export function FinancialsWorkspace({
 
       {insights.length > 0 && (
         <div className={cn("grid gap-4", callouts.length > 0 && "lg:grid-cols-2")}>
-          <Card className="border-slate-200 bg-white shadow-sm">
+          <Card className="border-[var(--rule)] bg-[var(--surface-raised)] shadow-sm">
             <CardHeader className="p-5 pb-2">
               <CardTitle className="text-base">Key takeaways</CardTitle>
               <CardDescription>Calculated only from comparable periods in the selected mode.</CardDescription>
@@ -889,14 +889,14 @@ export function FinancialsWorkspace({
             </CardContent>
           </Card>
           {callouts.length > 0 && (
-            <Card className="border-slate-200 bg-white shadow-sm">
+            <Card className="border-[var(--rule)] bg-[var(--surface-raised)] shadow-sm">
               <CardHeader className="p-5 pb-2">
                 <CardTitle className="text-base">Items to review</CardTitle>
                 <CardDescription>Shown only when a large movement is worth reviewing alongside the source filing.</CardDescription>
               </CardHeader>
               <CardContent className="space-y-2 p-5 pt-3">
                 {callouts.map((callout) => (
-                <div key={callout.text} className={cn("rounded-xl border px-3 py-2 text-sm", callout.tone === "positive" && "border-emerald-200 bg-emerald-50 text-emerald-900", callout.tone === "negative" && "border-red-200 bg-red-50 text-red-900", callout.tone === "warning" && "border-amber-200 bg-amber-50 text-amber-900", callout.tone === "neutral" && "border-slate-200 bg-slate-50 text-slate-800")}>
+                <div key={callout.text} className={cn("rounded-xl border px-3 py-2 text-sm", callout.tone === "positive" && "border-emerald-200 bg-emerald-50 text-emerald-900", callout.tone === "negative" && "border-red-200 bg-red-50 text-red-900", callout.tone === "warning" && "border-amber-200 bg-amber-50 text-amber-900", callout.tone === "neutral" && "border-[var(--rule)] bg-[var(--surface-sunken)] text-slate-800")}>
                   {callout.text}
                 </div>
                 ))}
@@ -906,7 +906,7 @@ export function FinancialsWorkspace({
         </div>
       )}
 
-      <Card className="border-slate-200 bg-white shadow-sm">
+      <Card className="border-[var(--rule)] bg-[var(--surface-raised)] shadow-sm">
         <CardHeader className="p-5 pb-3">
           <div className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
             <div>
@@ -948,7 +948,7 @@ export function FinancialsWorkspace({
             </p>
           ) : null}
           {metadataNote ? (
-            <p className="mt-2 rounded-lg bg-slate-50 px-3 py-2 text-xs text-slate-600">
+            <p className="mt-2 rounded-lg bg-[var(--surface-sunken)] px-3 py-2 text-xs text-slate-600">
               Filing metadata: {metadataNote}
             </p>
           ) : null}
@@ -959,7 +959,7 @@ export function FinancialsWorkspace({
               <Table className="min-w-[47.5rem]">
                 <THead>
                   <TR>
-                    <TH className="sticky left-0 z-[1] bg-white">Line item</TH>
+                    <TH className="sticky left-0 z-[1] bg-[var(--surface-raised)]">Line item</TH>
                     {visiblePeriods.map((period, i) => (
                       <TH key={`${period.statement_type}-${i}`} className={cn("text-right", i === 0 && "bg-emerald-50/80 text-up")}>
                         {(() => {
@@ -986,7 +986,7 @@ export function FinancialsWorkspace({
                     if (row.type === "section") {
                       return (
                         <TR key={`section-${row.label}`} className="hover:bg-transparent">
-                          <TD colSpan={visiblePeriods.length + (showChangeColumn ? 2 : 1)} className="bg-slate-50 px-2.5 py-2 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+                          <TD colSpan={visiblePeriods.length + (showChangeColumn ? 2 : 1)} className="bg-[var(--surface-sunken)] px-2.5 py-2 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
                             {row.label}
                           </TD>
                         </TR>
@@ -999,7 +999,7 @@ export function FinancialsWorkspace({
                     const derived = isCalculatedKey(key);
                     return (
                       <TR key={key} className={cn(isTotalLike(key) && "font-semibold")}>
-                        <TD className={cn("sticky left-0 z-[1] bg-white text-xs text-slate-900", isTotalLike(key) ? "font-semibold" : "font-medium")}>
+                        <TD className={cn("sticky left-0 z-[1] bg-[var(--surface-raised)] text-xs text-[var(--text-strong)]", isTotalLike(key) ? "font-semibold" : "font-medium")}>
                           <span title={ACCOUNTING_HINTS[key]} className={cn(ACCOUNTING_HINTS[key] && "cursor-help decoration-dotted underline-offset-2 hover:underline")}>{displayLabel(key, visiblePeriods[0])}</span>
                           {derived ? <Badge variant="secondary" className="ml-2">Calculated</Badge> : null}
                         </TD>
@@ -1079,7 +1079,7 @@ function TrendTooltip({
           const rawValue = Number(p.value);
           const statementValue = percent || eps ? rawValue : rawValue / 1000;
           return (
-            <div key={key} className="border-b border-slate-100 pb-1 last:border-0">
+            <div key={key} className="border-b border-[var(--rule)] pb-1 last:border-0">
               <div className="flex items-center justify-between gap-4 text-[11px]">
                 <span className="flex items-center gap-1.5 text-muted-foreground">
                   <span className="h-2 w-2 rounded-full" style={{ background: p.color ?? SERIES_COLOR[key] }} />

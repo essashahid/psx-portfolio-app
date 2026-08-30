@@ -46,7 +46,7 @@ export function TechnicalState({ signals, volatility }: TechnicalStateProps) {
   ];
 
   return (
-    <Card className="border-slate-200 bg-white shadow-sm">
+    <Card className="border-[var(--rule)] bg-[var(--surface-raised)] shadow-sm">
       <CardHeader className="p-4 pb-2">
         <CardTitle className="text-base">Technical State</CardTitle>
       </CardHeader>
@@ -54,8 +54,8 @@ export function TechnicalState({ signals, volatility }: TechnicalStateProps) {
         <Table>
           <TBody>
             {rows.map((r, i) => (
-              <TR key={i} className="border-b border-border last:border-0 hover:bg-slate-50/50">
-                <TD className="w-[8.75rem] py-3 pl-4 align-top font-medium text-slate-900">{r.dimension}</TD>
+              <TR key={i} className="border-b border-border last:border-0 hover:bg-[var(--surface-sunken)]/50">
+                <TD className="w-[8.75rem] py-3 pl-4 align-top font-medium text-[var(--text-strong)]">{r.dimension}</TD>
                 <TD className="w-[7.5rem] py-3 align-top">
                   <Badge variant={r.tone as any} className="whitespace-nowrap">{r.state}</Badge>
                 </TD>

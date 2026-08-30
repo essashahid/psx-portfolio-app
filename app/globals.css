@@ -234,6 +234,114 @@
   --splash-total: 1180ms;
 }
 
+/* ---------------------------------------------------------------------------
+   Dark mode.
+
+   Only the semantic roles are redefined; the raw palette above is untouched and
+   the shadcn aliases (--card, --muted, --border ...) already point at these
+   roles, so they follow without being restated.
+
+   True black rather than a dark grey: an OLED panel draws no power for a black
+   pixel, and this is read on phones as often as on a desk. That inverts the
+   surface relationship deliberately. In light mode the ink header is the
+   darkest thing on the page and lifts off the paper; here the page is black and
+   the raised surfaces are lighter, so the same block still reads as raised.
+
+   Accents move up a step (indigo-2 to indigo-3, up-2 to up-3) because a colour
+   weighted for paper goes muddy on black, and the up/down pair has to stay
+   legible at a glance since it is the first thing read on a holding.
+
+   Declared twice on purpose. The media query serves anyone who has never
+   touched the toggle, while [data-theme] lets an explicit choice win in both
+   directions; :not([data-theme="light"]) stops the system preference from
+   overriding someone who deliberately asked for light.
+   ------------------------------------------------------------------------ */
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --surface-page: #000000;
+    --surface-raised: #121212;
+    --surface-sunken: #0a0a0a;
+    --surface-inset: #1c1c1c;
+    --surface-nav: #0d0d0d;
+    --surface-field-ink: #121212;
+    --surface-field-indigo: #141a33;
+    --surface-field-saffron: #2a2109;
+    --surface-field-clay: #2b1710;
+
+    --text-strong: #f2f3f7;
+    --text-body: #d6d7dc;
+    --text-muted: #9fa2ae;
+    --text-faint: #6f7179;
+    --text-ghost: color-mix(in oklab, #f2f3f7 22%, transparent);
+    --text-brand: var(--indigo-3);
+    --text-up: var(--up-3);
+    --text-down: var(--down-3);
+    --text-link: var(--indigo-3);
+    --text-link-hover: #a8b6ec;
+
+    --rule: #232323;
+    --rule-soft: color-mix(in oklab, #ffffff 8%, transparent);
+    --rule-strong: #333333;
+
+    --chart-line-soft: var(--indigo-2);
+    --chart-grid: #1e1e1e;
+    --chart-axis: #6f7179;
+    --chart-up: var(--up-3);
+    --chart-down: var(--down-3);
+
+    --status-ok: var(--up-3);
+    --status-danger: var(--down-3);
+    --status-info: var(--indigo-3);
+
+    /* Inverted: the primary button is light on a dark field. */
+    --primary: #f2f3f7;
+    --primary-foreground: #0b0c0b;
+  }
+}
+
+:root[data-theme="dark"] {
+  --surface-page: #000000;
+  --surface-raised: #121212;
+  --surface-sunken: #0a0a0a;
+  --surface-inset: #1c1c1c;
+  --surface-nav: #0d0d0d;
+  --surface-field-ink: #121212;
+  --surface-field-indigo: #141a33;
+  --surface-field-saffron: #2a2109;
+  --surface-field-clay: #2b1710;
+
+  --text-strong: #f2f3f7;
+  --text-body: #d6d7dc;
+  --text-muted: #9fa2ae;
+  --text-faint: #6f7179;
+  --text-ghost: color-mix(in oklab, #f2f3f7 22%, transparent);
+  --text-brand: var(--indigo-3);
+  --text-up: var(--up-3);
+  --text-down: var(--down-3);
+  --text-link: var(--indigo-3);
+  --text-link-hover: #a8b6ec;
+
+  --rule: #232323;
+  --rule-soft: color-mix(in oklab, #ffffff 8%, transparent);
+  --rule-strong: #333333;
+
+  --chart-line-soft: var(--indigo-2);
+  --chart-grid: #1e1e1e;
+  --chart-axis: #6f7179;
+  --chart-up: var(--up-3);
+  --chart-down: var(--down-3);
+
+  --status-ok: var(--up-3);
+  --status-danger: var(--down-3);
+  --status-info: var(--indigo-3);
+
+  /* Inverted: the primary button is light on a dark field. */
+  --primary: #f2f3f7;
+  --primary-foreground: #0b0c0b;
+}
+
+
 /* Collapsing the duration tokens is enough to disable every transition built
    on them, so individual components need no reduced-motion branch of their own. */
 @media (prefers-reduced-motion: reduce) {

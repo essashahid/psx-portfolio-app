@@ -239,7 +239,7 @@ function parseDate(d: string | null): number {
 
 function Segment<T extends string>({ value, options, onChange }: { value: T; options: { value: T; label: string }[]; onChange: (v: T) => void }) {
   return (
-    <div className="inline-flex rounded-lg border border-slate-200 bg-slate-50 p-0.5">
+    <div className="inline-flex rounded-lg border border-[var(--rule)] bg-[var(--surface-sunken)] p-0.5">
       {options.map((option) => (
         <button
           key={option.value}
@@ -247,7 +247,7 @@ function Segment<T extends string>({ value, options, onChange }: { value: T; opt
           onClick={() => onChange(option.value)}
           className={cn(
             "rounded-md px-2.5 py-1.5 text-xs font-medium transition-colors",
-            value === option.value ? "bg-white text-slate-950 shadow-sm" : "text-muted-foreground hover:text-slate-950"
+            value === option.value ? "bg-[var(--surface-raised)] text-slate-950 shadow-sm" : "text-muted-foreground hover:text-slate-950"
           )}
         >
           {option.label}
@@ -260,7 +260,7 @@ function Segment<T extends string>({ value, options, onChange }: { value: T; opt
 function SummaryCard({ label, metricKey, val, isMargin, priorVal, priorLabel, valueMode, comparison }: { label: string; metricKey: string; val: number | null; isMargin?: boolean; priorVal: number | null; priorLabel: string; valueMode: ValueMode; comparison: "YoY" | "QoQ" }) {
     const chg = changeInfo(val, priorVal, isMargin ?? false);
     return (
-        <Card className="border-slate-200 bg-white shadow-sm flex flex-col justify-between min-h-[6.5rem]">
+        <Card className="border-[var(--rule)] bg-[var(--surface-raised)] shadow-sm flex flex-col justify-between min-h-[6.5rem]">
             <CardContent className="p-4 flex flex-col h-full justify-between">
                 <div>
                     <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">{label}</p>
@@ -495,24 +495,24 @@ export function EarningsWorkspace({
   return (
     <div className="space-y-4">
       {/* HEADER */}
-      <Card className="border-slate-200 bg-white shadow-sm">
+      <Card className="border-[var(--rule)] bg-[var(--surface-raised)] shadow-sm">
           <CardHeader className="p-5 pb-3">
               <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
                   <div>
                       <CardTitle className="text-lg">Earnings</CardTitle>
                       <CardDescription className="mt-2 space-y-1 text-xs">
                           <span className="block">
-                              <span className="font-medium text-slate-700">Selected result:</span>{" "}
+                              <span className="font-medium text-[var(--text-body)]">Selected result:</span>{" "}
                               {activePeriod ? `${labelPeriod(activePeriod)} · ${mode === "annual" ? "Annual" : mode === "quarterly" ? "Quarterly" : "Cumulative"}` : "No result"}
                               {activePeriod?.data?._period_end ? ` · Period ended ${formatDate(String(activePeriod.data._period_end))}` : ""}
                           </span>
                           {latestFiling ? <span className="block">
-                              <span className="font-medium text-slate-700">Latest filing available:</span>{" "}
+                              <span className="font-medium text-[var(--text-body)]">Latest filing available:</span>{" "}
                               {labelPeriod(latestFiling)}
                               {latestFiling?.reported_date ? ` · Announced ${formatDate(latestFiling.reported_date)}` : ""}
                           </span> : null}
                           <span className="block">
-                              <span className="font-medium text-slate-700">Source:</span>{" "}
+                              <span className="font-medium text-[var(--text-body)]">Source:</span>{" "}
                               {activePeriod?.source_url ? "Official PSX filing" : "Official source link not captured"}
                           </span>
                       </CardDescription>
@@ -595,11 +595,11 @@ export function EarningsWorkspace({
       )}
 
       {/* TREND CHART */}
-      <Card className="border-slate-200 bg-white shadow-sm overflow-hidden">
-        <CardHeader className="border-b border-border bg-slate-50/50 p-4">
+      <Card className="border-[var(--rule)] bg-[var(--surface-raised)] shadow-sm overflow-hidden">
+        <CardHeader className="border-b border-border bg-[var(--surface-sunken)]/50 p-4">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
              <div>
-                 <CardTitle className="text-sm flex items-center gap-2"><TrendingUp className="w-4 h-4 text-slate-500" /> Earnings dashboard</CardTitle>
+                 <CardTitle className="text-sm flex items-center gap-2"><TrendingUp className="w-4 h-4 text-[var(--text-muted)]" /> Earnings dashboard</CardTitle>
                  <CardDescription className="mt-1 text-xs">Charts show absolute values. The comparison control sets the YoY/QoQ basis shown in badges and tooltips.</CardDescription>
              </div>
              <Segment
@@ -616,14 +616,14 @@ export function EarningsWorkspace({
                     { key: "revenue", label: "Revenue trend", fill: "#2563eb", question: "Is the business growing?" },
                     { key: "pat", label: "Profit after tax trend", fill: "#b45309", question: "Are earnings growing?" },
                 ].map((chart) => (
-                    <div key={chart.key} className="rounded-lg border border-slate-200 p-3">
+                    <div key={chart.key} className="rounded-lg border border-[var(--rule)] p-3">
                         <div className="mb-2 flex items-center justify-between gap-2">
                             <div>
-                                <p className="text-xs font-semibold text-slate-900">{chart.label}</p>
+                                <p className="text-xs font-semibold text-[var(--text-strong)]">{chart.label}</p>
                                 <p className="text-[10px] text-muted-foreground">{chart.question}</p>
                             </div>
                             <div className="text-right">
-                                <p className="text-xs font-semibold tabular-nums text-slate-900">
+                                <p className="text-xs font-semibold tabular-nums text-[var(--text-strong)]">
                                     {latestChartPoint && typeof latestChartPoint[chart.key as "revenue" | "pat"] === "number"
                                         ? formatRawCompact(Number(latestChartPoint[chart.key as "revenue" | "pat"]) / 1000)
                                         : "—"}
@@ -701,15 +701,15 @@ export function EarningsWorkspace({
       {/* TWO COLUMNS: TAKEAWAYS & WATCHPOINTS vs HISTORY */}
       <div className="grid gap-4 lg:grid-cols-[1fr_minmax(0,2fr)] items-start">
           <div className="space-y-4">
-              <Card className="border-slate-200 bg-white shadow-sm">
+              <Card className="border-[var(--rule)] bg-[var(--surface-raised)] shadow-sm">
                   <CardHeader className="p-4 pb-2">
-                      <CardTitle className="text-sm flex items-center gap-2"><Presentation className="w-4 h-4 text-slate-500"/> Key earnings takeaways</CardTitle>
+                      <CardTitle className="text-sm flex items-center gap-2"><Presentation className="w-4 h-4 text-[var(--text-muted)]"/> Key earnings takeaways</CardTitle>
                   </CardHeader>
                   <CardContent className="p-4 pt-2">
                       {takeaways.length > 0 ? (
                           <ul className="space-y-2.5">
                               {takeaways.map((t, i) => (
-                                  <li key={i} className="flex items-start gap-2.5 text-sm text-slate-700 leading-relaxed">
+                                  <li key={i} className="flex items-start gap-2.5 text-sm text-[var(--text-body)] leading-relaxed">
                                       <CheckCircle2 className="w-4 h-4 text-up shrink-0 mt-0.5" />
                                       {t}
                                   </li>
@@ -740,21 +740,21 @@ export function EarningsWorkspace({
               )}
 
               {events.length > 0 && (
-                  <Card className="border-slate-200 bg-white shadow-sm">
+                  <Card className="border-[var(--rule)] bg-[var(--surface-raised)] shadow-sm">
                       <CardHeader className="p-4 pb-2">
-                          <CardTitle className="text-sm flex items-center gap-2"><Clock className="w-4 h-4 text-slate-500"/> Earnings-event timeline</CardTitle>
+                          <CardTitle className="text-sm flex items-center gap-2"><Clock className="w-4 h-4 text-[var(--text-muted)]"/> Earnings-event timeline</CardTitle>
                           <CardDescription className="mt-1 text-xs">Each result is grouped with its primary filing and nearby disclosures.</CardDescription>
                       </CardHeader>
                       <CardContent className="p-4 pt-2">
-                          <div className="relative border-l border-slate-200 ml-2 space-y-4 pb-2">
+                          <div className="relative border-l border-[var(--rule)] ml-2 space-y-4 pb-2">
                               {events.slice(0, 5).map((ev) => (
                                   <div
                                       key={ev.id}
-                                      className={cn("relative cursor-pointer rounded-md py-1 pl-5 pr-2 hover:bg-slate-50", activePeriod && ev.id === rank(activePeriod).toString() && "bg-blue-50/70")}
+                                      className={cn("relative cursor-pointer rounded-md py-1 pl-5 pr-2 hover:bg-[var(--surface-sunken)]", activePeriod && ev.id === rank(activePeriod).toString() && "bg-blue-50/70")}
                                       onClick={() => setSelectedPeriodId(ev.id)}
                                   >
                                       <span className="absolute left-[-5px] top-1 w-2.5 h-2.5 rounded-full bg-slate-300 border-2 border-white" />
-                                      <p className="text-[11px] font-semibold text-slate-900">{ev.period} result</p>
+                                      <p className="text-[11px] font-semibold text-[var(--text-strong)]">{ev.period} result</p>
                                       <p className="text-[10px] text-muted-foreground mb-1.5">{ev.date ? formatDate(ev.date) : "Announcement date not captured"}</p>
                                       {ev.primary ? (
                                           <a href={ev.primary.url} target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()} className="block text-xs font-medium text-blue-700 hover:underline mb-1">
@@ -769,8 +769,8 @@ export function EarningsWorkspace({
                                       )}
                                       {ev.related.length > 0 && (
                                           <details className="text-[10px]">
-                                              <summary className="cursor-pointer text-slate-500 hover:text-slate-900 font-medium">+{ev.related.length} related disclosure{ev.related.length > 1 ? 's' : ''}</summary>
-                                              <div className="mt-1.5 space-y-1.5 pl-2 border-l border-slate-100">
+                                              <summary className="cursor-pointer text-[var(--text-muted)] hover:text-[var(--text-strong)] font-medium">+{ev.related.length} related disclosure{ev.related.length > 1 ? 's' : ''}</summary>
+                                              <div className="mt-1.5 space-y-1.5 pl-2 border-l border-[var(--rule)]">
                                                   {ev.related.map((rel, j) => (
                                                       <a key={j} href={rel.url} target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()} className="block text-slate-600 hover:underline">
                                                           {rel.title}
@@ -787,8 +787,8 @@ export function EarningsWorkspace({
               )}
           </div>
 
-          <Card className="border-slate-200 bg-white shadow-sm overflow-hidden">
-              <CardHeader className="p-4 pb-2 border-b border-border bg-slate-50/50">
+          <Card className="border-[var(--rule)] bg-[var(--surface-raised)] shadow-sm overflow-hidden">
+              <CardHeader className="p-4 pb-2 border-b border-border bg-[var(--surface-sunken)]/50">
                    <div className="flex items-center justify-between">
                        <div>
                            <CardTitle className="text-sm">Earnings history</CardTitle>
@@ -808,8 +808,8 @@ export function EarningsWorkspace({
               <CardContent className="p-0 overflow-x-auto">
                   <Table>
                       <THead>
-                          <TR className="bg-slate-50/50 border-b border-border">
-                              <TH className="text-xs py-2 whitespace-nowrap sticky left-0 bg-slate-50/95 backdrop-blur z-10 font-semibold text-slate-900 shadow-[1px_0_0_0_#e2e8f0]">Period</TH>
+                          <TR className="bg-[var(--surface-sunken)]/50 border-b border-border">
+                              <TH className="text-xs py-2 whitespace-nowrap sticky left-0 bg-slate-50/95 backdrop-blur z-10 font-semibold text-[var(--text-strong)] shadow-[1px_0_0_0_#e2e8f0]">Period</TH>
                               <TH className="text-right text-xs py-2 whitespace-nowrap">Revenue</TH>
                               <TH className="text-right text-xs py-2 whitespace-nowrap">PAT</TH>
                               <TH className="text-right text-xs py-2 whitespace-nowrap">EPS</TH>
@@ -827,12 +827,12 @@ export function EarningsWorkspace({
                               return (
                                   <TR key={rank(r)} 
                                       className={cn(
-                                          "cursor-pointer hover:bg-slate-50 transition-colors",
+                                          "cursor-pointer hover:bg-[var(--surface-sunken)] transition-colors",
                                           isSelected && "bg-blue-50/50"
                                       )}
                                       onClick={() => setSelectedPeriodId(rank(r).toString())}
                                   >
-                                      <TD className={cn("text-xs font-medium py-2.5 whitespace-nowrap sticky left-0 bg-white z-10 shadow-[1px_0_0_0_#e2e8f0]", isSelected && "bg-blue-50/50 text-blue-800")}>
+                                      <TD className={cn("text-xs font-medium py-2.5 whitespace-nowrap sticky left-0 bg-[var(--surface-raised)] z-10 shadow-[1px_0_0_0_#e2e8f0]", isSelected && "bg-blue-50/50 text-blue-800")}>
                                           {labelPeriod(r)}
                                       </TD>
                                       <TD className="text-right text-xs py-2.5 tabular-nums">{formatValue(raw(r, "revenue"), "revenue", valueMode)}</TD>

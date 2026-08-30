@@ -326,7 +326,7 @@ function MobileMenuRow({ icon: Icon, label, active, badge }: { icon: NavIcon; la
       {pending ? <Loader2 className="h-4 w-4 shrink-0 animate-spin" /> : <Icon className="h-4 w-4 shrink-0" />}
       <span className="min-w-0 flex-1 truncate">{label}</span>
       {badge ? (
-        <span className={cn("rounded-full px-1.5 py-0.5 text-[10px] font-semibold", lit ? "bg-white text-primary" : "bg-saffron text-white")}>
+        <span className={cn("rounded-full px-1.5 py-0.5 text-[10px] font-semibold", lit ? "bg-[var(--surface-raised)] text-primary" : "bg-saffron text-white")}>
           {badge}
         </span>
       ) : null}

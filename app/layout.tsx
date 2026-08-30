@@ -38,10 +38,16 @@ export const viewport: Viewport = {
 
 import { Analytics } from "@vercel/analytics/next";
 import { PwaUpdater } from "@/components/shared/pwa-updater";
+import { themeInitScript } from "@/lib/theme-script";
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
+      <head>
+        {/* Runs before first paint so a dark-mode user never sees a white
+            flash. Must stay inline and blocking; a deferred script is too late. */}
+        <script dangerouslySetInnerHTML={{ __html: themeInitScript }} />
+      </head>
       <body className={`${manrope.variable} ${geistMono.variable} ${newsreader.variable} font-sans antialiased`}>
         {children}
         <PwaUpdater />

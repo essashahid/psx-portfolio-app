@@ -1132,7 +1132,7 @@ function ResearchActivity({
         className="flex min-h-12 w-full items-center gap-3 px-4 py-2.5 text-left"
         aria-expanded={expanded}
       >
-        <span className="relative flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-indigo-3/60 bg-white text-brand shadow-sm">
+        <span className="relative flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-indigo-3/60 bg-[var(--surface-raised)] text-brand shadow-sm">
           {active ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
           {active && <span className="absolute -right-1 -top-1 h-2.5 w-2.5 animate-pulse rounded-full border-2 border-white bg-indigo" />}
         </span>
@@ -1150,7 +1150,7 @@ function ResearchActivity({
         <ChevronDown className={cn("h-4 w-4 text-muted-foreground transition-transform", expanded && "rotate-180")} />
       </button>
       {expanded && (
-        <div className="border-t border-rule bg-white/55 px-4 py-3">
+        <div className="border-t border-rule bg-[var(--surface-raised)]/55 px-4 py-3">
           <div className="relative space-y-0">
             {steps.map((step, index) => {
               const isRunning = active && !step.done;
@@ -1159,7 +1159,7 @@ function ResearchActivity({
                 <div key={step.id} className="relative flex min-h-9 items-start gap-3 pb-2 last:min-h-0 last:pb-0">
                   {index < steps.length - 1 && <span className="absolute left-2.75 top-6 h-[calc(100%-0.25rem)] w-px bg-indigo-3/50" />}
                   <span className={cn(
-                    "relative z-10 flex h-6 w-6 shrink-0 items-center justify-center rounded-full border bg-white",
+                    "relative z-10 flex h-6 w-6 shrink-0 items-center justify-center rounded-full border bg-[var(--surface-raised)]",
                     isRunning ? "border-indigo-3 text-brand shadow-[0_0_0_3px_rgba(52,80,200,0.10)]" : "border-indigo-3/60 text-brand"
                   )}>
                     {isRunning ? <Loader2 className="h-3 w-3 animate-spin" /> : <Icon className="h-3 w-3" />}

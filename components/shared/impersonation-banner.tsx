@@ -31,7 +31,7 @@ export function ImpersonationBanner({
       <button
         onClick={exit}
         disabled={exiting}
-        className="flex shrink-0 items-center gap-1 rounded-md border border-amber-300 bg-white px-2.5 py-1 font-medium text-amber-800 hover:bg-amber-100 disabled:opacity-60"
+        className="flex shrink-0 items-center gap-1 rounded-md border border-amber-300 bg-[var(--surface-raised)] px-2.5 py-1 font-medium text-amber-800 hover:bg-amber-100 disabled:opacity-60"
       >
         {exiting ? (
           <Loader2 className="h-3.5 w-3.5 animate-spin" />

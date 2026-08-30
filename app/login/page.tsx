@@ -195,7 +195,7 @@ export default function LoginPage() {
                 <Loader2 className="h-4 w-4 animate-spin" />
               ) : (
                 <span className="flex h-[18px] w-[18px] items-center justify-center rounded-full bg-white/20">
-                  <span className="h-1.5 w-1.5 rounded-full bg-white" />
+                  <span className="h-1.5 w-1.5 rounded-full bg-[var(--surface-raised)]" />
                 </span>
               )}
               Sign in

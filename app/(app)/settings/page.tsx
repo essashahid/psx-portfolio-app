@@ -14,6 +14,7 @@ import {
 } from "@/components/features/settings/settings-forms";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Appearance } from "@/components/features/settings/appearance";
 import { Button } from "@/components/ui/button";
 import { Download, Sparkles, Trash2, RefreshCw } from "lucide-react";
 import { aiConfigured } from "@/lib/ai/openai";
@@ -117,6 +118,17 @@ export default async function SettingsPage() {
           </CardDescription>
         </CardHeader>
         <CardContent><PreferencesForm profile={profile} /></CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Appearance</CardTitle>
+          <CardDescription>
+            Applies straight away and is remembered in this browser. It is a device preference, so it is
+            not saved with the rest of your profile.
+          </CardDescription>
+        </CardHeader>
+        <CardContent><Appearance /></CardContent>
       </Card>
 
       <Card>
