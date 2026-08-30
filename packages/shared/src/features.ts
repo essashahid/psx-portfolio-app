@@ -119,6 +119,10 @@ export function featureAllowed(
   isRealAdmin: boolean
 ): boolean {
   if (ADMIN_ONLY_FEATURE_SET.has(href) && !isRealAdmin) return false;
+  // Unreleased work is reachable by the admin who is building it and nobody
+  // else. Hiding it from menus alone would still leave the URL guessable, and
+  // a half-finished screen is worse found by accident than not found at all.
+  if (UNRELEASED_FEATURE_SET.has(href) && !isRealAdmin) return false;
   return normalizeEnabledFeatures(enabledFeatures).includes(href);
 }
 
