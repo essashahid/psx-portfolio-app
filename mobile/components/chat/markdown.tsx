@@ -1,6 +1,7 @@
 import { memo } from "react";
 import { StyleSheet, Text, View } from "react-native";
-import { colors, fontFamily, fontSize, space } from "@/lib/theme";
+import { type Colors, colors, fontFamily, fontSize, space } from "@/lib/theme";
+import { makeStyles, useColors } from "@/lib/theme-context";
 
 /**
  * Renders the Copilot's markdown the way the app's own screens are set: the
@@ -45,7 +46,7 @@ function inlineRuns(line: string): Run[] {
  * the up/down colour, the same rule the web answers follow. Anything with
  * words in it stays ink: colouring prose reads as shouting.
  */
-function runColor(run: Run): string | undefined {
+function runColor(run: Run, colors: Colors): string | undefined {
   if (!run.bold) return undefined;
   const s = run.text.trim();
   if (/^\+(PKR\s*)?[\d,.]+[km]?%?$/i.test(s)) return colors.textUp;
@@ -54,6 +55,7 @@ function runColor(run: Run): string | undefined {
 }
 
 function Line({ line, base }: { line: string; base: object }) {
+  const styles = useStyles();
   return (
     <Text style={base}>
       {inlineRuns(line).map((run, i) => (
@@ -63,7 +65,7 @@ function Line({ line, base }: { line: string; base: object }) {
             run.bold && styles.bold,
             run.italic && styles.italic,
             run.code && styles.code,
-            runColor(run) ? { color: runColor(run) } : null,
+            runColor(run, colors) ? { color: runColor(run, colors) } : null,
           ]}
         >
           {run.text}
@@ -74,6 +76,7 @@ function Line({ line, base }: { line: string; base: object }) {
 }
 
 export const Markdown = memo(function Markdown({ children }: { children: string }) {
+  const styles = useStyles();
   const blocks: React.ReactNode[] = [];
   let paragraph: string[] = [];
   let key = 0;
@@ -134,29 +137,29 @@ export const Markdown = memo(function Markdown({ children }: { children: string 
   return <View style={styles.root}>{blocks}</View>;
 });
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((c) => ({
   root: { gap: space.sm + 2 },
   body: {
     fontFamily: fontFamily.ui,
     fontSize: fontSize.body,
     lineHeight: 24,
-    color: colors.textBody,
+    color: c.textBody,
   },
   h1: {
     fontFamily: fontFamily.display,
     fontSize: fontSize.h2,
     lineHeight: 26,
-    color: colors.textStrong,
+    color: c.textStrong,
     marginTop: space.xs,
   },
   h2: {
     fontFamily: fontFamily.uiSemibold,
     fontSize: fontSize.body,
     lineHeight: 24,
-    color: colors.textStrong,
+    color: c.textStrong,
     marginTop: space.xs,
   },
-  bold: { fontFamily: fontFamily.uiSemibold, color: colors.textStrong },
+  bold: { fontFamily: fontFamily.uiSemibold, color: c.textStrong },
   italic: { fontStyle: "italic" },
   code: { fontFamily: fontFamily.mono, fontSize: fontSize.sm },
   item: { flexDirection: "row", gap: space.sm, paddingLeft: 2 },
@@ -164,8 +167,8 @@ const styles = StyleSheet.create({
     fontFamily: fontFamily.ui,
     fontSize: fontSize.body,
     lineHeight: 24,
-    color: colors.textMuted,
+    color: c.textMuted,
   },
   itemBody: { flex: 1 },
-  tableRow: { fontFamily: fontFamily.mono, fontSize: fontSize.xs, lineHeight: 20, color: colors.textBody },
-});
+  tableRow: { fontFamily: fontFamily.mono, fontSize: fontSize.xs, lineHeight: 20, color: c.textBody },
+}));

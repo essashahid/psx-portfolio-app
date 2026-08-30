@@ -31,6 +31,7 @@ import { Band, Ledger, LedgerRow } from "@/components/ui/layout";
 import { Caps, Figure, PageTitle } from "@/components/ui/text";
 import { APP_NAME } from "@/lib/brand";
 import { colors, fontFamily, fontSize, layout, space } from "@/lib/theme";
+import { makeStyles, useColors } from "@/lib/theme-context";
 
 type Entry = {
   icon: LucideIcon;
@@ -45,6 +46,8 @@ type Entry = {
 const WEB_BASE = process.env.EXPO_PUBLIC_WEB_URL ?? process.env.EXPO_PUBLIC_API_URL ?? "";
 
 function Row({ entry }: { entry: Entry }) {
+  const styles = useStyles();
+  const colors = useColors();
   const router = useRouter();
   const Icon = entry.icon;
 
@@ -71,6 +74,7 @@ function Row({ entry }: { entry: Entry }) {
 }
 
 function Group({ title, entries }: { title: string; entries: Entry[] }) {
+  const styles = useStyles();
   return (
     <Band style={styles.group}>
       <Caps>{title}</Caps>
@@ -84,6 +88,8 @@ function Group({ title, entries }: { title: string; entries: Entry[] }) {
 }
 
 export default function MoreScreen() {
+  const styles = useStyles();
+  const colors = useColors();
   const { session, signOut } = useAuth();
   const { data: alerts, refresh: refreshAlerts } = useApi<AlertsResponse>("/api/alerts", "");
 
@@ -181,31 +187,31 @@ export default function MoreScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: colors.surfacePage },
+const useStyles = makeStyles((c) => ({
+  screen: { flex: 1, backgroundColor: c.surfacePage },
   header: { paddingHorizontal: layout.gutter, paddingBottom: space.md },
   account: { flexDirection: "row", alignItems: "center", gap: space.md, marginTop: space.lg },
   avatar: {
     width: 40,
     height: 40,
     borderRadius: layout.radiusPill,
-    backgroundColor: colors.brandSoft,
+    backgroundColor: c.brandSoft,
     alignItems: "center",
     justifyContent: "center",
   },
-  avatarLetter: { fontFamily: fontFamily.uiBold, fontSize: fontSize.body, color: colors.textBrand },
+  avatarLetter: { fontFamily: fontFamily.uiBold, fontSize: fontSize.body, color: c.textBrand },
   accountText: { flex: 1, gap: 1 },
-  accountName: { fontFamily: fontFamily.uiSemibold, fontSize: fontSize.sm, color: colors.textStrong },
-  accountMeta: { fontFamily: fontFamily.ui, fontSize: fontSize.xxs, color: colors.textFaint },
+  accountName: { fontFamily: fontFamily.uiSemibold, fontSize: fontSize.sm, color: c.textStrong },
+  accountMeta: { fontFamily: fontFamily.ui, fontSize: fontSize.xxs, color: c.textFaint },
   group: { paddingBottom: space.xs },
-  label: { flex: 1, marginLeft: space.md, fontFamily: fontFamily.ui, fontSize: fontSize.body, color: colors.textStrong },
+  label: { flex: 1, marginLeft: space.md, fontFamily: fontFamily.ui, fontSize: fontSize.body, color: c.textStrong },
   badge: {
     minWidth: 22,
     textAlign: "center",
     marginRight: space.sm,
     fontFamily: fontFamily.monoSemibold,
     fontSize: fontSize.xxs,
-    color: colors.textBrand,
+    color: c.textBrand,
   },
   signOut: {
     flexDirection: "row",
@@ -214,16 +220,16 @@ const styles = StyleSheet.create({
     gap: space.sm,
     minHeight: 48,
     borderWidth: 1,
-    borderColor: colors.rule,
+    borderColor: c.rule,
     borderRadius: layout.radiusPill,
-    backgroundColor: colors.surfaceRaised,
+    backgroundColor: c.surfaceRaised,
   },
-  signOutLabel: { fontFamily: fontFamily.uiSemibold, fontSize: fontSize.body, color: colors.textDown },
+  signOutLabel: { fontFamily: fontFamily.uiSemibold, fontSize: fontSize.body, color: c.textDown },
   footer: {
     marginTop: space.lg,
     fontFamily: fontFamily.ui,
     fontSize: fontSize.xxs,
     lineHeight: 17,
-    color: colors.textFaint,
+    color: c.textFaint,
   },
-});
+}));

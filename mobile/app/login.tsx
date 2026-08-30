@@ -6,6 +6,7 @@ import { Eye, EyeOff } from "lucide-react-native";
 import { useAuth } from "@/lib/auth";
 import { Wordmark } from "@/components/ui/mark";
 import { APP_PROMISE, DISCLAIMER_SHORT } from "@/lib/brand";
+import { makeStyles, useColors } from "@/lib/theme-context";
 import {
   colors,
   palette,
@@ -18,6 +19,8 @@ import {
 } from "@/lib/theme";
 
 export default function LoginScreen() {
+  const styles = useStyles();
+  const colors = useColors();
   const { signIn } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -157,8 +160,8 @@ export default function LoginScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: colors.ink },
+const useStyles = makeStyles((c) => ({
+  safe: { flex: 1, backgroundColor: c.ink },
   flex: { flex: 1 },
   scroll: {
     flexGrow: 1,
@@ -172,7 +175,7 @@ const styles = StyleSheet.create({
     fontSize: 34,
     lineHeight: 39,
     letterSpacing: letterSpacing(34, tracking.editorial),
-    color: colors.textOnDark,
+    color: c.textOnDark,
   },
   promise: {
     marginTop: space.lg + 2,
@@ -180,7 +183,7 @@ const styles = StyleSheet.create({
     fontFamily: fontFamily.ui,
     fontSize: fontSize.body,
     lineHeight: 24,
-    color: colors.textOnDarkMuted,
+    color: c.textOnDarkMuted,
   },
   spacer: { flexGrow: 1, minHeight: space.xxl },
   spacerClosed: { height: space.xl },
@@ -190,7 +193,7 @@ const styles = StyleSheet.create({
     fontFamily: fontFamily.uiBold,
     fontSize: fontSize.xxxs,
     letterSpacing: letterSpacing(fontSize.xxxs, tracking.caps),
-    color: colors.textOnDarkMuted,
+    color: c.textOnDarkMuted,
   },
   input: {
     minHeight: 50,
@@ -201,7 +204,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     fontFamily: fontFamily.ui,
     fontSize: 16,
-    color: colors.textOnDark,
+    color: c.textOnDark,
   },
   // Room for the reveal control, so a long password does not run underneath it.
   inputWithAffordance: { paddingRight: 48 },
@@ -221,7 +224,7 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     minHeight: 52,
     borderRadius: layout.radiusPill,
-    backgroundColor: colors.surfacePage,
+    backgroundColor: c.surfacePage,
     paddingLeft: 22,
     paddingRight: space.sm,
   },
@@ -229,17 +232,17 @@ const styles = StyleSheet.create({
   signInLabel: {
     fontFamily: fontFamily.uiSemibold,
     fontSize: fontSize.body,
-    color: colors.textStrong,
+    color: c.textStrong,
   },
   disc: {
     width: 36,
     height: 36,
     borderRadius: layout.radiusPill,
-    backgroundColor: colors.ink,
+    backgroundColor: c.ink,
     alignItems: "center",
     justifyContent: "center",
   },
-  dot: { width: 9, height: 9, borderRadius: layout.radiusPill, backgroundColor: colors.surfacePage },
+  dot: { width: 9, height: 9, borderRadius: layout.radiusPill, backgroundColor: c.surfacePage },
   footnote: {
     marginTop: space.xl,
     fontFamily: fontFamily.ui,
@@ -247,4 +250,4 @@ const styles = StyleSheet.create({
     lineHeight: 17,
     color: "rgba(242,243,247,0.5)",
   },
-});
+}));

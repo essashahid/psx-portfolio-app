@@ -14,6 +14,7 @@ import { Rise } from "@/components/ui/motion";
 import { PageSkeleton } from "@/components/skeleton";
 import { DividendSheet, type DividendDraft } from "@/components/features/dividend-sheet";
 import { Cta } from "@/components/ui/button";
+import { makeStyles, useColors } from "@/lib/theme-context";
 import {
   colors,
   fontFamily,
@@ -26,6 +27,7 @@ import {
 } from "@/lib/theme";
 
 function Payment({ row, onEdit }: { row: DividendRow; onEdit: (row: DividendRow) => void }) {
+  const styles = useStyles();
   return (
     <LedgerRow onPress={() => onEdit(row)} accessibilityLabel={`Edit ${row.ticker ?? "dividend"}`}>
       <View style={styles.paymentLeft}>
@@ -57,6 +59,8 @@ function withheldNote(data: DividendsResponse): string | null {
 }
 
 export default function DividendsScreen() {
+  const styles = useStyles();
+  const colors = useColors();
   const router = useRouter();
   const [editing, setEditing] = useState<DividendDraft | undefined>(undefined);
   const [sheetOpen, setSheetOpen] = useState(false);
@@ -246,32 +250,32 @@ export default function DividendsScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: colors.surfacePage },
+const useStyles = makeStyles((c) => ({
+  screen: { flex: 1, backgroundColor: c.surfacePage },
   header: { paddingHorizontal: layout.gutter, paddingBottom: space.sm },
   headRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
   addButton: {
     width: 34,
     height: 34,
     borderRadius: layout.radiusPill,
-    backgroundColor: colors.ink,
+    backgroundColor: c.ink,
     alignItems: "center",
     justifyContent: "center",
   },
   emptyBlock: { gap: space.lg, alignItems: "flex-start" },
   back: { flexDirection: "row", alignItems: "center", gap: 2, minHeight: 36, marginLeft: -4 },
-  backLabel: { fontFamily: fontFamily.uiMedium, fontSize: fontSize.sm, color: colors.textMuted },
+  backLabel: { fontFamily: fontFamily.uiMedium, fontSize: fontSize.sm, color: c.textMuted },
   title: { marginTop: space.xs },
   totalLabel: { marginTop: space.xl },
   total: { marginTop: space.xs },
-  totalUnit: { fontFamily: fontFamily.display, fontSize: 16, color: colors.textMuted },
+  totalUnit: { fontFamily: fontFamily.display, fontSize: 16, color: c.textMuted },
   totalFigure: {
     fontFamily: fontFamily.monoSemibold,
     fontSize: 34,
     letterSpacing: letterSpacing(34, tracking.editorial),
-    color: colors.textStrong,
+    color: c.textStrong,
   },
-  expected: { marginTop: space.sm, fontSize: fontSize.xxs, color: colors.textFaint },
+  expected: { marginTop: space.sm, fontSize: fontSize.xxs, color: c.textFaint },
   block: { marginBottom: space.xl },
   blockHead: {
     flexDirection: "row",
@@ -279,26 +283,26 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     marginBottom: space.md,
   },
-  note: { fontSize: fontSize.xxs, color: colors.textFaint },
+  note: { fontSize: fontSize.xxs, color: c.textFaint },
   yearRow: {
     paddingVertical: space.md,
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: colors.rule,
+    borderBottomColor: c.rule,
     gap: space.sm,
   },
   yearHead: { flexDirection: "row", justifyContent: "space-between", alignItems: "baseline" },
-  yearLabel: { fontFamily: fontFamily.uiSemibold, fontSize: fontSize.body, color: colors.textStrong },
+  yearLabel: { fontFamily: fontFamily.uiSemibold, fontSize: fontSize.body, color: c.textStrong },
   yearNet: { fontFamily: fontFamily.monoSemibold, fontSize: fontSize.body },
-  yearTrack: { height: 6, backgroundColor: colors.surfaceInset },
+  yearTrack: { height: 6, backgroundColor: c.surfaceInset },
   yearFill: { height: 6, backgroundColor: palette.up2 },
-  yearMeta: { fontSize: fontSize.xxs, color: colors.textFaint },
+  yearMeta: { fontSize: fontSize.xxs, color: c.textFaint },
   yieldLeft: { flex: 1, gap: 1 },
   yieldRight: { alignItems: "flex-end", gap: 1 },
-  yieldValue: { fontFamily: fontFamily.monoSemibold, fontSize: fontSize.body, color: colors.textStrong },
+  yieldValue: { fontFamily: fontFamily.monoSemibold, fontSize: fontSize.body, color: c.textStrong },
   paymentLeft: { flex: 1, gap: 1 },
   paymentRight: { alignItems: "flex-end", gap: 1 },
-  ticker: { fontFamily: fontFamily.uiSemibold, fontSize: fontSize.sm, color: colors.textStrong },
+  ticker: { fontFamily: fontFamily.uiSemibold, fontSize: fontSize.sm, color: c.textStrong },
   amount: { fontFamily: fontFamily.monoSemibold, fontSize: fontSize.sm },
-  meta: { fontSize: fontSize.xxs, color: colors.textFaint },
-  empty: { fontFamily: fontFamily.ui, fontSize: fontSize.sm, color: colors.textMuted, lineHeight: 20 },
-});
+  meta: { fontSize: fontSize.xxs, color: c.textFaint },
+  empty: { fontFamily: fontFamily.ui, fontSize: fontSize.sm, color: c.textMuted, lineHeight: 20 },
+}));

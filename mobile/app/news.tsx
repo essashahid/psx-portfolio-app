@@ -22,6 +22,7 @@ import { Caps, Figure, PageTitle } from "@/components/ui/text";
 import { ErrorNote } from "@/components/status";
 import { PageSkeleton } from "@/components/skeleton";
 import { Rise } from "@/components/ui/motion";
+import { makeStyles, useColors } from "@/lib/theme-context";
 import {
   colors,
   directionColor,
@@ -72,6 +73,8 @@ function Story({
   lead?: boolean;
   onAct: (event: NewsEventSummary, field: "saved" | "ignored", value: boolean) => void;
 }) {
+  const styles = useStyles();
+  const colors = useColors();
   const importance = IMPORTANCE_COLOR[event.importance];
   return (
     <View style={[styles.story, lead && styles.storyLead]}>
@@ -142,6 +145,8 @@ function Story({
 }
 
 export default function NewsScreen() {
+  const styles = useStyles();
+  const colors = useColors();
   const router = useRouter();
   const [tab, setTab] = useState<TabId>("suggested");
   const [windowId, setWindowId] = useState<string>("week");
@@ -426,25 +431,25 @@ export default function NewsScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: colors.surfacePage },
+const useStyles = makeStyles((c) => ({
+  screen: { flex: 1, backgroundColor: c.surfacePage },
   header: { paddingHorizontal: layout.gutter, paddingBottom: space.md },
   headRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
   back: { flexDirection: "row", alignItems: "center", gap: 2, minHeight: 36, marginLeft: -4 },
-  backLabel: { fontFamily: fontFamily.uiMedium, fontSize: fontSize.sm, color: colors.textMuted },
+  backLabel: { fontFamily: fontFamily.uiMedium, fontSize: fontSize.sm, color: c.textMuted },
   refresh: { width: 34, height: 34, alignItems: "center", justifyContent: "center" },
   pageTitle: { marginTop: space.xs },
-  health: { marginTop: space.sm, fontSize: fontSize.xxs, color: colors.textFaint },
-  since: { marginTop: 2, fontSize: fontSize.xxs, color: colors.textMuted },
+  health: { marginTop: space.sm, fontSize: fontSize.xxs, color: c.textFaint },
+  since: { marginTop: 2, fontSize: fontSize.xxs, color: c.textMuted },
 
   rail: { paddingHorizontal: layout.gutter, gap: space.lg, alignItems: "flex-start" },
   tab: { alignItems: "center", paddingBottom: 0 },
-  tabLabel: { fontFamily: fontFamily.uiMedium, fontSize: fontSize.sm, color: colors.textMuted },
-  tabLabelOn: { fontFamily: fontFamily.uiSemibold, color: colors.textStrong },
-  tabCount: { fontSize: 10, lineHeight: 14, color: colors.textFaint, marginTop: 1 },
+  tabLabel: { fontFamily: fontFamily.uiMedium, fontSize: fontSize.sm, color: c.textMuted },
+  tabLabelOn: { fontFamily: fontFamily.uiSemibold, color: c.textStrong },
+  tabCount: { fontSize: 10, lineHeight: 14, color: c.textFaint, marginTop: 1 },
   // The rule carries the state, so the label itself does not have to shout.
   tabRule: { height: 2, width: "100%", marginTop: space.xs, backgroundColor: "transparent" },
-  tabRuleOn: { backgroundColor: colors.ink },
+  tabRuleOn: { backgroundColor: c.ink },
 
   windowRow: {
     flexDirection: "row",
@@ -453,25 +458,25 @@ const styles = StyleSheet.create({
     paddingTop: space.lg,
     paddingBottom: space.xs,
     borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: colors.rule,
+    borderTopColor: c.rule,
   },
   chip: {
     paddingHorizontal: space.md,
     paddingVertical: 6,
     borderRadius: layout.radiusPill,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: colors.rule,
+    borderColor: c.rule,
   },
-  chipOn: { backgroundColor: colors.ink, borderColor: colors.ink },
-  chipLabel: { fontFamily: fontFamily.uiMedium, fontSize: fontSize.xxs, color: colors.textMuted },
-  chipLabelOn: { fontFamily: fontFamily.uiMedium, fontSize: fontSize.xxs, color: colors.textOnDark },
+  chipOn: { backgroundColor: c.ink, borderColor: c.ink },
+  chipLabel: { fontFamily: fontFamily.uiMedium, fontSize: fontSize.xxs, color: c.textMuted },
+  chipLabelOn: { fontFamily: fontFamily.uiMedium, fontSize: fontSize.xxs, color: c.textOnDark },
 
   group: { marginBottom: space.lg },
   groupHead: { marginBottom: space.md },
   story: {
     paddingVertical: space.lg,
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: colors.rule,
+    borderBottomColor: c.rule,
     gap: space.xs,
   },
   storyLead: {
@@ -479,18 +484,18 @@ const styles = StyleSheet.create({
     paddingBottom: space.xl,
     marginBottom: space.lg,
     borderBottomWidth: 1,
-    borderBottomColor: colors.ruleStrong,
+    borderBottomColor: c.ruleStrong,
   },
   storyMeta: { flexDirection: "row", alignItems: "center", gap: space.sm, marginBottom: 2 },
   dot: { width: 7, height: 7, borderRadius: 2 },
-  source: { fontSize: fontSize.xxs, color: colors.textMuted, flexShrink: 1 },
-  time: { fontSize: fontSize.xxs, color: colors.textFaint },
+  source: { fontSize: fontSize.xxs, color: c.textMuted, flexShrink: 1 },
+  time: { fontSize: fontSize.xxs, color: c.textFaint },
   importance: { fontFamily: fontFamily.uiSemibold, fontSize: 10, letterSpacing: 0.3 },
   title: {
     fontFamily: fontFamily.uiSemibold,
     fontSize: fontSize.body,
     lineHeight: 22,
-    color: colors.textStrong,
+    color: c.textStrong,
   },
   titleLead: {
     fontFamily: fontFamily.display,
@@ -498,18 +503,18 @@ const styles = StyleSheet.create({
     lineHeight: 32,
     letterSpacing: letterSpacing(fontSize.h2, tracking.editorial),
   },
-  summary: { fontFamily: fontFamily.ui, fontSize: fontSize.sm, lineHeight: 21, color: colors.textMuted },
-  holdings: { fontSize: fontSize.xxs, color: colors.textFaint, marginTop: 2 },
-  why: { fontFamily: fontFamily.ui, fontSize: fontSize.xxs, lineHeight: 17, color: colors.textMuted, marginTop: space.xs },
+  summary: { fontFamily: fontFamily.ui, fontSize: fontSize.sm, lineHeight: 21, color: c.textMuted },
+  holdings: { fontSize: fontSize.xxs, color: c.textFaint, marginTop: 2 },
+  why: { fontFamily: fontFamily.ui, fontSize: fontSize.xxs, lineHeight: 17, color: c.textMuted, marginTop: space.xs },
   storyActions: { flexDirection: "row", gap: space.xl, marginTop: space.sm },
   action: { flexDirection: "row", alignItems: "center", gap: 5, minHeight: 32 },
-  actionLabel: { fontFamily: fontFamily.uiMedium, fontSize: fontSize.xxs, color: colors.textFaint },
-  actionLabelOn: { color: colors.textStrong },
+  actionLabel: { fontFamily: fontFamily.uiMedium, fontSize: fontSize.xxs, color: c.textFaint },
+  actionLabelOn: { color: c.textStrong },
 
-  upcomingDate: { fontSize: fontSize.xxs, color: colors.textMuted, width: 46 },
+  upcomingDate: { fontSize: fontSize.xxs, color: c.textMuted, width: 46 },
   upcomingBody: { flex: 1, gap: 1 },
-  upcomingTitle: { fontFamily: fontFamily.uiMedium, fontSize: fontSize.sm, color: colors.textStrong, lineHeight: 20 },
-  upcomingMeta: { fontSize: fontSize.xxs, color: colors.textFaint },
+  upcomingTitle: { fontFamily: fontFamily.uiMedium, fontSize: fontSize.sm, color: c.textStrong, lineHeight: 20 },
+  upcomingMeta: { fontSize: fontSize.xxs, color: c.textFaint },
 
   symbolBand: { paddingBottom: space.xxl },
   symbols: { gap: space.sm, paddingRight: layout.gutter },
@@ -518,19 +523,19 @@ const styles = StyleSheet.create({
     paddingVertical: space.sm,
     borderRadius: layout.radiusSm,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: colors.rule,
+    borderColor: c.rule,
     alignItems: "center",
     minWidth: 74,
     gap: 1,
   },
-  symbolOn: { backgroundColor: colors.ink, borderColor: colors.ink },
-  symbolTicker: { fontFamily: fontFamily.uiSemibold, fontSize: fontSize.xxs, color: colors.textStrong },
-  symbolTickerOn: { color: colors.textOnDark },
+  symbolOn: { backgroundColor: c.ink, borderColor: c.ink },
+  symbolTicker: { fontFamily: fontFamily.uiSemibold, fontSize: fontSize.xxs, color: c.textStrong },
+  symbolTickerOn: { color: c.textOnDark },
   symbolMove: { fontSize: 10 },
-  symbolCount: { fontSize: 10, color: colors.textFaint },
+  symbolCount: { fontSize: 10, color: c.textFaint },
 
   emptyBlock: { gap: space.md, alignItems: "flex-start" },
   emptyLinks: { gap: space.md },
-  empty: { fontFamily: fontFamily.ui, fontSize: fontSize.sm, color: colors.textMuted, lineHeight: 20 },
-  link: { fontFamily: fontFamily.uiMedium, fontSize: fontSize.sm, color: colors.textStrong },
-});
+  empty: { fontFamily: fontFamily.ui, fontSize: fontSize.sm, color: c.textMuted, lineHeight: 20 },
+  link: { fontFamily: fontFamily.uiMedium, fontSize: fontSize.sm, color: c.textStrong },
+}));

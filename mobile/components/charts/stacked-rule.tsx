@@ -1,4 +1,5 @@
 import { StyleSheet, View } from "react-native";
+import { makeStyles } from "@/lib/theme-context";
 
 /**
  * Allocation as a single 12px rule rather than a donut.
@@ -14,6 +15,7 @@ export function StackedRule({
   segments: { value: number; color: string }[];
   height?: number;
 }) {
+  const styles = useStyles();
   const total = segments.reduce((sum, s) => sum + s.value, 0);
   if (total <= 0) return null;
 
@@ -34,6 +36,6 @@ export function StackedRule({
   );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((c) => ({
   track: { flexDirection: "row", gap: 1, overflow: "hidden" },
-});
+}));

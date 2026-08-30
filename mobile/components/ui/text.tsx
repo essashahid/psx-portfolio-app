@@ -1,5 +1,6 @@
 import { StyleSheet, Text, type TextProps, type TextStyle } from "react-native";
 import { colors, fontFamily, fontSize, letterSpacing, tracking } from "@/lib/theme";
+import { useColors } from "@/lib/theme-context";
 
 /**
  * The type roles from the handoff. Newsreader carries the brand, Manrope runs
@@ -11,6 +12,7 @@ type Props = TextProps & { onDark?: boolean };
 
 /** The small uppercase eyebrow that labels a band or a metric. */
 export function Caps({ style, onDark, ...rest }: Props) {
+  const colors = useColors();
   return (
     <Text
       {...rest}
@@ -21,6 +23,7 @@ export function Caps({ style, onDark, ...rest }: Props) {
 
 /** A screen or section title, set in the display serif. */
 export function PageTitle({ style, onDark, ...rest }: Props) {
+  const colors = useColors();
   return (
     <Text {...rest} style={[styles.pageTitle, onDark && { color: colors.textOnDark }, style]} />
   );
@@ -31,6 +34,7 @@ export function PageTitle({ style, onDark, ...rest }: Props) {
  * digits line up and a column does not shimmer as values change.
  */
 export function Figure({ style, onDark, ...rest }: Props) {
+  const colors = useColors();
   return (
     <Text {...rest} style={[styles.figure, onDark && { color: colors.textOnDark }, style]} />
   );
@@ -38,16 +42,19 @@ export function Figure({ style, onDark, ...rest }: Props) {
 
 /** Body copy. */
 export function Body({ style, onDark, ...rest }: Props) {
+  const colors = useColors();
   return <Text {...rest} style={[styles.body, onDark && { color: colors.textOnDarkMuted }, style]} />;
 }
 
 /** The quiet footnote at the bottom of a band. */
 export function Note({ style, onDark, ...rest }: Props) {
+  const colors = useColors();
   return <Text {...rest} style={[styles.note, onDark && { color: colors.textOnDarkFaint }, style]} />;
 }
 
 /** A row label: interface face, readable weight. */
 export function Label({ style, onDark, ...rest }: Props) {
+  const colors = useColors();
   return <Text {...rest} style={[styles.label, onDark && { color: colors.textOnDark }, style]} />;
 }
 

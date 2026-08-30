@@ -18,6 +18,7 @@ import { ErrorNote } from "@/components/status";
 import { Rise } from "@/components/ui/motion";
 import { ScreenSkeleton } from "@/components/skeleton";
 import { TransactionSheet } from "@/components/features/transaction-sheet";
+import { makeStyles, useColors } from "@/lib/theme-context";
 import {
   colors,
   directionColor,
@@ -30,6 +31,7 @@ import {
 const ALL = "All";
 
 function HeaderStat({ label, value, detail, tone }: { label: string; value: string; detail: string; tone?: string }) {
+  const styles = useStyles();
   return (
     <View style={styles.stat}>
       <Caps>{label}</Caps>
@@ -47,6 +49,7 @@ function HeaderStat({ label, value, detail, tone }: { label: string; value: stri
  * column you have to swipe to is a column nobody reads.
  */
 function Position({ row, largest }: { row: HoldingRow; largest: number }) {
+  const styles = useStyles();
   const router = useRouter();
   const priced = row.marketValue !== null;
   const value = row.marketValue ?? row.totalCost ?? 0;
@@ -97,6 +100,8 @@ function Position({ row, largest }: { row: HoldingRow; largest: number }) {
 }
 
 export default function HoldingsScreen() {
+  const styles = useStyles();
+  const colors = useColors();
   const router = useRouter();
   const [filter, setFilter] = useState<string>(ALL);
   const [adding, setAdding] = useState(false);
@@ -250,6 +255,7 @@ function Chip({
   active: boolean;
   onPress: () => void;
 }) {
+  const styles = useStyles();
   return (
     <Pressable
       onPress={() => {
@@ -268,15 +274,15 @@ function Chip({
   );
 }
 
-const styles = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: colors.surfacePage },
+const useStyles = makeStyles((c) => ({
+  screen: { flex: 1, backgroundColor: c.surfacePage },
   header: { paddingHorizontal: layout.gutter, paddingBottom: space.lg },
   titleActions: { flexDirection: "row", alignItems: "center", gap: space.lg },
   addButton: {
     width: 34,
     height: 34,
     borderRadius: layout.radiusPill,
-    backgroundColor: colors.ink,
+    backgroundColor: c.ink,
     alignItems: "center",
     justifyContent: "center",
   },
@@ -288,46 +294,46 @@ const styles = StyleSheet.create({
   },
   statGrid: { flexDirection: "row", flexWrap: "wrap", marginTop: space.md },
   stat: { flexBasis: "50%", paddingVertical: space.sm, paddingRight: space.md, gap: 2 },
-  statValue: { fontFamily: fontFamily.monoSemibold, fontSize: fontSize.h2, color: colors.textStrong },
-  statDetail: { fontFamily: fontFamily.ui, fontSize: fontSize.xxs, color: colors.textFaint },
+  statValue: { fontFamily: fontFamily.monoSemibold, fontSize: fontSize.h2, color: c.textStrong },
+  statDetail: { fontFamily: fontFamily.ui, fontSize: fontSize.xxs, color: c.textFaint },
   railWrap: {
-    backgroundColor: colors.surfacePage,
+    backgroundColor: c.surfacePage,
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: colors.rule,
+    borderBottomColor: c.rule,
   },
   rail: { flexDirection: "row", gap: space.lg + 2, paddingHorizontal: layout.gutter, paddingVertical: space.md },
   chip: { flexDirection: "row", alignItems: "center", gap: space.sm, minHeight: 28 },
   chipDot: { width: 8, height: 8 },
-  chipLabel: { fontFamily: fontFamily.uiMedium, fontSize: fontSize.sm, color: colors.textMuted },
-  chipLabelActive: { fontFamily: fontFamily.uiBold, color: colors.textStrong },
-  chipCount: { fontSize: fontSize.xxs, color: colors.textFaint },
+  chipLabel: { fontFamily: fontFamily.uiMedium, fontSize: fontSize.sm, color: c.textMuted },
+  chipLabelActive: { fontFamily: fontFamily.uiBold, color: c.textStrong },
+  chipCount: { fontSize: fontSize.xxs, color: c.textFaint },
   chipUnderline: {
     position: "absolute",
     left: 0,
     right: 0,
     bottom: -space.md + 2,
     height: 2,
-    backgroundColor: colors.textStrong,
+    backgroundColor: c.textStrong,
   },
   list: { paddingTop: space.xs },
   position: {
     paddingVertical: 13,
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: colors.rule,
+    borderBottomColor: c.rule,
   },
   line: { flexDirection: "row", alignItems: "baseline", gap: space.md },
   lineTight: { flexDirection: "row", alignItems: "baseline", gap: space.md, marginTop: space.xs },
   identity: { flex: 1, flexDirection: "row", alignItems: "center", gap: space.sm + 1 },
   dot: { width: 8, height: 8 },
-  ticker: { fontFamily: fontFamily.uiSemibold, fontSize: fontSize.body, color: colors.textStrong },
-  company: { flex: 1, fontFamily: fontFamily.ui, fontSize: fontSize.xxs, color: colors.textFaint },
+  ticker: { fontFamily: fontFamily.uiSemibold, fontSize: fontSize.body, color: c.textStrong },
+  company: { flex: 1, fontFamily: fontFamily.ui, fontSize: fontSize.xxs, color: c.textFaint },
   value: { fontFamily: fontFamily.monoSemibold, fontSize: fontSize.body },
-  basis: { flex: 1, fontSize: fontSize.xxs, color: colors.textFaint },
+  basis: { flex: 1, fontSize: fontSize.xxs, color: c.textFaint },
   gain: { fontFamily: fontFamily.monoSemibold, fontSize: fontSize.sm },
-  atCost: { fontSize: fontSize.xxs, color: colors.textFaint },
+  atCost: { fontSize: fontSize.xxs, color: c.textFaint },
   weightRow: { flexDirection: "row", alignItems: "center", gap: space.sm + 1, marginTop: space.sm + 1 },
-  weightTrack: { flex: 1, height: 4, backgroundColor: colors.surfaceInset },
+  weightTrack: { flex: 1, height: 4, backgroundColor: c.surfaceInset },
   weightFill: { height: 4 },
-  weight: { width: 44, textAlign: "right", fontSize: fontSize.xxs, color: colors.textFaint },
-  empty: { fontFamily: fontFamily.ui, fontSize: fontSize.sm, color: colors.textMuted, lineHeight: 20 },
-});
+  weight: { width: 44, textAlign: "right", fontSize: fontSize.xxs, color: c.textFaint },
+  empty: { fontFamily: fontFamily.ui, fontSize: fontSize.sm, color: c.textMuted, lineHeight: 20 },
+}));

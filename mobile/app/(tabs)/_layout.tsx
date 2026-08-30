@@ -5,6 +5,7 @@ import { Tabs } from "expo-router";
 import { Activity, Briefcase, LayoutDashboard, Menu, MessageSquare } from "lucide-react-native";
 import { ease, useMotion } from "@/lib/motion";
 import { colors, fontFamily, layout, space } from "@/lib/theme";
+import { makeStyles, useColors } from "@/lib/theme-context";
 
 /**
  * Five fixed slots: Home, Holdings, Market, Copilot, More. Everything else
@@ -24,6 +25,8 @@ const ICONS = {
 } as const;
 
 function Slot({ name, label, focused }: { name: keyof typeof ICONS; label: string; focused: boolean }) {
+  const styles = useStyles();
+  const colors = useColors();
   const Icon = ICONS[name];
   const { ms } = useMotion();
   const fill = useSharedValue(focused ? 1 : 0);
@@ -48,6 +51,8 @@ function Slot({ name, label, focused }: { name: keyof typeof ICONS; label: strin
 }
 
 export default function TabsLayout() {
+  const styles = useStyles();
+  const colors = useColors();
   return (
     <Tabs
       screenOptions={{
@@ -87,14 +92,14 @@ export default function TabsLayout() {
   );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((c) => ({
   bar: {
     height: 68,
     paddingTop: 7,
     paddingHorizontal: space.sm,
     borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: colors.rule,
-    backgroundColor: colors.surfaceRaised,
+    borderTopColor: c.rule,
+    backgroundColor: c.surfaceRaised,
     elevation: 0,
   },
   item: { paddingHorizontal: 0 },
@@ -117,14 +122,14 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     bottom: 0,
-    backgroundColor: colors.accentPrimary,
+    backgroundColor: c.accentPrimary,
     borderRadius: layout.radiusSm,
   },
   label: {
     fontFamily: fontFamily.uiSemibold,
     fontSize: 10,
     letterSpacing: -0.1,
-    color: colors.textMuted,
+    color: c.textMuted,
   },
   labelActive: { color: "#ffffff" },
-});
+}));

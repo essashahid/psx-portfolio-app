@@ -22,6 +22,7 @@ import type { NewsResponse } from "@psx/shared/api/news";
 import { groupRatios } from "@psx/shared/company/ratio-groups";
 import { formatCompactSigned } from "@psx/shared/format";
 import { apiWrite } from "@/lib/api";
+import { makeStyles, useColors } from "@/lib/theme-context";
 import {
   colors,
   directionColor,
@@ -52,6 +53,8 @@ function ratioText(value: number | string | null): string {
 }
 
 export default function CompanyScreen() {
+  const styles = useStyles();
+  const colors = useColors();
   const router = useRouter();
   const { ticker } = useLocalSearchParams<{ ticker: string }>();
   const [tab, setTab] = useState<Tab>("Overview");
@@ -392,31 +395,31 @@ export default function CompanyScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: colors.surfacePage },
+const useStyles = makeStyles((c) => ({
+  screen: { flex: 1, backgroundColor: c.surfacePage },
   header: { paddingHorizontal: layout.gutter, paddingBottom: space.md },
   headerActions: { flexDirection: "row", alignItems: "center", gap: space.lg },
   headerBar: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", minHeight: 36 },
   back: { flexDirection: "row", alignItems: "center", gap: 2, marginLeft: -4 },
-  backLabel: { fontFamily: fontFamily.uiMedium, fontSize: fontSize.sm, color: colors.textMuted },
+  backLabel: { fontFamily: fontFamily.uiMedium, fontSize: fontSize.sm, color: c.textMuted },
   identity: { flexDirection: "row", alignItems: "center", gap: space.sm + 1, marginTop: space.sm },
   dot: { width: 10, height: 10 },
   symbol: { fontSize: fontSize.h1, letterSpacing: letterSpacing(fontSize.h1, tracking.editorial) },
-  company: { marginTop: 2, fontFamily: fontFamily.ui, fontSize: fontSize.xs, color: colors.textMuted },
+  company: { marginTop: 2, fontFamily: fontFamily.ui, fontSize: fontSize.xs, color: c.textMuted },
   quoteRow: { flexDirection: "row", alignItems: "flex-end", justifyContent: "space-between", marginTop: space.lg },
   price: {
     fontFamily: fontFamily.monoSemibold,
     fontSize: 34,
     lineHeight: 36,
     letterSpacing: letterSpacing(34, tracking.editorial),
-    color: colors.textStrong,
+    color: c.textStrong,
   },
   quoteRight: { alignItems: "flex-end", gap: 2 },
   changePct: { fontFamily: fontFamily.monoSemibold, fontSize: fontSize.h2 },
-  cap: { fontSize: fontSize.xxs, color: colors.textFaint },
-  basis: { marginTop: space.md, fontSize: fontSize.xxs, color: colors.textFaint },
+  cap: { fontSize: fontSize.xxs, color: c.textFaint },
+  basis: { marginTop: space.md, fontSize: fontSize.xxs, color: c.textFaint },
   tabs: { marginTop: space.lg },
-  chartKey: { marginTop: space.sm, fontSize: fontSize.xxs, color: colors.textFaint },
+  chartKey: { marginTop: space.sm, fontSize: fontSize.xxs, color: c.textFaint },
   positionBlock: { marginTop: space.xl },
   blockHead: {
     flexDirection: "row",
@@ -425,18 +428,18 @@ const styles = StyleSheet.create({
     marginBottom: space.md,
   },
   blockCaps: { marginBottom: space.md },
-  positionWeight: { fontSize: fontSize.xxs, color: colors.textFaint },
+  positionWeight: { fontSize: fontSize.xxs, color: c.textFaint },
   positionNote: {
     fontFamily: fontFamily.ui,
     fontSize: fontSize.sm,
     lineHeight: 20,
-    color: colors.textMuted,
+    color: c.textMuted,
   },
   hiddenNote: {
     fontFamily: fontFamily.ui,
     fontSize: fontSize.xxs,
     lineHeight: 17,
-    color: colors.textMuted,
+    color: c.textMuted,
     marginTop: space.sm,
   },
   ratioBlock: { marginTop: space.xl },
@@ -445,16 +448,16 @@ const styles = StyleSheet.create({
   story: {
     paddingVertical: space.md,
     borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: colors.rule,
+    borderTopColor: c.rule,
     gap: 2,
   },
-  storyPressed: { backgroundColor: colors.surfaceSunken },
-  storyMeta: { fontSize: fontSize.xxs, color: colors.textFaint },
+  storyPressed: { backgroundColor: c.surfaceSunken },
+  storyMeta: { fontSize: fontSize.xxs, color: c.textFaint },
   storyTitle: {
     fontFamily: fontFamily.uiMedium,
     fontSize: fontSize.sm,
     lineHeight: 20,
-    color: colors.textStrong,
+    color: c.textStrong,
   },
   metricGrid: { flexDirection: "row", flexWrap: "wrap" },
   metricCell: {
@@ -463,14 +466,14 @@ const styles = StyleSheet.create({
     paddingRight: space.md,
     gap: space.xs,
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: colors.rule,
+    borderBottomColor: c.rule,
   },
-  metricValue: { fontFamily: fontFamily.monoSemibold, fontSize: fontSize.h2, color: colors.textStrong },
-  ratioName: { flex: 1, fontFamily: fontFamily.ui, fontSize: fontSize.sm, color: colors.textBody },
+  metricValue: { fontFamily: fontFamily.monoSemibold, fontSize: fontSize.h2, color: c.textStrong },
+  ratioName: { flex: 1, fontFamily: fontFamily.ui, fontSize: fontSize.sm, color: c.textBody },
   ratioValue: { fontFamily: fontFamily.monoSemibold, fontSize: fontSize.sm },
   payoutLeft: { flex: 1, gap: 1 },
-  payoutKind: { fontFamily: fontFamily.uiSemibold, fontSize: fontSize.sm, color: colors.textStrong },
-  payoutDate: { fontSize: fontSize.xxs, color: colors.textFaint },
+  payoutKind: { fontFamily: fontFamily.uiSemibold, fontSize: fontSize.sm, color: c.textStrong },
+  payoutDate: { fontSize: fontSize.xxs, color: c.textFaint },
   payoutValue: { fontFamily: fontFamily.monoSemibold, fontSize: fontSize.sm },
-  empty: { fontFamily: fontFamily.ui, fontSize: fontSize.sm, color: colors.textMuted, lineHeight: 20 },
-});
+  empty: { fontFamily: fontFamily.ui, fontSize: fontSize.sm, color: c.textMuted, lineHeight: 20 },
+}));

@@ -33,6 +33,7 @@ import { Artifact } from "@/components/chat/artifacts";
 import { Markdown } from "@/components/chat/markdown";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Caps, PageTitle } from "@/components/ui/text";
+import { makeStyles, useColors } from "@/lib/theme-context";
 import {
   colors,
   fontFamily,
@@ -56,6 +57,8 @@ const PROMPTS = [
 const MODEL_KEY = "plumb.chat.model";
 
 export default function CopilotScreen() {
+  const styles = useStyles();
+  const colors = useColors();
   const { q } = useLocalSearchParams<{ q?: string }>();
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
@@ -429,14 +432,14 @@ export default function CopilotScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: colors.surfacePage },
+const useStyles = makeStyles((c) => ({
+  screen: { flex: 1, backgroundColor: c.surfacePage },
   flex: { flex: 1 },
   header: {
     paddingHorizontal: layout.gutter,
     paddingBottom: space.md + 2,
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: colors.rule,
+    borderBottomColor: c.rule,
   },
   headerActions: { flexDirection: "row", alignItems: "center", gap: space.lg },
   titleRow: { flexDirection: "row", alignItems: "center", gap: space.sm },
@@ -450,69 +453,69 @@ const styles = StyleSheet.create({
     marginTop: 6,
     fontFamily: fontFamily.ui,
     fontSize: fontSize.xxs,
-    color: colors.textFaint,
+    color: c.textFaint,
   },
   scroll: { paddingHorizontal: layout.gutter, paddingTop: space.lg, paddingBottom: space.lg, gap: space.lg },
-  intro: { fontFamily: fontFamily.ui, fontSize: fontSize.body, lineHeight: 23, color: colors.textMuted },
+  intro: { fontFamily: fontFamily.ui, fontSize: fontSize.body, lineHeight: 23, color: c.textMuted },
   userRow: { alignItems: "flex-end" },
   userBubble: {
     maxWidth: "82%",
     borderRadius: 12,
-    backgroundColor: colors.ink,
+    backgroundColor: c.ink,
     paddingHorizontal: 15,
     paddingVertical: 12,
     fontFamily: fontFamily.ui,
     fontSize: fontSize.body,
     lineHeight: 22,
-    color: colors.textOnDark,
+    color: c.textOnDark,
   },
   answer: { gap: space.xs },
-  answerText: { fontFamily: fontFamily.ui, fontSize: fontSize.body, lineHeight: 24, color: colors.textBody },
+  answerText: { fontFamily: fontFamily.ui, fontSize: fontSize.body, lineHeight: 24, color: c.textBody },
   statusRow: { flexDirection: "row", alignItems: "center", gap: space.sm, paddingVertical: space.xs },
-  status: { fontFamily: fontFamily.ui, fontSize: fontSize.xxs, color: colors.textFaint },
-  error: { fontFamily: fontFamily.ui, fontSize: fontSize.sm, lineHeight: 20, color: colors.textDown },
-  disclaimer: { fontFamily: fontFamily.ui, fontSize: fontSize.xxs, lineHeight: 17, color: colors.textFaint },
+  status: { fontFamily: fontFamily.ui, fontSize: fontSize.xxs, color: c.textFaint },
+  error: { fontFamily: fontFamily.ui, fontSize: fontSize.sm, lineHeight: 20, color: c.textDown },
+  disclaimer: { fontFamily: fontFamily.ui, fontSize: fontSize.xxs, lineHeight: 17, color: c.textFaint },
   composer: {
     paddingHorizontal: layout.gutter,
     paddingTop: space.md,
     paddingBottom: space.sm,
     borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: colors.rule,
-    backgroundColor: colors.surfacePage,
+    borderTopColor: c.rule,
+    backgroundColor: c.surfacePage,
   },
   prompts: { gap: space.sm, paddingBottom: space.md },
   prompt: {
     minHeight: 38,
     justifyContent: "center",
     borderWidth: 1,
-    borderColor: colors.ruleStrong,
+    borderColor: c.ruleStrong,
     borderRadius: layout.radiusPill,
     paddingHorizontal: 15,
   },
-  promptText: { fontFamily: fontFamily.ui, fontSize: fontSize.xxs, color: colors.textMuted },
+  promptText: { fontFamily: fontFamily.ui, fontSize: fontSize.xxs, color: c.textMuted },
   inputRow: { flexDirection: "row", alignItems: "flex-end", gap: 9 },
   input: {
     flex: 1,
     minHeight: 48,
     maxHeight: 120,
     borderWidth: 1,
-    borderColor: colors.ruleStrong,
+    borderColor: c.ruleStrong,
     borderRadius: layout.radiusPill,
-    backgroundColor: colors.surfacePage,
+    backgroundColor: c.surfacePage,
     paddingHorizontal: 16,
     paddingTop: 13,
     paddingBottom: 13,
     fontFamily: fontFamily.ui,
     fontSize: 16,
-    color: colors.textStrong,
+    color: c.textStrong,
   },
   send: {
     width: 48,
     height: 48,
     borderRadius: layout.radiusPill,
-    backgroundColor: colors.ink,
+    backgroundColor: c.ink,
     alignItems: "center",
     justifyContent: "center",
   },
   sendInert: { opacity: 0.35 },
-});
+}));

@@ -5,7 +5,8 @@ import { apiWrite, ApiError } from "@/lib/api";
 import { Sheet, SheetError } from "@/components/ui/sheet";
 import { Field, Toggle } from "@/components/ui/field";
 import { Cta, Ghost } from "@/components/ui/button";
-import { colors, fontFamily, fontSize, space } from "@/lib/theme";
+import { fontFamily, fontSize, space } from "@/lib/theme";
+import { makeStyles } from "@/lib/theme-context";
 
 export interface PositionDraft {
   quantity: number;
@@ -38,6 +39,7 @@ export function PositionSheet({
   /** Called after the ticker and everything attached to it is gone. */
   onRemoved: () => void;
 }) {
+  const styles = useStyles();
   const [quantity, setQuantity] = useState("");
   const [avgCost, setAvgCost] = useState("");
   const [notes, setNotes] = useState("");
@@ -170,12 +172,12 @@ export function PositionSheet({
   );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((c) => ({
   footer: { gap: space.sm },
   lede: {
     fontFamily: fontFamily.ui,
     fontSize: fontSize.sm,
     lineHeight: 20,
-    color: colors.textMuted,
+    color: c.textMuted,
   },
-});
+}));

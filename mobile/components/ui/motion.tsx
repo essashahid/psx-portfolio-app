@@ -7,7 +7,8 @@ import Animated, {
   withSequence,
 } from "react-native-reanimated";
 import { duration, ease, useMotion } from "@/lib/motion";
-import { colors, layout, palette } from "@/lib/theme";
+import { layout, palette } from "@/lib/theme";
+import { makeStyles } from "@/lib/theme-context";
 
 /**
  * Entrance: an element lifts into place and fades in. The web pairs this with
@@ -70,6 +71,7 @@ export function Tick({
   children: React.ReactNode;
   style?: StyleProp<ViewStyle>;
 }) {
+  const styles = useStyles();
   const { ms } = useMotion();
   const previous = useRef(value);
   const flash = useSharedValue(0);
@@ -148,6 +150,7 @@ export function CountUp({
  * the data does not support.
  */
 export function LivePulse({ live }: { live: boolean }) {
+  const styles = useStyles();
   const { reduced } = useMotion();
   const wave = useSharedValue(0);
 
@@ -177,6 +180,7 @@ export function LivePulse({ live }: { live: boolean }) {
  * when the data lands. A spinner belongs only where the shape is unknown.
  */
 export function Shimmer({ width, height, style }: { width?: number | `${number}%`; height: number; style?: StyleProp<ViewStyle> }) {
+  const styles = useStyles();
   const { reduced } = useMotion();
   const phase = useSharedValue(0.4);
 
@@ -190,7 +194,7 @@ export function Shimmer({ width, height, style }: { width?: number | `${number}%
   return <Animated.View style={[styles.shimmer, { width: width ?? "100%", height }, style, animated]} />;
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((c) => ({
   tick: { paddingHorizontal: 5, paddingVertical: 2, marginHorizontal: -5, borderRadius: 3, alignSelf: "flex-start" },
   pulse: { width: 7, height: 7, alignItems: "center", justifyContent: "center" },
   pulseRing: {
@@ -201,6 +205,6 @@ const styles = StyleSheet.create({
     backgroundColor: palette.up2,
   },
   pulseDot: { width: 7, height: 7, borderRadius: layout.radiusPill, backgroundColor: palette.up2 },
-  pulseDotClosed: { backgroundColor: colors.textFaint },
-  shimmer: { backgroundColor: colors.surfaceInset, borderRadius: 3 },
-});
+  pulseDotClosed: { backgroundColor: c.textFaint },
+  shimmer: { backgroundColor: c.surfaceInset, borderRadius: 3 },
+}));

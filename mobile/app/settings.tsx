@@ -25,12 +25,19 @@ import { Field, Toggle } from "@/components/ui/field";
 import { Cta } from "@/components/ui/button";
 import { colors, fontFamily, fontSize, layout, palette, space } from "@/lib/theme";
 import { APP_NAME } from "@/lib/brand";
+import { makeStyles, useColors, useTheme, type ThemeMode } from "@/lib/theme-context";
 
 /**
  * A row of options where exactly one is chosen, laid out down the page rather
  * than across it: these labels carry a line of explanation each, and a rail of
  * pills would truncate the part that makes the choice meaningful.
  */
+const THEME_OPTIONS = [
+  { value: "system" as const, label: "System", detail: "Follow your phone's appearance setting" },
+  { value: "light" as const, label: "Light", detail: "Always the paper field" },
+  { value: "dark" as const, label: "Dark", detail: "A true-black field, easier at night" },
+];
+
 function Choose<T extends string>({
   label,
   options,
@@ -44,6 +51,7 @@ function Choose<T extends string>({
   onChange: (next: T | null) => void;
   allowNone?: boolean;
 }) {
+  const styles = useStyles();
   return (
     <View style={styles.block}>
       <Caps style={styles.blockHead}>{label}</Caps>
@@ -75,6 +83,9 @@ function Choose<T extends string>({
 }
 
 export default function SettingsScreen() {
+  const { mode: themeMode, setMode: setThemeMode } = useTheme();
+  const styles = useStyles();
+  const colors = useColors();
   const router = useRouter();
   const { signOut } = useAuth();
   const { data, error, loading, refreshing, refresh } = useApi<SettingsResponse>(
@@ -193,6 +204,13 @@ export default function SettingsScreen() {
           </Text>
 
           <Choose
+            label="Appearance"
+            options={THEME_OPTIONS}
+            value={themeMode}
+            onChange={(next) => next && setThemeMode(next as ThemeMode)}
+          />
+
+          <Choose
             label="Experience"
             options={EXPERIENCE_OPTIONS}
             value={experience}
@@ -294,18 +312,18 @@ export default function SettingsScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: colors.surfacePage },
+const useStyles = makeStyles((c) => ({
+  screen: { flex: 1, backgroundColor: c.surfacePage },
   header: { paddingHorizontal: layout.gutter, paddingBottom: space.sm },
   back: { flexDirection: "row", alignItems: "center", gap: 2, minHeight: 36, marginLeft: -4 },
-  backLabel: { fontFamily: fontFamily.uiMedium, fontSize: fontSize.sm, color: colors.textMuted },
+  backLabel: { fontFamily: fontFamily.uiMedium, fontSize: fontSize.sm, color: c.textMuted },
   title: { marginTop: space.xs },
-  account: { marginTop: space.sm, fontSize: fontSize.xxs, color: colors.textFaint },
+  account: { marginTop: space.sm, fontSize: fontSize.xxs, color: c.textFaint },
   lede: {
     fontFamily: fontFamily.ui,
     fontSize: fontSize.sm,
     lineHeight: 21,
-    color: colors.textMuted,
+    color: c.textMuted,
     marginBottom: space.xl,
   },
   stack: { gap: space.lg },
@@ -318,30 +336,30 @@ const styles = StyleSheet.create({
     minHeight: layout.hitMin,
     paddingVertical: space.sm,
   },
-  optionPressed: { backgroundColor: colors.surfaceSunken },
+  optionPressed: { backgroundColor: c.surfaceSunken },
   radio: {
     width: 20,
     height: 20,
     borderRadius: layout.radiusPill,
     borderWidth: 1.5,
-    borderColor: colors.ruleStrong,
+    borderColor: c.ruleStrong,
     alignItems: "center",
     justifyContent: "center",
   },
-  radioOn: { borderColor: colors.ink },
-  radioDot: { width: 10, height: 10, borderRadius: layout.radiusPill, backgroundColor: colors.ink },
+  radioOn: { borderColor: c.ink },
+  radioDot: { width: 10, height: 10, borderRadius: layout.radiusPill, backgroundColor: c.ink },
   optionText: { flex: 1, gap: 1 },
-  optionLabel: { fontFamily: fontFamily.ui, fontSize: fontSize.body, color: colors.textStrong },
+  optionLabel: { fontFamily: fontFamily.ui, fontSize: fontSize.body, color: c.textStrong },
   optionLabelOn: { fontFamily: fontFamily.uiSemibold },
-  optionDetail: { fontFamily: fontFamily.ui, fontSize: fontSize.xxs, color: colors.textFaint },
+  optionDetail: { fontFamily: fontFamily.ui, fontSize: fontSize.xxs, color: c.textFaint },
   saveRow: { marginTop: space.xl },
-  failure: { fontFamily: fontFamily.ui, fontSize: fontSize.sm, lineHeight: 20, color: colors.textDown, marginTop: space.md },
+  failure: { fontFamily: fontFamily.ui, fontSize: fontSize.sm, lineHeight: 20, color: c.textDown, marginTop: space.md },
   saved: { fontFamily: fontFamily.ui, fontSize: fontSize.sm, color: palette.up2, marginTop: space.md },
   counts: { flexDirection: "row", gap: space.xxl, marginBottom: space.lg },
   count: { gap: 2 },
-  countValue: { fontFamily: fontFamily.monoSemibold, fontSize: fontSize.h3, color: colors.textStrong },
-  countLabel: { fontFamily: fontFamily.ui, fontSize: fontSize.xxs, color: colors.textFaint },
-  note: { fontFamily: fontFamily.ui, fontSize: fontSize.sm, lineHeight: 20, color: colors.textMuted },
+  countValue: { fontFamily: fontFamily.monoSemibold, fontSize: fontSize.h3, color: c.textStrong },
+  countLabel: { fontFamily: fontFamily.ui, fontSize: fontSize.xxs, color: c.textFaint },
+  note: { fontFamily: fontFamily.ui, fontSize: fontSize.sm, lineHeight: 20, color: c.textMuted },
   signOut: {
     flexDirection: "row",
     alignItems: "center",
@@ -349,5 +367,5 @@ const styles = StyleSheet.create({
     marginTop: space.xxl,
     minHeight: layout.hitMin,
   },
-  signOutLabel: { fontFamily: fontFamily.uiMedium, fontSize: fontSize.body, color: colors.textDown },
-});
+  signOutLabel: { fontFamily: fontFamily.uiMedium, fontSize: fontSize.body, color: c.textDown },
+}));

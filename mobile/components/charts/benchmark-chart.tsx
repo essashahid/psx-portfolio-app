@@ -7,6 +7,7 @@ import type { BenchmarkPoint } from "@psx/shared/api/performance";
 import { formatCompact } from "@psx/shared/format";
 import { ease, useMotion } from "@/lib/motion";
 import { colors, fontFamily, fontSize, layout, palette, space } from "@/lib/theme";
+import { makeStyles, useColors } from "@/lib/theme-context";
 
 const AnimatedPath = Animated.createAnimatedComponent(Path);
 
@@ -34,6 +35,8 @@ export function BenchmarkChart({
   series: BenchmarkPoint[];
   height?: number;
 }) {
+  const styles = useStyles();
+  const colors = useColors();
   const [width, setWidth] = useState(0);
   const [hidden, setHidden] = useState<Set<SeriesKey>>(new Set());
   const onLayout = (event: LayoutChangeEvent) => setWidth(event.nativeEvent.layout.width);
@@ -188,12 +191,12 @@ export function BenchmarkChart({
   );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((c) => ({
   blank: { flex: 1, alignItems: "center", justifyContent: "center" },
-  blankText: { fontFamily: fontFamily.ui, fontSize: fontSize.sm, color: colors.textFaint },
+  blankText: { fontFamily: fontFamily.ui, fontSize: fontSize.sm, color: c.textFaint },
   legend: { flexDirection: "row", flexWrap: "wrap", gap: space.md, marginTop: space.md },
   legendItem: { flexDirection: "row", alignItems: "center", gap: 5, minHeight: 32 },
   swatch: { width: 9, height: 9, borderRadius: 2, borderWidth: 1.5 },
-  legendLabel: { fontFamily: fontFamily.uiMedium, fontSize: fontSize.xxs, color: colors.textStrong },
-  legendLabelOff: { color: colors.textFaint },
-});
+  legendLabel: { fontFamily: fontFamily.uiMedium, fontSize: fontSize.xxs, color: c.textStrong },
+  legendLabelOff: { color: c.textFaint },
+}));

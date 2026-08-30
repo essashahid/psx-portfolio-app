@@ -1,5 +1,6 @@
 import { StyleSheet, Text, View } from "react-native";
 import { colors, fontSize, letterSpacing, space, tracking } from "@/lib/theme";
+import { makeStyles, useColors } from "@/lib/theme-context";
 
 /**
  * The web app's Metric-grid pattern: a label above a figure, laid out in a
@@ -17,6 +18,8 @@ export function Metric({
   tone?: "neutral" | "up" | "down";
   size?: "normal" | "large";
 }) {
+  const styles = useStyles();
+  const colors = useColors();
   const toneColor =
     tone === "up" ? colors.textUp : tone === "down" ? colors.textDown : colors.textStrong;
 
@@ -38,15 +41,16 @@ export function Metric({
 }
 
 export function MetricGrid({ children }: { children: React.ReactNode }) {
+  const styles = useStyles();
   return <View style={styles.grid}>{children}</View>;
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((c) => ({
   grid: {
     flexDirection: "row",
     flexWrap: "wrap",
     borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: colors.rule,
+    borderTopColor: c.rule,
   },
   metric: {
     flexBasis: "50%",
@@ -54,12 +58,12 @@ const styles = StyleSheet.create({
     paddingVertical: space.md,
     paddingRight: space.md,
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: colors.rule,
+    borderBottomColor: c.rule,
     gap: space.xs,
   },
   label: {
     fontSize: fontSize.xxs,
-    color: colors.textMuted,
+    color: c.textMuted,
     letterSpacing: letterSpacing(fontSize.xxs, tracking.caps),
   },
   value: {
@@ -70,4 +74,4 @@ const styles = StyleSheet.create({
     fontSize: fontSize.title,
     letterSpacing: letterSpacing(fontSize.title, tracking.editorial),
   },
-});
+}));

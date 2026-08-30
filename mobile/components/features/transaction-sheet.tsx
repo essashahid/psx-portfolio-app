@@ -6,6 +6,7 @@ import { Sheet, SheetError } from "@/components/ui/sheet";
 import { Field, Choice } from "@/components/ui/field";
 import { Cta, Ghost } from "@/components/ui/button";
 import { space } from "@/lib/theme";
+import { makeStyles } from "@/lib/theme-context";
 
 /** Mirrors the enum the transactions route validates against. */
 const TYPES = ["BUY", "SELL", "DIVIDEND", "BONUS", "RIGHT", "SPLIT"] as const;
@@ -45,6 +46,7 @@ export function TransactionSheet({
   onClose: () => void;
   onSaved: () => void;
 }) {
+  const styles = useStyles();
   const editing = Boolean(initial?.id);
   const [ticker, setTicker] = useState("");
   const [date, setDate] = useState(today());
@@ -278,4 +280,4 @@ export function TransactionSheet({
   );
 }
 
-const styles = StyleSheet.create({ footer: { gap: space.sm } });
+const useStyles = makeStyles((c) => ({ footer: { gap: space.sm } }));

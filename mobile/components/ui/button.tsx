@@ -1,6 +1,7 @@
 import { ActivityIndicator, Pressable, StyleSheet, Text, type PressableProps } from "react-native";
 import * as Haptics from "expo-haptics";
 import { colors, fontFamily, fontSize, layout, palette, space } from "@/lib/theme";
+import { makeStyles, useColors } from "@/lib/theme-context";
 
 type Props = Omit<PressableProps, "style"> & {
   label: string;
@@ -11,6 +12,8 @@ type Props = Omit<PressableProps, "style"> & {
 
 /** The primary action: a solid pill. */
 export function Cta({ label, busy, onDark, disabled, onPress, ...rest }: Props) {
+  const styles = useStyles();
+  const colors = useColors();
   const inert = disabled || busy;
   return (
     <Pressable
@@ -39,6 +42,7 @@ export function Cta({ label, busy, onDark, disabled, onPress, ...rest }: Props) 
 
 /** The secondary action: outlined, same height. */
 export function Ghost({ label, busy, onDark, disabled, onPress, ...rest }: Props) {
+  const styles = useStyles();
   const inert = disabled || busy;
   return (
     <Pressable
@@ -61,28 +65,28 @@ export function Ghost({ label, busy, onDark, disabled, onPress, ...rest }: Props
   );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((c) => ({
   cta: {
     minHeight: 48,
     borderRadius: layout.radiusPill,
-    backgroundColor: colors.ink,
+    backgroundColor: c.ink,
     alignItems: "center",
     justifyContent: "center",
     paddingHorizontal: space.xl,
   },
-  ctaOnDark: { backgroundColor: colors.surfacePage },
+  ctaOnDark: { backgroundColor: c.surfacePage },
   ctaLabel: {
     fontFamily: fontFamily.uiSemibold,
     fontSize: fontSize.body,
-    color: colors.textOnDark,
+    color: c.textOnDark,
   },
-  ctaLabelOnDark: { color: colors.textStrong },
+  ctaLabelOnDark: { color: c.textStrong },
   ghost: {
     minHeight: 48,
     borderRadius: layout.radiusPill,
     borderWidth: 1,
-    borderColor: colors.ruleStrong,
-    backgroundColor: colors.surfaceRaised,
+    borderColor: c.ruleStrong,
+    backgroundColor: c.surfaceRaised,
     alignItems: "center",
     justifyContent: "center",
     paddingHorizontal: space.xl,
@@ -91,9 +95,9 @@ const styles = StyleSheet.create({
   ghostLabel: {
     fontFamily: fontFamily.uiSemibold,
     fontSize: fontSize.sm,
-    color: colors.textStrong,
+    color: c.textStrong,
   },
-  ghostLabelOnDark: { fontSize: fontSize.body, color: colors.textOnDark },
+  ghostLabelOnDark: { fontSize: fontSize.body, color: c.textOnDark },
   inert: { opacity: 0.4 },
   /**
    * Press confirms in a background shift, never in opacity and never in
@@ -102,6 +106,6 @@ const styles = StyleSheet.create({
    */
   ctaPressed: { backgroundColor: palette.indigo1 },
   ctaPressedOnDark: { backgroundColor: palette.paper3 },
-  ghostPressed: { backgroundColor: colors.surfaceInset, borderColor: colors.ink },
+  ghostPressed: { backgroundColor: c.surfaceInset, borderColor: c.ink },
   ghostPressedOnDark: { backgroundColor: "rgba(255,255,255,0.14)" },
-});
+}));

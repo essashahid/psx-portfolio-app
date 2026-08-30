@@ -15,6 +15,7 @@ import { PageSkeleton } from "@/components/skeleton";
 import { Cta } from "@/components/ui/button";
 import { TransactionSheet, type TransactionDraft } from "@/components/features/transaction-sheet";
 import { CashSheet, type CashDraft } from "@/components/features/cash-sheet";
+import { makeStyles, useColors } from "@/lib/theme-context";
 import {
   colors,
   fontFamily,
@@ -38,6 +39,7 @@ function monthOf(date: string | null): string {
 }
 
 function Entry({ entry, onPress }: { entry: LedgerEntry; onPress: () => void }) {
+  const styles = useStyles();
   const isCredit = entry.credit > 0;
   const amount = isCredit ? entry.credit : entry.debit;
   return (
@@ -67,6 +69,8 @@ function Entry({ entry, onPress }: { entry: LedgerEntry; onPress: () => void }) 
 }
 
 export default function LedgerScreen() {
+  const styles = useStyles();
+  const colors = useColors();
   const router = useRouter();
   const { data, error, loading, refreshing, refresh } = useApi<LedgerResponse>(
     "/api/portfolio/ledger",
@@ -259,31 +263,31 @@ export default function LedgerScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: colors.surfacePage },
+const useStyles = makeStyles((c) => ({
+  screen: { flex: 1, backgroundColor: c.surfacePage },
   header: { paddingHorizontal: layout.gutter, paddingBottom: space.sm },
   headRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
   addButton: {
     width: 34,
     height: 34,
     borderRadius: layout.radiusPill,
-    backgroundColor: colors.ink,
+    backgroundColor: c.ink,
     alignItems: "center",
     justifyContent: "center",
   },
   back: { flexDirection: "row", alignItems: "center", gap: 2, minHeight: 36, marginLeft: -4 },
-  backLabel: { fontFamily: fontFamily.uiMedium, fontSize: fontSize.sm, color: colors.textMuted },
+  backLabel: { fontFamily: fontFamily.uiMedium, fontSize: fontSize.sm, color: c.textMuted },
   title: { marginTop: space.xs },
   totalLabel: { marginTop: space.xl },
   total: { marginTop: space.xs },
-  totalUnit: { fontFamily: fontFamily.display, fontSize: 16, color: colors.textMuted },
+  totalUnit: { fontFamily: fontFamily.display, fontSize: 16, color: c.textMuted },
   totalFigure: {
     fontFamily: fontFamily.monoSemibold,
     fontSize: 34,
     letterSpacing: letterSpacing(34, tracking.editorial),
-    color: colors.textStrong,
+    color: c.textStrong,
   },
-  subtitle: { marginTop: space.sm, fontSize: fontSize.xxs, color: colors.textFaint, lineHeight: 16 },
+  subtitle: { marginTop: space.sm, fontSize: fontSize.xxs, color: c.textFaint, lineHeight: 16 },
   filters: { flexDirection: "row", alignItems: "center", gap: space.xs, marginBottom: space.lg },
   filterSpacer: { flex: 1 },
   filter: {
@@ -291,21 +295,21 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
     borderRadius: layout.radiusPill,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: colors.rule,
+    borderColor: c.rule,
   },
-  filterOn: { backgroundColor: colors.ink, borderColor: colors.ink },
-  filterLabel: { fontFamily: fontFamily.uiMedium, fontSize: fontSize.xxs, color: colors.textMuted },
-  filterLabelOn: { color: colors.textOnDark },
-  link: { fontFamily: fontFamily.uiMedium, fontSize: fontSize.xxs, color: colors.textMuted },
+  filterOn: { backgroundColor: c.ink, borderColor: c.ink },
+  filterLabel: { fontFamily: fontFamily.uiMedium, fontSize: fontSize.xxs, color: c.textMuted },
+  filterLabelOn: { color: c.textOnDark },
+  link: { fontFamily: fontFamily.uiMedium, fontSize: fontSize.xxs, color: c.textMuted },
   block: { marginBottom: space.xl },
   blockHead: { marginBottom: space.md },
   entryLeft: { flex: 1, gap: 1, paddingRight: space.md },
-  narration: { fontFamily: fontFamily.uiSemibold, fontSize: fontSize.sm, color: colors.textStrong },
-  meta: { fontSize: fontSize.xxs, color: colors.textFaint },
+  narration: { fontFamily: fontFamily.uiSemibold, fontSize: fontSize.sm, color: c.textStrong },
+  meta: { fontSize: fontSize.xxs, color: c.textFaint },
   amount: { fontFamily: fontFamily.monoSemibold, fontSize: fontSize.sm },
   amountCredit: { color: palette.up2 },
-  amountDebit: { color: colors.textStrong },
-  amountFlat: { color: colors.textFaint },
+  amountDebit: { color: c.textStrong },
+  amountFlat: { color: c.textFaint },
   emptyBlock: { gap: space.lg, alignItems: "flex-start" },
-  empty: { fontFamily: fontFamily.ui, fontSize: fontSize.sm, color: colors.textMuted, lineHeight: 20 },
-});
+  empty: { fontFamily: fontFamily.ui, fontSize: fontSize.sm, color: c.textMuted, lineHeight: 20 },
+}));

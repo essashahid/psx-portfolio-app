@@ -14,6 +14,7 @@ import type {
 import { formatNumber } from "@psx/shared/format";
 import { sectorColor } from "@psx/shared/sector-colors";
 import { colors, fontSize, layout, letterSpacing, space, tracking } from "@/lib/theme";
+import { makeStyles, useColors } from "@/lib/theme-context";
 
 /**
  * Artifact rendering for the phone.
@@ -40,6 +41,7 @@ function Frame({
   description?: string;
   children: React.ReactNode;
 }) {
+  const styles = useStyles();
   return (
     <View style={styles.frame}>
       {title ? <Text style={styles.frameTitle}>{title.toUpperCase()}</Text> : null}
@@ -50,6 +52,7 @@ function Frame({
 }
 
 function MetricStrip({ spec }: { spec: MetricStripArtifact }) {
+  const styles = useStyles();
   return (
     <Frame title={spec.title}>
       <View style={styles.metricGrid}>
@@ -72,6 +75,7 @@ function cellText(value: string | number | null): string {
 }
 
 function DataTable({ spec }: { spec: TableArtifact | ComparisonTableArtifact }) {
+  const styles = useStyles();
   // Three columns is what fits a phone without horizontal scrolling. Beyond
   // that the remaining columns are listed under each row instead of being cut
   // off at the screen edge.
@@ -112,6 +116,7 @@ function DataTable({ spec }: { spec: TableArtifact | ComparisonTableArtifact }) 
 }
 
 function Timeline({ spec }: { spec: TimelineArtifact }) {
+  const styles = useStyles();
   return (
     <Frame title={spec.title} description={spec.description}>
       {spec.events.map((e, i) => (
@@ -140,6 +145,7 @@ function ProportionRow({
   fraction: number;
   color: string;
 }) {
+  const styles = useStyles();
   const width = `${Math.max(0, Math.min(1, fraction)) * 100}%` as const;
   return (
     <View style={styles.barRow}>
@@ -157,6 +163,7 @@ function ProportionRow({
 }
 
 function Attribution({ spec }: { spec: PortfolioAttributionArtifact }) {
+  const colors = useColors();
   const largest = Math.max(...spec.items.map((i) => Math.abs(i.value)), 1);
   return (
     <Frame title={spec.title} description={spec.description}>
@@ -186,6 +193,8 @@ function Attribution({ spec }: { spec: PortfolioAttributionArtifact }) {
 }
 
 function Allocation({ spec }: { spec: AllocationArtifact }) {
+  const styles = useStyles();
+  const colors = useColors();
   // A donut needs a drawing surface; on a narrow screen a ranked set of bars
   // reads better anyway, and keeps the sector colours the rest of the app uses.
   const total = spec.segments.reduce((sum, s) => sum + s.value, 0) || 1;
@@ -212,6 +221,8 @@ function Allocation({ spec }: { spec: AllocationArtifact }) {
 }
 
 function BenchmarkExcess({ spec }: { spec: BenchmarkExcessArtifact }) {
+  const styles = useStyles();
+  const colors = useColors();
   const benchmark = spec.benchmarkLabel ?? "KSE-100";
   return (
     <Frame title={spec.title} description={spec.description}>
@@ -244,6 +255,8 @@ function BenchmarkExcess({ spec }: { spec: BenchmarkExcessArtifact }) {
 }
 
 function Gauge({ spec }: { spec: GaugeArtifact }) {
+  const styles = useStyles();
+  const colors = useColors();
   const span = spec.max - spec.min || 1;
   const position = Math.max(0, Math.min(1, (spec.value - spec.min) / span));
   return (
@@ -280,6 +293,7 @@ function Gauge({ spec }: { spec: GaugeArtifact }) {
 
 /** For the kinds that need a plotting engine we do not ship yet. */
 function Described({ title, description, fallback }: { title: string; description?: string; fallback?: string }) {
+  const styles = useStyles();
   return (
     <Frame title={title} description={description}>
       <Text style={styles.fallback}>
@@ -315,9 +329,7 @@ export class Artifact extends Component<{ spec: ArtifactSpec }, { failed: boolea
     if (this.state.failed) {
       return (
         <Frame title="Chart unavailable">
-          <Text style={styles.errorText}>
-            This chart was saved in a format this version cannot draw.
-          </Text>
+          <ArtifactError />
         </Frame>
       );
     }
@@ -326,6 +338,7 @@ export class Artifact extends Component<{ spec: ArtifactSpec }, { failed: boolea
 }
 
 function ArtifactBody({ spec }: { spec: ArtifactSpec }) {
+  const styles = useStyles();
   switch (spec.kind) {
     case "metric-strip":
       return <MetricStrip spec={spec} />;
@@ -358,80 +371,90 @@ function ArtifactBody({ spec }: { spec: ArtifactSpec }) {
   }
 }
 
-const styles = StyleSheet.create({
+/** Split out because the boundary above is a class, and classes cannot use hooks. */
+function ArtifactError() {
+  const styles = useStyles();
+  return (
+    <Text style={styles.errorText}>
+      This chart was saved in a format this version cannot draw.
+    </Text>
+  );
+}
+
+const useStyles = makeStyles((c) => ({
   frame: {
     marginVertical: space.md,
     paddingVertical: space.md,
     borderTopWidth: StyleSheet.hairlineWidth,
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderColor: colors.rule,
+    borderColor: c.rule,
     gap: space.sm,
   },
   frameTitle: {
     fontSize: fontSize.xxs,
-    color: colors.textMuted,
+    color: c.textMuted,
     letterSpacing: letterSpacing(fontSize.xxs, tracking.caps),
   },
-  frameDescription: { fontSize: fontSize.xs, color: colors.textMuted, lineHeight: 18 },
+  frameDescription: { fontSize: fontSize.xs, color: c.textMuted, lineHeight: 18 },
   metricGrid: { flexDirection: "row", flexWrap: "wrap" },
   metricCell: { flexBasis: "50%", paddingVertical: space.sm, paddingRight: space.md, gap: 2 },
   metricLabel: {
     fontSize: fontSize.xxs,
-    color: colors.textMuted,
+    color: c.textMuted,
     letterSpacing: letterSpacing(fontSize.xxs, tracking.caps),
   },
   metricValue: { fontSize: fontSize.h2 },
-  metricDetail: { fontSize: fontSize.xs, color: colors.textFaint },
+  metricDetail: { fontSize: fontSize.xs, color: c.textFaint },
   tableHead: {
     flexDirection: "row",
     paddingBottom: space.xs,
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: colors.rule,
+    borderBottomColor: c.rule,
   },
-  tableHeadCell: { flex: 1, fontSize: fontSize.xxs, color: colors.textMuted },
+  tableHeadCell: { flex: 1, fontSize: fontSize.xxs, color: c.textMuted },
   tableRow: {
     paddingVertical: space.sm,
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: colors.rule,
+    borderBottomColor: c.rule,
     gap: 2,
   },
   tableLine: { flexDirection: "row" },
-  tableCell: { flex: 1, fontSize: fontSize.sm, color: colors.textBody },
-  tableCellFirst: { color: colors.textStrong },
+  tableCell: { flex: 1, fontSize: fontSize.sm, color: c.textBody },
+  tableCellFirst: { color: c.textStrong },
   tableCellRight: { textAlign: "right" },
-  tableOverflow: { fontSize: fontSize.xs, color: colors.textFaint },
+  tableOverflow: { fontSize: fontSize.xs, color: c.textFaint },
   timelineRow: {
     flexDirection: "row",
     gap: space.md,
     paddingVertical: space.sm,
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: colors.rule,
+    borderBottomColor: c.rule,
   },
-  timelineDate: { fontSize: fontSize.xs, color: colors.textFaint, width: 78 },
+  timelineDate: { fontSize: fontSize.xs, color: c.textFaint, width: 78 },
   timelineBody: { flex: 1, gap: 2 },
-  timelineLabel: { fontSize: fontSize.sm, color: colors.textStrong },
-  timelineValue: { fontSize: fontSize.sm, color: colors.textBody },
+  timelineLabel: { fontSize: fontSize.sm, color: c.textStrong },
+  timelineValue: { fontSize: fontSize.sm, color: c.textBody },
   barRow: { paddingVertical: space.sm, gap: space.xs },
   barHead: { flexDirection: "row", justifyContent: "space-between", gap: space.md },
-  barLabel: { flex: 1, fontSize: fontSize.sm, color: colors.textBody },
-  barValue: { fontSize: fontSize.sm, color: colors.textStrong },
-  barTrack: { height: 6, borderRadius: 3, backgroundColor: colors.surfaceSunken, overflow: "hidden" },
+  barLabel: { flex: 1, fontSize: fontSize.sm, color: c.textBody },
+  barValue: { fontSize: fontSize.sm, color: c.textStrong },
+  barTrack: { height: 6, borderRadius: 3, backgroundColor: c.surfaceSunken, overflow: "hidden" },
   barFill: { height: 6, borderRadius: 3 },
   centerBlock: { paddingBottom: space.sm, gap: 2 },
-  centerValue: { fontSize: fontSize.title, color: colors.textStrong },
+  centerValue: { fontSize: fontSize.title, color: c.textStrong },
   excessRow: {
     paddingVertical: space.sm,
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: colors.rule,
+    borderBottomColor: c.rule,
     gap: 2,
   },
   excessNumbers: { flexDirection: "row", justifyContent: "space-between", gap: space.md },
-  gaugeValue: { fontSize: fontSize.title, color: colors.textStrong },
-  gaugeUnit: { fontSize: fontSize.body, color: colors.textMuted },
+  gaugeValue: { fontSize: fontSize.title, color: c.textStrong },
+  gaugeUnit: { fontSize: fontSize.body, color: c.textMuted },
   gaugeTrack: {
     height: 10,
     borderRadius: 5,
-    backgroundColor: colors.surfaceSunken,
+    backgroundColor: c.surfaceSunken,
     flexDirection: "row",
     overflow: "hidden",
     position: "relative",
@@ -443,9 +466,9 @@ const styles = StyleSheet.create({
     width: 2,
     height: 16,
     marginLeft: -1,
-    backgroundColor: colors.textStrong,
+    backgroundColor: c.textStrong,
   },
   gaugeScale: { flexDirection: "row", justifyContent: "space-between", gap: space.sm },
-  fallback: { fontSize: fontSize.sm, color: colors.textBody, lineHeight: 20 },
-  errorText: { fontSize: fontSize.sm, color: colors.textDown, lineHeight: 20 },
-});
+  fallback: { fontSize: fontSize.sm, color: c.textBody, lineHeight: 20 },
+  errorText: { fontSize: fontSize.sm, color: c.textDown, lineHeight: 20 },
+}));

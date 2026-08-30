@@ -8,6 +8,7 @@ import { formatNumber } from "@psx/shared/format";
 import { ease, useMotion } from "@/lib/motion";
 import { Shimmer } from "@/components/ui/motion";
 import { colors, fontFamily, fontSize, layout, palette, space } from "@/lib/theme";
+import { makeStyles, useColors } from "@/lib/theme-context";
 
 const AnimatedPath = Animated.createAnimatedComponent(Path);
 
@@ -35,6 +36,8 @@ export function PriceChart({
   height?: number;
   loading?: boolean;
 }) {
+  const styles = useStyles();
+  const colors = useColors();
   const [width, setWidth] = useState(0);
   const onLayout = (event: LayoutChangeEvent) => setWidth(event.nativeEvent.layout.width);
 
@@ -203,6 +206,7 @@ export function PeriodRail({
   value: ChartPeriod;
   onChange: (next: ChartPeriod) => void;
 }) {
+  const styles = useStyles();
   return (
     <View style={styles.rail}>
       {CHART_PERIODS.map((period) => {
@@ -226,18 +230,18 @@ export function PeriodRail({
   );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((c) => ({
   blank: { alignItems: "center", justifyContent: "center" },
-  blankText: { fontFamily: fontFamily.ui, fontSize: fontSize.sm, color: colors.textFaint },
+  blankText: { fontFamily: fontFamily.ui, fontSize: fontSize.sm, color: c.textFaint },
   rail: { flexDirection: "row", gap: space.xs, marginTop: space.md },
   period: {
     paddingHorizontal: space.md,
     paddingVertical: 6,
     borderRadius: layout.radiusPill,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: colors.rule,
+    borderColor: c.rule,
   },
-  periodOn: { backgroundColor: colors.ink, borderColor: colors.ink },
-  periodLabel: { fontFamily: fontFamily.monoMedium, fontSize: fontSize.xxs, color: colors.textMuted },
-  periodLabelOn: { color: colors.textOnDark },
-});
+  periodOn: { backgroundColor: c.ink, borderColor: c.ink },
+  periodLabel: { fontFamily: fontFamily.monoMedium, fontSize: fontSize.xxs, color: c.textMuted },
+  periodLabelOn: { color: c.textOnDark },
+}));

@@ -11,6 +11,7 @@ import { ErrorNote } from "@/components/status";
 import { Rise } from "@/components/ui/motion";
 import { PageSkeleton } from "@/components/skeleton";
 import { colors, fontFamily, fontSize, layout, space } from "@/lib/theme";
+import { makeStyles, useColors } from "@/lib/theme-context";
 
 /** Severity reads as a coloured left edge, as it does on the web rows. */
 const EDGE: Record<AlertSeverity, string> = {
@@ -20,6 +21,8 @@ const EDGE: Record<AlertSeverity, string> = {
 };
 
 function Alert({ row }: { row: AlertRow }) {
+  const styles = useStyles();
+  const colors = useColors();
   return (
     <View style={[styles.alert, { borderLeftColor: EDGE[row.severity] ?? colors.rule }]}>
       <View style={styles.alertHead}>
@@ -33,6 +36,8 @@ function Alert({ row }: { row: AlertRow }) {
 }
 
 export default function AlertsScreen() {
+  const styles = useStyles();
+  const colors = useColors();
   const router = useRouter();
   const { data, error, loading, refreshing, refresh } = useApi<AlertsResponse>(
     "/api/alerts",
@@ -102,11 +107,11 @@ export default function AlertsScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: colors.surfacePage },
+const useStyles = makeStyles((c) => ({
+  screen: { flex: 1, backgroundColor: c.surfacePage },
   header: { paddingHorizontal: layout.gutter, paddingBottom: space.sm },
   back: { flexDirection: "row", alignItems: "center", gap: 2, minHeight: 36, marginLeft: -4 },
-  backLabel: { fontFamily: fontFamily.uiMedium, fontSize: fontSize.sm, color: colors.textMuted },
+  backLabel: { fontFamily: fontFamily.uiMedium, fontSize: fontSize.sm, color: c.textMuted },
   pageTitle: { marginTop: space.xs },
   count: { marginTop: space.sm },
   alert: {
@@ -114,15 +119,15 @@ const styles = StyleSheet.create({
     paddingLeft: space.md,
     paddingVertical: space.md,
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: colors.rule,
+    borderBottomColor: c.rule,
     gap: space.xs,
   },
   alertHead: { flexDirection: "row", justifyContent: "space-between", gap: space.md },
-  title: { flex: 1, fontFamily: fontFamily.uiSemibold, fontSize: fontSize.h3, color: colors.textStrong },
-  ticker: { fontFamily: fontFamily.mono, fontSize: fontSize.xs, color: colors.textMuted },
-  message: { fontFamily: fontFamily.ui, fontSize: fontSize.sm, lineHeight: 20, color: colors.textBody },
-  date: { fontSize: fontSize.xxs, color: colors.textFaint },
-  breakdown: { marginTop: space.xs, fontSize: fontSize.xxs, color: colors.textFaint },
+  title: { flex: 1, fontFamily: fontFamily.uiSemibold, fontSize: fontSize.h3, color: c.textStrong },
+  ticker: { fontFamily: fontFamily.mono, fontSize: fontSize.xs, color: c.textMuted },
+  message: { fontFamily: fontFamily.ui, fontSize: fontSize.sm, lineHeight: 20, color: c.textBody },
+  date: { fontSize: fontSize.xxs, color: c.textFaint },
+  breakdown: { marginTop: space.xs, fontSize: fontSize.xxs, color: c.textFaint },
   watchBand: { paddingBottom: space.xxl },
   watchHead: { marginBottom: space.md },
   watchRow: { flexDirection: "row", alignItems: "flex-start", gap: space.md, paddingVertical: 7 },
@@ -130,7 +135,7 @@ const styles = StyleSheet.create({
     width: 5,
     height: 5,
     borderRadius: layout.radiusPill,
-    backgroundColor: colors.ruleStrong,
+    backgroundColor: c.ruleStrong,
     marginTop: 7,
   },
   watchLabel: {
@@ -138,14 +143,14 @@ const styles = StyleSheet.create({
     fontFamily: fontFamily.ui,
     fontSize: fontSize.sm,
     lineHeight: 20,
-    color: colors.textBody,
+    color: c.textBody,
   },
   watchNote: {
     fontFamily: fontFamily.ui,
     fontSize: fontSize.xxs,
     lineHeight: 17,
-    color: colors.textFaint,
+    color: c.textFaint,
     marginTop: space.lg,
   },
-  empty: { fontFamily: fontFamily.ui, fontSize: fontSize.sm, lineHeight: 20, color: colors.textMuted },
-});
+  empty: { fontFamily: fontFamily.ui, fontSize: fontSize.sm, lineHeight: 20, color: c.textMuted },
+}));

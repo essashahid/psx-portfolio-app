@@ -1,6 +1,7 @@
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import * as Haptics from "expo-haptics";
-import { colors, fontSize, layout, space } from "@/lib/theme";
+import { fontSize, layout, space } from "@/lib/theme";
+import { makeStyles } from "@/lib/theme-context";
 
 /** Switches between views of the same subject. Text only, no icons. */
 export function Segmented<T extends string>({
@@ -12,6 +13,7 @@ export function Segmented<T extends string>({
   value: T;
   onChange: (next: T) => void;
 }) {
+  const styles = useStyles();
   return (
     <View style={styles.track}>
       {options.map((option) => {
@@ -36,10 +38,10 @@ export function Segmented<T extends string>({
   );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((c) => ({
   track: {
     flexDirection: "row",
-    backgroundColor: colors.surfaceSunken,
+    backgroundColor: c.surfaceSunken,
     borderRadius: layout.radiusSm,
     padding: 3,
     gap: 3,
@@ -52,7 +54,7 @@ const styles = StyleSheet.create({
     borderRadius: layout.radiusSm - 3,
     paddingHorizontal: space.sm,
   },
-  segmentActive: { backgroundColor: colors.surfaceRaised },
-  label: { fontSize: fontSize.sm, color: colors.textMuted },
-  labelActive: { color: colors.textStrong, fontWeight: "600" },
-});
+  segmentActive: { backgroundColor: c.surfaceRaised },
+  label: { fontSize: fontSize.sm, color: c.textMuted },
+  labelActive: { color: c.textStrong, fontWeight: "600" },
+}));

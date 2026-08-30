@@ -1,7 +1,8 @@
 import Svg, { Circle, Path, Rect } from "react-native-svg";
 import { StyleSheet, Text, View } from "react-native";
-import { colors, fontFamily, fontSize, letterSpacing, palette, space, tracking } from "@/lib/theme";
+import { fontFamily, fontSize, letterSpacing, palette, space, tracking } from "@/lib/theme";
 import { APP_NAME } from "@/lib/brand";
+import { makeStyles } from "@/lib/theme-context";
 
 /**
  * The mark: a square with a plumb line dropping through it and a bob below.
@@ -20,6 +21,7 @@ export function Mark({ size = 19 }: { size?: number }) {
 
 /** Mark plus wordmark, as it appears in the header and on the login screen. */
 export function Wordmark({ size = 19, textSize = fontSize.h3 }: { size?: number; textSize?: number }) {
+  const styles = useStyles();
   return (
     <View style={styles.row}>
       <Mark size={size} />
@@ -30,7 +32,7 @@ export function Wordmark({ size = 19, textSize = fontSize.h3 }: { size?: number;
   );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((c) => ({
   row: { flexDirection: "row", alignItems: "center", gap: space.sm + 1 },
-  word: { fontFamily: fontFamily.display, color: colors.textOnDark },
-});
+  word: { fontFamily: fontFamily.display, color: c.textOnDark },
+}));

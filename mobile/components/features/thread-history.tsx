@@ -9,6 +9,7 @@ import { Field } from "@/components/ui/field";
 import { Cta, Ghost } from "@/components/ui/button";
 import { Shimmer } from "@/components/ui/motion";
 import { colors, fontFamily, fontSize, layout, space } from "@/lib/theme";
+import { makeStyles, useColors } from "@/lib/theme-context";
 
 /**
  * "Yesterday", "3 days ago", then the date. A saved conversation is found by
@@ -47,6 +48,8 @@ export function ThreadHistory({
   /** Called with the thread to load. The screen owns the loading. */
   onOpenThread: (id: string) => void;
 }) {
+  const styles = useStyles();
+  const colors = useColors();
   const [threads, setThreads] = useState<ChatThreadSummary[] | null>(null);
   const [failure, setFailure] = useState<string | null>(null);
   const [renaming, setRenaming] = useState<ChatThreadSummary | null>(null);
@@ -201,7 +204,7 @@ export function ThreadHistory({
   );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((c) => ({
   footer: { gap: space.sm },
   loading: { gap: space.lg },
   loadingRow: { gap: 2 },
@@ -211,7 +214,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: colors.rule,
+    borderBottomColor: c.rule,
   },
   rowMain: {
     flex: 1,
@@ -220,10 +223,10 @@ const styles = StyleSheet.create({
     paddingVertical: space.sm,
     gap: 2,
   },
-  rowPressed: { backgroundColor: colors.surfaceSunken },
-  title: { fontFamily: fontFamily.uiMedium, fontSize: fontSize.body, color: colors.textStrong },
+  rowPressed: { backgroundColor: c.surfaceSunken },
+  title: { fontFamily: fontFamily.uiMedium, fontSize: fontSize.body, color: c.textStrong },
   titleCurrent: { fontFamily: fontFamily.uiSemibold },
-  meta: { fontFamily: fontFamily.ui, fontSize: fontSize.xxs, color: colors.textFaint },
+  meta: { fontFamily: fontFamily.ui, fontSize: fontSize.xxs, color: c.textFaint },
   action: { width: 40, height: layout.hitMin, alignItems: "center", justifyContent: "center" },
-  empty: { fontFamily: fontFamily.ui, fontSize: fontSize.sm, lineHeight: 20, color: colors.textMuted },
-});
+  empty: { fontFamily: fontFamily.ui, fontSize: fontSize.sm, lineHeight: 20, color: c.textMuted },
+}));

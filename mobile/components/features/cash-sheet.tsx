@@ -6,6 +6,7 @@ import { Sheet, SheetError } from "@/components/ui/sheet";
 import { Field, Choice } from "@/components/ui/field";
 import { Cta, Ghost } from "@/components/ui/button";
 import { space } from "@/lib/theme";
+import { makeStyles } from "@/lib/theme-context";
 
 const TYPES = ["CASH_IN", "CASH_OUT", "FEE", "TAX", "DIVIDEND"] as const;
 type CashType = (typeof TYPES)[number];
@@ -39,6 +40,7 @@ export function CashSheet({
   onClose: () => void;
   onSaved: () => void;
 }) {
+  const styles = useStyles();
   const editing = Boolean(initial?.id);
   const [date, setDate] = useState(today());
   const [type, setType] = useState<CashType>("CASH_IN");
@@ -166,4 +168,4 @@ export function CashSheet({
   );
 }
 
-const styles = StyleSheet.create({ footer: { gap: space.sm } });
+const useStyles = makeStyles((c) => ({ footer: { gap: space.sm } }));

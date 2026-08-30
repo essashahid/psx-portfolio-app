@@ -5,6 +5,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { X } from "lucide-react-native";
 import { PageTitle } from "@/components/ui/text";
 import { colors, fontFamily, fontSize, layout, space } from "@/lib/theme";
+import { makeStyles, useColors } from "@/lib/theme-context";
 
 /**
  * A bottom sheet for a single task: add a transaction, record a payout, edit a
@@ -29,6 +30,8 @@ export function Sheet({
   children: React.ReactNode;
   footer?: React.ReactNode;
 }) {
+  const styles = useStyles();
+  const colors = useColors();
   // With the keyboard up, the panel sits on the keyboard rather than on the
   // navigation bar, so the bottom safe-area inset would leave a strip of the
   // screen behind showing through under the sheet.
@@ -78,18 +81,19 @@ export function Sheet({
 
 /** The line a sheet uses to explain a refusal or a failure. */
 export function SheetError({ message }: { message: string | null }) {
+  const styles = useStyles();
   if (!message) return null;
   return <Text style={styles.error}>{message}</Text>;
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((c) => ({
   scrim: { flex: 1, justifyContent: "flex-end", backgroundColor: "rgba(16, 26, 51, 0.34)" },
   scrimTap: { flex: 1 },
   panel: {
     maxHeight: "88%",
     borderTopLeftRadius: 16,
     borderTopRightRadius: 16,
-    backgroundColor: colors.surfacePage,
+    backgroundColor: c.surfacePage,
   },
   grip: {
     alignSelf: "center",
@@ -97,7 +101,7 @@ const styles = StyleSheet.create({
     height: 4,
     borderRadius: 2,
     marginTop: space.sm,
-    backgroundColor: colors.rule,
+    backgroundColor: c.rule,
   },
   head: {
     flexDirection: "row",
@@ -113,12 +117,12 @@ const styles = StyleSheet.create({
     paddingTop: space.md,
     paddingBottom: space.sm,
     borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: colors.rule,
+    borderTopColor: c.rule,
   },
   error: {
     fontFamily: fontFamily.ui,
     fontSize: fontSize.sm,
     lineHeight: 20,
-    color: colors.textDown,
+    color: c.textDown,
   },
-});
+}));

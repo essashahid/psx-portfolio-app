@@ -1,5 +1,6 @@
 import { StyleSheet, View } from "react-native";
-import { colors, palette } from "@/lib/theme";
+import { palette } from "@/lib/theme";
+import { makeStyles } from "@/lib/theme-context";
 
 /**
  * A move measured from a centre line: right for a gain, left for a loss.
@@ -18,6 +19,7 @@ export function SignedBar({
   extent: number;
   height?: number;
 }) {
+  const styles = useStyles();
   const magnitude = extent > 0 ? Math.min(1, Math.abs(value ?? 0) / extent) : 0;
   const positive = (value ?? 0) >= 0;
 
@@ -36,7 +38,7 @@ export function SignedBar({
   );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((c) => ({
   track: { position: "relative", justifyContent: "center" },
   centre: {
     position: "absolute",
@@ -44,7 +46,7 @@ const styles = StyleSheet.create({
     bottom: 0,
     left: "50%",
     width: 1,
-    backgroundColor: colors.ruleStrong,
+    backgroundColor: c.ruleStrong,
   },
   bar: { position: "absolute", top: 4, height: 6 },
-});
+}));

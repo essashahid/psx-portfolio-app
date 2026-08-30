@@ -2,6 +2,7 @@ import { StyleSheet, Text, View } from "react-native";
 import type { MarketDistribution } from "@psx/shared/api/market";
 import { formatPctSigned } from "@psx/shared/format";
 import { colors, fontFamily, fontSize, palette, space } from "@/lib/theme";
+import { makeStyles, useColors } from "@/lib/theme-context";
 
 /**
  * Where every company landed today, and where yours landed in it.
@@ -12,6 +13,8 @@ import { colors, fontFamily, fontSize, palette, space } from "@/lib/theme";
  * decision.
  */
 export function ReturnHistogram({ distribution }: { distribution: MarketDistribution }) {
+  const styles = useStyles();
+  const colors = useColors();
   const { buckets, best, worst } = distribution;
   const max = Math.max(...buckets.map((b) => b.count), 1);
 
@@ -81,13 +84,13 @@ export function ReturnHistogram({ distribution }: { distribution: MarketDistribu
   );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((c) => ({
   bars: { flexDirection: "row", alignItems: "flex-end", gap: 3, height: 118 },
   column: { flex: 1, alignItems: "center" },
   count: {
     fontFamily: fontFamily.monoSemibold,
     fontSize: 9,
-    color: colors.textMuted,
+    color: c.textMuted,
     marginBottom: 2,
   },
   bar: { width: "100%" },
@@ -96,20 +99,20 @@ const styles = StyleSheet.create({
     gap: 3,
     paddingTop: space.sm,
     borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: colors.ruleStrong,
+    borderTopColor: c.ruleStrong,
   },
-  tick: { fontFamily: fontFamily.mono, fontSize: 9, color: colors.textFaint },
+  tick: { fontFamily: fontFamily.mono, fontSize: 9, color: c.textFaint },
   marks: { flexDirection: "row", gap: 3, marginTop: space.sm, minHeight: 34 },
-  stem: { width: 1.5, height: 7, backgroundColor: colors.accentPrimary },
+  stem: { width: 1.5, height: 7, backgroundColor: c.accentPrimary },
   mine: {
     fontFamily: fontFamily.uiSemibold,
     fontSize: 8,
     lineHeight: 10,
     textAlign: "center",
-    color: colors.accentPrimary,
+    color: c.accentPrimary,
     marginTop: 2,
   },
   extremes: { flexDirection: "row", justifyContent: "space-between", marginTop: space.md },
-  weak: { fontFamily: fontFamily.monoSemibold, fontSize: fontSize.xxs, color: colors.textDown },
-  strong: { fontFamily: fontFamily.monoSemibold, fontSize: fontSize.xxs, color: colors.textUp },
-});
+  weak: { fontFamily: fontFamily.monoSemibold, fontSize: fontSize.xxs, color: c.textDown },
+  strong: { fontFamily: fontFamily.monoSemibold, fontSize: fontSize.xxs, color: c.textUp },
+}));

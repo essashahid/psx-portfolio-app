@@ -6,6 +6,7 @@ import { Sheet, SheetError } from "@/components/ui/sheet";
 import { Field, Choice } from "@/components/ui/field";
 import { Cta, Ghost } from "@/components/ui/button";
 import { space } from "@/lib/theme";
+import { makeStyles } from "@/lib/theme-context";
 
 const STATUSES = ["received", "announced", "expected", "missing"] as const;
 type Status = (typeof STATUSES)[number];
@@ -43,6 +44,7 @@ export function DividendSheet({
   onClose: () => void;
   onSaved: () => void;
 }) {
+  const styles = useStyles();
   const editing = Boolean(initial?.id);
   const [ticker, setTicker] = useState("");
   const [payDate, setPayDate] = useState(today());
@@ -232,4 +234,4 @@ export function DividendSheet({
   );
 }
 
-const styles = StyleSheet.create({ footer: { gap: space.sm } });
+const useStyles = makeStyles((c) => ({ footer: { gap: space.sm } }));

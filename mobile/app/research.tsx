@@ -19,6 +19,7 @@ import { api, ApiError } from "@/lib/api";
 import { Band, Ledger, LedgerRow } from "@/components/ui/layout";
 import { Caps, Figure, PageTitle } from "@/components/ui/text";
 import { ErrorNote } from "@/components/status";
+import { makeStyles, useColors } from "@/lib/theme-context";
 import {
   colors,
   directionColor,
@@ -37,6 +38,7 @@ const SORTS = [
 ] as const;
 
 function Row({ row }: { row: StockRow }) {
+  const styles = useStyles();
   const router = useRouter();
   return (
     <Pressable
@@ -70,6 +72,8 @@ function Row({ row }: { row: StockRow }) {
 }
 
 export default function ResearchScreen() {
+  const styles = useStyles();
+  const colors = useColors();
   const router = useRouter();
   const [query, setQuery] = useState("");
   const [sort, setSort] = useState<(typeof SORTS)[number]["key"]>("marketCap");
@@ -174,11 +178,11 @@ export default function ResearchScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: colors.surfacePage },
+const useStyles = makeStyles((c) => ({
+  screen: { flex: 1, backgroundColor: c.surfacePage },
   header: { paddingHorizontal: layout.gutter, paddingBottom: space.md },
   back: { flexDirection: "row", alignItems: "center", gap: 2, minHeight: 36, marginLeft: -4 },
-  backLabel: { fontFamily: fontFamily.uiMedium, fontSize: fontSize.sm, color: colors.textMuted },
+  backLabel: { fontFamily: fontFamily.uiMedium, fontSize: fontSize.sm, color: c.textMuted },
   title: { marginTop: space.xs },
   searchBox: {
     flexDirection: "row",
@@ -188,47 +192,47 @@ const styles = StyleSheet.create({
     marginTop: space.md,
     paddingHorizontal: space.md,
     borderWidth: 1,
-    borderColor: colors.rule,
+    borderColor: c.rule,
     borderRadius: layout.radiusSm,
-    backgroundColor: colors.surfaceRaised,
+    backgroundColor: c.surfaceRaised,
   },
-  search: { flex: 1, fontFamily: fontFamily.ui, fontSize: 16, color: colors.textStrong },
+  search: { flex: 1, fontFamily: fontFamily.ui, fontSize: 16, color: c.textStrong },
   sorts: { flexDirection: "row", alignItems: "center", gap: space.lg, marginTop: space.md },
   sortChip: { minHeight: 32, justifyContent: "center" },
-  sortLabel: { fontFamily: fontFamily.uiMedium, fontSize: fontSize.sm, color: colors.textMuted },
+  sortLabel: { fontFamily: fontFamily.uiMedium, fontSize: fontSize.sm, color: c.textMuted },
   sortLabelActive: {
     fontFamily: fontFamily.uiBold,
-    color: colors.textStrong,
+    color: c.textStrong,
     textDecorationLine: "underline",
   },
   count: { flex: 1, alignItems: "flex-end" },
-  countText: { fontSize: fontSize.xxs, color: colors.textFaint },
+  countText: { fontSize: fontSize.xxs, color: c.textFaint },
   list: { paddingTop: space.sm },
   columnHead: {
     flexDirection: "row",
     paddingBottom: space.sm,
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: colors.rule,
+    borderBottomColor: c.rule,
   },
   colName: { flex: 1 },
   colPrice: { width: 74, textAlign: "right" },
   colVal: { width: 78, textAlign: "right" },
   dot: { width: 8, height: 8 },
   name: { flex: 1, marginLeft: space.sm + 1, gap: 1 },
-  ticker: { fontFamily: fontFamily.uiSemibold, fontSize: fontSize.sm, color: colors.textStrong },
-  company: { fontFamily: fontFamily.ui, fontSize: fontSize.xxs, color: colors.textFaint },
+  ticker: { fontFamily: fontFamily.uiSemibold, fontSize: fontSize.sm, color: c.textStrong },
+  company: { fontFamily: fontFamily.ui, fontSize: fontSize.xxs, color: c.textFaint },
   numbers: { width: 74, alignItems: "flex-end", gap: 1 },
-  price: { fontSize: fontSize.sm, color: colors.textStrong },
+  price: { fontSize: fontSize.sm, color: c.textStrong },
   change: { fontSize: fontSize.xxs },
   valuation: { width: 78, alignItems: "flex-end", gap: 1 },
-  pe: { fontSize: fontSize.sm, color: colors.textBody },
-  cap: { fontSize: fontSize.xxs, color: colors.textFaint },
+  pe: { fontSize: fontSize.sm, color: c.textBody },
+  cap: { fontSize: fontSize.xxs, color: c.textFaint },
   spinner: { marginTop: space.xl },
   empty: {
     marginTop: space.lg,
     fontFamily: fontFamily.ui,
     fontSize: fontSize.sm,
-    color: colors.textMuted,
+    color: c.textMuted,
     lineHeight: 20,
   },
-});
+}));

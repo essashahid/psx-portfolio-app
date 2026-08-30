@@ -10,6 +10,7 @@ import {
 import * as Haptics from "expo-haptics";
 import { Caps } from "@/components/ui/text";
 import { colors, fontFamily, fontSize, layout, letterSpacing, space, tracking } from "@/lib/theme";
+import { makeStyles, useColors } from "@/lib/theme-context";
 
 /**
  * The form primitives. Every input in the app comes from here so a label, a
@@ -22,6 +23,8 @@ import { colors, fontFamily, fontSize, layout, letterSpacing, space, tracking } 
 
 export const Field = forwardRef<TextInput, TextInputProps & { label: string; error?: string | null; hint?: string }>(
   function Field({ label, error, hint, style, ...rest }, ref) {
+  const styles = useStyles();
+  const colors = useColors();
     return (
       <View style={styles.field}>
         <Caps>{label}</Caps>
@@ -58,6 +61,7 @@ export function Choice<T extends string>({
   /** Renders a readable name for an option whose stored value is a code. */
   labelFor?: (option: T) => string;
 }) {
+  const styles = useStyles();
   return (
     <View style={styles.field}>
       <Caps>{label}</Caps>
@@ -84,7 +88,7 @@ export function Choice<T extends string>({
   );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((c) => ({
   toggleRow: {
     flexDirection: "row",
     alignItems: "center",
@@ -93,61 +97,61 @@ const styles = StyleSheet.create({
     minHeight: layout.hitMin,
     paddingVertical: space.sm,
   },
-  togglePressed: { backgroundColor: colors.surfaceSunken },
+  togglePressed: { backgroundColor: c.surfaceSunken },
   toggleText: { flex: 1, gap: 2 },
-  toggleLabel: { fontFamily: fontFamily.ui, fontSize: fontSize.body, color: colors.textStrong },
-  toggleDim: { color: colors.textFaint },
-  toggleHint: { fontFamily: fontFamily.ui, fontSize: fontSize.xxs, lineHeight: 17, color: colors.textFaint },
+  toggleLabel: { fontFamily: fontFamily.ui, fontSize: fontSize.body, color: c.textStrong },
+  toggleDim: { color: c.textFaint },
+  toggleHint: { fontFamily: fontFamily.ui, fontSize: fontSize.xxs, lineHeight: 17, color: c.textFaint },
   track: {
     width: 46,
     height: 28,
     borderRadius: layout.radiusPill,
-    backgroundColor: colors.surfaceInset,
+    backgroundColor: c.surfaceInset,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: colors.rule,
+    borderColor: c.rule,
     padding: 3,
     justifyContent: "center",
   },
-  trackOn: { backgroundColor: colors.ink, borderColor: colors.ink },
-  knob: { width: 20, height: 20, borderRadius: layout.radiusPill, backgroundColor: colors.surfaceRaised },
+  trackOn: { backgroundColor: c.ink, borderColor: c.ink },
+  knob: { width: 20, height: 20, borderRadius: layout.radiusPill, backgroundColor: c.surfaceRaised },
   knobOn: { alignSelf: "flex-end" },
 
   field: { gap: space.sm - 2 },
   input: {
     minHeight: layout.hitMin,
     borderWidth: 1,
-    borderColor: colors.rule,
+    borderColor: c.rule,
     borderRadius: layout.radiusSm,
-    backgroundColor: colors.surfaceRaised,
+    backgroundColor: c.surfaceRaised,
     paddingHorizontal: space.md,
     // 16px stops iOS zooming the viewport on focus.
     fontSize: 16,
     fontFamily: fontFamily.ui,
-    color: colors.textStrong,
+    color: c.textStrong,
   },
-  inputError: { borderColor: colors.statusDanger },
-  error: { fontFamily: fontFamily.ui, fontSize: fontSize.xxs, color: colors.textDown },
-  hint: { fontFamily: fontFamily.ui, fontSize: fontSize.xxs, color: colors.textFaint },
+  inputError: { borderColor: c.statusDanger },
+  error: { fontFamily: fontFamily.ui, fontSize: fontSize.xxs, color: c.textDown },
+  hint: { fontFamily: fontFamily.ui, fontSize: fontSize.xxs, color: c.textFaint },
   choices: { flexDirection: "row", flexWrap: "wrap", gap: space.sm },
   choice: {
     minHeight: 38,
     justifyContent: "center",
     paddingHorizontal: space.lg,
     borderWidth: 1,
-    borderColor: colors.ruleStrong,
+    borderColor: c.ruleStrong,
     borderRadius: layout.radiusPill,
   },
   // Selection inverts rather than tinting: a tint would compete with the
   // directional colours, which have to stay unambiguous.
-  choiceOn: { backgroundColor: colors.ink, borderColor: colors.ink },
+  choiceOn: { backgroundColor: c.ink, borderColor: c.ink },
   choiceLabel: {
     fontFamily: fontFamily.uiMedium,
     fontSize: fontSize.sm,
     letterSpacing: letterSpacing(fontSize.sm, tracking.ui),
-    color: colors.textMuted,
+    color: c.textMuted,
   },
-  choiceLabelOn: { color: colors.textOnDark },
-});
+  choiceLabelOn: { color: c.textOnDark },
+}));
 
 /**
  * A setting that is on or off.
@@ -169,6 +173,7 @@ export function Toggle({
   onChange: (next: boolean) => void;
   disabled?: boolean;
 }) {
+  const styles = useStyles();
   return (
     <Pressable
       onPress={() => {

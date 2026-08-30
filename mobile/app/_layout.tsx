@@ -25,9 +25,11 @@ import { PersistQueryClientProvider } from "@tanstack/react-query-persist-client
 import { enableFreeze } from "react-native-screens";
 import { AuthProvider, useAuth } from "@/lib/auth";
 import { persister, queryClient } from "@/lib/query";
+import { ThemeProvider, useTheme } from "@/lib/theme-context";
 import { prefetch } from "@/lib/use-api";
 import { Splash } from "@/components/ui/splash";
 import { colors } from "@/lib/theme";
+import { useColors } from "@/lib/theme-context";
 
 // Hold the native splash rather than letting it drop at the first render. It
 // used to hand over before the fonts were in memory, so the animated splash
@@ -71,6 +73,7 @@ function Launch({ ready, children }: { ready: boolean; children: React.ReactNode
 }
 
 function RootNavigator() {
+  const colors = useColors();
   const { session } = useAuth();
 
   return (
@@ -102,6 +105,12 @@ function RootNavigator() {
       </Stack.Protected>
     </Stack>
   );
+}
+
+/** Dark text on the light field, light text on the dark one. */
+function ThemedStatusBar() {
+  const { scheme } = useTheme();
+  return <StatusBar style={scheme === "dark" ? "light" : "dark"} />;
 }
 
 function Shell() {
@@ -148,14 +157,16 @@ export default function RootLayout() {
         {/* Restores the last session's responses from disk before the first
             screen mounts, so a cold start opens on the portfolio rather than
             on a skeleton while the first request crosses two oceans. */}
-        <PersistQueryClientProvider client={queryClient} persistOptions={{ persister }}>
+        <ThemeProvider>
+          <PersistQueryClientProvider client={queryClient} persistOptions={{ persister }}>
           <SafeAreaProvider>
             <AuthProvider>
-              <StatusBar style="light" />
+              <ThemedStatusBar />
               <Shell />
             </AuthProvider>
           </SafeAreaProvider>
-        </PersistQueryClientProvider>
+          </PersistQueryClientProvider>
+        </ThemeProvider>
       </KeyboardProvider>
     </GestureHandlerRootView>
   );

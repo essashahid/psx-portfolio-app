@@ -10,6 +10,7 @@ import { ErrorNote } from "@/components/status";
 import { Rise, Tick } from "@/components/ui/motion";
 import { ReturnHistogram } from "@/components/charts/return-histogram";
 import { ScreenSkeleton } from "@/components/skeleton";
+import { makeStyles, useColors } from "@/lib/theme-context";
 import {
   colors,
   directionColor,
@@ -23,6 +24,7 @@ import {
 } from "@/lib/theme";
 
 function Mover({ row }: { row: MarketMover }) {
+  const styles = useStyles();
   return (
     <LedgerRow>
       <View style={[styles.dot, { backgroundColor: row.color }]} />
@@ -50,6 +52,7 @@ function Mover({ row }: { row: MarketMover }) {
 }
 
 function MoverBlock({ title, rows }: { title: string; rows: MarketMover[] }) {
+  const styles = useStyles();
   if (rows.length === 0) return null;
   return (
     <Band>
@@ -66,6 +69,8 @@ function MoverBlock({ title, rows }: { title: string; rows: MarketMover[] }) {
 }
 
 export default function MarketScreen() {
+  const styles = useStyles();
+  const colors = useColors();
   const { data, error, loading, refreshing, refresh } = useApi<MarketResponse>(
     "/api/market/dashboard",
     "Could not load the market."
@@ -195,8 +200,8 @@ export default function MarketScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: colors.surfacePage },
+const useStyles = makeStyles((c) => ({
+  screen: { flex: 1, backgroundColor: c.surfacePage },
   gutter: { paddingHorizontal: layout.gutter },
   header: { paddingHorizontal: layout.gutter, paddingBottom: space.lg },
   indexRow: { flexDirection: "row", alignItems: "flex-end", justifyContent: "space-between", marginTop: space.lg },
@@ -207,7 +212,7 @@ const styles = StyleSheet.create({
     fontSize: 36,
     lineHeight: 38,
     letterSpacing: letterSpacing(36, tracking.editorial),
-    color: colors.textStrong,
+    color: c.textStrong,
   },
   indexRight: { alignItems: "flex-end", paddingBottom: 4 },
   indexChange: { fontFamily: fontFamily.monoSemibold, fontSize: fontSize.h2 },
@@ -216,8 +221,8 @@ const styles = StyleSheet.create({
   breadthTrack: { flexDirection: "row", height: 9, gap: 1 },
   breadthSeg: { height: 9 },
   breadthLabels: { flexDirection: "row", justifyContent: "space-between", marginTop: 7 },
-  breadthLabel: { fontSize: fontSize.xxs, color: colors.textFaint },
-  turnover: { marginTop: space.sm, fontSize: fontSize.xxs, color: colors.textFaint },
+  breadthLabel: { fontSize: fontSize.xxs, color: c.textFaint },
+  turnover: { marginTop: space.sm, fontSize: fontSize.xxs, color: c.textFaint },
   blockHead: { marginBottom: space.md + 2 },
   histogramHead: {
     flexDirection: "row",
@@ -225,32 +230,32 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     marginBottom: space.md + 2,
   },
-  histogramCount: { fontSize: fontSize.xxs, color: colors.textFaint },
-  histogramNote: { marginTop: space.md, fontSize: fontSize.xxs, color: colors.textFaint },
+  histogramCount: { fontSize: fontSize.xxs, color: c.textFaint },
+  histogramNote: { marginTop: space.md, fontSize: fontSize.xxs, color: c.textFaint },
   dot: { width: 8, height: 8 },
   sectorName: { flexDirection: "row", alignItems: "center", gap: 7, width: 88 },
-  sectorLabel: { flex: 1, fontFamily: fontFamily.ui, fontSize: fontSize.xxs, color: colors.textBody },
+  sectorLabel: { flex: 1, fontFamily: fontFamily.ui, fontSize: fontSize.xxs, color: c.textBody },
   sectorBar: { flex: 1, marginHorizontal: space.sm },
   sectorPct: { minWidth: 56, textAlign: "right", fontFamily: fontFamily.monoSemibold, fontSize: fontSize.sm },
   moverName: { flex: 1, marginLeft: space.sm + 1, gap: 1 },
   moverTop: { flexDirection: "row", alignItems: "center", gap: space.sm },
-  ticker: { fontFamily: fontFamily.uiSemibold, fontSize: fontSize.sm, color: colors.textStrong },
+  ticker: { fontFamily: fontFamily.uiSemibold, fontSize: fontSize.sm, color: c.textStrong },
   held: {
     fontFamily: fontFamily.uiBold,
     fontSize: 9,
     letterSpacing: letterSpacing(9, tracking.caps),
     textTransform: "uppercase",
-    color: colors.textBrand,
+    color: c.textBrand,
   },
-  company: { fontFamily: fontFamily.ui, fontSize: fontSize.xxs, color: colors.textFaint },
-  price: { fontSize: fontSize.sm, color: colors.textMuted, minWidth: 62, textAlign: "right" },
+  company: { fontFamily: fontFamily.ui, fontSize: fontSize.xxs, color: c.textFaint },
+  price: { fontSize: fontSize.sm, color: c.textMuted, minWidth: 62, textAlign: "right" },
   moverPct: {
     minWidth: 62,
     textAlign: "right",
     fontFamily: fontFamily.monoSemibold,
     fontSize: fontSize.sm,
   },
-  empty: { marginTop: space.lg, fontFamily: fontFamily.ui, fontSize: fontSize.sm, color: colors.textMuted, lineHeight: 20 },
+  empty: { marginTop: space.lg, fontFamily: fontFamily.ui, fontSize: fontSize.sm, color: c.textMuted, lineHeight: 20 },
   footer: { paddingTop: 0 },
-  updated: { fontSize: fontSize.xxs, color: colors.textFaint },
-});
+  updated: { fontSize: fontSize.xxs, color: c.textFaint },
+}));

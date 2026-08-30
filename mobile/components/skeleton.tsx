@@ -1,7 +1,8 @@
 import { StyleSheet, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Shimmer } from "@/components/ui/motion";
-import { colors, layout, space } from "@/lib/theme";
+import { layout, space } from "@/lib/theme";
+import { makeStyles } from "@/lib/theme-context";
 
 /**
  * Waiting states in the shape of the screen they stand in for, so nothing
@@ -11,6 +12,7 @@ import { colors, layout, space } from "@/lib/theme";
 
 /** The dark header block every portfolio screen opens with. */
 function HeaderSkeleton({ dark = true, metrics = 4 }: { dark?: boolean; metrics?: number }) {
+  const styles = useStyles();
   return (
     <View style={[styles.header, dark ? styles.headerDark : styles.headerLight]}>
       <Shimmer width={110} height={11} style={dark ? styles.onDark : undefined} />
@@ -30,6 +32,7 @@ function HeaderSkeleton({ dark = true, metrics = 4 }: { dark?: boolean; metrics?
 
 /** A stack of ledger rows: a label, a sub-line and a figure on the right. */
 function RowsSkeleton({ rows = 6 }: { rows?: number }) {
+  const styles = useStyles();
   return (
     <View style={styles.body}>
       <Shimmer width={120} height={11} />
@@ -57,6 +60,7 @@ export function ScreenSkeleton({
   metrics?: number;
   rows?: number;
 }) {
+  const styles = useStyles();
   return (
     <View style={styles.screen} accessibilityLabel="Loading" accessibilityRole="progressbar">
       <SafeAreaView edges={["top"]} style={dark ? styles.safeDark : styles.safeLight}>
@@ -69,6 +73,7 @@ export function ScreenSkeleton({
 
 /** Screens that open on a light field with a back control rather than a band. */
 export function PageSkeleton({ rows = 6 }: { rows?: number }) {
+  const styles = useStyles();
   return (
     <SafeAreaView edges={["top"]} style={styles.screen} accessibilityLabel="Loading" accessibilityRole="progressbar">
       <View style={styles.pageHead}>
@@ -82,13 +87,13 @@ export function PageSkeleton({ rows = 6 }: { rows?: number }) {
   );
 }
 
-const styles = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: colors.surfacePage },
-  safeDark: { backgroundColor: colors.ink },
-  safeLight: { backgroundColor: colors.surfacePage },
+const useStyles = makeStyles((c) => ({
+  screen: { flex: 1, backgroundColor: c.surfacePage },
+  safeDark: { backgroundColor: c.ink },
+  safeLight: { backgroundColor: c.surfacePage },
   header: { paddingHorizontal: layout.gutter, paddingTop: space.lg, paddingBottom: space.xl },
-  headerDark: { backgroundColor: colors.ink },
-  headerLight: { backgroundColor: colors.surfacePage },
+  headerDark: { backgroundColor: c.ink },
+  headerLight: { backgroundColor: c.surfacePage },
   // On the dark band the inset surface is invisible, so the placeholder is a
   // light wash instead.
   onDark: { backgroundColor: "rgba(255,255,255,0.09)" },
@@ -103,11 +108,11 @@ const styles = StyleSheet.create({
     paddingVertical: space.md,
     minHeight: layout.hitMin,
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: colors.rule,
+    borderBottomColor: c.rule,
   },
   rowLeft: { flex: 1, paddingRight: space.lg },
   gapSm: { marginTop: space.xs },
   gapMd: { marginTop: space.sm },
   gapLg: { marginTop: space.md },
   gapXl: { marginTop: space.xl },
-});
+}));

@@ -10,6 +10,7 @@ import {
 import { Sheet } from "@/components/ui/sheet";
 import { colors, fontFamily, fontSize, layout, space } from "@/lib/theme";
 import { Pressable } from "react-native";
+import { makeStyles, useColors } from "@/lib/theme-context";
 
 /**
  * Choosing which model answers.
@@ -27,6 +28,8 @@ export function ModelChip({
   label: string;
   onPress: () => void;
 }) {
+  const styles = useStyles();
+  const colors = useColors();
   return (
     <Pressable
       onPress={() => {
@@ -57,6 +60,8 @@ export function ModelPicker({
   onClose: () => void;
   onChange: (next: ChatModelId) => void;
 }) {
+  const styles = useStyles();
+  const colors = useColors();
   return (
     <Sheet open={open} title="Which model answers" onClose={onClose}>
       {groupedModels().map((group) => (
@@ -99,7 +104,7 @@ export function ModelPicker({
   );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((c) => ({
   chip: {
     flexDirection: "row",
     alignItems: "center",
@@ -108,17 +113,17 @@ const styles = StyleSheet.create({
     paddingVertical: 4,
     borderRadius: layout.radiusPill,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: colors.rule,
+    borderColor: c.rule,
   },
-  chipPressed: { backgroundColor: colors.surfaceSunken },
-  chipLabel: { fontFamily: fontFamily.uiMedium, fontSize: fontSize.xxs, color: colors.textMuted },
+  chipPressed: { backgroundColor: c.surfaceSunken },
+  chipLabel: { fontFamily: fontFamily.uiMedium, fontSize: fontSize.xxs, color: c.textMuted },
   group: { gap: space.xs },
   groupHead: {
     fontFamily: fontFamily.uiBold,
     fontSize: fontSize.xxxs,
     textTransform: "uppercase",
     letterSpacing: 0.8,
-    color: colors.textFaint,
+    color: c.textFaint,
     marginBottom: space.xs,
   },
   row: {
@@ -128,9 +133,9 @@ const styles = StyleSheet.create({
     minHeight: layout.hitMin,
     paddingVertical: space.sm,
   },
-  rowPressed: { backgroundColor: colors.surfaceSunken },
+  rowPressed: { backgroundColor: c.surfaceSunken },
   rowText: { flex: 1, gap: 1 },
-  label: { fontFamily: fontFamily.uiMedium, fontSize: fontSize.body, color: colors.textStrong },
-  dim: { color: colors.textFaint },
-  hint: { fontFamily: fontFamily.ui, fontSize: fontSize.xxs, lineHeight: 17, color: colors.textFaint },
-});
+  label: { fontFamily: fontFamily.uiMedium, fontSize: fontSize.body, color: c.textStrong },
+  dim: { color: c.textFaint },
+  hint: { fontFamily: fontFamily.ui, fontSize: fontSize.xxs, lineHeight: 17, color: c.textFaint },
+}));

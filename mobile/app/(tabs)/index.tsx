@@ -20,6 +20,7 @@ import { ErrorNote } from "@/components/status";
 import { ScreenSkeleton } from "@/components/skeleton";
 import { CountUp, LivePulse, Rise } from "@/components/ui/motion";
 import { useMarketOpen } from "@/lib/use-market-open";
+import { makeStyles, useColors } from "@/lib/theme-context";
 import {
   colors,
   directionColor,
@@ -33,6 +34,7 @@ import {
 } from "@/lib/theme";
 
 function HeaderMetric({ label, value, detail, tone }: { label: string; value: string; detail: string; tone?: string }) {
+  const styles = useStyles();
   return (
     <View style={styles.metricCell}>
       <Caps onDark>{label}</Caps>
@@ -43,6 +45,7 @@ function HeaderMetric({ label, value, detail, tone }: { label: string; value: st
 }
 
 function Contributor({ row }: { row: HomeContributor }) {
+  const styles = useStyles();
   return (
     <LedgerRow>
       <View style={[styles.dot, { backgroundColor: row.color }]} />
@@ -63,6 +66,8 @@ function Contributor({ row }: { row: HomeContributor }) {
 }
 
 export default function HomeScreen() {
+  const styles = useStyles();
+  const colors = useColors();
   const router = useRouter();
   const marketOpen = useMarketOpen();
   const { data, error, loading, refreshing, refresh } = useApi<HomeResponse>(
@@ -218,11 +223,11 @@ export default function HomeScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: colors.surfacePage },
+const useStyles = makeStyles((c) => ({
+  screen: { flex: 1, backgroundColor: c.surfacePage },
   scroll: { paddingBottom: space.xl },
   gutter: { paddingHorizontal: layout.gutter },
-  header: { backgroundColor: colors.ink, paddingHorizontal: layout.gutter, paddingBottom: space.xs },
+  header: { backgroundColor: c.ink, paddingHorizontal: layout.gutter, paddingBottom: space.xs },
   headerBar: {
     flexDirection: "row",
     alignItems: "center",
@@ -234,23 +239,23 @@ const styles = StyleSheet.create({
   valueUnit: {
     fontFamily: fontFamily.display,
     fontSize: 17,
-    color: colors.textOnDarkMuted,
+    color: c.textOnDarkMuted,
   },
   valueFigure: {
     fontFamily: fontFamily.monoSemibold,
     fontSize: 38,
     letterSpacing: letterSpacing(38, tracking.editorial),
-    color: colors.textOnDark,
+    color: c.textOnDark,
   },
   today: {
     marginTop: space.md,
     fontFamily: fontFamily.ui,
     fontSize: fontSize.body,
-    color: colors.textOnDarkMuted,
+    color: c.textOnDarkMuted,
   },
   todayFigure: { fontFamily: fontFamily.monoSemibold, fontSize: fontSize.body },
   asOfRow: { flexDirection: "row", alignItems: "center", gap: space.sm, marginTop: space.md + 2 },
-  asOf: { fontSize: fontSize.xxs, color: colors.textOnDarkFaint },
+  asOf: { fontSize: fontSize.xxs, color: c.textOnDarkFaint },
   chartBlock: { marginTop: space.xl - 2 },
   chartHead: {
     flexDirection: "row",
@@ -260,19 +265,19 @@ const styles = StyleSheet.create({
   },
   chartPct: { fontSize: fontSize.xxs },
   chartFoot: { flexDirection: "row", justifyContent: "space-between", marginTop: 5 },
-  chartFootText: { fontSize: fontSize.xxs, color: colors.textOnDarkFaint },
+  chartFootText: { fontSize: fontSize.xxs, color: c.textOnDarkFaint },
   metricGrid: {
     flexDirection: "row",
     flexWrap: "wrap",
     marginTop: space.xl - 2,
     marginHorizontal: -layout.gutter,
-    backgroundColor: colors.ruleOnDark,
+    backgroundColor: c.ruleOnDark,
     gap: StyleSheet.hairlineWidth,
   },
   metricCell: {
     flexBasis: "48%",
     flexGrow: 1,
-    backgroundColor: colors.ink,
+    backgroundColor: c.ink,
     paddingVertical: space.md + 2,
     paddingHorizontal: layout.gutter,
     gap: 3,
@@ -280,12 +285,12 @@ const styles = StyleSheet.create({
   metricValue: {
     fontFamily: fontFamily.monoSemibold,
     fontSize: fontSize.h2,
-    color: colors.textOnDark,
+    color: c.textOnDark,
   },
   metricDetail: {
     fontFamily: fontFamily.ui,
     fontSize: fontSize.xxs,
-    color: colors.textOnDarkFaint,
+    color: c.textOnDarkFaint,
   },
   bandTight: { paddingBottom: 0 },
   bandHead: {
@@ -294,11 +299,11 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     marginBottom: space.md,
   },
-  bandNote: { fontSize: fontSize.xxs, color: colors.textFaint },
-  link: { fontFamily: fontFamily.uiMedium, fontSize: fontSize.xxs, color: colors.textBrand },
+  bandNote: { fontSize: fontSize.xxs, color: c.textFaint },
+  link: { fontFamily: fontFamily.uiMedium, fontSize: fontSize.xxs, color: c.textBrand },
   chip: { width: 8, height: 8, marginRight: space.md - 1 },
-  sectorName: { flex: 1, fontFamily: fontFamily.ui, fontSize: fontSize.sm, color: colors.textStrong },
-  sectorValue: { fontSize: fontSize.sm, color: colors.textMuted, marginRight: space.md },
+  sectorName: { flex: 1, fontFamily: fontFamily.ui, fontSize: fontSize.sm, color: c.textStrong },
+  sectorValue: { fontSize: fontSize.sm, color: c.textMuted, marginRight: space.md },
   sectorWeight: {
     minWidth: 52,
     textAlign: "right",
@@ -307,8 +312,8 @@ const styles = StyleSheet.create({
   },
   dot: { width: 8, height: 8, marginRight: space.sm + 1 },
   contributorName: { flex: 1, gap: 1 },
-  ticker: { fontFamily: fontFamily.uiSemibold, fontSize: fontSize.sm, color: colors.textStrong },
-  company: { fontFamily: fontFamily.ui, fontSize: fontSize.xxs, color: colors.textFaint },
+  ticker: { fontFamily: fontFamily.uiSemibold, fontSize: fontSize.sm, color: c.textStrong },
+  company: { fontFamily: fontFamily.ui, fontSize: fontSize.xxs, color: c.textFaint },
   contributorPnl: {
     minWidth: 74,
     textAlign: "right",
@@ -317,4 +322,4 @@ const styles = StyleSheet.create({
   },
   contributorPct: { minWidth: 62, textAlign: "right", fontSize: fontSize.sm },
   disclaimer: { marginTop: space.lg },
-});
+}));

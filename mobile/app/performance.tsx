@@ -12,6 +12,7 @@ import { Band, Ledger, LedgerRow } from "@/components/ui/layout";
 import { Caps, Figure, PageTitle } from "@/components/ui/text";
 import { ErrorNote } from "@/components/status";
 import { PageSkeleton } from "@/components/skeleton";
+import { makeStyles, useColors } from "@/lib/theme-context";
 import {
   colors,
   directionColor,
@@ -24,6 +25,7 @@ import {
 } from "@/lib/theme";
 
 function Stat({ label, value, detail, tone }: { label: string; value: string; detail?: string; tone?: string }) {
+  const styles = useStyles();
   return (
     <View style={styles.stat}>
       <Caps>{label}</Caps>
@@ -34,6 +36,8 @@ function Stat({ label, value, detail, tone }: { label: string; value: string; de
 }
 
 export default function PerformanceScreen() {
+  const styles = useStyles();
+  const colors = useColors();
   const router = useRouter();
   const { data, error, loading, refreshing, refresh } = useApi<PerformanceResponse>(
     "/api/portfolio/performance",
@@ -218,11 +222,11 @@ export default function PerformanceScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: colors.surfacePage },
+const useStyles = makeStyles((c) => ({
+  screen: { flex: 1, backgroundColor: c.surfacePage },
   header: { paddingHorizontal: layout.gutter, paddingBottom: space.sm },
   back: { flexDirection: "row", alignItems: "center", gap: 2, minHeight: 36, marginLeft: -4 },
-  backLabel: { fontFamily: fontFamily.uiMedium, fontSize: fontSize.sm, color: colors.textMuted },
+  backLabel: { fontFamily: fontFamily.uiMedium, fontSize: fontSize.sm, color: c.textMuted },
   title: { marginTop: space.xs },
   headLabel: { marginTop: space.xl },
   headValue: {
@@ -230,9 +234,9 @@ const styles = StyleSheet.create({
     fontFamily: fontFamily.monoSemibold,
     fontSize: 38,
     letterSpacing: letterSpacing(38, tracking.editorial),
-    color: colors.textStrong,
+    color: c.textStrong,
   },
-  headDetail: { marginTop: space.xs, fontFamily: fontFamily.ui, fontSize: fontSize.sm, color: colors.textMuted, lineHeight: 19 },
+  headDetail: { marginTop: space.xs, fontFamily: fontFamily.ui, fontSize: fontSize.sm, color: c.textMuted, lineHeight: 19 },
   chartBand: { paddingBottom: 0 },
   blockHead: {
     flexDirection: "row",
@@ -240,8 +244,8 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     marginBottom: space.md,
   },
-  benchmarkNote: { marginTop: space.md, fontSize: fontSize.xxs, lineHeight: 17, color: colors.textFaint },
-  note: { fontSize: fontSize.xxs, color: colors.textFaint },
+  benchmarkNote: { marginTop: space.md, fontSize: fontSize.xxs, lineHeight: 17, color: c.textFaint },
+  note: { fontSize: fontSize.xxs, color: c.textFaint },
   statGrid: { flexDirection: "row", flexWrap: "wrap" },
   stat: {
     flexBasis: "50%",
@@ -249,17 +253,17 @@ const styles = StyleSheet.create({
     paddingRight: space.md,
     gap: 2,
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: colors.rule,
+    borderBottomColor: c.rule,
   },
-  statValue: { fontFamily: fontFamily.monoSemibold, fontSize: fontSize.h2, color: colors.textStrong },
-  statDetail: { fontFamily: fontFamily.ui, fontSize: fontSize.xxs, color: colors.textFaint },
+  statValue: { fontFamily: fontFamily.monoSemibold, fontSize: fontSize.h2, color: c.textStrong },
+  statDetail: { fontFamily: fontFamily.ui, fontSize: fontSize.xxs, color: c.textFaint },
   block: { marginTop: space.xl },
   totalRow: { borderBottomWidth: 0 },
-  rowLabel: { flex: 1, fontFamily: fontFamily.ui, fontSize: fontSize.sm, color: colors.textBody },
-  rowLabelStrong: { fontFamily: fontFamily.uiSemibold, color: colors.textStrong },
-  rowValue: { fontFamily: fontFamily.mono, fontSize: fontSize.sm, color: colors.textBody },
-  rowValueStrong: { fontFamily: fontFamily.monoSemibold, color: colors.textStrong },
+  rowLabel: { flex: 1, fontFamily: fontFamily.ui, fontSize: fontSize.sm, color: c.textBody },
+  rowLabelStrong: { fontFamily: fontFamily.uiSemibold, color: c.textStrong },
+  rowValue: { fontFamily: fontFamily.mono, fontSize: fontSize.sm, color: c.textBody },
+  rowValueStrong: { fontFamily: fontFamily.monoSemibold, color: c.textStrong },
   dot: { width: 8, height: 8, marginRight: space.sm + 1 },
-  source: { marginTop: space.xl, fontFamily: fontFamily.ui, fontSize: fontSize.xxs, color: colors.textFaint, lineHeight: 17 },
-  empty: { fontFamily: fontFamily.ui, fontSize: fontSize.sm, color: colors.textMuted, lineHeight: 20 },
-});
+  source: { marginTop: space.xl, fontFamily: fontFamily.ui, fontSize: fontSize.xxs, color: c.textFaint, lineHeight: 17 },
+  empty: { fontFamily: fontFamily.ui, fontSize: fontSize.sm, color: c.textMuted, lineHeight: 20 },
+}));

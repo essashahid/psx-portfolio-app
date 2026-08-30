@@ -3,7 +3,8 @@ import { StyleSheet, Text, View } from "react-native";
 import Animated, { useAnimatedStyle, useSharedValue } from "react-native-reanimated";
 import { ease, useMotion } from "@/lib/motion";
 import { APP_NAME, DISCLAIMER_SHORT } from "@/lib/brand";
-import { colors, fontFamily, fontSize, layout, letterSpacing, palette, space, tracking } from "@/lib/theme";
+import { fontFamily, fontSize, layout, letterSpacing, palette, space, tracking } from "@/lib/theme";
+import { makeStyles } from "@/lib/theme-context";
 
 /** The plumb line's full drop, in the 64pt box the mark is drawn in. */
 const LINE_LENGTH = 56;
@@ -26,6 +27,7 @@ const STROKE = 3.55;
  * views are handled natively, so the same sequence costs nothing.
  */
 export function Splash({ onDone }: { onDone?: () => void }) {
+  const styles = useStyles();
   const { reduced } = useMotion();
   const aperture = useSharedValue(0);
   const line = useSharedValue(0);
@@ -88,8 +90,8 @@ export function Splash({ onDone }: { onDone?: () => void }) {
   );
 }
 
-const styles = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: colors.ink, justifyContent: "center", alignItems: "center" },
+const useStyles = makeStyles((c) => ({
+  screen: { flex: 1, backgroundColor: c.ink, justifyContent: "center", alignItems: "center" },
   centre: { alignItems: "center", gap: space.lg },
   mark: { width: 64, height: 64 },
   square: {
@@ -99,7 +101,7 @@ const styles = StyleSheet.create({
     width: 36,
     height: 36,
     borderWidth: STROKE,
-    borderColor: colors.textOnDark,
+    borderColor: c.textOnDark,
   },
   line: {
     position: "absolute",
@@ -124,7 +126,7 @@ const styles = StyleSheet.create({
     fontFamily: fontFamily.display,
     fontSize: fontSize.h1,
     letterSpacing: letterSpacing(fontSize.h1, tracking.editorial),
-    color: colors.textOnDark,
+    color: c.textOnDark,
     marginTop: space.md,
   },
   foot: { position: "absolute", bottom: space.xxl, paddingHorizontal: layout.gutter },
@@ -133,6 +135,6 @@ const styles = StyleSheet.create({
     fontSize: fontSize.xxs,
     lineHeight: 16,
     textAlign: "center",
-    color: colors.textOnDarkFaint,
+    color: c.textOnDarkFaint,
   },
-});
+}));
