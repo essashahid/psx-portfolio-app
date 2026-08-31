@@ -122,7 +122,7 @@ export function TopNav({
       <div className="flex items-center gap-8 px-(--gutter-page) py-3.5">
         <Link href="/dashboard" className="flex shrink-0 items-center gap-2.5" aria-label="PortfolioOS home">
           <PlumbMark size={19} className="block shrink-0 text-text-strong" />
-          <span className="font-display text-[15px] tracking-editorial text-text-strong">Plumb</span>
+          <span className="font-display text-[15px] tracking-editorial text-text-strong">PortfolioOS PK</span>
         </Link>
 
         <nav className="flex min-w-0 flex-1 flex-wrap items-center gap-x-6 gap-y-2">

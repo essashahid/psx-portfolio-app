@@ -270,7 +270,7 @@ export function OnboardingBrand() {
   return (
     <div className="mb-8 flex items-center gap-2.5">
       <PlumbMark size={24} className="text-text-strong" />
-      <span className="text-[15px] font-semibold tracking-tight">Plumb</span>
+      <span className="text-[15px] font-semibold tracking-tight">PortfolioOS PK</span>
     </div>
   );
 }

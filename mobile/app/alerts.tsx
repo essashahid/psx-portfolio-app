@@ -90,7 +90,7 @@ export default function AlertsScreen() {
         {/* An empty screen is only reassuring if you know what would have
             fired. This is the actual rule set, not a description of it. */}
         <Band style={styles.watchBand}>
-          <Caps style={styles.watchHead}>What Plumb is watching</Caps>
+          <Caps style={styles.watchHead}>What PortfolioOS PK is watching</Caps>
           {ALERT_KINDS.map((entry) => (
             <View key={entry.kind} style={styles.watchRow}>
               <View style={styles.watchDot} />

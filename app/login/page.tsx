@@ -92,7 +92,7 @@ export default function LoginPage() {
           <svg width="34" height="34" viewBox="0 0 64 64" aria-hidden className="block shrink-0">
             <rect x="10" y="10" width="44" height="44" fill="#fff" />
           </svg>
-          <span className="font-display text-[22px] tracking-editorial">Plumb</span>
+          <span className="font-display text-[22px] tracking-editorial">PortfolioOS PK</span>
         </div>
 
         <div className="relative z-10 mt-16 lg:mt-20">

@@ -1,5 +1,5 @@
 /**
- * The Plumb mark: an aperture with a plumb line dropping through it.
+ * The app mark: an aperture with a plumb line dropping through it.
  *
  * Stroke thickens as the mark shrinks, and the bob is dropped at and below
  * 16px where it would close the line into a blob. That is why this takes a
@@ -51,7 +51,7 @@ export function PlumbMark({
       height={size}
       viewBox="0 0 64 64"
       role="img"
-      aria-label="Plumb"
+      aria-label="PortfolioOS PK"
       className={className}
     >
       <rect
