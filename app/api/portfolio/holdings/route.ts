@@ -98,6 +98,14 @@ export async function GET() {
     const totals = retotal(rows);
 
     const body: HoldingsResponse = {
+      closed: portfolio.closedPositions.map((c) => ({
+        ticker: c.ticker,
+        sold: c.sold,
+        realizedPl: c.realizedPl,
+        realizedPct: c.realizedPct,
+        lastSell: c.lastSell,
+        heldDays: c.heldDays,
+      })),
       rows,
       totalValue: totals.totalValue,
       totalCost: totals.totalCost,

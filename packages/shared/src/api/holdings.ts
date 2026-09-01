@@ -32,6 +32,12 @@ export interface HoldingRow {
 }
 
 export interface HoldingsResponse {
+  /**
+   * Companies sold out of, newest first. Sent so the phone can show the same
+   * record the web does: selling closes a position, it does not erase that it
+   * was owned.
+   */
+  closed?: ClosedPositionRow[];
   rows: HoldingRow[];
   totalValue: number;
   totalCost: number;
@@ -49,4 +55,14 @@ export interface HoldingsResponse {
   belowCostCount: number | null;
   /** Sector filter rail: one entry per sector held, largest first. */
   sectorFilters: { sector: string; label: string; color: string; count: number }[];
+}
+
+/** A company no longer held, with what it earned over the time it was. */
+export interface ClosedPositionRow {
+  ticker: string;
+  sold: number;
+  realizedPl: number;
+  realizedPct: number | null;
+  lastSell: string | null;
+  heldDays: number | null;
 }

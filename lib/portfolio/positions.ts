@@ -1,6 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type {
   EnrichedHolding,
+  ClosedPosition,
   HiddenHolding,
   Holding,
   PortfolioSummary,
@@ -52,7 +53,7 @@ export async function getPortfolio(
       supabase.from("targets").select("*").eq("user_id", userId),
       supabase.from("theses").select("*").eq("user_id", userId),
       supabase.from("dividends").select("ticker, amount, net_amount, status").eq("user_id", userId),
-      supabase.from("transactions").select("ticker, type, net_amount, realized_pl").eq("user_id", userId),
+      supabase.from("transactions").select("ticker, type, quantity, price, net_amount, commission, tax, realized_pl, trade_date").eq("user_id", userId),
       supabase.from("cash_movements").select("type, amount").eq("user_id", userId),
     ]);
 
@@ -94,6 +95,63 @@ export async function getPortfolio(
   const realizedPl = (realizedRes.data ?? [])
     .filter((r) => !r.ticker || !hiddenTickers.has(r.ticker))
     .reduce((s, r) => s + Number(r.realized_pl ?? 0), 0);
+
+  /**
+   * Companies with trades on record that are not currently held.
+   *
+   * Derived from the ledger rather than from a flag, so a position closes
+   * simply by being sold out and cannot fall out of step with the trades.
+   * Anything still open, and anything deliberately hidden, is excluded: this
+   * is the record of what was owned and let go.
+   */
+  const openTickers = new Set(allHoldings.map((h) => h.ticker));
+  const byTicker = new Map<string, {
+    bought: number; sold: number; invested: number; proceeds: number;
+    realized: number; firstBuy: string | null; lastSell: string | null;
+  }>();
+  for (const t of realizedRes.data ?? []) {
+    const ticker = t.ticker as string | null;
+    if (!ticker || openTickers.has(ticker)) continue;
+    const g = byTicker.get(ticker) ?? {
+      bought: 0, sold: 0, invested: 0, proceeds: 0, realized: 0, firstBuy: null, lastSell: null,
+    };
+    const qty = Number(t.quantity ?? 0);
+    const gross = qty * Number(t.price ?? 0);
+    const fees = Number(t.commission ?? 0) + Number(t.tax ?? 0);
+    const net = t.net_amount != null ? Number(t.net_amount) : gross;
+    const date = (t.trade_date as string | null) ?? null;
+    if (t.type === "BUY") {
+      g.bought += qty;
+      g.invested += net || gross + fees;
+      if (date && (!g.firstBuy || date < g.firstBuy)) g.firstBuy = date;
+    } else if (t.type === "SELL") {
+      g.sold += qty;
+      g.proceeds += net || gross - fees;
+      g.realized += Number(t.realized_pl ?? 0);
+      if (date && (!g.lastSell || date > g.lastSell)) g.lastSell = date;
+    }
+    byTicker.set(ticker, g);
+  }
+  const closedPositions: ClosedPosition[] = [...byTicker.entries()]
+    .filter(([, g]) => g.sold > 0)
+    .map(([ticker, g]) => ({
+      ticker,
+      company_name: null,
+      sector: null,
+      bought: g.bought,
+      sold: g.sold,
+      invested: g.invested,
+      proceeds: g.proceeds,
+      realizedPl: g.realized,
+      realizedPct: g.invested > 0 ? (g.realized / g.invested) * 100 : null,
+      firstBuy: g.firstBuy,
+      lastSell: g.lastSell,
+      heldDays:
+        g.firstBuy && g.lastSell
+          ? Math.round((Date.parse(g.lastSell) - Date.parse(g.firstBuy)) / 86400000)
+          : null,
+    }))
+    .sort((a, b) => (b.lastSell ?? "").localeCompare(a.lastSell ?? ""));
 
   // Broker cash on hand, derived from the full ledger so it always reconciles:
   // deposits and sale proceeds add, buys, withdrawals, fees and CGT subtract.
@@ -198,6 +256,7 @@ export async function getPortfolio(
       ? { sector: sectorWeights[0].sector, weight: sectorWeights[0].weight }
       : null,
     pricedHoldings: enriched.filter((h) => h.latest_price !== null).length,
+    closedPositions,
     hiddenHoldings,
   };
 }

@@ -12,7 +12,7 @@ import {
   formatPctSigned,
 } from "@psx/shared/format";
 import { useApi } from "@/lib/use-api";
-import { Band, Ledger } from "@/components/ui/layout";
+import { Band, Ledger, LedgerRow } from "@/components/ui/layout";
 import { Caps, Figure, PageTitle } from "@/components/ui/text";
 import { ErrorNote } from "@/components/status";
 import { Rise } from "@/components/ui/motion";
@@ -233,6 +233,42 @@ export default function HoldingsScreen() {
             </Ledger>
           )}
         </Band>
+
+        {/* Sold out of, but not forgotten. A track record is the point of the
+            app, so closing a position must not erase that it was held. */}
+        {data?.closed && data.closed.length > 0 ? (
+          <Band>
+            <Caps>Previously held</Caps>
+            <Ledger>
+              {data.closed.map((c) => (
+                <LedgerRow key={c.ticker}>
+                  <View style={styles.closedRow}>
+                    <View style={styles.closedLeft}>
+                      <Text style={styles.closedTicker}>{c.ticker}</Text>
+                      <Figure style={styles.closedMeta} numberOfLines={1}>
+                        {formatNumber(c.sold, 0)} shares
+                        {c.heldDays != null
+                          ? ` · ${c.heldDays < 365 ? `${c.heldDays}d` : `${(c.heldDays / 365).toFixed(1)}y`}`
+                          : ""}
+                        {c.lastSell ? ` · sold ${c.lastSell}` : ""}
+                      </Figure>
+                    </View>
+                    <View style={styles.closedRight}>
+                      <Figure style={[styles.closedPl, { color: directionColor(c.realizedPl) }]}>
+                        {c.realizedPl >= 0 ? "+" : "−"}{formatCompact(Math.abs(c.realizedPl))}
+                      </Figure>
+                      {c.realizedPct != null ? (
+                        <Figure style={styles.closedPct}>
+                          {c.realizedPct >= 0 ? "+" : "−"}{Math.abs(c.realizedPct).toFixed(1)}%
+                        </Figure>
+                      ) : null}
+                    </View>
+                  </View>
+                </LedgerRow>
+              ))}
+            </Ledger>
+          </Band>
+        ) : null}
       </ScrollView>
 
       {/* Refetching on save is what makes the new row appear without a manual
@@ -275,6 +311,13 @@ function Chip({
 }
 
 const useStyles = makeStyles((c) => ({
+  closedRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", flex: 1, gap: space.sm },
+  closedLeft: { flex: 1, minWidth: 0 },
+  closedTicker: { fontFamily: fontFamily.uiSemibold, fontSize: fontSize.body, color: c.textStrong },
+  closedMeta: { marginTop: 2, fontSize: fontSize.xxs, color: c.textFaint },
+  closedRight: { alignItems: "flex-end" },
+  closedPl: { fontSize: fontSize.body, fontWeight: "600" },
+  closedPct: { marginTop: 2, fontSize: fontSize.xxs, color: c.textFaint },
   screen: { flex: 1, backgroundColor: c.surfacePage },
   header: { paddingHorizontal: layout.gutter, paddingBottom: space.lg },
   titleActions: { flexDirection: "row", alignItems: "center", gap: space.lg },

@@ -105,6 +105,46 @@ export default async function HoldingsPage() {
           </Band>
         </>
       )}
+      {summary.closedPositions.length > 0 && (
+        <Band tone="paper" rule="none" className="px-3 sm:px-4 md:px-(--gutter-page)">
+          <PanelHeader
+            eyebrow="Closed"
+            title="Previously held"
+            aside={<span className="figure text-xs text-text-muted">{summary.closedPositions.length}</span>}
+          />
+          <p className="mt-2 text-xs text-text-muted">
+            Companies you have sold out of. They stay here with what they earned, because a track record
+            is the point: selling should close a position, not erase that you ever owned it.
+          </p>
+          <div className="ledger mt-3">
+            {summary.closedPositions.map((c) => (
+              <div key={c.ticker} className="ledger-row flex flex-wrap items-center justify-between gap-2">
+                <div className="flex items-baseline gap-2">
+                  <span className="text-sm font-medium text-text-strong">{c.ticker}</span>
+                  <span className="figure text-xs text-text-muted">
+                    {formatNumber(c.sold, 0)} shares
+                    {c.heldDays != null ? ` · held ${c.heldDays < 365 ? `${c.heldDays}d` : `${(c.heldDays / 365).toFixed(1)}y`}` : ""}
+                    {c.lastSell ? ` · sold ${c.lastSell}` : ""}
+                  </span>
+                </div>
+                <div className="flex items-baseline gap-3">
+                  <span
+                    className="figure text-sm font-semibold"
+                    style={{ color: c.realizedPl >= 0 ? "var(--text-up)" : "var(--text-down)" }}
+                  >
+                    {c.realizedPl >= 0 ? "+" : "\u2212"}{formatMoney(Math.abs(c.realizedPl))}
+                  </span>
+                  {c.realizedPct != null && (
+                    <span className="figure text-xs text-text-muted">
+                      {c.realizedPct >= 0 ? "+" : "\u2212"}{Math.abs(c.realizedPct).toFixed(1)}%
+                    </span>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        </Band>
+      )}
       {summary.hiddenHoldings.length > 0 && (
         <Band tone="paper" rule="none" className="px-3 sm:px-4 md:px-(--gutter-page)">
           <PanelHeader

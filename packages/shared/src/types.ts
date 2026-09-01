@@ -87,6 +87,33 @@ export interface HiddenHolding {
   total_cost: number;
 }
 
+/**
+ * A company you no longer hold.
+ *
+ * Selling out used to erase a name from the app entirely: the trades stayed in
+ * the ledger, but nothing on any screen said you had ever owned it. For an app
+ * whose point is a track record, that is the wrong thing to forget, so a closed
+ * position keeps its own row with what it earned and how long it was held.
+ */
+export interface ClosedPosition {
+  ticker: string;
+  company_name: string | null;
+  sector: string | null;
+  /** Shares bought and sold over the life of the position. */
+  bought: number;
+  sold: number;
+  /** What the shares cost and what they were sold for, net of fees and tax. */
+  invested: number;
+  proceeds: number;
+  realizedPl: number;
+  /** Return on what was actually put in, or null when cost is unknown. */
+  realizedPct: number | null;
+  firstBuy: string | null;
+  lastSell: string | null;
+  /** Calendar days from first purchase to final sale. */
+  heldDays: number | null;
+}
+
 export interface Transaction {
   id: string;
   user_id: string;
@@ -293,4 +320,5 @@ export interface PortfolioSummary {
   pricedHoldings: number;
   /** Positions excluded from all analysis; kept here so the holdings page can list and unhide them. */
   hiddenHoldings: HiddenHolding[];
+  closedPositions: ClosedPosition[];
 }
