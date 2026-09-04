@@ -17,6 +17,10 @@ export function useTheme() {
   useEffect(() => {
     try {
       const stored = localStorage.getItem(THEME_STORAGE_KEY);
+      // localStorage does not exist on the server, so the stored choice can
+      // only be adopted after hydration. Reading it during render would make
+      // the first client paint disagree with the server's.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       if (stored === "light" || stored === "dark") setModeState(stored);
     } catch {
       // Storage can throw in a private window. The system default is fine.

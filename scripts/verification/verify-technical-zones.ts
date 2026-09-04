@@ -2,6 +2,10 @@ import { config } from "dotenv";
 import { resolve } from "path";
 import { createClient } from "@supabase/supabase-js";
 import { computeSignals, findSwings, detectSupportResistanceZones, swingThresholdFor } from "@/lib/market/technicals";
+import type { Candle } from "@/lib/market/technicals";
+
+/** Shape of the jsonb blob in company_technicals.data that this script reads. */
+type TechnicalsBlob = { history?: Candle[] };
 
 config({ path: resolve(process.cwd(), ".env.local") });
 
@@ -10,14 +14,14 @@ const db = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPAB
 async function main() {
   const { data: all } = await db.from("company_technicals").select("ticker, data");
   if (!all) return;
-  const usable = all.filter(r => ((r.data as any)?.history ?? []).length > 260);
+  const usable = all.filter(r => ((r.data as TechnicalsBlob)?.history ?? []).length > 260);
   const picks = [0, 1, 2, 3].map(i => usable[Math.floor((i + 1) * usable.length / 5)]);
 
   // aggregate across the whole universe
-  let totalOld = 0, totalNew = 0, totalZonesOld = 0, totalZonesNew = 0, n = 0;
-  let worstDistOld = 0, worstDistNew = 0;
+  let totalOld = 0, totalNew = 0, totalZonesNew = 0, n = 0;
+  let worstDistNew = 0;
   for (const r of usable) {
-    const h = (r.data as any).history;
+    const h = (r.data as TechnicalsBlob).history!;
     const price = h[h.length - 1].close;
     const oldSw = findSwings(h, 8);
     const newSw = findSwings(h);
@@ -35,7 +39,7 @@ async function main() {
   console.log(`  worst zone distance from price, new: ${worstDistNew.toFixed(1)}%`);
 
   for (const row of picks) {
-    const hist = (row.data as any).history;
+    const hist = (row.data as TechnicalsBlob).history!;
     const price = hist[hist.length - 1].close;
     const oldSwings = findSwings(hist, 8);
     const newSwings = findSwings(hist);

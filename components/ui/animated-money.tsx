@@ -61,6 +61,9 @@ export function AnimatedMoney({
     // this without a second media query of its own.
     const duration = durationToken("--dur-count", 1300);
     if (duration === 0) {
+      // Reduced motion: land on the final value immediately. The duration comes
+      // from a CSS custom property, which is only readable once mounted.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setDisplay(target);
       return;
     }

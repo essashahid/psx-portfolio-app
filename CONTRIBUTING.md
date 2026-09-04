@@ -20,23 +20,19 @@ npm run build         # catches Server/Client boundary errors nothing else does
 Both commands must be run for anything that touches `app/`, `components/`,
 `lib/`, `packages/shared/` or `mobile/`.
 
-**`npm run validate` currently fails, and it is not your change.** `npm run
-lint` reports 41 pre-existing problems, 16 of them errors, spread across
-`scripts/` and a dozen files under `app/`, `components/` and `lib/`, mostly
-`no-explicit-any` and `prefer-const`. Because the chain stops at the first
-failure, nothing after lint runs. Until that debt is cleared, run the stages
-separately to check your own work:
+`npm run validate` passes. It last went green in September 2026, when the
+remaining lint errors were cleared; keep it that way rather than letting a
+count creep back. ESLint still reports warnings, mostly unused variables in
+one-off scripts under `scripts/`. Warnings do not fail the build, but do not
+add to them either.
 
-```bash
-npm run lint            # compare the count, do not add to it
-npm run typecheck       # passes
-npm run check:shared    # passes
-npm run mobile:typecheck # passes
-npm test                # passes
-```
-
-Do not add new lint errors, and do not "fix" the existing ones by widening the
-ESLint configuration.
+Do not fix a lint error by widening the ESLint configuration. Four call sites
+carry a one-line `react-hooks/set-state-in-effect` disable, each with the
+reason above it: they read the URL, `localStorage` or a CSS custom property,
+none of which exist on the server, so the value can only reach state after
+hydration. Prefer a real fix; reach for a narrow disable only when the rule is
+describing a constraint that genuinely does not hold, and say why on the line
+above.
 
 ## Naming
 

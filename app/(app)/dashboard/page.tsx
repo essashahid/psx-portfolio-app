@@ -120,6 +120,13 @@ async function getSparks(supabase: SupabaseClient, tickers: string[]): Promise<M
   return out;
 }
 
+/** The ISO date n days before now. Module scope: this page is a server
+ * component, but reading the clock is impure either way, so it is kept out of
+ * the render body. */
+function isoDaysAgo(days: number): string {
+  return new Date(Date.now() - days * 86_400_000).toISOString().slice(0, 10);
+}
+
 export default async function DashboardPage() {
   const supabase = await createClient();
   const user = await getUser();
@@ -170,7 +177,7 @@ export default async function DashboardPage() {
       }
     : null;
   const benchDelta = bench ? bench.portfolioPct - bench.ksePct : null;
-  const yearAgo = new Date(Date.now() - 365 * 86_400_000).toISOString().slice(0, 10);
+  const yearAgo = isoDaysAgo(365);
   const heroSpark = series.filter((p) => p.date >= yearAgo).map((p) => p.portfolio);
   const motif = motifPath(series.map((p) => p.portfolio));
 

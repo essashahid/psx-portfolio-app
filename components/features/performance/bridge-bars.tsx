@@ -30,14 +30,19 @@ export function BridgeBars({ rows }: { rows: BridgeBarRow[] }) {
   const max = Math.max(...rows.map((r) => Math.abs(r.value)), 1);
   const px = (v: number) => Math.max((Math.abs(v) / max) * 190, 3);
 
+  // A plain loop rather than map: the running total is accumulated as the bars
+  // are laid out, and a callback closing over a variable it reassigns is the
+  // one shape the React compiler cannot verify stays inside this render.
+  const bars: { row: BridgeBarRow; i: number; offset: number }[] = [];
   let running = 0;
-  const bars = rows.map((row, i) => {
+  for (let i = 0; i < rows.length; i++) {
+    const row = rows[i];
     const isEdge = i === 0 || row.kind === "start" || row.kind === "end";
     const offset = isEdge ? 0 : (Math.min(running, running + row.value) / max) * 190;
     if (!isEdge) running += row.value;
     else if (i === 0 || row.kind === "start") running = row.value;
-    return { row, i, offset: Math.max(0, offset) };
-  });
+    bars.push({ row, i, offset: Math.max(0, offset) });
+  }
 
   return (
     <div>

@@ -627,7 +627,27 @@ export function detectSupportResistanceZones(candles: Candle[], swings: Swing[],
 // OHLCV Conversion
 // ---------------------------------------------------------------------------
 
-export function toCanonicalOHLCV(ticker: string, candles: Candle[]): any {
+export interface CanonicalOHLCV {
+  symbol: string;
+  exchange: string;
+  resolution: string;
+  timezone: string;
+  bars: {
+    time: number;
+    open: number;
+    high: number;
+    low: number;
+    close: number;
+    volume: number;
+    status: "verified" | "unverified" | "missing";
+  }[];
+  latestMarketDate: string;
+  refreshedAt: string;
+  adjustmentStatus: string;
+  dataQuality: string;
+}
+
+export function toCanonicalOHLCV(ticker: string, candles: Candle[]): CanonicalOHLCV {
   // Fallback CanonicalOHLCV when we only have close + volume
   // In Phase 1, we set open=high=low=close and status=unverified if not real OHLC
   return {

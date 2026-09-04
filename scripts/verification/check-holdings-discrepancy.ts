@@ -40,7 +40,7 @@ async function run() {
   const asOf = '2026-06-30';
   
   const eodHoldings = new Map();
-  let eodTotal = 0;
+  const eodTotal = 0;
   for (const e of shareEvents) {
     if (e.date > asOf) break;
     eodHoldings.set(e.ticker, (eodHoldings.get(e.ticker) ?? 0) + e.qtyDelta);
@@ -58,7 +58,7 @@ async function run() {
     let eodPrice = 0;
     if (eodQty > 0) {
       const p = priceSeries.get(t);
-      const row = p?.slice().reverse().find((r: any) => r.date <= asOf);
+      const row = p?.slice().reverse().find((r: { date: string; close: number }) => r.date <= asOf);
       eodPrice = row?.close || 0;
       eodVal = eodQty * eodPrice;
     }

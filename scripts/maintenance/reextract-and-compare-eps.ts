@@ -15,7 +15,7 @@ async function main(){
     const r=await extractFinancials(t,4,true);
     await refreshRatios(db,t);
     const {data}=await db.from('company_ratios').select('ratio_value,inputs,source_period').eq('ticker',t).eq('ratio_name','P/E').maybeSingle();
-    const ours=(data?.inputs as any)?.eps??null, theirs=store[t]?.eps??null;
+    const ours=(data?.inputs as { eps?: number } | null)?.eps??null, theirs=store[t]?.eps??null;
     const d=(ours!=null&&theirs)?((ours/theirs-1)*100).toFixed(0)+'%':'-';
     console.log(`${t.padEnd(7)} ours=${String(ours==null?'-':ours.toFixed(2)).padStart(8)} sarmaaya=${String(theirs??'-').padStart(8)}  ${String(d).padStart(7)}  ${data?.source_period??''}  (saved ${r.saved})`);
   }

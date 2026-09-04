@@ -70,6 +70,8 @@ function useEventState(event: NewsEvent) {
   const [open, setOpen] = useState(false);
 
   useEffect(() => {
+    // Read receipts live in localStorage, which the server cannot see.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     if (loadRead().has(event.id)) setRead(true);
   }, [event.id]);
 

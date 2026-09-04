@@ -34,6 +34,9 @@ export default function LoginPage() {
   // /demo redirects here when the shared demo workspace cannot be opened.
   useEffect(() => {
     if (new URLSearchParams(window.location.search).get("demo") === "unavailable") {
+      // The query string is readable only after mount, so this cannot be an
+      // initial value without breaking the server render.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setError("The read-only demo could not be opened. Please try the button below.");
     }
   }, []);
