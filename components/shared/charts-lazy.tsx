@@ -23,10 +23,6 @@ export const TargetVsActualBar = dynamic(
   { ssr: false, loading: ChartFallback }
 );
 
-export const ValueLine = dynamic(
-  () => import("@/components/shared/charts").then((m) => m.ValueLine),
-  { ssr: false, loading: ChartFallback }
-);
 
 
 

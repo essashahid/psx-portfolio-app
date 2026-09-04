@@ -13,8 +13,6 @@ import {
   YAxis,
   CartesianGrid,
   Legend,
-  AreaChart,
-  Area,
 } from "recharts";
 import {
   INK,
@@ -25,7 +23,6 @@ import {
   fmtCompact,
   fmtPkr,
   GlassTooltip,
-  CURSOR,
   FadeDefs,
   ChartEmpty,
   AXIS_TICK,
@@ -152,64 +149,6 @@ export function TargetVsActualBar({
             animationEasing={EASE}
           />
         </BarChart>
-      </ResponsiveContainer>
-    </div>
-  );
-}
-
-// ---------------------------------------------------------------------------
-// Portfolio value — luminous gradient area with cost-basis ghost line
-// ---------------------------------------------------------------------------
-
-export function ValueLine({ data }: { data: { date: string; value: number; cost: number }[] }) {
-  const animate = useChartMotion();
-  if (data.length < 2)
-    return <ChartEmpty note="Portfolio value over time appears once at least two daily snapshots exist." />;
-  return (
-    <div className="chart-reveal">
-      <ResponsiveContainer width="100%" height={240}>
-        <AreaChart data={data} margin={{ top: 8, right: 10, bottom: 5, left: 10 }}>
-          <FadeDefs defs={[{ id: "valueFade", color: INK.line, from: 0.22, to: 0 }]} />
-          <CartesianGrid strokeDasharray="3 3" stroke={INK.grid} vertical={false} />
-          <XAxis dataKey="date" tick={AXIS_TICK} axisLine={false} tickLine={false} minTickGap={28} />
-          <YAxis
-            tick={AXIS_TICK}
-            tickFormatter={fmtCompact}
-            domain={["auto", "auto"]}
-            axisLine={false}
-            tickLine={false}
-            width={46}
-          />
-          <Tooltip content={<GlassTooltip />} cursor={CURSOR} />
-          <Legend wrapperStyle={{ fontSize: 11 }} iconType="circle" iconSize={7} />
-          <Area
-            type="monotone"
-            dataKey="cost"
-            name="Cost basis"
-            stroke={INK.neutral}
-            strokeWidth={1.4}
-            strokeDasharray="5 4"
-            fill="none"
-            dot={false}
-            activeDot={{ r: 3, strokeWidth: 0, fill: INK.neutral }}
-            isAnimationActive={animate}
-            animationDuration={DRAW_MS}
-            animationEasing={EASE}
-          />
-          <Area
-            type="monotone"
-            dataKey="value"
-            name="Market value"
-            stroke={INK.line}
-            strokeWidth={2.2}
-            fill="url(#valueFade)"
-            dot={false}
-            activeDot={{ r: 4, strokeWidth: 2, stroke: "#fbfbf9", fill: INK.line }}
-            isAnimationActive={animate}
-            animationDuration={DRAW_MS}
-            animationEasing={EASE}
-          />
-        </AreaChart>
       </ResponsiveContainer>
     </div>
   );

@@ -1,9 +1,9 @@
 /**
  * Chart data shapes shared by the web app and the mobile app.
  *
- * The engine adapter interface that consumes these lives in
- * types/chart-engine-adapter.ts: it is typed against HTMLElement and drives
- * klinecharts, so it is web only.
+ * The web-side ChartEngineAdapter interface that consumed these was deleted in
+ * September 2026 along with the klinecharts technicals workstation, its only
+ * implementation. These shapes currently have no importer.
  */
 
 export interface CanonicalOHLCV {

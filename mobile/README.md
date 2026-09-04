@@ -59,5 +59,4 @@ lib/
 ## What is deliberately not here
 
 Import, saved research, stock comparison and the admin screens stay on the web.
-They are desk work. The klinecharts technicals workstation is web only too: it
-is built against the DOM.
+They are desk work.

@@ -14,8 +14,8 @@ all behind your own Supabase project with Row Level Security.
 ## Stack
 
 Next.js 16 (App Router) · React 19 · TypeScript · Tailwind CSS v4 ·
-Supabase (Postgres, Auth, Storage, RLS) · Jest · Recharts, Vega-Lite and
-KLineCharts · Zod · Papaparse · XLSX · pdf-parse ·
+Supabase (Postgres, Auth, Storage, RLS) · Jest · Recharts and Vega-Lite ·
+Zod · Papaparse · XLSX · pdf-parse ·
 Anthropic and OpenAI-compatible model APIs · Serwist (PWA)
 
 The phone app is Expo (React Native) with expo-router and TanStack Query, in

@@ -21,11 +21,11 @@ Both commands must be run for anything that touches `app/`, `components/`,
 `lib/`, `packages/shared/` or `mobile/`.
 
 **`npm run validate` currently fails, and it is not your change.** `npm run
-lint` reports 71 pre-existing problems, 32 of them errors, mostly
-`no-explicit-any` in `types/chart-engine-adapter.ts` and several files under
-`scripts/`. Because the chain stops at the first failure, nothing after lint
-runs. Until that debt is cleared, run the stages separately to check your own
-work:
+lint` reports 41 pre-existing problems, 16 of them errors, spread across
+`scripts/` and a dozen files under `app/`, `components/` and `lib/`, mostly
+`no-explicit-any` and `prefer-const`. Because the chain stops at the first
+failure, nothing after lint runs. Until that debt is cleared, run the stages
+separately to check your own work:
 
 ```bash
 npm run lint            # compare the count, do not add to it
