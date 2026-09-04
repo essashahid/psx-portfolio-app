@@ -153,7 +153,7 @@ export function PreferencesForm({ profile }: { profile: Profile }) {
         <Button type="submit" size="sm" disabled={busy}>
           {busy && <Loader2 className="h-3.5 w-3.5 animate-spin" />} Save preferences
         </Button>
-        <Link href="/onboarding" className="text-xs text-muted-foreground underline-offset-2 hover:text-foreground hover:underline">
+        <Link href="/onboarding" className="text-xs text-text-muted underline-offset-2 hover:text-text-strong hover:underline">
           Redo onboarding
         </Link>
         {msg && <p className={`text-xs ${msg.startsWith("Error") ? "text-down" : "text-up"}`}>{msg}</p>}
@@ -271,8 +271,8 @@ export function PriceManager({
               <TD className="text-right tabular-nums text-xs">
                 {h.latest_price !== null ? formatNumber(h.latest_price) : <span className="text-amber-600">no price</span>}
               </TD>
-              <TD className="text-xs text-muted-foreground">{h.price_date ?? "—"}</TD>
-              <TD className="text-xs text-muted-foreground">{h.price_source ?? "—"}</TD>
+              <TD className="text-xs text-text-muted">{h.price_date ?? "—"}</TD>
+              <TD className="text-xs text-text-muted">{h.price_source ?? "—"}</TD>
               <TD>
                 <Input
                   className="h-8 w-28 text-xs"
@@ -294,9 +294,9 @@ export function PriceManager({
         </Button>
         {msg && <p className={`text-xs ${msg.startsWith("Error") ? "text-down" : "text-up"}`}>{msg}</p>}
       </div>
-      <div className="space-y-2 rounded-md border border-border bg-muted/30 p-3">
+      <div className="space-y-2 rounded-md border border-rule bg-surface-sunken/30 p-3">
         <Label>Bulk upload prices (CSV)</Label>
-        <p className="text-[11px] text-muted-foreground">
+        <p className="text-[11px] text-text-muted">
           Format: <code>ticker,price[,date]</code> — one row per line, header optional.
         </p>
         <Textarea
@@ -354,9 +354,9 @@ export function BrokerAccounts({
       {accounts.length > 0 && (
         <ul className="space-y-1.5">
           {accounts.map((a) => (
-            <li key={a.id} className="flex items-center justify-between rounded-md border border-border px-3 py-1.5 text-xs">
-              <span><span className="font-medium">{a.label}</span> <span className="text-muted-foreground">({a.broker_type})</span></span>
-              <button onClick={() => remove(a.id)} className="text-muted-foreground hover:text-down">
+            <li key={a.id} className="flex items-center justify-between rounded-md border border-rule px-3 py-1.5 text-xs">
+              <span><span className="font-medium">{a.label}</span> <span className="text-text-muted">({a.broker_type})</span></span>
+              <button onClick={() => remove(a.id)} className="text-text-muted hover:text-down">
                 <Trash2 className="h-3.5 w-3.5" />
               </button>
             </li>
@@ -380,7 +380,7 @@ export function BrokerAccounts({
           <Plus className="h-3.5 w-3.5" /> Add
         </Button>
       </form>
-      <p className="text-[11px] text-muted-foreground">
+      <p className="text-[11px] text-text-muted">
         Labels only — PortfolioOS never asks for or stores brokerage credentials.
       </p>
     </div>
@@ -402,14 +402,14 @@ export function SavedMappings({
     router.refresh();
   }
   if (mappings.length === 0) {
-    return <p className="text-xs text-muted-foreground">No saved mappings yet. They are created from the Import Center when you save a custom column mapping.</p>;
+    return <p className="text-xs text-text-muted">No saved mappings yet. They are created from the Import Center when you save a custom column mapping.</p>;
   }
   return (
     <ul className="space-y-1.5">
       {mappings.map((m) => (
-        <li key={m.id} className="flex items-center justify-between rounded-md border border-border px-3 py-1.5 text-xs">
-          <span><span className="font-medium">{m.name}</span> <span className="text-muted-foreground">({m.statement_type}, saved {m.created_at.slice(0, 10)})</span></span>
-          <button onClick={() => remove(m.id)} className="text-muted-foreground hover:text-down">
+        <li key={m.id} className="flex items-center justify-between rounded-md border border-rule px-3 py-1.5 text-xs">
+          <span><span className="font-medium">{m.name}</span> <span className="text-text-muted">({m.statement_type}, saved {m.created_at.slice(0, 10)})</span></span>
+          <button onClick={() => remove(m.id)} className="text-text-muted hover:text-down">
             <Trash2 className="h-3.5 w-3.5" />
           </button>
         </li>
@@ -438,19 +438,19 @@ export function StatementsList({
   }
 
   if (statements.length === 0) {
-    return <p className="text-xs text-muted-foreground">No uploaded statements.</p>;
+    return <p className="text-xs text-text-muted">No uploaded statements.</p>;
   }
   return (
     <ul className="space-y-1.5">
       {statements.map((s) => (
-        <li key={s.id} className="flex items-center justify-between rounded-md border border-border px-3 py-1.5 text-xs">
+        <li key={s.id} className="flex items-center justify-between rounded-md border border-rule px-3 py-1.5 text-xs">
           <span className="min-w-0 truncate">
             <span className="font-medium">{s.file_name}</span>{" "}
-            <span className="text-muted-foreground">
+            <span className="text-text-muted">
               ({s.file_type}, {s.statement_type ?? "?"}, {s.status}, {s.created_at.slice(0, 10)})
             </span>
           </span>
-          <button onClick={() => remove(s.id)} disabled={busyId === s.id} className="ml-2 shrink-0 text-muted-foreground hover:text-down">
+          <button onClick={() => remove(s.id)} disabled={busyId === s.id} className="ml-2 shrink-0 text-text-muted hover:text-down">
             {busyId === s.id ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Trash2 className="h-3.5 w-3.5" />}
           </button>
         </li>

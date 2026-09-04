@@ -21,7 +21,7 @@ export default async function OnboardingPage() {
   if (profile?.onboarded) redirect("/dashboard");
 
   return (
-    <main className="relative flex min-h-dvh flex-col items-center bg-background px-4 py-[calc(2.5rem+env(safe-area-inset-top))]">
+    <main className="relative flex min-h-dvh flex-col items-center bg-surface-page px-4 py-[calc(2.5rem+env(safe-area-inset-top))]">
       <div
         aria-hidden
         className="pointer-events-none absolute inset-0"
@@ -37,7 +37,7 @@ export default async function OnboardingPage() {
           initialExperience={(profile?.experience_level as ExperienceLevel) ?? "intermediate"}
         />
       </div>
-      <p className="relative z-10 mt-10 max-w-sm px-4 text-center text-[11px] text-muted-foreground">{DISCLAIMER}</p>
+      <p className="relative z-10 mt-10 max-w-sm px-4 text-center text-[11px] text-text-muted">{DISCLAIMER}</p>
     </main>
   );
 }

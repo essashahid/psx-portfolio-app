@@ -44,13 +44,13 @@ function ChoiceCard({ icon: Icon, title, description, selected, onClick }: Choic
         "group flex w-full items-start gap-3 rounded-xl border p-4 text-left transition-colors",
         selected
           ? "border-emerald-500/70 bg-emerald-50/60 ring-1 ring-emerald-500/40"
-          : "border-border bg-card hover:border-foreground/30 hover:bg-accent"
+          : "border-rule bg-surface-raised hover:border-text-strong/30 hover:bg-surface-inset"
       )}
     >
       <span
         className={cn(
           "flex h-9 w-9 shrink-0 items-center justify-center rounded-lg transition-colors",
-          selected ? "bg-emerald-600 text-white" : "bg-muted text-muted-foreground group-hover:text-foreground"
+          selected ? "bg-emerald-600 text-white" : "bg-surface-sunken text-text-muted group-hover:text-text-strong"
         )}
       >
         <Icon className="h-4.5 w-4.5" />
@@ -60,7 +60,7 @@ function ChoiceCard({ icon: Icon, title, description, selected, onClick }: Choic
           {title}
           {selected && <Check className="h-3.5 w-3.5 text-up" />}
         </span>
-        <span className="mt-0.5 block text-xs leading-relaxed text-muted-foreground">{description}</span>
+        <span className="mt-0.5 block text-xs leading-relaxed text-text-muted">{description}</span>
       </span>
     </button>
   );
@@ -175,7 +175,7 @@ export function OnboardingWizard({
           <div className="space-y-5">
             <div className="space-y-2">
               <h1 className="text-2xl font-medium tracking-tight">Welcome. Let us set up your view.</h1>
-              <p className="text-sm text-muted-foreground">
+              <p className="text-sm text-text-muted">
                 A few quick questions so the platform can tune research language and portfolio context to you.
               </p>
             </div>
@@ -244,9 +244,9 @@ export function OnboardingWizard({
         </Button>
       </div>
 
-      <p className="mt-6 text-center text-xs text-muted-foreground">
+      <p className="mt-6 text-center text-xs text-text-muted">
         Not you, or want a different account?{" "}
-        <button type="button" onClick={signOut} disabled={saving} className="font-medium text-foreground underline-offset-2 hover:underline">
+        <button type="button" onClick={signOut} disabled={saving} className="font-medium text-text-strong underline-offset-2 hover:underline">
           Sign out
         </button>
       </p>
@@ -259,7 +259,7 @@ function Step({ title, subtitle, children }: { title: string; subtitle: string; 
     <div className="space-y-5">
       <div className="space-y-2">
         <h1 className="text-2xl font-medium tracking-tight">{title}</h1>
-        <p className="text-sm text-muted-foreground">{subtitle}</p>
+        <p className="text-sm text-text-muted">{subtitle}</p>
       </div>
       <div className="grid gap-2.5">{children}</div>
     </div>

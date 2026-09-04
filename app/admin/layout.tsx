@@ -10,17 +10,17 @@ export default async function AdminLayout({ children }: { children: React.ReactN
   if (!isAdmin) redirect("/dashboard");
 
   return (
-    <div className="min-h-dvh bg-background">
-      <header className="sticky top-0 z-30 border-b border-border bg-card/95 backdrop-blur">
+    <div className="min-h-dvh bg-surface-page">
+      <header className="sticky top-0 z-30 border-b border-rule bg-surface-raised/95 backdrop-blur">
         <div className="mx-auto flex w-full max-w-6xl items-center justify-between px-4 py-3">
           <div className="flex items-center gap-2.5">
             <ShieldCheck className="h-5 w-5 text-up" />
             <span className="text-sm font-semibold tracking-tight">Admin</span>
-            <span className="hidden text-xs text-muted-foreground sm:inline">Account management</span>
+            <span className="hidden text-xs text-text-muted sm:inline">Account management</span>
           </div>
           <Link
             href="/dashboard"
-            className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground"
+            className="flex items-center gap-1.5 text-xs text-text-muted hover:text-text-strong"
           >
             <ArrowLeft className="h-3.5 w-3.5" />
             Back to app

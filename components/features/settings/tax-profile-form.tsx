@@ -127,7 +127,7 @@ export function TaxProfileForm({ settings }: { settings: TaxSettings }) {
           {busy && <Loader2 className="h-3.5 w-3.5 animate-spin" />} Save tax profile
         </Button>
         {settings.updated_at && (
-          <span className="text-[11px] text-muted-foreground">Last updated {settings.updated_at.slice(0, 10)}</span>
+          <span className="text-[11px] text-text-muted">Last updated {settings.updated_at.slice(0, 10)}</span>
         )}
         {msg && <span className={`text-[11px] ${msg.error ? "text-down" : "text-up"}`}>{msg.text}</span>}
       </div>

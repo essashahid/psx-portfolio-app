@@ -90,11 +90,11 @@ export function AdminWaitlistClient() {
       <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
         <div>
           <h2 className="text-lg font-semibold tracking-tight">Waitlist</h2>
-          <p className="mt-1 text-sm text-muted-foreground">People who asked for access. Review, contact, then create accounts manually when ready.</p>
+          <p className="mt-1 text-sm text-text-muted">People who asked for access. Review, contact, then create accounts manually when ready.</p>
         </div>
         <div className="flex flex-wrap gap-2">
           <div className="relative">
-            <Search className="pointer-events-none absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+            <Search className="pointer-events-none absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-text-muted" />
             <Input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search waitlist" className="w-56 pl-9" />
           </div>
           <Select value={status} onChange={(e) => setStatus(e.target.value)} className="w-36">
@@ -106,7 +106,7 @@ export function AdminWaitlistClient() {
 
       {error && <p className="mb-3 rounded-md bg-red-50 px-3 py-2 text-xs text-down">{error}</p>}
 
-      <div className="overflow-x-auto rounded-lg border border-border">
+      <div className="overflow-x-auto rounded-lg border border-rule">
         <Table>
           <THead>
             <TR>
@@ -120,9 +120,9 @@ export function AdminWaitlistClient() {
           </THead>
           <TBody>
             {loading ? (
-              <TR><TD colSpan={6} className="py-8 text-center"><Loader2 className="mx-auto h-5 w-5 animate-spin text-muted-foreground" /></TD></TR>
+              <TR><TD colSpan={6} className="py-8 text-center"><Loader2 className="mx-auto h-5 w-5 animate-spin text-text-muted" /></TD></TR>
             ) : entries.length === 0 ? (
-              <TR><TD colSpan={6} className="py-8 text-center text-sm text-muted-foreground">No waitlist entries yet.</TD></TR>
+              <TR><TD colSpan={6} className="py-8 text-center text-sm text-text-muted">No waitlist entries yet.</TD></TR>
             ) : (
               entries.map((entry) => {
                 const draft = drafts[entry.id] ?? { status: entry.status, admin_notes: entry.admin_notes ?? "" };
@@ -130,12 +130,12 @@ export function AdminWaitlistClient() {
                   <TR key={entry.id}>
                     <TD className="align-top">
                       <p className="font-medium">{entry.full_name}</p>
-                      <p className="text-xs text-muted-foreground">{entry.email ?? "No email"}</p>
-                      {entry.phone && <p className="text-xs text-muted-foreground">{entry.phone}</p>}
+                      <p className="text-xs text-text-muted">{entry.email ?? "No email"}</p>
+                      {entry.phone && <p className="text-xs text-text-muted">{entry.phone}</p>}
                     </TD>
-                    <TD className="max-w-xs align-top text-sm text-muted-foreground">
+                    <TD className="max-w-xs align-top text-sm text-text-muted">
                       {entry.note || "-"}
-                      <p className="mt-1 text-[10px] uppercase tracking-wide text-muted-foreground">Source: {entry.source}</p>
+                      <p className="mt-1 text-[10px] uppercase tracking-wide text-text-muted">Source: {entry.source}</p>
                     </TD>
                     <TD className="align-top">
                       <Badge variant={statusVariant(entry.status)}>{entry.status}</Badge>
@@ -155,7 +155,7 @@ export function AdminWaitlistClient() {
                         className="w-64"
                       />
                     </TD>
-                    <TD className="align-top text-sm text-muted-foreground">{fmtDate(entry.created_at)}</TD>
+                    <TD className="align-top text-sm text-text-muted">{fmtDate(entry.created_at)}</TD>
                     <TD className="align-top">
                       <Button size="sm" variant="outline" onClick={() => void save(entry)} disabled={savingId === entry.id}>
                         {savingId === entry.id ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Save className="h-3.5 w-3.5" />}

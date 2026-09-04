@@ -191,7 +191,7 @@ export function UserDetailClient({ userId }: { userId: string }) {
   if (loading) {
     return (
       <div className="flex justify-center py-16">
-        <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+        <Loader2 className="h-6 w-6 animate-spin text-text-muted" />
       </div>
     );
   }
@@ -229,13 +229,13 @@ export function UserDetailClient({ userId }: { userId: string }) {
       <Card className="p-4">
         <h2 className="mb-1 text-sm font-semibold">Account</h2>
         <dl className="grid grid-cols-2 gap-x-4 gap-y-1.5 text-xs">
-          <dt className="text-muted-foreground">Joined</dt>
+          <dt className="text-text-muted">Joined</dt>
           <dd>{fmtDate(detail.auth.created_at)}</dd>
-          <dt className="text-muted-foreground">Last sign-in</dt>
+          <dt className="text-text-muted">Last sign-in</dt>
           <dd>{fmtDate(detail.auth.last_sign_in_at)}</dd>
-          <dt className="text-muted-foreground">Email confirmed</dt>
+          <dt className="text-text-muted">Email confirmed</dt>
           <dd>{detail.auth.email_confirmed_at ? "Yes" : "No"}</dd>
-          <dt className="text-muted-foreground">User ID</dt>
+          <dt className="text-text-muted">User ID</dt>
           <dd className="truncate font-mono">{detail.auth.id}</dd>
         </dl>
       </Card>
@@ -294,7 +294,7 @@ export function UserDetailClient({ userId }: { userId: string }) {
         <div className="mb-3 flex flex-wrap items-start justify-between gap-3">
           <div>
             <h2 className="text-sm font-semibold">Feature access</h2>
-            <p className="mt-1 text-xs text-muted-foreground">
+            <p className="mt-1 text-xs text-text-muted">
               Account-level tabs and Research Copilot model providers. Admin-only tools still require admin access.
             </p>
           </div>
@@ -323,7 +323,7 @@ export function UserDetailClient({ userId }: { userId: string }) {
             return (
               <label
                 key={item.href}
-                className="flex cursor-pointer items-start gap-2.5 rounded-lg border border-border bg-card px-3 py-2 text-xs"
+                className="flex cursor-pointer items-start gap-2.5 rounded-lg border border-rule bg-surface-raised px-3 py-2 text-xs"
               >
                 <input
                   type="checkbox"
@@ -337,19 +337,19 @@ export function UserDetailClient({ userId }: { userId: string }) {
                     {item.label}
                     {item.adminOnly && <Badge variant="amber">Admin</Badge>}
                   </span>
-                  <span className="mt-0.5 block leading-relaxed text-muted-foreground">{item.hint}</span>
+                  <span className="mt-0.5 block leading-relaxed text-text-muted">{item.hint}</span>
                 </span>
               </label>
             );
           })}
         </div>
-        <div className="mt-4 border-t border-border pt-4">
-          <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">AI and report capabilities</h3>
+        <div className="mt-4 border-t border-rule pt-4">
+          <h3 className="text-xs font-semibold uppercase tracking-wide text-text-muted">AI and report capabilities</h3>
           <div className="mt-2 grid gap-2 sm:grid-cols-2">
             {ACCOUNT_CAPABILITIES.map((capability) => (
               <label
                 key={capability}
-                className="flex cursor-pointer items-start gap-2.5 rounded-lg border border-border bg-card px-3 py-2 text-xs"
+                className="flex cursor-pointer items-start gap-2.5 rounded-lg border border-rule bg-surface-raised px-3 py-2 text-xs"
               >
                 <input
                   type="checkbox"
@@ -359,14 +359,14 @@ export function UserDetailClient({ userId }: { userId: string }) {
                 />
                 <span>
                   <span className="font-medium">{capabilityLabel(capability)}</span>
-                  <span className="mt-0.5 block leading-relaxed text-muted-foreground">{capabilityHint(capability)}</span>
+                  <span className="mt-0.5 block leading-relaxed text-text-muted">{capabilityHint(capability)}</span>
                 </span>
               </label>
             ))}
           </div>
         </div>
-        <div className="mt-4 border-t border-border pt-4">
-          <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Research Copilot models</h3>
+        <div className="mt-4 border-t border-rule pt-4">
+          <h3 className="text-xs font-semibold uppercase tracking-wide text-text-muted">Research Copilot models</h3>
           <div className="mt-2 flex flex-wrap gap-3">
             {CHAT_PROVIDERS.map((provider) => (
               <label key={provider} className="flex items-center gap-2 text-sm">
@@ -400,7 +400,7 @@ export function UserDetailClient({ userId }: { userId: string }) {
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
-                <tr className="border-b border-border text-left text-xs text-muted-foreground">
+                <tr className="border-b border-rule text-left text-xs text-text-muted">
                   <th className="py-1.5 pr-3 font-medium">Ticker</th>
                   <th className="py-1.5 pr-3 font-medium">Qty</th>
                   <th className="py-1.5 pr-3 font-medium">Avg cost</th>
@@ -409,7 +409,7 @@ export function UserDetailClient({ userId }: { userId: string }) {
               </thead>
               <tbody>
                 {detail.holdings.map((h) => (
-                  <tr key={h.ticker} className="border-b border-border/50 last:border-0">
+                  <tr key={h.ticker} className="border-b border-rule/50 last:border-0">
                     <td className="py-1.5 pr-3 font-medium">{h.ticker}</td>
                     <td className="py-1.5 pr-3">{h.quantity}</td>
                     <td className="py-1.5 pr-3">{h.avg_cost.toLocaleString()}</td>
@@ -424,7 +424,7 @@ export function UserDetailClient({ userId }: { userId: string }) {
 
       <Card className="border-amber-200 bg-amber-50/40 p-4">
         <h2 className="mb-1 text-sm font-semibold">Account actions</h2>
-        <p className="mb-3 text-xs text-muted-foreground">
+        <p className="mb-3 text-xs text-text-muted">
           Reset the password, suspend sign-in access, or permanently delete the account.
         </p>
         <div className="flex flex-wrap gap-2">
@@ -482,7 +482,7 @@ export function UserDetailClient({ userId }: { userId: string }) {
 
 function BackLink() {
   return (
-    <Link href="/admin" className="inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground">
+    <Link href="/admin" className="inline-flex items-center gap-1.5 text-xs text-text-muted hover:text-text-strong">
       <ArrowLeft className="h-3.5 w-3.5" />
       All users
     </Link>
@@ -492,7 +492,7 @@ function BackLink() {
 function Stat({ label, value }: { label: string; value: number }) {
   return (
     <Card className="p-3">
-      <p className="text-xs text-muted-foreground">{label}</p>
+      <p className="text-xs text-text-muted">{label}</p>
       <p className="mt-0.5 text-lg font-semibold tabular-nums">{value.toLocaleString()}</p>
     </Card>
   );

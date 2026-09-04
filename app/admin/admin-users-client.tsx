@@ -47,7 +47,7 @@ export function AdminUsersClient() {
     <div>
       <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
         <div className="relative max-w-xs flex-1">
-          <Search className="pointer-events-none absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+          <Search className="pointer-events-none absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-text-muted" />
           <Input
             value={search}
             onChange={(e) => setSearch(e.target.value)}
@@ -65,7 +65,7 @@ export function AdminUsersClient() {
         <p className="mb-3 rounded-md bg-red-50 px-3 py-2 text-xs text-down">{error}</p>
       )}
 
-      <div className="overflow-x-auto rounded-lg border border-border">
+      <div className="overflow-x-auto rounded-lg border border-rule">
         <Table>
           <THead>
             <TR>
@@ -78,26 +78,26 @@ export function AdminUsersClient() {
           <TBody>
             {loading ? (
               <TR>
-                <TD colSpan={4} className="py-8 text-center text-sm text-muted-foreground">
+                <TD colSpan={4} className="py-8 text-center text-sm text-text-muted">
                   <Loader2 className="mx-auto h-5 w-5 animate-spin" />
                 </TD>
               </TR>
             ) : users.length === 0 ? (
               <TR>
-                <TD colSpan={4} className="py-8 text-center text-sm text-muted-foreground">
+                <TD colSpan={4} className="py-8 text-center text-sm text-text-muted">
                   No accounts found.
                 </TD>
               </TR>
             ) : (
               users.map((u) => (
-                <TR key={u.id} className="cursor-pointer hover:bg-muted/40">
+                <TR key={u.id} className="cursor-pointer hover:bg-surface-sunken/40">
                   <TD>
                     <Link href={`/admin/users/${u.id}`} className="block">
                       <span className="flex items-center gap-1.5 font-medium">
                         {u.full_name || "—"}
                         {u.is_admin && <ShieldCheck className="h-3.5 w-3.5 text-up" />}
                       </span>
-                      <span className="text-xs text-muted-foreground">{u.email}</span>
+                      <span className="text-xs text-text-muted">{u.email}</span>
                     </Link>
                   </TD>
                   <TD>
@@ -110,8 +110,8 @@ export function AdminUsersClient() {
                       )}
                     </span>
                   </TD>
-                  <TD className="text-sm text-muted-foreground">{fmtDate(u.created_at)}</TD>
-                  <TD className="text-sm text-muted-foreground">{fmtDate(u.last_sign_in_at)}</TD>
+                  <TD className="text-sm text-text-muted">{fmtDate(u.created_at)}</TD>
+                  <TD className="text-sm text-text-muted">{fmtDate(u.last_sign_in_at)}</TD>
                 </TR>
               ))
             )}
@@ -179,7 +179,7 @@ function CreateUserDialog({
   return (
     <Dialog open={open} onClose={onClose} title="Create account">
       <form onSubmit={submit} className="space-y-3">
-        <p className="text-xs text-muted-foreground">
+        <p className="text-xs text-text-muted">
           The account is ready to use immediately. Share the email and temporary password with the
           person, and ask them to change it after signing in.
         </p>

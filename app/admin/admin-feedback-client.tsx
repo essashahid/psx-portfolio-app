@@ -101,11 +101,11 @@ export function AdminFeedbackClient() {
       <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
         <div>
           <h2 className="text-lg font-semibold tracking-tight">Feedback</h2>
-          <p className="mt-1 text-sm text-muted-foreground">Comments from demo and private users, grouped by browser visitor id.</p>
+          <p className="mt-1 text-sm text-text-muted">Comments from demo and private users, grouped by browser visitor id.</p>
         </div>
         <div className="flex flex-wrap gap-2">
           <div className="relative">
-            <Search className="pointer-events-none absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+            <Search className="pointer-events-none absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-text-muted" />
             <Input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search feedback" className="w-56 pl-9" />
           </div>
           <Select value={status} onChange={(e) => setStatus(e.target.value)} className="w-36">
@@ -117,7 +117,7 @@ export function AdminFeedbackClient() {
 
       {error && <p className="mb-3 rounded-md bg-red-50 px-3 py-2 text-xs text-down">{error}</p>}
 
-      <div className="overflow-x-auto rounded-lg border border-border">
+      <div className="overflow-x-auto rounded-lg border border-rule">
         <Table>
           <THead>
             <TR>
@@ -131,9 +131,9 @@ export function AdminFeedbackClient() {
           </THead>
           <TBody>
             {loading ? (
-              <TR><TD colSpan={6} className="py-8 text-center"><Loader2 className="mx-auto h-5 w-5 animate-spin text-muted-foreground" /></TD></TR>
+              <TR><TD colSpan={6} className="py-8 text-center"><Loader2 className="mx-auto h-5 w-5 animate-spin text-text-muted" /></TD></TR>
             ) : feedback.length === 0 ? (
-              <TR><TD colSpan={6} className="py-8 text-center text-sm text-muted-foreground">No feedback yet.</TD></TR>
+              <TR><TD colSpan={6} className="py-8 text-center text-sm text-text-muted">No feedback yet.</TD></TR>
             ) : (
               feedback.map((entry) => {
                 const draft = drafts[entry.id] ?? { status: entry.status, admin_notes: entry.admin_notes ?? "" };
@@ -146,10 +146,10 @@ export function AdminFeedbackClient() {
                         {entry.rating && <Badge variant="outline">{entry.rating}/5</Badge>}
                       </div>
                       <p className="text-sm leading-relaxed">{entry.message}</p>
-                      {entry.contact && <p className="mt-1 text-xs text-muted-foreground">Contact: {entry.contact}</p>}
+                      {entry.contact && <p className="mt-1 text-xs text-text-muted">Contact: {entry.contact}</p>}
                     </TD>
-                    <TD className="max-w-xs align-top whitespace-normal text-xs text-muted-foreground">
-                      <p className="font-medium text-foreground">{entry.page_path}</p>
+                    <TD className="max-w-xs align-top whitespace-normal text-xs text-text-muted">
+                      <p className="font-medium text-text-strong">{entry.page_path}</p>
                       <p className="mt-1">Visitor: {visitorShort}</p>
                       <p>User: {entry.user_id?.slice(0, 8) ?? "-"}</p>
                     </TD>
@@ -171,7 +171,7 @@ export function AdminFeedbackClient() {
                         className="w-64"
                       />
                     </TD>
-                    <TD className="align-top text-sm text-muted-foreground">{fmtDate(entry.created_at)}</TD>
+                    <TD className="align-top text-sm text-text-muted">{fmtDate(entry.created_at)}</TD>
                     <TD className="align-top">
                       <Button size="sm" variant="outline" onClick={() => void save(entry)} disabled={savingId === entry.id}>
                         {savingId === entry.id ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Save className="h-3.5 w-3.5" />}

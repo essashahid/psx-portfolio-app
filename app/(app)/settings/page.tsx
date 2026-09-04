@@ -183,7 +183,7 @@ export default async function SettingsPage() {
         </CardHeader>
         <CardContent>
           {summary.holdings.length === 0 ? (
-            <p className="text-xs text-muted-foreground">Import holdings first; then you can manage their prices here.</p>
+            <p className="text-xs text-text-muted">Import holdings first; then you can manage their prices here.</p>
           ) : (
             <PriceManager
               holdings={summary.holdings.map((h) => ({
@@ -214,13 +214,13 @@ export default async function SettingsPage() {
             {keyStatus.map((k) => (
               <div key={k.name} className="flex items-center justify-between text-xs">
                 <span className="font-medium">{k.name}</span>
-                <span className="flex items-center gap-2 text-muted-foreground">
+                <span className="flex items-center gap-2 text-text-muted">
                   {k.note}
                   <Badge variant={k.ok ? "green" : "amber"}>{k.ok ? "configured" : "not configured"}</Badge>
                 </span>
               </div>
             ))}
-            <p className="pt-1 text-[11px] text-muted-foreground">
+            <p className="pt-1 text-[11px] text-text-muted">
               Keys live in <code>.env.local</code> on the server. The app degrades gracefully when a key is missing.
             </p>
           </CardContent>
