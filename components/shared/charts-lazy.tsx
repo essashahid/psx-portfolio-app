@@ -15,20 +15,8 @@ export const AllocationPie = dynamic(
   { ssr: false, loading: ChartFallback }
 );
 
-export const GainLossBar = dynamic(
-  () => import("@/components/shared/charts").then((m) => m.GainLossBar),
-  { ssr: false, loading: ChartFallback }
-);
 
-export const DailyHoldingPerformanceBar = dynamic(
-  () => import("@/components/shared/charts").then((m) => m.DailyHoldingPerformanceBar),
-  { ssr: false, loading: ChartFallback }
-);
 
-export const RatioSnapshotChart = dynamic(
-  () => import("@/components/shared/charts").then((m) => m.RatioSnapshotChart),
-  { ssr: false, loading: ChartFallback }
-);
 
 export const TargetVsActualBar = dynamic(
   () => import("@/components/shared/charts").then((m) => m.TargetVsActualBar),
@@ -40,15 +28,7 @@ export const ValueLine = dynamic(
   { ssr: false, loading: ChartFallback }
 );
 
-export const PerformanceWaterfall = dynamic(
-  () => import("@/components/shared/charts").then((m) => m.PerformanceWaterfall),
-  { ssr: false, loading: ChartFallback }
-);
 
-export const PerformanceTimeline = dynamic(
-  () => import("@/components/shared/charts").then((m) => m.PerformanceTimeline),
-  { ssr: false, loading: ChartFallback }
-);
 
 export const CostFrictionBars = dynamic(
   () => import("@/components/shared/charts").then((m) => m.CostFrictionBars),
