@@ -3,16 +3,39 @@
 ## Before you open a change
 
 ```bash
-npm run validate      # lint + typecheck + tests
+npm run validate      # lint + typecheck + check:shared + mobile:typecheck + tests
 npm run build         # catches Server/Client boundary errors nothing else does
 ```
 
-`npm run validate` runs `npm run lint`, `npm run typecheck` (`tsc --noEmit`),
-and `npm test` (Jest). All four commands must be run for anything that touches
-`app/`, `components/`, or `lib/`.
+`npm run validate` chains five checks, cheapest first so the slow one runs last:
 
-`npm run lint` currently reports pre-existing errors in `types/chart-engine.ts`
-and a few scripts. Do not add new ones, and do not "fix" them by widening the
+| Step | What it covers |
+|---|---|
+| `npm run lint` | ESLint over the repository |
+| `npm run typecheck` | `tsc --noEmit` for the web app |
+| `npm run check:shared` | `packages/shared` imports no platform code, and typechecks |
+| `npm run mobile:typecheck` | `tsc --noEmit` for the Expo app in `mobile/` |
+| `npm test` | Jest, about a minute |
+
+Both commands must be run for anything that touches `app/`, `components/`,
+`lib/`, `packages/shared/` or `mobile/`.
+
+**`npm run validate` currently fails, and it is not your change.** `npm run
+lint` reports 71 pre-existing problems, 32 of them errors, mostly
+`no-explicit-any` in `types/chart-engine-adapter.ts` and several files under
+`scripts/`. Because the chain stops at the first failure, nothing after lint
+runs. Until that debt is cleared, run the stages separately to check your own
+work:
+
+```bash
+npm run lint            # compare the count, do not add to it
+npm run typecheck       # passes
+npm run check:shared    # passes
+npm run mobile:typecheck # passes
+npm test                # passes
+```
+
+Do not add new lint errors, and do not "fix" the existing ones by widening the
 ESLint configuration.
 
 ## Naming

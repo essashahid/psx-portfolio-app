@@ -46,6 +46,45 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
+      # Registry health, reported before the deploy but deliberately not
+      # gating it. Two things have to be true before this can block, and
+      # neither is today:
+      #
+      #   1. The checks read the database with the service-role key, and this
+      #      repository holds only VERCEL_TOKEN. Without the two secrets below
+      #      the step has nothing to check.
+      #   2. As of September 2026 the verified registry has 23 drifted entries
+      #      out of 136, which is known debt tracked in the data-platform plan,
+      #      not a regression this workflow should discover.
+      #
+      # This workflow is the only production deploy path, because vercel.json
+      # disables the Git integration. A gate that fails here stops everything
+      # from shipping, so it reports and moves on. To make it blocking: add the
+      # secrets, get `npm run check:registry` green locally, then delete the
+      # continue-on-error line.
+      - name: Check out
+        uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Check verified registry (advisory)
+        continue-on-error: true
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: |
+          if [ -z "${SUPABASE_SERVICE_ROLE_KEY:-}" ]; then
+            echo "Skipped: SUPABASE_SERVICE_ROLE_KEY is not set for this repository."
+            echo "Add it and NEXT_PUBLIC_SUPABASE_URL with: gh secret set <NAME>"
+            exit 0
+          fi
+          npm ci
+          npm run check:registry
+
       - name: Create deployment
         id: create
         run: |

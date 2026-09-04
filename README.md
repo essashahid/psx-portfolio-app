@@ -15,8 +15,11 @@ all behind your own Supabase project with Row Level Security.
 
 Next.js 16 (App Router) · React 19 · TypeScript · Tailwind CSS v4 ·
 Supabase (Postgres, Auth, Storage, RLS) · Jest · Recharts, Vega-Lite and
-KLineCharts · TanStack Table · Zod · Papaparse · XLSX · pdf-parse ·
+KLineCharts · Zod · Papaparse · XLSX · pdf-parse ·
 Anthropic and OpenAI-compatible model APIs · Serwist (PWA)
+
+The phone app is Expo (React Native) with expo-router and TanStack Query, in
+`mobile/`. Both apps share `packages/shared`.
 
 ## Prerequisites
 
@@ -133,9 +136,16 @@ __tests__/         Jest suites, mirroring lib/ by domain
 scripts/           operator-run scripts, by category, see scripts/README.md
 data/              reference, external, queue, generated, private data, see data/README.md
 samples/           sanitised import fixtures, see samples/README.md
-supabase/          migrations/ (append-only) and seed.sql
+supabase/          config.toml, migrations/ (append-only), seed.sql
 docs/              architecture, development, operations, research, design
 proxy.ts           request proxy: auth and per-account feature gating
+
+packages/
+  shared/          @psx/shared: API response contracts, formatting, sector colours,
+                   chat stream parsing. Imported by both apps, see packages/shared/README.md
+mobile/            the Expo app (@psx/mobile): expo-router screens in mobile/app/,
+                   with its own components/ and lib/. Not an npm workspace, so it
+                   keeps its own node_modules and lockfile, see mobile/README.md
 ```
 
 Full detail, including layer boundaries and where a new file belongs:
