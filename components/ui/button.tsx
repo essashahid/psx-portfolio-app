@@ -6,10 +6,10 @@ type Size = "default" | "sm" | "lg" | "icon";
 
 const variants: Record<Variant, string> = {
   default: "bg-primary text-primary-foreground hover:bg-primary/90",
-  outline: "border border-border bg-card hover:bg-accent",
-  ghost: "hover:bg-accent",
+  outline: "border border-rule bg-surface-raised hover:bg-surface-inset",
+  ghost: "hover:bg-surface-inset",
   destructive: "bg-destructive text-white hover:bg-destructive/90",
-  secondary: "bg-muted text-foreground hover:bg-muted/70",
+  secondary: "bg-surface-sunken text-text-strong hover:bg-surface-sunken/70",
 };
 
 const sizes: Record<Size, string> = {

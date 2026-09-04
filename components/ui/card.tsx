@@ -7,7 +7,7 @@ export function Card({ className, ...props }: React.HTMLAttributes<HTMLDivElemen
       className={cn(
         // Ruled, not boxed: hairlines carry structure. Shadow is reserved for
         // surfaces that genuinely float (dialogs, tooltips, mobile nav).
-        "rounded-md border border-rule bg-card text-card-foreground",
+        "rounded-md border border-rule bg-surface-raised text-text-strong",
         className
       )}
       {...props}
@@ -24,7 +24,7 @@ export function CardTitle({ className, ...props }: React.HTMLAttributes<HTMLHead
 }
 
 export function CardDescription({ className, ...props }: React.HTMLAttributes<HTMLParagraphElement>) {
-  return <p className={cn("text-xs text-muted-foreground", className)} {...props} />;
+  return <p className={cn("text-xs text-text-muted", className)} {...props} />;
 }
 
 export function CardContent({ className, ...props }: React.HTMLAttributes<HTMLDivElement>) {

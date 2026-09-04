@@ -93,7 +93,7 @@ export function SegmentedControl<T extends string>({
               "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2 focus-visible:ring-offset-card",
               selected
                 ? "border-foreground bg-foreground text-background"
-                : "border-border bg-card text-muted-foreground hover:bg-muted hover:text-foreground"
+                : "border-rule bg-surface-raised text-text-muted hover:bg-surface-sunken hover:text-text-strong"
             )}
           >
             {option.label}

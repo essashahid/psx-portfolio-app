@@ -51,18 +51,18 @@ export function Dialog({
     >
       <div
         className={cn(
-          "scroll-touch max-h-[88dvh] w-full max-w-none overflow-y-auto rounded-t-lg border border-rule bg-card p-4 pb-[calc(env(safe-area-inset-bottom)+1rem)] shadow-dialog sm:max-w-lg sm:rounded-lg sm:p-5",
+          "scroll-touch max-h-[88dvh] w-full max-w-none overflow-y-auto rounded-t-lg border border-rule bg-surface-raised p-4 pb-[calc(env(safe-area-inset-bottom)+1rem)] shadow-dialog sm:max-w-lg sm:rounded-lg sm:p-5",
           className
         )}
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="sticky top-0 z-10 -mx-1 mb-3 flex items-center justify-between bg-card px-1">
+        <div className="sticky top-0 z-10 -mx-1 mb-3 flex items-center justify-between bg-surface-raised px-1">
           <h2 id={titleId} className="font-display text-(length:--text-h2) font-normal tracking-editorial text-text-strong">
             {title}
           </h2>
           <button
             onClick={onClose}
-            className="flex h-11 w-11 items-center justify-center rounded-md text-text-muted transition-colors hover:bg-muted hover:text-text-strong sm:h-9 sm:w-9"
+            className="flex h-11 w-11 items-center justify-center rounded-md text-text-muted transition-colors hover:bg-surface-sunken hover:text-text-strong sm:h-9 sm:w-9"
             aria-label="Close dialog"
           >
             <X className="h-4 w-4" />

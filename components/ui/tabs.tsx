@@ -40,7 +40,7 @@ export function Tabs({ tabs, initial }: { tabs: TabDef[]; initial?: string }) {
 
   return (
     <div>
-      <div role="tablist" aria-label="Page sections" className="scroll-touch sticky top-0 z-10 -mx-1 mb-4 flex gap-1 overflow-x-auto border-b border-border bg-background/90 px-1 pb-px backdrop-blur">
+      <div role="tablist" aria-label="Page sections" className="scroll-touch sticky top-0 z-10 -mx-1 mb-4 flex gap-1 overflow-x-auto border-b border-rule bg-surface-page/90 px-1 pb-px backdrop-blur">
         {tabs.map((t) => (
           <button
             key={t.id}
@@ -50,7 +50,7 @@ export function Tabs({ tabs, initial }: { tabs: TabDef[]; initial?: string }) {
             aria-controls={`panel-${t.id}`}
             className={cn(
               "relative min-h-11 shrink-0 whitespace-nowrap px-3 py-2 text-[13px] font-medium transition-colors md:min-h-0",
-              active === t.id ? "text-foreground" : "text-muted-foreground hover:text-foreground"
+              active === t.id ? "text-text-strong" : "text-text-muted hover:text-text-strong"
             )}
           >
             {t.label}
