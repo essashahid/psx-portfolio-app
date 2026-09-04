@@ -21,7 +21,7 @@ components/
   ui/                       Presentation primitives. No app or domain knowledge.
   shared/                   Cross-feature application components (sidebar, charts, …)
   features/<domain>/        UI owned by one feature: outlook, market, stocks, chat,
-                            dividends, allocation, technicals, dashboard, holdings,
+                            dividends, allocation, dashboard, holdings,
                             performance, news, import, settings, alerts, goals,
                             journal, onboarding, coverage
 
