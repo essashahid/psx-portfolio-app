@@ -839,7 +839,7 @@ thead {
 
 /* ═════════════════════════════════════════════════════════════════════════
    PLUMB MOTION SYSTEM
-   From handoff 3/motion/motion.css. The four duration tokens, --ease-out and
+   From docs/design/brand/motion.css. The four duration tokens, --ease-out and
    the reduced-motion collapse live with the other tokens at the top of this
    file rather than being redeclared here.
 

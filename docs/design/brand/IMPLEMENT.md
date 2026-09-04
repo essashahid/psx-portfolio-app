@@ -1,10 +1,19 @@
 # Plumb — motion & brand assets: implementation brief
 
+**This brief was implemented in July 2026. It is kept as the brand
+specification, not as work to do.** The motion tokens and keyframes live in
+`app/globals.css`, the splash in `components/shared/plumb-splash.tsx`, and the
+mark in `components/shared/plumb-mark.tsx` and `mobile/components/ui/mark.tsx`.
+The SVGs beside this file are still the only vector masters, and the size table
+below is what both mark implementations cite.
+
+Original brief follows.
+
 For an agent with write access to `essashahid/psx-portfolio-app` (branch `main`).
 Everything needed is in this folder. No design tool, no new dependency.
 
 ```
-handoff/motion/
+docs/design/brand/
   IMPLEMENT.md          this file
   motion.css            all tokens, keyframes and state classes — paste target below
   splash.html           cold-start splash markup

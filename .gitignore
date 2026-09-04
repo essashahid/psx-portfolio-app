@@ -65,3 +65,6 @@ data/private/
 # Per-company backfill run logs. Rebuilt by scripts/backfills/run-batch-backfill.ts
 # on every run; the durable record is data/reference/backfill-progress.json.
 logs/
+
+# Scratch output from one-off maintenance scripts. Nothing reads it back.
+.worker/

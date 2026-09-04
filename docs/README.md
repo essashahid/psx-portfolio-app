@@ -24,9 +24,11 @@ them wrong, fix it in the same change.
   launch, where the flags live, and how to restore each one.
 - `research/bulls-and-bears-video-insights-idea.md` — an unbuilt idea for
   deriving Bulls & Bears content from video transcripts. Not a specification.
-- `design/psx-outlook-design-reference.html` — a standalone HTML mock used while
-  designing the outlook pages. Open it in a browser. It is not part of the
-  build and nothing imports it.
+- `design/` — visual and layout source material: the Stock Research build
+  handoff and its ten phone screens, the brand and motion assets, the News
+  Centre canvas, and the outlook mock. None of it is part of the build and
+  nothing imports it. See `design/README.md`, which also notes the two items
+  that are load-bearing.
 
 Other documentation lives next to what it describes: `scripts/README.md`,
 `data/README.md`, `samples/README.md`, and `CONTRIBUTING.md` at the root.

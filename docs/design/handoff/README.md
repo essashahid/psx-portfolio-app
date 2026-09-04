@@ -1,7 +1,7 @@
 # Stock Research — build handoff
 
 Static HTML of the Stock Research screener and one company page per PSX sector.
-Open `handoff/screener.html` in a browser; every row links to its company page.
+Open `screener.html` in a browser; every row links to its company page.
 Nothing here needs a build step or a network call — the pages are plain HTML plus
 eight token stylesheets and about 30 lines of vanilla JS for tab / metric / filing
 switching.
@@ -9,9 +9,10 @@ switching.
 ## Files
 
 ```
-handoff/
+docs/design/handoff/
   screener.html            Stock Research — the whole board
   company/<TICKER>.html    15 company pages, one per sector (see table)
+  mobile/                  the ten phone screens (see mobile/README.md)
   tokens/*.css             design tokens, copied verbatim from the design system
 ```
 

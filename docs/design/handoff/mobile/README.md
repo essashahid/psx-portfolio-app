@@ -5,7 +5,7 @@ screen directly. No build step, no framework, no network call except the icon
 mask URLs.
 
 ```
-handoff/mobile/
+docs/design/handoff/mobile/
   index.html        contents page
   login.html  home.html  holdings.html  dividends.html  performance.html
   market.html  research.html  company.html  copilot.html  more.html

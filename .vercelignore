@@ -15,9 +15,8 @@ node_modules
 mobile
 
 # Design canvases and handoff material: source for people, not for the build.
-design
-handoff 3
-mobile copy
+# They live under docs/design/ since September 2026.
+docs/design
 
 *.log
 .DS_Store
