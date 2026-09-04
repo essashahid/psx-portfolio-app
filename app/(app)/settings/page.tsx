@@ -65,8 +65,6 @@ export default async function SettingsPage() {
     experience_level: "intermediate",
     risk_profile: null,
     objective: null,
-    extra_features: [],
-    hidden_features: [],
     enabled_features: ["/dashboard", "/holdings", "/dividends", "/stocks", "/market", "/chat"],
     allowed_llm_providers: ["claude", "deepseek"],
   };

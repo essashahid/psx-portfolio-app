@@ -12,7 +12,6 @@ import { formatNumber, formatSignedPct } from "@/lib/shared/format";
 import { NAV, resolveVisibleHrefs } from "@/lib/config/navigation";
 import { getCachedMarketGlobal } from "@/lib/market/read";
 import { getCachedTickerExtras } from "@/lib/market/ticker-extras";
-import type { ExperienceLevel } from "@/lib/shared/types";
 
 const fmtCompactNum = (v: number) =>
   v >= 1e9 ? `${formatNumber(v / 1e9, 1)}bn` : v >= 1e6 ? `${formatNumber(v / 1e6, 0)}m` : formatNumber(v, 0);
@@ -72,7 +71,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
       .eq("status", "open"),
     supabase
       .from("profiles")
-      .select("onboarded, experience_level, extra_features, hidden_features, enabled_features, is_admin, demo_mode")
+      .select("onboarded, enabled_features, is_admin, demo_mode")
       .eq("id", user.id)
       .maybeSingle(),
     getTickerItems(),
@@ -90,12 +89,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   const isDemo = Boolean(profileRes.data?.demo_mode);
 
   const visibleHrefs = resolveVisibleHrefs(
-    {
-      experience_level: (profileRes.data?.experience_level as ExperienceLevel) ?? "intermediate",
-      extra_features: profileRes.data?.extra_features ?? [],
-      hidden_features: profileRes.data?.hidden_features ?? [],
-      enabled_features: profileRes.data?.enabled_features ?? [],
-    },
+    { enabled_features: profileRes.data?.enabled_features ?? [] },
     isAdmin
   );
 

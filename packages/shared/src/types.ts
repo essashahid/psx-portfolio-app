@@ -55,8 +55,6 @@ export interface Profile {
   experience_level: ExperienceLevel;
   risk_profile: RiskProfile | null;
   objective: Objective | null;
-  extra_features: string[];
-  hidden_features: string[];
   enabled_features: string[];
   allowed_llm_providers: string[];
   is_admin?: boolean;
