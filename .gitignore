@@ -68,3 +68,8 @@ logs/
 
 # Scratch output from one-off maintenance scripts. Nothing reads it back.
 .worker/
+
+# Supabase CLI link metadata: project ref, pooler URL and the server versions
+# it last saw. Machine-specific, and rewritten by the CLI on its own. Restore
+# it with `supabase link --project-ref <ref>`; nothing in the app reads it.
+supabase/.temp/

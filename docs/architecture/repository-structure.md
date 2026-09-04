@@ -45,10 +45,20 @@ scripts/                    Operator-run scripts. See scripts/README.md
 data/                       Reference, external, queue, generated, and private data.
                             See data/README.md
 samples/                    Sanitised import fixtures. See samples/README.md
-supabase/                   migrations/ (numbered, append-only) and seed.sql
+supabase/                   config.toml, migrations/ (numbered, append-only), seed.sql
 public/                     Static assets served at the site root
 docs/                       architecture/ development/ operations/ research/ design/
 proxy.ts                    Framework-level request proxy (auth + feature gating)
+
+packages/
+  shared/                   @psx/shared. Raw TypeScript with no build step, imported
+                            by both apps: API response contracts, formatting, sector
+                            colours, chat stream parsing. See packages/shared/README.md
+
+mobile/                     The Expo app (@psx/mobile). expo-router screens in
+                            mobile/app/, its own components/ and lib/. Deliberately
+                            not an npm workspace, so it keeps its own node_modules
+                            and lockfile. See mobile/metro.config.js for why.
 ```
 
 ## Layer boundaries
@@ -74,6 +84,10 @@ app/  →  components/  →  lib/  →  lib/supabase, lib/providers, lib/market-
   row is genuinely a stocks capability rather than a shared one.
 - **`scripts/` may import from `lib/` via the `@/` alias.** Nothing in `app/` or
   `lib/` may import from `scripts/`.
+- **`packages/shared/` imports nothing.** It is consumed by the web app and by
+  `mobile/`, so it must stay free of React, React Native, Next.js, Supabase
+  clients and `process.env`. `npm run check:shared` enforces that; several
+  modules under `lib/shared/` are now re-export shims pointing at it.
 
 ## Client and server
 
@@ -106,6 +120,8 @@ app/  →  components/  →  lib/  →  lib/supabase, lib/providers, lib/market-
 | A new external data provider | `lib/providers/` or `lib/market-data/` |
 | A test | `__tests__/<domain>/<subject>.test.ts` |
 | A one-off or operational script | `scripts/<category>/` — see `scripts/README.md` |
+| Code both the web and mobile apps use | `packages/shared/src/` |
+| A phone screen or mobile-only component | `mobile/app/` or `mobile/components/` |
 | A database change | a new numbered file in `supabase/migrations/` |
 | A committed dataset the app reads | `data/reference/` |
 | A vendor snapshot | `data/external/<vendor>/` |
