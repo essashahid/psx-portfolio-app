@@ -40,19 +40,41 @@ export const ALL_ACCOUNT_FEATURES = [
   ...ACCOUNT_CAPABILITIES,
 ] as const;
 
-export const ADMIN_ONLY_FEATURES = ["/bulls-bears", "/allocation", "/coverage"] as const;
+/**
+ * Reachable only by a real admin. This is the whole access rule; there is no
+ * second list.
+ *
+ * It holds two kinds of route that used to be tracked separately and enforced
+ * identically: internal tooling that will always be admin-only (the data
+ * engine, the weekly brief, the allocation forecaster), and work that is built
+ * but not finished enough to show anyone. They are the same check, so they are
+ * one list. What differs between them is only whether an admin sees the tab in
+ * their menu, and that is navigation, not access: see HIDDEN_FROM_NAV.
+ */
+export const ADMIN_ONLY_FEATURES = [
+  // Internal tooling.
+  "/bulls-bears",
+  "/allocation",
+  "/coverage",
+  // Built, not finished.
+  "/performance",
+  "/research",
+  "/outlook",
+  "/goals",
+  "/journal",
+  "/import",
+] as const;
 
 /**
- * Built, but not finished enough to put in front of anyone yet. Hidden from
- * navigation on both the web and the phone; the routes still resolve, so work
- * can continue by typing the URL.
+ * Kept out of the menus on both the web and the phone. Admins can still open
+ * them by typing the URL, which is how the work continues.
  *
  * These are web hrefs. The phone matches them against an entry's `web` target,
  * not its native route, because the two namespaces collide: /research is the
  * saved-report viewer on the web and the stock screener on the phone. Matching
  * blindly on path would have withdrawn a screen that is finished and in use.
  */
-export const UNRELEASED_FEATURES = [
+export const HIDDEN_FROM_NAV = [
   "/performance",
   "/research",
   "/outlook",
@@ -63,11 +85,17 @@ export const UNRELEASED_FEATURES = [
   "/coverage",
 ] as const;
 
-const UNRELEASED_FEATURE_SET = new Set<string>(UNRELEASED_FEATURES);
+const HIDDEN_FROM_NAV_SET = new Set<string>(HIDDEN_FROM_NAV);
 
-/** Whether a destination should be kept out of menus for now. */
+/**
+ * Whether a destination should be kept out of menus for now.
+ *
+ * Presentation only. Access is decided by featureAllowed, which does not
+ * consult this list: everything in it is also in ADMIN_ONLY_FEATURES, so a
+ * non-admin cannot reach these routes whether or not they are in a menu.
+ */
 export function isUnreleased(href: string): boolean {
-  return UNRELEASED_FEATURE_SET.has(href);
+  return HIDDEN_FROM_NAV_SET.has(href);
 }
 
 export type AppFeatureHref = (typeof ALL_APP_FEATURES)[number];
@@ -118,11 +146,9 @@ export function featureAllowed(
   enabledFeatures: unknown,
   isRealAdmin: boolean
 ): boolean {
+  // One admin gate. Hiding a route from the menu is not protection on its own,
+  // because the URL stays guessable, so anything withheld is withheld here.
   if (ADMIN_ONLY_FEATURE_SET.has(href) && !isRealAdmin) return false;
-  // Unreleased work is reachable by the admin who is building it and nobody
-  // else. Hiding it from menus alone would still leave the URL guessable, and
-  // a half-finished screen is worse found by accident than not found at all.
-  if (UNRELEASED_FEATURE_SET.has(href) && !isRealAdmin) return false;
   return normalizeEnabledFeatures(enabledFeatures).includes(href);
 }
 
