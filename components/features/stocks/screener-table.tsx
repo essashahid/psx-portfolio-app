@@ -9,6 +9,7 @@ import { SectorDot } from "@/components/shared/sector-chip";
 import { Sparkline } from "@/components/shared/sparkline";
 import { shortSector } from "@/lib/shared/sector-colors";
 import type { ScreenerStock } from "@/lib/market/screener";
+import { useSortableTable, type SortValue } from "@/components/shared/use-sortable-table";
 
 type SortKey = "ticker" | "price" | "change" | "volume" | "cap";
 type Scope = "all" | "mine" | "watch";
@@ -20,6 +21,17 @@ const COLUMNS: { key: SortKey; label: string; sortName: string; align: "left" | 
   { key: "volume", label: "Volume · value", sortName: "volume", align: "right" },
   { key: "cap", label: "Market cap", sortName: "market cap", align: "right" },
 ];
+
+/** Column -> comparable value. Same branches the inline sorter used. */
+function stockSortValue(s: ScreenerStock, key: SortKey): SortValue {
+  switch (key) {
+    case "ticker": return s.ticker;
+    case "price": return s.price ?? 0;
+    case "change": return s.changePercent ?? 0;
+    case "volume": return s.volume ?? 0;
+    case "cap": return s.marketCap ?? 0;
+  }
+}
 
 const signed = (v: number, d = 2) => `${v < 0 ? "−" : "+"}${formatNumber(Math.abs(v), d)}`;
 const compact = (v: number | null) =>
@@ -34,38 +46,20 @@ export function ScreenerTable({ stocks, sectors }: { stocks: ScreenerStock[]; se
   const [query, setQuery] = useState("");
   const [scope, setScope] = useState<Scope>("all");
   const [sector, setSector] = useState<string>("");
-  const [sortKey, setSortKey] = useState<SortKey>("cap");
-  const [sortDir, setSortDir] = useState<-1 | 1>(-1);
   const [limit, setLimit] = useState(60);
 
-  const rows = useMemo(() => {
+  const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
-    const filtered = stocks.filter((s) => {
+    return stocks.filter((s) => {
       if (scope === "mine" && !s.owned) return false;
       if (scope === "watch" && !s.watched) return false;
       if (sector && s.sector !== sector) return false;
       if (!q) return true;
       return `${s.ticker} ${s.companyName ?? ""} ${s.sector ?? ""}`.toLowerCase().includes(q);
     });
-    const sorted = [...filtered].sort((a, b) => {
-      if (sortKey === "ticker") return a.ticker.localeCompare(b.ticker) * -sortDir;
-      const pick = (s: ScreenerStock) =>
-        sortKey === "price" ? s.price ?? 0
-        : sortKey === "change" ? s.changePercent ?? 0
-        : sortKey === "volume" ? s.volume ?? 0
-        : s.marketCap ?? 0;
-      return (pick(a) - pick(b)) * sortDir;
-    });
-    return sorted;
-  }, [stocks, query, scope, sector, sortKey, sortDir]);
+  }, [stocks, query, scope, sector]);
 
-  function sortBy(key: SortKey) {
-    if (key === sortKey) setSortDir((d) => (d === -1 ? 1 : -1));
-    else {
-      setSortKey(key);
-      setSortDir(-1);
-    }
-  }
+  const { rows, sortKey, sortDir, sortBy } = useSortableTable<ScreenerStock, SortKey>(filtered, stockSortValue, "cap");
 
   const shown = rows.slice(0, limit);
   const sortLabel = COLUMNS.find((c) => c.key === sortKey)?.sortName ?? "market cap";
