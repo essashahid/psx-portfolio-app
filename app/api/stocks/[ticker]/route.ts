@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { requireUser, errorResponse } from "@/lib/shared/api";
 import { getRatioCard } from "@/lib/chat/data";
+import type { CompanyResponse } from "@psx/shared/api/stocks";
 
 export const maxDuration = 60;
 
@@ -81,7 +82,7 @@ export async function GET(
       watched: Boolean(watched), error: `No data for ${ticker}.` }, { status: 404 });
     }
 
-    return NextResponse.json({
+    return NextResponse.json<CompanyResponse>({
       position: holding
         ? {
             quantity: Number(holding.quantity),

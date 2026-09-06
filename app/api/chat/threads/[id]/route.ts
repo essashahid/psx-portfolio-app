@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { requireUser } from "@/lib/shared/api";
 import { accountHasFeature } from "@/lib/config/features";
 import { rejectDemoWrite } from "@/lib/demo/mode";
+import type { ThreadDetailResponse } from "@psx/shared/api/threads";
 
 type Params = {
   params: Promise<{ id: string }>;
@@ -33,7 +34,7 @@ export async function GET(_request: Request, { params }: Params) {
     .order("created_at", { ascending: true });
 
   if (messagesError) return NextResponse.json({ error: messagesError.message }, { status: 500 });
-  return NextResponse.json({ thread, messages: messages ?? [] });
+  return NextResponse.json<ThreadDetailResponse>({ thread, messages: messages ?? [] });
 }
 
 export async function PATCH(request: Request, { params }: Params) {

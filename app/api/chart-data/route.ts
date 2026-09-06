@@ -11,6 +11,7 @@ import { requireUser } from "@/lib/shared/api";
 import { getDailyCandles } from "@/lib/chat/data";
 import { fetchPsxEod } from "@/lib/market-data/psx-dps";
 import type { Candle } from "@/lib/market/technicals";
+import type { ChartDataResponse } from "@psx/shared/api/chart";
 
 export const dynamic = "force-dynamic";
 
@@ -106,12 +107,13 @@ export async function GET(request: Request) {
       price: t.price != null ? Number(t.price) : null,
     }));
 
-  return Response.json({
+  const body: ChartDataResponse = {
     ticker,
     period,
     candles: trimmed,
     avgCost,
     dividends,
     transactions,
-  });
+  };
+  return Response.json(body);
 }
