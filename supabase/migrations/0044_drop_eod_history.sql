@@ -1,0 +1,43 @@
+-- Drop the superseded eod_history table.
+--
+-- ⚠️ THIS IS THE ONE DESTRUCTIVE MIGRATION IN PHASE 2 AND IS NOT APPLIED.
+-- It is committed so the evidence and the decision travel together. Apply it
+-- deliberately, not as part of a batch.
+--
+-- What it removes
+-- ---------------
+-- 115,035 rows. Migration 0034 made company_price_history canonical and copied
+-- eod_history into it, tagging the copies source='legacy-eod-history'.
+--
+-- Preflight, run against production on 6 September 2026:
+--
+--   eod_history rows                                     115,035
+--   company_price_history rows                           523,851
+--   eod_history rows with no (ticker, price_date) match  0
+--   company_price_history rows from 'legacy-eod-history' 1,146
+--
+-- Every row is already present in the canonical table, so nothing unique is
+-- lost. The 1,146 figure is lower than 115,035 because most of the history was
+-- later re-fetched from the portal and overwritten with a truer source; that is
+-- the intended outcome of 0034, not a gap.
+--
+-- Code references: none. The only mention was
+-- scripts/verification/check-eod-prices.mjs, which queried a column that does
+-- not exist on this table (`date`, where the column is `trade_date`) and so had
+-- silently reported a total of 0.00 for as long as it existed. That script is
+-- removed in the same commit as this file.
+--
+-- Risk
+-- ----
+-- Dropping a table is not reversible from inside Postgres. The recovery path is
+-- a point-in-time restore of the Supabase project, which is why this is not
+-- bundled with the additive migration.
+--
+-- Take a copy first if you want a cheap undo:
+--
+--   create table public.eod_history_backup_20260906 as
+--     select * from public.eod_history;
+--
+-- and drop that once you are satisfied.
+
+drop table if exists public.eod_history;

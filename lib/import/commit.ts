@@ -2,6 +2,23 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import type { NormalizedRow, StatementType } from "@/lib/shared/types";
 import { recomputeHoldingsFromTransactions } from "@/lib/portfolio/positions";
 
+/**
+ * Postgres unique-violation.
+ *
+ * Import dedupes by reading the existing row_hashes first, which is a
+ * read-then-insert and therefore a race: two commits of the same statement, or
+ * one retried serverless invocation, can both pass the check. Migration 0043
+ * adds unique (user_id, row_hash) to transactions and cash_movements so the
+ * database settles it, and this is how the loser of that race is recognised
+ * and counted as a duplicate rather than thrown as a failed import.
+ *
+ * Written to be correct on both sides of that migration: until the constraint
+ * exists nothing raises 23505, and the pre-read keeps doing the work alone.
+ */
+function isDuplicateRow(error: { code?: string } | null): boolean {
+  return error?.code === "23505";
+}
+
 export interface CommitResult {
   committed: number;
   duplicates: number;
@@ -123,6 +140,11 @@ export async function commitBatch(
         row_hash: row.row_hash,
         source: "import",
       });
+      if (isDuplicateRow(error)) {
+        duplicates++;
+        existingHashes.add(row.row_hash);
+        continue;
+      }
       if (error) throw error;
       committed++;
       holdingsTouched.add(n.ticker);
@@ -195,6 +217,11 @@ export async function commitBatch(
         row_hash: row.row_hash,
         notes: n.description ?? null,
       });
+      if (isDuplicateRow(error)) {
+        duplicates++;
+        seen.add(row.row_hash);
+        continue;
+      }
       if (error) throw error;
       committed++;
       if (n.ticker) holdingsTouched.add(n.ticker);
@@ -208,6 +235,11 @@ export async function commitBatch(
         description: n.description ?? null,
         row_hash: row.row_hash,
       });
+      if (isDuplicateRow(error)) {
+        duplicates++;
+        seen.add(row.row_hash);
+        continue;
+      }
       if (error) throw error;
       committed++;
     }
