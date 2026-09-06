@@ -1,5 +1,6 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Table, THead, TBody, TR, TH, TD } from "@/components/ui/table";
 import type { SignalClass, SignalEvidenceReport, CellEvidence } from "@/lib/engine/outlook/evaluate";
 
 /**
@@ -62,51 +63,49 @@ export function SignalEvidenceView({ report, bare = false }: { report: SignalEvi
             title="Phase 2 signal evidence"
             blurb={`Every candidate signal tested against 3% and 5% drawdowns over 5, 10 and 20 sessions (1 month measured but never decisive), with states assigned from each signal's own expanding history so a date is only ever judged by cut-offs that existed on that date. Verdicts weigh distinct market episodes, stability across sample halves, and whether the signal adds anything beyond volatility. Descriptive and in-sample; no model has been fitted.`}
           />
-          <div className="-mx-4 overflow-x-auto px-4">
-            <table className="w-full min-w-[52rem] text-xs">
-              <thead>
-                <tr className="border-b border-rule text-left text-[11px] uppercase tracking-wide text-text-muted">
-                  <th className="pb-2 pr-3 font-medium">Signal</th>
-                  <th className="pb-2 pr-3 font-medium">Family</th>
-                  <th className="pb-2 pr-3 text-right font-medium">Coverage</th>
-                  <th className="pb-2 pr-3 text-right font-medium">Defining cell</th>
-                  <th className="pb-2 pr-3 text-right font-medium">Lift</th>
-                  <th className="pb-2 pr-3 text-right font-medium">Episodes</th>
-                  <th className="pb-2 pr-3 text-right font-medium">Beyond vol</th>
-                  <th className="pb-2 font-medium">Verdict</th>
-                </tr>
-              </thead>
-              <tbody>
-                {sorted.map((s) => {
-                  const cell = headlineCell(s.cells, s.verdict);
-                  const badge = VERDICT_BADGE[s.verdict];
-                  return (
-                    <tr key={s.key} className="border-b border-rule/60 last:border-0">
-                      <td className="py-2 pr-3">
-                        <span className="text-text-strong">{s.label}</span>
-                        <span className="mt-0.5 block text-[11px] leading-snug text-text-muted">{s.verdictReason}</span>
-                      </td>
-                      <td className="py-2 pr-3 text-text-muted">{s.family}</td>
-                      <td className="py-2 pr-3 text-right tabular-nums text-text-muted">
-                        {s.coverage.observations.toLocaleString()} obs
-                      </td>
-                      <td className="py-2 pr-3 text-right tabular-nums text-text-muted">
-                        {Math.abs(cell.threshold * 100).toFixed(0)}% / {cell.horizonKey}
-                      </td>
-                      <td className="py-2 pr-3 text-right tabular-nums text-text-muted">{x(cell.lift)}</td>
-                      <td className="py-2 pr-3 text-right tabular-nums text-text-muted">{cell.hitEpisodes}</td>
-                      <td className="py-2 pr-3 text-right tabular-nums text-text-muted">
-                        {cell.beyondVol ? x(cell.beyondVol.lift) : "benchmark"}
-                      </td>
-                      <td className="py-2">
-                        <Badge variant={badge.variant}>{badge.label}</Badge>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
+          <Table variant="reader" wrapperClassName="-mx-4 px-4" className="min-w-[52rem]">
+            <THead>
+              <TR>
+                <TH>Signal</TH>
+                <TH>Family</TH>
+                <TH className="text-right">Coverage</TH>
+                <TH className="text-right">Defining cell</TH>
+                <TH className="text-right">Lift</TH>
+                <TH className="text-right">Episodes</TH>
+                <TH className="text-right">Beyond vol</TH>
+                <TH>Verdict</TH>
+              </TR>
+            </THead>
+            <TBody>
+              {sorted.map((s) => {
+                const cell = headlineCell(s.cells, s.verdict);
+                const badge = VERDICT_BADGE[s.verdict];
+                return (
+                  <TR key={s.key}>
+                    <TD>
+                      <span className="text-text-strong">{s.label}</span>
+                      <span className="mt-0.5 block text-[11px] leading-snug text-text-muted">{s.verdictReason}</span>
+                    </TD>
+                    <TD className="text-text-muted">{s.family}</TD>
+                    <TD className="text-right tabular-nums text-text-muted">
+                      {s.coverage.observations.toLocaleString()} obs
+                    </TD>
+                    <TD className="text-right tabular-nums text-text-muted">
+                      {Math.abs(cell.threshold * 100).toFixed(0)}% / {cell.horizonKey}
+                    </TD>
+                    <TD className="text-right tabular-nums text-text-muted">{x(cell.lift)}</TD>
+                    <TD className="text-right tabular-nums text-text-muted">{cell.hitEpisodes}</TD>
+                    <TD className="text-right tabular-nums text-text-muted">
+                      {cell.beyondVol ? x(cell.beyondVol.lift) : "benchmark"}
+                    </TD>
+                    <TD>
+                      <Badge variant={badge.variant}>{badge.label}</Badge>
+                    </TD>
+                  </TR>
+                );
+              })}
+            </TBody>
+          </Table>
       </Section>
 
       <Section bare={bare} className="rise rise-1">
@@ -145,35 +144,33 @@ export function SignalEvidenceView({ report, bare = false }: { report: SignalEvi
             title="Market regimes, descriptively"
             blurb="Trend against the 200-day average crossed with the volatility tercile, with the share of history spent in each state and the drawdown rates that followed. Read alongside the episode counts: the downtrend states are rare in this sample, so their rates rest on a handful of events."
           />
-          <div className="-mx-4 overflow-x-auto px-4">
-            <table className="w-full min-w-[44rem] text-xs">
-              <thead>
-                <tr className="border-b border-rule text-left text-[11px] uppercase tracking-wide text-text-muted">
-                  <th className="pb-2 pr-3 font-medium">Regime</th>
-                  <th className="pb-2 pr-3 text-right font-medium">Share of history</th>
-                  {report.regimes[0]?.cells.map((c) => (
-                    <th key={`${c.horizonKey}-${c.threshold}`} className="pb-2 pr-3 text-right font-medium">
-                      {Math.abs(c.threshold * 100).toFixed(0)}% / {c.horizonKey}
-                    </th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {report.regimes.map((r) => (
-                  <tr key={r.key} className="border-b border-rule/60 last:border-0">
-                    <td className="py-2 pr-3 text-text-strong">{r.label}</td>
-                    <td className="py-2 pr-3 text-right tabular-nums text-text-muted">{pct(r.occupancyShare)}</td>
-                    {r.cells.map((c) => (
-                      <td key={`${c.horizonKey}-${c.threshold}`} className="py-2 pr-3 text-right tabular-nums text-text-muted">
-                        {pct(c.rate)}
-                        <span className="block text-[10px] text-text-muted/70">{c.hitEpisodes} ep</span>
-                      </td>
-                    ))}
-                  </tr>
+          <Table variant="reader" wrapperClassName="-mx-4 px-4" className="min-w-[44rem]">
+            <THead>
+              <TR>
+                <TH>Regime</TH>
+                <TH className="text-right">Share of history</TH>
+                {report.regimes[0]?.cells.map((c) => (
+                  <TH key={`${c.horizonKey}-${c.threshold}`} className="text-right">
+                    {Math.abs(c.threshold * 100).toFixed(0)}% / {c.horizonKey}
+                  </TH>
                 ))}
-              </tbody>
-            </table>
-          </div>
+              </TR>
+            </THead>
+            <TBody>
+              {report.regimes.map((r) => (
+                <TR key={r.key}>
+                  <TD className="text-text-strong">{r.label}</TD>
+                  <TD className="text-right tabular-nums text-text-muted">{pct(r.occupancyShare)}</TD>
+                  {r.cells.map((c) => (
+                    <TD key={`${c.horizonKey}-${c.threshold}`} className="text-right tabular-nums text-text-muted">
+                      {pct(c.rate)}
+                      <span className="block text-[10px] text-text-muted/70">{c.hitEpisodes} ep</span>
+                    </TD>
+                  ))}
+                </TR>
+              ))}
+            </TBody>
+          </Table>
       </Section>
 
       <Section bare={bare} className="rise rise-3">
