@@ -228,7 +228,7 @@ export default async function MarketPulsePage() {
   );
 }
 
-function MarketStat({ label, value, tone: statTone }: { label: string; value: string; tone?: "positive" | "negative" }) { return <div><p className={cn("text-sm font-semibold tabular-nums", statTone === "positive" ? "text-up" : statTone === "negative" ? "text-down" : "text-foreground")}>{value}</p><p className="mt-0.5 text-[10px] uppercase tracking-wide text-muted-foreground">{label}</p></div>; }
+function MarketStat({ label, value, tone: statTone }: { label: string; value: string; tone?: "positive" | "negative" }) { return <div><p className={cn("text-sm font-semibold tabular-nums", statTone === "positive" ? "text-up" : statTone === "negative" ? "text-down" : "text-text-strong")}>{value}</p><p className="mt-0.5 text-[10px] uppercase tracking-wide text-text-muted">{label}</p></div>; }
 
 
 

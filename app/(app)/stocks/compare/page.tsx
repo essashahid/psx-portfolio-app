@@ -58,7 +58,7 @@ export default async function CompareStocksPage({ searchParams }: { searchParams
       <div className="space-y-4">
         <PageHeader eyebrow="Research" title="Compare stocks" description="Put two to four PSX companies side by side on valuation, dividends and quality." />
         <Card>
-          <CardContent className="py-12 text-center text-sm text-muted-foreground">
+          <CardContent className="py-12 text-center text-sm text-text-muted">
             Add at least two tickers to compare, for example <Link href="/stocks/compare?t=FCCL,MLCF" className="font-medium text-primary hover:underline">/stocks/compare?t=FCCL,MLCF</Link>.
             <p className="mt-2 text-xs">Open any stock and use its search to pick companies, or start from <Link href="/stocks" className="text-primary hover:underline">Stock Research</Link>.</p>
           </CardContent>
@@ -105,7 +105,7 @@ export default async function CompareStocksPage({ searchParams }: { searchParams
 
   return (
     <div className="space-y-4">
-      <Link href="/stocks" className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground">
+      <Link href="/stocks" className="inline-flex items-center gap-1 text-xs text-text-muted hover:text-text-strong">
         <ArrowLeft className="h-3.5 w-3.5" /> Stock research
       </Link>
       <PageHeader eyebrow="Research" title={`Compare ${tickers.join(" · ")}`} description="Valuation, dividends and quality side by side. The most attractive value per row is emphasised; this is context, not a recommendation." />
@@ -114,29 +114,29 @@ export default async function CompareStocksPage({ searchParams }: { searchParams
         <CardContent className="overflow-x-auto p-0">
           <table className="w-full min-w-[40rem] border-collapse text-sm">
             <thead>
-              <tr className="border-b border-border">
-                <th className="p-3 text-left text-xs font-medium text-muted-foreground">Metric</th>
+              <tr className="border-b border-rule">
+                <th className="p-3 text-left text-xs font-medium text-text-muted">Metric</th>
                 {columns.map((col) => (
                   <th key={col.ticker} className="p-3 text-right align-bottom">
                     <Link href={`/stocks/${col.ticker}`} className="font-semibold hover:underline">{col.ticker}</Link>
                     {col.owned && <Badge variant="green" className="ml-1.5 align-middle">Owned</Badge>}
-                    <p className="truncate text-[11px] font-normal text-muted-foreground">{col.companyName ?? ""}</p>
-                    <p className="text-[10px] font-normal text-muted-foreground">{col.sector ?? ""}</p>
+                    <p className="truncate text-[11px] font-normal text-text-muted">{col.companyName ?? ""}</p>
+                    <p className="text-[10px] font-normal text-text-muted">{col.sector ?? ""}</p>
                   </th>
                 ))}
               </tr>
             </thead>
             <tbody>
-              <tr className="border-b border-border">
-                <td className="p-3 text-xs text-muted-foreground">Price</td>
+              <tr className="border-b border-rule">
+                <td className="p-3 text-xs text-text-muted">Price</td>
                 {columns.map((col) => (
                   <td key={col.ticker} className="p-3 text-right tabular-nums">{col.price !== null ? `PKR ${formatNumber(col.price)}` : "—"}</td>
                 ))}
               </tr>
-              <tr className="border-b border-border">
-                <td className="p-3 text-xs text-muted-foreground">52-week range</td>
+              <tr className="border-b border-rule">
+                <td className="p-3 text-xs text-text-muted">52-week range</td>
                 {columns.map((col) => (
-                  <td key={col.ticker} className="p-3 text-right text-xs tabular-nums text-muted-foreground">
+                  <td key={col.ticker} className="p-3 text-right text-xs tabular-nums text-text-muted">
                     {col.low52 !== null && col.high52 !== null ? `${formatNumber(col.low52)} – ${formatNumber(col.high52)}` : "—"}
                   </td>
                 ))}
@@ -144,14 +144,14 @@ export default async function CompareStocksPage({ searchParams }: { searchParams
               {COMPARE_METRICS.map((m) => {
                 const best = bestTicker(m.name, m.better);
                 return (
-                  <tr key={m.name} className="border-b border-border last:border-0">
-                    <td className="p-3 text-xs text-muted-foreground">{m.label}</td>
+                  <tr key={m.name} className="border-b border-rule last:border-0">
+                    <td className="p-3 text-xs text-text-muted">{m.label}</td>
                     {columns.map((col) => {
                       const v = col.ratios.get(m.name);
                       const isBest = best === col.ticker && columns.length > 1;
                       return (
                         <td key={col.ticker} className={`p-3 text-right tabular-nums ${isBest ? "font-semibold text-up" : ""}`}>
-                          {v !== null && v !== undefined ? `${m.suffix === "%" ? v.toFixed(2) : v.toFixed(2)}${m.suffix ?? ""}` : <span className="text-muted-foreground">—</span>}
+                          {v !== null && v !== undefined ? `${m.suffix === "%" ? v.toFixed(2) : v.toFixed(2)}${m.suffix ?? ""}` : <span className="text-text-muted">—</span>}
                         </td>
                       );
                     })}
