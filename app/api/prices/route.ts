@@ -5,6 +5,7 @@ import { refreshAlerts } from "@/lib/alerts/refresh";
 import { takeSnapshot } from "@/lib/portfolio/positions";
 import { refreshBenchmarkForUser } from "@/lib/engine/benchmark-rebuild";
 import { refreshQuotesForTickers } from "@/lib/engine/market-data";
+import { RATE_LIMITS, rateLimitResponse } from "@/lib/shared/rate-limit";
 import { parseNumberLoose, parseDateLoose } from "@/lib/shared/format";
 import { rejectDemoWrite } from "@/lib/demo/mode";
 
@@ -38,6 +39,8 @@ export async function POST(request: Request) {
     };
 
     if (body.refresh) {
+      const limited = await rateLimitResponse(RATE_LIMITS.priceRefresh, user.id, "Prices were refreshed recently. Try again in a few minutes.");
+      if (limited) return limited;
       const providerName = (process.env.MARKET_DATA_PROVIDER ?? "psx").toLowerCase();
       if (providerName === "manual") {
         return NextResponse.json({

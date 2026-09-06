@@ -3,6 +3,7 @@
 import { useEffect } from "react";
 import { RotateCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { reportClientError } from "@/components/shared/error-reporter";
 
 /**
  * A signed-in page threw. Without this the reader gets Next's default error
@@ -14,6 +15,7 @@ import { Button } from "@/components/ui/button";
 export default function Error({ error, reset }: { error: Error & { digest?: string }; reset: () => void }) {
   useEffect(() => {
     console.error("[app] route error", error);
+    reportClientError(`${error.message}${error.digest ? ` (digest ${error.digest})` : ""}`, error.stack);
   }, [error]);
 
   return (

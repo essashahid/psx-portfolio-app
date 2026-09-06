@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { track } from "@/lib/telemetry/events";
 import { z } from "zod";
 import { requireUser, errorResponse } from "@/lib/shared/api";
 import { recomputeAll } from "@/lib/portfolio/recompute-cascade";
@@ -88,6 +89,7 @@ export async function POST(request: Request) {
     if (insErr) throw insErr;
 
     await recomputeAll(supabase, user.id, { changedTickers: [ticker] });
+    void track(user.id, "holding_added", { method: "manual", type: t.type });
 
     return NextResponse.json({
       ok: true,

@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { errorResponse } from "@/lib/shared/api";
+import { RATE_LIMITS, rateLimitResponse, clientAddress } from "@/lib/shared/rate-limit";
 
 const WaitlistSchema = z
   .object({
@@ -22,6 +23,8 @@ const WaitlistSchema = z
   });
 
 export async function POST(request: Request) {
+  const limited = await rateLimitResponse(RATE_LIMITS.waitlist, clientAddress(request));
+  if (limited) return limited;
   try {
     const parsed = WaitlistSchema.safeParse(await request.json().catch(() => ({})));
     if (!parsed.success) {

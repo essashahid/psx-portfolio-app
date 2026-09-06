@@ -3,6 +3,7 @@ import { requireUser, errorResponse, logAgentRun } from "@/lib/shared/api";
 import { refreshNewsForUser } from "@/lib/news/refresh";
 import { refreshAlerts } from "@/lib/alerts/refresh";
 import { rejectDemoWrite } from "@/lib/demo/mode";
+import { RATE_LIMITS, rateLimitResponse } from "@/lib/shared/rate-limit";
 import { newsWriteClient, syncNewsClusters } from "@/lib/news/global-store";
 
 export const maxDuration = 300;
@@ -12,6 +13,8 @@ export async function POST(request: Request) {
   if (error) return error;
   const demoError = await rejectDemoWrite(supabase, user.id);
   if (demoError) return demoError;
+  const limited = await rateLimitResponse(RATE_LIMITS.newsRefresh, user.id, "News was refreshed recently. Try again in a few minutes.");
+  if (limited) return limited;
 
   try {
     const body = (await request.json().catch(() => ({}))) as { ticker?: string };

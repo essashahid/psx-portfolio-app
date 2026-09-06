@@ -7,6 +7,7 @@ import { NavProgress } from "@/components/shared/nav-progress";
 import { PlumbSplash } from "@/components/shared/plumb-splash";
 import { ImpersonationBanner } from "@/components/shared/impersonation-banner";
 import { FeedbackWidget } from "@/components/shared/feedback-widget";
+import { TrackPageView } from "@/components/shared/track-page-view";
 import { CommandPalette } from "@/components/shared/command-palette";
 import { formatNumber, formatSignedPct } from "@/lib/shared/format";
 import { NAV, resolveVisibleHrefs } from "@/lib/config/navigation";
@@ -123,7 +124,9 @@ export default async function AppLayout({ children }: { children: React.ReactNod
       <main className="scroll-touch flex-1 px-3 py-3 pb-[calc(5.75rem+env(safe-area-inset-bottom))] sm:px-4 sm:py-4 md:px-(--gutter-page) md:py-8 md:pb-8">
         <div className="w-full">{children}</div>
       </main>
-      {isDemo && <FeedbackWidget isDemo={isDemo} />}
+      {/* Feedback is open to every account during the beta, not only the demo. */}
+      <FeedbackWidget isDemo={isDemo} />
+      <TrackPageView />
       <MobileBottomNav email={user.email ?? ""} openAlerts={count ?? 0} visibleHrefs={visibleHrefs} isAdmin={isAdmin} />
     </div>
   );

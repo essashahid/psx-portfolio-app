@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { track } from "@/lib/telemetry/events";
 import { requireUser, errorResponse } from "@/lib/shared/api";
 import { accountHasFeature } from "@/lib/config/features";
 import { commitBatch } from "@/lib/import/commit";
@@ -85,6 +86,8 @@ export async function POST(request: Request) {
     const duplicates =
       (rows ?? []).filter((r) => r.status === "duplicate").length + result.duplicates;
 
+    void track(user.id, "import_committed", { committed: result.committed, duplicates, rejected });
+    void track(user.id, "holding_added", { method: "import", rows: result.committed });
     await supabase
       .from("import_batches")
       .update({

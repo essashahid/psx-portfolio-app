@@ -64,6 +64,34 @@ export function AdminWaitlistClient() {
     setDrafts((prev) => ({ ...prev, [id]: { ...prev[id], ...patch } }));
   }
 
+  const [inviteEmail, setInviteEmail] = useState("");
+  const [inviteName, setInviteName] = useState("");
+  const [inviting, setInviting] = useState<string | null>(null);
+  const [inviteNote, setInviteNote] = useState<string | null>(null);
+
+  async function invite(body: { id?: string; email?: string; fullName?: string }, key: string) {
+    setInviting(key);
+    setError(null);
+    setInviteNote(null);
+    try {
+      const res = await fetch("/api/admin/waitlist/invite", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error ?? "Invite failed");
+      setInviteNote(`Invite sent to ${data.email}. They set a password from the email link and land in onboarding.`);
+      setInviteEmail("");
+      setInviteName("");
+      await load();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Invite failed");
+    } finally {
+      setInviting(null);
+    }
+  }
+
   async function save(entry: AdminWaitlistRow) {
     const draft = drafts[entry.id];
     if (!draft) return;
@@ -90,7 +118,7 @@ export function AdminWaitlistClient() {
       <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
         <div>
           <h2 className="text-lg font-semibold tracking-tight">Waitlist</h2>
-          <p className="mt-1 text-sm text-text-muted">People who asked for access. Review, contact, then create accounts manually when ready.</p>
+          <p className="mt-1 text-sm text-text-muted">People who asked for access. Invite sends the Supabase invite email; the person sets a password and lands in onboarding.</p>
         </div>
         <div className="flex flex-wrap gap-2">
           <div className="relative">
@@ -105,6 +133,27 @@ export function AdminWaitlistClient() {
       </div>
 
       {error && <p className="mb-3 rounded-md bg-red-50 px-3 py-2 text-xs text-down">{error}</p>}
+      {inviteNote && <p className="mb-3 rounded-md border border-rule bg-surface-raised px-3 py-2 text-xs text-text-muted">{inviteNote}</p>}
+
+      <form
+        className="mb-4 flex flex-wrap items-end gap-2"
+        onSubmit={(e) => {
+          e.preventDefault();
+          if (inviteEmail.trim()) void invite({ email: inviteEmail.trim(), fullName: inviteName.trim() || undefined }, "manual");
+        }}
+      >
+        <div>
+          <p className="mb-1 text-(length:--text-2xs) font-bold uppercase tracking-(--tracking-caps) text-text-faint">Invite someone not on the list</p>
+          <div className="flex flex-wrap gap-2">
+            <Input value={inviteName} onChange={(e) => setInviteName(e.target.value)} placeholder="Name" className="w-40" />
+            <Input value={inviteEmail} onChange={(e) => setInviteEmail(e.target.value)} placeholder="email@example.com" type="email" className="w-64" />
+            <Button type="submit" size="sm" disabled={inviting === "manual" || !inviteEmail.trim()}>
+              {inviting === "manual" ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : null}
+              Send invite
+            </Button>
+          </div>
+        </div>
+      </form>
 
       <div className="overflow-x-auto rounded-lg border border-rule">
         <Table>
@@ -157,10 +206,18 @@ export function AdminWaitlistClient() {
                     </TD>
                     <TD className="align-top text-sm text-text-muted">{fmtDate(entry.created_at)}</TD>
                     <TD className="align-top">
-                      <Button size="sm" variant="outline" onClick={() => void save(entry)} disabled={savingId === entry.id}>
-                        {savingId === entry.id ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Save className="h-3.5 w-3.5" />}
-                        Save
-                      </Button>
+                      <div className="flex flex-col gap-1.5">
+                        <Button size="sm" variant="outline" onClick={() => void save(entry)} disabled={savingId === entry.id}>
+                          {savingId === entry.id ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Save className="h-3.5 w-3.5" />}
+                          Save
+                        </Button>
+                        {entry.email && entry.status !== "invited" && entry.status !== "converted" && (
+                          <Button size="sm" onClick={() => void invite({ id: entry.id }, entry.id)} disabled={inviting === entry.id}>
+                            {inviting === entry.id ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : null}
+                            Invite
+                          </Button>
+                        )}
+                      </div>
                     </TD>
                   </TR>
                 );

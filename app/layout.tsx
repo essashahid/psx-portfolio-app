@@ -38,6 +38,7 @@ export const viewport: Viewport = {
 
 import { Analytics } from "@vercel/analytics/next";
 import { PwaUpdater } from "@/components/shared/pwa-updater";
+import { ErrorReporter } from "@/components/shared/error-reporter";
 import { themeInitScript } from "@/lib/theme-script";
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
@@ -51,6 +52,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body className={`${manrope.variable} ${geistMono.variable} ${newsreader.variable} font-sans antialiased`}>
         {children}
         <PwaUpdater />
+        <ErrorReporter />
         {/* Vercel Web Analytics: cookieless visitor + page-view tracking.
             No-ops in local dev; requires Web Analytics enabled on the Vercel
             project. */}

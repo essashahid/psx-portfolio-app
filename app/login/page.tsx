@@ -30,14 +30,38 @@ export default function LoginPage() {
   const [loginLoading, setLoginLoading] = useState(false);
   const [demoLoading, setDemoLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
+  const [resetLoading, setResetLoading] = useState(false);
+
+  async function forgotPassword() {
+    setError(null);
+    setNotice(null);
+    if (!email.trim()) {
+      setError("Enter your email address first, then choose Forgot password.");
+      return;
+    }
+    setResetLoading(true);
+    const supabase = createClient();
+    const { error: resetError } = await supabase.auth.resetPasswordForEmail(email.trim(), {
+      redirectTo: `${window.location.origin}/auth/callback?next=/auth/set-password`,
+    });
+    setResetLoading(false);
+    if (resetError) setError(resetError.message);
+    else setNotice("If that address has an account, a reset link is on its way. Open it on this device to choose a new password.");
+  }
 
   // /demo redirects here when the shared demo workspace cannot be opened.
   useEffect(() => {
-    if (new URLSearchParams(window.location.search).get("demo") === "unavailable") {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("demo") === "unavailable") {
       // The query string is readable only after mount, so this cannot be an
       // initial value without breaking the server render.
       // eslint-disable-next-line react-hooks/set-state-in-effect
       setError("The read-only demo could not be opened. Please try the button below.");
+    }
+    if (params.get("invite") === "expired") {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setError("That link has expired or was already used. Ask for a new invite, or use Forgot password if you already have an account.");
     }
   }, []);
 
@@ -165,7 +189,9 @@ export default function LoginPage() {
             <div className="space-y-2">
               <div className="flex items-baseline justify-between gap-4">
                 <Label htmlFor="password">Password</Label>
-                <span className="text-xs text-text-muted">Forgot password</span>
+                <button type="button" onClick={() => void forgotPassword()} disabled={resetLoading} className="text-xs text-text-muted underline-offset-2 hover:text-text-strong hover:underline disabled:opacity-50">
+                  {resetLoading ? "Sending" : "Forgot password"}
+                </button>
               </div>
               <div className="relative">
                 <Input
@@ -207,6 +233,9 @@ export default function LoginPage() {
 
           {error && (
             <p className="mt-4 rounded-md border border-[var(--down-3)]/40 bg-[var(--down-4)] px-3 py-2 text-xs text-down">{error}</p>
+          )}
+          {notice && (
+            <p className="mt-4 rounded-md border border-rule bg-surface-raised px-3 py-2 text-xs text-text-muted">{notice}</p>
           )}
 
           <div className="my-8 flex items-center gap-4">
