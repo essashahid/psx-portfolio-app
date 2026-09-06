@@ -2,7 +2,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { checkUpcomingDividends } from "@/lib/dividends/detect";
 import { generateDividendForecasts } from "@/lib/dividends/forecast";
 import { reconcileAndDedupe } from "@/lib/dividends/dedup";
-import { getMarketDataProvider } from "@/lib/market-data/adapter";
+import { refreshQuotesForTickers } from "@/lib/engine/market-data";
 import { takeSnapshot } from "@/lib/portfolio/positions";
 import { refreshNewsForUser } from "@/lib/news/refresh";
 import { refreshBenchmarkForUser } from "@/lib/engine/benchmark-rebuild";
@@ -72,13 +72,16 @@ export async function runDailyUpdate(
   const before = await snapshotState(supabase, userId);
 
   // 1. Prices. Skipped when the market was shut: there is no new close, so a
-  //    fetch would spend a provider call per holding to learn nothing.
+  //    fetch would spend a provider call per holding to learn nothing. The
+  //    refresh writes the shared quote table; a ticker another account already
+  //    refreshed this run is served from that row, so the cost is per ticker,
+  //    not per account.
   let prices_updated = 0;
   if (!opts.skipPrices) {
     try {
-      const provider = getMarketDataProvider(supabase, userId);
-      const res = await provider.refreshPortfolioPrices(userId);
-      prices_updated = res.updated;
+      const { data: held } = await supabase.from("holdings").select("ticker").eq("user_id", userId).gt("quantity", 0);
+      const res = await refreshQuotesForTickers((held ?? []).map((h) => String(h.ticker)));
+      prices_updated = res.refreshed + res.fresh.length;
     } catch (e) {
       errors.push(`prices: ${e instanceof Error ? e.message : String(e)}`);
     }

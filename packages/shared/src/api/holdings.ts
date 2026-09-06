@@ -66,3 +66,18 @@ export interface ClosedPositionRow {
   lastSell: string | null;
   heldDays: number | null;
 }
+
+/**
+ * The request contract for PATCH /api/holdings/[ticker].
+ *
+ * A quantity or average-cost change becomes an adjusting ledger entry; notes
+ * are written to the position itself. `hidden` is handled on its own and the
+ * route returns early after flipping it, so send it in a separate request
+ * from the other fields.
+ */
+export interface HoldingPatchRequest {
+  quantity?: number;
+  avg_cost?: number;
+  notes?: string;
+  hidden?: boolean;
+}

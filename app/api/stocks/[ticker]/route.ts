@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { requireUser, errorResponse } from "@/lib/shared/api";
 import { getRatioCard } from "@/lib/chat/data";
+import { getQuote } from "@/lib/company/quote";
 import type { CompanyResponse } from "@psx/shared/api/stocks";
 
 export const maxDuration = 60;
@@ -37,14 +38,13 @@ export async function GET(
     const { ticker: raw } = await params;
     const ticker = decodeURIComponent(raw).toUpperCase();
 
-    const [{ data: master }, { data: quote }, card, { data: payouts }, { data: holding }, { data: watched }] =
+    const [{ data: master }, quote, { data: cap }, card, { data: payouts }, { data: holding }, { data: watched }] =
       await Promise.all([
       supabase.from("stock_master").select("company_name, sector").eq("ticker", ticker).maybeSingle(),
-      supabase
-        .from("market_quotes")
-        .select("price, prev_close, day_change_pct, market_cap, as_of, provider")
-        .eq("ticker", ticker)
-        .maybeSingle(),
+      // The same resolution the web header and the portfolio use, including
+      // this user's own override, so the phone never shows a third price.
+      getQuote(supabase, ticker, { userId: user.id }),
+      supabase.from("market_quotes").select("market_cap").eq("ticker", ticker).maybeSingle(),
       getRatioCard(supabase, ticker),
       supabase
         .from("company_payouts")
@@ -68,7 +68,7 @@ export async function GET(
         .maybeSingle(),
     ]);
 
-    if (!master && !quote && (card?.rows.length ?? 0) === 0) {
+    if (!master && quote.price === null && (card?.rows.length ?? 0) === 0) {
       return NextResponse.json({
       position: holding
         ? {
@@ -96,16 +96,17 @@ export async function GET(
       ticker,
       name: master?.company_name ?? null,
       sector: master?.sector ?? null,
-      quote: quote
-        ? {
-            price: quote.price,
-            prevClose: quote.prev_close,
-            dayChangePct: quote.day_change_pct,
-            marketCap: quote.market_cap,
-            asOf: quote.as_of,
-            provider: quote.provider,
-          }
-        : null,
+      quote:
+        quote.price !== null
+          ? {
+              price: quote.price,
+              prevClose: quote.prevClose,
+              dayChangePct: quote.dayChangePct,
+              marketCap: cap?.market_cap ?? null,
+              asOf: quote.asOf,
+              provider: quote.meta.source,
+            }
+          : null,
       verified: card?.verified ?? null,
       periods: {
         latestAnnual: card?.latestAnnualPeriod ?? null,

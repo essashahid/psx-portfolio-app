@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import * as Haptics from "expo-haptics";
 import { Pencil, Trash2 } from "lucide-react-native";
-import type { ChatThreadSummary } from "@psx/shared/api/threads";
+import type { ChatThreadSummary, ThreadListResponse, ThreadPatchRequest } from "@psx/shared/api/threads";
 import { api, apiWrite, ApiError } from "@/lib/api";
 import { Sheet, SheetError } from "@/components/ui/sheet";
 import { Field } from "@/components/ui/field";
@@ -59,7 +59,7 @@ export function ThreadHistory({
   const load = useCallback(async () => {
     setFailure(null);
     try {
-      const res = await api<{ threads: ChatThreadSummary[] }>("/api/chat/threads");
+      const res = await api<ThreadListResponse>("/api/chat/threads");
       setThreads(res.threads);
     } catch (err) {
       setThreads([]);
@@ -81,7 +81,8 @@ export function ThreadHistory({
     if (!next) return;
     setBusy(true);
     try {
-      await apiWrite(`/api/chat/threads/${renaming.id}`, "PATCH", { title: next });
+      const body: ThreadPatchRequest = { title: next };
+      await apiWrite(`/api/chat/threads/${renaming.id}`, "PATCH", body);
       void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       setRenaming(null);
       await load();

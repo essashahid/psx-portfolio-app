@@ -1,6 +1,10 @@
 import { useEffect, useState } from "react";
 import { Alert, StyleSheet, View } from "react-native";
 import * as Haptics from "expo-haptics";
+import type {
+  TransactionPatchRequest,
+  TransactionWriteRequest,
+} from "@psx/shared/api/transactions";
 import { apiWrite, ApiError } from "@/lib/api";
 import { Sheet, SheetError } from "@/components/ui/sheet";
 import { Field, Choice } from "@/components/ui/field";
@@ -142,7 +146,7 @@ export function TransactionSheet({
     setBusy(true);
     setFailure(null);
     try {
-      const body = {
+      const body: TransactionWriteRequest = {
         ticker: ticker.trim().toUpperCase(),
         trade_date: date.trim(),
         type,
@@ -158,7 +162,8 @@ export function TransactionSheet({
         // owned by the dividends ledger. Leave the type untouched there rather
         // than sending a value the route will refuse.
         const { type: t, ...rest } = body;
-        await apiWrite(`/api/transactions/${initial!.id}`, "PATCH", t === "DIVIDEND" ? rest : body);
+        const patch: TransactionPatchRequest = t === "DIVIDEND" ? rest : { ...rest, type: t };
+        await apiWrite(`/api/transactions/${initial!.id}`, "PATCH", patch);
       } else {
         await apiWrite("/api/transactions", "POST", body);
       }

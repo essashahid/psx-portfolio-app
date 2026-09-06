@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Alert, StyleSheet, View } from "react-native";
 import * as Haptics from "expo-haptics";
+import type { DividendDeleteRequest, DividendWriteRequest } from "@psx/shared/api/dividends";
 import { apiWrite, ApiError } from "@/lib/api";
 import { Sheet, SheetError } from "@/components/ui/sheet";
 import { Field, Choice } from "@/components/ui/field";
@@ -106,7 +107,7 @@ export function DividendSheet({
     setBusy(true);
     setFailure(null);
     try {
-      const body = {
+      const body: DividendWriteRequest = {
         id: initial?.id,
         ticker: ticker.trim().toUpperCase(),
         payment_date: payDate.trim(),
@@ -136,9 +137,14 @@ export function DividendSheet({
         text: "Delete",
         style: "destructive",
         onPress: async () => {
+          // The sheet only offers delete when it opened on a saved row, so an
+          // id is always present here; the guard keeps the request type honest.
+          const id = initial?.id;
+          if (!id) return;
           setBusy(true);
           try {
-            await apiWrite("/api/dividends", "DELETE", { id: initial!.id });
+            const body: DividendDeleteRequest = { id };
+            await apiWrite("/api/dividends", "DELETE", body);
             void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
             onSaved();
             onClose();

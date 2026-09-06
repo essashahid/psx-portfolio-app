@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { requireCronAuth } from "@/lib/shared/cron-auth";
+import { runCron } from "@/lib/ops/job-runs";
 import { revalidateTag } from "next/cache";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { refreshOutlookData } from "@/lib/engine/outlook/refresh";
@@ -24,7 +25,7 @@ export const maxDuration = 300;
  * Protected by CRON_SECRET (Bearer header or ?key=).
  *   ?force=1 captures closes even when the index has no new session yet.
  */
-export async function GET(request: Request) {
+async function handler(request: Request) {
   const denied = requireCronAuth(request);
   if (denied) return denied;
   const url = new URL(request.url);
@@ -49,3 +50,5 @@ export async function GET(request: Request) {
     );
   }
 }
+
+export const GET = (request: Request) => runCron("outlook", request, handler);

@@ -1,4 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { resolveEffectivePrices } from "@/lib/portfolio/price-lookup";
+import { computeCashBalance } from "@/lib/portfolio/cash";
 import type {
   EnrichedHolding,
   ClosedPosition,
@@ -9,8 +11,6 @@ import type {
   Thesis,
   TxnType,
 } from "@/lib/shared/types";
-
-type PriceRow = { ticker: string; price: number; price_date: string; source: string };
 
 /**
  * Loads everything needed to value the portfolio and enriches each holding with
@@ -44,12 +44,10 @@ export async function getPortfolio(
   const hiddenTickers = new Set(hiddenHoldings.map((h) => h.ticker));
   const tickers = [...new Set(holdings.map((h) => h.ticker))];
 
-  const [pricesRes, targetsRes, thesesRes, divRes, realizedRes, cashRes] =
+  const [effectivePrices, targetsRes, thesesRes, divRes, realizedRes, cashRes] =
     await Promise.all([
-      // Single round-trip for the latest price per ticker (see migration 0026).
-      tickers.length
-        ? supabase.rpc("latest_prices", { p_user_id: userId, p_tickers: tickers })
-        : Promise.resolve({ data: [] as PriceRow[] }),
+      // The one price rule, shared with the company header (effective-price.ts).
+      resolveEffectivePrices(supabase, userId, tickers),
       supabase.from("targets").select("*").eq("user_id", userId),
       supabase.from("theses").select("*").eq("user_id", userId),
       supabase.from("dividends").select("ticker, amount, net_amount, status").eq("user_id", userId),
@@ -57,10 +55,9 @@ export async function getPortfolio(
       supabase.from("cash_movements").select("type, amount").eq("user_id", userId),
     ]);
 
-  // latest_prices returns exactly one row per ticker (newest first via DISTINCT ON)
   const latestPrice = new Map<string, { price: number; price_date: string; source: string }>();
-  for (const p of (pricesRes.data ?? []) as PriceRow[]) {
-    latestPrice.set(p.ticker, { price: Number(p.price), price_date: p.price_date, source: p.source });
+  for (const [ticker, p] of effectivePrices) {
+    latestPrice.set(ticker, { price: p.price, price_date: p.date, source: p.source });
   }
 
   const targetByTicker = new Map<string, Target>();
@@ -153,20 +150,8 @@ export async function getPortfolio(
     }))
     .sort((a, b) => (b.lastSell ?? "").localeCompare(a.lastSell ?? ""));
 
-  // Broker cash on hand, derived from the full ledger so it always reconciles:
-  // deposits and sale proceeds add, buys, withdrawals, fees and CGT subtract.
-  let cashBalance = 0;
-  for (const c of cashRes.data ?? []) {
-    const amt = Number(c.amount ?? 0);
-    if (c.type === "CASH_IN" || c.type === "DIVIDEND") cashBalance += Math.abs(amt);
-    else if (c.type === "CASH_OUT" || c.type === "FEE" || c.type === "TAX") cashBalance -= Math.abs(amt);
-    else cashBalance += amt;
-  }
-  for (const t of realizedRes.data ?? []) {
-    const net = Math.abs(Number(t.net_amount ?? 0));
-    if (t.type === "SELL") cashBalance += net;
-    else if (t.type === "BUY" || t.type === "RIGHT") cashBalance -= net;
-  }
+  // Broker cash on hand, from the shared rule in lib/portfolio/cash.ts.
+  const cashBalance = computeCashBalance(cashRes.data ?? [], realizedRes.data ?? []);
 
   // First pass: market values
   let totalValue = 0;

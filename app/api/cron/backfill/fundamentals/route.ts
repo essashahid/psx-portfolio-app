@@ -1,4 +1,5 @@
-import { GET as backfill } from "../route";
+import { backfillJobHandler } from "@/lib/engine/backfill-job";
+import { runCron } from "@/lib/ops/job-runs";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 300;
@@ -8,9 +9,11 @@ export const maxDuration = 300;
  * payout history + ratios, no LLM). A dedicated path because vercel.json cron
  * paths carry no query string; delegates to /api/cron/backfill?task=fundamentals.
  */
-export async function GET(request: Request) {
+async function handler(request: Request) {
   const url = new URL(request.url);
   url.pathname = url.pathname.replace(/\/fundamentals$/, "");
   url.searchParams.set("task", "fundamentals");
-  return backfill(new Request(url, { headers: request.headers }));
+  return backfillJobHandler(new Request(url, { headers: request.headers }));
 }
+
+export const GET = (request: Request) => runCron("backfill/fundamentals", request, handler);

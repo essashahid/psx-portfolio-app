@@ -3,6 +3,7 @@ import { z } from "zod";
 import { requireUser, errorResponse } from "@/lib/shared/api";
 import { recomputeAll } from "@/lib/portfolio/recompute-cascade";
 import { rejectDemoWrite } from "@/lib/demo/mode";
+import type { HoldingPatchRequest } from "@psx/shared/api/holdings";
 
 const PatchSchema = z.object({
   quantity: z.number().positive().optional(),
@@ -25,6 +26,7 @@ export async function PATCH(
   const body = await req.json().catch(() => ({}));
   const parsed = PatchSchema.safeParse(body);
   if (!parsed.success) return NextResponse.json({ error: "Invalid fields" }, { status: 400 });
+  const patch: HoldingPatchRequest = parsed.data;
 
   const { data: existing, error: readErr } = await supabase
     .from("holdings")
@@ -37,17 +39,17 @@ export async function PATCH(
   // Hide/unhide is a flag flip, not a ledger event: update the row, then
   // re-derive the snapshot, benchmark series and alerts so every analysis
   // surface reflects the exclusion immediately.
-  if (parsed.data.hidden !== undefined && parsed.data.hidden !== Boolean(existing?.hidden)) {
+  if (patch.hidden !== undefined && patch.hidden !== Boolean(existing?.hidden)) {
     if (!existing) return NextResponse.json({ error: `No holding for ${symbol}` }, { status: 404 });
     const { error: hideErr } = await supabase
       .from("holdings")
-      .update({ hidden: parsed.data.hidden })
+      .update({ hidden: patch.hidden })
       .eq("user_id", user.id)
       .eq("ticker", symbol);
     if (hideErr) return errorResponse(hideErr);
     await recomputeAll(supabase, user.id, { changedTickers: [symbol] });
     return NextResponse.json({
-      message: parsed.data.hidden
+      message: patch.hidden
         ? `${symbol} hidden. It is excluded from all analysis until you unhide it.`
         : `${symbol} is back in your analysis.`,
     });
@@ -55,16 +57,16 @@ export async function PATCH(
 
   const currentQty = Number(existing?.quantity ?? 0);
   const currentAvg = Number(existing?.avg_cost ?? 0);
-  const targetQty = parsed.data.quantity ?? currentQty;
-  const targetAvg = parsed.data.avg_cost ?? currentAvg;
+  const targetQty = patch.quantity ?? currentQty;
+  const targetAvg = patch.avg_cost ?? currentAvg;
   const qtyDelta = targetQty - currentQty;
-  const avgChanged = parsed.data.avg_cost !== undefined && Math.abs(targetAvg - currentAvg) >= 0.0001;
+  const avgChanged = patch.avg_cost !== undefined && Math.abs(targetAvg - currentAvg) >= 0.0001;
 
-  if (Math.abs(qtyDelta) < 0.0001 && !avgChanged && parsed.data.notes === undefined) {
+  if (Math.abs(qtyDelta) < 0.0001 && !avgChanged && patch.notes === undefined) {
     return NextResponse.json({ message: `${symbol} unchanged.` });
   }
 
-  const notes = parsed.data.notes?.trim() || `Holding edit for ${symbol}`;
+  const notes = patch.notes?.trim() || `Holding edit for ${symbol}`;
 
   /**
    * The note belongs on the position, not only on the adjustment.
@@ -75,11 +77,11 @@ export async function PATCH(
    * also a quantity or cost change the note travels with both: it explains the
    * position now and the entry that changed it.
    */
-  if (parsed.data.notes !== undefined) {
+  if (patch.notes !== undefined) {
     if (!existing) return NextResponse.json({ error: `No holding for ${symbol}` }, { status: 404 });
     const { error: noteErr } = await supabase
       .from("holdings")
-      .update({ notes: parsed.data.notes.trim() || null })
+      .update({ notes: patch.notes.trim() || null })
       .eq("user_id", user.id)
       .eq("ticker", symbol);
     if (noteErr) return errorResponse(noteErr);

@@ -1,3 +1,4 @@
+-- Applied to production on 6 September 2026 (Phase 3), after copying the table to public.eod_history_backup_20260906 (115,035 rows).
 -- Drop the superseded eod_history table.
 --
 -- ⚠️ THIS IS THE ONE DESTRUCTIVE MIGRATION IN PHASE 2 AND IS NOT APPLIED.

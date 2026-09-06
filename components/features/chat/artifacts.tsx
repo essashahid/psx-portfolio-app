@@ -98,12 +98,14 @@ interface ChartDataState {
   avgCost: number | null;
   dividends: { date: string; amount: number }[];
   transactions: PriceTransaction[];
+  /** Bonus or split events the endpoint back-adjusted inside this period. */
+  breaks: number;
   loading: boolean;
   error: string | null;
 }
 
 function PriceChart({ spec }: { spec: PriceChartArtifact }) {
-  const [state, setState] = useState<ChartDataState>({ candles: [], avgCost: null, dividends: [], transactions: [], loading: true, error: null });
+  const [state, setState] = useState<ChartDataState>({ candles: [], avgCost: null, dividends: [], transactions: [], breaks: 0, loading: true, error: null });
   const motion = useChartMotion();
 
   useEffect(() => {
@@ -114,7 +116,7 @@ function PriceChart({ spec }: { spec: PriceChartArtifact }) {
       .then((d) => {
         if (cancelled) return;
         if (d.error) { setState((s) => ({ ...s, loading: false, error: d.error as string })); return; }
-        setState({ candles: d.candles ?? [], avgCost: d.avgCost ?? null, dividends: d.dividends ?? [], transactions: d.transactions ?? [], loading: false, error: null });
+        setState({ candles: d.candles ?? [], avgCost: d.avgCost ?? null, dividends: d.dividends ?? [], transactions: d.transactions ?? [], breaks: Number(d.breaks) || 0, loading: false, error: null });
       })
       .catch(() => { if (!cancelled) setState((s) => ({ ...s, loading: false, error: "Failed to load price data" })); });
     return () => { cancelled = true; };
@@ -240,6 +242,9 @@ function PriceChart({ spec }: { spec: PriceChartArtifact }) {
               showTransactions ? "solid green/red marks indicate buys/sells" : null,
             ].filter(Boolean).join("; ")}.
           </p>
+        )}
+        {state.breaks > 0 && (
+          <p className="mt-1 px-2 text-[10px] text-text-muted">Adjusted for bonus and split events</p>
         )}
       </div>
     </ArtifactShell>

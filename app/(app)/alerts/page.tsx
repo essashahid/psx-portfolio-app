@@ -16,6 +16,7 @@ const TYPE_LABEL: Record<string, string> = {
   dividend_news: "Dividend announcement",
   result_news: "Financial result",
   concentration_risk: "Concentration risk",
+  corporate_action_check: "Corporate action",
   import_issue: "Import issue",
 };
 

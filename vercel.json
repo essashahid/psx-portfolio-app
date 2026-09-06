@@ -43,6 +43,10 @@
     {
       "path": "/api/cron/market/macro",
       "schedule": "20 12 * * *"
+    },
+    {
+      "path": "/api/cron/market/payouts",
+      "schedule": "0 13 * * 1-5"
     }
   ]
 }

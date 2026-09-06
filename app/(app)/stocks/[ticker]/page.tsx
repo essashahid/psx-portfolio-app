@@ -69,7 +69,7 @@ export default async function StockCockpitPage({ params }: { params: Promise<{ t
   // never disagree with Key signals on the period or the value.
   const [header, { data: holding }, { data: watch }, ratios, profileRes, { data: closesRows }] =
     await Promise.all([
-      getCompanyHeader(supabase, ticker),
+      getCompanyHeader(supabase, ticker, user.id),
       supabase.from("holdings").select("quantity, avg_cost").eq("user_id", user.id).eq("ticker", ticker).eq("hidden", false).gt("quantity", 0).maybeSingle(),
       supabase.from("stock_watchlist").select("ticker").eq("user_id", user.id).eq("ticker", ticker).maybeSingle(),
       computeRatios(supabase, ticker),

@@ -70,6 +70,12 @@ export function MarketMap({ items }: { items: MarketMapItem[] }) {
    * Direction is the only thing the fill says. It mixes toward whichever
    * surface the theme is painting, so the same tile reads correctly on paper
    * and on black without a second palette.
+   *
+   * heatColor() in @psx/shared/market/format is deliberately not used here.
+   * It returns fixed hsl() strings tuned for the web's dark heatmap and has no
+   * way to take the active theme surface, so on the light phone palette its
+   * tiles would not sit on paper, and mix() needs hex input to blend toward
+   * the theme. The ramp below is the same idea with the palette as input.
    */
   function fillFor(pct: number | null) {
     const d = pct ?? 0;

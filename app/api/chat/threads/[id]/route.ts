@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { requireUser } from "@/lib/shared/api";
 import { accountHasFeature } from "@/lib/config/features";
 import { rejectDemoWrite } from "@/lib/demo/mode";
-import type { ThreadDetailResponse } from "@psx/shared/api/threads";
+import type { ThreadDetailResponse, ThreadPatchRequest, ThreadWriteResponse } from "@psx/shared/api/threads";
 
 type Params = {
   params: Promise<{ id: string }>;
@@ -47,7 +47,7 @@ export async function PATCH(request: Request, { params }: Params) {
   if (demoError) return demoError;
   const { id } = await params;
 
-  const body = (await request.json().catch(() => ({}))) as { title?: string };
+  const body = (await request.json().catch(() => ({}))) as Partial<ThreadPatchRequest>;
   const title = cleanTitle(body.title);
   if (!title) return NextResponse.json({ error: "Title is required" }, { status: 400 });
 
@@ -61,7 +61,7 @@ export async function PATCH(request: Request, { params }: Params) {
 
   if (dbError) return NextResponse.json({ error: dbError.message }, { status: 500 });
   if (!data) return NextResponse.json({ error: "Chat not found" }, { status: 404 });
-  return NextResponse.json({ thread: data });
+  return NextResponse.json<ThreadWriteResponse>({ thread: data });
 }
 
 export async function DELETE(_request: Request, { params }: Params) {

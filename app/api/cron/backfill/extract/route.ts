@@ -1,4 +1,5 @@
-import { GET as backfill } from "../route";
+import { backfillJobHandler } from "@/lib/engine/backfill-job";
+import { runCron } from "@/lib/ops/job-runs";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 300;
@@ -20,9 +21,11 @@ export const maxDuration = 300;
  * with no execution limit and deletes the crons from vercel.json, this one
  * included.
  */
-export async function GET(request: Request) {
+async function handler(request: Request) {
   const url = new URL(request.url);
   url.pathname = url.pathname.replace(/\/extract$/, "");
   url.searchParams.set("task", "extract");
-  return backfill(new Request(url, { headers: request.headers }));
+  return backfillJobHandler(new Request(url, { headers: request.headers }));
 }
+
+export const GET = (request: Request) => runCron("backfill/extract", request, handler);

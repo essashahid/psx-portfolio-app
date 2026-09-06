@@ -4,9 +4,26 @@ import { useMemo } from "react";
 import { Line, LineChart, ReferenceLine, ResponsiveContainer, Tooltip, XAxis, YAxis, CartesianGrid } from "recharts";
 import { formatNumber } from "@/lib/shared/format";
 import type { CompanyReportPayload } from "@/lib/company/report";
+import { adjustForCorporateActions, detectCorporateActionBreaks } from "@psx/shared/market/adjust";
 
 export function ReportPriceChart({ payload }: { payload: CompanyReportPayload }) {
-  const data = useMemo(() => payload.charts.price, [payload.charts.price]);
+  // The report series is stored raw. Back-adjust it here for bonus and split
+  // events, and rescale the KSE-100 overlay by the same factor: it is indexed
+  // to the stock's first close, which the adjustment has just restated.
+  const { data, breaks } = useMemo(() => {
+    const raw = payload.charts.price;
+    const breaks = detectCorporateActionBreaks(raw).length;
+    if (breaks === 0) return { data: raw, breaks };
+    const adjusted = adjustForCorporateActions(raw);
+    const factor = raw[0]?.close ? adjusted[0].close / raw[0].close : 1;
+    return {
+      data: adjusted.map((p) => ({
+        ...p,
+        kse100Indexed: p.kse100Indexed == null ? p.kse100Indexed : p.kse100Indexed * factor,
+      })),
+      breaks,
+    };
+  }, [payload.charts.price]);
   const portfolio = payload.charts.portfolio;
   const avgCost = portfolio?.avgCost ?? null;
   const markers = portfolio?.markers ?? [];
@@ -45,6 +62,7 @@ export function ReportPriceChart({ payload }: { payload: CompanyReportPayload })
       </ResponsiveContainer>
       <p className="mt-1 text-[10px] text-text-muted">
         Green line: KSE-100 indexed to stock start · Orange dashed: average cost · Vertical: trades
+        {breaks > 0 ? " · Adjusted for bonus and split events" : ""}
       </p>
     </div>
   );

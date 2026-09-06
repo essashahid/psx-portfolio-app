@@ -1,4 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { getContested, contestedReason, type ContestedEntry, type ContestedSet } from "@/lib/engine/contested";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 /**
@@ -273,7 +274,7 @@ export async function computeRatios(supabase: SupabaseClient, ticker: string): P
   const t = ticker.toUpperCase();
   const now = new Date().toISOString();
 
-  const [{ data: finRows }, { data: quote }, { data: divRows }] = await Promise.all([
+  const [{ data: finRows }, { data: quote }, { data: divRows }, contested] = await Promise.all([
     supabase
       .from("company_financials")
       .select("period_type, fiscal_year, fiscal_period, statement_type, reported_date, source_type, source_url, reporting_basis, review_status, confidence, data")
@@ -291,6 +292,7 @@ export async function computeRatios(supabase: SupabaseClient, ticker: string): P
       .eq("kind", "cash")
       .order("announcement_date", { ascending: false })
       .limit(20),
+    getContested(supabase, t),
   ]);
 
   const rows = (finRows ?? []) as FinRow[];
@@ -730,7 +732,97 @@ export async function computeRatios(supabase: SupabaseClient, ticker: string): P
   add("Cash conversion", "Operating cash flow ÷ Same-period operating profit", { operating_cash_flow: ocf, operating_profit: cashOperatingProfit ?? operatingProfit }, safeDiv(ocf, cashOperatingProfit ?? (cashMonths === 12 ? operatingProfit : null)), need([["operating cash flow", ocf], ["same-period operating profit", cashOperatingProfit ?? (cashMonths === 12 ? operatingProfit : null)]]), cashOperatingProfit !== null ? periodLabel(cash) : `${detailPeriod ?? incomePeriod ?? "?"} / ${periodLabel(cash) ?? "?"}`);
   add("Accrual ratio", "(Same-period PAT − Operating cash flow) ÷ Total assets", { profit_after_tax: cashPat ?? pat, operating_cash_flow: ocf, total_assets: totalAssets }, (cashPat ?? (cashMonths === 12 ? pat : null)) !== null && ocf !== null ? safeDiv((cashPat ?? pat)! - ocf, totalAssets) : null, need([["same-period profit after tax", cashPat ?? (cashMonths === 12 ? pat : null)], ["operating cash flow", ocf], ["total assets", totalAssets]]), `${cashPat !== null ? periodLabel(cash) : incomePeriod ?? "?"} / ${balancePeriod ?? "?"}`);
 
-  return out;
+  return withholdContested(out, contested, {
+    income,
+    interim: interimIncome,
+    balance,
+    cash,
+    detailed: detailedIncome,
+    annualYear: annualYear ?? null,
+  });
+}
+
+/**
+ * Which ratio inputs map to which filed field, so a contested filing figure
+ * withholds every ratio that leans on it and nothing else.
+ */
+const INPUT_FIELD: Record<string, string> = {
+  eps: "eps",
+  annual_eps: "eps",
+  interim_eps: "eps",
+  prior_year_interim_eps: "eps",
+  prior_eps: "eps",
+  base_eps: "eps",
+  revenue: "revenue",
+  revenue_pkr: "revenue",
+  revenue_pkr_thousands: "revenue",
+  prior_revenue: "revenue",
+  base_revenue: "revenue",
+  profit_after_tax: "profit_after_tax",
+  profit_after_tax_pkr_thousands: "profit_after_tax",
+  prior_pat: "profit_after_tax",
+  gross_profit: "gross_profit",
+  prior_gross_profit: "gross_profit",
+  operating_profit: "operating_profit",
+  operating_profit_pkr: "operating_profit",
+  equity: "equity",
+  equity_pkr_thousands: "equity",
+  total_assets: "total_assets",
+  borrowings: "borrowings",
+  operating_cash_flow: "operating_cash_flow",
+};
+
+/**
+ * Blank every ratio whose inputs come from a contested filing figure, and say
+ * why in `missing`, so the header, the Overview and the Copilot all withhold
+ * the same numbers for the same reason.
+ *
+ * The rows the engine actually used are checked, not the whole conflict
+ * list: a disputed FY2021 balance sheet must not blank today's P/E.
+ */
+function withholdContested(
+  out: RatioRow[],
+  contested: ContestedSet,
+  used: {
+    income: FinRow | undefined;
+    interim: FinRow[];
+    balance: FinRow | undefined;
+    cash: FinRow | undefined;
+    detailed: FinRow | undefined;
+    annualYear: number | null;
+  }
+): RatioRow[] {
+  if (contested.size === 0) return out;
+
+  // Interim rows that feed TTM figures: the current year and the prior year.
+  const annualYear = used.annualYear;
+  const ttmInterim = annualYear === null
+    ? []
+    : used.interim.filter((r) => r.fiscal_year === annualYear || r.fiscal_year === annualYear + 1);
+
+  const contestedFields = new Map<string, ContestedEntry>();
+  const consider = (row: FinRow | undefined) => {
+    if (!row) return;
+    for (const e of contested.fieldsFor(row.statement_type, row.fiscal_year, row.fiscal_period)) {
+      if (!contestedFields.has(e.field)) contestedFields.set(e.field, e);
+    }
+  };
+  consider(used.income);
+  consider(used.balance);
+  consider(used.cash);
+  consider(used.detailed);
+  for (const r of ttmInterim) consider(r);
+  if (contestedFields.size === 0) return out;
+
+  return out.map((row) => {
+    if (row.ratio_value === null) return row;
+    for (const key of Object.keys(row.inputs)) {
+      const field = INPUT_FIELD[key];
+      const hit = field ? contestedFields.get(field) : undefined;
+      if (hit) return { ...row, ratio_value: null, missing: contestedReason(hit) };
+    }
+    return row;
+  });
 }
 
 /** Compute and persist ratios for a ticker (service-role write). */

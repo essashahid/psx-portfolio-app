@@ -1,4 +1,3 @@
-import type { SupabaseClient } from "@supabase/supabase-js";
 import type { MarketDataProvider, PricePoint } from "@/lib/market-data/adapter";
 
 /**
@@ -13,7 +12,6 @@ import type { MarketDataProvider, PricePoint } from "@/lib/market-data/adapter";
  */
 
 const DPS_BASE = "https://dps.psx.com.pk/timeseries";
-const BATCH_SIZE = 5;
 const REQUEST_TIMEOUT_MS = 8000;
 export const PSX_PRICE_SOURCE = "psx-dps";
 
@@ -117,7 +115,6 @@ function latestFromSeries(ticker: string, rows: SeriesRow[]): PricePoint | null 
 
 export class PsxDpsProvider implements MarketDataProvider {
   readonly name = "psx";
-  constructor(private supabase: SupabaseClient, private userId: string) {}
 
   async getLatestPrice(ticker: string): Promise<PricePoint | null> {
     const intraday = await fetchSeries("int", ticker);
@@ -137,37 +134,6 @@ export class PsxDpsProvider implements MarketDataProvider {
       .map((r) => ({ ticker, price: r[1], date: pktDate(r[0]), source: PSX_PRICE_SOURCE }))
       .filter((p) => p.date >= startDate && p.date <= endDate)
       .reverse(); // oldest first
-  }
-
-  async refreshPortfolioPrices(userId: string): Promise<{ updated: number; skipped: string[] }> {
-    const { data: holdings } = await this.supabase
-      .from("holdings")
-      .select("ticker")
-      .eq("user_id", userId);
-    const tickers = [...new Set((holdings ?? []).map((h) => h.ticker as string))];
-    if (tickers.length === 0) return { updated: 0, skipped: [] };
-
-    const points: PricePoint[] = [];
-    const skipped: string[] = [];
-    for (let i = 0; i < tickers.length; i += BATCH_SIZE) {
-      const batch = tickers.slice(i, i + BATCH_SIZE);
-      const results = await Promise.all(batch.map((t) => this.getLatestPrice(t)));
-      results.forEach((p, idx) => (p ? points.push(p) : skipped.push(batch[idx])));
-    }
-
-    if (points.length > 0) {
-      await this.supabase.from("prices").upsert(
-        points.map((p) => ({
-          user_id: userId,
-          ticker: p.ticker,
-          price: p.price,
-          price_date: p.date,
-          source: PSX_PRICE_SOURCE,
-        })),
-        { onConflict: "user_id,ticker,price_date" }
-      );
-    }
-    return { updated: points.length, skipped };
   }
 }
 

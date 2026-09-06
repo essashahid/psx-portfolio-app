@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { requireUser, errorResponse } from "@/lib/shared/api";
 import { rejectDemoWrite } from "@/lib/demo/mode";
+import type { ProfilePatchRequest } from "@psx/shared/api/settings";
 
 /**
  * The profile fields the settings screen owns.
@@ -40,7 +41,7 @@ export async function PATCH(request: Request) {
     // free_cash is NOT NULL in the schema, and clearing the field means "no
     // cash the ledger does not already account for", which is zero rather than
     // unknown. Sending null would fail the constraint.
-    const patch = { ...parsed.data };
+    const patch: ProfilePatchRequest = { ...parsed.data };
     if ("free_cash" in patch && patch.free_cash === null) patch.free_cash = 0;
 
     const { error: updateErr } = await supabase.from("profiles").update(patch).eq("id", user.id);

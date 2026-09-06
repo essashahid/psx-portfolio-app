@@ -21,16 +21,18 @@ import type { ChartDataResponse } from "@psx/shared/api/chart";
 import type { NewsResponse } from "@psx/shared/api/news";
 import { groupRatios } from "@psx/shared/company/ratio-groups";
 import { formatCompactSigned } from "@psx/shared/format";
+import type { WatchlistWriteRequest } from "@psx/shared/api/watchlist";
+import { tone } from "@psx/shared/market/format";
 import { apiWrite } from "@/lib/api";
 import { makeStyles, useColors } from "@/lib/theme-context";
 import {
   colors,
-  directionColor,
   fontFamily,
   fontSize,
   layout,
   letterSpacing,
   space,
+  toneColor,
   tracking,
 } from "@/lib/theme";
 
@@ -96,7 +98,8 @@ export default function CompanyScreen() {
     void Haptics.selectionAsync();
     setWatchBusy(true);
     try {
-      await apiWrite("/api/stocks/watchlist", "POST", { ticker: symbol, action: "toggle" });
+      const body: WatchlistWriteRequest = { ticker: symbol, action: "toggle" };
+      await apiWrite("/api/stocks/watchlist", "POST", body);
       refresh();
     } catch {
       // The star is a preference, not a figure. A failed toggle leaves the
@@ -212,7 +215,7 @@ export default function CompanyScreen() {
           <View style={styles.quoteRow}>
             <Figure style={styles.price}>{formatNumber(quote?.price, 2)}</Figure>
             <View style={styles.quoteRight}>
-              <Figure style={[styles.changePct, { color: directionColor(quote?.dayChangePct) }]}>
+              <Figure style={[styles.changePct, { color: toneColor(colors, tone(quote?.dayChangePct)) }]}>
                 {formatPctSigned(quote?.dayChangePct, 2)}
               </Figure>
               <Figure style={styles.cap}>Cap {formatCompact(quote?.marketCap)}</Figure>
@@ -271,13 +274,13 @@ export default function CompanyScreen() {
                     </View>
                     <View style={styles.metricCell}>
                       <Caps>Unrealised</Caps>
-                      <Figure style={[styles.metricValue, { color: directionColor(unrealized) }]}>
+                      <Figure style={[styles.metricValue, { color: toneColor(colors, tone(unrealized)) }]}>
                         {unrealized !== null ? formatCompactSigned(unrealized) : "—"}
                       </Figure>
                     </View>
                     <View style={styles.metricCell}>
                       <Caps>On cost</Caps>
-                      <Figure style={[styles.metricValue, { color: directionColor(unrealizedPct) }]}>
+                      <Figure style={[styles.metricValue, { color: toneColor(colors, tone(unrealizedPct)) }]}>
                         {unrealizedPct !== null ? formatPctSigned(unrealizedPct) : "—"}
                       </Figure>
                     </View>

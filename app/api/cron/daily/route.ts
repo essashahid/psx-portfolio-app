@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { requireCronAuth } from "@/lib/shared/cron-auth";
+import { runCron } from "@/lib/ops/job-runs";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { runDailyUpdate } from "@/lib/dividends/daily";
 import { syncNewsClusters } from "@/lib/news/global-store";
@@ -28,7 +29,7 @@ const USER_BUDGET_MS = 220_000;
  * Runs the proactive dividend/price/forecast/reconcile pipeline per user and
  * writes each user's "what changed" digest.
  */
-export async function GET(request: Request) {
+async function handler(request: Request) {
   const denied = requireCronAuth(request);
   if (denied) return denied;
 
@@ -92,3 +93,5 @@ export async function GET(request: Request) {
     results,
   });
 }
+
+export const GET = (request: Request) => runCron("daily", request, handler);

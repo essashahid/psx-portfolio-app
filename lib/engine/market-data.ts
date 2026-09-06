@@ -11,6 +11,7 @@ import {
   alphaVantageQuote,
   alphaVantageHistory,
 } from "@/lib/providers/adapters";
+import { needsRefresh } from "@/lib/market-data/psx-dps";
 
 /**
  * Market-data engine: layered fallback across providers, normalized writes to
@@ -149,6 +150,46 @@ export async function refreshQuote(ticker: string): Promise<ProviderQuote | null
 
   await logFetch(t, "quote", "all", "empty", 0, "no provider has coverage");
   return null;
+}
+
+/**
+ * Refresh the shared quote for each ticker that is stale, in one pass.
+ *
+ * This replaced the per-user price refresh that wrote provider prices into
+ * the per-user `prices` table. Every account holding OGDC now shares one
+ * quote row instead of each carrying its own copy fetched at a different
+ * minute, which is what let the dashboard and the company page disagree.
+ *
+ * Tickers whose row was fetched within `staleMinutes` are skipped (see
+ * needsRefresh for the market-hours rule). The provider chain paces its own
+ * requests, so the loop is sequential on purpose.
+ */
+export async function refreshQuotesForTickers(
+  tickers: string[],
+  opts: { staleMinutes?: number } = {}
+): Promise<{ refreshed: number; fresh: string[]; failed: string[] }> {
+  const list = [...new Set(tickers.map((t) => t.toUpperCase()))];
+  const out = { refreshed: 0, fresh: [] as string[], failed: [] as string[] };
+  if (list.length === 0) return out;
+  if ((process.env.MARKET_DATA_PROVIDER ?? "psx").toLowerCase() === "manual") return out;
+
+  const db = admin();
+  const lastFetched = new Map<string, Date | null>();
+  if (db) {
+    const { data } = await db.from("market_quotes").select("ticker, last_fetched_at").in("ticker", list);
+    for (const r of data ?? []) lastFetched.set(String(r.ticker), r.last_fetched_at ? new Date(String(r.last_fetched_at)) : null);
+  }
+  const staleMinutes = opts.staleMinutes ?? 10;
+  for (const t of list) {
+    if (!needsRefresh(lastFetched.get(t) ?? null, staleMinutes)) {
+      out.fresh.push(t);
+      continue;
+    }
+    const q = await refreshQuote(t).catch(() => null);
+    if (q) out.refreshed++;
+    else out.failed.push(t);
+  }
+  return out;
 }
 
 /**

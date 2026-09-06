@@ -3,9 +3,13 @@ import { z } from "zod";
 import { requireUser, errorResponse } from "@/lib/shared/api";
 import { recomputeAll } from "@/lib/portfolio/recompute-cascade";
 import { rejectDemoWrite } from "@/lib/demo/mode";
+import type { TransactionWriteRequest } from "@psx/shared/api/transactions";
 
 export const maxDuration = 60;
 
+// The shared request type is the contract the phone builds against; the
+// schema below is the runtime check. Assigning parsed.data to that type keeps
+// the two from drifting apart.
 const txnSchema = z.object({
   ticker: z.string().min(2).max(10),
   trade_date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
@@ -33,7 +37,7 @@ export async function POST(request: Request) {
         { status: 422 }
       );
     }
-    const t = parsed.data;
+    const t: TransactionWriteRequest = parsed.data;
     const ticker = t.ticker.toUpperCase();
 
     if (t.type === "DIVIDEND") {

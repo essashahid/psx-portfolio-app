@@ -17,7 +17,8 @@ export type AlertKind =
   | "negative_news"
   | "dividend_news"
   | "result_news"
-  | "import_issue";
+  | "import_issue"
+  | "corporate_action_check";
 
 export const ALERT_KINDS: { kind: AlertKind; label: string }[] = [
   { kind: "price_above_target", label: "A holding passes the price target you set" },
@@ -28,7 +29,8 @@ export const ALERT_KINDS: { kind: AlertKind; label: string }[] = [
   { kind: "result_news", label: "A company you hold posts results" },
   { kind: "dividend_news", label: "A payout is announced on something you hold" },
   { kind: "negative_news", label: "Something you hold takes a bad headline" },
+  { kind: "corporate_action_check", label: "A bonus or right issue on something you hold has not been recorded" },
   { kind: "review_due", label: "A thesis you wrote falls due for review" },
-  { kind: "missing_thesis", label: "A position has no thesis written against it" },
+  { kind: "missing_thesis", label: "A position has no thesis written against it (off unless you opt in)" },
   { kind: "import_issue", label: "An import leaves the ledger inconsistent" },
 ];

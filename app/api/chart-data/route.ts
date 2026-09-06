@@ -12,6 +12,7 @@ import { getDailyCandles } from "@/lib/chat/data";
 import { fetchPsxEod } from "@/lib/market-data/psx-dps";
 import type { Candle } from "@/lib/market/technicals";
 import type { ChartDataResponse } from "@psx/shared/api/chart";
+import { adjustForCorporateActions, detectCorporateActionBreaks } from "@psx/shared/market/adjust";
 
 export const dynamic = "force-dynamic";
 
@@ -46,15 +47,23 @@ export async function GET(request: Request) {
   const days = PERIOD_DAYS[period] ?? PERIOD_DAYS["1Y"];
   const cutoff = new Date(Date.now() - days * 86_400_000).toISOString().slice(0, 10);
 
-  // Fetch candles — cached technicals first, live PSX as fallback.
+  // Fetch candles: cached technicals first, live PSX as fallback.
   let candles: ChartCandle[] = await getDailyCandles(supabase, ticker);
   if (candles.length === 0) {
     candles = await fetchPsxEod(ticker);
   }
 
-  const trimmed = candles
-    .filter((c) => c.date >= cutoff && Number.isFinite(c.close) && c.close > 0)
-    .sort((a, b) => (a.date < b.date ? -1 : 1))
+  // Back-adjust for bonus and split events on the full series, then trim, so
+  // the window is right whether or not the break itself falls inside it. Only
+  // breaks inside the window are reported, since those are the ones the
+  // reader could otherwise mistake for a move.
+  const sorted = candles
+    .filter((c) => Number.isFinite(c.close) && c.close > 0)
+    .sort((a, b) => (a.date < b.date ? -1 : 1));
+  const firstInWindow = sorted.findIndex((c) => c.date >= cutoff);
+  const breaks = firstInWindow < 0 ? 0 : detectCorporateActionBreaks(sorted).filter((b) => b.index >= firstInWindow).length;
+  const trimmed = adjustForCorporateActions(sorted)
+    .filter((c) => c.date >= cutoff)
     .map((c) => ({
       date: c.date,
       close: c.close,
@@ -114,6 +123,8 @@ export async function GET(request: Request) {
     avgCost,
     dividends,
     transactions,
+    adjusted: breaks > 0,
+    breaks,
   };
   return Response.json(body);
 }

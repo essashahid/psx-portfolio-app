@@ -4,6 +4,7 @@ import { claudeConfigured } from "@/lib/ai/claude";
 import { deepseekChatConfigured } from "@/lib/ai/deepseek-chat";
 import { normalizeAllowedChatProviders } from "@/lib/config/features";
 import type { ProviderStatus } from "@psx/shared/ai/models";
+import type { ChatModelsResponse } from "@psx/shared/api/chat-models";
 
 /**
  * Which models this account may actually use.
@@ -34,7 +35,7 @@ export async function GET() {
         allowed: !isDemo && allowed.includes("deepseek"),
       },
     };
-    return NextResponse.json({ providers });
+    return NextResponse.json<ChatModelsResponse>({ providers });
   } catch (err) {
     return errorResponse(err);
   }

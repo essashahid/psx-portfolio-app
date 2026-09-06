@@ -34,4 +34,12 @@ export interface ChartDataResponse {
   avgCost: number | null;
   dividends: ChartDividend[];
   transactions: ChartTrade[];
+  /**
+   * True when a bonus or split event inside the period was detected and the
+   * candles before it were back-adjusted into current share terms. The last
+   * candle is always the price that actually traded.
+   */
+  adjusted: boolean;
+  /** How many such events fall inside the returned candles. */
+  breaks: number;
 }

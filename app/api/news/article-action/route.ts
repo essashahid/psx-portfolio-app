@@ -1,13 +1,7 @@
 import { NextResponse } from "next/server";
 import { requireUser, errorResponse } from "@/lib/shared/api";
 import { rejectDemoWrite } from "@/lib/demo/mode";
-
-type Body = {
-  id?: string;
-  storage?: "global" | "legacy";
-  field?: "saved" | "ignored";
-  value?: boolean;
-};
+import type { ArticleActionRequest } from "@psx/shared/api/news";
 
 export async function POST(request: Request) {
   const { supabase, user, error } = await requireUser();
@@ -16,7 +10,7 @@ export async function POST(request: Request) {
   if (demoError) return demoError;
 
   try {
-    const body = (await request.json().catch(() => ({}))) as Body;
+    const body = (await request.json().catch(() => ({}))) as Partial<ArticleActionRequest>;
     if (!body.id || (body.field !== "saved" && body.field !== "ignored") || typeof body.value !== "boolean") {
       return NextResponse.json({ error: "Invalid article action." }, { status: 400 });
     }

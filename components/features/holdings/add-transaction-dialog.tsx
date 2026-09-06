@@ -49,11 +49,12 @@ export function AddTransactionDialog({
         type: form.type,
         notes: form.notes || undefined,
       };
+      const noCash = form.type === "BONUS" || form.type === "SPLIT";
       if (form.quantity) body.quantity = parseFloat(form.quantity);
-      if (form.price) body.price = parseFloat(form.price);
-      if (form.commission) body.commission = parseFloat(form.commission);
-      if (form.tax) body.tax = parseFloat(form.tax);
-      if (form.net_amount) body.net_amount = parseFloat(form.net_amount);
+      if (form.price && !noCash) body.price = parseFloat(form.price);
+      if (form.commission && !noCash) body.commission = parseFloat(form.commission);
+      if (form.tax && !noCash) body.tax = parseFloat(form.tax);
+      if (form.net_amount && !noCash) body.net_amount = parseFloat(form.net_amount);
       const res = await fetch("/api/transactions", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -71,6 +72,27 @@ export function AddTransactionDialog({
   }
 
   const isDividend = form.type === "DIVIDEND";
+  const isBonus = form.type === "BONUS";
+  const isSplit = form.type === "SPLIT";
+  // Bonus shares arrive at zero cost and a split moves no cash, so the price
+  // and cash fields would only invite a number that then distorts the cost
+  // basis. Rights are paid for, so they keep the full set.
+  const hasCash = !isDividend && !isBonus && !isSplit;
+
+  const quantityLabel = isDividend
+    ? "Shares (optional)"
+    : isBonus
+      ? "New shares"
+      : isSplit
+        ? "Split factor"
+        : "Quantity";
+  const quantityHelp = isBonus
+    ? "Bonus shares: enter the number of new shares you received, at zero cost."
+    : isSplit
+      ? "Split: enter the factor, for example 2 for a 1:2 split."
+      : form.type === "RIGHT"
+        ? "Right shares: enter the shares you took up and the price you paid per share."
+        : null;
 
   return (
     <>
@@ -92,25 +114,38 @@ export function AddTransactionDialog({
                 <option value="DIVIDEND">Dividend</option>
                 <option value="BONUS">Bonus shares</option>
                 <option value="RIGHT">Right shares</option>
+                <option value="SPLIT">Split</option>
               </Select>
             </div>
             <div className="space-y-1.5">
               <Label>Date</Label>
               <Input type="date" required value={form.trade_date} onChange={(e) => set("trade_date", e.target.value)} />
             </div>
-            <div className="space-y-1.5">
-              <Label>{isDividend ? "Shares (optional)" : "Quantity"}</Label>
-              <Input type="number" step="any" min="0" value={form.quantity} onChange={(e) => set("quantity", e.target.value)} />
+            <div className={isBonus || isSplit ? "space-y-1.5 sm:col-span-2" : "space-y-1.5"}>
+              <Label>{quantityLabel}</Label>
+              <Input
+                type="number"
+                step="any"
+                min="0"
+                required={isBonus || isSplit}
+                value={form.quantity}
+                onChange={(e) => set("quantity", e.target.value)}
+              />
+              {quantityHelp && <p className="text-xs text-text-muted">{quantityHelp}</p>}
             </div>
-            <div className="space-y-1.5">
-              <Label>{isDividend ? "Dividend per share (optional)" : "Price per share"}</Label>
-              <Input type="number" step="any" min="0" value={form.price} onChange={(e) => set("price", e.target.value)} />
-            </div>
-            <div className="space-y-1.5">
-              <Label>{isDividend ? "Net dividend amount" : "Net amount (optional)"}</Label>
-              <Input type="number" step="any" value={form.net_amount} onChange={(e) => set("net_amount", e.target.value)} />
-            </div>
-            {!isDividend && (
+            {!isBonus && !isSplit && (
+              <div className="space-y-1.5">
+                <Label>{isDividend ? "Dividend per share (optional)" : "Price per share"}</Label>
+                <Input type="number" step="any" min="0" value={form.price} onChange={(e) => set("price", e.target.value)} />
+              </div>
+            )}
+            {!isBonus && !isSplit && (
+              <div className="space-y-1.5">
+                <Label>{isDividend ? "Net dividend amount" : "Net amount (optional)"}</Label>
+                <Input type="number" step="any" value={form.net_amount} onChange={(e) => set("net_amount", e.target.value)} />
+              </div>
+            )}
+            {hasCash && (
               <>
                 <div className="space-y-1.5">
                   <Label>Commission (optional)</Label>

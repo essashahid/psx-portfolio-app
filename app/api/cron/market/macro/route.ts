@@ -1,4 +1,5 @@
-import { GET as market } from "../route";
+import { marketJobHandler } from "@/lib/market/refresh-job";
+import { runCron } from "@/lib/ops/job-runs";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 300;
@@ -22,9 +23,11 @@ export const maxDuration = 300;
  * delegates to /api/cron/market?task=macro. The PSX index top-up inside that
  * task carries its own weekday guard, so reaching it on a Sunday is safe.
  */
-export async function GET(request: Request) {
+async function handler(request: Request) {
   const url = new URL(request.url);
   url.pathname = url.pathname.replace(/\/macro$/, "");
   url.searchParams.set("task", "macro");
-  return market(new Request(url, { headers: request.headers }));
+  return marketJobHandler(new Request(url, { headers: request.headers }));
 }
+
+export const GET = (request: Request) => runCron("market/macro", request, handler);

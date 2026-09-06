@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { requireUser, errorResponse } from "@/lib/shared/api";
 import { rejectDemoWrite } from "@/lib/demo/mode";
+import type { TaxPatchRequest } from "@psx/shared/api/settings";
 
 const schema = z.object({
   taxpayer_status: z.enum(["filer", "non-filer"]),
@@ -25,12 +26,13 @@ export async function POST(request: Request) {
     if (!parsed.success) {
       return NextResponse.json({ error: parsed.error.issues.map((i) => i.message).join("; ") }, { status: 422 });
     }
+    const body: TaxPatchRequest = parsed.data;
     const { error: upErr } = await supabase.from("tax_settings").upsert(
       {
         user_id: user.id,
         country: "PK",
-        ...parsed.data,
-        source_note: parsed.data.source_note || null,
+        ...body,
+        source_note: body.source_note || null,
         updated_at: new Date().toISOString(),
       },
       { onConflict: "user_id" }

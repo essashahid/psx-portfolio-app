@@ -3,6 +3,7 @@ import { z } from "zod";
 import { requireUser, errorResponse } from "@/lib/shared/api";
 import { recomputeAll } from "@/lib/portfolio/recompute-cascade";
 import { rejectDemoWrite } from "@/lib/demo/mode";
+import type { CashMovementPatchRequest } from "@psx/shared/api/cash-movements";
 
 export const maxDuration = 60;
 
@@ -32,9 +33,10 @@ export async function PATCH(
       );
     }
 
+    const patch: CashMovementPatchRequest = parsed.data;
     const { data, error: updateErr } = await supabase
       .from("cash_movements")
-      .update(parsed.data)
+      .update(patch)
       .eq("user_id", user.id)
       .eq("id", id)
       .select("id")

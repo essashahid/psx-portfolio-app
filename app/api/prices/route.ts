@@ -4,8 +4,7 @@ import { requireUser, errorResponse } from "@/lib/shared/api";
 import { refreshAlerts } from "@/lib/alerts/refresh";
 import { takeSnapshot } from "@/lib/portfolio/positions";
 import { refreshBenchmarkForUser } from "@/lib/engine/benchmark-rebuild";
-import { getMarketDataProvider } from "@/lib/market-data/adapter";
-import { needsRefresh, PSX_PRICE_SOURCE } from "@/lib/market-data/psx-dps";
+import { refreshQuotesForTickers } from "@/lib/engine/market-data";
 import { parseNumberLoose, parseDateLoose } from "@/lib/shared/format";
 import { rejectDemoWrite } from "@/lib/demo/mode";
 
@@ -39,36 +38,26 @@ export async function POST(request: Request) {
     };
 
     if (body.refresh) {
-      const provider = getMarketDataProvider(supabase, user.id);
-      if (provider.name === "manual") {
-        const result = await provider.refreshPortfolioPrices(user.id);
+      const providerName = (process.env.MARKET_DATA_PROVIDER ?? "psx").toLowerCase();
+      if (providerName === "manual") {
         return NextResponse.json({
           provider: "manual",
           updated: 0,
-          skipped: result.skipped,
-          message:
-            result.skipped.length > 0
-              ? `Manual mode: no external provider configured. ${result.skipped.length} holding(s) still have no price: ${summarizeTickers(result.skipped)}. Set prices below or upload a price CSV.`
-              : "Manual mode: all holdings already have prices. Update them below whenever you like.",
+          skipped: [],
+          message: "Manual mode: no external provider configured. Set prices below or upload a price CSV.",
         });
       }
 
-      const providerSource = provider.name === "psx" ? PSX_PRICE_SOURCE : provider.name;
-      if (body.ifStaleMinutes) {
-        const { data: last } = await supabase
-          .from("prices")
-          .select("created_at")
-          .eq("user_id", user.id)
-          .eq("source", providerSource)
-          .order("created_at", { ascending: false })
-          .limit(1)
-          .maybeSingle();
-        if (!needsRefresh(last ? new Date(last.created_at) : null, body.ifStaleMinutes)) {
-          return NextResponse.json({ provider: provider.name, updated: 0, skipped: [], fresh: true });
-        }
+      const { data: held } = await supabase.from("holdings").select("ticker").eq("user_id", user.id).gt("quantity", 0);
+      const refreshed = await refreshQuotesForTickers(
+        (held ?? []).map((h) => String(h.ticker)),
+        { staleMinutes: body.ifStaleMinutes ?? 10 }
+      );
+      if (body.ifStaleMinutes && refreshed.refreshed === 0 && refreshed.failed.length === 0) {
+        return NextResponse.json({ provider: providerName, updated: 0, skipped: [], fresh: true });
       }
-
-      const result = await provider.refreshPortfolioPrices(user.id);
+      const result = { updated: refreshed.refreshed, skipped: refreshed.failed };
+      const provider = { name: providerName };
       if (result.updated > 0) {
         await takeSnapshot(supabase, user.id);
         await refreshAlerts(supabase, user.id);

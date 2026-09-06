@@ -5,8 +5,6 @@ import { getTaxSettings } from "@/lib/dividends/tax";
 import { taxYearOf } from "@psx/shared/dividends/tax-year";
 import { buildYieldOnCost } from "@psx/shared/dividends/yield-on-cost";
 import { getPortfolio } from "@/lib/portfolio/positions";
-import { getDailyHoldingPerformance } from "@/lib/portfolio/daily-performance";
-import { fillFromSnapshot, snapshotByTicker } from "@/lib/portfolio/snapshot-fallback";
 import type {
   DividendRow,
   DividendTaxYear,
@@ -23,15 +21,12 @@ export async function GET() {
   if (error) return error;
 
   try {
-    const [dividends, tax, portfolio, daily] = await Promise.all([
+    const [dividends, tax, portfolio] = await Promise.all([
       getDividends(supabase, user.id),
       getTaxSettings(supabase, user.id),
+      // Current values come from getPortfolio's shared price resolution.
       getPortfolio(supabase, user.id),
-      // Yield on current value needs a current value. Without this every row
-      // shows a dash until the daily cron fills the per-user prices table.
-      getDailyHoldingPerformance(supabase, user.id).catch(() => null),
     ]);
-    const dayByTicker = daily ? snapshotByTicker(daily) : null;
 
     const toRow = (d: (typeof dividends)[number]): DividendRow => ({
       id: d.id,
@@ -85,24 +80,11 @@ export async function GET() {
       yieldOnCost: buildYieldOnCost(
         portfolio.holdings.map((h) => {
           const totalCost = h.total_cost === null ? null : Number(h.total_cost);
-          const priced = fillFromSnapshot(
-            {
-              latestPrice: h.latest_price,
-              priceDate: h.price_date,
-              marketValue: h.market_value,
-              unrealizedPl: h.unrealized_pl,
-              unrealizedPlPct: h.unrealized_pl_pct,
-            },
-            Number(h.quantity),
-            totalCost,
-            dayByTicker?.get(h.ticker),
-            daily?.asOf ?? null
-          );
           return {
             ticker: h.ticker,
             companyName: h.company_name,
             totalCost,
-            marketValue: priced.marketValue,
+            marketValue: h.market_value,
           };
         }),
         dividends.map((d) => ({

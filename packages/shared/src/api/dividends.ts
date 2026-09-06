@@ -52,3 +52,32 @@ export interface DividendsResponse {
   yieldOnCost: YieldOnCostRow[];
   count: number;
 }
+
+/**
+ * The request contract for POST, PATCH and DELETE /api/dividends.
+ *
+ * POST and PATCH take the same shape; PATCH additionally requires `id`. Dates
+ * are YYYY-MM-DD. `amount` is gross, `tax` is what was withheld, and the route
+ * derives `net_amount` when it is not sent.
+ */
+export interface DividendWriteRequest {
+  /** Required for PATCH, ignored for POST. */
+  id?: string;
+  ticker: string;
+  company_name?: string | null;
+  announcement_date?: string | null;
+  ex_date?: string | null;
+  payment_date?: string | null;
+  dividend_per_share?: number | null;
+  quantity_held?: number | null;
+  amount: number;
+  tax?: number | null;
+  net_amount?: number | null;
+  /** Defaults to "received" when omitted. */
+  status?: DividendRow["status"];
+  notes?: string | null;
+}
+
+export interface DividendDeleteRequest {
+  id: string;
+}

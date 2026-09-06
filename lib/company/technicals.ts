@@ -4,6 +4,7 @@ import { fetchPsxEod, fetchPsxEodDetailed, type SeriesFailure } from "@/lib/mark
 import { freshnessFor, isStaleOrMissing, TTL_MINUTES } from "@/lib/company/freshness";
 import type { Candle, Quote, Technicals, TechnicalFlag } from "@/lib/company/types";
 import { computeSignals } from "@/lib/market/technicals";
+import { adjustForCorporateActions } from "@psx/shared/market/adjust";
 
 const MAX_STORED_CANDLES = 1300; // ~5 trading years, enough for every chart range
 
@@ -58,7 +59,10 @@ function pct(from: number, to: number): number {
  * universe in one query, detailed enough to show the recent trend shape.
  */
 export function sparkline(candles: Candle[], lookback = 90, points = 40): number[] {
-  const closes = candles.slice(-lookback).map((c) => c.close).filter((v) => Number.isFinite(v) && v > 0);
+  // Back-adjusted, so a bonus issue inside the window does not draw as a cliff.
+  const closes = adjustForCorporateActions(candles.slice(-lookback))
+    .map((c) => c.close)
+    .filter((v) => Number.isFinite(v) && v > 0);
   if (closes.length <= points) return closes;
   const step = (closes.length - 1) / (points - 1);
   const out: number[] = [];
@@ -67,20 +71,27 @@ export function sparkline(candles: Candle[], lookback = 90, points = 40): number
 }
 
 export function computeTechnicals(ticker: string, candles: Candle[]): Omit<Technicals, "meta"> {
-  const closes = candles.map((c) => c.close);
+  // Every multi-session figure (averages, 52-week range, RSI, volatility) is
+  // computed on a series back-adjusted for bonus and split events, otherwise
+  // one unadjusted session dominates all of them. The stored history stays
+  // raw, and so does the latest price: it is the price that actually traded.
+  const adjusted = adjustForCorporateActions(candles);
+  const closes = adjusted.map((c) => c.close);
   const volumes = candles.map((c) => c.volume);
   const last = candles[candles.length - 1];
   const prev = candles[candles.length - 2];
 
   // 52-week window = last ~252 trading days.
-  const yearSlice = candles.slice(-252);
-  const yearCloses = yearSlice.map((c) => c.close);
+  const yearCloses = closes.slice(-252);
   const high52 = yearCloses.length ? Math.max(...yearCloses) : null;
   const low52 = yearCloses.length ? Math.min(...yearCloses) : null;
 
   const latest = last?.close ?? null;
   const prevClose = prev?.close ?? null;
-  const dayChangePct = latest !== null && prevClose ? pct(prevClose, latest) : null;
+  // Day change uses the adjusted previous close, so the session a bonus lands
+  // on reads as the real move rather than the mechanical drop.
+  const adjustedPrev = adjusted[adjusted.length - 2]?.close ?? null;
+  const dayChangePct = latest !== null && adjustedPrev ? pct(adjustedPrev, latest) : null;
 
   const ma20 = sma(closes, 20);
   const ma50 = sma(closes, 50);

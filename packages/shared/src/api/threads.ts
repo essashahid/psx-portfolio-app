@@ -37,3 +37,18 @@ export interface ThreadDetailResponse {
   thread: ChatThreadSummary;
   messages: SavedChatMessage[];
 }
+
+/** What POST /api/chat/threads accepts. The title defaults to "New chat". */
+export interface ThreadCreateRequest {
+  title?: string;
+}
+
+/** What PATCH /api/chat/threads/[id] accepts. The title is trimmed and capped at 80 characters. */
+export interface ThreadPatchRequest {
+  title: string;
+}
+
+/** The response to POST /api/chat/threads and PATCH /api/chat/threads/[id]. */
+export interface ThreadWriteResponse {
+  thread: ChatThreadSummary;
+}

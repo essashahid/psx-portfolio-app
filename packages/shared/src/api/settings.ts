@@ -64,3 +64,33 @@ export interface SettingsResponse {
   holdingsCount: number;
   watchlistCount: number;
 }
+
+/**
+ * The request contract for PATCH /api/settings/profile. Every field is
+ * optional; an empty body is refused. Null on free_cash is stored as zero,
+ * since the column is NOT NULL and clearing the field means "none".
+ */
+export interface ProfilePatchRequest {
+  full_name?: string | null;
+  experience_level?: ExperienceLevel;
+  risk_profile?: RiskProfile | null;
+  objective?: Objective | null;
+  free_cash?: number | null;
+}
+
+/**
+ * The request contract for POST /api/settings/tax. The route upserts the
+ * whole row, so every field is sent each time; unchanged values go back as
+ * they came rather than falling to a default.
+ */
+export interface TaxPatchRequest {
+  taxpayer_status: "filer" | "non-filer";
+  tax_year: string;
+  /** A fraction between 0 and 1, not a percentage. */
+  dividend_tax_rate: number;
+  default_payment_window_days: number;
+  default_face_value: number;
+  source_note?: string | null;
+  show_forecasts_in_review: boolean;
+  auto_create_confirmed: boolean;
+}

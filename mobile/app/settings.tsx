@@ -11,7 +11,9 @@ import {
   RISK_OPTIONS,
   type ExperienceLevel,
   type Objective,
+  type ProfilePatchRequest,
   type RiskProfile,
+  type TaxPatchRequest,
 } from "@psx/shared/api/settings";
 import { formatNumber } from "@psx/shared/format";
 import { useApi } from "@/lib/use-api";
@@ -135,17 +137,18 @@ export default function SettingsScreen() {
         return;
       }
 
-      await apiWrite("/api/settings/profile", "PATCH", {
+      const profile: ProfilePatchRequest = {
         experience_level: experience,
         risk_profile: risk,
         objective,
         free_cash: cash,
-      });
+      };
+      await apiWrite("/api/settings/profile", "PATCH", profile);
 
       // The tax route takes the whole profile, so unchanged fields are sent
       // back as they came rather than being reset to a default.
       if (data) {
-        await apiWrite("/api/settings/tax", "POST", {
+        const tax: TaxPatchRequest = {
           taxpayer_status: filer ? "filer" : "non-filer",
           tax_year: data.tax.taxYear,
           dividend_tax_rate: rate === null ? 0 : rate / 100,
@@ -153,7 +156,8 @@ export default function SettingsScreen() {
           default_face_value: data.tax.defaultFaceValue,
           show_forecasts_in_review: showForecasts,
           auto_create_confirmed: autoConfirm,
-        });
+        };
+        await apiWrite("/api/settings/tax", "POST", tax);
       }
 
       void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);

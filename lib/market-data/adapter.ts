@@ -19,17 +19,17 @@ export interface MarketDataProvider {
   /** Latest known price, or null if unavailable. */
   getLatestPrice(ticker: string): Promise<PricePoint | null>;
   getHistoricalPrices(ticker: string, startDate: string, endDate: string): Promise<PricePoint[]>;
-  /**
-   * Refreshes prices for every holding of a user and writes them to the prices
-   * table. Returns the number of tickers updated.
-   */
-  refreshPortfolioPrices(userId: string): Promise<{ updated: number; skipped: string[] }>;
 }
 
+// Refreshing the price of a held stock is no longer a per-user act. It goes
+// through refreshQuotesForTickers in lib/engine/market-data.ts, which writes
+// the shared market_quotes row every account reads. The per-user `prices`
+// table now only carries what the user themselves supplied: manual entries
+// and prices taken from their broker statement.
+
 /**
- * Manual provider (default). Prices come from the user's own `prices` table —
- * fed by manual edits, CSV uploads, and market prices found on imported
- * statements. refreshPortfolioPrices is a no-op beyond reporting coverage.
+ * Manual provider. Prices come from the user's own `prices` table, fed by
+ * manual edits, CSV uploads, and market prices found on imported statements.
  */
 export class ManualProvider implements MarketDataProvider {
   readonly name = "manual";
@@ -64,19 +64,6 @@ export class ManualProvider implements MarketDataProvider {
       source: p.source,
     }));
   }
-
-  async refreshPortfolioPrices(userId: string): Promise<{ updated: number; skipped: string[] }> {
-    const { data: holdings } = await this.supabase
-      .from("holdings")
-      .select("ticker")
-      .eq("user_id", userId);
-    const skipped: string[] = [];
-    for (const h of holdings ?? []) {
-      const latest = await this.getLatestPrice(h.ticker);
-      if (!latest) skipped.push(h.ticker);
-    }
-    return { updated: 0, skipped };
-  }
 }
 
 /**
@@ -102,9 +89,6 @@ export class ExternalProvider implements MarketDataProvider {
   async getHistoricalPrices(): Promise<PricePoint[]> {
     throw new Error(`Market data provider "${this.name}" is not implemented.`);
   }
-  async refreshPortfolioPrices(): Promise<{ updated: number; skipped: string[] }> {
-    throw new Error(`Market data provider "${this.name}" is not implemented.`);
-  }
 }
 
 export function getMarketDataProvider(
@@ -113,10 +97,10 @@ export function getMarketDataProvider(
 ): MarketDataProvider {
   const configured = (process.env.MARKET_DATA_PROVIDER ?? "psx").toLowerCase();
   if (configured === "psx" || configured === "") {
-    return new PsxDpsProvider(supabase, userId);
+    return new PsxDpsProvider();
   }
   if (configured === "twelve-data" || configured === "twelvedata") {
-    return new TwelveDataProvider(supabase, userId);
+    return new TwelveDataProvider();
   }
   if (configured === "manual") {
     return new ManualProvider(supabase, userId);

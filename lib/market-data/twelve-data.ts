@@ -1,10 +1,8 @@
-import type { SupabaseClient } from "@supabase/supabase-js";
 import type { MarketDataProvider, PricePoint } from "@/lib/market-data/adapter";
 
 const BASE_URL = "https://api.twelvedata.com";
 const EXCHANGE = "XKAR";
 const SOURCE = "twelve-data";
-const BATCH_SIZE = 6;
 
 type TwelveDataEodResponse =
   | {
@@ -44,7 +42,6 @@ function apiKey(): string {
 
 export class TwelveDataProvider implements MarketDataProvider {
   readonly name = SOURCE;
-  constructor(private supabase: SupabaseClient, private userId: string) {}
 
   async getLatestPrice(ticker: string): Promise<PricePoint | null> {
     const url = new URL("/eod", BASE_URL);
@@ -81,39 +78,6 @@ export class TwelveDataProvider implements MarketDataProvider {
       })
       .filter((p): p is PricePoint => !!p)
       .reverse();
-  }
-
-  async refreshPortfolioPrices(userId: string): Promise<{ updated: number; skipped: string[] }> {
-    const { data: holdings } = await this.supabase
-      .from("holdings")
-      .select("ticker")
-      .eq("user_id", userId);
-    const tickers = [...new Set((holdings ?? []).map((h) => h.ticker as string))];
-    if (tickers.length === 0) return { updated: 0, skipped: [] };
-
-    const points: PricePoint[] = [];
-    const skipped: string[] = [];
-    for (let i = 0; i < tickers.length; i += BATCH_SIZE) {
-      const batch = tickers.slice(i, i + BATCH_SIZE);
-      const results = await Promise.all(batch.map((ticker) => this.getLatestPrice(ticker)));
-      results.forEach((point, idx) => (point ? points.push(point) : skipped.push(batch[idx])));
-    }
-
-    if (points.length > 0) {
-      const { error } = await this.supabase.from("prices").upsert(
-        points.map((p) => ({
-          user_id: this.userId,
-          ticker: p.ticker,
-          price: p.price,
-          price_date: p.date,
-          source: p.source,
-        })),
-        { onConflict: "user_id,ticker,price_date" }
-      );
-      if (error) throw error;
-    }
-
-    return { updated: points.length, skipped };
   }
 }
 

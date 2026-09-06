@@ -10,37 +10,10 @@ import { ActionButton } from "@/components/ui/action-button";
 import { FundamentalsGrid } from "@/components/features/stocks/fundamentals-grid";
 import { FilingsSpine, type SpineEntry } from "@/components/features/stocks/filings-spine";
 import { formatNumber, formatFinancialPeriod, cn } from "@/lib/shared/format";
+import { adjustForCorporateActions, detectCorporateActionBreaks } from "@psx/shared/market/adjust";
 import {
   FileText,
 } from "lucide-react";
-
-/**
- * Neutralise unadjusted corporate actions in a close series, for display.
- *
- * PSX price history is stored raw, so a split lands as a single enormous
- * session: Mari reads 3,536.83 to 415.90 overnight on 16 September 2024, an
- * apparent 88% collapse that never happened. Drawn unadjusted, the chart shows
- * a crash and the shape of five years of trading is destroyed by one artefact.
- *
- * A single-session move beyond 40% is treated as a corporate action rather than
- * a trade — PSX applies daily price limits far tighter than that, so a real
- * move of this size cannot happen in one session. Everything before it is
- * scaled by the ratio, which is the standard back-adjustment.
- *
- * This is a display fix on a data problem. The right answer is a corporate
- * actions table applied at ingest, which is recorded in the pipeline gaps note.
- */
-function splitAdjust(closes: number[]): number[] {
-  if (closes.length < 2) return closes;
-  const out = [...closes];
-  for (let i = out.length - 1; i > 0; i--) {
-    const ratio = out[i] / out[i - 1];
-    if (ratio > 1.4 || ratio < 0.6) {
-      for (let j = 0; j < i; j++) out[j] *= ratio;
-    }
-  }
-  return out;
-}
 
 const compactShares = (v: number) =>
   new Intl.NumberFormat("en-PK", { notation: "compact", maximumFractionDigits: 1 }).format(v);
@@ -133,8 +106,9 @@ export async function OverviewPanel({
   const high52 = technicals.fiftyTwoWeekHigh ?? null;
   const fromHigh = price !== null && high52 ? ((price - high52) / high52) * 100 : null;
 
-  const closes = (technicals.history ?? []).map((c) => Number(c.close)).filter((c) => Number.isFinite(c) && c > 0);
-  const ma50 = closes.length >= 50 ? closes.slice(-50).reduce((a, b) => a + b, 0) / 50 : null;
+  // The technicals bundle already computes its averages on a series adjusted
+  // for bonus and split events, so it is not recomputed here from raw closes.
+  const ma50 = technicals.ma50 ?? null;
 
   const signals: { label: string; sub: string; value: string }[] = [];
 
@@ -480,9 +454,13 @@ export async function TechnicalsPanel({ ticker }: { ticker: string }) {
     );
   }
 
-  const closes = splitAdjust(
-    technicals.history.map((c) => Number(c.close)).filter((c) => Number.isFinite(c) && c > 0)
-  );
+  // Five years of closes, back-adjusted so a bonus or split does not draw as a
+  // crash. The 60-session track in the page header is left raw on purpose: a
+  // break that recent is worth seeing, and the rails it is drawn against come
+  // from the same adjusted 52-week range as here.
+  const usableHistory = technicals.history.filter((c) => Number.isFinite(Number(c.close)) && Number(c.close) > 0);
+  const breaks = detectCorporateActionBreaks(usableHistory);
+  const closes = adjustForCorporateActions(usableHistory).map((c) => Number(c.close));
   const price = technicals.latestPrice;
   const low52 = technicals.fiftyTwoWeekLow;
   const high52 = technicals.fiftyTwoWeekHigh;
@@ -539,6 +517,9 @@ export async function TechnicalsPanel({ ticker }: { ticker: string }) {
             <path d={`${line} L${W} ${H} L0 ${H} Z`} fill={hue} fillOpacity="0.08" />
             <path d={line} fill="none" stroke={hue} strokeWidth="2" strokeLinejoin="round" strokeLinecap="round" vectorEffect="non-scaling-stroke" />
           </svg>
+          {breaks.length > 0 && (
+            <p className="mt-2 text-(length:--text-2xs) text-text-faint">Adjusted for bonus and split events</p>
+          )}
 
           {hasRange && (
             <div className="mt-6">
@@ -695,7 +676,7 @@ export async function NewsFilingsPanel({ ticker }: { ticker: string }) {
   if (!user) return null;
 
   const [filings, newsRes, payoutsRes] = await Promise.all([
-    getCompanyFilings(ticker, 30),
+    getCompanyFilings(ticker, 30, { supabase }),
     supabase
       .from("news_articles")
       .select("title, url, source, published_at")

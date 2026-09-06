@@ -73,7 +73,7 @@ export default async function CompareStocksPage({ searchParams }: { searchParams
   const columns: Column[] = await Promise.all(
     tickers.map(async (ticker): Promise<Column> => {
       const [header, ratios] = await Promise.all([
-        getCompanyHeader(supabase, ticker),
+        getCompanyHeader(supabase, ticker, user.id),
         computeRatios(supabase, ticker),
       ]);
       const map = new Map<string, number | null>();

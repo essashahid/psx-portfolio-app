@@ -27,8 +27,11 @@ export function fmtInt(v: number | null | undefined): string {
   return Math.round(v).toLocaleString("en-PK");
 }
 
+/** The three directions a change value can read as. */
+export type Tone = "positive" | "negative" | "flat";
+
 /** Tone for a change value: positive (green), negative (red), or flat. */
-export function tone(v: number | null | undefined): "positive" | "negative" | "flat" {
+export function tone(v: number | null | undefined): Tone {
   if (v == null || v === 0 || !Number.isFinite(v)) return "flat";
   return v > 0 ? "positive" : "negative";
 }

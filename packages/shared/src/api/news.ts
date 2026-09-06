@@ -86,3 +86,16 @@ export interface NewsResponse {
   sourceHealth: string;
   count: number;
 }
+
+/**
+ * The request contract for POST /api/news/article-action.
+ *
+ * `id` is the article row (NewsEventSummary.articleId), never the event's
+ * cluster id, and `storage` says which table that row lives in.
+ */
+export interface ArticleActionRequest {
+  id: string;
+  storage: NewsEventSummary["storage"];
+  field: "saved" | "ignored";
+  value: boolean;
+}

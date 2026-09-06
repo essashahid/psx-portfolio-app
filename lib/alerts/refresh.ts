@@ -6,6 +6,8 @@ const DRIFT_THRESHOLD_PP = 5; // percentage points off target allocation
 const TARGET_PROXIMITY_PCT = 5; // within 5% of target price
 const CONCENTRATION_STOCK_PCT = 25;
 const CONCENTRATION_SECTOR_PCT = 40;
+/** How far back a bonus or right issue is worth reminding the user about. */
+const CORPORATE_ACTION_LOOKBACK_DAYS = 90;
 
 interface NewAlert {
   ticker: string | null;
@@ -16,24 +18,34 @@ interface NewAlert {
   dedupe_key: string;
 }
 
+export interface RefreshAlertsOptions {
+  /**
+   * Whether to raise "no thesis written" alerts. Off by default: the thesis
+   * workflow is opt-in and a reminder per holding reads as nagging. When it is
+   * on, the rule still waits until at least one thesis exists, so a fresh
+   * import does not flood the screen.
+   */
+  includeThesisRules?: boolean;
+}
+
 /**
  * Rule engine: recomputes the full alert set from current portfolio state.
- * Idempotent — alerts are upserted on (user_id, dedupe_key), and rule-based
+ * Idempotent: alerts are upserted on (user_id, dedupe_key), and rule-based
  * alerts whose condition has cleared are resolved.
  */
 export async function refreshAlerts(
   supabase: SupabaseClient,
-  userId: string
+  userId: string,
+  options: RefreshAlertsOptions = {}
 ): Promise<{ created: number; total: number }> {
   const summary = await getPortfolio(supabase, userId);
   const alerts: NewAlert[] = [];
   const today = new Date().toISOString().slice(0, 10);
-  // Only nag about missing theses once the user has written at least one —
-  // otherwise a fresh import floods Alerts with a warning per holding.
-  const usesTheses = summary.holdings.some((h) => h.has_thesis);
+  const includeThesisRules = options.includeThesisRules === true;
+  const usesTheses = includeThesisRules && summary.holdings.some((h) => h.has_thesis);
 
   for (const h of summary.holdings) {
-    // missing thesis
+    // missing thesis (only when the caller opted in)
     if (usesTheses && !h.has_thesis) {
       alerts.push({
         ticker: h.ticker,
@@ -140,6 +152,14 @@ export async function refreshAlerts(
     }
   }
 
+  // Corporate actions the user has not recorded. A bonus or right issue
+  // changes the share count, and until a BONUS, RIGHT or SPLIT transaction is
+  // entered the cost basis and every figure built on it is wrong. The rule
+  // looks at company_payouts for held tickers over the last 90 days and
+  // clears itself once a matching transaction dated on or after the
+  // announcement exists.
+  alerts.push(...(await corporateActionAlerts(supabase, userId, summary.holdings.map((h) => h.ticker), today)));
+
   // negative / dividend / result news (last 7 days, relevance >= 6)
   const since = new Date(Date.now() - 7 * 86400000).toISOString();
   const { data: news } = await supabase
@@ -156,7 +176,7 @@ export async function refreshAlerts(
         alert_type: "negative_news",
         severity: "warning",
         title: `Negative news: ${n.ticker ?? "portfolio"}`,
-        message: `${n.title} — ${n.url}`,
+        message: `${n.title}. ${n.url}`,
         dedupe_key: `negative_news:${n.id}`,
       });
     }
@@ -166,7 +186,7 @@ export async function refreshAlerts(
         alert_type: "dividend_news",
         severity: "info",
         title: `Dividend announcement found: ${n.ticker ?? ""}`,
-        message: `${n.title} — ${n.url}`,
+        message: `${n.title}. ${n.url}`,
         dedupe_key: `dividend_news:${n.id}`,
       });
     }
@@ -176,7 +196,7 @@ export async function refreshAlerts(
         alert_type: "result_news",
         severity: "info",
         title: `Financial result found: ${n.ticker ?? ""}`,
-        message: `${n.title} — ${n.url}`,
+        message: `${n.title}. ${n.url}`,
         dedupe_key: `result_news:${n.id}`,
       });
     }
@@ -217,6 +237,8 @@ export async function refreshAlerts(
 
   // Resolve open rule-based alerts whose condition cleared
   const activeKeys = new Set(alerts.map((a) => a.dedupe_key));
+  // missing_thesis stays in this list even though it is off by default, so
+  // any alerts an earlier run raised are resolved rather than left hanging.
   const RULE_TYPES = [
     "missing_thesis",
     "price_above_target",
@@ -225,6 +247,7 @@ export async function refreshAlerts(
     "allocation_below_target",
     "concentration_risk",
     "review_due",
+    "corporate_action_check",
   ];
   const { data: open } = await supabase
     .from("alerts")
@@ -244,4 +267,83 @@ export async function refreshAlerts(
     .eq("status", "open");
 
   return { created, total: count ?? 0 };
+}
+
+interface PayoutRow {
+  ticker: string;
+  kind: string;
+  announcement_date: string | null;
+  book_closure_end: string | null;
+}
+
+function daysBetween(fromIso: string, toIso: string): number {
+  return (Date.parse(toIso) - Date.parse(fromIso)) / 86400000;
+}
+
+function formatAnnouncementDate(iso: string): string {
+  const d = new Date(iso + "T00:00:00Z");
+  if (!Number.isFinite(d.getTime())) return iso;
+  return d.toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric", timeZone: "UTC" });
+}
+
+async function corporateActionAlerts(
+  supabase: SupabaseClient,
+  userId: string,
+  tickers: string[],
+  today: string
+): Promise<NewAlert[]> {
+  if (tickers.length === 0) return [];
+
+  const { data: payoutRows } = await supabase
+    .from("company_payouts")
+    .select("ticker, kind, announcement_date, book_closure_end")
+    .in("ticker", tickers)
+    .in("kind", ["bonus", "right"]);
+
+  const recent = ((payoutRows ?? []) as PayoutRow[])
+    .filter((p) => p.kind === "bonus" || p.kind === "right")
+    .map((p) => {
+      // The effective date is the book closure when we hold it, otherwise the
+      // announcement. The announcement is what a recorded transaction must
+      // fall on or after.
+      const effective = p.book_closure_end ?? p.announcement_date;
+      const announced = p.announcement_date ?? p.book_closure_end;
+      return { ...p, effective, announced };
+    })
+    .filter((p): p is typeof p & { effective: string; announced: string } => {
+      if (!p.effective || !p.announced) return false;
+      const age = daysBetween(p.effective, today);
+      return Number.isFinite(age) && age >= 0 && age <= CORPORATE_ACTION_LOOKBACK_DAYS;
+    });
+  if (recent.length === 0) return [];
+
+  const { data: txnRows } = await supabase
+    .from("transactions")
+    .select("ticker, type, trade_date")
+    .eq("user_id", userId)
+    .in("ticker", [...new Set(recent.map((p) => p.ticker))])
+    .in("type", ["BONUS", "RIGHT", "SPLIT"]);
+  const recorded = ((txnRows ?? []) as { ticker: string; type: string; trade_date: string | null }[]).filter(
+    (t) => !!t.trade_date
+  );
+
+  const out: NewAlert[] = [];
+  const seen = new Set<string>();
+  for (const p of recent) {
+    const key = `corporate_action_check:${p.ticker}:${p.kind}:${p.announced}`;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    const handled = recorded.some((t) => t.ticker === p.ticker && (t.trade_date as string) >= p.announced);
+    if (handled) continue;
+    const label = p.kind === "right" ? "right issue" : "bonus issue";
+    out.push({
+      ticker: p.ticker,
+      alert_type: "corporate_action_check",
+      severity: "info",
+      title: `${p.ticker} announced a ${label}`,
+      message: `${p.ticker} announced a ${label} on ${formatAnnouncementDate(p.announced)}. Check your share count and record it so your cost basis stays right.`,
+      dedupe_key: key,
+    });
+  }
+  return out;
 }

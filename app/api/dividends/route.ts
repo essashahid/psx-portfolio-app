@@ -4,6 +4,7 @@ import { requireUser, errorResponse } from "@/lib/shared/api";
 import { refreshAlerts } from "@/lib/alerts/refresh";
 import { takeSnapshot } from "@/lib/portfolio/positions";
 import { rejectDemoWrite } from "@/lib/demo/mode";
+import type { DividendDeleteRequest, DividendWriteRequest } from "@psx/shared/api/dividends";
 
 export const maxDuration = 60;
 
@@ -36,7 +37,7 @@ export async function POST(request: Request) {
     if (!parsed.success) {
       return NextResponse.json({ error: parsed.error.issues.map((i) => i.message).join("; ") }, { status: 422 });
     }
-    const d = normalizePayload(parsed.data);
+    const d = normalizePayload(parsed.data satisfies DividendWriteRequest);
     const { error: insErr } = await supabase.from("dividends").insert({
       user_id: user.id,
       ...d,
@@ -64,7 +65,7 @@ export async function PATCH(request: Request) {
     if (!parsed.success || !parsed.data.id) {
       return NextResponse.json({ error: "Valid dividend id and fields are required." }, { status: 422 });
     }
-    const { id, ...payload } = parsed.data;
+    const { id, ...payload } = parsed.data satisfies DividendWriteRequest;
     const d = normalizePayload(payload);
     const { error: updErr } = await supabase
       .from("dividends")
@@ -87,7 +88,7 @@ export async function DELETE(request: Request) {
   if (demoError) return demoError;
 
   try {
-    const body = (await request.json()) as { id?: string };
+    const body = (await request.json()) as Partial<DividendDeleteRequest>;
     if (!body.id) return NextResponse.json({ error: "id is required" }, { status: 400 });
     const { error: delErr } = await supabase.from("dividends").delete().eq("id", body.id).eq("user_id", user.id);
     if (delErr) throw delErr;

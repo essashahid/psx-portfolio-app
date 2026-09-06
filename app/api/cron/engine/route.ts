@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { requireCronAuth } from "@/lib/shared/cron-auth";
+import { runCron } from "@/lib/ops/job-runs";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { refreshQuote } from "@/lib/engine/market-data";
 import { refreshTechnicals } from "@/lib/company/technicals";
@@ -34,7 +35,7 @@ const TIME_BUDGET_MS = 250_000;
  *  4. Financial extraction queue (few tickers/run — Gemini is slow)
  *  5. Ratio recompute for tickers with financials
  */
-export async function GET(request: Request) {
+async function handler(request: Request) {
   const denied = requireCronAuth(request);
   if (denied) return denied;
   if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
@@ -217,3 +218,5 @@ export async function GET(request: Request) {
 
   return NextResponse.json({ ok: true, elapsedMs: Date.now() - startedAt, ranOutOfTime: outOfTime(), ...report });
 }
+
+export const GET = (request: Request) => runCron("engine", request, handler);

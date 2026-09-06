@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Alert, StyleSheet, Text, View } from "react-native";
 import * as Haptics from "expo-haptics";
+import type { HoldingPatchRequest } from "@psx/shared/api/holdings";
 import { apiWrite, ApiError } from "@/lib/api";
 import { Sheet, SheetError } from "@/components/ui/sheet";
 import { Field, Toggle } from "@/components/ui/field";
@@ -75,17 +76,19 @@ export function PositionSheet({
       // Hiding is a flag flip the route handles on its own and returns early
       // from, so it cannot travel with a quantity change in one request.
       if (hidden !== (initial?.hidden ?? false)) {
-        await apiWrite(`/api/holdings/${ticker}`, "PATCH", { hidden });
+        const flip: HoldingPatchRequest = { hidden };
+        await apiWrite(`/api/holdings/${ticker}`, "PATCH", flip);
       }
       const changedQty = q !== initial?.quantity;
       const changedCost = c !== null && c !== initial?.avgCost;
       const changedNotes = notes.trim() !== (initial?.notes ?? "");
       if (changedQty || changedCost || changedNotes) {
-        await apiWrite(`/api/holdings/${ticker}`, "PATCH", {
+        const patch: HoldingPatchRequest = {
           ...(changedQty ? { quantity: q } : {}),
           ...(changedCost ? { avg_cost: c } : {}),
           ...(changedNotes ? { notes: notes.trim() } : {}),
-        });
+        };
+        await apiWrite(`/api/holdings/${ticker}`, "PATCH", patch);
       }
       void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       onSaved();

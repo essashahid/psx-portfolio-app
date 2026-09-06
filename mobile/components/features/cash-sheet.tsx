@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Alert, StyleSheet, View } from "react-native";
 import * as Haptics from "expo-haptics";
+import type { CashMovementPatchRequest, CashMovementWriteRequest } from "@psx/shared/api/cash-movements";
 import { apiWrite, ApiError } from "@/lib/api";
 import { Sheet, SheetError } from "@/components/ui/sheet";
 import { Field, Choice } from "@/components/ui/field";
@@ -79,13 +80,16 @@ export function CashSheet({
     setBusy(true);
     setFailure(null);
     try {
-      const body = {
+      const body: CashMovementWriteRequest = {
         movement_date: date.trim(),
         type,
         amount: value,
         description: description.trim() || undefined,
       };
-      if (editing) await apiWrite(`/api/cash-movements/${initial!.id}`, "PATCH", body);
+      if (editing) {
+        const patch: CashMovementPatchRequest = body;
+        await apiWrite(`/api/cash-movements/${initial!.id}`, "PATCH", patch);
+      }
       else await apiWrite("/api/cash-movements", "POST", body);
       void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       onSaved();

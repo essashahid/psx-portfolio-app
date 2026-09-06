@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { requireUser } from "@/lib/shared/api";
 import { accountHasFeature } from "@/lib/config/features";
 import { rejectDemoWrite } from "@/lib/demo/mode";
+import type { ThreadCreateRequest, ThreadListResponse, ThreadWriteResponse } from "@psx/shared/api/threads";
 
 export async function GET() {
   const { supabase, user, error } = await requireUser();
@@ -18,7 +19,7 @@ export async function GET() {
     .limit(50);
 
   if (dbError) return NextResponse.json({ error: dbError.message }, { status: 500 });
-  return NextResponse.json({ threads: data ?? [] });
+  return NextResponse.json<ThreadListResponse>({ threads: data ?? [] });
 }
 
 export async function POST(request: Request) {
@@ -30,7 +31,7 @@ export async function POST(request: Request) {
   const demoError = await rejectDemoWrite(supabase, user.id, "The demo Copilot is read-only.");
   if (demoError) return demoError;
 
-  const body = (await request.json().catch(() => ({}))) as { title?: string };
+  const body = (await request.json().catch(() => ({}))) as ThreadCreateRequest;
   const title = cleanTitle(body.title) || "New chat";
 
   const { data, error: dbError } = await supabase
@@ -40,7 +41,7 @@ export async function POST(request: Request) {
     .single();
 
   if (dbError) return NextResponse.json({ error: dbError.message }, { status: 500 });
-  return NextResponse.json({ thread: data });
+  return NextResponse.json<ThreadWriteResponse>({ thread: data });
 }
 
 function cleanTitle(value: string | undefined): string | null {

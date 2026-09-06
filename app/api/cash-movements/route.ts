@@ -3,6 +3,7 @@ import { z } from "zod";
 import { requireUser, errorResponse } from "@/lib/shared/api";
 import { recomputeAll } from "@/lib/portfolio/recompute-cascade";
 import { rejectDemoWrite } from "@/lib/demo/mode";
+import type { CashMovementWriteRequest } from "@psx/shared/api/cash-movements";
 
 export const maxDuration = 60;
 
@@ -27,7 +28,7 @@ export async function POST(request: Request) {
         { status: 422 }
       );
     }
-    const c = parsed.data;
+    const c: CashMovementWriteRequest = parsed.data;
     const { error: insErr } = await supabase.from("cash_movements").insert({
       user_id: user.id,
       movement_date: c.movement_date,

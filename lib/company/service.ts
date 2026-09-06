@@ -12,12 +12,13 @@ import type { CompanyHeader } from "@/lib/company/types";
  */
 export async function getCompanyHeader(
   supabase: SupabaseClient,
-  ticker: string
+  ticker: string,
+  userId: string | null = null
 ): Promise<CompanyHeader> {
   const t = ticker.toUpperCase();
   const [metadata, quote, technicals] = await Promise.all([
     getCompanyMetadata(supabase, t),
-    getQuote(supabase, t),
+    getQuote(supabase, t, { userId }),
     getTechnicals(supabase, t),
   ]);
 

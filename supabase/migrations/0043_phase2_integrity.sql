@@ -1,3 +1,4 @@
+-- Applied to production on 6 September 2026 (Phase 3): preflight showed 0 duplicates on every key.
 -- Phase 2: data integrity.
 --
 -- Everything here is additive. No column is dropped, no row is deleted or

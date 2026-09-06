@@ -3,6 +3,7 @@ import { z } from "zod";
 import { requireUser, errorResponse } from "@/lib/shared/api";
 import { recomputeAll } from "@/lib/portfolio/recompute-cascade";
 import { rejectDemoWrite } from "@/lib/demo/mode";
+import type { TransactionPatchRequest } from "@psx/shared/api/transactions";
 
 export const maxDuration = 60;
 
@@ -46,7 +47,8 @@ export async function PATCH(
     if (before.error) throw before.error;
     if (!before.data) return NextResponse.json({ error: "Transaction not found" }, { status: 404 });
 
-    const updates: Record<string, unknown> = { ...parsed.data };
+    const patch: TransactionPatchRequest = parsed.data;
+    const updates: Record<string, unknown> = { ...patch };
     if (typeof updates.ticker === "string") updates.ticker = updates.ticker.toUpperCase();
     const { data, error: updateErr } = await supabase
       .from("transactions")

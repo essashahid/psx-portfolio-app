@@ -1,5 +1,7 @@
 import { NextResponse } from "next/server";
 import { requireCronAuth } from "@/lib/shared/cron-auth";
+import { runCron, recentJobRuns } from "@/lib/ops/job-runs";
+import { evaluateJobHealth, notifyOwner } from "@/lib/ops/job-health";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { runDataHealth } from "@/lib/engine/data-health";
 import { checkRegistryHealth, summariseRegistryHealth } from "@/lib/engine/registry-health";
@@ -23,7 +25,7 @@ export const maxDuration = 300;
  *   GET /api/cron/data-health            summary only
  *   GET /api/cron/data-health?detail=1   include findings (capped)
  */
-export async function GET(request: Request) {
+async function handler(request: Request) {
   const denied = requireCronAuth(request);
   if (denied) return denied;
   const url = new URL(request.url);
@@ -66,7 +68,13 @@ export async function GET(request: Request) {
     // which is useful on its own.
     const registry = await checkRegistryHealth(db).catch(() => null);
 
+    // Did every scheduled job run today? This is the last cron of the day,
+    // so it is where a missing or killed run becomes a message to the owner.
+    const jobs = evaluateJobHealth(await recentJobRuns(26));
+    const notified = await notifyOwner(jobs);
+
     return NextResponse.json({
+      jobs: { ok: jobs.ok, problems: jobs.problems, notified },
       checked: health.checked,
       cleanCompanies: health.cleanCompanies,
       cleanMarketCap: health.cleanMarketCap,
@@ -95,3 +103,5 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: err instanceof Error ? err.message : String(err) }, { status: 500 });
   }
 }
+
+export const GET = (request: Request) => runCron("data-health", request, handler);

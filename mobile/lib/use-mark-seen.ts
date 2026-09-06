@@ -1,4 +1,5 @@
 import { useEffect, useRef } from "react";
+import type { PrefsPatchRequest } from "@psx/shared/api/prefs";
 import { apiWrite } from "@/lib/api";
 
 const KEYS = {
@@ -24,7 +25,8 @@ export function useMarkSeen(surface: keyof typeof KEYS, ready: boolean) {
   useEffect(() => {
     if (!ready || stamped.current) return;
     stamped.current = true;
-    void apiWrite("/api/prefs", "POST", { [KEYS[surface]]: new Date().toISOString() }).catch(() => {
+    const body: PrefsPatchRequest = { [KEYS[surface]]: new Date().toISOString() };
+    void apiWrite("/api/prefs", "POST", body).catch(() => {
       // A missed stamp costs the next visit an accurate count, nothing more.
       // It is not worth an error in front of the news the user came to read.
     });

@@ -1,10 +1,11 @@
 import { NextResponse } from "next/server";
 import { requireUser, errorResponse } from "@/lib/shared/api";
 import { rejectDemoWrite } from "@/lib/demo/mode";
+import type { WatchlistWriteRequest, WatchlistWriteResponse } from "@psx/shared/api/watchlist";
 
 export const maxDuration = 15;
 
-/** POST { ticker, action?: "add" | "remove" | "toggle" } — manage the watchlist. */
+/** POST WatchlistWriteRequest: manage the watchlist. */
 export async function POST(request: Request) {
   const { supabase, user, error } = await requireUser();
   if (error) return error;
@@ -12,7 +13,7 @@ export async function POST(request: Request) {
   if (demoError) return demoError;
 
   try {
-    const body = (await request.json()) as { ticker?: string; action?: "add" | "remove" | "toggle" };
+    const body = (await request.json()) as Partial<WatchlistWriteRequest>;
     const ticker = (body.ticker ?? "").toUpperCase().trim();
     if (!ticker) return NextResponse.json({ error: "ticker is required" }, { status: 400 });
 
@@ -28,7 +29,7 @@ export async function POST(request: Request) {
 
     if (shouldRemove) {
       if (existing) await supabase.from("stock_watchlist").delete().eq("id", existing.id);
-      return NextResponse.json({ watched: false, message: `${ticker} removed from watchlist.` });
+      return NextResponse.json<WatchlistWriteResponse>({ watched: false, message: `${ticker} removed from watchlist.` });
     }
 
     if (!existing) {
@@ -37,7 +38,7 @@ export async function POST(request: Request) {
         .insert({ user_id: user.id, ticker, status: "watching" });
       if (insErr) throw insErr;
     }
-    return NextResponse.json({ watched: true, message: `${ticker} added to watchlist.` });
+    return NextResponse.json<WatchlistWriteResponse>({ watched: true, message: `${ticker} added to watchlist.` });
   } catch (err) {
     return errorResponse(err);
   }

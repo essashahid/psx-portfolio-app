@@ -1,3 +1,5 @@
+import { tone, type Tone } from "@psx/shared/market/format";
+
 /**
  * The design tokens, resolved for React Native.
  *
@@ -215,16 +217,30 @@ export const layout = {
   bandPadY: 20,
 } as const;
 
-/** Gains, losses and flat. Never used decoratively, same rule as the web app. */
+/**
+ * The colour for a tone, looked up in whichever palette is active.
+ *
+ * The up/down/flat rule itself is tone() in @psx/shared/market/format, the
+ * same function the web app uses, so what counts as a gain is decided once.
+ * Only the palette lookup is local. Never used decoratively.
+ */
+export function toneColor(c: Colors, t: Tone): string {
+  if (t === "positive") return c.textUp;
+  if (t === "negative") return c.textDown;
+  return c.textMuted;
+}
+
+/** Gains, losses and flat, from the light palette. Prefer toneColor(useColors(), tone(v)). */
 export function directionColor(value: number | null | undefined): string {
-  if (value === null || value === undefined || value === 0) return colors.textMuted;
-  return value > 0 ? colors.textUp : colors.textDown;
+  return toneColor(colors, tone(value));
 }
 
 /** The brighter directional pair, for figures sitting on the ink field. */
 export function directionColorOnDark(value: number | null | undefined): string {
-  if (value === null || value === undefined || value === 0) return colors.textOnDarkMuted;
-  return value > 0 ? palette.up3 : palette.down3;
+  const t = tone(value);
+  if (t === "positive") return palette.up3;
+  if (t === "negative") return palette.down3;
+  return colors.textOnDarkMuted;
 }
 
 export const theme = { colors, palette, fontSize, fontFamily, space, layout, tracking } as const;

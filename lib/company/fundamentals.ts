@@ -1,4 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { getContested, contestedReason } from "@/lib/engine/contested";
 
 /**
  * The six metrics behind the Fundamentals grid, read from filed annual
@@ -161,7 +162,16 @@ export interface PeerRank {
   isSelf: boolean;
 }
 
+/** A filed year whose figure is withheld because two readings disagree. */
+export interface ContestedYear {
+  year: number;
+  field: string;
+  reason: string;
+}
+
 export interface FundamentalsData {
+  /** Years dropped from the series above because the filing is in dispute. */
+  contested: ContestedYear[];
   series: Record<MetricKey, MetricSeries>;
   /** Sector peers ranked on each metric, best first. */
   ranking: Record<MetricKey, PeerRank[]>;
@@ -339,6 +349,23 @@ export async function getFundamentals(
   const byTicker = mergeByYear((rows ?? []) as Row[]);
   const selfYears = byTicker.get(ticker) ?? new Map<number, Record<string, unknown>>();
 
+  // A contested annual figure is removed from the company's own series before
+  // anything is derived from it. The year is reported so the grid can say
+  // "withheld" where the bar would have been rather than drawing a gap that
+  // reads as "never filed".
+  const contestedSet = await getContested(supabase, ticker);
+  const contested: ContestedYear[] = [];
+  for (const [year, d] of selfYears) {
+    for (const stmt of ["income_statement", "balance_sheet", "cash_flow"]) {
+      for (const e of contestedSet.fieldsFor(stmt, year, "FY")) {
+        if (e.field in d) {
+          delete d[e.field];
+          contested.push({ year, field: e.field, reason: contestedReason(e) });
+        }
+      }
+    }
+  }
+
   const series = {} as Record<MetricKey, MetricSeries>;
   const ranking = {} as Record<MetricKey, PeerRank[]>;
 
@@ -388,7 +415,7 @@ export async function getFundamentals(
     ranking[def.key] = peerLatest;
   }
 
-  return { series, ranking, sector, sectorPe: await sectorPeOf(supabase, byTicker, peerTickers) };
+  return { series, ranking, sector, contested, sectorPe: await sectorPeOf(supabase, byTicker, peerTickers) };
 }
 
 /** Median P/E across peers that filed a positive EPS and have a live price. */

@@ -1,3 +1,4 @@
+-- Applied to production on 6 September 2026 (Phase 3), after re-running scripts/verification/phase2-preflight.sql.
 -- Feature flags: replace the closed CHECK allowlist with a lookup table.
 --
 -- Why

@@ -12,7 +12,8 @@ import { useRouter } from "expo-router";
 import * as Haptics from "expo-haptics";
 import * as WebBrowser from "expo-web-browser";
 import { Bookmark, BookmarkCheck, ChevronLeft, EyeOff, RefreshCw } from "lucide-react-native";
-import type { NewsEventSummary, NewsResponse } from "@psx/shared/api/news";
+import type { ArticleActionRequest, NewsEventSummary, NewsResponse } from "@psx/shared/api/news";
+import { tone } from "@psx/shared/market/format";
 import { formatPctSigned } from "@psx/shared/format";
 import { useApi } from "@/lib/use-api";
 import { apiWrite } from "@/lib/api";
@@ -25,13 +26,13 @@ import { Rise } from "@/components/ui/motion";
 import { makeStyles, useColors } from "@/lib/theme-context";
 import {
   colors,
-  directionColor,
   fontFamily,
   fontSize,
   layout,
   letterSpacing,
   palette,
   space,
+  toneColor,
   tracking,
 } from "@/lib/theme";
 
@@ -51,7 +52,14 @@ const WINDOWS = [
   { id: "all", label: "All" },
 ] as const;
 
-/** Importance is the one place colour is spent in this screen. */
+/**
+ * Importance is the one place colour is spent in this screen.
+ *
+ * This stays local on purpose: categoryStyle() in @psx/shared/news/category-colors
+ * colours the story category (Markets, Dividend, Policy), not its importance,
+ * and there is no shared importance ramp. These two are status colours from
+ * the theme palette rather than a second news palette.
+ */
 const IMPORTANCE_COLOR: Record<string, string> = {
   Critical: palette.down2,
   High: palette.saffron2,
@@ -173,13 +181,9 @@ export default function NewsScreen() {
     async (event: NewsEventSummary, field: "saved" | "ignored", value: boolean) => {
       void Haptics.selectionAsync();
       try {
-        await apiWrite("/api/news/article-action", "POST", {
-          // The action writes against the article row, not the event cluster.
-          id: event.articleId,
-          storage: event.storage,
-          field,
-          value,
-        });
+        // The action writes against the article row, not the event cluster.
+        const body: ArticleActionRequest = { id: event.articleId, storage: event.storage, field, value };
+        await apiWrite("/api/news/article-action", "POST", body);
         refresh();
       } catch {
         // The list is still readable and the action is repeatable, so a failed
@@ -406,7 +410,7 @@ export default function NewsScreen() {
                   <Figure
                     style={[
                       styles.symbolMove,
-                      { color: ticker === symbol.ticker ? colors.textOnDarkMuted : directionColor(symbol.move) },
+                      { color: ticker === symbol.ticker ? colors.textOnDarkMuted : toneColor(colors, tone(symbol.move)) },
                     ]}
                   >
                     {symbol.move === null ? "—" : formatPctSigned(symbol.move, 1)}

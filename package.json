@@ -20,6 +20,7 @@
     "eval:forecast": "tsx scripts/evaluations/eval-outlook-forecast.ts",
     "eval:dividends": "tsx scripts/evaluations/eval-dividend-forecast.ts",
     "backfill:index": "tsx scripts/backfills/backfill-index-history.ts",
+    "check:cash": "tsx scripts/verification/reconcile-cash.ts",
     "check:drift": "tsx scripts/verification/check-verified-drift.ts",
     "check:freshness": "tsx scripts/verification/check-verified-freshness.ts",
     "check:registry": "npm run check:drift && npm run check:freshness",

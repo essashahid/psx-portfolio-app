@@ -19,6 +19,8 @@
  * reads. The volatility helper is therefore close-based.
  */
 
+import { adjustForCorporateActions } from "@psx/shared/market/adjust";
+
 export interface Candle {
   date: string; // ISO yyyy-mm-dd
   close: number;
@@ -429,9 +431,14 @@ function round(n: number): number {
 // ---------------------------------------------------------------------------
 
 export function computeSignals(candles: Candle[]): TechnicalSignals {
-  const clean = candles
-    .filter((c) => Number.isFinite(c.close) && c.close > 0)
-    .sort((a, b) => (a.date < b.date ? -1 : 1));
+  // Back-adjusted for bonus and split events before any of the trend, swing
+  // or seasonality maths runs. The last close is unchanged by adjustment, so
+  // `lastClose` is still the price that actually traded.
+  const clean = adjustForCorporateActions(
+    candles
+      .filter((c) => Number.isFinite(c.close) && c.close > 0)
+      .sort((a, b) => (a.date < b.date ? -1 : 1))
+  );
 
   const empty: TechnicalSignals = {
     asOf: clean.at(-1)?.date ?? null,
