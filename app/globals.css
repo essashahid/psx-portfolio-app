@@ -128,9 +128,12 @@
   --status-ok: var(--up-2);
 
   /* ── Legacy aliases ───────────────────────────────────────────────
-     Every existing component reads these names via Tailwind's bg-background,
-     text-foreground, etc. Repointing them at the new semantic tokens carries
-     the redesign through without a mass find-replace. */
+     These once let bg-background, text-foreground and friends resolve to the
+     new semantic tokens while components were migrated. That migration is
+     finished: no component uses those class names any more, and the @theme
+     block below no longer exposes them as utilities. The variables stay
+     because ~23 rules in this file still read them directly, the body
+     background and colour among them. */
   --background: var(--surface-page);
   --foreground: var(--text-strong);
   --card: var(--surface-raised);
@@ -371,16 +374,8 @@
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --color-card: var(--card);
-  --color-card-foreground: var(--card-foreground);
-  --color-muted: var(--muted);
-  --color-muted-foreground: var(--muted-foreground);
-  --color-border: var(--border);
   --color-primary: var(--primary);
   --color-primary-foreground: var(--primary-foreground);
-  --color-accent: var(--accent);
   --color-destructive: var(--destructive);
   --color-ring: var(--ring);
   --color-sidebar: var(--sidebar);

@@ -15,7 +15,7 @@ export function PageHeader({
       <div className="rise">
         <span className="mb-3.5 block h-0.75 w-11 bg-indigo" />
         {eyebrow && <p className="eyebrow mb-1.5">{eyebrow}</p>}
-        <h1 className="font-display text-[1.5rem] font-normal leading-tight tracking-editorial text-text-strong sm:text-(length:--text-title)">{title}</h1>
+        <h1 className="font-display text-(length:--text-h1) font-normal leading-tight tracking-editorial text-text-strong sm:text-(length:--text-title)">{title}</h1>
         {description && (
           <p className="mt-1.5 max-w-xl text-sm text-text-muted">{description}</p>
         )}

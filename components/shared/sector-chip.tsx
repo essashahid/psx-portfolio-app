@@ -18,7 +18,7 @@ export function SectorChip({
   size?: "sm" | "xs";
 }) {
   if (!sector || !sector.trim()) {
-    return <span className={cn("text-xs text-amber-600", className)}>Unclassified</span>;
+    return <span className={cn("text-xs text-saffron", className)}>Unclassified</span>;
   }
   const s = sectorChipStyle(sector);
   return (
