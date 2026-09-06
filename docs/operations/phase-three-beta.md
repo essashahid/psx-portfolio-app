@@ -73,3 +73,93 @@ to `OWNER_ALERT_WEBHOOK_URL` when set, and always to `/admin/jobs`.
   `https://<origin>/auth/callback` to Supabase Auth redirect URLs, or invite
   and reset links will point at the wrong host.
 - Delete `public.eod_history_backup_20260906` after a week.
+
+## Product shape (Phase 4)
+
+**Navigation.** Web: Home, Portfolio, Dividends, Companies, Market, Ask;
+bell and avatar in chrome; an Internal menu for admins holds every
+admin-only route plus News. Phone: Home, Holdings, Market, Ask, More; More
+lists only native destinations for a non-admin. News is reachable from Home,
+Market, the avatar menu and the phone's More, not a tab.
+
+**Onboarding.** Name, experience, objective, then Add what you own: ticker
+search, shares, optional average cost. A known cost becomes a BUY in the
+ledger; an unknown cost becomes a manual holding with cost 0 that every
+surface prints as "Cost unknown" and leaves out of the return denominator.
+`POST /api/holdings/quick-add` is the one write path. Skippable.
+
+**Home.** Value, today, unrealised, dividends received, cash, then a
+dividends block (this tax year, all time, next announced or expected
+payout), growth chart, positions, contribution, allocation, developments.
+The index-weight panel is gone from the default view.
+
+**Company.** Three tabs on both surfaces, same order: Overview (what it
+does, your position, is it growing, does it pay, is it expensive, eight key
+figures with glossary hints, recent developments, Ask), Financials (the
+grid, earnings, every ratio, statements, price structure), Filings. The
+eight key figures come from `lib/company/key-figures.ts`, used by the page
+and the phone route. Contested figures say "Contested, under review" and
+why.
+
+**Market.** Index, a one-sentence day summary computed on the server, sectors,
+movers, your holdings against the market, developments; everything
+analytical under More detail. The summary and index contributors are in
+`MarketResponse` so the phone stops computing its own.
+
+**Ask.** Explain mode by default. Verdict-first advice only when the profile
+is `advanced` and the message asks for a view. 40 questions a day per
+account. Suggestions, demo threads and eval cases rewritten. Grounding rules
+unchanged.
+
+**Hidden, not deleted.** Performance, Saved reports, Outlook, Goals,
+Allocation, Journal, Import Center, Coverage, Bulls & Bears remain admin-only
+(`ADMIN_ONLY_FEATURES`); Import is enabled per account from Admin.
+
+## Beta readiness (Phase 5)
+
+- Invite: Admin > Waitlist > Invite, or invite by email. Supabase sends the
+  link; `/auth/callback` establishes the session; `/auth/set-password` then
+  onboarding. Forgot password on the login page uses the same pages.
+- Telemetry: `app_events` written by `POST /api/events` from web and phone
+  (page_view, onboarding_completed, holding_added with method,
+  import_opened/committed, company_viewed with held, company_tab_viewed,
+  chat_asked with mode, push_interest, feedback_sent). `/admin/beta` answers
+  the beta questions from it.
+- Errors: `client_errors` from the web error boundary and window handlers,
+  and from the phone's global handler and boundary. Listed on `/admin/beta`.
+- Rate limits: `lib/shared/rate-limit.ts`, database-backed; chat 10 a minute
+  and 40 a day, price refresh 6 per 10 minutes, news refresh 3 per 10
+  minutes, waitlist 5 an hour per address, demo 20 an hour per address.
+- Feedback widget on every page for every account.
+- Jobs: `/admin/jobs` and the daily webhook.
+
+## Visual verification
+
+Every authenticated page was rendered and inspected, which Phase 1 could
+not do. Method, reusable:
+
+- Web: `npm run dev`, a throwaway account created with the service role,
+  Playwright driving system Chrome with `reduced_motion="reduce"`, through
+  login, all four onboarding steps, the empty Home, Portfolio and Dividends,
+  quick-add through both paths, then every default page at 1280px and the
+  phone width, clipped to the viewport (the ticker tape's transform fools a
+  full-page capture). Two defects found and fixed: a hydration mismatch from
+  the splash on every page, and event titles hidden at phone width.
+- Phone: Android 15 emulator (`psx_pixel7`, created from
+  `system-images;android-35;google_apis;arm64-v8a`), debug build via
+  `expo run:android`, Metro on 8081, `mobile/.env.local` pointing the app at
+  `http://10.0.2.2:3000`, screens captured with `adb exec-out screencap`.
+  Login, Home, Holdings, Market, Ask, More, Company (three scroll positions),
+  Dividends, Alerts, Settings. Three copy defects found and fixed.
+- The same account showed the same portfolio value, day move, position
+  values and company figures on both surfaces.
+- The throwaway account and its rows were deleted afterwards; the test
+  telemetry rows were cleared.
+
+## Not built, on purpose
+
+The ingestion worker and queue, Realtime quotes, the instruments table,
+universe-wide statement extraction, the corporate-actions table, push
+notifications, mobile signup and onboarding, the Performance release,
+quarterly derivation, licensed feeds. Each has a trigger in the beta
+questions on `/admin/beta`.

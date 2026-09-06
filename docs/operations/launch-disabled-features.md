@@ -1,5 +1,9 @@
 # Launch-disabled features
 
+> September 2026: the default surface, navigation and onboarding changed in
+> Phases 3 to 5. See `phase-three-beta.md` for the current state; the notes
+> below describe the mechanism, which is unchanged.
+
 This file documents the statement-import and fallback-heavy surfaces hidden for launch so they can be restored intentionally later.
 
 ## Default account surface
