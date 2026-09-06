@@ -8,6 +8,7 @@ import { DividendReceivables } from "@/components/features/dividends/dividend-re
 import { DividendManager } from "@/components/features/dividends/dividend-form";
 import { formatMoney, cn } from "@/lib/shared/format";
 import { sectorColor } from "@/lib/shared/sector-colors";
+import { AXIS_TICK } from "@/components/shared/chart-kit";
 
 type Period = "ytd" | "previous" | "twelve_months" | "all" | "custom";
 type Granularity = "monthly" | "quarterly" | "annual";
@@ -207,7 +208,7 @@ export function DividendIncomeWorkspace({
               ))}
             </div>
           </div>
-          {timeline.length ? <div className="mt-4 h-72"><ResponsiveContainer width="100%" height="100%"><BarChart data={timeline} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}><CartesianGrid vertical={false} stroke="var(--chart-grid, #e6e6df)" strokeDasharray="3 3" /><XAxis dataKey="label" tick={{ fontSize: 10, fill: "#82827a" }} axisLine={false} tickLine={false} /><YAxis tick={{ fontSize: 10, fill: "#82827a" }} tickFormatter={(value) => `PKR ${(value / 1000).toFixed(0)}k`} axisLine={false} tickLine={false} width={55} /><Tooltip content={<IncomeTooltip />} cursor={{ fill: "var(--surface-sunken)", opacity: 0.5 }} /><Bar dataKey="gross" name="Gross" fill="var(--paper-4)" /><Bar dataKey="tax" name="Tax withheld" fill="var(--clay-3)" /><Bar dataKey="net" name="Net" fill="var(--saffron-2)" /></BarChart></ResponsiveContainer></div> : <p className="py-16 text-center text-sm text-text-muted">No received dividend income in the selected period.</p>}
+          {timeline.length ? <div className="mt-4 h-72"><ResponsiveContainer width="100%" height="100%"><BarChart data={timeline} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}><CartesianGrid vertical={false} stroke="var(--chart-grid)" strokeDasharray="3 3" /><XAxis dataKey="label" tick={{ ...AXIS_TICK, fontSize: 10 }} axisLine={false} tickLine={false} /><YAxis tick={{ ...AXIS_TICK, fontSize: 10 }} tickFormatter={(value) => `PKR ${(value / 1000).toFixed(0)}k`} axisLine={false} tickLine={false} width={55} /><Tooltip content={<IncomeTooltip />} cursor={{ fill: "var(--surface-sunken)", opacity: 0.5 }} /><Bar dataKey="gross" name="Gross" fill="var(--paper-4)" /><Bar dataKey="tax" name="Tax withheld" fill="var(--clay-3)" /><Bar dataKey="net" name="Net" fill="var(--saffron-2)" /></BarChart></ResponsiveContainer></div> : <p className="py-16 text-center text-sm text-text-muted">No received dividend income in the selected period.</p>}
         </section>
         <section>
           <p className="eyebrow">Net income by holding</p>

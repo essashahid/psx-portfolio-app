@@ -144,4 +144,6 @@ export function ChartEmpty({ note, height = 240 }: { note?: string; height?: num
   );
 }
 
-export const AXIS_TICK = { fontSize: 10.5, fill: "#82827a" } as const;
+/** Axis labels. The fill is the token, not its light-mode value, so the
+ * labels follow the theme instead of staying pale on the dark ground. */
+export const AXIS_TICK = { fontSize: 10.5, fill: "var(--chart-axis)" } as const;
