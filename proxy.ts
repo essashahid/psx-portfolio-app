@@ -62,21 +62,30 @@ export default async function proxy(request: NextRequest) {
   if (user && !path.startsWith("/api")) {
     const gatedFeature = featureForPath(path);
     if (gatedFeature) {
+      // One read covers both questions for the signed-in user. A second is
+      // needed only while an admin is impersonating someone else, because then
+      // the flags come from a different row than the is_admin that authorises
+      // the impersonation. That is the rare path, so it pays for itself.
       const { data: realProfile } = await supabase
         .from("profiles")
-        .select("is_admin")
+        .select("is_admin, enabled_features")
         .eq("id", user.id)
         .maybeSingle();
       const realIsAdmin = Boolean(realProfile?.is_admin);
       const impersonateId = request.cookies.get(IMPERSONATE_COOKIE)?.value;
-      const effectiveId = realIsAdmin && impersonateId ? impersonateId : user.id;
-      const { data: effectiveProfile } = await supabase
-        .from("profiles")
-        .select("enabled_features")
-        .eq("id", effectiveId)
-        .maybeSingle();
+      const impersonating = realIsAdmin && impersonateId && impersonateId !== user.id;
 
-      if (!featureAllowed(gatedFeature, effectiveProfile?.enabled_features, realIsAdmin)) {
+      let enabledFeatures = realProfile?.enabled_features;
+      if (impersonating) {
+        const { data: effectiveProfile } = await supabase
+          .from("profiles")
+          .select("enabled_features")
+          .eq("id", impersonateId)
+          .maybeSingle();
+        enabledFeatures = effectiveProfile?.enabled_features;
+      }
+
+      if (!featureAllowed(gatedFeature, enabledFeatures, realIsAdmin)) {
         const url = request.nextUrl.clone();
         url.pathname = "/dashboard";
         url.search = "";
