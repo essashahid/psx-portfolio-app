@@ -29,6 +29,10 @@
       "schedule": "50 9 * * 1-5"
     },
     {
+      "path": "/api/cron/backfill/extract",
+      "schedule": "10 10 * * 1-5"
+    },
+    {
       "path": "/api/cron/data-health",
       "schedule": "15 13 * * *"
     },
