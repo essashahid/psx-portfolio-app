@@ -1,4 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { fetchSbpSeries, sbpTbillSeries, SBP_SOURCE } from "@/lib/market-data/sbp-easydata";
 
 /**
  * Multi-asset history for the capital-allocation forecaster: Bitcoin, gold,
@@ -161,7 +162,31 @@ const TBILL_YIELD_STEPS: { from: string; yieldPct: number }[] = [
   { from: "2026-04-27", yieldPct: 11.5 }, // surprise 100bps hike; held at 11.5% on 15 Jun 2026
 ];
 
+/** Marks the fabricated step series. Real points carry SBP_SOURCE instead. */
 export const TBILL_SOURCE = "sbp-policy-steps";
+
+/**
+ * The short PKR rate, from SBP EasyData when it is configured and from the
+ * hardcoded policy steps when it is not.
+ *
+ * The fallback is kept because the inflation-protected benchmark line would
+ * otherwise vanish for anyone without a key, but it is now honest about what
+ * it is: it stops at the last step it knows and is tagged with a source that
+ * says so.
+ */
+export async function fetchTbillSeries(
+  startDate: string,
+  endDate: string
+): Promise<{ points: MacroPoint[]; source: string; fabricated: boolean }> {
+  const result = await fetchSbpSeries(sbpTbillSeries(), startDate, endDate);
+  if (result.ok) {
+    return { points: result.points, source: SBP_SOURCE, fabricated: false };
+  }
+  if (result.reason === "request-failed") {
+    console.warn(`[macro] SBP EasyData T-bill fetch failed (${result.detail}); using policy steps.`);
+  }
+  return { points: buildTbillSeries(startDate, endDate), source: TBILL_SOURCE, fabricated: true };
+}
 
 /** Annualised PKR T-bill/policy yield (%) in effect on a given date. */
 export function tbillYieldOn(date: string): number {
@@ -226,11 +251,14 @@ export function buildTbillSeries(startDate: string, endDate: string): MacroPoint
     out.push({ date, value: tbillYieldOn(date) });
     d.setUTCMonth(d.getUTCMonth() + 1);
   }
-  // Always carry a point at the exact end date so the synthetic series tracks
-  // the latest known short rate and never reads as stale against daily assets.
-  if (out.length === 0 || out[out.length - 1].date !== endDate) {
-    out.push({ date: endDate, value: tbillYieldOn(endDate) });
-  }
+  // Deliberately no point at the exact end date.
+  //
+  // This used to always append one so the synthetic series "never reads as
+  // stale against daily assets". That is the defect, not the feature: a
+  // fabricated series that renews its own timestamp every day cannot be told
+  // apart from a fed one, so nobody ever notices the feed is missing. It now
+  // stops at the last month it can honestly speak for, and the gap is the
+  // signal. Configure SBP EasyData to get a real series.
   return out;
 }
 
