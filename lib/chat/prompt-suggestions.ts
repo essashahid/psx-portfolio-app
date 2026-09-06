@@ -1,20 +1,21 @@
 /**
- * Deterministic, personalized sample prompts for the Research Copilot empty
- * state. Pure data — no LLM, no DB — so the suggestion pool regenerates
- * instantly when the user switches models or shuffles.
+ * Deterministic, personalized sample prompts for the Ask empty state. Pure
+ * data (no LLM, no DB) so the suggestion pool regenerates instantly when the
+ * user switches models or shuffles. This is also the fallback when the
+ * generated pool in lib/chat/suggest.ts is missing or fails its gate.
+ *
+ * The pool is explain-first: questions about what the user owns, how it is
+ * doing, what happened, and what terms mean, using their real tickers. It
+ * never suggests a buy, trim or sell question.
  *
  * Two dimensions decide which prompts a user sees:
  *
- *  - Model tier: what the selected model can actually do well. Tool-less /
- *    lightweight models (DeepSeek R1, Haiku) get FOCUSED single-stock prompts
- *    they can answer from the pre-built context. DeepSeek Chat (V3) can call
- *    tools, so it gets MEDIUM, few-stock prompts. Sonnet/Opus can chain many
- *    tools over a big budget, so they get DEEP portfolio-wide and ledger scans.
- *    This steers users away from handing a whole-portfolio scan to a model that
- *    will stall on it.
+ *  - Model tier: models that chain many tools (Sonnet, Opus, V4 Pro) get the
+ *    whole-book explanations; lighter models get single-stock questions that
+ *    the pre-built brief already answers.
  *
- *  - Data tier: ledger imported (transaction-level prompts), holdings only
- *    (position prompts), or nothing yet (general PSX prompts).
+ *  - Data tier: ledger imported (cost-basis prompts), holdings only, or
+ *    nothing yet (general PSX explanations).
  */
 
 import type { ChatModelId } from "@/lib/ai/models";
@@ -51,13 +52,6 @@ function tierFor(model: ChatModelId): Tier {
   }
 }
 
-/** A clean round add-size that does not exceed the user's available cash. */
-function amountFor(cash: number | null): string {
-  const tiers = [1_000_000, 500_000, 250_000, 100_000, 50_000, 25_000];
-  const amount = cash && cash >= 25_000 ? tiers.find((t) => cash >= t) ?? 50_000 : 50_000;
-  return `PKR ${amount.toLocaleString("en-US")}`;
-}
-
 /**
  * Build the ordered suggestion pool for a model + portfolio. The caller shows
  * the first few and rotates through the rest on "Try another".
@@ -69,7 +63,6 @@ export function buildSuggestions(model: ChatModelId, ctx?: PromptContext | null)
   const t2 = tickers[1] ?? null;
   const sectors = ctx?.sectors?.length ? ctx.sectors : ctx?.topSector ? [ctx.topSector] : [];
   const sector1 = ctx?.top[0]?.sector ?? ctx?.topSector ?? sectors[0] ?? null;
-  const amount = amountFor(ctx?.cashBalance ?? null);
   const hasHoldings = (ctx?.holdingsCount ?? 0) > 0 && !!t1;
   const hasLedger = !!ctx?.hasLedger;
   const hasThesis = !!ctx?.hasThesis;
@@ -80,85 +73,55 @@ export function buildSuggestions(model: ChatModelId, ctx?: PromptContext | null)
   };
 
   if (hasHoldings) {
+    // The core explain-first pool: the same nine kinds of question for every
+    // model, ordered so the first four are the ones a new user most often has.
+    add(`Why is my portfolio down today?`);
+    add(`How much have I earned from dividends this tax year?`);
+    add(t1 ? `Explain ${t1}'s latest results simply` : null);
+    add(t1 ? `What does P/E mean, and what is ${t1}'s?` : null);
+    add(t2 ? `Why did ${t2} move today?` : t1 ? `Why did ${t1} move today?` : null);
+    add(`What are the important developments in my holdings?`);
+    add(`Which of my holdings are most concentrated?`);
+    add(`How has my portfolio done against the KSE-100?`);
+    add(`What does this dividend announcement mean for me?`);
+
     if (tier === "deep") {
-      // Whole-portfolio scans for models that can chain many tools
-      // (Sonnet/Opus/V4 Pro). Lead with the questions the platform now answers
-      // exceptionally well: benchmark excess, the payout calendar, two-basis
-      // income, the rate cycle, earnings quality, and honest stress tests.
-      add(`What's the single most important thing in my portfolio I haven't asked about?`);
-      add(`Which of my holdings beat the KSE-100 over my holding period, and which just rode the market?`);
-      add(`When are my next expected dividends, and how much should I actually receive from each?`);
-      add(`How much dividend income did I actually receive over the last 12 months, and who paid it?`);
-      add(t1 ? `If ${t1} cut its dividend in half tomorrow, what would happen to my income and my capital?` : null);
-      add(`How exposed is my book to the SBP rate cycle after the latest policy move?`);
-      add(t2 ? `Compare the earnings quality of ${t1} and ${t2}, not just the earnings.` : null);
-      add(t1 ? `Steelman the case against ${t1} using only my own data.` : null);
-      add(`If I had to raise ${amount} from this portfolio with the least damage, what would you sell and why?`);
-      add(`Rank my holdings from strongest to weakest for adding ${amount} today, and explain each.`);
-      add(`Across my whole portfolio, where would ${amount} of new capital most improve diversification and risk?`);
-      add(`Which of my holdings look most attractively valued right now, and why?`);
-      add(`Which of my holdings no longer earn their place, and should I trim any?`);
-      add(sector1 ? `Am I over-concentrated in ${sector1}? Compare it to the rest of my book.` : `Show my sector weights and where I'm over- or under-exposed.`);
-      // Cross-holding pattern questions — the platform's edge.
-      add(`Which of my holdings share a sector or risk driver, and where am I doubling up?`);
-      add(`What single event or risk would hit the most of my holdings at once?`);
-      if (hasThesis) add(`Which of my holdings have drifted from the thesis I wrote for them?`);
-      if (hasLedger) {
-        add(`Find any discrepancies between my holdings, transaction ledger, and broker records.`);
-        add(`Which holdings drove my realized and unrealized gains the most, after dividends and fees?`);
-        add(`Across my ledger, where did recent tranches buy in with the least margin of safety?`);
-      }
-      for (const s of sectors.slice(1, 4)) add(`Is the ${s} sector pulling its weight in my portfolio, or should I rotate out?`);
+      // Models that chain many tools can take whole-book explanations.
+      add(`Which of my holdings pay most of my dividend income, and how reliable is each payer?`);
+      add(`How does the current SBP policy rate affect each of my holdings?`);
+      add(sector1 ? `Explain how much of my portfolio depends on ${sector1}, and what drives that sector.` : null);
+      add(t1 && t2 ? `Explain the difference between ${t1} and ${t2} as businesses.` : null);
+      add(`Which of my holdings beat the KSE-100 over my holding period, and which lagged?`);
+      if (hasThesis) add(`Which of my holdings still match the thesis I wrote for them?`);
+      if (hasLedger) add(`Explain how my average cost in each holding was built up over my purchases.`);
       for (const t of tickers.slice(0, 6)) {
-        add(`Should I add ${amount} to ${t}, hold, or trim, given my weight and cost basis?`);
-        if (hasLedger) add(`Analyse my ${t} tranches: did recent buys erode my margin of safety?`);
-      }
-    } else if (tier === "medium") {
-      add(`Which of my holdings look most attractively valued today?`);
-      add(`When is my next expected dividend, and from which holding?`);
-      add(`How much dividend income did I actually receive over the last 12 months?`);
-      add(`Which of my holdings beat the KSE-100 over my holding period?`);
-      add(`Which of my holdings overlap in sector or risk?`);
-      if (hasThesis) add(`Which of my holdings still match the thesis I wrote, and which have drifted?`);
-      add(t2 ? `Compare ${t1} and ${t2} for a long-term hold, and which deserves ${amount} more.` : null);
-      for (const s of sectors.slice(0, 3)) add(`Is the ${s} sector still a good place for my long-term capital?`);
-      for (const t of tickers.slice(0, 6)) {
-        add(`Review ${t}: valuation, dividends, and whether to add ${amount} for the long term.`);
-        add(`What's the latest news affecting ${t}?`);
+        add(`What does ${t} actually do, and how does it make money?`);
+        add(`Explain ${t}'s dividend history and what the yield on my cost is.`);
       }
     } else {
-      // Focused: single-stock, answerable from the pre-built brief.
-      add(`When is my next expected dividend, and from which holding?`);
+      // Focused: single-stock explanations answerable from the pre-built brief.
       for (const t of tickers.slice(0, 6)) {
-        add(`Should I add ${amount} to ${t} for the long term? Weigh the company case against my concentration and cost basis.`);
-        add(`Is ${t} attractively valued right now for a long-term investor?`);
-        add(`How has my ${t} position performed after dividends and fees?`);
-        add(`What's the latest news affecting ${t}?`);
-        if (hasThesis) add(`Does my ${t} position still match the thesis I wrote for it?`);
-        if (hasLedger) add(`Review my ${t} cost basis: did recent buys have less margin of safety?`);
+        add(`What does ${t} actually do, and how does it make money?`);
+        add(`Explain ${t}'s dividend history and what the yield on my cost is.`);
+        add(`What is the latest news affecting ${t}?`);
+        if (hasThesis) add(`Does ${t} still match the thesis I wrote for it?`);
+        if (hasLedger) add(`Explain how my average cost in ${t} was built up over my purchases.`);
       }
+      for (const s of sectors.slice(0, 3)) add(`Explain what drives the ${s} sector on the PSX.`);
     }
   } else {
-    // No holdings yet — general PSX prompts over well-known large caps.
+    // No holdings yet: general PSX explanations over well-known large caps.
     const names = ["MEBL", "OGDC", "LUCK", "ENGRO", "FFC", "UBL", "PPL", "HBL"];
     const secs = ["cement", "bank", "fertilizer", "oil and gas", "power"];
-    if (tier === "deep") {
-      add(`What are the most attractively valued large-cap PSX stocks for a long-term investor today?`);
-      add(`Build me a starter long-term watchlist across four PSX sectors.`);
-      add(`Compare the cement and bank sectors for long-term accumulation.`);
-      for (const s of secs) add(`Is the ${s} sector attractive for long-term accumulation right now?`);
-    } else if (tier === "medium") {
-      add(`Which PSX sectors look most attractive for a long-term investor right now?`);
-      add(`Compare ENGRO and LUCK for a long-term hold.`);
-      for (const n of names.slice(0, 5)) add(`Is ${n} attractively valued for a long-term investor today?`);
-    } else {
-      for (const n of names.slice(0, 6)) add(`Is ${n} a good long-term hold at current prices?`);
-      for (const n of names.slice(0, 4)) add(`What's the latest news on ${n}?`);
-    }
+    add(`What does P/E mean, and how do I read it for a PSX stock?`);
+    add(`What is the difference between dividend yield and yield on cost?`);
+    add(`What does book closure mean for a dividend?`);
+    add(`How does withholding tax on dividends work for a filer and a non-filer?`);
+    for (const n of names.slice(0, 5)) add(`What does ${n} actually do, and how does it make money?`);
+    for (const s of secs) add(`Explain what drives the ${s} sector on the PSX.`);
   }
 
-  // Always-available breadth (market, movement, flows, filings).
-  if (hasHoldings) add(`Why did my portfolio move today, and what contributed most?`);
+  // Always-available breadth (market, sectors, flows, filings).
   add(`What moved the PSX market today and which sectors led?`);
   add(`Which PSX sectors are leading and lagging right now?`);
   add(`What are foreign investors net buying and selling on the PSX lately?`);

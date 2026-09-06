@@ -20,6 +20,8 @@ import {
   type GenerationMeta,
 } from "@/lib/chat/completion";
 import { buildSystemPrompt } from "@/lib/chat/system-prompt";
+import { chooseMode } from "@/lib/chat/mode";
+import { countMessagesToday, overDailyCap, DAILY_CAP_MESSAGE } from "@/lib/chat/daily-cap";
 import type Anthropic from "@anthropic-ai/sdk";
 import type { SupabaseClient } from "@supabase/supabase-js";
 
@@ -84,11 +86,27 @@ export async function POST(request: Request) {
   const modelDef = getModelDef(body.model);
   const { data: profile, error: profileErr } = await supabase
     .from("profiles")
-    .select("allowed_llm_providers")
+    .select("allowed_llm_providers, experience_level, is_admin")
     .eq("id", user.id)
     .maybeSingle();
   if (profileErr) return new Response(JSON.stringify({ error: profileErr.message }), { status: 500 });
   const allowedProviders = normalizeAllowedChatProviders(profile?.allowed_llm_providers);
+
+  // Daily cap: 40 questions per UTC day, counted from the user's own rows.
+  // Admins are exempt. The client shows the message in place of an answer.
+  if (!profile?.is_admin) {
+    const asked = await countMessagesToday(supabase, user.id);
+    if (overDailyCap(asked)) {
+      return new Response(JSON.stringify({ error: DAILY_CAP_MESSAGE, code: "daily_cap" }), {
+        status: 429,
+        headers: { "Content-Type": "application/json" },
+      });
+    }
+  }
+
+  // Posture: explain by default; advise only for an advanced account that asks
+  // for a view outright. See lib/chat/mode.ts.
+  const mode = chooseMode({ experienceLevel: profile?.experience_level as string | null | undefined, message });
 
   const encoder = new TextEncoder();
   const stream = new ReadableStream<Uint8Array>({
@@ -164,7 +182,7 @@ export async function POST(request: Request) {
         // 3. Narrative. buildSystemPrompt appends retrieval guidance for
         //    tool-capable models, or the "answer from context, never promise a
         //    lookup" rule for a tool-less model so it doesn't stall on a promise.
-        const systemPrompt = buildSystemPrompt(modelDef, message);
+        const systemPrompt = buildSystemPrompt(modelDef, message, { mode });
 
         // The brief is injected so most questions answer in one shot (no extra
         // tool round-trips).

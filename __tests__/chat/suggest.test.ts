@@ -9,7 +9,7 @@ describe("suggestion validation gate", () => {
   });
 
   test("strips list numbering and quotes", () => {
-    expect(validateSuggestion('1. "Should I trim MEBL below 20%?"', HELD, [])).toBe("Should I trim MEBL below 20%?");
+    expect(validateSuggestion('1. "Why is MEBL below 20% of my book now?"', HELD, [])).toBe("Why is MEBL below 20% of my book now?");
   });
 
   test("rejects tickers the user does not hold", () => {
@@ -26,6 +26,13 @@ describe("suggestion validation gate", () => {
     expect(validateSuggestion("Where should I set a stop-loss on my MEBL position today?", HELD, [])).toBeNull();
     expect(validateSuggestion("What is the best entry point for SYS before the breakout comes?", HELD, [])).toBeNull();
     expect(validateSuggestion("Which of my stocks should I buy tomorrow morning at the open?", HELD, [])).toBeNull();
+  });
+
+  test("rejects verdict-seeking questions, keeps explanations", () => {
+    expect(validateSuggestion("Should I buy more MEBL at this weight and price?", HELD, [])).toBeNull();
+    expect(validateSuggestion("Is UBL worth adding to before the next payout?", HELD, [])).toBeNull();
+    expect(validateSuggestion("What does UBL's PKR 11 dividend mean for me after tax?", HELD, [])).not.toBeNull();
+    expect(validateSuggestion("Why did SEARL move today, and was it company news?", HELD, [])).not.toBeNull();
   });
 
   test("rejects near-duplicates of prior questions", () => {

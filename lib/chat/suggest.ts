@@ -9,7 +9,7 @@ import { stripEmDashes, tidyTypography } from "@/lib/chat/sanitize";
 import { deepseekKey } from "@/lib/ai/deepseek-chat";
 
 /**
- * Personalized empty-state suggestions for the Research Copilot.
+ * Personalized empty-state suggestions for Ask.
  *
  * A cheap model (DeepSeek V4 Flash) turns a compact profile of the user's book
  * — holdings, income calendar, benchmark laggards, recent ledger activity, and
@@ -176,6 +176,10 @@ const ACRONYM_ALLOWLIST = new Set([
 const TRADING_CONSTRUCTS =
   /stop.?loss|price target|target price|entry (point|price)|exit (point|price|window)|break.?out|swing trade|intraday|day.?trad|buy tomorrow|sell tomorrow|tomorrow'?s (best|top)|short.?sell|scalp|momentum trade|support level|resistance level|technical breakout|chase the/i;
 
+// Verdict-seeking phrasings. The pool explains; it does not invite the model to
+// tell the user what to buy, trim or sell.
+const VERDICT_SEEKING = /\bshould i (buy|sell|add|trim|cut|exit|hold|reduce|increase|average)\b|\b(buy|sell|trim) (more|now|it|some)\b|\bwhat (should|would) you (buy|sell|do)\b|\bworth (buying|selling|adding)\b/i;
+
 const normalize = (s: string) => s.toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
 
 /**
@@ -192,6 +196,7 @@ export function validateSuggestion(
   if (s.length < 20 || s.length > 160) return null;
   if (/\n/.test(s) || /[<>{}\\]/.test(s)) return null;
   if (TRADING_CONSTRUCTS.test(s)) return null;
+  if (VERDICT_SEEKING.test(s)) return null;
 
   // Every ticker-looking token must be a holding or a known market acronym —
   // a suggestion about a stock the user does not own reads as generic spam.
@@ -217,8 +222,8 @@ function eventSlots(p: Profile): string[] {
   if (next?.expectedDate) {
     out.push(
       next.status === "announced"
-        ? `${next.ticker} pays ${next.dpsText} around ${next.expectedDate}. How much lands in my account, and does it change anything?`
-        : `${next.ticker} is forecast to pay ${next.dpsText} around ${next.expectedDate}. How reliable is that estimate for my position?`
+        ? `${next.ticker} pays ${next.dpsText} around ${next.expectedDate}. What does that announcement mean for me, after tax?`
+        : `${next.ticker} is forecast to pay ${next.dpsText} around ${next.expectedDate}. What is that estimate based on?`
     );
   }
 
@@ -230,7 +235,7 @@ function eventSlots(p: Profile): string[] {
     if (worst) {
       const period = win.label.replace(/^(\d+)-month$/, "$1 months"); // "6-month" -> "6 months"
       out.push(
-        `${worst.ticker} has lagged the KSE-100 by ${Math.abs(worst.excessPct!).toFixed(0)} points over the last ${period}. Is it still earning its place in my book?`
+        `${worst.ticker} has lagged the KSE-100 by ${Math.abs(worst.excessPct!).toFixed(0)} points over the last ${period}. Why?`
       );
     }
   }
@@ -241,7 +246,7 @@ function eventSlots(p: Profile): string[] {
   for (const b of buys) byTicker.set(b.ticker, (byTicker.get(b.ticker) ?? 0) + 1);
   const burst = [...byTicker.entries()].filter(([, n]) => n >= 3).sort((a, b) => b[1] - a[1])[0];
   if (burst) {
-    out.push(`I have bought ${burst[0]} ${burst[1]} times recently. Review my sizing and average cost after those adds.`);
+    out.push(`I have bought ${burst[0]} ${burst[1]} times recently. Explain how my average cost and weight changed after those adds.`);
   }
 
   return out;
@@ -249,12 +254,13 @@ function eventSlots(p: Profile): string[] {
 
 // ── Generation ───────────────────────────────────────────────────────────────
 
-const GENERATION_PROMPT = `You write suggested questions for a Pakistan Stock Exchange portfolio research assistant. The user is a LONG-TERM INVESTOR: fundamentals, valuation, income, concentration, never trading (no targets, stop-losses, timing, breakouts).
+const GENERATION_PROMPT = `You write suggested questions for Ask, the explainer inside a Pakistan Stock Exchange portfolio app. The user is a self-directed LONG-TERM INVESTOR who wants to understand their own portfolio: what they own, how it is doing, what happened, what terms mean. Never trading (no targets, stop-losses, timing, breakouts), and never a buy, trim or sell question.
 
 From the portfolio profile below, write ${GENERATED_CAP + 4} distinct suggested questions the user would genuinely want to ask next. Rules:
-- First person, as the user would type them ("Which of my holdings...", "Should I...").
+- First person, as the user would type them ("Why did my...", "Explain...", "How much have I...", "What does ... mean?").
 - Each must be specific to THIS portfolio: reference their actual tickers, weights, payers, laggards, or recent activity. Nothing a generic investor could be shown.
-- Learn from their question history: go deeper on themes they ask about, and cover one or two important angles they have never asked (income, concentration, benchmark excess, rate cycle, earnings quality).
+- Cover these kinds of question: why the portfolio or one holding moved, dividend income and what tax took, a holding's latest results explained simply, what a ratio means with the user's own figure, important developments in their holdings, concentration, performance against the KSE-100, what a dividend announcement means for them.
+- Learn from their question history: go deeper on themes they ask about, and cover one or two angles they have never asked.
 - Do not repeat a question they already asked. Do not mention writing a thesis unless the profile says they use theses.
 - One sentence each, 20 to 140 characters, plain language, no em dashes, no numbering commentary.
 

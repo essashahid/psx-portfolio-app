@@ -3,14 +3,14 @@ import { Sparkles } from "lucide-react";
 import { cn } from "@/lib/shared/format";
 
 /**
- * Opens the Research Copilot pre-seeded with a question. The chat page reads
+ * Opens the Ask pre-seeded with a question. The chat page reads
  * `?q=` and auto-sends it once, grounding on any ticker it names. Use this to
  * turn any surface (a stock page, a holding row, a news event) into a Copilot
  * on-ramp instead of making the user retype context.
  */
 export function AskCopilotLink({
   question,
-  label = "Ask Copilot",
+  label = "Ask",
   className,
   variant = "button",
 }: {

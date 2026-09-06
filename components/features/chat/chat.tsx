@@ -349,6 +349,14 @@ export function Chat({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ message: q, model, threadId, history }),
       });
+      if (!res.ok) {
+        // A JSON refusal (daily cap, disabled feature, demo read-only) rather
+        // than a stream: show the server's plain message in place of an answer.
+        const data = (await res.json().catch(() => ({}))) as { error?: string };
+        const text = data.error ?? (res.status === 429 ? "You have reached today's question limit." : "Ask could not answer right now.");
+        update((m) => ({ ...m, content: text, parts: [{ type: "text" as const, content: text }], activity: [] }));
+        return;
+      }
       if (!res.body) throw new Error("No stream");
       const reader = res.body.getReader();
       const decoder = new TextDecoder();
@@ -582,7 +590,7 @@ export function Chat({
         placeholder="Ask about your portfolio, a PSX company, or the market"
         rows={1}
         enterKeyHint="send"
-        aria-label="Message Research Copilot"
+        aria-label="Ask a question"
         className="max-h-32 w-full resize-none overflow-y-auto bg-transparent px-1 pt-3 font-display text-lg leading-6 tracking-editorial text-text-strong outline-none placeholder:text-text-faint md:text-[18px]"
       />
       <div className="flex items-center gap-1.5 px-2 pb-2">
@@ -647,10 +655,10 @@ export function Chat({
         </button>
         <div className="min-w-0 flex-1">
           <p className="truncate font-display text-[17px] font-normal tracking-editorial text-text-strong">
-            {activeThread?.title ?? "Copilot"}
+            {activeThread?.title ?? "Ask"}
           </p>
           <p className="truncate text-[11px] text-text-faint">
-            {readOnly ? "Read-only demo research library" : dataUpdated ? `Grounded in your portfolio · data as of ${dataUpdated}` : "Grounded in your portfolio"}
+            {readOnly ? "Read-only demo research library" : dataUpdated ? `Answers from your own figures · data as of ${dataUpdated}` : "Answers from your own figures"}
           </p>
         </div>
         {busy && (
@@ -713,11 +721,11 @@ export function Chat({
                 <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-brand-soft text-brand">
                   <Sparkles className="h-5 w-5" />
                 </div>
-                <h2 className="font-display text-(length:--text-h1) font-normal tracking-editorial text-text-strong">{readOnly ? "Browse demo research" : "Research your portfolio"}</h2>
+                <h2 className="font-display text-(length:--text-h1) font-normal tracking-editorial text-text-strong">{readOnly ? "Browse demo research" : "Ask about your portfolio"}</h2>
                 <p className="mx-auto mt-2 max-w-md text-sm leading-6 text-text-muted">
                   {readOnly
                     ? "Open a curated conversation to see labelled answers, charts and tables based on the demo portfolio."
-                    : "Ask about your holdings, compare companies, review official filings, analyse valuation or understand what moved your portfolio."}
+                    : "Plain answers from your own figures. Not financial advice."}
                   {!readOnly && !aiEnabled && " AI narration is off — live data cards will still appear."}
                 </p>
               </div>

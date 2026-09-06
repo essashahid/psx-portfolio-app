@@ -21,6 +21,7 @@ export interface CaseResult {
   description: string;
   question: string;
   intent: string;
+  mode: "explain" | "advise";
   briefChars: number;
   checks: CheckResult[];
   /** Hard pass: every `must` present and no `mustNot` present. */
@@ -51,8 +52,15 @@ export async function deriveTemplateVars(supabase: SupabaseClient, userId: strin
   };
 }
 
-function scoreCase(brief: string, kind: CheckResult["kind"], patterns: string[] | undefined): CheckResult[] {
-  return (patterns ?? []).map((pattern) => {
+function scoreCase(
+  brief: string,
+  kind: CheckResult["kind"],
+  patterns: string[] | undefined,
+  vars: EvalTemplateVars
+): CheckResult[] {
+  return (patterns ?? []).map((raw) => {
+    // Patterns may name the template ticker ("{TOP} RATIOS") just like questions.
+    const pattern = renderQuestion(raw, vars);
     const present = new RegExp(pattern, "i").test(brief);
     // must/should pass when present; mustNot passes when absent.
     const passed = kind === "mustNot" ? !present : present;
@@ -69,9 +77,9 @@ export async function runCase(
   const question = renderQuestion(c.question, vars);
   const { brief, resolved } = await assembleChatContext(supabase, userId, question);
   const checks = [
-    ...scoreCase(brief, "must", c.must),
-    ...scoreCase(brief, "should", c.should),
-    ...scoreCase(brief, "mustNot", c.mustNot),
+    ...scoreCase(brief, "must", c.must, vars),
+    ...scoreCase(brief, "should", c.should, vars),
+    ...scoreCase(brief, "mustNot", c.mustNot, vars),
   ];
   const criticalFailed = checks.some((r) => (r.kind === "must" || r.kind === "mustNot") && !r.passed);
   const softMissing = checks.filter((r) => r.kind === "should" && !r.passed).length;
@@ -80,6 +88,7 @@ export async function runCase(
     description: c.description,
     question,
     intent: resolved.intent,
+    mode: c.mode ?? "explain",
     briefChars: brief.length,
     checks,
     passed: !criticalFailed,
@@ -89,7 +98,7 @@ export async function runCase(
 
 export async function runEvals(supabase: SupabaseClient, userId: string): Promise<EvalReport> {
   const vars = await deriveTemplateVars(supabase, userId);
-  if (!vars) throw new Error("No holdings found for this user — the grounding eval needs a seeded portfolio.");
+  if (!vars) throw new Error("No holdings found for this user; the grounding eval needs a seeded portfolio.");
 
   const cases: CaseResult[] = [];
   for (const c of EVAL_CASES) {
@@ -109,10 +118,10 @@ export async function runEvals(supabase: SupabaseClient, userId: string): Promis
 /** Human-readable report for a terminal. */
 export function formatReport(report: EvalReport): string {
   const lines: string[] = [];
-  lines.push(`Chat grounding evals — ${report.passed}/${report.total} passed (${report.softMissing} soft checks missing)`);
+  lines.push(`Chat grounding evals: ${report.passed}/${report.total} passed (${report.softMissing} soft checks missing)`);
   lines.push(`Portfolio: TOP=${report.vars.TOP}, SECOND=${report.vars.SECOND}, SECTOR=${report.vars.SECTOR}\n`);
   for (const c of report.cases) {
-    lines.push(`${c.passed ? "PASS" : "FAIL"}  [${c.id}] intent=${c.intent}, brief ${c.briefChars} chars`);
+    lines.push(`${c.passed ? "PASS" : "FAIL"}  [${c.id}] intent=${c.intent}, mode=${c.mode}, brief ${c.briefChars} chars`);
     lines.push(`      ${c.question}`);
     for (const r of c.checks) {
       const mark = r.passed ? "ok  " : r.kind === "should" ? "miss" : "FAIL";

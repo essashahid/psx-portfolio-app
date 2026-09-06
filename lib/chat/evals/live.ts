@@ -1,7 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type Anthropic from "@anthropic-ai/sdk";
 import { assembleChatContext } from "@/lib/chat/build-context";
-import { buildSystemPrompt } from "@/lib/chat/system-prompt";
+import { buildSystemPrompt, type PromptMode } from "@/lib/chat/system-prompt";
 import { getModelDef, type ChatModelDef } from "@/lib/ai/models";
 import { runDeepSeekChat, deepseekChatConfigured } from "@/lib/ai/deepseek-chat";
 import { getClaude, buildClaudeParams, claudeConfigured } from "@/lib/ai/claude";
@@ -42,6 +42,8 @@ export interface LiveCaseResult {
   hedging: string[];
   emDash: boolean;
   answerMustMissing: string[];
+  /** Forbidden patterns (verdict openers, trading constructs) the answer contained. */
+  answerMustNotHit: string[];
   /** Artifact kinds the answer emitted (visual coverage, informational). */
   artifactKinds: string[];
   /** True when a substantive answer is an unstructured wall of prose. */
@@ -61,8 +63,8 @@ export interface LiveReport {
 }
 
 /** Generate an answer tool-lessly from the injected brief, matching production framing. */
-async function generateAnswer(modelDef: ChatModelDef, question: string, brief: string): Promise<string> {
-  const systemPrompt = buildSystemPrompt(modelDef, question, { canUseTools: false });
+async function generateAnswer(modelDef: ChatModelDef, question: string, brief: string, mode: PromptMode): Promise<string> {
+  const systemPrompt = buildSystemPrompt(modelDef, question, { canUseTools: false, mode });
   const userContext = brief
     ? `<context>\n${brief}\n</context>\n\nQuestion: ${question}`
     : `Question: ${question}`;
@@ -110,11 +112,11 @@ export async function runLiveCase(
 
   let answer = "";
   try {
-    answer = await generateAnswer(modelDef, question, brief);
+    answer = await generateAnswer(modelDef, question, brief, c.mode ?? "explain");
   } catch (err) {
     return {
       id: c.id, question, intent: resolved.intent, answerChars: 0,
-      hedging: [], emDash: false, answerMustMissing: [], artifactKinds: [], proseWall: false, passed: false,
+      hedging: [], emDash: false, answerMustMissing: [], answerMustNotHit: [], artifactKinds: [], proseWall: false, passed: false,
       fidelity: { checked: 0, matched: 0, groundedPct: null, unmatched: [] },
       error: err instanceof Error ? err.message : String(err),
     };
@@ -126,16 +128,21 @@ export async function runLiveCase(
   const answerMustMissing = (c.answerMust ?? [])
     .map((p) => renderQuestion(p, vars))
     .filter((p) => !new RegExp(p, "i").test(answer));
+  const prose = stripArtifacts(answer);
+  const answerMustNotHit = (c.answerMustNot ?? [])
+    .map((p) => renderQuestion(p, vars))
+    .filter((p) => new RegExp(p, "im").test(prose));
   const artifactKinds = extractArtifactKinds(answer);
   const proseWall = isProseWall(answer);
   const fidelity = checkNumericFidelity(answer, brief);
 
   const fidelityOk = fidelity.groundedPct === null || fidelity.groundedPct >= FIDELITY_FAIL_BELOW;
-  const passed = hedging.length === 0 && !emDash && answerMustMissing.length === 0 && !proseWall && fidelityOk;
+  const passed =
+    hedging.length === 0 && !emDash && answerMustMissing.length === 0 && answerMustNotHit.length === 0 && !proseWall && fidelityOk;
 
   return {
     id: c.id, question, intent: resolved.intent, answerChars: answer.length,
-    hedging, emDash, answerMustMissing, artifactKinds, proseWall, fidelity, passed,
+    hedging, emDash, answerMustMissing, answerMustNotHit, artifactKinds, proseWall, fidelity, passed,
   };
 }
 
@@ -196,6 +203,7 @@ export function formatLiveReport(report: LiveReport): string {
     if (c.hedging.length) lines.push(`        FAIL hedging: ${c.hedging.map((h) => `"${h}"`).join(", ")}`);
     if (c.emDash) lines.push(`        FAIL em dash present`);
     if (c.answerMustMissing.length) lines.push(`        FAIL answer missing: ${c.answerMustMissing.map((p) => `/${p}/`).join(", ")}`);
+    if (c.answerMustNotHit.length) lines.push(`        FAIL answer contains: ${c.answerMustNotHit.map((p) => `/${p}/`).join(", ")}`);
     if (c.proseWall) lines.push(`        FAIL prose wall (substantive answer with no visual, table, or list)`);
     lines.push(`        ${c.artifactKinds.length ? "ok  " : "--  "} visuals: [${c.artifactKinds.join(", ") || "none"}]`);
     const f = c.fidelity;

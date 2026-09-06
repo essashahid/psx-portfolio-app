@@ -295,7 +295,7 @@ export function UserDetailClient({ userId }: { userId: string }) {
           <div>
             <h2 className="text-sm font-semibold">Feature access</h2>
             <p className="mt-1 text-xs text-text-muted">
-              Account-level tabs and Research Copilot model providers. Admin-only tools still require admin access.
+              Account-level tabs and Ask model providers. Admin-only tools still require admin access.
             </p>
           </div>
           <div className="flex flex-wrap gap-2">
@@ -366,7 +366,7 @@ export function UserDetailClient({ userId }: { userId: string }) {
           </div>
         </div>
         <div className="mt-4 border-t border-rule pt-4">
-          <h3 className="text-xs font-semibold uppercase tracking-wide text-text-muted">Research Copilot models</h3>
+          <h3 className="text-xs font-semibold uppercase tracking-wide text-text-muted">Ask models</h3>
           <div className="mt-2 flex flex-wrap gap-3">
             {CHAT_PROVIDERS.map((provider) => (
               <label key={provider} className="flex items-center gap-2 text-sm">
