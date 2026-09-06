@@ -8,9 +8,11 @@ import { getPortfolio } from "@/lib/portfolio/positions";
 import { getClustersForTickers } from "@/lib/news/global-store";
 import { sectorColor } from "@/lib/shared/sector-colors";
 import { computeRatios, type RatioRow } from "@/lib/engine/ratios";
-import { buildKeyFigures, formatRatioValue, isContested, withheldReason } from "@/lib/company/key-figures";
-import { TREND_FIELDS, TREND_YEARS, filingCategoryLabel, newsSourceLabel, officialDescription } from "@/lib/company/overview";
-import { groupRatios } from "@psx/shared/company/ratio-groups";
+import { buildKeyFigures, formatRatioValue, isContested, readerKeyFigures, withheldReason } from "@/lib/company/key-figures";
+import { TREND_FIELDS, TREND_YEARS, filingCategoryLabel, newsSourceLabel, officialDescription, recentFilings, RECENT_FILING_DAYS } from "@/lib/company/overview";
+import { growthReading, payoutReading, priceStructureReading, valuationReading } from "@/lib/company/readings";
+import { groupRatiosForReader } from "@psx/shared/company/ratio-groups";
+import { MoreDetail } from "@/components/shared/more-detail";
 import { EmptyState } from "@/components/ui/empty-state";
 import { ActionButton } from "@/components/ui/action-button";
 import { Metric } from "@/components/ui/metric";
@@ -130,22 +132,6 @@ function TinyBars({
   );
 }
 
-/** One sentence on the direction of a filed series. */
-function trendReading(noun: string, points: { year: number; value: number }[], format: (v: number) => string): string {
-  if (points.length === 0) return `No filed years of ${noun} on record.`;
-  const last = points[points.length - 1];
-  if (points.length === 1) return `${format(last.value)} in FY${last.year}. One filed year, so no trend yet.`;
-  const first = points[0];
-  const years = last.year - first.year;
-  if (first.value > 0 && last.value > 0 && years > 0) {
-    const cagr = (Math.pow(last.value / first.value, 1 / years) - 1) * 100;
-    const word = Math.abs(cagr) < 1 ? "flat" : cagr > 0 ? "up" : "down";
-    const rate = Math.abs(cagr) < 1 ? "" : ` about ${Math.abs(cagr).toFixed(0)}% a year`;
-    return `${format(last.value)} in FY${last.year}, ${word}${rate} since FY${first.year}.`;
-  }
-  return `From ${format(first.value)} in FY${first.year} to ${format(last.value)} in FY${last.year}.`;
-}
-
 function withheldYears(fundamentals: FundamentalsData, fields: string[]): { year: number; reason: string }[] {
   const seen = new Set<number>();
   return fundamentals.contested
@@ -154,11 +140,19 @@ function withheldYears(fundamentals: FundamentalsData, fields: string[]): { year
     .map((c) => ({ year: c.year, reason: c.reason }));
 }
 
-function QuestionRow({ question, children }: { question: string; children: React.ReactNode }) {
+/**
+ * One of the three plain questions. The reading is the answer in a sentence,
+ * computed from the filed figures by lib/company/readings; the figures beneath
+ * it are the evidence.
+ */
+function QuestionRow({ question, reading, children }: { question: string; reading: string; children: React.ReactNode }) {
   return (
     <section className="grid gap-4 border-b border-rule py-6 md:grid-cols-[11rem_minmax(0,1fr)] md:gap-8">
       <h3 className="font-display text-(length:--text-h3) font-normal tracking-editorial text-text-strong">{question}</h3>
-      <div className="min-w-0">{children}</div>
+      <div className="min-w-0">
+        <p className="mb-5 max-w-(--measure) text-base leading-relaxed text-text-strong">{reading}</p>
+        {children}
+      </div>
     </section>
   );
 }
@@ -222,6 +216,7 @@ export async function OverviewPanel({ ticker }: { ticker: string }) {
       : marginFirst
         ? `Net margin ${marginLast.value.toFixed(1)}% in FY${marginLast.year}, from ${marginFirst.value.toFixed(1)}% in FY${marginFirst.year}.`
         : `Net margin ${marginLast.value.toFixed(1)}% in FY${marginLast.year}.`;
+  const growReading = growthReading(revenue, eps);
 
   // Does it pay?
   const yieldRow = ratioByName(ratios, "Dividend yield (TTM)");
@@ -233,10 +228,7 @@ export async function OverviewPanel({ ticker }: { ticker: string }) {
   const cashPayouts = (payoutsRes.data ?? [])
     .filter((p) => (!p.kind || String(p.kind).toLowerCase() === "cash") && typeof p.dividend_per_share === "number")
     .slice(0, 4);
-  const payReading =
-    divYield !== null && ttmDps !== null
-      ? `PKR ${formatNumber(ttmDps, 2)} per share over the last 12 months, a ${divYield.toFixed(2)}% yield at today's price.${payout !== null ? ` That is ${payout.toFixed(0)}% of earnings.` : ""}`
-      : "No verified cash dividend in the last 12 months.";
+  const payReading = payoutReading({ ttmDps, divYield, payoutRatio: payout });
 
   // Is it expensive?
   const peRow = ratioByName(ratios, "P/E");
@@ -244,18 +236,11 @@ export async function OverviewPanel({ ticker }: { ticker: string }) {
   const pe = peRow?.ratio_value ?? null;
   const sectorPe = fundamentals.sectorPe;
   const peWithheld = pe === null ? withheldDisplay(peRow) : null;
-  const peReading =
-    pe === null
-      ? null
-      : sectorPe.median === null
-        ? `Only ${sectorPe.contributors} peer${sectorPe.contributors === 1 ? "" : "s"} priced, so there is no sector median to set it against.`
-        : pe > sectorPe.median * 1.1
-          ? `Priced above most of its sector on earnings. The sector median is ${sectorPe.median.toFixed(1)}x.`
-          : pe < sectorPe.median * 0.9
-            ? `Priced below most of its sector on earnings. The sector median is ${sectorPe.median.toFixed(1)}x.`
-            : `In line with its sector on earnings. The sector median is ${sectorPe.median.toFixed(1)}x.`;
+  const peReading = valuationReading({ pe, sectorMedianPe: sectorPe.median, peers: sectorPe.contributors, missing: peRow?.missing });
 
-  const keyFigures = buildKeyFigures(ratios);
+  // A figure that is only a gap in the data is left out; one that is contested
+  // or loss-making stays, with its reason, because that is worth knowing.
+  const keyFigures = readerKeyFigures(buildKeyFigures(ratios));
 
   return (
     <div>
@@ -288,13 +273,12 @@ export async function OverviewPanel({ ticker }: { ticker: string }) {
       <div className="mt-10">
         <p className={SECTION_LABEL}>Three plain questions</p>
 
-        <QuestionRow question="Is it growing?">
+        <QuestionRow question="Is it growing?" reading={growReading}>
           <div className="grid gap-6 sm:grid-cols-2">
             <Figure
               label="Revenue"
               value={revenue.length ? fmtPkr(revenue[revenue.length - 1].value) : "—"}
               period={revenue.length ? `FY${revenue[revenue.length - 1].year}` : null}
-              reading={trendReading("revenue", revenue, fmtPkr)}
               caption={revenueWithheld.map((w) => `FY${w.year} withheld. ${w.reason}`).join(" ") || null}
             >
               <TinyBars points={revenue} withheld={revenueWithheld} format={fmtPkr} />
@@ -303,7 +287,6 @@ export async function OverviewPanel({ ticker }: { ticker: string }) {
               label="Earnings per share"
               value={eps.length ? fmtEps(eps[eps.length - 1].value) : "—"}
               period={eps.length ? `FY${eps[eps.length - 1].year}` : null}
-              reading={trendReading("earnings per share", eps, fmtEps)}
               caption={epsWithheld.map((w) => `FY${w.year} withheld. ${w.reason}`).join(" ") || null}
             >
               <TinyBars points={eps} withheld={epsWithheld} format={fmtEps} />
@@ -312,13 +295,12 @@ export async function OverviewPanel({ ticker }: { ticker: string }) {
           <p className="mt-4 max-w-(--measure) text-sm leading-relaxed text-text-muted">{marginReading}</p>
         </QuestionRow>
 
-        <QuestionRow question="Does it pay?">
+        <QuestionRow question="Does it pay?" reading={payReading}>
           <div className="grid gap-6 sm:grid-cols-2">
             <Figure
               label="Dividend yield"
               value={divYield !== null ? `${divYield.toFixed(2)}%` : "—"}
               period={divYield !== null ? "last 12 months" : null}
-              reading={payReading}
               caption={divYield === null ? withheldReason(yieldRow?.missing) : null}
             />
             <div>
@@ -342,13 +324,12 @@ export async function OverviewPanel({ ticker }: { ticker: string }) {
           </div>
         </QuestionRow>
 
-        <QuestionRow question="Is it expensive?">
+        <QuestionRow question="Is it expensive?" reading={peReading}>
           <div className="grid gap-6 sm:grid-cols-2">
             <Figure
               label="Price to earnings"
               value={pe !== null ? `${pe.toFixed(1)}x` : peWithheld?.value ?? "—"}
               period={pe !== null ? formatFinancialPeriod(peRow?.source_period) : null}
-              reading={peReading}
               caption={peWithheld?.caption || null}
             />
             {pbRow && (
@@ -385,8 +366,8 @@ export async function OverviewPanel({ ticker }: { ticker: string }) {
           ))}
         </div>
         <p className="mt-4 max-w-(--measure) text-(length:--text-2xs) leading-relaxed text-text-faint">
-          Hover a figure for what it means. Every figure is struck on filed accounts and today&apos;s price; a
-          withheld one says why. The full set is under Financials.
+          Hover a figure for what it means. Every figure is struck on filed accounts and today&apos;s price. A
+          withheld one says why, and one with no filed input yet is left out. The full set is under Financials.
         </p>
       </div>
     </div>
@@ -632,6 +613,9 @@ export async function EarningsPanel({ ticker }: { ticker: string }) {
   // Scaled to the tallest bar actually drawn, so a swing that is no longer on
   // screen cannot flatten every visible bar against the floor.
   const maxAbs = Math.max(1, ...chartRows.filter((r) => r.change !== null).map((r) => Math.abs(r.change as number)));
+  const newestFirst = [...rows].reverse();
+  const recentRows = newestFirst.slice(0, 4);
+  const earlierRows = newestFirst.slice(4);
 
   return (
     <div>
@@ -671,6 +655,10 @@ export async function EarningsPanel({ ticker }: { ticker: string }) {
         </div>
       )}
 
+      {/*
+        The newest four periods are the ledger a reader actually checks; the
+        rest of the five-year record stays a fold away, nothing dropped.
+      */}
       <div className="mt-9 overflow-x-auto">
         <div className="min-w-[34rem]">
           <div className="grid grid-cols-[minmax(0,1fr)_8rem_8rem_7rem] gap-4 border-b border-rule-strong pb-2 text-(length:--text-3xs) font-bold uppercase tracking-(--tracking-caps) text-text-faint">
@@ -679,18 +667,31 @@ export async function EarningsPanel({ ticker }: { ticker: string }) {
             <span className="text-right">Year before</span>
             <span className="text-right">Change</span>
           </div>
-          {[...rows].reverse().map((r) => (
-            <div key={`row-${r.year}-${r.period}`} className="grid grid-cols-[minmax(0,1fr)_8rem_8rem_7rem] items-baseline gap-4 border-b border-rule py-2.5">
-              <span className="figure text-sm text-text-strong">{r.period} FY{r.year}</span>
-              <span className="figure text-right text-sm font-semibold text-text-strong">{formatNumber(r.eps)}</span>
-              <span className="figure text-right text-sm text-text-muted">{r.prior === null ? "—" : formatNumber(r.prior)}</span>
-              <span className={cn("figure text-right text-sm font-semibold", r.change === null ? "text-text-faint" : r.change >= 0 ? "text-up" : "text-down")}>
-                {r.change === null ? "—" : `${r.change >= 0 ? "+" : "−"}${Math.abs(r.change).toFixed(1)}%`}
-              </span>
-            </div>
-          ))}
+          {recentRows.map((r) => <EarningsRow key={`row-${r.year}-${r.period}`} row={r} />)}
+          {earlierRows.length > 0 && (
+            <details className="group">
+              <summary className="cursor-pointer list-none py-3 text-sm font-semibold text-text-muted transition-colors hover:text-text-strong [&::-webkit-details-marker]:hidden">
+                <span className="group-open:hidden">Show earlier periods ({earlierRows.length})</span>
+                <span className="hidden group-open:inline">Hide earlier periods</span>
+              </summary>
+              {earlierRows.map((r) => <EarningsRow key={`row-${r.year}-${r.period}`} row={r} />)}
+            </details>
+          )}
         </div>
       </div>
+    </div>
+  );
+}
+
+function EarningsRow({ row: r }: { row: { year: number; period: string; eps: number; prior: number | null; change: number | null } }) {
+  return (
+    <div className="grid grid-cols-[minmax(0,1fr)_8rem_8rem_7rem] items-baseline gap-4 border-b border-rule py-2.5">
+      <span className="figure text-sm text-text-strong">{r.period} FY{r.year}</span>
+      <span className="figure text-right text-sm font-semibold text-text-strong">{formatNumber(r.eps)}</span>
+      <span className="figure text-right text-sm text-text-muted">{r.prior === null ? "—" : formatNumber(r.prior)}</span>
+      <span className={cn("figure text-right text-sm font-semibold", r.change === null ? "text-text-faint" : r.change >= 0 ? "text-up" : "text-down")}>
+        {r.change === null ? "—" : `${r.change >= 0 ? "+" : "−"}${Math.abs(r.change).toFixed(1)}%`}
+      </span>
     </div>
   );
 }
@@ -703,6 +704,11 @@ export async function EarningsPanel({ ticker }: { ticker: string }) {
  * Every ratio the engine computes, grouped the way the questions get asked.
  * A withheld ratio keeps its row and says why beneath the name, so the table
  * never has a silent gap.
+ *
+ * The table is the reader's view: a group in which nothing was computed (the
+ * Banking ratios of an oil producer) is left out, and the rows only an analyst
+ * reads sit under their own fold. groupRatiosForReader is the one rule for
+ * both, shared with the phone.
  */
 export async function RatiosPanel({ ticker }: { ticker: string }) {
   const supabase = await createClient();
@@ -716,23 +722,38 @@ export async function RatiosPanel({ ticker }: { ticker: string }) {
     );
   }
 
-  const groups = groupRatios(ratios.map((r) => ({ name: r.ratio_name, row: r })));
+  const { groups, analyst } = groupRatiosForReader(ratios.map((r) => ({ name: r.ratio_name, value: r.ratio_value, row: r })));
 
   return (
-    <Table variant="reader">
-      <THead>
-        <TR>
-          <TH>Ratio</TH>
-          <TH className="text-right">Value</TH>
-          <TH className="text-right">Period</TH>
-        </TR>
-      </THead>
-      <TBody>
-        {groups.map((g) => (
-          <GroupRows key={g.title} title={g.title} rows={g.rows.map((r) => r.row)} />
-        ))}
-      </TBody>
-    </Table>
+    <div>
+      <Table variant="reader">
+        <THead>
+          <TR>
+            <TH>Ratio</TH>
+            <TH className="text-right">Value</TH>
+            <TH className="text-right">Period</TH>
+          </TR>
+        </THead>
+        <TBody>
+          {groups.map((g) => (
+            <GroupRows key={g.title} title={g.title} rows={g.rows.map((r) => r.row)} />
+          ))}
+        </TBody>
+      </Table>
+      {analyst.length > 0 && (
+        <MoreDetail title="Analyst rows" compact className="mt-6">
+          <p className="mb-3 max-w-(--measure) text-(length:--text-2xs) leading-relaxed text-text-faint">
+            Reconciliations, derived share counts and second-order accrual and cost measures. Kept for checking the
+            engine&apos;s work rather than for forming a view.
+          </p>
+          <Table variant="reader">
+            <TBody>
+              <GroupRows title="Analyst" rows={analyst.map((r) => r.row)} />
+            </TBody>
+          </Table>
+        </MoreDetail>
+      )}
+    </div>
   );
 }
 
@@ -847,12 +868,13 @@ export async function StatementsPanel({ ticker }: { ticker: string }) {
                 <TD className="py-2 text-text-muted">{units ?? "not stated"}</TD>
                 <TD className="py-2 text-text-muted">{basis ?? "not stated"}</TD>
                 <TD className="py-2 text-right">
+                  {/* The link reads as what it is, a filing, not as the store's source token. */}
                   {r.source_url ? (
                     <a href={r.source_url} target="_blank" rel="noreferrer" className="text-text-strong hover:underline">
-                      {r.source_type ?? "filing"}
+                      Source filing ↗
                     </a>
                   ) : (
-                    <span className="text-text-faint">{r.source_type ?? "no link"}</span>
+                    <span className="text-text-faint">no link</span>
                   )}
                 </TD>
               </TR>
@@ -867,6 +889,25 @@ export async function StatementsPanel({ ticker }: { ticker: string }) {
 // ---------------------------------------------------------------------------
 // 6. Technicals
 // ---------------------------------------------------------------------------
+
+/**
+ * One sentence on where the price sits, shown outside the Price structure
+ * fold so nobody has to open a chart to learn the one thing it says.
+ */
+export async function PriceStructureLine({ ticker }: { ticker: string }) {
+  const supabase = await createClient();
+  const technicals = await getTechnicals(supabase, ticker);
+  return (
+    <p className="max-w-(--measure) text-sm leading-relaxed text-text-muted">
+      {priceStructureReading({
+        price: technicals.latestPrice,
+        ma50: technicals.ma50,
+        high52: technicals.fiftyTwoWeekHigh,
+        low52: technicals.fiftyTwoWeekLow,
+      })}
+    </p>
+  );
+}
 
 /**
  * Technicals: price structure, placed last in the Financials tab on purpose.
@@ -1080,24 +1121,56 @@ export async function NewsFilingsPanel({ ticker }: { ticker: string }) {
     })),
   ].sort((a, b) => (b.date ?? "").localeCompare(a.date ?? ""));
 
+  // Results, dividends, board meetings and material information from the last
+  // four months: the handful of notices a holder should have seen. The full
+  // spine stays a fold away, open only when there is nothing recent to show.
+  const recent = recentFilings(filings);
+
   return (
     <div>
       <p className="eyebrow">Primary sources</p>
       <h2 className="mt-1.5 font-display text-(length:--text-h1) font-normal tracking-editorial text-text-strong">
-        Everything filed or reported
+        What matters recently
       </h2>
-      <p className="mb-7 mt-1 max-w-(--measure) text-sm leading-relaxed text-text-muted">
-        In date order, newest first. Where an entry moved a figure we hold, it names it, so an accounting event
-        reads differently from an announcement that changed nothing.
-      </p>
-
-      {entries.length === 0 ? (
-        <p className="max-w-(--measure) text-sm leading-relaxed text-text-muted">
-          No filings or coverage on file for {ticker}. Announcements appear here as the exchange publishes them.
+      {recent.length === 0 ? (
+        <p className="mb-7 mt-1 max-w-(--measure) text-sm leading-relaxed text-text-muted">
+          No results, dividend, board meeting or material information notice in the last {RECENT_FILING_DAYS} days.
         </p>
       ) : (
-        <FilingsSpine entries={entries} />
+        <ul className="mb-7 mt-4">
+          {recent.map((f, i) => (
+            <li key={`${f.date}-${i}`} className="grid grid-cols-[6.5rem_minmax(0,1fr)] items-baseline gap-4 border-b border-rule py-3 sm:grid-cols-[6.5rem_10rem_minmax(0,1fr)]">
+              <span className="figure text-(length:--text-2xs) text-text-faint">{readableDate(f.date)}</span>
+              <span className="text-sm font-semibold text-text-strong">{f.label}</span>
+              <span className="col-span-2 min-w-0 sm:col-span-1">
+                <span className="block text-sm text-text-muted">{f.title}</span>
+                <span className="mt-1 flex flex-wrap items-center gap-3 text-(length:--text-2xs) text-text-faint">
+                  <span>PSX filing</span>
+                  {f.url && (
+                    <a href={f.url} target="_blank" rel="noopener noreferrer" className="font-semibold text-indigo transition-colors hover:underline">
+                      Read the notice ↗
+                    </a>
+                  )}
+                </span>
+              </span>
+            </li>
+          ))}
+        </ul>
       )}
+
+      <MoreDetail title="Complete record" defaultOpen={recent.length === 0}>
+        <p className="mb-7 max-w-(--measure) text-sm leading-relaxed text-text-muted">
+          Everything filed or reported, newest first. Where an entry moved a figure we hold, it names it, so an
+          accounting event reads differently from an announcement that changed nothing.
+        </p>
+        {entries.length === 0 ? (
+          <p className="max-w-(--measure) text-sm leading-relaxed text-text-muted">
+            No filings or coverage on file for {ticker}. Announcements appear here as the exchange publishes them.
+          </p>
+        ) : (
+          <FilingsSpine entries={entries} />
+        )}
+      </MoreDetail>
     </div>
   );
 }

@@ -5,10 +5,12 @@ import { useRouter } from "expo-router";
 import * as Haptics from "expo-haptics";
 import { ChevronLeft, Plus } from "lucide-react-native";
 import type { DividendRow, DividendsResponse } from "@psx/shared/api/dividends";
+import { taxYearOf } from "@psx/shared/dividends/tax-year";
 import { formatCompact, formatNumber, formatPkr } from "@psx/shared/format";
 import { useApi } from "@/lib/use-api";
 import { Band, Ledger, LedgerRow } from "@/components/ui/layout";
 import { Caps, Figure, PageTitle } from "@/components/ui/text";
+import { Disclosure } from "@/components/ui/disclosure";
 import { ErrorNote } from "@/components/status";
 import { Rise } from "@/components/ui/motion";
 import { PageSkeleton } from "@/components/skeleton";
@@ -34,7 +36,7 @@ function Payment({ row, onEdit }: { row: DividendRow; onEdit: (row: DividendRow)
         <Text style={styles.ticker}>{row.ticker ?? "—"}</Text>
         <Figure style={styles.meta} numberOfLines={1}>
           {row.payDate ?? "date unknown"}
-          {row.perShare !== null ? ` · ${formatNumber(row.perShare, 2)} per share` : ""}
+          {row.perShare !== null ? `, ${formatNumber(row.perShare, 2)} per share` : ""}
         </Figure>
       </View>
       <View style={styles.paymentRight}>
@@ -56,6 +58,13 @@ function withheldNote(data: DividendsResponse): string | null {
   if (gross > 0 && tax > 0) return `${formatNumber((tax / gross) * 100, 1)}% withheld`;
   if (gross > 0) return "no tax withheld";
   return data.taxRatePct ? `${formatNumber(data.taxRatePct, 0)}% expected` : null;
+}
+
+function todayKey(): string {
+  const d = new Date();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${d.getFullYear()}-${m}-${day}`;
 }
 
 export default function DividendsScreen() {
@@ -94,6 +103,11 @@ export default function DividendsScreen() {
 
   const years = data?.byTaxYear ?? [];
   const peak = Math.max(...years.map((y) => y.net), 1);
+  // The Pakistan tax year, 1 July to 30 June. The same split the web uses.
+  const thisTaxYear = taxYearOf(todayKey());
+  const thisYear = years.find((y) => y.taxYear === thisTaxYear) ?? null;
+  const next = data?.upcoming[0] ?? null;
+  const later = data?.upcoming.slice(1, 6) ?? [];
 
   return (
     <SafeAreaView style={styles.screen} edges={["top"]}>
@@ -121,16 +135,19 @@ export default function DividendsScreen() {
           </View>
           <PageTitle style={styles.title}>Dividends</PageTitle>
 
-          <Caps style={styles.totalLabel}>Received after tax</Caps>
+          {/* Received after tax, this tax year first because that is the
+              figure the tax return asks for, then the whole record. */}
+          <Caps style={styles.totalLabel}>Received after tax, tax year {thisTaxYear}</Caps>
           <Text style={styles.total}>
             <Text style={styles.totalUnit}>PKR </Text>
-            <Text style={styles.totalFigure}>{formatNumber(data?.receivedNetTotal ?? 0, 0)}</Text>
+            <Text style={styles.totalFigure}>{formatNumber(thisYear?.net ?? 0, 0)}</Text>
           </Text>
-          {data && data.upcomingTotal > 0 ? (
-            <Figure style={styles.expected}>
-              {formatPkr(data.upcomingTotal, 0)} announced and not yet paid
-            </Figure>
-          ) : null}
+          <Figure style={styles.expected}>
+            {thisYear
+              ? `${thisYear.count} payment${thisYear.count === 1 ? "" : "s"}${thisYear.tax > 0 ? `, ${formatCompact(thisYear.tax)} withheld as tax` : ""}. `
+              : "Nothing received yet this tax year. "}
+            All time, PKR {formatNumber(data?.receivedNetTotal ?? 0, 0)} after tax.
+          </Figure>
         </View>
 
         <Band>
@@ -147,81 +164,34 @@ export default function DividendsScreen() {
             )
           ) : (
             <>
-              {years.length > 0 ? (
-                <View style={styles.block}>
-                  <View style={styles.blockHead}>
-                    <Caps>By tax year</Caps>
-                    <Figure style={styles.note}>{withheldNote(data)}</Figure>
-                  </View>
-                  {/* Tax years read down the page as bars, so the trend is
-                      visible without a chart that repeats the same figures. */}
-                  {years.map((y) => (
-                    <View key={y.taxYear} style={styles.yearRow}>
-                      <View style={styles.yearHead}>
-                        <Text style={styles.yearLabel}>{y.taxYear}</Text>
-                        <Figure style={styles.yearNet}>{formatCompact(y.net)}</Figure>
-                      </View>
-                      <View style={styles.yearTrack}>
-                        <View style={[styles.yearFill, { width: `${(y.net / peak) * 100}%` }]} />
-                      </View>
-                      <Figure style={styles.yearMeta}>
-                        {y.count} payment{y.count === 1 ? "" : "s"}
-                        {y.tax > 0 ? ` · ${formatCompact(y.tax)} tax` : ""}
-                      </Figure>
-                    </View>
-                  ))}
+              <View style={styles.block}>
+                <View style={styles.blockHead}>
+                  <Caps>Next payout</Caps>
+                  {data.upcomingTotal > 0 ? (
+                    <Figure style={styles.note}>{formatPkr(data.upcomingTotal, 0)} announced and not yet paid</Figure>
+                  ) : null}
                 </View>
-              ) : null}
-
-              {data.upcoming.length > 0 ? (
-                <View style={styles.block}>
-                  <Caps style={styles.blockHead}>Expected</Caps>
-                  <Ledger>
-                    {data.upcoming.slice(0, 10).map((row) => (
-                      <Payment key={row.id} row={row} onEdit={editRow} />
-                    ))}
-                  </Ledger>
-                </View>
-              ) : null}
-
-              {/* Yield on cost is the number that matters once a position is
-                  old: a stock bought at 150 that now pays 12 yields 8% to you
-                  whatever the screen says today. */}
-              {data.yieldOnCost.length > 0 ? (
-                <View style={styles.block}>
-                  <View style={styles.blockHead}>
-                    <Caps>Yield on cost</Caps>
-                    <Figure style={styles.note}>last twelve months</Figure>
-                  </View>
-                  <Ledger>
-                    {data.yieldOnCost.map((row, i) => (
-                      <Rise key={row.ticker} index={i}>
-                        <LedgerRow>
-                          <View style={styles.yieldLeft}>
-                            <Text style={styles.ticker}>{row.ticker}</Text>
-                            <Figure style={styles.meta} numberOfLines={1}>
-                              {formatNumber(row.ttmNet, 0)} on {formatCompact(row.cost)}
-                            </Figure>
-                          </View>
-                          <View style={styles.yieldRight}>
-                            <Figure style={styles.yieldValue}>
-                              {/* toFixed, not formatNumber: this is a column
-                                  of figures and a trimmed "7.7" breaks the
-                                  decimal alignment against "12.51". */}
-                              {row.yieldOnCost !== null ? `${row.yieldOnCost.toFixed(2)}%` : "—"}
-                            </Figure>
-                            <Figure style={styles.meta}>
-                              {row.yieldOnValue !== null
-                                ? `${row.yieldOnValue.toFixed(2)}% today`
-                                : ""}
-                            </Figure>
-                          </View>
-                        </LedgerRow>
-                      </Rise>
-                    ))}
-                  </Ledger>
-                </View>
-              ) : null}
+                {next ? (
+                  <>
+                    <Text style={styles.nextLine}>
+                      {next.ticker ?? "A holding"}
+                      {next.perShare !== null ? ` pays ${formatNumber(next.perShare, 2)} per share` : " has a payout coming"}
+                      {next.payDate ? ` on ${next.payDate}` : ", date to be announced"}
+                      {`, about PKR ${formatNumber(next.netAmount ?? next.amount, 0)} to you`}
+                      {next.status === "expected" ? ", if it pays as it did last year." : "."}
+                    </Text>
+                    {later.length > 0 ? (
+                      <Ledger>
+                        {later.map((row) => (
+                          <Payment key={row.id} row={row} onEdit={editRow} />
+                        ))}
+                      </Ledger>
+                    ) : null}
+                  </>
+                ) : (
+                  <Text style={styles.empty}>Nothing announced or expected for what you hold.</Text>
+                )}
+              </View>
 
               {data.recent.length > 0 ? (
                 <View style={styles.block}>
@@ -234,6 +204,73 @@ export default function DividendsScreen() {
                     ))}
                   </Ledger>
                 </View>
+              ) : null}
+
+              {years.length > 0 || data.yieldOnCost.length > 0 ? (
+                <Disclosure label="More detail" openLabel="Less detail">
+                  {years.length > 0 ? (
+                    <View style={styles.detailBlock}>
+                      <View style={styles.blockHead}>
+                        <Caps>By tax year</Caps>
+                        <Figure style={styles.note}>{withheldNote(data)}</Figure>
+                      </View>
+                      {/* Tax years read down the page as bars, so the trend is
+                          visible without a chart that repeats the same figures. */}
+                      {years.map((y) => (
+                        <View key={y.taxYear} style={styles.yearRow}>
+                          <View style={styles.yearHead}>
+                            <Text style={styles.yearLabel}>{y.taxYear}</Text>
+                            <Figure style={styles.yearNet}>{formatCompact(y.net)}</Figure>
+                          </View>
+                          <View style={styles.yearTrack}>
+                            <View style={[styles.yearFill, { width: `${(y.net / peak) * 100}%` }]} />
+                          </View>
+                          <Figure style={styles.yearMeta}>
+                            {y.count} payment{y.count === 1 ? "" : "s"}
+                            {y.tax > 0 ? `, ${formatCompact(y.tax)} tax` : ""}
+                          </Figure>
+                        </View>
+                      ))}
+                    </View>
+                  ) : null}
+
+                  {/* Yield on cost is the number that matters once a position is
+                      old: a stock bought at 150 that now pays 12 yields 8% to you
+                      whatever the screen says today. */}
+                  {data.yieldOnCost.length > 0 ? (
+                    <View style={styles.detailBlock}>
+                      <View style={styles.blockHead}>
+                        <Caps>Yield on cost</Caps>
+                        <Figure style={styles.note}>last twelve months</Figure>
+                      </View>
+                      <Ledger>
+                        {data.yieldOnCost.map((row) => (
+                          <LedgerRow key={row.ticker}>
+                            <View style={styles.yieldLeft}>
+                              <Text style={styles.ticker}>{row.ticker}</Text>
+                              <Figure style={styles.meta} numberOfLines={1}>
+                                {formatNumber(row.ttmNet, 0)} on {formatCompact(row.cost)}
+                              </Figure>
+                            </View>
+                            <View style={styles.yieldRight}>
+                              <Figure style={styles.yieldValue}>
+                                {/* toFixed, not formatNumber: this is a column
+                                    of figures and a trimmed "7.7" breaks the
+                                    decimal alignment against "12.51". */}
+                                {row.yieldOnCost !== null ? `${row.yieldOnCost.toFixed(2)}%` : "—"}
+                              </Figure>
+                              <Figure style={styles.meta}>
+                                {row.yieldOnValue !== null
+                                  ? `${row.yieldOnValue.toFixed(2)}% today`
+                                  : ""}
+                              </Figure>
+                            </View>
+                          </LedgerRow>
+                        ))}
+                      </Ledger>
+                    </View>
+                  ) : null}
+                </Disclosure>
               ) : null}
             </>
           )}
@@ -275,15 +312,24 @@ const useStyles = makeStyles((c) => ({
     letterSpacing: letterSpacing(34, tracking.editorial),
     color: c.textStrong,
   },
-  expected: { marginTop: space.sm, fontSize: fontSize.xxs, color: c.textFaint },
+  expected: { marginTop: space.sm, fontSize: fontSize.xxs, lineHeight: 17, color: c.textFaint },
   block: { marginBottom: space.xl },
+  detailBlock: { marginTop: space.lg },
   blockHead: {
     flexDirection: "row",
     alignItems: "baseline",
     justifyContent: "space-between",
     marginBottom: space.md,
+    gap: space.md,
   },
-  note: { fontSize: fontSize.xxs, color: c.textFaint },
+  note: { flexShrink: 1, textAlign: "right", fontSize: fontSize.xxs, color: c.textFaint },
+  nextLine: {
+    fontFamily: fontFamily.uiMedium,
+    fontSize: fontSize.body,
+    lineHeight: 22,
+    color: c.textStrong,
+    marginBottom: space.sm,
+  },
   yearRow: {
     paddingVertical: space.md,
     borderBottomWidth: StyleSheet.hairlineWidth,

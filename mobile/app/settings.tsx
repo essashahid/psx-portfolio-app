@@ -50,12 +50,15 @@ const THEME_OPTIONS = [
 
 function Choose<T extends string>({
   label,
+  note,
   options,
   value,
   onChange,
   allowNone,
 }: {
   label: string;
+  /** A line under the label, for a question that is not required. */
+  note?: string;
   options: readonly { value: T; label: string; detail?: string }[];
   value: T | null;
   onChange: (next: T | null) => void;
@@ -64,7 +67,8 @@ function Choose<T extends string>({
   const styles = useStyles();
   return (
     <View style={styles.block}>
-      <Caps style={styles.blockHead}>{label}</Caps>
+      <Caps style={note ? styles.blockHeadTight : styles.blockHead}>{label}</Caps>
+      {note ? <Text style={styles.blockNote}>{note}</Text> : null}
       {options.map((option) => {
         const on = option.value === value;
         return (
@@ -242,17 +246,20 @@ export default function SettingsScreen() {
             onChange={(next) => next && setExperience(next)}
           />
           <Choose
-            label="Risk comfort"
-            options={RISK_OPTIONS}
-            value={risk}
-            onChange={setRisk}
-            allowNone
-          />
-          <Choose
             label="What you are investing for"
             options={OBJECTIVE_OPTIONS}
             value={objective}
             onChange={setObjective}
+            allowNone
+          />
+          {/* Not asked during onboarding any more. Kept here for anyone who
+              wants to say, and left blank without consequence. */}
+          <Choose
+            label="Risk comfort"
+            note="Optional. Tap a chosen answer again to clear it."
+            options={RISK_OPTIONS}
+            value={risk}
+            onChange={setRisk}
             allowNone
           />
         </Band>
@@ -364,6 +371,8 @@ const useStyles = makeStyles((c) => ({
   stack: { gap: space.lg },
   block: { marginBottom: space.xl },
   blockHead: { marginBottom: space.md },
+  blockHeadTight: { marginBottom: space.xs },
+  blockNote: { fontFamily: fontFamily.ui, fontSize: fontSize.xxs, lineHeight: 17, color: c.textFaint, marginBottom: space.md },
   option: {
     flexDirection: "row",
     alignItems: "center",

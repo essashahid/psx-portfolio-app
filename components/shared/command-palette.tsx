@@ -218,7 +218,7 @@ export function CommandPalette({ nav }: { nav: NavTarget[] }) {
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             onKeyDown={onKeyDown}
-            placeholder="Jump to a tab, search a ticker, or ask Copilot…"
+            placeholder="Jump to a tab, search a ticker, or ask a question"
             className="h-14 w-full bg-transparent text-[15px] outline-none placeholder:text-text-muted"
           />
           {loading ? (
@@ -241,7 +241,7 @@ export function CommandPalette({ nav }: { nav: NavTarget[] }) {
           )}
 
           {!q && recent.length === 0 && (
-            <p className="px-3 py-8 text-center text-xs text-text-muted">Type to jump to a tab, find a stock, or ask the Copilot.</p>
+            <p className="px-3 py-8 text-center text-xs text-text-muted">Type to jump to a tab, find a company, or ask a question.</p>
           )}
 
           {q && items.length === 0 && !loading && (
@@ -298,7 +298,7 @@ export function CommandPalette({ nav }: { nav: NavTarget[] }) {
             return (
               <div key="copilot" onMouseEnter={() => setHighlight(i)} onClick={() => activate(item)} className={rowClass}>
                 <Sparkles className="h-4 w-4 shrink-0 text-brand" />
-                <p className="flex-1 truncate text-sm font-medium">Ask Copilot: <span className="text-text-muted">{item.question}</span></p>
+                <p className="flex-1 truncate text-sm font-medium">Ask: <span className="text-text-muted">{item.question}</span></p>
               </div>
             );
           })}

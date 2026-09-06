@@ -150,7 +150,7 @@ export function DividendReceivables({
             className="inline-flex items-center gap-1 text-[11px] text-text-muted hover:text-text-strong"
           >
             <EyeOff className="h-3 w-3" />
-            {showHidden ? "Hide" : "Show"} {hiddenCount} low-confidence match(es)
+            {showHidden ? "Hide" : "Show"} {hiddenCount} uncertain {hiddenCount === 1 ? "match" : "matches"}
           </button>
         )}
       </div>
@@ -210,7 +210,7 @@ export function DividendReceivables({
                       <Meta label="Eligible qty" value={fmt(e.eligible_quantity)} />
                       <Meta label="Gross" value={fmt(e.gross_expected)} />
                       <Meta label="Tax" value={e.estimated_tax !== null ? `−${fmt(e.estimated_tax)}` : "—"} />
-                      <Meta label="Source" value={e.source_url ? "PSX announcement" : e.source_type ?? "—"} />
+                      <Meta label="Source" value={e.source_url ? "PSX announcement" : e.source_type === "manual" ? "Entered by you" : e.source_type ? "Statement or import" : "—"} />
                     </div>
 
                     {!readOnly && (

@@ -49,7 +49,7 @@ export default async function ResearchLibraryPage({
           <CardContent className="p-2">
             {(!reports || reports.length === 0) && (
               <p className="px-2 py-6 text-center text-xs text-text-muted">
-                No reports yet. Generate one from Stock Research or Holdings.
+                No reports yet. Generate one from Companies or Portfolio.
               </p>
             )}
             {reports?.map((r) => {

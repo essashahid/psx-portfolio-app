@@ -1,4 +1,4 @@
-import { buildKeyFigures, KEY_FIGURE_DEFS, withheldReason } from "@/lib/company/key-figures";
+import { buildKeyFigures, isDataGap, KEY_FIGURE_DEFS, readerKeyFigures, withheldReason } from "@/lib/company/key-figures";
 import { METRIC_HINTS } from "@psx/shared/market/glossary";
 import type { RatioRow } from "@/lib/engine/ratios";
 
@@ -82,5 +82,21 @@ describe("buildKeyFigures", () => {
       expect(f.hint).toBe(METRIC_HINTS[f.key]);
       expect(f.hint.length).toBeGreaterThan(0);
     }
+  });
+});
+
+describe("readerKeyFigures", () => {
+  it("hides a figure that is only missing data and keeps contested and loss-making ones", () => {
+    const figures = buildKeyFigures([
+      row("P/E", null, { missing: "Loss-making period — no multiple." }),
+      row("Dividend yield (TTM)", 4.5),
+      row("Revenue growth", null, { missing: "Contested: two readings disagree on revenue by 12%." }),
+      row("Debt-to-equity", null, { missing: "Cannot calculate — missing: borrowings, equity." }),
+    ]);
+    const shown = readerKeyFigures(figures).map((f) => f.key);
+    expect(shown).toEqual(["P/E", "Dividend yield (TTM)", "Revenue growth"]);
+    expect(isDataGap("Not calculated. Missing: borrowings.")).toBe(true);
+    expect(isDataGap("Not calculated yet. The filing needed for this figure is not on file.")).toBe(true);
+    expect(isDataGap("No multiple, loss-making period.")).toBe(false);
   });
 });

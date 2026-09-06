@@ -5,11 +5,13 @@ import { useRouter } from "expo-router";
 import { Search } from "lucide-react-native";
 import * as Haptics from "expo-haptics";
 import type { MarketMover, MarketResponse } from "@psx/shared/api/market";
-import { formatCompact, formatFigure, formatNumber, formatPctSigned } from "@psx/shared/format";
+import type { HoldingRow, HoldingsResponse } from "@psx/shared/api/holdings";
+import { formatCompact, formatCompactSigned, formatFigure, formatNumber, formatPctSigned } from "@psx/shared/format";
 import { useApi } from "@/lib/use-api";
 import { SignedBar } from "@/components/charts/signed-bar";
 import { Band, Ledger, LedgerRow } from "@/components/ui/layout";
 import { Caps, Figure, PageTitle } from "@/components/ui/text";
+import { Disclosure } from "@/components/ui/disclosure";
 import { ErrorNote } from "@/components/status";
 import { Rise, Tick } from "@/components/ui/motion";
 import { ReturnHistogram } from "@/components/charts/return-histogram";
@@ -73,6 +75,53 @@ function MoverBlock({ title, rows }: { title: string; rows: MarketMover[] }) {
   );
 }
 
+/**
+ * Your own book against the day. The question a holder brings to the Market
+ * tab is "how did mine do, and was that just the market?", so each row shows
+ * the day's move and the money it meant, and the caption gives the index to
+ * read it against. Positions without a fresh price show no figure rather
+ * than a stale one.
+ */
+function HoldingToday({ row }: { row: HoldingRow }) {
+  const styles = useStyles();
+  const router = useRouter();
+  const priced = row.dayChangePct !== null;
+  return (
+    <LedgerRow
+      onPress={() => {
+        void Haptics.selectionAsync();
+        router.push({ pathname: "/company/[ticker]", params: { ticker: row.ticker } });
+      }}
+      edgeColor={row.color}
+    >
+      <View style={[styles.dot, { backgroundColor: row.color }]} />
+      <View style={styles.moverName}>
+        <Text style={styles.ticker}>{row.ticker}</Text>
+        <Text style={styles.company} numberOfLines={1}>
+          {row.companyName ?? ""}
+        </Text>
+      </View>
+      {priced ? (
+        <>
+          <Figure style={styles.price}>{formatCompactSigned(row.dayPnl)}</Figure>
+          <Figure style={[styles.moverPct, { color: directionColor(row.dayChangePct) }]}>
+            {formatPctSigned(row.dayChangePct, 2)}
+          </Figure>
+        </>
+      ) : (
+        <Figure style={styles.noPrice}>no price today</Figure>
+      )}
+    </LedgerRow>
+  );
+}
+
+function byDayMove(a: HoldingRow, b: HoldingRow): number {
+  if (a.dayChangePct === null && b.dayChangePct === null) return 0;
+  if (a.dayChangePct === null) return 1;
+  if (b.dayChangePct === null) return -1;
+  return b.dayChangePct - a.dayChangePct;
+}
+
 export default function MarketScreen() {
   const styles = useStyles();
   const colors = useColors();
@@ -81,6 +130,8 @@ export default function MarketScreen() {
     "/api/market/dashboard",
     "Could not load the market."
   );
+  // Already warm from the Home and Holdings tabs, so this is usually a cache hit.
+  const holdings = useApi<HoldingsResponse>("/api/portfolio/holdings", "");
 
   // The verdict sentence and the index contributors come from the server, so
   // the phone and the web page read the same words and the same points.
@@ -91,16 +142,32 @@ export default function MarketScreen() {
     return rows.map((r) => ({ ...r, width: Math.max((Math.abs(r.points) / max) * 48, 0.8) }));
   }, [data?.indexContributors]);
 
+  const mine = useMemo(() => [...(holdings.data?.rows ?? [])].sort(byDayMove), [holdings.data]);
+
   if (loading) return <ScreenSkeleton dark={false} metrics={2} rows={8} />;
 
   const breadth = data?.breadth;
   const extent = Math.max(...(data?.sectors ?? []).map((s) => Math.abs(s.averageReturn ?? 0)), 0.01);
+  const indexPct = data?.index?.changePct ?? null;
+  const hasDetail =
+    contributions.length > 0 ||
+    (data?.distribution && data.distribution.total > 0) ||
+    (data?.flows && data.flows.length > 0) ||
+    (data && data.sectors.length > 0) ||
+    !!breadth;
 
   return (
     <View style={styles.screen}>
       <ScrollView
         refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={refresh} tintColor={colors.textMuted} />
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={() => {
+              void refresh();
+              void holdings.refresh();
+            }}
+            tintColor={colors.textMuted}
+          />
         }
         showsVerticalScrollIndicator={false}
       >
@@ -139,6 +206,8 @@ export default function MarketScreen() {
                 </View>
               </View>
 
+              {/* The strip stays: three counts and a bar are the simplest
+                  answer to "was it broad?". Turnover is under More detail. */}
               {breadth ? (
                 <View style={styles.breadthBlock}>
                   <View style={styles.breadthTrack}>
@@ -155,9 +224,6 @@ export default function MarketScreen() {
                       {breadth.decliners} declining
                     </Figure>
                   </View>
-                  <Figure style={styles.turnover}>
-                    Turnover {formatCompact(breadth.totalValue)} on {formatCompact(breadth.totalVolume)} shares
-                  </Figure>
                 </View>
               ) : null}
             </>
@@ -180,124 +246,30 @@ export default function MarketScreen() {
             <Figure style={styles.mapCaption}>
               Area is market value, grouped by sector.
               {data.mapCoverage
-                ? ` ${data.mapCoverage.shown} companies · ${formatCompact(data.mapCoverage.capShown)} of ${formatCompact(data.mapCoverage.capTotal)}.`
+                ? ` ${data.mapCoverage.shown} companies, ${formatCompact(data.mapCoverage.capShown)} of ${formatCompact(data.mapCoverage.capTotal)}.`
                 : ""}
             </Figure>
           </Band>
         ) : null}
 
-        {contributions.length > 0 ? (
+        {mine.length > 0 ? (
           <Band>
-            <Caps style={styles.blockHead}>Index points moved</Caps>
+            <Caps style={styles.blockHead}>Your holdings today</Caps>
             <Ledger>
-              {contributions.map((row) => (
-                <LedgerRow key={row.ticker}>
-                  <View style={styles.contribRow}>
-                    <Text style={styles.contribTicker}>{row.ticker}</Text>
-                    <View style={styles.contribTrack}>
-                      <View style={[styles.contribAxis, { backgroundColor: colors.ruleStrong }]} />
-                      <View
-                        style={[
-                          styles.contribBar,
-                          {
-                            backgroundColor: row.points >= 0 ? colors.chartUp : colors.chartDown,
-                            left: row.points >= 0 ? "50%" : `${50 - row.width}%`,
-                            width: `${row.width}%`,
-                          },
-                        ]}
-                      />
-                    </View>
-                    <Figure style={[styles.contribAmt, { color: directionColor(row.points) }]}>
-                      {row.points >= 0 ? "+" : "−"}{Math.abs(row.points).toFixed(0)}
-                    </Figure>
-                  </View>
-                </LedgerRow>
+              {mine.map((row, i) => (
+                <Rise key={row.ticker} index={i}>
+                  <HoldingToday row={row} />
+                </Rise>
               ))}
-            </Ledger>
-            <Figure style={styles.mapCaption}>Weight in the index times the day's move.</Figure>
-          </Band>
-        ) : null}
-
-        {/* Directly after breadth, which it is the detailed version of. The
-            sector list below runs to thirty-odd rows, and burying this under
-            it would put the answer to "was that just the market?" three
-            screens from the question. */}
-        {data?.distribution && data.distribution.total > 0 ? (
-          <Band>
-            <View style={styles.histogramHead}>
-              <Caps>How the market moved</Caps>
-              <Figure style={styles.histogramCount}>
-                {data.distribution.total} companies
-              </Figure>
-            </View>
-            <ReturnHistogram distribution={data.distribution} />
-            <Figure style={styles.histogramNote}>
-              Each bar is one percent. Your holdings are marked underneath.
-            </Figure>
-          </Band>
-        ) : null}
-
-        {data?.flows && data.flows.length > 0 ? (
-          <Band>
-            <Caps style={styles.blockHead}>Who was buying</Caps>
-            <Ledger>
-              {data.flows.map((flow) => {
-                const max = Math.max(...(data.flows ?? []).map((f) => Math.abs(f.net ?? 0)), 1);
-                const width = Math.max((Math.abs(flow.net ?? 0) / max) * 48, 0.8);
-                const net = flow.net ?? 0;
-                return (
-                  <LedgerRow key={flow.label}>
-                    <View style={styles.contribRow}>
-                      <Text style={styles.flowLabel} numberOfLines={1}>{flow.label}</Text>
-                      <View style={styles.contribTrack}>
-                        <View style={[styles.contribAxis, { backgroundColor: colors.ruleStrong }]} />
-                        <View
-                          style={[
-                            styles.contribBar,
-                            {
-                              backgroundColor: net >= 0 ? colors.chartUp : colors.chartDown,
-                              left: net >= 0 ? "50%" : `${50 - width}%`,
-                              width: `${width}%`,
-                            },
-                          ]}
-                        />
-                      </View>
-                      <Figure style={[styles.contribAmt, { color: directionColor(net) }]}>
-                        {net >= 0 ? "+" : "−"}{formatCompact(Math.abs(net))}
-                      </Figure>
-                    </View>
-                  </LedgerRow>
-                );
-              })}
             </Ledger>
             <Figure style={styles.mapCaption}>
-              Net buying by investor type across the market, not in your holdings.
-              {data.flowsAsOf ? ` As of ${data.flowsAsOf}.` : ""}
+              {indexPct !== null
+                ? `Read against the index, which moved ${formatPctSigned(indexPct, 2)} today.`
+                : "Delayed prices."}
+              {holdings.data?.totalDayPnl != null
+                ? ` Together, ${formatCompactSigned(holdings.data.totalDayPnl)} on the day.`
+                : ""}
             </Figure>
-          </Band>
-        ) : null}
-
-        {data && data.sectors.length > 0 ? (
-          <Band>
-            <Caps style={styles.blockHead}>Sectors, best to worst</Caps>
-            <Ledger>
-              {data.sectors.map((s) => (
-                <LedgerRow key={s.sector}>
-                  <View style={styles.sectorName}>
-                    <View style={[styles.dot, { backgroundColor: s.color }]} />
-                    <Text style={styles.sectorLabel} numberOfLines={1}>
-                      {s.label}
-                    </Text>
-                  </View>
-                  <View style={styles.sectorBar}>
-                    <SignedBar value={s.averageReturn} extent={extent} />
-                  </View>
-                  <Figure style={[styles.sectorPct, { color: directionColor(s.averageReturn) }]}>
-                    {formatPctSigned(s.averageReturn, 2)}
-                  </Figure>
-                </LedgerRow>
-              ))}
-            </Ledger>
           </Band>
         ) : null}
 
@@ -305,11 +277,138 @@ export default function MarketScreen() {
         <MoverBlock title="Losers" rows={data?.losers ?? []} />
         <MoverBlock title="Most active" rows={data?.mostActive ?? []} />
 
-        {data?.updatedLabel ? (
-          <Band style={styles.footer}>
-            <Figure style={styles.updated}>{data.updatedLabel}</Figure>
+        {/* Everything analytical. Preserved, one row away. */}
+        {hasDetail ? (
+          <Band>
+            <Disclosure label="More detail" openLabel="Less detail">
+              {contributions.length > 0 ? (
+                <View style={styles.detailBlock}>
+                  <Caps style={styles.blockHead}>Index points moved</Caps>
+                  <Ledger>
+                    {contributions.map((row) => (
+                      <LedgerRow key={row.ticker}>
+                        <View style={styles.contribRow}>
+                          <Text style={styles.contribTicker}>{row.ticker}</Text>
+                          <View style={styles.contribTrack}>
+                            <View style={[styles.contribAxis, { backgroundColor: colors.ruleStrong }]} />
+                            <View
+                              style={[
+                                styles.contribBar,
+                                {
+                                  backgroundColor: row.points >= 0 ? colors.chartUp : colors.chartDown,
+                                  left: row.points >= 0 ? "50%" : `${50 - row.width}%`,
+                                  width: `${row.width}%`,
+                                },
+                              ]}
+                            />
+                          </View>
+                          <Figure style={[styles.contribAmt, { color: directionColor(row.points) }]}>
+                            {row.points >= 0 ? "+" : "−"}{Math.abs(row.points).toFixed(0)}
+                          </Figure>
+                        </View>
+                      </LedgerRow>
+                    ))}
+                  </Ledger>
+                  <Figure style={styles.mapCaption}>Weight in the index times the day's move.</Figure>
+                </View>
+              ) : null}
+
+              {breadth ? (
+                <View style={styles.detailBlock}>
+                  <Caps style={styles.blockHead}>Turnover</Caps>
+                  <Figure style={styles.turnover}>
+                    {formatCompact(breadth.totalValue)} traded on {formatCompact(breadth.totalVolume)} shares.
+                  </Figure>
+                </View>
+              ) : null}
+
+              {data?.distribution && data.distribution.total > 0 ? (
+                <View style={styles.detailBlock}>
+                  <View style={styles.histogramHead}>
+                    <Caps>How the market moved</Caps>
+                    <Figure style={styles.histogramCount}>
+                      {data.distribution.total} companies
+                    </Figure>
+                  </View>
+                  <ReturnHistogram distribution={data.distribution} />
+                  <Figure style={styles.histogramNote}>
+                    Each bar is one percent. Your holdings are marked underneath.
+                  </Figure>
+                </View>
+              ) : null}
+
+              {data?.flows && data.flows.length > 0 ? (
+                <View style={styles.detailBlock}>
+                  <Caps style={styles.blockHead}>Who was buying</Caps>
+                  <Ledger>
+                    {data.flows.map((flow) => {
+                      const max = Math.max(...(data.flows ?? []).map((f) => Math.abs(f.net ?? 0)), 1);
+                      const width = Math.max((Math.abs(flow.net ?? 0) / max) * 48, 0.8);
+                      const net = flow.net ?? 0;
+                      return (
+                        <LedgerRow key={flow.label}>
+                          <View style={styles.contribRow}>
+                            <Text style={styles.flowLabel} numberOfLines={1}>{flow.label}</Text>
+                            <View style={styles.contribTrack}>
+                              <View style={[styles.contribAxis, { backgroundColor: colors.ruleStrong }]} />
+                              <View
+                                style={[
+                                  styles.contribBar,
+                                  {
+                                    backgroundColor: net >= 0 ? colors.chartUp : colors.chartDown,
+                                    left: net >= 0 ? "50%" : `${50 - width}%`,
+                                    width: `${width}%`,
+                                  },
+                                ]}
+                              />
+                            </View>
+                            <Figure style={[styles.contribAmt, { color: directionColor(net) }]}>
+                              {net >= 0 ? "+" : "−"}{formatCompact(Math.abs(net))}
+                            </Figure>
+                          </View>
+                        </LedgerRow>
+                      );
+                    })}
+                  </Ledger>
+                  <Figure style={styles.mapCaption}>
+                    Net buying by investor type across the market, not in your holdings.
+                    {data.flowsAsOf ? ` As of ${data.flowsAsOf}.` : ""}
+                  </Figure>
+                </View>
+              ) : null}
+
+              {data && data.sectors.length > 0 ? (
+                <View style={styles.detailBlock}>
+                  <Caps style={styles.blockHead}>Sectors, best to worst</Caps>
+                  <Ledger>
+                    {data.sectors.map((s) => (
+                      <LedgerRow key={s.sector}>
+                        <View style={styles.sectorName}>
+                          <View style={[styles.dot, { backgroundColor: s.color }]} />
+                          <Text style={styles.sectorLabel} numberOfLines={1}>
+                            {s.label}
+                          </Text>
+                        </View>
+                        <View style={styles.sectorBar}>
+                          <SignedBar value={s.averageReturn} extent={extent} />
+                        </View>
+                        <Figure style={[styles.sectorPct, { color: directionColor(s.averageReturn) }]}>
+                          {formatPctSigned(s.averageReturn, 2)}
+                        </Figure>
+                      </LedgerRow>
+                    ))}
+                  </Ledger>
+                </View>
+              ) : null}
+            </Disclosure>
           </Band>
         ) : null}
+
+        <Band style={styles.footer}>
+          <Figure style={styles.updated}>
+            Delayed prices.{data?.updatedLabel ? ` ${data.updatedLabel}` : ""}
+          </Figure>
+        </Band>
       </ScrollView>
     </View>
   );
@@ -327,6 +426,7 @@ const useStyles = makeStyles((c) => ({
     letterSpacing: -0.3,
     color: c.textStrong,
   },
+  detailBlock: { marginTop: space.lg },
   contribRow: { flexDirection: "row", alignItems: "center", flex: 1, gap: space.sm },
   contribTicker: { width: 56, fontFamily: fontFamily.uiSemibold, fontSize: fontSize.sm, color: c.textStrong },
   /* A centre line the bars grow out of, so gains and losses read as opposites. */
@@ -358,7 +458,7 @@ const useStyles = makeStyles((c) => ({
   breadthSeg: { height: 9 },
   breadthLabels: { flexDirection: "row", justifyContent: "space-between", marginTop: 7 },
   breadthLabel: { fontSize: fontSize.xxs, color: c.textFaint },
-  turnover: { marginTop: space.sm, fontSize: fontSize.xxs, color: c.textFaint },
+  turnover: { fontSize: fontSize.sm, color: c.textBody },
   blockHead: { marginBottom: space.md + 2 },
   histogramHead: {
     flexDirection: "row",
@@ -385,6 +485,7 @@ const useStyles = makeStyles((c) => ({
   },
   company: { fontFamily: fontFamily.ui, fontSize: fontSize.xxs, color: c.textFaint },
   price: { fontSize: fontSize.sm, color: c.textMuted, minWidth: 62, textAlign: "right" },
+  noPrice: { fontSize: fontSize.xxs, color: c.textFaint },
   moverPct: {
     minWidth: 62,
     textAlign: "right",

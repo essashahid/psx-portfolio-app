@@ -139,7 +139,7 @@ export default function HoldingsScreen() {
               <Pressable
                 onPress={() => router.push("/research")}
                 hitSlop={12}
-                accessibilityLabel="Stock research"
+                accessibilityLabel="Companies"
                 accessibilityRole="button"
               >
                 <Search size={19} color={colors.textMuted} />
@@ -187,6 +187,13 @@ export default function HoldingsScreen() {
               detail={`of ${data?.count ?? 0} holdings`}
             />
           </View>
+          {/* Every price on this screen is delayed, and the rows below print
+              one without a date. Said once here rather than on each row. */}
+          {data && data.pricedCount > 0 ? (
+            <Figure style={styles.delayed}>
+              Delayed prices{data.asOf ? `, as of ${data.asOf.slice(0, 10)}` : ""}.
+            </Figure>
+          ) : null}
         </SafeAreaView>
 
         {/* Sector filters, built from what the book holds rather than the whole
@@ -339,6 +346,7 @@ const useStyles = makeStyles((c) => ({
   stat: { flexBasis: "50%", paddingVertical: space.sm, paddingRight: space.md, gap: 2 },
   statValue: { fontFamily: fontFamily.monoSemibold, fontSize: fontSize.h2, color: c.textStrong },
   statDetail: { fontFamily: fontFamily.ui, fontSize: fontSize.xxs, color: c.textFaint },
+  delayed: { marginTop: space.sm, fontSize: fontSize.xxs, color: c.textFaint },
   railWrap: {
     backgroundColor: c.surfacePage,
     borderBottomWidth: StyleSheet.hairlineWidth,

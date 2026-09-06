@@ -7,6 +7,7 @@ import { DividendManager } from "@/components/features/dividends/dividend-form";
 import { DividendIncomeWorkspace } from "@/components/features/dividends/dividend-income-workspace";
 import { DividendTrajectory, DividendYieldTable, TaxYearStatement } from "@/components/features/dividends/dividend-analytics";
 import { Band } from "@/components/ui/band";
+import { MoreDetail } from "@/components/shared/more-detail";
 
 export const dynamic = "force-dynamic";
 
@@ -51,31 +52,35 @@ export default async function DividendsPage() {
       </Band>
 
       <Band tone="paper" rule="none" className="dot-grid px-3 sm:px-4 md:px-(--gutter-page)">
-        <div className="mt-2 grid gap-12 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.3fr)]">
-          <section>
-            <p className="eyebrow">Income trajectory</p>
-            <h2 className="mt-1.5 font-display text-(length:--text-h1) font-normal tracking-editorial text-text-strong">By calendar year</h2>
-            <div className="mt-5">
-              <DividendTrajectory dividends={dividends} events={events} />
-            </div>
-          </section>
-
-          <section>
-            <p className="eyebrow">Yield by holding</p>
-            <h2 className="mt-1.5 font-display text-(length:--text-h1) font-normal tracking-editorial text-text-strong">Trailing twelve months</h2>
-            <div className="mt-5">
-              <DividendYieldTable dividends={dividends} holdings={summary.holdings} asOf={asOf} />
-            </div>
-          </section>
-        </div>
-
-        <section className="mt-10 border-t border-rule pt-7">
+        {/*
+          What was received and the ledger lead, in the band above. The
+          statement stays in view because it is the one thing a filer needs
+          from this page; the trajectory follows it, and the per-holding
+          yield table sits behind a fold.
+        */}
+        <section className="mt-2">
           <p className="eyebrow">Statement</p>
           <h2 className="mt-1.5 font-display text-(length:--text-h1) font-normal tracking-editorial text-text-strong">Tax-year statement</h2>
           <div className="mt-5">
             <TaxYearStatement dividends={dividends} defaultYear={taxSettings.tax_year ?? null} />
           </div>
         </section>
+
+        <section className="mt-10 border-t border-rule pt-7">
+          <p className="eyebrow">Income trajectory</p>
+          <h2 className="mt-1.5 font-display text-(length:--text-h1) font-normal tracking-editorial text-text-strong">By calendar year</h2>
+          <div className="mt-5">
+            <DividendTrajectory dividends={dividends} events={events} />
+          </div>
+        </section>
+
+        <MoreDetail className="mt-10">
+          <p className="eyebrow">Yield by holding</p>
+          <h3 className="mt-1.5 font-display text-(length:--text-h2) font-normal tracking-editorial text-text-strong">Trailing twelve months</h3>
+          <div className="mt-5">
+            <DividendYieldTable dividends={dividends} holdings={summary.holdings} asOf={asOf} />
+          </div>
+        </MoreDetail>
       </Band>
     </div>
   );

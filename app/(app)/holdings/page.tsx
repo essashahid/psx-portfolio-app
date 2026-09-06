@@ -9,6 +9,7 @@ import { ActionButton } from "@/components/ui/action-button";
 import { formatMoney, formatNumber } from "@/lib/shared/format";
 import { Band } from "@/components/ui/band";
 import { PanelHeader } from "@/components/ui/panel-header";
+import { MoreDetail } from "@/components/shared/more-detail";
 import { SectorWeightBar, SectorTreemap, BelowCostPlot } from "@/components/features/holdings/holdings-visuals";
 import { Briefcase, Eye } from "lucide-react";
 
@@ -56,7 +57,7 @@ export default async function HoldingsPage() {
               Portfolio
             </h1>
             <p className="mt-1.5 flex flex-wrap items-center gap-x-1.5 text-xs text-text-muted">
-              <AsOf date={latestPriceDate} label="Prices" />
+              <AsOf date={latestPriceDate} label="Delayed prices" />
               <span>· {summary.pricedHoldings} of {summary.holdingsCount} priced{unpriced ? ` · ${unpriced} valued at cost` : ""}{unknownCost ? ` · ${unknownCost} with cost unknown` : ""}</span>
             </p>
           </div>
@@ -92,17 +93,20 @@ export default async function HoldingsPage() {
             <HoldingsTable holdings={summary.holdings} summary={summary} dailyRows={dailyPerformance.rows.map((row) => ({ ticker: row.ticker, dayChangePct: row.dayChangePct, dayPnl: row.dayPnl }))} readOnly={isDemo} />
           </Band>
 
-          <Band tone="paper" className="px-3 sm:px-4 md:px-(--gutter-page)">
-            <div className="grid gap-12 lg:grid-cols-[minmax(0,1.25fr)_minmax(0,1fr)]">
-              <div>
-                <PanelHeader eyebrow="Concentration" title="Weight by sector" />
-                <SectorTreemap slices={summary.sectorWeights} total={summary.totalValue} />
+          <Band tone="paper" rule="none" className="px-3 sm:px-4 md:px-(--gutter-page)">
+            {/* The sector bar above already answers the weight question; the treemap and the underwater plot are a fold away. */}
+            <MoreDetail>
+              <div className="grid gap-12 pt-2 lg:grid-cols-[minmax(0,1.25fr)_minmax(0,1fr)]">
+                <div>
+                  <PanelHeader eyebrow="Concentration" title="Weight by sector" />
+                  <SectorTreemap slices={summary.sectorWeights} total={summary.totalValue} />
+                </div>
+                <div>
+                  <PanelHeader eyebrow="Underwater" title="Cost against last price" />
+                  <BelowCostPlot rows={belowCostRows} />
+                </div>
               </div>
-              <div>
-                <PanelHeader eyebrow="Underwater" title="Cost against last price" />
-                <BelowCostPlot rows={belowCostRows} />
-              </div>
-            </div>
+            </MoreDetail>
           </Band>
         </>
       )}
@@ -153,7 +157,7 @@ export default async function HoldingsPage() {
             title="Hidden holdings"
             aside={<span className="figure text-xs text-text-muted">{summary.hiddenHoldings.length}</span>}
           />
-          <p className="mt-2 text-xs text-text-muted">Kept in your ledger but excluded from totals, performance, dividends and Copilot.</p>
+          <p className="mt-2 text-xs text-text-muted">Kept in your ledger but excluded from totals, performance, dividends and Ask.</p>
           <div className="ledger mt-3">
             {summary.hiddenHoldings.map((h) => (
               <div key={h.ticker} className="ledger-row flex flex-wrap items-center justify-between gap-2">

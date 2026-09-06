@@ -21,9 +21,10 @@ import { quoteFreshness } from "@/lib/company/overview";
 import { ArrowLeft } from "lucide-react";
 import {
   OverviewPanel, RecentDevelopmentsPanel, AskAboutCompany,
-  FinancialsPanel, EarningsPanel, RatiosPanel, StatementsPanel, TechnicalsPanel,
+  FinancialsPanel, EarningsPanel, RatiosPanel, StatementsPanel, TechnicalsPanel, PriceStructureLine,
   NewsFilingsPanel,
 } from "./panels";
+import { MoreDetail } from "@/components/shared/more-detail";
 
 export const dynamic = "force-dynamic";
 
@@ -130,9 +131,22 @@ export default async function StockCockpitPage({ params }: { params: Promise<{ t
     </section>
   );
 
-  // Three tabs. Overview explains first; Financials holds everything
-  // analytical, with the chart last because it is for timing, not for forming
-  // the view; Filings is the primary-source record.
+  // A fold of the Financials tab: closed by default, its content streaming in
+  // under its own Suspense boundary once opened. It remembers nothing.
+  const fold = (title: string, fallback: React.ReactNode, node: React.ReactNode, lead?: React.ReactNode) => (
+    <section>
+      {lead}
+      <MoreDetail title={title} className={lead ? "mt-4" : undefined}>
+        <Suspense fallback={fallback}>{node}</Suspense>
+      </MoreDetail>
+    </section>
+  );
+
+  // Three tabs. Overview explains first. Financials shows how the business
+  // earns and the recent quarters by default, with every ratio, the filed
+  // statements and the price chart a fold away; the chart is last because it
+  // is for timing, not for forming the view. Filings is the primary-source
+  // record.
   const tabs = [
     {
       id: "overview",
@@ -152,9 +166,16 @@ export default async function StockCockpitPage({ params }: { params: Promise<{ t
         <div className="space-y-14">
           {section("Filed years", "How the business earns", <TableSkeleton />, <FinancialsPanel ticker={ticker} readOnly={isDemo} />)}
           {section("Quarterly earnings", "Reported against the year before", <CardSkeleton lines={6} />, <EarningsPanel ticker={ticker} />)}
-          {section("All ratios", "Every figure the engine computes", <TableSkeleton />, <RatiosPanel ticker={ticker} />)}
-          {section("Statements as filed", "The filings behind the figures", <TableSkeleton />, <StatementsPanel ticker={ticker} />)}
-          {section("Price structure", "For timing, not for forming the view", <CardSkeleton lines={10} />, <TechnicalsPanel ticker={ticker} />)}
+          <div>
+            {fold("All ratios", <TableSkeleton />, <RatiosPanel ticker={ticker} />)}
+            {fold("Statements as filed", <TableSkeleton />, <StatementsPanel ticker={ticker} />)}
+            {fold(
+              "Price structure",
+              <CardSkeleton lines={10} />,
+              <TechnicalsPanel ticker={ticker} />,
+              <Suspense fallback={<CardSkeleton lines={1} />}><PriceStructureLine ticker={ticker} /></Suspense>
+            )}
+          </div>
         </div>
       ),
     },
@@ -236,7 +257,12 @@ export default async function StockCockpitPage({ params }: { params: Promise<{ t
           </div>
         </div>
 
-        <div className="mt-7 grid border-t border-rule sm:grid-cols-3 lg:grid-cols-6">
+        {/*
+          Five cells, or six when the reader holds the share. Volume used to
+          sit here; it is an analyst figure with no plain reading, so the
+          slot now carries the position instead, or nothing.
+        */}
+        <div className={cn("mt-7 grid border-t border-rule sm:grid-cols-3", holding && holding.quantity > 0 ? "lg:grid-cols-6" : "lg:grid-cols-5")}>
           <HeaderMetric label="Market cap" value={metadata.marketCap !== null ? compactNumber(metadata.marketCap) : "—"} sub="PKR" />
           <HeaderMetric
             label="P/E"
@@ -256,7 +282,13 @@ export default async function StockCockpitPage({ params }: { params: Promise<{ t
           />
           <HeaderMetric label="EPS" value={eps !== null ? formatNumber(eps) : "—"} sub={eps !== null ? epsPeriod ?? "PKR" : "needs financials"} />
           <HeaderMetric label="Dividend yield" value={divYield !== null ? `${divYield.toFixed(2)}%` : "—"} sub={divYield !== null ? "announced DPS · TTM" : "DPS unverified"} />
-          <HeaderMetric label="Volume" value={quote.volume !== null ? compactNumber(quote.volume) : "—"} sub="shares today" />
+          {holding && holding.quantity > 0 && (
+            <HeaderMetric
+              label="Shares held"
+              value={formatNumber(holding.quantity, 0)}
+              sub={holding.avg_cost ? `at ${price2(holding.avg_cost)} average` : "cost unknown"}
+            />
+          )}
           <HeaderMetric
             label="52-week range"
             value={hasRange ? `${formatNumber(low52)}–${formatNumber(high52)}` : "—"}

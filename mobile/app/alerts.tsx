@@ -52,7 +52,7 @@ export default function AlertsScreen() {
   const breakdown = (["critical", "warning", "info"] as const)
     .filter((severity) => bySeverity[severity] > 0)
     .map((severity) => `${bySeverity[severity]} ${severity}`)
-    .join(" · ");
+    .join(", ");
 
   return (
     <SafeAreaView style={styles.screen} edges={["top"]}>

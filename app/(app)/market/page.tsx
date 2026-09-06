@@ -11,7 +11,7 @@ import { Metric } from "@/components/ui/metric";
 import { PanelHeader } from "@/components/ui/panel-header";
 import { AsOf } from "@/components/shared/as-of";
 import { SectorChip } from "@/components/shared/sector-chip";
-import { MoreDetail } from "@/components/features/market/more-detail";
+import { MoreDetail } from "@/components/shared/more-detail";
 import {
   BreadthStrip,
   FiftyTwoWeekStrip,

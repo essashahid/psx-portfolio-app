@@ -489,7 +489,7 @@ function EventDetailDrawer({
               )}`}
               className="rounded-md border border-rule px-3 py-2 text-sm hover:bg-surface-sunken"
             >
-              Ask Copilot
+              Ask
             </Link>
           </div>
         </div>

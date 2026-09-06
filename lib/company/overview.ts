@@ -135,3 +135,40 @@ export function quoteFreshness(quote: Pick<Quote, "price" | "meta">): QuoteFresh
   if (f === "missing") return "missing";
   return "stale";
 }
+
+/** The categories that matter to a holder, and how each reads as a row label. */
+export const RECENT_FILING_LABEL: Record<string, string> = {
+  result: "Financial results",
+  dividend: "Dividend announced",
+  board_meeting: "Board meeting",
+  material: "Material information",
+};
+
+/** How far back "What matters recently" looks, and how many rows it shows. */
+export const RECENT_FILING_DAYS = 120;
+export const RECENT_FILING_CAP = 6;
+
+export interface RecentFiling {
+  date: string;
+  label: string;
+  title: string;
+  url: string | null;
+}
+
+/**
+ * The filings a holder should have seen: results, dividends, board meetings
+ * and material information from the last 120 days, newest first, at most six.
+ * Categorisation is whatever categorizeFiling decided; nothing is re-read.
+ */
+export function recentFilings(filings: Filing[], now: Date = new Date(), days = RECENT_FILING_DAYS, cap = RECENT_FILING_CAP): RecentFiling[] {
+  const cutoff = now.getTime() - days * 86400000;
+  return filings
+    .filter((f): f is Filing & { date: string } => Boolean(f.date && RECENT_FILING_LABEL[f.category]))
+    .filter((f) => {
+      const t = Date.parse(f.date);
+      return Number.isFinite(t) && t >= cutoff && t <= now.getTime() + 86400000;
+    })
+    .sort((a, b) => b.date.localeCompare(a.date))
+    .slice(0, cap)
+    .map((f) => ({ date: f.date, label: RECENT_FILING_LABEL[f.category], title: f.title, url: f.url || null }));
+}

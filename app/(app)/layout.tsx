@@ -14,9 +14,6 @@ import { NAV, resolveVisibleHrefs } from "@/lib/config/navigation";
 import { getCachedMarketGlobal } from "@/lib/market/read";
 import { getCachedTickerExtras } from "@/lib/market/ticker-extras";
 
-const fmtCompactNum = (v: number) =>
-  v >= 1e9 ? `${formatNumber(v / 1e9, 1)}bn` : v >= 1e6 ? `${formatNumber(v / 1e6, 0)}m` : formatNumber(v, 0);
-
 async function getTickerItems(): Promise<TickerItem[]> {
   const [{ snapshot, movers }, extras] = await Promise.all([
     getCachedMarketGlobal(),
@@ -24,7 +21,6 @@ async function getTickerItems(): Promise<TickerItem[]> {
   ]);
   if (!snapshot) return extras;
   const items: TickerItem[] = [];
-  const total = snapshot.total_advancers + snapshot.total_decliners + snapshot.total_unchanged || 1;
   if (snapshot.snapshot_time) {
     items.push({ label: "As of", value: `${String(snapshot.snapshot_time).slice(0, 5)} PKT`, change: snapshot.snapshot_date, tone: "flat" });
   }
@@ -36,21 +32,15 @@ async function getTickerItems(): Promise<TickerItem[]> {
       tone: (snapshot.index_change_percent ?? 0) > 0 ? "up" : (snapshot.index_change_percent ?? 0) < 0 ? "down" : "flat",
     });
   }
-  items.push({
-    label: "Breadth",
-    value: `${Math.round((snapshot.total_advancers / total) * 100)}%`,
-    change: "advancing",
-    tone: snapshot.total_advancers > snapshot.total_decliners ? "up" : "down",
-  });
-  items.push({ label: "Volume", value: fmtCompactNum(snapshot.total_volume) });
-  items.push({ label: "Value traded", value: fmtCompactNum(snapshot.total_value) });
+  // Breadth, volume, value traded and the top and bottom sectors stay on the
+  // Market page; the tape carries only what reads at a glance.
   const gainer = movers.find((m) => m.category.includes("gain"));
   const loser = movers.find((m) => m.category.includes("los"));
   if (gainer?.change_percent != null) items.push({ label: "Top gainer", value: gainer.ticker, change: formatSignedPct(gainer.change_percent), tone: "up" });
   if (loser?.change_percent != null) items.push({ label: "Top loser", value: loser.ticker, change: formatSignedPct(loser.change_percent), tone: "down" });
-  if (snapshot.top_sector) items.push({ label: "Top sector", value: snapshot.top_sector, tone: "up" });
-  if (snapshot.bottom_sector) items.push({ label: "Bottom sector", value: snapshot.bottom_sector, tone: "down" });
-  items.push(...extras);
+  // Foreign and local flow figures are analyst reading; the other extras
+  // (secondary indices, gold, the rupee) stay.
+  items.push(...extras.filter((e) => e.label !== "FIPI" && e.label !== "LIPI"));
   return items;
 }
 
@@ -118,7 +108,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
       )}
       {isDemo && (
         <div className="shrink-0 border-b border-blue-200 bg-blue-50 px-3 py-2 text-center text-xs text-blue-900 sm:px-4">
-          Read-only demo: explore the launch tabs and curated Copilot research. Editing, refreshes and AI generation are disabled.
+          Read-only demo: explore the launch tabs and the curated Ask threads. Editing, refreshes and AI generation are disabled.
         </div>
       )}
       <main className="scroll-touch flex-1 px-3 py-3 pb-[calc(5.75rem+env(safe-area-inset-bottom))] sm:px-4 sm:py-4 md:px-(--gutter-page) md:py-8 md:pb-8">

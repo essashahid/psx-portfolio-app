@@ -6,7 +6,7 @@ import type { Filing } from "@/lib/company/types";
 /** Map a PSX announcement title to a cockpit filing category. */
 export function categorizeFiling(title: string): string {
   const t = title.toLowerCase();
-  if (/\b(financial result|quarterly|half year|annual report|accounts|audited|un-?audited)\b/.test(t)) return "result";
+  if (/\b(financial results?|quarterly|half year|annual report|accounts|audited|un-?audited)\b/.test(t)) return "result";
   if (/\b(dividend|bonus|right|entitlement|payout)\b/.test(t)) return "dividend";
   if (/\bboard of directors|board meeting|bod meeting|meeting of the board\b/.test(t)) return "board_meeting";
   if (/\bmaterial information|price sensitive|disclosure\b/.test(t)) return "material";

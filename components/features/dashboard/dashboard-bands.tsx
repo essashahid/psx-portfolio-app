@@ -15,15 +15,21 @@ export interface ContributionRow {
   weight: number | null;
 }
 
+const CONTRIBUTION_DEFAULT_ROWS = 6;
+
 export function ContributionLedger({ rows }: { rows: ContributionRow[] }) {
+  const [showAll, setShowAll] = useState(false);
   const sorted = [...rows].sort((a, b) => b.contrib - a.contrib);
   const max = Math.max(...sorted.map((r) => Math.abs(r.contrib)), 1);
   if (sorted.length === 0) {
     return <p className="py-10 text-center text-sm text-text-muted">No priced holdings today.</p>;
   }
+  // Six rows is the whole book for most readers; a bigger one folds the rest.
+  const shown = showAll ? sorted : sorted.slice(0, CONTRIBUTION_DEFAULT_ROWS);
+  const hidden = sorted.length - shown.length;
   return (
     <div className="ledger">
-      {sorted.map((r) => {
+      {shown.map((r) => {
         const w = (Math.abs(r.contrib) / max) * 48;
         return (
           <div key={r.ticker} className="ledger-row grid items-center gap-3.5" style={{ gridTemplateColumns: "6rem 1fr 5.75rem" }}>
@@ -50,6 +56,15 @@ export function ContributionLedger({ rows }: { rows: ContributionRow[] }) {
           </div>
         );
       })}
+      {(hidden > 0 || showAll) && sorted.length > CONTRIBUTION_DEFAULT_ROWS && (
+        <button
+          type="button"
+          onClick={() => setShowAll((v) => !v)}
+          className="mt-3 text-xs font-semibold text-text-muted transition-colors hover:text-text-strong"
+        >
+          {showAll ? "Show fewer" : `Show all ${sorted.length}`}
+        </button>
+      )}
     </div>
   );
 }

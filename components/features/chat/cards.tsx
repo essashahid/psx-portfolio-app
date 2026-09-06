@@ -191,7 +191,7 @@ function ChatCard({ card }: { card: Card }) {
             </div>
           </div>
           <p className="mt-1 text-[10px] text-text-muted">
-            {f.buckets.slice(0, 3).map((b) => `${b.label} ${fmtFlow(b.net)}`).join(" · ") || `Source ${f.day.sourceProvider}`}
+            {f.buckets.slice(0, 3).map((b) => `${b.label} ${fmtFlow(b.net)}`).join(" · ") || "NCCPL daily report"}
           </p>
         </Shell>
       );

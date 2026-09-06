@@ -34,7 +34,7 @@ import {
 const SORTS = [
   { key: "marketCap", label: "Size" },
   { key: "pe", label: "P/E" },
-  { key: "ticker", label: "A–Z" },
+  { key: "ticker", label: "A to Z" },
 ] as const;
 
 function Row({ row }: { row: StockRow }) {
@@ -158,8 +158,8 @@ export default function ResearchScreen() {
           <ErrorNote message={error} />
           <View style={styles.columnHead}>
             <Caps style={styles.colName}>Company</Caps>
-            <Caps style={styles.colPrice}>Price</Caps>
-            <Caps style={styles.colVal}>P/E · Cap</Caps>
+            <Caps style={styles.colPrice}>Price, delayed</Caps>
+            <Caps style={styles.colVal}>P/E, cap</Caps>
           </View>
           {busy && shown.length === 0 ? (
             <ActivityIndicator style={styles.spinner} color={colors.accentPrimary} />

@@ -18,13 +18,21 @@ import type { HoldingRow, HoldingsResponse } from "@psx/shared/api/holdings";
 import type { WatchlistWriteRequest } from "@psx/shared/api/watchlist";
 import { formatCompact, formatCompactSigned, formatNumber, formatPctSigned } from "@psx/shared/format";
 import { sectorColor, shortSector } from "@psx/shared/sector-colors";
-import { groupRatios } from "@psx/shared/company/ratio-groups";
 import { tone } from "@psx/shared/market/format";
 import { useApi } from "@/lib/use-api";
 import { apiWrite } from "@/lib/api";
 import { track } from "@/lib/track";
+import { groupRatiosForReader } from "@/lib/ratios";
+import {
+  countWord,
+  growthReading,
+  isGapFigure,
+  payoutReading,
+  valuationReading,
+} from "@/lib/company-readings";
 import { Segmented } from "@/components/segmented";
 import { Band, Ledger, LedgerRow } from "@/components/ui/layout";
+import { Disclosure } from "@/components/ui/disclosure";
 import { Caps, Figure, PageTitle } from "@/components/ui/text";
 import { ErrorNote } from "@/components/status";
 import { PageSkeleton } from "@/components/skeleton";
@@ -49,6 +57,9 @@ type Tab = (typeof TABS)[number];
 
 /** How many filed years the growth bars show. Matches the web strip. */
 const TREND_YEARS = 4;
+
+/** Key figures shown on the Overview before "Show all eight". */
+const KEY_FIGURES_FOLDED = 4;
 
 const ASK_QUESTION = (ticker: string) =>
   `Explain ${ticker} to me simply: what it does, how it is doing, and whether it pays dividends.`;
@@ -185,6 +196,76 @@ function developmentsOf(filings: CompanyFiling[], news: CompanyNewsItem[]): Deve
   ].sort((a, b) => (b.date ?? "").localeCompare(a.date ?? ""));
 }
 
+/** How far back "recently" reaches on the Filings tab. */
+const RECENT_FILING_DAYS = 120;
+const RECENT_FILING_CAP = 6;
+
+/**
+ * The filings a holder actually acts on, in plain words. The portal's
+ * category is a word or a code depending on the row's age, so the match is on
+ * the stem rather than the exact string.
+ */
+function plainFilingLabel(category: string): string | null {
+  const c = category.toLowerCase().replace(/[^a-z]/g, "");
+  if (c.startsWith("result") || c.startsWith("financialresult")) return "Financial results";
+  if (c.startsWith("dividend")) return "Dividend announced";
+  if (c.startsWith("board")) return "Board meeting";
+  if (c.startsWith("material")) return "Material information";
+  return null;
+}
+
+function recentFilingsOf(filings: CompanyFiling[], now = new Date()): Development[] {
+  const cutoff = new Date(now);
+  cutoff.setDate(cutoff.getDate() - RECENT_FILING_DAYS);
+  const out: Development[] = [];
+  filings.forEach((f, i) => {
+    if (!f.date) return;
+    const d = new Date(`${f.date.slice(0, 10)}T00:00:00`);
+    if (Number.isNaN(d.getTime()) || d < cutoff) return;
+    const label = plainFilingLabel(f.category);
+    if (!label) return;
+    out.push({
+      key: `r-${f.date}-${i}`,
+      date: f.date,
+      label: "PSX filing",
+      title: f.title,
+      note: label,
+      url: f.url || null,
+    });
+  });
+  return out.sort((a, b) => (b.date ?? "").localeCompare(a.date ?? "")).slice(0, RECENT_FILING_CAP);
+}
+
+/** A ratio row inside a ledger. Shared by the reader groups and the analyst rows. */
+function RatioLine({ row }: { row: { name: string; value: number | string | null } }) {
+  const styles = useStyles();
+  return (
+    <LedgerRow>
+      <Text style={styles.ratioName} numberOfLines={1}>
+        {row.name}
+      </Text>
+      <Figure style={[styles.ratioValue, row.value === null && styles.figureMuted]}>{ratioText(row.value)}</Figure>
+    </LedgerRow>
+  );
+}
+
+function PayoutLine({ payout, withKind }: { payout: CompanyPayout; withKind?: boolean }) {
+  const styles = useStyles();
+  return (
+    <LedgerRow>
+      {withKind ? (
+        <View style={styles.payoutLeft}>
+          <Text style={styles.payoutKind}>{payout.kind ?? "Payout"}</Text>
+          <Figure style={styles.payoutDate}>{payout.date ?? "date unknown"}</Figure>
+        </View>
+      ) : (
+        <Figure style={styles.payoutDate}>{payout.date ?? "date unknown"}</Figure>
+      )}
+      <Figure style={styles.payoutValue}>{payoutText(payout)}</Figure>
+    </LedgerRow>
+  );
+}
+
 function DevelopmentRow({ entry }: { entry: Development }) {
   const styles = useStyles();
   return (
@@ -285,8 +366,14 @@ export default function CompanyScreen() {
         ? `Delayed, as of ${quoteDate ?? "an earlier session"}`
         : "Delayed";
 
-  const grouped = groupRatios(data?.ratios ?? []);
+  const ratios = data?.ratios ?? [];
+  // Reader groups and the analyst rows folded out of them, from the shared
+  // helper, so the web and the phone show the same table.
+  const { groups: grouped, analyst: analystRows } = groupRatiosForReader(ratios);
   const keyFigures = data?.keyFigures ?? [];
+  // A gap in the filings is not a fact about the company, so it leaves the
+  // Overview list. Contested and loss-making figures stay: they say something.
+  const shownFigures = keyFigures.filter((f) => !isGapFigure(f));
   const byKey = new Map(keyFigures.map((f) => [f.key, f]));
   const peFigure = byKey.get("P/E") ?? null;
   const yieldFigure = byKey.get("Dividend yield (TTM)") ?? null;
@@ -301,6 +388,12 @@ export default function CompanyScreen() {
     .slice(0, 4);
   const filings = data?.filings ?? [];
   const developments = developmentsOf(filings, data?.news ?? []);
+  const recentFilings = recentFilingsOf(filings);
+
+  // The plain sentences. Each restates a figure shown beside it.
+  const growthLine = growthReading(trends?.revenue ?? []);
+  const payLine = payoutReading({ payouts, yieldFigure, ratios, price: quote?.price ?? data?.priceUsed });
+  const priceLine = valuationReading(peFigure);
 
   return (
     <SafeAreaView style={styles.screen} edges={["top"]}>
@@ -460,6 +553,7 @@ export default function CompanyScreen() {
 
               <View style={styles.block}>
                 <Caps style={styles.blockCaps}>Is it growing?</Caps>
+                <Text style={styles.reading}>{growthLine}</Text>
                 <View style={styles.trendGrid}>
                   <View style={styles.trendCell}>
                     <Text style={styles.trendLabel}>Revenue</Text>
@@ -479,6 +573,7 @@ export default function CompanyScreen() {
 
               <View style={styles.block}>
                 <Caps style={styles.blockCaps}>Does it pay?</Caps>
+                <Text style={styles.reading}>{payLine}</Text>
                 <View style={styles.figureLine}>
                   <Text style={styles.figureLabel}>{yieldFigure?.label ?? "Dividend yield"}</Text>
                   <View style={styles.figureRight}>
@@ -506,6 +601,7 @@ export default function CompanyScreen() {
 
               <View style={styles.block}>
                 <Caps style={styles.blockCaps}>Is it expensive?</Caps>
+                <Text style={styles.reading}>{priceLine}</Text>
                 <View style={styles.figureLine}>
                   <Text style={styles.figureLabel}>{peFigure?.label ?? "Price to earnings"}</Text>
                   <View style={styles.figureRight}>
@@ -515,21 +611,38 @@ export default function CompanyScreen() {
                     {peFigure?.period ? <Figure style={styles.figurePeriod}>{peFigure.period}</Figure> : null}
                   </View>
                 </View>
-                <Text style={styles.footnote}>
-                  {peFigure?.withheld ?? peFigure?.hint ?? "The share price divided by a year of earnings per share."}
-                </Text>
+                {peFigure?.value !== null && peFigure?.value !== undefined ? (
+                  <Text style={styles.footnote}>
+                    {peFigure.hint || "The share price divided by a year of earnings per share."}
+                  </Text>
+                ) : null}
               </View>
 
               <View style={styles.block}>
                 <Caps style={styles.blockCaps}>Key figures</Caps>
-                {keyFigures.length === 0 ? (
+                {shownFigures.length === 0 ? (
                   <Text style={styles.empty}>No figures published for this company yet.</Text>
                 ) : (
-                  <View style={styles.figureList}>
-                    {keyFigures.map((figure) => (
-                      <KeyFigureRow key={figure.key} figure={figure} />
-                    ))}
-                  </View>
+                  <>
+                    <View style={styles.figureList}>
+                      {shownFigures.slice(0, KEY_FIGURES_FOLDED).map((figure) => (
+                        <KeyFigureRow key={figure.key} figure={figure} />
+                      ))}
+                    </View>
+                    {shownFigures.length > KEY_FIGURES_FOLDED ? (
+                      <Disclosure
+                        label={`Show all ${countWord(shownFigures.length)}`}
+                        openLabel="Show fewer"
+                        style={styles.figureMore}
+                      >
+                        <View style={styles.figureList}>
+                          {shownFigures.slice(KEY_FIGURES_FOLDED).map((figure) => (
+                            <KeyFigureRow key={figure.key} figure={figure} />
+                          ))}
+                        </View>
+                      </Disclosure>
+                    ) : null}
+                  </>
                 )}
                 <Text style={styles.footnote}>Tap a figure to see what it means. The full set is under Financials.</Text>
               </View>
@@ -559,44 +672,85 @@ export default function CompanyScreen() {
 
           {tab === "Financials" ? (
             <>
-              {grouped.length > 0 ? (
-                grouped.map((group) => (
-                  <View key={group.title} style={styles.ratioGroup}>
-                    <Caps style={styles.blockCaps}>{group.title}</Caps>
-                    <Ledger>
-                      {group.rows.map((row, i) => (
-                        <LedgerRow key={`${row.name}-${i}`}>
-                          <Text style={styles.ratioName} numberOfLines={1}>
-                            {row.name}
-                          </Text>
-                          <Figure style={styles.ratioValue}>{ratioText(row.value)}</Figure>
-                        </LedgerRow>
-                      ))}
-                    </Ledger>
+              {/* The same eight figures as the Overview, all of them here,
+                  with the reason for any gap. This is the grid a reader needs;
+                  the full ratio card sits behind one row below it. */}
+              <View style={styles.ratioGroup}>
+                <Caps style={styles.blockCaps}>Key figures</Caps>
+                {keyFigures.length === 0 ? (
+                  <Text style={styles.empty}>No fundamentals published for this company yet.</Text>
+                ) : (
+                  <View style={styles.figureList}>
+                    {keyFigures.map((figure) => (
+                      <KeyFigureRow key={figure.key} figure={figure} />
+                    ))}
                   </View>
-                ))
-              ) : (
-                <Text style={styles.empty}>No fundamentals published for this company yet.</Text>
-              )}
+                )}
+              </View>
 
               <View style={styles.ratioGroup}>
-                <Caps style={styles.blockCaps}>Payouts</Caps>
+                <Caps style={styles.blockCaps}>Last cash payouts</Caps>
+                {lastPayouts.length === 0 ? (
+                  <Text style={styles.empty}>No cash payout announcements on file.</Text>
+                ) : (
+                  <Ledger>
+                    {lastPayouts.map((p, i) => (
+                      <PayoutLine key={`${p.date}-${i}`} payout={p} />
+                    ))}
+                  </Ledger>
+                )}
+              </View>
+
+              <Disclosure
+                label="All ratios"
+                note={grouped.length > 0 ? `${grouped.reduce((n, g) => n + g.rows.length, 0)} figures` : "none published"}
+              >
+                {grouped.length === 0 && analystRows.length === 0 ? (
+                  <Text style={styles.empty}>No ratios published for this company yet.</Text>
+                ) : null}
+                {grouped.map((group) => (
+                  <Disclosure
+                    key={group.title}
+                    label={group.title}
+                    note={`${group.rows.length}`}
+                    nested
+                  >
+                    <Ledger>
+                      {group.rows.map((row, i) => (
+                        <RatioLine key={`${row.name}-${i}`} row={row} />
+                      ))}
+                    </Ledger>
+                  </Disclosure>
+                ))}
+                {analystRows.length > 0 ? (
+                  <Disclosure label="Analyst rows" note={`${analystRows.length}`} nested>
+                    <Text style={styles.footnote}>
+                      Derived and reconciliation figures. Kept for anyone checking the sums; not needed
+                      to judge the company.
+                    </Text>
+                    <Ledger>
+                      {analystRows.map((row, i) => (
+                        <RatioLine key={`${row.name}-${i}`} row={row} />
+                      ))}
+                    </Ledger>
+                  </Disclosure>
+                ) : null}
+              </Disclosure>
+
+              <Disclosure
+                label="All payouts"
+                note={payouts.length > 0 ? `${payouts.length} declared` : "none on record"}
+              >
                 {payouts.length === 0 ? (
                   <Text style={styles.empty}>No declared payouts on record.</Text>
                 ) : (
                   <Ledger>
                     {payouts.map((p, i) => (
-                      <LedgerRow key={`${p.date}-${i}`}>
-                        <View style={styles.payoutLeft}>
-                          <Text style={styles.payoutKind}>{p.kind ?? "Payout"}</Text>
-                          <Figure style={styles.payoutDate}>{p.date ?? "date unknown"}</Figure>
-                        </View>
-                        <Figure style={styles.payoutValue}>{payoutText(p)}</Figure>
-                      </LedgerRow>
+                      <PayoutLine key={`${p.date}-${i}`} payout={p} withKind />
                     ))}
                   </Ledger>
                 )}
-              </View>
+              </Disclosure>
             </>
           ) : null}
 
@@ -604,20 +758,43 @@ export default function CompanyScreen() {
             filings.length === 0 ? (
               <Text style={styles.empty}>No filings on file for {symbol}.</Text>
             ) : (
-              filings.map((f, i) => (
-                <Rise key={`${f.date}-${i}`} index={i}>
-                  <DevelopmentRow
-                    entry={{
-                      key: `f-${i}`,
-                      date: f.date,
-                      label: "PSX filing",
-                      title: f.title,
-                      note: f.category || null,
-                      url: f.url || null,
-                    }}
-                  />
-                </Rise>
-              ))
+              <>
+                <View style={styles.ratioGroup}>
+                  <Caps style={styles.blockCaps}>What matters recently</Caps>
+                  {recentFilings.length === 0 ? (
+                    <Text style={styles.empty}>
+                      No results, dividends, board meetings or material information in the last{" "}
+                      {RECENT_FILING_DAYS} days.
+                    </Text>
+                  ) : (
+                    recentFilings.map((entry, i) => (
+                      <Rise key={entry.key} index={i}>
+                        <DevelopmentRow entry={entry} />
+                      </Rise>
+                    ))
+                  )}
+                </View>
+
+                <Disclosure
+                  label="Complete record"
+                  note={`${filings.length} filings`}
+                  defaultOpen={recentFilings.length === 0}
+                >
+                  {filings.map((f, i) => (
+                    <DevelopmentRow
+                      key={`${f.date}-${i}`}
+                      entry={{
+                        key: `f-${i}`,
+                        date: f.date,
+                        label: "PSX filing",
+                        title: f.title,
+                        note: plainFilingLabel(f.category) ?? f.category ?? null,
+                        url: f.url || null,
+                      }}
+                    />
+                  ))}
+                </Disclosure>
+              </>
             )
           ) : null}
         </Band>
@@ -674,6 +851,16 @@ const useStyles = makeStyles((c) => ({
   subCaps: { marginTop: space.lg, marginBottom: space.xs },
   blockNote: { fontSize: fontSize.xxs, color: c.textFaint },
   prose: { fontFamily: fontFamily.ui, fontSize: fontSize.sm, lineHeight: 21, color: c.textBody },
+  /* The plain sentence under a question. Body weight, a touch larger than the
+     figures it explains, so it reads first. */
+  reading: {
+    marginBottom: space.md,
+    fontFamily: fontFamily.uiMedium,
+    fontSize: fontSize.body,
+    lineHeight: 22,
+    color: c.textStrong,
+  },
+  figureMore: { marginTop: space.xs, borderTopWidth: 0 },
   positionNote: {
     marginTop: space.md,
     fontFamily: fontFamily.ui,

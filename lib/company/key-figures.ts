@@ -101,3 +101,17 @@ export function buildKeyFigures(ratios: RatioRow[]): KeyFigure[] {
     };
   });
 }
+
+/**
+ * True when a withheld figure is only a gap in the data, not something the
+ * reader should know about. A contested filing and a loss-making period both
+ * stay visible with their reason; a missing input is simply not shown.
+ */
+export function isDataGap(withheld: string | null | undefined): boolean {
+  return Boolean(withheld && /^Not calculated/i.test(withheld));
+}
+
+/** The key figures worth a reader's attention: every value, plus withheld ones with a reason that matters. */
+export function readerKeyFigures(figures: KeyFigure[]): KeyFigure[] {
+  return figures.filter((f) => f.value !== null || !isDataGap(f.withheld));
+}

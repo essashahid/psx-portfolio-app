@@ -19,7 +19,7 @@ export default async function ChatPage({ searchParams }: { searchParams: Promise
     supabase.from("chat_threads").select("id, title, summary, created_at, updated_at, last_message_at").eq("user_id", user.id).order("last_message_at", { ascending: false }).limit(50),
     getDataFreshness(supabase, user.id),
     getPortfolio(supabase, user.id),
-    supabase.from("profiles").select("allowed_llm_providers, demo_mode").eq("id", user.id).maybeSingle(),
+    supabase.from("profiles").select("allowed_llm_providers, demo_mode, is_admin").eq("id", user.id).maybeSingle(),
     supabase.from("transactions").select("id", { count: "exact", head: true }).eq("user_id", user.id),
     supabase.from("chat_suggestions").select("suggestions").eq("user_id", user.id).maybeSingle(),
   ]);
@@ -27,6 +27,7 @@ export default async function ChatPage({ searchParams }: { searchParams: Promise
     ? (suggestionsRes.data.suggestions as unknown[]).filter((s): s is string => typeof s === "string")
     : [];
   const isDemo = Boolean(profileRes.data?.demo_mode);
+  const isAdmin = Boolean(profileRes.data?.is_admin);
   const allowedProviders = normalizeAllowedChatProviders(profileRes.data?.allowed_llm_providers);
   const freshnessItems = freshness.filter((item) => item.date && item.key !== "brief");
   const sources = freshnessItems.map((item) => `${item.label} · ${item.date}`);
@@ -51,7 +52,7 @@ export default async function ChatPage({ searchParams }: { searchParams: Promise
     hasThesis: portfolio.holdings.some((h) => h.has_thesis),
   };
 
-  // Escape every padding tier of the shared app-shell main so the Copilot
+  // Escape every padding tier of the shared app-shell main so Ask
   // fills the full content area edge to edge at every breakpoint.
   return (
     <div className="-mx-3 -mt-3 sm:-mx-4 sm:-mt-4 md:-m-8">
@@ -65,6 +66,7 @@ export default async function ChatPage({ searchParams }: { searchParams: Promise
         sourceStatus={sources}
         dataUpdated={dataUpdated}
         readOnly={isDemo}
+        isAdmin={isAdmin}
         initialSuggestions={cachedSuggestions}
         initialMessage={initialMessage}
       />

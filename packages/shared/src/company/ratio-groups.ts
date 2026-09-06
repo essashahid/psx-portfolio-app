@@ -124,3 +124,53 @@ export function groupRatios<T extends { name: string }>(
   if (rest.length > 0) groups.push({ title: "Other", rows: rest });
   return groups;
 }
+
+/**
+ * Ratios that only an analyst reads.
+ *
+ * Each of these is either a reconciliation the engine runs on itself, a
+ * derived intermediate (a share count, a market cap struck from it), or a
+ * second-order accrual and cost-structure measure. None of them answers a
+ * question a self-directed investor asks, so the reader view leaves them out
+ * of the table and shows them under an "Analyst rows" fold. Nothing is
+ * deleted: groupRatiosForReader hands them back separately.
+ */
+export const ANALYST_ONLY_RATIOS: readonly string[] = [
+  "Share count reconciliation",
+  "Shares outstanding (derived)",
+  "Market cap (derived)",
+  "EPS (annualized)",
+  "Interim EPS growth",
+  "Receivables % of market cap",
+  "Receivables / share",
+  "Retained earnings / assets",
+  "Accrual ratio",
+  "Equity multiplier",
+  "Cost of sales ratio",
+  "Operating expense ratio",
+];
+
+const ANALYST_ONLY = new Set(ANALYST_ONLY_RATIOS);
+
+/**
+ * The ratio table as a reader sees it, on both surfaces.
+ *
+ * Two rules on top of groupRatios. A group in which every ratio is withheld
+ * is dropped, because a null Banking section on an oil producer is not a
+ * gap in the data, it is a category that does not apply. And the analyst-only
+ * rows are lifted out of every group and returned separately, so the page can
+ * fold them away without losing them. "Other" follows the same rules and is
+ * never shown empty.
+ */
+export function groupRatiosForReader<T extends { name: string; value: number | null }>(
+  ratios: T[]
+): { groups: { title: string; rows: T[] }[]; analyst: T[] } {
+  const analyst: T[] = [];
+  const reader: T[] = [];
+  for (const row of ratios) (ANALYST_ONLY.has(row.name) ? analyst : reader).push(row);
+
+  const groups = groupRatios(reader).filter((group) =>
+    group.rows.some((row) => row.value !== null && Number.isFinite(row.value))
+  );
+  return { groups, analyst };
+}

@@ -104,6 +104,7 @@ export function Chat({
   providers,
   initialThreads = [],
   promptContext = null,
+  isAdmin = false,
   sourceStatus = [],
   dataUpdated = null,
   readOnly = false,
@@ -116,6 +117,8 @@ export function Chat({
   sourceStatus?: string[];
   dataUpdated?: string | null;
   readOnly?: boolean;
+  /** Admins see the model picker and the sources fold; everyone else gets the default model. */
+  isAdmin?: boolean;
   /** Cached personalized suggestions (chat_suggestions); template pool is the fallback. */
   initialSuggestions?: string[];
   /** Pre-seeded question (from an "Ask Copilot about this" entry point). Sent once on mount. */
@@ -602,6 +605,12 @@ export function Chat({
         >
           {RESEARCH_MODES.map((mode) => <option key={mode}>{mode}</option>)}
         </select>
+        {/*
+          The sources fold and the model picker are for checking the machine,
+          not for asking a question. The footer already says what the answers
+          are drawn from, so a non-admin sees neither.
+        */}
+        {isAdmin && (
         <details className="relative">
           <summary className="flex h-8 cursor-pointer list-none items-center gap-1.5 rounded-lg px-2 text-[11px] text-text-muted transition-colors hover:bg-surface-sunken">
             <Database className="h-3.5 w-3.5" /> Context
@@ -615,6 +624,8 @@ export function Chat({
             )}
           </div>
         </details>
+        )}
+        {isAdmin && (
         <details className="relative">
           <summary className="flex h-8 w-8 cursor-pointer list-none items-center justify-center rounded-lg text-text-muted transition-colors hover:bg-surface-sunken" title="Advanced model settings" aria-label="Advanced model settings">
             <SlidersHorizontal className="h-3.5 w-3.5" />
@@ -624,6 +635,7 @@ export function Chat({
             <ModelPicker model={model} setModel={setModel} providers={providers} />
           </div>
         </details>
+        )}
         {!aiEnabled && <span className="text-[10px] text-amber-600">AI narration off</span>}
         <button
           type="submit"
@@ -726,7 +738,7 @@ export function Chat({
                   {readOnly
                     ? "Open a curated conversation to see labelled answers, charts and tables based on the demo portfolio."
                     : "Plain answers from your own figures. Not financial advice."}
-                  {!readOnly && !aiEnabled && " AI narration is off — live data cards will still appear."}
+                  {!readOnly && !aiEnabled && " AI narration is off. Data cards will still appear."}
                 </p>
               </div>
 
