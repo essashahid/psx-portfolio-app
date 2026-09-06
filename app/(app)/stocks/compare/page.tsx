@@ -56,11 +56,11 @@ export default async function CompareStocksPage({ searchParams }: { searchParams
   if (tickers.length < 2) {
     return (
       <div className="space-y-4">
-        <PageHeader eyebrow="Research" title="Compare stocks" description="Put two to four PSX companies side by side on valuation, dividends and quality." />
+        <PageHeader eyebrow="Research" title="Compare companies" description="Put two to four PSX companies side by side on valuation, dividends and quality." />
         <Card>
           <CardContent className="py-12 text-center text-sm text-text-muted">
             Add at least two tickers to compare, for example <Link href="/stocks/compare?t=FCCL,MLCF" className="font-medium text-primary hover:underline">/stocks/compare?t=FCCL,MLCF</Link>.
-            <p className="mt-2 text-xs">Open any stock and use its search to pick companies, or start from <Link href="/stocks" className="text-primary hover:underline">Stock Research</Link>.</p>
+            <p className="mt-2 text-xs">Open any stock and use its search to pick companies, or start from <Link href="/stocks" className="text-primary hover:underline">Companies</Link>.</p>
           </CardContent>
         </Card>
       </div>
@@ -106,9 +106,9 @@ export default async function CompareStocksPage({ searchParams }: { searchParams
   return (
     <div className="space-y-4">
       <Link href="/stocks" className="inline-flex items-center gap-1 text-xs text-text-muted hover:text-text-strong">
-        <ArrowLeft className="h-3.5 w-3.5" /> Stock research
+        <ArrowLeft className="h-3.5 w-3.5" /> Companies
       </Link>
-      <PageHeader eyebrow="Research" title={`Compare ${tickers.join(" · ")}`} description="Valuation, dividends and quality side by side. The most attractive value per row is emphasised; this is context, not a recommendation." />
+      <PageHeader eyebrow="Compare companies" title={`Compare ${tickers.join(" · ")}`} description="Valuation, dividends and quality side by side. The most attractive value per row is emphasised; this is context, not a recommendation." />
 
       <Card>
         <CardContent className="overflow-x-auto p-0">

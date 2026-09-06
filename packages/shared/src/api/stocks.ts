@@ -86,6 +86,58 @@ export interface CompanyPosition {
   hidden: boolean;
 }
 
+/**
+ * One of the eight headline figures on the company Overview. The web strip and
+ * the phone both read this shape from the same builder, so the number, the
+ * label, the period and the reason a figure is withheld are identical on both.
+ */
+export interface KeyFigure {
+  /** The ratio engine's name for the figure, e.g. "P/E". */
+  key: string;
+  /** The plain label shown to the reader, e.g. "Price to earnings". */
+  label: string;
+  value: number | null;
+  /** The figure formatted for display, or "—" when withheld. */
+  display: string;
+  /** The period the figure is struck on, in reader form, e.g. "FY2025". */
+  period: string | null;
+  /** The glossary one-liner explaining what the figure means. */
+  hint: string;
+  /** Why the value is null, in plain words. Null when a value is shown. */
+  withheld: string | null;
+}
+
+export interface TrendPoint {
+  year: number;
+  value: number;
+}
+
+export interface CompanyTrends {
+  revenue: TrendPoint[];
+  eps: TrendPoint[];
+  netMargin: TrendPoint[];
+  /** Filed years withheld because two readings of the filing disagree. */
+  contested: { year: number; field: string; reason: string }[];
+}
+
+export interface CompanyFiling {
+  date: string | null;
+  title: string;
+  /** In words: Result, Dividend, Board meeting, Material information, Announcement. */
+  category: string;
+  url: string;
+}
+
+export interface CompanyNewsItem {
+  id: string;
+  title: string;
+  url: string | null;
+  source: string | null;
+  publishedAt: string | null;
+}
+
+export type QuoteFreshness = "fresh" | "stale" | "missing";
+
 export interface CompanyResponse {
   ticker: string;
   name: string | null;
@@ -98,4 +150,15 @@ export interface CompanyResponse {
   payouts: CompanyPayout[];
   position: CompanyPosition | null;
   watched: boolean;
+  /** The official PSX business description, or null when none is on file. */
+  description?: string | null;
+  /** Revenue, EPS and net margin by filed year, oldest first. */
+  trends?: CompanyTrends;
+  /** The last five official filings, newest first. */
+  filings?: CompanyFiling[];
+  /** Up to three recent news clusters that touch the company. */
+  news?: CompanyNewsItem[];
+  /** The same eight figures the web Overview strip shows, in the same order. */
+  keyFigures?: KeyFigure[];
+  quoteFreshness?: QuoteFreshness;
 }

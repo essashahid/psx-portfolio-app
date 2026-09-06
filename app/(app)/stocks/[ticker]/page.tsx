@@ -1,4 +1,5 @@
 import { Suspense } from "react";
+import { track } from "@/lib/telemetry/events";
 import Link from "next/link";
 import { createClient, getUser } from "@/lib/supabase/server";
 import { getCompanyHeader } from "@/lib/company/service";
@@ -11,13 +12,17 @@ import { PriceTrack } from "@/components/features/stocks/price-track";
 import { CardSkeleton, TableSkeleton } from "@/components/ui/page-skeleton";
 import { Band } from "@/components/ui/band";
 import { Metric } from "@/components/ui/metric";
+import { PanelHeader } from "@/components/ui/panel-header";
+import { AsOf } from "@/components/shared/as-of";
 import { formatNumber, formatSignedPct, formatFinancialPeriod, cn } from "@/lib/shared/format";
 import { normalizeEnabledFeatures } from "@/lib/config/features";
 import { sectorColor } from "@/lib/shared/sector-colors";
+import { quoteFreshness } from "@/lib/company/overview";
 import { ArrowLeft } from "lucide-react";
 import {
-  OverviewPanel, FinancialsPanel, EarningsPanel,
-  DividendsPanel, NewsFilingsPanel, TechnicalsPanel,
+  OverviewPanel, RecentDevelopmentsPanel, AskAboutCompany,
+  FinancialsPanel, EarningsPanel, RatiosPanel, StatementsPanel, TechnicalsPanel,
+  NewsFilingsPanel,
 } from "./panels";
 
 export const dynamic = "force-dynamic";
@@ -64,8 +69,8 @@ export default async function StockCockpitPage({ params }: { params: Promise<{ t
   // status and the 60 closes the header track draws. Heavy per-section data
   // streams in below via Suspense.
   //
-  // Valuation metrics (P/E, EPS, dividend yield) come from the ratio engine —
-  // the single source of truth shared with the Overview tab — so the header can
+  // Valuation metrics (P/E, EPS, dividend yield) come from the ratio engine,
+  // the single source of truth shared with the Overview tab, so the header can
   // never disagree with Key signals on the period or the value.
   const [header, { data: holding }, { data: watch }, ratios, profileRes, { data: closesRows }] =
     await Promise.all([
@@ -79,10 +84,11 @@ export default async function StockCockpitPage({ params }: { params: Promise<{ t
 
   const enabledFeatures = normalizeEnabledFeatures(profileRes.data?.enabled_features);
   const isDemo = Boolean(profileRes.data?.demo_mode);
-  const companyEnrichmentEnabled = enabledFeatures.includes("company_enrichment") && !isDemo;
   const companyReportsEnabled = enabledFeatures.includes("company_reports") && !isDemo;
 
   const { metadata, quote } = header;
+  const freshness = quoteFreshness(quote);
+  void track(user.id, "company_viewed", { ticker, held: Boolean(holding && holding.quantity > 0) });
   const hue = sectorColor(metadata.sector);
   const dayUp = quote.dayChangePct !== null && quote.dayChangePct > 0;
   const dayDown = quote.dayChangePct !== null && quote.dayChangePct < 0;
@@ -114,15 +120,45 @@ export default async function StockCockpitPage({ params }: { params: Promise<{ t
     </Band>
   );
 
+  // A section of the Financials tab: its own heading above its own Suspense
+  // boundary, so a slow section streams in under a heading that is already
+  // there rather than holding the whole tab.
+  const section = (eyebrow: string, title: string, fallback: React.ReactNode, node: React.ReactNode) => (
+    <section>
+      <PanelHeader eyebrow={eyebrow} title={title} className="mb-6" />
+      <Suspense fallback={fallback}>{node}</Suspense>
+    </section>
+  );
+
+  // Three tabs. Overview explains first; Financials holds everything
+  // analytical, with the chart last because it is for timing, not for forming
+  // the view; Filings is the primary-source record.
   const tabs = [
-    { id: "overview", label: "Overview", content: panel(<Suspense fallback={<CardSkeleton lines={8} />}><OverviewPanel ticker={ticker} companyEnrichmentEnabled={companyEnrichmentEnabled} readOnly={isDemo} /></Suspense>) },
-    { id: "fundamentals", label: "Fundamentals", content: panel(<Suspense fallback={<TableSkeleton />}><FinancialsPanel ticker={ticker} readOnly={isDemo} /></Suspense>) },
-    { id: "earnings", label: "Earnings", content: panel(<Suspense fallback={<CardSkeleton lines={6} />}><EarningsPanel ticker={ticker} /></Suspense>) },
-    { id: "dividends", label: "Dividends", content: panel(<Suspense fallback={<TableSkeleton />}><DividendsPanel ticker={ticker} /></Suspense>) },
-    // Placed after the fundamental tabs on purpose: the chart is for timing an
-    // accumulation, not for forming the view.
-    { id: "technicals", label: "Technicals", content: panel(<Suspense fallback={<CardSkeleton lines={10} />}><TechnicalsPanel ticker={ticker} /></Suspense>) },
-    { id: "news", label: "Filings & news", content: panel(<Suspense fallback={<CardSkeleton lines={8} />}><NewsFilingsPanel ticker={ticker} /></Suspense>) },
+    {
+      id: "overview",
+      label: "Overview",
+      content: panel(
+        <div>
+          <Suspense fallback={<CardSkeleton lines={10} />}><OverviewPanel ticker={ticker} /></Suspense>
+          <Suspense fallback={<CardSkeleton lines={4} />}><RecentDevelopmentsPanel ticker={ticker} /></Suspense>
+          <AskAboutCompany ticker={ticker} />
+        </div>
+      ),
+    },
+    {
+      id: "financials",
+      label: "Financials",
+      content: panel(
+        <div className="space-y-14">
+          {section("Filed years", "How the business earns", <TableSkeleton />, <FinancialsPanel ticker={ticker} readOnly={isDemo} />)}
+          {section("Quarterly earnings", "Reported against the year before", <CardSkeleton lines={6} />, <EarningsPanel ticker={ticker} />)}
+          {section("All ratios", "Every figure the engine computes", <TableSkeleton />, <RatiosPanel ticker={ticker} />)}
+          {section("Statements as filed", "The filings behind the figures", <TableSkeleton />, <StatementsPanel ticker={ticker} />)}
+          {section("Price structure", "For timing, not for forming the view", <CardSkeleton lines={10} />, <TechnicalsPanel ticker={ticker} />)}
+        </div>
+      ),
+    },
+    { id: "filings", label: "Filings", content: panel(<Suspense fallback={<CardSkeleton lines={8} />}><NewsFilingsPanel ticker={ticker} /></Suspense>) },
   ];
 
   return (
@@ -177,6 +213,19 @@ export default async function StockCockpitPage({ params }: { params: Promise<{ t
               <span className={cn("figure mt-1.5 block text-sm font-semibold", dayUp && "text-up", dayDown && "text-down", !dayUp && !dayDown && "text-text-muted")}>
                 {quote.dayChange !== null ? `${quote.dayChange > 0 ? "+" : quote.dayChange < 0 ? "−" : ""}${formatNumber(Math.abs(quote.dayChange))}` : ""}
                 {quote.dayChangePct !== null ? `${quote.dayChange !== null ? " · " : ""}${formatSignedPct(quote.dayChangePct)} today` : quote.dayChange === null ? "—" : ""}
+              </span>
+              {/*
+                Quotes reach the platform delayed, and the caption says so
+                beside the date rather than leaving a reader to assume the
+                figure is live. A quote older than a couple of sessions turns
+                amber through the shared AsOf stamp.
+              */}
+              <span className="mt-1.5 block">
+                {freshness === "missing" ? (
+                  <span className="text-xs text-text-muted">No quote on file</span>
+                ) : (
+                  <AsOf date={quote.asOf} label="Delayed quote, as of" staleAfterDays={freshness === "stale" ? 0 : 4} />
+                )}
               </span>
             </div>
             <div className="flex flex-wrap justify-end gap-2.5">

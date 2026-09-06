@@ -98,7 +98,7 @@ export async function GET(request: Request) {
         pe: round(pe?.ratio_value),
         eps: round(pe?.inputs?.eps),
         pb: round(rs?.get("P/B")?.ratio_value),
-        dividendYield: round(rs?.get("Dividend yield")?.ratio_value),
+        dividendYield: round(rs?.get("Dividend yield (TTM)")?.ratio_value),
         // The period the valuation rests on. A value starting with "TTM" is a
         // trailing twelve months; anything else (e.g. "2024 FY") means the
         // ratio is computed from that period alone and may be stale.

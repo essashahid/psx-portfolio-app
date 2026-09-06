@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
+import { track } from "@/lib/telemetry/client";
 import { cn } from "@/lib/shared/format";
 import type { ReactNode } from "react";
 
@@ -49,6 +50,7 @@ export function CompanyTabs({
   function select(id: string) {
     setActive(id);
     history.replaceState(null, "", `#${id}`);
+    track("company_tab_viewed", { tab: id });
   }
 
   // Measured from the rendered tabs rather than computed from label lengths,

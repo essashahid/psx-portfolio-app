@@ -2,6 +2,19 @@ import { NextResponse } from "next/server";
 import { requireUser, errorResponse } from "@/lib/shared/api";
 import { getRatioCard } from "@/lib/chat/data";
 import { getQuote } from "@/lib/company/quote";
+import { getCompanyMetadata } from "@/lib/company/metadata";
+import { getFundamentals } from "@/lib/company/fundamentals";
+import { getCompanyFilings } from "@/lib/company/filings";
+import { getClustersForTickers } from "@/lib/news/global-store";
+import { computeRatios } from "@/lib/engine/ratios";
+import { buildKeyFigures } from "@/lib/company/key-figures";
+import {
+  buildTrends,
+  officialDescription,
+  quoteFreshness,
+  toCompanyFilings,
+  toCompanyNews,
+} from "@/lib/company/overview";
 import type { CompanyResponse } from "@psx/shared/api/stocks";
 
 export const maxDuration = 60;
@@ -10,10 +23,12 @@ export const maxDuration = 60;
  * GET /api/stocks/[ticker]
  *
  * The per-ticker data endpoint: everything the platform knows about one
- * company as JSON — live quote, the full ratio card (valuation on a
+ * company as JSON: live quote, the full ratio card (valuation on a
  * trailing-12m basis with the forward/run-rate line beside it, and the
  * bank-specific set where the line items exist), hand-verification status,
- * latest filing periods, and recent payouts.
+ * latest filing periods, and recent payouts. The Overview block the phone
+ * mirrors (description, trends, filings, news, key figures) is built from the
+ * same lib helpers the web page uses, so both surfaces show identical figures.
  *
  *   GET /api/stocks/MEBL
  *   {
@@ -38,8 +53,20 @@ export async function GET(
     const { ticker: raw } = await params;
     const ticker = decodeURIComponent(raw).toUpperCase();
 
-    const [{ data: master }, quote, { data: cap }, card, { data: payouts }, { data: holding }, { data: watched }] =
-      await Promise.all([
+    const [
+      { data: master },
+      quote,
+      { data: cap },
+      card,
+      { data: payouts },
+      { data: holding },
+      { data: watched },
+      metadata,
+      fundamentals,
+      filings,
+      clusters,
+      ratioRows,
+    ] = await Promise.all([
       supabase.from("stock_master").select("company_name, sector").eq("ticker", ticker).maybeSingle(),
       // The same resolution the web header and the portfolio use, including
       // this user's own override, so the phone never shows a third price.
@@ -66,6 +93,11 @@ export async function GET(
         .eq("user_id", user.id)
         .eq("ticker", ticker)
         .maybeSingle(),
+      getCompanyMetadata(supabase, ticker),
+      getFundamentals(supabase, ticker),
+      getCompanyFilings(ticker, 5, { supabase }),
+      getClustersForTickers(supabase, [ticker], { limit: 3 }),
+      computeRatios(supabase, ticker),
     ]);
 
     if (!master && quote.price === null && (card?.rows.length ?? 0) === 0) {
@@ -126,6 +158,12 @@ export async function GET(
         dps: p.dividend_per_share,
         percentage: p.percentage,
       })),
+      description: officialDescription(metadata),
+      trends: buildTrends(fundamentals),
+      filings: toCompanyFilings(filings),
+      news: toCompanyNews(clusters),
+      keyFigures: buildKeyFigures(ratioRows),
+      quoteFreshness: quoteFreshness(quote),
     });
   } catch (err) {
     return errorResponse(err);

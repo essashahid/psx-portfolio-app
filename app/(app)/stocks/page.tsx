@@ -1,7 +1,8 @@
+import type { SupabaseClient } from "@supabase/supabase-js";
 import { createClient, getUser } from "@/lib/supabase/server";
 import { getScreenerData } from "@/lib/market/screener";
 import { fmtPct, fmtInt, tone } from "@/lib/market/format";
-import { ScreenerTable } from "@/components/features/stocks/screener-table";
+import { ScreenerTable, type ScreenerRow } from "@/components/features/stocks/screener-table";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Band } from "@/components/ui/band";
 import { Metric } from "@/components/ui/metric";
@@ -13,13 +14,45 @@ export const dynamic = "force-dynamic";
 
 const GUTTER = "px-3 sm:px-4 md:px-(--gutter-page)";
 
-export default async function StockResearchPage() {
+/**
+ * P/E and trailing dividend yield for every company, from the stored ratio
+ * table. The screener snapshot carries prices and caps but no valuation, and
+ * these two figures are what a long-term reader scans a list for. Read in
+ * pages of a thousand: two rows per company across the universe is more than
+ * one page.
+ */
+async function valuationByTicker(supabase: SupabaseClient): Promise<Map<string, { pe: number | null; dividendYield: number | null }>> {
+  type Row = { ticker: string; ratio_name: string; ratio_value: number | null };
+  const rows: Row[] = [];
+  for (let offset = 0; offset < 20_000; offset += 1000) {
+    const { data } = await supabase
+      .from("company_ratios")
+      .select("ticker, ratio_name, ratio_value")
+      .in("ratio_name", ["P/E", "Dividend yield (TTM)"])
+      .range(offset, offset + 999);
+    if (!data?.length) break;
+    rows.push(...(data as Row[]));
+    if (data.length < 1000) break;
+  }
+  const out = new Map<string, { pe: number | null; dividendYield: number | null }>();
+  for (const r of rows) {
+    const entry = out.get(r.ticker) ?? { pe: null, dividendYield: null };
+    const v = typeof r.ratio_value === "number" && Number.isFinite(r.ratio_value) ? r.ratio_value : null;
+    if (r.ratio_name === "P/E") entry.pe = v;
+    else entry.dividendYield = v;
+    out.set(r.ticker, entry);
+  }
+  return out;
+}
+
+export default async function CompaniesPage() {
   const supabase = await createClient();
   const user = await getUser();
   if (!user) return null;
 
-  const [d] = await Promise.all([
+  const [d, valuation] = await Promise.all([
     getScreenerData(supabase, user.id),
+    valuationByTicker(supabase),
   ]);
   const indexTone = tone(d.index?.changePercent);
   const coveragePct = d.coverage.total ? Math.round((d.coverage.withSpark / d.coverage.total) * 100) : 0;
@@ -29,7 +62,7 @@ export default async function StockResearchPage() {
       <div className="settle -mx-3 sm:-mx-4 md:-mx-(--gutter-page)">
         <Band tone="paper" rule="none" className={GUTTER}>
           <span className="mb-3.5 block h-0.75 w-11 bg-(--sp-violet)" />
-          <h1 className="font-display text-(length:--text-title) font-normal tracking-editorial text-text-strong">Stock Research</h1>
+          <h1 className="font-display text-(length:--text-title) font-normal tracking-editorial text-text-strong">Companies</h1>
           <div className="mt-6">
             <EmptyState
               icon={Activity}
@@ -42,6 +75,11 @@ export default async function StockResearchPage() {
     );
   }
 
+  const rows: ScreenerRow[] = d.stocks.map((s) => ({
+    ...s,
+    pe: valuation.get(s.ticker)?.pe ?? null,
+    dividendYield: valuation.get(s.ticker)?.dividendYield ?? null,
+  }));
   const owned = d.stocks.filter((s) => s.owned).length;
   const watched = d.stocks.filter((s) => s.watched).length;
   const advancers = d.breadth?.advancers ?? 0;
@@ -58,7 +96,8 @@ export default async function StockResearchPage() {
         <div className="flex flex-wrap items-end justify-between gap-7">
           <div>
             <span className="mb-3.5 block h-0.75 w-11 bg-(--sp-violet)" />
-            <h1 className="font-display text-(length:--text-title) font-normal tracking-editorial text-text-strong">Stock Research</h1>
+            <h1 className="font-display text-(length:--text-title) font-normal tracking-editorial text-text-strong">Companies</h1>
+            <p className="mt-2 max-w-(--measure) text-sm text-text-muted">Every listed company on the PSX. Search by name or ticker.</p>
             <div className="mt-4 flex items-end gap-5">
               <span>
                 <span className="block text-(length:--text-3xs) font-bold uppercase tracking-(--tracking-caps) text-text-faint">
@@ -97,7 +136,7 @@ export default async function StockResearchPage() {
             Every company, one screen
           </h2>
         </div>
-        <ScreenerTable stocks={d.stocks} sectors={d.sectors} />
+        <ScreenerTable stocks={rows} sectors={d.sectors} />
       </Band>
     </div>
   );
