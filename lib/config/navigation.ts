@@ -116,6 +116,11 @@ const ADMIN_ONLY_HREFS = new Set<string>(ADMIN_ONLY_FEATURES);
  * released. The route guard still decides access; this is only where an admin
  * finds the work in progress without typing the URL.
  */
+/**
+ * Admin-only destinations. Not shown in any menu since September 2026: the
+ * panel is reachable from the account menu and the rest by URL. Kept so the
+ * command palette and future admin surfaces can list them.
+ */
 export const INTERNAL_NAV = ALL_NAV.filter((item) => ADMIN_ONLY_HREFS.has(item.href));
 
 type NavPrefs = Pick<Profile, "enabled_features">;
