@@ -45,7 +45,7 @@ export function AsOf({
   className?: string;
 }) {
   if (!date) {
-    return <span className={cn("text-xs text-muted-foreground", className)}>No data yet</span>;
+    return <span className={cn("text-xs text-text-muted", className)}>No data yet</span>;
   }
 
   const display = new Intl.DateTimeFormat("en-PK", { day: "2-digit", month: "short", year: "numeric" }).format(
@@ -58,7 +58,7 @@ export function AsOf({
   const clock = pktClock(time);
 
   return (
-    <span className={cn("inline-flex items-center gap-1.5 text-xs", stale ? "text-amber-700" : "text-muted-foreground", className)}>
+    <span className={cn("inline-flex items-center gap-1.5 text-xs", stale ? "text-amber-700" : "text-text-muted", className)}>
       {stale && <span className="h-1.5 w-1.5 rounded-full bg-amber-500" aria-hidden />}
       {/* Stale wins: an amber dot and a pulse together would be contradictory. */}
       {live && !stale && <MarketPulse />}

@@ -210,56 +210,56 @@ export function CommandPalette({ nav }: { nav: NavTarget[] }) {
       aria-modal="true"
       aria-label="Command palette"
     >
-      <div className="palette-panel w-full max-w-xl overflow-hidden rounded-2xl border border-border bg-card shadow-2xl" onMouseDown={(e) => e.stopPropagation()}>
-        <div className="flex items-center gap-2.5 border-b border-border px-4">
-          <Search className="h-4.5 w-4.5 shrink-0 text-muted-foreground" />
+      <div className="palette-panel w-full max-w-xl overflow-hidden rounded-2xl border border-rule bg-surface-raised shadow-2xl" onMouseDown={(e) => e.stopPropagation()}>
+        <div className="flex items-center gap-2.5 border-b border-rule px-4">
+          <Search className="h-4.5 w-4.5 shrink-0 text-text-muted" />
           <input
             ref={inputRef}
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             onKeyDown={onKeyDown}
             placeholder="Jump to a tab, search a ticker, or ask Copilot…"
-            className="h-14 w-full bg-transparent text-[15px] outline-none placeholder:text-muted-foreground"
+            className="h-14 w-full bg-transparent text-[15px] outline-none placeholder:text-text-muted"
           />
           {loading ? (
-            <Loader2 className="h-4 w-4 shrink-0 animate-spin text-muted-foreground" />
+            <Loader2 className="h-4 w-4 shrink-0 animate-spin text-text-muted" />
           ) : (
-            <kbd className="hidden shrink-0 rounded-md border border-border bg-muted px-1.5 py-0.5 font-sans text-[10px] font-medium text-muted-foreground sm:inline-block">esc</kbd>
+            <kbd className="hidden shrink-0 rounded-md border border-rule bg-surface-sunken px-1.5 py-0.5 font-sans text-[10px] font-medium text-text-muted sm:inline-block">esc</kbd>
           )}
         </div>
 
         <div className="max-h-[min(60vh,28rem)] overflow-y-auto p-1.5">
           {!q && recent.length > 0 && (
             <div className="px-2 py-2">
-              <p className="mb-2 flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground"><Clock className="h-3 w-3" /> Recent</p>
+              <p className="mb-2 flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wide text-text-muted"><Clock className="h-3 w-3" /> Recent</p>
               <div className="flex flex-wrap gap-1.5">
                 {recent.map((t) => (
-                  <button key={t} onClick={() => goTicker(t)} className="rounded-lg border border-border bg-card px-2.5 py-1 text-xs font-semibold transition-colors hover:border-emerald-500/50 hover:bg-accent">{t}</button>
+                  <button key={t} onClick={() => goTicker(t)} className="rounded-lg border border-rule bg-surface-raised px-2.5 py-1 text-xs font-semibold transition-colors hover:border-emerald-500/50 hover:bg-surface-inset">{t}</button>
                 ))}
               </div>
             </div>
           )}
 
           {!q && recent.length === 0 && (
-            <p className="px-3 py-8 text-center text-xs text-muted-foreground">Type to jump to a tab, find a stock, or ask the Copilot.</p>
+            <p className="px-3 py-8 text-center text-xs text-text-muted">Type to jump to a tab, find a stock, or ask the Copilot.</p>
           )}
 
           {q && items.length === 0 && !loading && (
-            <p className="px-3 py-8 text-center text-xs text-muted-foreground">No matches for “{q}”.</p>
+            <p className="px-3 py-8 text-center text-xs text-text-muted">No matches for “{q}”.</p>
           )}
 
           {items.map((item, i) => {
             const active = i === highlight;
-            const rowClass = cn("flex cursor-pointer items-center gap-3 rounded-lg px-2.5 py-2 transition-colors", active ? "bg-accent" : "hover:bg-accent");
+            const rowClass = cn("flex cursor-pointer items-center gap-3 rounded-lg px-2.5 py-2 transition-colors", active ? "bg-surface-inset" : "hover:bg-surface-inset");
             if (item.kind === "nav") {
               return (
                 <div key={`nav-${item.href}`} onMouseEnter={() => setHighlight(i)} onClick={() => activate(item)} className={rowClass}>
-                  <ArrowRight className="h-4 w-4 shrink-0 text-muted-foreground" />
+                  <ArrowRight className="h-4 w-4 shrink-0 text-text-muted" />
                   <div className="min-w-0 flex-1">
                     <p className="text-sm font-medium">{item.label}</p>
-                    {item.hint && <p className="truncate text-xs text-muted-foreground">{item.hint}</p>}
+                    {item.hint && <p className="truncate text-xs text-text-muted">{item.hint}</p>}
                   </div>
-                  <span className="text-[10px] uppercase tracking-wide text-muted-foreground">Tab</span>
+                  <span className="text-[10px] uppercase tracking-wide text-text-muted">Tab</span>
                 </div>
               );
             }
@@ -273,13 +273,13 @@ export function CommandPalette({ nav }: { nav: NavTarget[] }) {
                       {r.owned && <Briefcase className="h-3 w-3 text-up" />}
                       {r.watched && <Star className="h-3 w-3 fill-amber-400 text-amber-500" />}
                     </div>
-                    <p className="truncate text-xs text-muted-foreground">{r.companyName ?? "—"}{r.sector ? ` · ${r.sector}` : ""}</p>
+                    <p className="truncate text-xs text-text-muted">{r.companyName ?? "—"}{r.sector ? ` · ${r.sector}` : ""}</p>
                   </div>
                   {r.price !== null && (
                     <div className="shrink-0 text-right">
                       <p className="text-xs font-semibold tabular-nums">{formatNumber(r.price)}</p>
                       {r.dayChangePct !== null && (
-                        <p className={cn("text-[11px] tabular-nums", r.dayChangePct > 0 ? "text-up" : r.dayChangePct < 0 ? "text-down" : "text-muted-foreground")}>{formatSignedPct(r.dayChangePct)}</p>
+                        <p className={cn("text-[11px] tabular-nums", r.dayChangePct > 0 ? "text-up" : r.dayChangePct < 0 ? "text-down" : "text-text-muted")}>{formatSignedPct(r.dayChangePct)}</p>
                       )}
                     </div>
                   )}
@@ -289,22 +289,22 @@ export function CommandPalette({ nav }: { nav: NavTarget[] }) {
             if (item.kind === "compare") {
               return (
                 <div key="compare" onMouseEnter={() => setHighlight(i)} onClick={() => activate(item)} className={rowClass}>
-                  <ArrowRight className="h-4 w-4 shrink-0 text-muted-foreground" />
+                  <ArrowRight className="h-4 w-4 shrink-0 text-text-muted" />
                   <p className="flex-1 text-sm font-medium">Compare {item.tickers.join(", ")}</p>
-                  <span className="text-[10px] uppercase tracking-wide text-muted-foreground">Compare</span>
+                  <span className="text-[10px] uppercase tracking-wide text-text-muted">Compare</span>
                 </div>
               );
             }
             return (
               <div key="copilot" onMouseEnter={() => setHighlight(i)} onClick={() => activate(item)} className={rowClass}>
                 <Sparkles className="h-4 w-4 shrink-0 text-brand" />
-                <p className="flex-1 truncate text-sm font-medium">Ask Copilot: <span className="text-muted-foreground">{item.question}</span></p>
+                <p className="flex-1 truncate text-sm font-medium">Ask Copilot: <span className="text-text-muted">{item.question}</span></p>
               </div>
             );
           })}
         </div>
 
-        <div className="hidden items-center gap-4 border-t border-border px-4 py-2 text-[11px] text-muted-foreground sm:flex">
+        <div className="hidden items-center gap-4 border-t border-rule px-4 py-2 text-[11px] text-text-muted sm:flex">
           <span className="flex items-center gap-1"><CornerDownLeft className="h-3 w-3" /> open</span>
           <span className="flex items-center gap-1"><span className="font-sans">↑↓</span> navigate</span>
           <span className="ml-auto">{modKey}K to toggle</span>

@@ -177,27 +177,27 @@ export function DividendManager({
         <Button size="sm" onClick={openNew}><Plus className="h-3.5 w-3.5" /> Add dividend</Button>
       ) : (
         <div className="flex flex-wrap items-center justify-between gap-2">
-          <p className="text-xs text-muted-foreground">{dividends.length} dividend record(s)</p>
+          <p className="text-xs text-text-muted">{dividends.length} dividend record(s)</p>
           <Button size="sm" onClick={openNew}><Plus className="h-3.5 w-3.5" /> Add dividend</Button>
         </div>
       )}
 
-      {!triggerOnly && <div className="mt-3 overflow-x-auto rounded-lg border border-border">
+      {!triggerOnly && <div className="mt-3 overflow-x-auto rounded-lg border border-rule">
         <table className="w-full text-sm">
           <thead>
-            <tr className="border-b border-border">
+            <tr className="border-b border-rule">
               {["Ticker", "Status", "Announcement", "Payment", "DPS", "Qty", "Gross", "Tax", "Net", ""].map((h) => (
-                <th key={h} className="h-9 whitespace-nowrap px-2.5 text-left text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">{h}</th>
+                <th key={h} className="h-9 whitespace-nowrap px-2.5 text-left text-[11px] font-semibold uppercase tracking-wide text-text-muted">{h}</th>
               ))}
             </tr>
           </thead>
           <tbody>
             {dividends.map((d) => (
-              <tr key={d.id} className="border-b border-border last:border-0 hover:bg-muted/50">
+              <tr key={d.id} className="border-b border-rule last:border-0 hover:bg-surface-sunken/50">
                 <td className="px-2.5 py-2 font-medium">{d.ticker}</td>
                 <td className="px-2.5 py-2"><Badge variant={statusVariant(d.status)}>{d.status}</Badge></td>
-                <td className="px-2.5 py-2 text-xs text-muted-foreground">{d.announcement_date ?? "—"}</td>
-                <td className="px-2.5 py-2 text-xs text-muted-foreground">{d.payment_date ?? d.pay_date ?? "—"}</td>
+                <td className="px-2.5 py-2 text-xs text-text-muted">{d.announcement_date ?? "—"}</td>
+                <td className="px-2.5 py-2 text-xs text-text-muted">{d.payment_date ?? d.pay_date ?? "—"}</td>
                 <td className="px-2.5 py-2 text-xs tabular-nums">{formatNumber(d.dividend_per_share)}</td>
                 <td className="px-2.5 py-2 text-xs tabular-nums">{formatNumber(d.quantity_held, 0)}</td>
                 <td className="px-2.5 py-2 text-xs tabular-nums">{formatNumber(d.amount, 0)}</td>
@@ -205,10 +205,10 @@ export function DividendManager({
                 <td className="px-2.5 py-2 text-xs font-medium tabular-nums">{formatNumber(d.net_amount ?? d.amount, 0)}</td>
                 <td className="px-2.5 py-2">
                   <div className="flex justify-end gap-1">
-                    <button onClick={() => openEdit(d)} className="rounded p-1 text-muted-foreground hover:bg-muted" title="Edit dividend">
+                    <button onClick={() => openEdit(d)} className="rounded p-1 text-text-muted hover:bg-surface-sunken" title="Edit dividend">
                       <Edit2 className="h-3.5 w-3.5" />
                     </button>
-                    <button onClick={() => remove(d.id)} className="rounded p-1 text-muted-foreground hover:bg-muted hover:text-down" title="Delete dividend">
+                    <button onClick={() => remove(d.id)} className="rounded p-1 text-text-muted hover:bg-surface-sunken hover:text-down" title="Delete dividend">
                       <Trash2 className="h-3.5 w-3.5" />
                     </button>
                   </div>
@@ -217,7 +217,7 @@ export function DividendManager({
             ))}
             {dividends.length === 0 && (
               <tr>
-                <td colSpan={10} className="px-2.5 py-8 text-center text-xs text-muted-foreground">No dividend records match this filter.</td>
+                <td colSpan={10} className="px-2.5 py-8 text-center text-xs text-text-muted">No dividend records match this filter.</td>
               </tr>
             )}
           </tbody>

@@ -83,16 +83,16 @@ export const CHAT_MARKDOWN_COMPONENTS: Components = {
   h1: ({ children }) => <h2 className="mb-3 mt-6 text-xl font-semibold tracking-editorial first:mt-0">{children}</h2>,
   h2: ({ children }) => <h2 className="mb-3 mt-6 text-lg font-semibold tracking-editorial first:mt-0">{children}</h2>,
   h3: ({ children }) => <h3 className="mb-2.5 mt-5 text-base font-semibold tracking-editorial first:mt-0">{children}</h3>,
-  h4: ({ children }) => <h4 className="mb-2 mt-4 text-sm font-semibold text-foreground">{children}</h4>,
-  p: ({ children }) => <p className="my-3 leading-7 text-foreground/85">{colorize(children)}</p>,
+  h4: ({ children }) => <h4 className="mb-2 mt-4 text-sm font-semibold text-text-strong">{children}</h4>,
+  p: ({ children }) => <p className="my-3 leading-7 text-text-strong/85">{colorize(children)}</p>,
   ul: ({ children }) => <ul className="my-3 space-y-2 pl-0">{children}</ul>,
-  ol: ({ children }) => <ol className="my-3 list-decimal space-y-3 pl-5 marker:text-muted-foreground">{children}</ol>,
-  li: ({ children }) => <li className="leading-7 text-foreground/85 [&>p]:my-0">{colorize(children)}</li>,
-  strong: ({ children }) => <strong className="font-semibold text-foreground">{colorize(children)}</strong>,
-  em: ({ children }) => <em className="text-foreground/75">{colorize(children)}</em>,
-  hr: () => <div className="my-6 h-px bg-border" />,
+  ol: ({ children }) => <ol className="my-3 list-decimal space-y-3 pl-5 marker:text-text-muted">{children}</ol>,
+  li: ({ children }) => <li className="leading-7 text-text-strong/85 [&>p]:my-0">{colorize(children)}</li>,
+  strong: ({ children }) => <strong className="font-semibold text-text-strong">{colorize(children)}</strong>,
+  em: ({ children }) => <em className="text-text-strong/75">{colorize(children)}</em>,
+  hr: () => <div className="my-6 h-px bg-rule" />,
   blockquote: ({ children }) => (
-    <blockquote className="my-4 rounded-md border-l-2 border-emerald-500 bg-emerald-50/50 px-3 py-2 text-sm text-foreground/80">
+    <blockquote className="my-4 rounded-md border-l-2 border-emerald-500 bg-emerald-50/50 px-3 py-2 text-sm text-text-strong/80">
       {children}
     </blockquote>
   ),
@@ -102,25 +102,25 @@ export const CHAT_MARKDOWN_COMPONENTS: Components = {
     </a>
   ),
   code: ({ children, className, ...props }) => (
-    <code className={cn("rounded bg-muted px-1.5 py-0.5 text-[0.9em] text-foreground", className)} {...props}>
+    <code className={cn("rounded bg-surface-sunken px-1.5 py-0.5 text-[0.9em] text-text-strong", className)} {...props}>
       {children}
     </code>
   ),
   table: ({ children }) => (
-    <div className="my-4 overflow-x-auto rounded-lg border border-border">
+    <div className="my-4 overflow-x-auto rounded-lg border border-rule">
       <table className="w-full border-collapse text-sm">{children}</table>
     </div>
   ),
-  thead: ({ children }) => <thead className="bg-muted/60">{children}</thead>,
-  tbody: ({ children }) => <tbody className="divide-y divide-border">{children}</tbody>,
-  tr: ({ children }) => <tr className="transition-colors hover:bg-muted/30">{children}</tr>,
+  thead: ({ children }) => <thead className="bg-surface-sunken/60">{children}</thead>,
+  tbody: ({ children }) => <tbody className="divide-y divide-rule">{children}</tbody>,
+  tr: ({ children }) => <tr className="transition-colors hover:bg-surface-sunken/30">{children}</tr>,
   th: ({ children }) => (
-    <th className="border-b border-border px-3 py-2 text-left text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+    <th className="border-b border-rule px-3 py-2 text-left text-xs font-semibold uppercase tracking-wide text-text-muted">
       {children}
     </th>
   ),
-  td: ({ children }) => <td className="px-3 py-2 align-top text-foreground/90 tabular-nums">{colorize(children)}</td>,
-  del: ({ children }) => <del className="text-muted-foreground">{children}</del>,
+  td: ({ children }) => <td className="px-3 py-2 align-top text-text-strong/90 tabular-nums">{colorize(children)}</td>,
+  del: ({ children }) => <del className="text-text-muted">{children}</del>,
 };
 
 function Markdown({ content }: { content: string }) {
@@ -170,7 +170,7 @@ export function AssistantProse({
           if (leadText) {
             return (
               <Fragment key={i}>
-                <div className="mb-4 border-b border-border/60 pb-4 text-[15.5px] font-medium leading-7 [&_p]:my-0">
+                <div className="mb-4 border-b border-rule/60 pb-4 text-[15.5px] font-medium leading-7 [&_p]:my-0">
                   <Markdown content={leadText} />
                 </div>
                 {rest.trim() && <Markdown content={rest} />}

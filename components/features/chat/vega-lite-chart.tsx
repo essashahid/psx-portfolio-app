@@ -86,7 +86,7 @@ export default function VegaLiteChart({ spec, fallback }: { spec: Record<string,
 
   if (blocked || error) {
     return (
-      <p className="px-4 py-4 text-[12px] text-muted-foreground">
+      <p className="px-4 py-4 text-[12px] text-text-muted">
         {fallback ?? "This chart could not be rendered. The analysis is in the surrounding text."}
       </p>
     );

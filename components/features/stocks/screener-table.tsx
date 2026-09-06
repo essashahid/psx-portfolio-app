@@ -97,7 +97,7 @@ export function ScreenerTable({ stocks, sectors }: { stocks: ScreenerStock[]; se
           value={sector}
           onChange={(e) => setSector(e.target.value)}
           aria-label="Sector"
-          className="h-9 rounded-md border border-rule bg-card px-2.5 text-xs text-text-strong"
+          className="h-9 rounded-md border border-rule bg-surface-raised px-2.5 text-xs text-text-strong"
         >
           <option value="">All sectors</option>
           {sectors.map((s) => (
@@ -216,7 +216,7 @@ export function ScreenerTable({ stocks, sectors }: { stocks: ScreenerStock[]; se
           <button
             type="button"
             onClick={() => setLimit((n) => n + 60)}
-            className="rounded-(--radius-sm) border border-rule bg-card px-4 py-2 text-xs font-semibold text-text-strong transition-colors hover:bg-surface-sunken"
+            className="rounded-(--radius-sm) border border-rule bg-surface-raised px-4 py-2 text-xs font-semibold text-text-strong transition-colors hover:bg-surface-sunken"
           >
             Show 60 more · {rows.length - shown.length} remaining
           </button>

@@ -283,18 +283,18 @@ export function GenerateReportDialog({
         <div className="flex max-h-[min(80vh,720px)] flex-col">
           <div className="flex-1 space-y-4 overflow-y-auto pr-1">
             {/* Company identity */}
-            <div className="rounded-md border border-border bg-muted/20 px-3 py-2.5">
+            <div className="rounded-md border border-rule bg-surface-sunken/20 px-3 py-2.5">
               {previewLoading ? (
-                <p className="text-xs text-muted-foreground">Loading company data…</p>
+                <p className="text-xs text-text-muted">Loading company data…</p>
               ) : preview?.resolvable ? (
                 <>
                   <p className="text-sm font-semibold">
                     {ticker} · {preview.companyName ?? companyName}
                   </p>
-                  <p className="text-xs text-muted-foreground">
+                  <p className="text-xs text-text-muted">
                     {preview.sector} · {preview.exchange ?? "PSX"}
                   </p>
-                  <div className="mt-2 grid gap-1 text-xs text-muted-foreground sm:grid-cols-2">
+                  <div className="mt-2 grid gap-1 text-xs text-text-muted sm:grid-cols-2">
                     <span>Price: PKR {preview.price != null ? formatNumber(preview.price) : "—"}</span>
                     <span>Updated: {preview.priceUpdated?.slice(0, 10) ?? "—"}</span>
                     <span>Financials through: {preview.financialsThrough ?? "—"}</span>
@@ -306,12 +306,12 @@ export function GenerateReportDialog({
               ) : (
                 <div className="space-y-2">
                   <p className="text-sm font-semibold text-down">Report cannot be generated</p>
-                  <p className="text-xs text-muted-foreground">{preview?.error ?? "Company metadata could not be resolved."}</p>
+                  <p className="text-xs text-text-muted">{preview?.error ?? "Company metadata could not be resolved."}</p>
                   <div className="flex gap-2">
                     <Button variant="outline" size="sm" onClick={loadPreview}>
                       <RefreshCw className="h-3 w-3" /> Refresh company data
                     </Button>
-                    <Link href={`/stocks/${ticker}`} className="inline-flex h-8 items-center rounded-md border border-border px-2.5 text-xs font-medium hover:bg-muted">
+                    <Link href={`/stocks/${ticker}`} className="inline-flex h-8 items-center rounded-md border border-rule px-2.5 text-xs font-medium hover:bg-surface-sunken">
                       Review ticker mapping
                     </Link>
                   </div>
@@ -328,14 +328,14 @@ export function GenerateReportDialog({
                         <input type="radio" className="mt-0.5" checked={depth === "full"} onChange={() => applyDepth("full")} />
                       <span>
                         <span className="font-medium">Full equity-research report</span>
-                        <span className="block text-[11px] text-muted-foreground">Approximately 15–25 pages</span>
+                        <span className="block text-[11px] text-text-muted">Approximately 15–25 pages</span>
                       </span>
                     </label>
                     <label className="flex items-start gap-2 text-sm">
                         <input type="radio" className="mt-0.5" checked={depth === "brief"} onChange={() => applyDepth("brief")} />
                       <span>
                         <span className="font-medium">Concise investment brief</span>
-                        <span className="block text-[11px] text-muted-foreground">Approximately 4–6 pages</span>
+                        <span className="block text-[11px] text-text-muted">Approximately 4–6 pages</span>
                       </span>
                     </label>
                   </fieldset>
@@ -366,14 +366,14 @@ export function GenerateReportDialog({
                 {include.peers && (
                   <div>
                     <p className="text-xs font-semibold">Peer group</p>
-                    <p className="mt-1 text-xs text-muted-foreground">
+                    <p className="mt-1 text-xs text-text-muted">
                       Auto-selected: {selectedPeers.join(" · ") || "—"}
                     </p>
                     <input
                       value={peerText}
                       onChange={(e) => setPeerText(e.target.value.toUpperCase())}
                       placeholder="LUCK, DGKC, MLCF, CHCC"
-                      className="mt-1.5 h-9 w-full rounded-md border border-input bg-background px-3 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                      className="mt-1.5 h-9 w-full rounded-md border border-input bg-surface-page px-3 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
                     />
                   </div>
                 )}
@@ -408,7 +408,7 @@ export function GenerateReportDialog({
 
                 <details className="text-xs" open={advancedOpen} onToggle={(e) => setAdvancedOpen(e.currentTarget.open)}>
                   <summary className="cursor-pointer font-semibold">Advanced settings</summary>
-                  <p className="mt-2 text-muted-foreground">
+                  <p className="mt-2 text-text-muted">
                     Before generation, the system will refresh: company metadata, market price, historical prices, financial statements,
                     official PSX filings, dividend history, verified news, peer metrics, and portfolio position.
                   </p>
@@ -417,7 +417,7 @@ export function GenerateReportDialog({
             )}
 
             {running && (
-              <div className="rounded-md border border-border bg-muted/25 p-3">
+              <div className="rounded-md border border-rule bg-surface-sunken/25 p-3">
                 <div className="mb-2 flex items-center justify-between gap-2">
                   <p className="text-sm font-semibold">Generating {ticker} research report</p>
                   <Button variant="ghost" size="sm" onClick={cancel}>Cancel</Button>
@@ -428,8 +428,8 @@ export function GenerateReportDialog({
                     const failed = step.status === "failed";
                     const active = running && !done && !failed && i === stages.findIndex((s) => s.status === "pending");
                     return (
-                      <div key={step.label} className={cn("flex items-center gap-2 text-xs", !done && !active && !failed && "text-muted-foreground")}>
-                        {done ? <Check className="h-3.5 w-3.5 text-up" /> : failed ? <XCircle className="h-3.5 w-3.5 text-down" /> : active ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <span className="h-3.5 w-3.5 rounded-full border border-border" />}
+                      <div key={step.label} className={cn("flex items-center gap-2 text-xs", !done && !active && !failed && "text-text-muted")}>
+                        {done ? <Check className="h-3.5 w-3.5 text-up" /> : failed ? <XCircle className="h-3.5 w-3.5 text-down" /> : active ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <span className="h-3.5 w-3.5 rounded-full border border-rule" />}
                         {step.label}
                       </div>
                     );
@@ -466,7 +466,7 @@ export function GenerateReportDialog({
             ) : null}
           </div>
 
-          <div className="mt-4 flex shrink-0 justify-end gap-2 border-t border-border pt-3">
+          <div className="mt-4 flex shrink-0 justify-end gap-2 border-t border-rule pt-3">
             <Button variant="outline" onClick={() => setOpen(false)} disabled={running}>Cancel</Button>
             <Button onClick={generate} disabled={!canGenerate}>
               {running ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <FileText className="h-3.5 w-3.5" />}

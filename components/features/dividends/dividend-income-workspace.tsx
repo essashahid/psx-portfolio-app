@@ -155,7 +155,7 @@ export function DividendIncomeWorkspace({
         </div>
         <span className="figure text-(length:--text-2xs) text-text-faint">{range.start === "0000-01-01" ? "All recorded history" : `${range.start} – ${range.end}`}</span>
       </div>
-      {period === "custom" && <div className="mt-3 flex flex-wrap gap-2"><label className="text-xs text-text-muted">From <input className="ml-1 rounded border border-rule bg-card px-2 py-1.5 text-foreground" type="date" value={customStart} onChange={(event) => setCustomStart(event.target.value)} /></label><label className="text-xs text-text-muted">To <input className="ml-1 rounded border border-rule bg-card px-2 py-1.5 text-foreground" type="date" value={customEnd} onChange={(event) => setCustomEnd(event.target.value)} /></label></div>}
+      {period === "custom" && <div className="mt-3 flex flex-wrap gap-2"><label className="text-xs text-text-muted">From <input className="ml-1 rounded border border-rule bg-surface-raised px-2 py-1.5 text-text-strong" type="date" value={customStart} onChange={(event) => setCustomStart(event.target.value)} /></label><label className="text-xs text-text-muted">To <input className="ml-1 rounded border border-rule bg-surface-raised px-2 py-1.5 text-text-strong" type="date" value={customEnd} onChange={(event) => setCustomEnd(event.target.value)} /></label></div>}
 
       <div className="flex flex-wrap items-end gap-11 pt-6">
         <div className="flex flex-wrap items-end gap-5">

@@ -28,8 +28,8 @@ export function ChatCards({ cards }: { cards: Card[] }) {
 // stays calm rather than fencing each one in green or red.
 function Shell({ icon: Icon, title, href, children }: { icon: typeof TrendingUp; title: string; href?: string; children: React.ReactNode }) {
   const inner = (
-    <div className={cn("rounded-xl border border-border/70 bg-card p-3 transition-colors", href && "hover:border-border hover:bg-muted/30")}>
-      <div className="mb-1.5 flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+    <div className={cn("rounded-xl border border-rule/70 bg-surface-raised p-3 transition-colors", href && "hover:border-rule hover:bg-surface-sunken/30")}>
+      <div className="mb-1.5 flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wide text-text-muted">
         <Icon className="h-3 w-3" /> {title}
       </div>
       {children}
@@ -41,8 +41,8 @@ function Shell({ icon: Icon, title, href, children }: { icon: typeof TrendingUp;
 function Big({ value, sub, t }: { value: string; sub?: string; t?: "positive" | "negative" | "flat" }) {
   return (
     <div>
-      <p className={cn("text-lg font-semibold tabular-nums", t === "positive" ? "text-up" : t === "negative" ? "text-down" : "text-foreground")}>{value}</p>
-      {sub && <p className="text-[11px] text-muted-foreground">{sub}</p>}
+      <p className={cn("text-lg font-semibold tabular-nums", t === "positive" ? "text-up" : t === "negative" ? "text-down" : "text-text-strong")}>{value}</p>
+      {sub && <p className="text-[11px] text-text-muted">{sub}</p>}
     </div>
   );
 }
@@ -62,8 +62,8 @@ function ChatCard({ card }: { card: Card }) {
           <div className="flex items-end justify-between">
             <Big value={fmtPrice(q.price)} sub={q.companyName ?? q.sector ?? ""} t={t} />
             <div className="text-right">
-              <p className={cn("text-sm font-semibold tabular-nums", t === "positive" ? "text-up" : t === "negative" ? "text-down" : "text-muted-foreground")}>{fmtPct(q.changePct)}</p>
-              <p className="text-[10px] text-muted-foreground">vol {fmtCompact(q.volume)}</p>
+              <p className={cn("text-sm font-semibold tabular-nums", t === "positive" ? "text-up" : t === "negative" ? "text-down" : "text-text-muted")}>{fmtPct(q.changePct)}</p>
+              <p className="text-[10px] text-text-muted">vol {fmtCompact(q.volume)}</p>
             </div>
           </div>
         </Shell>
@@ -77,8 +77,8 @@ function ChatCard({ card }: { card: Card }) {
           <div className="flex items-end justify-between">
             <Big value={`${fmtCompact(p.marketValue)}`} sub={`${p.quantity} sh @ ${p.avgCost.toFixed(2)}`} />
             <div className="text-right">
-              <p className={cn("text-sm font-semibold tabular-nums", t === "positive" ? "text-up" : t === "negative" ? "text-down" : "text-muted-foreground")}>{p.unrealizedPL != null ? fmtCompact(p.unrealizedPL) : "—"}</p>
-              <p className="text-[10px] text-muted-foreground">{fmtPct(p.unrealizedPLPct)} unrealized</p>
+              <p className={cn("text-sm font-semibold tabular-nums", t === "positive" ? "text-up" : t === "negative" ? "text-down" : "text-text-muted")}>{p.unrealizedPL != null ? fmtCompact(p.unrealizedPL) : "—"}</p>
+              <p className="text-[10px] text-text-muted">{fmtPct(p.unrealizedPLPct)} unrealized</p>
             </div>
           </div>
         </Shell>
@@ -93,11 +93,11 @@ function ChatCard({ card }: { card: Card }) {
             {shown.map((x) => (
               <div key={x.name}>
                 <p className="text-sm font-semibold tabular-nums">{x.value!.toFixed(x.value! >= 100 ? 0 : 2)}{/yield|margin|growth|roe|roa/i.test(x.name) ? "%" : ""}</p>
-                <p className="truncate text-[9px] text-muted-foreground" title={x.name}>{x.name}</p>
+                <p className="truncate text-[9px] text-text-muted" title={x.name}>{x.name}</p>
               </div>
             ))}
           </div>
-          {r.sourcePeriod && <p className="mt-1.5 text-[9px] text-muted-foreground">{r.sourcePeriod}</p>}
+          {r.sourcePeriod && <p className="mt-1.5 text-[9px] text-text-muted">{r.sourcePeriod}</p>}
         </Shell>
       );
     }
@@ -109,14 +109,14 @@ function ChatCard({ card }: { card: Card }) {
         <Shell icon={Activity} title={`${tc.ticker} · Trend`} href={`/stocks/${tc.ticker}#technicals`}>
           <div className="flex items-center justify-between gap-2">
             <div className="flex-1">
-              {tc.spark && tc.spark.length > 1 ? <Sparkline data={tc.spark} width={120} height={32} /> : <p className="text-[11px] text-muted-foreground">no chart yet</p>}
+              {tc.spark && tc.spark.length > 1 ? <Sparkline data={tc.spark} width={120} height={32} /> : <p className="text-[11px] text-text-muted">no chart yet</p>}
               {pos != null && (
                 <div className="mt-1 h-1.5 w-full rounded-full bg-gradient-to-r from-red-200 via-amber-200 to-emerald-200">
-                  <span className="relative block h-1.5" style={{ left: `${pos * 100}%` }}><span className="absolute -top-0.5 h-2.5 w-2.5 -translate-x-1/2 rounded-full border-2 border-white bg-foreground" /></span>
+                  <span className="relative block h-1.5" style={{ left: `${pos * 100}%` }}><span className="absolute -top-0.5 h-2.5 w-2.5 -translate-x-1/2 rounded-full border-2 border-white bg-text-strong" /></span>
                 </div>
               )}
             </div>
-            {tc.rsi != null && <div className="text-right"><p className="text-sm font-semibold tabular-nums">{tc.rsi.toFixed(0)}</p><p className="text-[9px] text-muted-foreground">RSI</p></div>}
+            {tc.rsi != null && <div className="text-right"><p className="text-sm font-semibold tabular-nums">{tc.rsi.toFixed(0)}</p><p className="text-[9px] text-text-muted">RSI</p></div>}
           </div>
         </Shell>
       );
@@ -126,7 +126,7 @@ function ChatCard({ card }: { card: Card }) {
       return (
         <Shell icon={HandCoins} title={`${d.ticker} · Dividends`} href={`/stocks/${d.ticker}#dividends`}>
           <Big value={d.ttmDps != null ? `${d.ttmDps.toFixed(2)} PKR` : "—"} sub="trailing-12m cash DPS" />
-          {d.recent.length > 0 && <p className="mt-1 truncate text-[10px] text-muted-foreground">{d.recent.map((x) => x.raw).filter(Boolean).join(" · ")}</p>}
+          {d.recent.length > 0 && <p className="mt-1 truncate text-[10px] text-text-muted">{d.recent.map((x) => x.raw).filter(Boolean).join(" · ")}</p>}
         </Shell>
       );
     }
@@ -138,7 +138,7 @@ function ChatCard({ card }: { card: Card }) {
             {n.items.slice(0, 4).map((it, i) => (
               <li key={i} className="text-[11px] leading-snug">
                 {it.url ? <a href={it.url} target="_blank" rel="noopener noreferrer" className="hover:underline">{it.title}</a> : it.title}
-                <span className="ml-1 text-[9px] text-muted-foreground">{it.date}</span>
+                <span className="ml-1 text-[9px] text-text-muted">{it.date}</span>
               </li>
             ))}
           </ul>
@@ -152,9 +152,9 @@ function ChatCard({ card }: { card: Card }) {
         <Shell icon={Gauge} title={`${m.indexName ?? "PSX"} · ${m.date}`} href="/market">
           <div className="flex items-end justify-between">
             <Big value={m.indexValue?.toLocaleString("en-PK", { maximumFractionDigits: 0 }) ?? "—"} sub={`${m.advancers}↑ / ${m.decliners}↓`} t={t} />
-            <p className={cn("text-sm font-semibold tabular-nums", t === "positive" ? "text-up" : t === "negative" ? "text-down" : "text-muted-foreground")}>{fmtPct(m.indexChangePct)}</p>
+            <p className={cn("text-sm font-semibold tabular-nums", t === "positive" ? "text-up" : t === "negative" ? "text-down" : "text-text-muted")}>{fmtPct(m.indexChangePct)}</p>
           </div>
-          <p className="mt-1 text-[10px] text-muted-foreground">Leading {m.topSector ?? "—"} · Lagging {m.bottomSector ?? "—"}</p>
+          <p className="mt-1 text-[10px] text-text-muted">Leading {m.topSector ?? "—"} · Lagging {m.bottomSector ?? "—"}</p>
         </Shell>
       );
     }
@@ -168,13 +168,13 @@ function ChatCard({ card }: { card: Card }) {
               const t = tone(s.avgReturn);
               return (
                 <div key={s.sector} className="flex items-center justify-between gap-2">
-                  <span className="truncate text-[11px]">{s.sector} <span className="text-muted-foreground">({s.advancers}↑/{s.decliners}↓)</span></span>
-                  <span className={cn("shrink-0 text-[11px] font-semibold tabular-nums", t === "positive" ? "text-up" : t === "negative" ? "text-down" : "text-muted-foreground")}>{fmtPct(s.avgReturn)}</span>
+                  <span className="truncate text-[11px]">{s.sector} <span className="text-text-muted">({s.advancers}↑/{s.decliners}↓)</span></span>
+                  <span className={cn("shrink-0 text-[11px] font-semibold tabular-nums", t === "positive" ? "text-up" : t === "negative" ? "text-down" : "text-text-muted")}>{fmtPct(s.avgReturn)}</span>
                 </div>
               );
             })}
           </div>
-          {sc.filter && rows[0]?.topGainer && <p className="mt-1.5 text-[10px] text-muted-foreground">Top: {rows[0].topGainer} {fmtPct(rows[0].topGainerPct)} · Worst: {rows[0].topLoser} {fmtPct(rows[0].topLoserPct)}</p>}
+          {sc.filter && rows[0]?.topGainer && <p className="mt-1.5 text-[10px] text-text-muted">Top: {rows[0].topGainer} {fmtPct(rows[0].topGainerPct)} · Worst: {rows[0].topLoser} {fmtPct(rows[0].topLoserPct)}</p>}
         </Shell>
       );
     }
@@ -186,11 +186,11 @@ function ChatCard({ card }: { card: Card }) {
           <div className="flex items-end justify-between">
             <Big value={`${fmtFlow(f.day.fipiNet)} ${f.day.currency} mn`} sub={f.stanceLabel} t={t} />
             <div className="text-right">
-              <p className={cn("text-sm font-semibold tabular-nums", (f.cumulativeNet ?? 0) > 0 ? "text-up" : (f.cumulativeNet ?? 0) < 0 ? "text-down" : "text-muted-foreground")}>{fmtFlow(f.cumulativeNet)}</p>
-              <p className="text-[10px] text-muted-foreground">{f.series.length}-day net</p>
+              <p className={cn("text-sm font-semibold tabular-nums", (f.cumulativeNet ?? 0) > 0 ? "text-up" : (f.cumulativeNet ?? 0) < 0 ? "text-down" : "text-text-muted")}>{fmtFlow(f.cumulativeNet)}</p>
+              <p className="text-[10px] text-text-muted">{f.series.length}-day net</p>
             </div>
           </div>
-          <p className="mt-1 text-[10px] text-muted-foreground">
+          <p className="mt-1 text-[10px] text-text-muted">
             {f.buckets.slice(0, 3).map((b) => `${b.label} ${fmtFlow(b.net)}`).join(" · ") || `Source ${f.day.sourceProvider}`}
           </p>
         </Shell>
@@ -203,7 +203,7 @@ function ChatCard({ card }: { card: Card }) {
           <Big value={`${h.count}`} sub="positions" />
           <div className="mt-1 flex flex-wrap gap-1">
             {h.holdings.slice(0, 10).map((x) => (
-              <Link key={x.ticker} href={`/stocks/${x.ticker}`} className={cn("rounded px-1.5 py-0.5 text-[10px] font-medium tabular-nums", (x.changePct ?? 0) > 0 ? "bg-emerald-50 text-up" : (x.changePct ?? 0) < 0 ? "bg-red-50 text-down" : "bg-muted text-muted-foreground")}>
+              <Link key={x.ticker} href={`/stocks/${x.ticker}`} className={cn("rounded px-1.5 py-0.5 text-[10px] font-medium tabular-nums", (x.changePct ?? 0) > 0 ? "bg-emerald-50 text-up" : (x.changePct ?? 0) < 0 ? "bg-red-50 text-down" : "bg-surface-sunken text-text-muted")}>
                 {x.ticker} {fmtPct(x.changePct)}
               </Link>
             ))}

@@ -456,7 +456,7 @@ function DataStatusDetails({
       </summary>
       <div className="absolute left-0 z-20 mt-2 w-[min(340px,calc(100vw-3rem))] rounded-xl border border-[var(--rule)] bg-[var(--surface-raised)] p-3 text-xs shadow-lg">
         <p className="font-semibold text-slate-950">Data status</p>
-        <p className="mt-1 leading-relaxed text-muted-foreground">
+        <p className="mt-1 leading-relaxed text-text-muted">
           {overallStatus === "Partial" && affected.length
             ? `The selected Income Statement can be complete while other datasets remain partial. ${affected[0].label} needs attention.`
             : "The selected view has no known blocking data-quality issues."}
@@ -466,7 +466,7 @@ function DataStatusDetails({
             <div key={section.label} className="grid grid-cols-[1fr_auto] gap-2">
               <div>
                 <p className="font-medium text-[var(--text-strong)]">{section.label}</p>
-                <p className="text-muted-foreground">{section.impact}</p>
+                <p className="text-text-muted">{section.impact}</p>
               </div>
               <Badge variant={statusVariant(section.status)}>{section.status}</Badge>
             </div>
@@ -543,7 +543,7 @@ function Segment<T extends string>({
           onClick={() => onChange(option.value)}
           className={cn(
             "rounded-md px-2.5 py-1.5 text-xs font-medium transition-colors",
-            value === option.value ? "bg-[var(--surface-raised)] text-slate-950 shadow-sm" : "text-muted-foreground hover:text-slate-950"
+            value === option.value ? "bg-[var(--surface-raised)] text-slate-950 shadow-sm" : "text-text-muted hover:text-slate-950"
           )}
         >
           {option.label}
@@ -711,17 +711,17 @@ export function FinancialsWorkspace({
               <div className="mt-2 flex flex-wrap items-center gap-2">
                 <DataStatusDetails rows={rows} mode={mode} selectedStatus={selectedValueStatus} overallStatus={dataStatus} />
                 {latestFiling ? (
-                  <span className="text-[11px] text-muted-foreground">
+                  <span className="text-[11px] text-text-muted">
                     Latest filing available: {labelPeriod(latestFiling)}
                   </span>
                 ) : null}
                 {otherDataPartial ? <span className="text-[11px] text-amber-700">Other datasets remain partial.</span> : null}
-                <span className="text-[11px] text-muted-foreground">Displayed as {headerUnitLabel(valueMode)}; original source uses {units}.</span>
+                <span className="text-[11px] text-text-muted">Displayed as {headerUnitLabel(valueMode)}; original source uses {units}.</span>
               </div>
             </div>
             <div className="flex flex-col gap-2 xl:items-end">
               <div className="flex flex-col gap-1 sm:flex-row sm:flex-wrap sm:items-center sm:justify-end">
-                <span className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">Mode</span>
+                <span className="text-[10px] font-semibold uppercase tracking-wide text-text-muted">Mode</span>
                 <Segment
                   value={mode}
                   onChange={setMode}
@@ -733,7 +733,7 @@ export function FinancialsWorkspace({
                 />
               </div>
               <label className="flex items-center gap-2">
-                <span className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">Display</span>
+                <span className="text-[10px] font-semibold uppercase tracking-wide text-text-muted">Display</span>
                 <Select value={valueMode} onChange={(e) => setValueMode(e.target.value as ValueMode)} className="w-full sm:w-[10.625rem]">
                   <option value="compact">Compact values</option>
                   <option value="exact">Exact values</option>
@@ -744,7 +744,7 @@ export function FinancialsWorkspace({
               </label>
               <div className="flex flex-col gap-2 md:hidden">
                 <details className="relative">
-                  <summary className="inline-flex h-10 cursor-pointer list-none items-center justify-center gap-2 rounded-md border border-border bg-card px-3 text-xs font-medium hover:bg-accent">
+                  <summary className="inline-flex h-10 cursor-pointer list-none items-center justify-center gap-2 rounded-md border border-rule bg-surface-raised px-3 text-xs font-medium hover:bg-surface-inset">
                     <MoreHorizontal className="h-3.5 w-3.5" /> Actions
                   </summary>
                   <div className="absolute right-0 z-20 mt-2 flex w-56 flex-col gap-2 rounded-xl border border-[var(--rule)] bg-[var(--surface-raised)] p-3 shadow-lg">
@@ -795,7 +795,7 @@ export function FinancialsWorkspace({
                 </Button>
               ) : null}
               <label className="flex items-center gap-2">
-                <Download className="h-3.5 w-3.5 text-muted-foreground" />
+                <Download className="h-3.5 w-3.5 text-text-muted" />
                 <Select
                   aria-label="Export financials"
                   defaultValue=""
@@ -829,7 +829,7 @@ export function FinancialsWorkspace({
           >
             <CardContent className="p-4">
               <div className="flex items-start justify-between gap-2">
-                <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">{LABELS[item.key]}</p>
+                <p className="text-[11px] font-medium uppercase tracking-wide text-text-muted">{LABELS[item.key]}</p>
                 {rowCompleteness(item.row!, FULL_ROWS[item.row!.statement_type as StatementType]) === "Partial" ? <Badge variant="amber">Partial</Badge> : null}
               </div>
               <p className={cn("mt-2 font-semibold tabular-nums text-slate-950", ["revenue", "profit_after_tax", "net_margin"].includes(item.key) ? "text-2xl" : "text-xl")}>{formatValue(item.value, item.key, valueMode)}</p>
@@ -840,7 +840,7 @@ export function FinancialsWorkspace({
                 >
                   {item.change ? `${item.change.text} ${comparisonLabel(item.row!)}` : "No comparable period"}
                 </p>
-                <p className="text-[11px] text-muted-foreground">{labelPeriod(item.row!)}</p>
+                <p className="text-[11px] text-text-muted">{labelPeriod(item.row!)}</p>
               </div>
             </CardContent>
           </Card>
@@ -885,7 +885,7 @@ export function FinancialsWorkspace({
                     </li>
                   ))}
                 </ul>
-              ) : <p className="text-sm text-muted-foreground">No comparable prior-period data loaded.</p>}
+              ) : <p className="text-sm text-text-muted">No comparable prior-period data loaded.</p>}
             </CardContent>
           </Card>
           {callouts.length > 0 && (
@@ -915,11 +915,11 @@ export function FinancialsWorkspace({
             </div>
             <div className="flex flex-wrap gap-4">
               <div className="space-y-1">
-                <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">Statement</p>
+                <p className="text-[10px] font-semibold uppercase tracking-wide text-text-muted">Statement</p>
                 <Segment value={activeStatement} onChange={setStatement} options={statementOptions} />
               </div>
               <div className="space-y-1">
-                <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">Detail</p>
+                <p className="text-[10px] font-semibold uppercase tracking-wide text-text-muted">Detail</p>
                 <Segment
                   value={depth}
                   onChange={setDepth}
@@ -930,7 +930,7 @@ export function FinancialsWorkspace({
                 />
               </div>
               <div className="space-y-1">
-                <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">Periods</p>
+                <p className="text-[10px] font-semibold uppercase tracking-wide text-text-muted">Periods</p>
                 <Segment
                   value={limit}
                   onChange={setLimit}
@@ -968,12 +968,12 @@ export function FinancialsWorkspace({
                             <>
                               <span className="block">{meta.primary}</span>
                               {meta.secondary ? (
-                                <span className={cn("block text-[10px] font-normal normal-case", meta.status === "unverified" ? "text-amber-700" : "text-muted-foreground")}>{meta.secondary}</span>
+                                <span className={cn("block text-[10px] font-normal normal-case", meta.status === "unverified" ? "text-amber-700" : "text-text-muted")}>{meta.secondary}</span>
                               ) : null}
                             </>
                           );
                         })()}
-                        <span className="block text-[10px] font-normal normal-case text-muted-foreground">
+                        <span className="block text-[10px] font-normal normal-case text-text-muted">
                           {completenessLabel(rowCompleteness(period, FULL_ROWS[activeStatement]))}
                         </span>
                       </TH>
@@ -986,7 +986,7 @@ export function FinancialsWorkspace({
                     if (row.type === "section") {
                       return (
                         <TR key={`section-${row.label}`} className="hover:bg-transparent">
-                          <TD colSpan={visiblePeriods.length + (showChangeColumn ? 2 : 1)} className="bg-[var(--surface-sunken)] px-2.5 py-2 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+                          <TD colSpan={visiblePeriods.length + (showChangeColumn ? 2 : 1)} className="bg-[var(--surface-sunken)] px-2.5 py-2 text-[10px] font-semibold uppercase tracking-wide text-text-muted">
                             {row.label}
                           </TD>
                         </TR>
@@ -1004,12 +1004,12 @@ export function FinancialsWorkspace({
                           {derived ? <Badge variant="secondary" className="ml-2">Calculated</Badge> : null}
                         </TD>
                         {visiblePeriods.map((period, i) => (
-                          <TD key={i} className={cn("text-right text-xs tabular-nums", i === 0 && "bg-emerald-50/50 font-semibold text-slate-950", value(period, key) === null && "text-muted-foreground")}>
+                          <TD key={i} className={cn("text-right text-xs tabular-nums", i === 0 && "bg-emerald-50/50 font-semibold text-slate-950", value(period, key) === null && "text-text-muted")}>
                             {formatValue(value(period, key), key, valueMode)}
                           </TD>
                         ))}
                         {showChangeColumn ? (
-                          <TD className={cn("text-right text-xs font-semibold tabular-nums", change?.tone === "positive" && "text-up", change?.tone === "negative" && "text-down", !change && "text-muted-foreground")}>
+                          <TD className={cn("text-right text-xs font-semibold tabular-nums", change?.tone === "positive" && "text-up", change?.tone === "negative" && "text-down", !change && "text-text-muted")}>
                             {change ? `${change.text} ${comparisonLabel(visiblePeriods[0])}` : "—"}
                           </TD>
                         ) : null}
@@ -1081,19 +1081,19 @@ function TrendTooltip({
           return (
             <div key={key} className="border-b border-[var(--rule)] pb-1 last:border-0">
               <div className="flex items-center justify-between gap-4 text-[11px]">
-                <span className="flex items-center gap-1.5 text-muted-foreground">
+                <span className="flex items-center gap-1.5 text-text-muted">
                   <span className="h-2 w-2 rounded-full" style={{ background: p.color ?? SERIES_COLOR[key] }} />
                   {LABELS[key] ?? key}
                 </span>
                 <span className="font-semibold tabular-nums">{format(rawValue)}</span>
               </div>
-              {!percent && !eps ? <p className="text-[10px] text-muted-foreground">Exact: {formatValue(statementValue, key, valueMode)}</p> : null}
-              {row?.[`${key}_change`] ? <p className="text-[10px] text-muted-foreground">{row[`${key}_change`]} versus prior comparable period</p> : null}
+              {!percent && !eps ? <p className="text-[10px] text-text-muted">Exact: {formatValue(statementValue, key, valueMode)}</p> : null}
+              {row?.[`${key}_change`] ? <p className="text-[10px] text-text-muted">{row[`${key}_change`]} versus prior comparable period</p> : null}
             </div>
           );
         })}
       </div>
-      <p className="mt-2 text-[10px] text-muted-foreground">{row?.source ?? "Official PSX financials"} · {row?.status ?? "Status pending"}</p>
+      <p className="mt-2 text-[10px] text-text-muted">{row?.source ?? "Official PSX financials"} · {row?.status ?? "Status pending"}</p>
     </div>
   );
 }

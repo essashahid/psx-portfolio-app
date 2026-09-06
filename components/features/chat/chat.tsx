@@ -502,12 +502,12 @@ export function Chat({
             value={renameValue}
             onChange={(e) => setRenameValue(e.target.value)}
             autoFocus
-            className="h-9 min-w-0 flex-1 rounded-md border border-border bg-background px-2 text-[13px] outline-none focus:ring-2 focus:ring-ring"
+            className="h-9 min-w-0 flex-1 rounded-md border border-rule bg-surface-page px-2 text-[13px] outline-none focus:ring-2 focus:ring-ring"
           />
           <button type="submit" aria-label="Save chat name" className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-ink-1 text-white">
             <Check className="h-3.5 w-3.5" />
           </button>
-          <button type="button" onClick={() => setRenamingId(null)} aria-label="Cancel rename" className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md border border-border text-muted-foreground">
+          <button type="button" onClick={() => setRenamingId(null)} aria-label="Cancel rename" className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md border border-rule text-text-muted">
             <X className="h-3.5 w-3.5" />
           </button>
         </form>
@@ -518,7 +518,7 @@ export function Chat({
         key={thread.id}
         className={cn(
           "group relative flex items-center rounded-lg pr-1 transition-colors",
-          active ? "bg-muted" : "hover:bg-muted/60"
+          active ? "bg-surface-sunken" : "hover:bg-surface-sunken/60"
         )}
       >
         <button
@@ -528,13 +528,13 @@ export function Chat({
           className="flex min-w-0 flex-1 items-center gap-2 px-2.5 py-2 text-left disabled:opacity-60"
         >
           {loading ? (
-            <Loader2 className="h-3.5 w-3.5 shrink-0 animate-spin text-muted-foreground" />
+            <Loader2 className="h-3.5 w-3.5 shrink-0 animate-spin text-text-muted" />
           ) : (
-            <MessageSquareText className={cn("h-3.5 w-3.5 shrink-0", active ? "text-up" : "text-muted-foreground")} />
+            <MessageSquareText className={cn("h-3.5 w-3.5 shrink-0", active ? "text-up" : "text-text-muted")} />
           )}
           <span className="min-w-0 flex-1">
-            <span className="block truncate text-[13px] font-medium text-foreground">{thread.title}</span>
-            <span className="mt-0.5 flex items-center gap-1 text-[10px] text-muted-foreground">
+            <span className="block truncate text-[13px] font-medium text-text-strong">{thread.title}</span>
+            <span className="mt-0.5 flex items-center gap-1 text-[10px] text-text-muted">
               <Clock3 className="h-2.5 w-2.5" /> {formatThreadTime(thread.last_message_at)}
             </span>
           </span>
@@ -545,7 +545,7 @@ export function Chat({
               onClick={() => { setRenamingId(thread.id); setRenameValue(thread.title); }}
               title="Rename"
               aria-label="Rename chat"
-              className="flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-background hover:text-foreground"
+              className="flex h-7 w-7 items-center justify-center rounded-md text-text-muted transition-colors hover:bg-surface-page hover:text-text-strong"
             >
               <Pencil className="h-3 w-3" />
             </button>
@@ -553,7 +553,7 @@ export function Chat({
               onClick={() => void deleteThread(thread.id)}
               title="Delete"
               aria-label="Delete chat"
-              className="flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-background hover:text-down"
+              className="flex h-7 w-7 items-center justify-center rounded-md text-text-muted transition-colors hover:bg-surface-page hover:text-down"
             >
               <Trash2 className="h-3 w-3" />
             </button>
@@ -590,29 +590,29 @@ export function Chat({
           value={researchMode}
           onChange={(e) => setResearchMode(e.target.value as ResearchMode)}
           aria-label="Research mode"
-          className="h-8 rounded-lg border border-border bg-background px-2 text-[11px] font-medium text-foreground outline-none"
+          className="h-8 rounded-lg border border-rule bg-surface-page px-2 text-[11px] font-medium text-text-strong outline-none"
         >
           {RESEARCH_MODES.map((mode) => <option key={mode}>{mode}</option>)}
         </select>
         <details className="relative">
-          <summary className="flex h-8 cursor-pointer list-none items-center gap-1.5 rounded-lg px-2 text-[11px] text-muted-foreground transition-colors hover:bg-muted">
+          <summary className="flex h-8 cursor-pointer list-none items-center gap-1.5 rounded-lg px-2 text-[11px] text-text-muted transition-colors hover:bg-surface-sunken">
             <Database className="h-3.5 w-3.5" /> Context
           </summary>
-          <div className="absolute bottom-10 left-0 z-20 w-72 rounded-lg border border-border bg-card p-3 text-xs shadow-card">
+          <div className="absolute bottom-10 left-0 z-20 w-72 rounded-lg border border-rule bg-surface-raised p-3 text-xs shadow-card">
             <p className="font-semibold">Sources used in this answer</p>
             {sourceStatus.length ? (
-              <ul className="mt-2 space-y-1 text-muted-foreground">{sourceStatus.map((s) => <li key={s}>{s}</li>)}</ul>
+              <ul className="mt-2 space-y-1 text-text-muted">{sourceStatus.map((s) => <li key={s}>{s}</li>)}</ul>
             ) : (
-              <p className="mt-2 text-muted-foreground">Data availability is checked before research.</p>
+              <p className="mt-2 text-text-muted">Data availability is checked before research.</p>
             )}
           </div>
         </details>
         <details className="relative">
-          <summary className="flex h-8 w-8 cursor-pointer list-none items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-muted" title="Advanced model settings" aria-label="Advanced model settings">
+          <summary className="flex h-8 w-8 cursor-pointer list-none items-center justify-center rounded-lg text-text-muted transition-colors hover:bg-surface-sunken" title="Advanced model settings" aria-label="Advanced model settings">
             <SlidersHorizontal className="h-3.5 w-3.5" />
           </summary>
-          <div className="absolute bottom-10 left-0 z-20 rounded-lg border border-border bg-card p-2 shadow-card">
-            <p className="px-1 pb-1 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">Model</p>
+          <div className="absolute bottom-10 left-0 z-20 rounded-lg border border-rule bg-surface-raised p-2 shadow-card">
+            <p className="px-1 pb-1 text-[10px] font-semibold uppercase tracking-wide text-text-muted">Model</p>
             <ModelPicker model={model} setModel={setModel} providers={providers} />
           </div>
         </details>
@@ -632,14 +632,14 @@ export function Chat({
   return (
     // Mobile height: 100dvh minus top bar (3.5rem) and bottom nav pb (5.75rem) plus safe-area insets.
     // Desktop height: 100dvh minus the app-shell footer (~2.75rem); md:-m-8 in page.tsx cancels main padding.
-    <div className="flex h-[calc(100dvh-9.25rem-env(safe-area-inset-top)-env(safe-area-inset-bottom))] flex-col bg-background md:h-[calc(100dvh-2.75rem)]">
+    <div className="flex h-[calc(100dvh-9.25rem-env(safe-area-inset-top)-env(safe-area-inset-bottom))] flex-col bg-surface-page md:h-[calc(100dvh-2.75rem)]">
 
       {/* ── Compact workspace header ── */}
-      <header className="flex h-14 shrink-0 items-center gap-1.5 border-b border-border/70 px-3 sm:px-5">
+      <header className="flex h-14 shrink-0 items-center gap-1.5 border-b border-rule/70 px-3 sm:px-5">
         <button
           type="button"
           onClick={() => setThreadsOpen(true)}
-          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-muted md:hidden"
+          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-text-muted transition-colors hover:bg-surface-sunken md:hidden"
           aria-label="Saved research"
           title="Saved research"
         >
@@ -654,21 +654,21 @@ export function Chat({
           </p>
         </div>
         {busy && (
-          <span className="hidden shrink-0 items-center gap-1.5 rounded-full bg-muted px-2.5 py-1 text-[11px] text-muted-foreground sm:flex">
+          <span className="hidden shrink-0 items-center gap-1.5 rounded-full bg-surface-sunken px-2.5 py-1 text-[11px] text-text-muted sm:flex">
             <Loader2 className="h-3 w-3 animate-spin" /> Researching
           </span>
         )}
         {dataUpdated && (
           <details className="relative hidden sm:block">
-            <summary className="flex h-9 cursor-pointer list-none items-center gap-1.5 rounded-lg px-2.5 text-[11px] text-muted-foreground transition-colors hover:bg-muted">
+            <summary className="flex h-9 cursor-pointer list-none items-center gap-1.5 rounded-lg px-2.5 text-[11px] text-text-muted transition-colors hover:bg-surface-sunken">
               <Clock3 className="h-3.5 w-3.5" /> Data updated {dataUpdated}
             </summary>
-            <div className="absolute right-0 top-11 z-30 w-72 rounded-lg border border-border bg-card p-3 text-xs shadow-card">
+            <div className="absolute right-0 top-11 z-30 w-72 rounded-lg border border-rule bg-surface-raised p-3 text-xs shadow-card">
               <p className="font-semibold">Data sources</p>
               {sourceStatus.length ? (
-                <ul className="mt-2 space-y-1 text-muted-foreground">{sourceStatus.map((s) => <li key={s}>{s}</li>)}</ul>
+                <ul className="mt-2 space-y-1 text-text-muted">{sourceStatus.map((s) => <li key={s}>{s}</li>)}</ul>
               ) : (
-                <p className="mt-2 text-muted-foreground">Availability is checked before each answer.</p>
+                <p className="mt-2 text-text-muted">Availability is checked before each answer.</p>
               )}
             </div>
           </details>
@@ -680,7 +680,7 @@ export function Chat({
             disabled={busy}
             title="New conversation"
             aria-label="New conversation"
-            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-muted disabled:opacity-50"
+            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-text-muted transition-colors hover:bg-surface-sunken disabled:opacity-50"
           >
             <Plus className="h-4 w-4" />
           </button>
@@ -694,7 +694,7 @@ export function Chat({
           aria-label={readOnly ? "Curated conversations" : "Conversation history"}
           className={cn(
             "hidden shrink-0 items-center gap-1.5 rounded-lg px-2.5 h-9 text-[12px] font-medium transition-colors md:flex",
-            threadsOpen ? "bg-muted text-foreground" : "text-muted-foreground hover:bg-muted"
+            threadsOpen ? "bg-surface-sunken text-text-strong" : "text-text-muted hover:bg-surface-sunken"
           )}
         >
           <PanelRight className="h-4 w-4" />
@@ -726,7 +726,7 @@ export function Chat({
               {!readOnly && shownSuggestions.length > 0 && (
                 <div className="mb-5">
                   <div className="mb-2 flex items-center justify-between px-0.5">
-                    <span className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
+                    <span className="text-[11px] font-medium uppercase tracking-wide text-text-muted">
                       {personalized.length >= 4 ? "Suggested for your portfolio" : `Suggested for ${selectedModelLabel}`}
                     </span>
                     {canShuffleSuggestions && (
@@ -734,7 +734,7 @@ export function Chat({
                         type="button"
                         onClick={() => setSuggestionOffset((o) => o + 4)}
                         disabled={busy}
-                        className="flex items-center gap-1 rounded-md px-1.5 py-1 text-[11px] text-muted-foreground transition-colors hover:bg-muted hover:text-foreground disabled:opacity-50"
+                        className="flex items-center gap-1 rounded-md px-1.5 py-1 text-[11px] text-text-muted transition-colors hover:bg-surface-sunken hover:text-text-strong disabled:opacity-50"
                       >
                         <RefreshCw className="h-3 w-3" /> Try another
                       </button>
@@ -746,9 +746,9 @@ export function Chat({
                         key={s}
                         onClick={() => send(s)}
                         disabled={busy}
-                        className="flex items-center gap-2.5 rounded-xl border border-border/70 bg-card px-3.5 py-3 text-left text-[13px] text-foreground/90 transition-colors hover:border-border hover:bg-muted/40 disabled:opacity-50"
+                        className="flex items-center gap-2.5 rounded-xl border border-rule/70 bg-surface-raised px-3.5 py-3 text-left text-[13px] text-text-strong/90 transition-colors hover:border-rule hover:bg-surface-sunken/40 disabled:opacity-50"
                       >
-                        <Sparkles className="h-3.5 w-3.5 shrink-0 text-muted-foreground/70" />
+                        <Sparkles className="h-3.5 w-3.5 shrink-0 text-text-muted/70" />
                         <span className="min-w-0">{s}</span>
                       </button>
                     ))}
@@ -758,7 +758,7 @@ export function Chat({
 
               {/* Inline composer */}
               {composerForm}
-              <p className="mt-2 text-center text-[11px] text-muted-foreground">
+              <p className="mt-2 text-center text-[11px] text-text-muted">
                 Portfolio tracking and research support only. Not financial advice.
               </p>
             </div>
@@ -787,7 +787,7 @@ export function Chat({
                         )}
                         {m.cards && <ChatCards cards={m.cards} />}
                         {busy && i === messages.length - 1 && !m.content && !m.activity?.length && (
-                          <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                          <p className="flex items-center gap-1.5 text-xs text-text-muted">
                             <Loader2 className="h-3 w-3 animate-spin" /> Preparing research...
                           </p>
                         )}
@@ -817,7 +817,7 @@ export function Chat({
                         }
                       </div>
                     ) : (
-                      <div className="max-w-[85%] rounded-2xl rounded-br-md bg-foreground px-4 py-2.5 text-sm leading-6 text-background">
+                      <div className="max-w-[85%] rounded-2xl rounded-br-md bg-text-strong px-4 py-2.5 text-sm leading-6 text-surface-page">
                         {m.content}
                       </div>
                     )}
@@ -829,7 +829,7 @@ export function Chat({
               <button
                 type="button"
                 onClick={() => scrollToLatest()}
-                className="absolute bottom-4 left-1/2 flex -translate-x-1/2 items-center gap-1.5 rounded-full border border-border bg-card px-3 py-2 text-xs font-medium text-foreground shadow-lg transition hover:bg-muted"
+                className="absolute bottom-4 left-1/2 flex -translate-x-1/2 items-center gap-1.5 rounded-full border border-rule bg-surface-raised px-3 py-2 text-xs font-medium text-text-strong shadow-lg transition hover:bg-surface-sunken"
               >
                 <ArrowDown className="h-3.5 w-3.5" /> Latest response
               </button>
@@ -837,7 +837,7 @@ export function Chat({
           </div>
 
           {/* Sticky composer — only shown in active state */}
-          <div className="shrink-0 border-t border-border/70 bg-background/85 backdrop-blur-xl">
+          <div className="shrink-0 border-t border-rule/70 bg-surface-page/85 backdrop-blur-xl">
             <div className="mx-auto w-full max-w-3xl px-4 py-3 sm:px-6">
               {composerForm}
             </div>
@@ -862,14 +862,14 @@ export function Chat({
         aria-modal="true"
         aria-label="Saved research"
         className={cn(
-          "fixed inset-y-0 right-0 z-50 flex w-[min(20rem,90vw)] flex-col border-l border-border bg-card shadow-2xl transition-[transform,visibility] duration-300",
+          "fixed inset-y-0 right-0 z-50 flex w-[min(20rem,90vw)] flex-col border-l border-rule bg-surface-raised shadow-2xl transition-[transform,visibility] duration-300",
           threadsOpen ? "translate-x-0 visible" : "translate-x-full invisible"
         )}
       >
-        <div className="flex h-14 shrink-0 items-center justify-between gap-2 border-b border-border px-4">
+        <div className="flex h-14 shrink-0 items-center justify-between gap-2 border-b border-rule px-4">
           <div className="min-w-0">
             <p className="text-sm font-semibold">Saved research</p>
-            <p className="text-[11px] text-muted-foreground">{threads.length} conversation{threads.length === 1 ? "" : "s"}</p>
+            <p className="text-[11px] text-text-muted">{threads.length} conversation{threads.length === 1 ? "" : "s"}</p>
           </div>
           <div className="flex items-center gap-1">
             {!readOnly && (
@@ -878,7 +878,7 @@ export function Chat({
                 disabled={busy}
                 title="New conversation"
                 aria-label="New conversation"
-                className="flex h-9 w-9 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-muted disabled:opacity-50"
+                className="flex h-9 w-9 items-center justify-center rounded-lg text-text-muted transition-colors hover:bg-surface-sunken disabled:opacity-50"
               >
                 <Plus className="h-4 w-4" />
               </button>
@@ -886,7 +886,7 @@ export function Chat({
             <button
               onClick={() => setThreadsOpen(false)}
               aria-label="Close history"
-              className="flex h-9 w-9 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-muted"
+              className="flex h-9 w-9 items-center justify-center rounded-lg text-text-muted transition-colors hover:bg-surface-sunken"
             >
               <X className="h-5 w-5" />
             </button>
@@ -897,7 +897,7 @@ export function Chat({
             value={searchThreads}
             onChange={(e) => setSearchThreads(e.target.value)}
             placeholder="Search research…"
-            className="h-9 w-full rounded-lg border border-border bg-background px-3 text-[13px] outline-none focus:ring-2 focus:ring-ring"
+            className="h-9 w-full rounded-lg border border-rule bg-surface-page px-3 text-[13px] outline-none focus:ring-2 focus:ring-ring"
           />
         </div>
         {threadError && (
@@ -905,11 +905,11 @@ export function Chat({
         )}
         <div className="scroll-touch min-h-0 flex-1 overflow-y-auto px-2 pb-4">
           {threads.length === 0 ? (
-            <div className="m-2 rounded-lg border border-dashed border-border p-4 text-center text-xs text-muted-foreground">
+            <div className="m-2 rounded-lg border border-dashed border-rule p-4 text-center text-xs text-text-muted">
               {readOnly ? "Curated demo conversations will appear here." : "Your conversations will appear here after the first message."}
             </div>
           ) : filteredThreads.length === 0 ? (
-            <div className="m-2 rounded-lg border border-dashed border-border p-4 text-center text-xs text-muted-foreground">
+            <div className="m-2 rounded-lg border border-dashed border-rule p-4 text-center text-xs text-text-muted">
               No conversations match that search.
             </div>
           ) : (
@@ -917,7 +917,7 @@ export function Chat({
               {([["Today", groups.today], ["Previous 7 days", groups.week], ["Older", groups.older]] as const).map(([label, list]) =>
                 list.length ? (
                   <div key={label}>
-                    <p className="px-2.5 pb-1 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">{label}</p>
+                    <p className="px-2.5 pb-1 text-[10px] font-semibold uppercase tracking-wide text-text-muted">{label}</p>
                     <div className="space-y-0.5">{list.map(renderThreadRow)}</div>
                   </div>
                 ) : null
@@ -1034,13 +1034,13 @@ function ModelPicker({
       <button
         type="button"
         onClick={() => setOpen((o) => !o)}
-        className="flex min-h-10 max-w-[calc(100vw-3rem)] items-center gap-1.5 rounded-full bg-muted px-3 text-[11px] font-medium text-foreground transition-colors hover:bg-muted/70 md:min-h-0 md:px-2.5 md:py-1"
+        className="flex min-h-10 max-w-[calc(100vw-3rem)] items-center gap-1.5 rounded-full bg-surface-sunken px-3 text-[11px] font-medium text-text-strong transition-colors hover:bg-surface-sunken/70 md:min-h-0 md:px-2.5 md:py-1"
         title="Choose model"
         aria-haspopup="listbox"
         aria-expanded={open}
       >
         <SelectedIcon className="h-3 w-3" />
-        <span className="text-muted-foreground">{selected.group}</span>
+        <span className="text-text-muted">{selected.group}</span>
         {selected.label}
         <ChevronDown className={cn("h-3 w-3 transition-transform", open && "rotate-180")} />
       </button>
@@ -1048,11 +1048,11 @@ function ModelPicker({
       {open && (
         <div
           role="listbox"
-          className="scroll-touch absolute bottom-full left-0 z-20 mb-1.5 max-h-[min(70dvh,28rem)] w-[min(16rem,calc(100vw-3rem))] overflow-y-auto rounded-lg border border-border bg-card shadow-card"
+          className="scroll-touch absolute bottom-full left-0 z-20 mb-1.5 max-h-[min(70dvh,28rem)] w-[min(16rem,calc(100vw-3rem))] overflow-y-auto rounded-lg border border-rule bg-surface-raised shadow-card"
         >
           {groupedModels().map((g) => (
             <div key={g.group} className="py-1">
-              <p className="px-3 pb-0.5 pt-1.5 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">{g.group}</p>
+              <p className="px-3 pb-0.5 pt-1.5 text-[10px] font-semibold uppercase tracking-wide text-text-muted">{g.group}</p>
               {g.models.map((m) => {
                 const Icon = MODEL_ICONS[m.id];
                 const provider = providers[m.provider];
@@ -1071,14 +1071,14 @@ function ModelPicker({
                     }}
                     className={cn(
                       "flex min-h-11 w-full items-center gap-2 px-3 py-2 text-left text-xs transition-colors md:min-h-0 md:py-1.5",
-                      active ? "bg-muted" : "hover:bg-muted/60",
+                      active ? "bg-surface-sunken" : "hover:bg-surface-sunken/60",
                       !available && "cursor-not-allowed opacity-40 hover:bg-transparent"
                     )}
                   >
-                    <Icon className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+                    <Icon className="h-3.5 w-3.5 shrink-0 text-text-muted" />
                     <span className="flex-1">
                       <span className="font-medium">{m.label}</span>
-                      <span className="block text-[10px] leading-tight text-muted-foreground">
+                      <span className="block text-[10px] leading-tight text-text-muted">
                         {available ? m.hint : provider?.allowed ? "API key not configured" : "Disabled for this account"}
                       </span>
                     </span>
@@ -1137,7 +1137,7 @@ function ResearchActivity({
           {active && <span className="absolute -right-1 -top-1 h-2.5 w-2.5 animate-pulse rounded-full border-2 border-white bg-indigo" />}
         </span>
         <span className="min-w-0 flex-1">
-          <span className="flex items-center gap-2 text-xs font-semibold tracking-[-0.01em] text-foreground">
+          <span className="flex items-center gap-2 text-xs font-semibold tracking-[-0.01em] text-text-strong">
             {active ? "Research in progress" : "Research complete"}
             {active && (
               <span className="rounded-full border border-indigo-3/60 bg-brand-soft px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-[0.12em] text-brand">
@@ -1145,9 +1145,9 @@ function ResearchActivity({
               </span>
             )}
           </span>
-          <span className="mt-0.5 block truncate text-[11px] text-muted-foreground">{headerSub}</span>
+          <span className="mt-0.5 block truncate text-[11px] text-text-muted">{headerSub}</span>
         </span>
-        <ChevronDown className={cn("h-4 w-4 text-muted-foreground transition-transform", expanded && "rotate-180")} />
+        <ChevronDown className={cn("h-4 w-4 text-text-muted transition-transform", expanded && "rotate-180")} />
       </button>
       {expanded && (
         <div className="border-t border-rule bg-[var(--surface-raised)]/55 px-4 py-3">
@@ -1164,9 +1164,9 @@ function ResearchActivity({
                   )}>
                     {isRunning ? <Loader2 className="h-3 w-3 animate-spin" /> : <Icon className="h-3 w-3" />}
                   </span>
-                  <span className={cn("min-w-0 pt-1 text-[11px] leading-4", isRunning ? "font-medium text-foreground" : "text-muted-foreground")}>
+                  <span className={cn("min-w-0 pt-1 text-[11px] leading-4", isRunning ? "font-medium text-text-strong" : "text-text-muted")}>
                     {step.label}
-                    {step.detail && <span className="text-muted-foreground/80"> — {step.detail}</span>}
+                    {step.detail && <span className="text-text-muted/80"> — {step.detail}</span>}
                   </span>
                 </div>
               );

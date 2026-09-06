@@ -52,13 +52,13 @@ export function PwaUpdater() {
 
   return (
     <div className="fixed bottom-20 left-1/2 z-[100] w-[calc(100%-2rem)] max-w-sm -translate-x-1/2 transform sm:bottom-6 sm:w-auto">
-      <div className="flex items-center gap-3 rounded-lg border border-border bg-card p-4 shadow-xl">
+      <div className="flex items-center gap-3 rounded-lg border border-rule bg-surface-raised p-4 shadow-xl">
         <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary">
           <DownloadCloud className="h-5 w-5" />
         </div>
         <div className="flex-1 min-w-0">
           <p className="text-sm font-semibold">Update available</p>
-          <p className="text-xs text-muted-foreground">A new version of PortfolioOS is ready.</p>
+          <p className="text-xs text-text-muted">A new version of PortfolioOS is ready.</p>
         </div>
         <div className="flex shrink-0 items-center gap-2">
           <button
@@ -69,7 +69,7 @@ export function PwaUpdater() {
           </button>
           <button
             onClick={() => setShow(false)}
-            className="flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground"
+            className="flex h-8 w-8 items-center justify-center rounded-md text-text-muted hover:bg-surface-sunken hover:text-text-strong"
             aria-label="Dismiss update"
           >
             <X className="h-4 w-4" />

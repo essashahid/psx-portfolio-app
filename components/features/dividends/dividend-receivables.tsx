@@ -147,7 +147,7 @@ export function DividendReceivables({
         {tab === "upcoming" && hiddenCount > 0 && (
           <button
             onClick={() => setShowHidden((s) => !s)}
-            className="inline-flex items-center gap-1 text-[11px] text-muted-foreground hover:text-foreground"
+            className="inline-flex items-center gap-1 text-[11px] text-text-muted hover:text-text-strong"
           >
             <EyeOff className="h-3 w-3" />
             {showHidden ? "Hide" : "Show"} {hiddenCount} low-confidence match(es)
@@ -155,7 +155,7 @@ export function DividendReceivables({
         )}
       </div>
 
-      {msg && <p className="rounded-md bg-muted px-3 py-1.5 text-[11px]">{msg}</p>}
+      {msg && <p className="rounded-md bg-surface-sunken px-3 py-1.5 text-[11px]">{msg}</p>}
 
       {tab === "upcoming" && (
         <div className="ledger">
@@ -393,7 +393,7 @@ export function DividendReceivables({
             <Label>Shares held before ex-date / book closure</Label>
             <Input type="number" min="0" value={qtyValue} onChange={(e) => setQtyValue(e.target.value)} />
           </div>
-          <p className="text-[11px] text-muted-foreground">Gross, tax and net expected amounts recalculate from this quantity.</p>
+          <p className="text-[11px] text-text-muted">Gross, tax and net expected amounts recalculate from this quantity.</p>
           <div className="flex justify-end gap-2">
             <Button size="sm" variant="outline" onClick={() => setQtyDialog(null)}>Cancel</Button>
             <Button size="sm" disabled={busyId !== null}
@@ -419,7 +419,7 @@ export function DividendReceivables({
             <Label>Tax deducted (PKR)</Label>
             <Input type="number" min="0" value={receiveForm.tax} onChange={(e) => setReceiveForm((f) => ({ ...f, tax: e.target.value }))} />
           </div>
-          <p className="text-[11px] text-muted-foreground">
+          <p className="text-[11px] text-text-muted">
             The amount is reconciled against the expected net and recorded in your dividend income.
           </p>
           <div className="flex justify-end gap-2">

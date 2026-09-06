@@ -101,7 +101,7 @@ export function GlassTooltip({
       <div className="space-y-1">
         {payload.map((row, i) => (
           <div key={i} className="flex items-center justify-between gap-4">
-            <span className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
+            <span className="flex items-center gap-1.5 text-[11px] text-text-muted">
               <span className="h-2 w-2 shrink-0 rounded-full" style={{ background: row.color ?? INK.line }} />
               {String(row.name ?? "")}
             </span>
@@ -137,7 +137,7 @@ export function FadeDefs({ defs }: { defs: { id: string; color: string; from?: n
 export function ChartEmpty({ note, height = 240 }: { note?: string; height?: number }) {
   return (
     <div className="flex items-center justify-center" style={{ height }}>
-      <p className="max-w-[17.5rem] text-center text-xs text-muted-foreground">
+      <p className="max-w-[17.5rem] text-center text-xs text-text-muted">
         {note ?? "No data to chart yet."}
       </p>
     </div>

@@ -111,7 +111,7 @@ export function FeedbackWidget({ isDemo }: { isDemo: boolean }) {
           setError(null);
           setSent(false);
         }}
-        className="fixed bottom-[calc(5.5rem+env(safe-area-inset-bottom))] right-3 z-40 inline-flex h-11 items-center gap-2 rounded-md border border-border bg-card px-3 text-sm font-medium shadow-lg transition-colors hover:bg-accent md:bottom-4 md:right-4"
+        className="fixed bottom-[calc(5.5rem+env(safe-area-inset-bottom))] right-3 z-40 inline-flex h-11 items-center gap-2 rounded-md border border-rule bg-surface-raised px-3 text-sm font-medium shadow-lg transition-colors hover:bg-surface-inset md:bottom-4 md:right-4"
       >
         <MessageSquare className="h-4 w-4" />
         Feedback
@@ -184,7 +184,7 @@ export function FeedbackWidget({ isDemo }: { isDemo: boolean }) {
                       ? "text-down"
                       : nearLimit
                         ? "text-amber-700"
-                        : "text-muted-foreground"
+                        : "text-text-muted"
                   }`}
                 >
                   {messageTooLong
@@ -207,7 +207,7 @@ export function FeedbackWidget({ isDemo }: { isDemo: boolean }) {
               />
               <p
                 className={`text-[11px] ${
-                  messageTooLong || messageTooShort ? "text-down" : "text-muted-foreground"
+                  messageTooLong || messageTooShort ? "text-down" : "text-text-muted"
                 }`}
               >
                 {messageTooLong
@@ -229,7 +229,7 @@ export function FeedbackWidget({ isDemo }: { isDemo: boolean }) {
               />
             </div>
 
-            <p className="text-[11px] text-muted-foreground">Page: {pagePath}</p>
+            <p className="text-[11px] text-text-muted">Page: {pagePath}</p>
             {error && <p className="rounded-md bg-red-50 px-3 py-2 text-xs text-down">{error}</p>}
 
             <div className="flex justify-end gap-2 pt-1">

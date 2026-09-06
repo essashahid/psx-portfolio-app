@@ -10,9 +10,9 @@ import { SectionRefreshButton } from "@/components/features/stocks/section-refre
 function InsightBlock({ title, items }: { title: string; items: AiReportInsight[] }) {
   if (!items.length) return null;
   return (
-    <section className="border-b border-border pb-3">
+    <section className="border-b border-rule pb-3">
       {title && <h3 className="text-sm font-semibold">{title}</h3>}
-      <ul className="mt-2 space-y-1.5 text-sm text-muted-foreground">
+      <ul className="mt-2 space-y-1.5 text-sm text-text-muted">
         {items.map((item, i) => (
           <li key={i}>
             {item.text}
@@ -38,11 +38,11 @@ function FinTable({
   if (!rows.length) return null;
   return (
     <div className="mt-3">
-      <h4 className="text-xs font-semibold">{title} <span className="text-muted-foreground">({unit})</span></h4>
+      <h4 className="text-xs font-semibold">{title} <span className="text-text-muted">({unit})</span></h4>
       <div className="overflow-x-auto">
         <table className="mt-1 w-full text-xs">
           <thead>
-            <tr className="border-b border-border text-left text-muted-foreground">
+            <tr className="border-b border-rule text-left text-text-muted">
               <th className="py-1 pr-2">Period</th>
               <th className="py-1 pr-2">Revenue</th>
               <th className="py-1 pr-2">PAT</th>
@@ -51,7 +51,7 @@ function FinTable({
           </thead>
           <tbody>
             {rows.map((r) => (
-              <tr key={r.period} className="border-b border-border/50">
+              <tr key={r.period} className="border-b border-rule/50">
                 <td className="py-1 pr-2 font-medium">{r.period}</td>
                 <td className="py-1 pr-2 tabular-nums">{fmt(r.revenue)}</td>
                 <td className="py-1 pr-2 tabular-nums">{fmt(r.profitAfterTax)}</td>
@@ -69,10 +69,10 @@ function MetricGrid({ metrics }: { metrics: { label: string; value: string; sub?
   return (
     <div className="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-3">
       {metrics.map((m) => (
-        <div key={m.label} className="rounded-md border border-border/60 bg-muted/15 px-3 py-2">
-          <p className="text-[10px] font-semibold uppercase text-muted-foreground">{m.label}</p>
+        <div key={m.label} className="rounded-md border border-rule/60 bg-surface-sunken/15 px-3 py-2">
+          <p className="text-[10px] font-semibold uppercase text-text-muted">{m.label}</p>
           <p className="text-base font-bold tabular-nums">{m.value}</p>
-          {m.sub && <p className="text-[10px] text-muted-foreground">{m.sub}</p>}
+          {m.sub && <p className="text-[10px] text-text-muted">{m.sub}</p>}
         </div>
       ))}
     </div>
@@ -125,11 +125,11 @@ export function CompanyReportViewer({
   ];
 
   return (
-    <div className="rounded-md border border-border">
-      <div className="flex items-center justify-between gap-3 border-b border-border px-3 py-2">
+    <div className="rounded-md border border-rule">
+      <div className="flex items-center justify-between gap-3 border-b border-rule px-3 py-2">
         <div className="min-w-0">
           <p className="truncate text-sm font-semibold">{payload.title}</p>
-          <p className="text-[11px] text-muted-foreground">
+          <p className="text-[11px] text-text-muted">
             v{payload.reportVersion} · {payload.ticker} · {company?.companyName} · {payload.displayUnit}
           </p>
         </div>
@@ -146,13 +146,13 @@ export function CompanyReportViewer({
           )}
           <a
             href={`/api/reports/company/${reportId}/docx`}
-            className="inline-flex h-8 items-center gap-1.5 rounded-md border border-border px-2.5 text-xs font-medium hover:bg-muted"
+            className="inline-flex h-8 items-center gap-1.5 rounded-md border border-rule px-2.5 text-xs font-medium hover:bg-surface-sunken"
           >
             DOCX
           </a>
           <a
             href={`/api/reports/company/${reportId}/pdf`}
-            className="inline-flex h-8 shrink-0 items-center gap-1.5 rounded-md border border-border px-2.5 text-xs font-medium hover:bg-muted"
+            className="inline-flex h-8 shrink-0 items-center gap-1.5 rounded-md border border-rule px-2.5 text-xs font-medium hover:bg-surface-sunken"
           >
             <Download className="h-3.5 w-3.5" />
             PDF
@@ -160,13 +160,13 @@ export function CompanyReportViewer({
         </div>
       </div>
 
-      <nav className="flex flex-wrap gap-1 border-b border-border px-3 py-2">
+      <nav className="flex flex-wrap gap-1 border-b border-rule px-3 py-2">
         {allSections.map((id) => (
           <button
             key={id}
             type="button"
             onClick={() => toggle(id)}
-            className="rounded px-2 py-0.5 text-[11px] font-medium text-muted-foreground hover:bg-muted hover:text-foreground"
+            className="rounded px-2 py-0.5 text-[11px] font-medium text-text-muted hover:bg-surface-sunken hover:text-text-strong"
           >
             {id}
           </button>
@@ -248,7 +248,7 @@ export function CompanyReportViewer({
           <div className="overflow-x-auto">
             <table className="mt-2 w-full text-xs">
               <thead>
-                <tr className="text-left text-muted-foreground">
+                <tr className="text-left text-text-muted">
                   <th className="py-1">Metric</th>
                   <th className="py-1">Company</th>
                   <th className="py-1">Peer median</th>
@@ -256,7 +256,7 @@ export function CompanyReportViewer({
               </thead>
               <tbody>
                 {payload.charts.valuation.map((v) => (
-                  <tr key={v.name} className="border-t border-border/50">
+                  <tr key={v.name} className="border-t border-rule/50">
                     <td className="py-1">{v.name}</td>
                     <td className="py-1 tabular-nums">{v.value ?? "n/a"}</td>
                     <td className="py-1 tabular-nums">{v.peerMedian ?? "n/a"}</td>
@@ -279,7 +279,7 @@ export function CompanyReportViewer({
             <div className="overflow-x-auto">
               <table className="mt-2 w-full text-xs">
                 <thead>
-                  <tr className="text-left text-muted-foreground border-b border-border">
+                  <tr className="text-left text-text-muted border-b border-rule">
                     <th className="py-1">Date</th>
                     <th className="py-1">Kind</th>
                     <th className="py-1">DPS</th>
@@ -287,7 +287,7 @@ export function CompanyReportViewer({
                 </thead>
                 <tbody>
                   {payload.charts.dividends.slice(0, 10).map((d, i) => (
-                    <tr key={i} className="border-b border-border/50">
+                    <tr key={i} className="border-b border-rule/50">
                       <td className="py-1">{d.date ?? "n/a"}</td>
                       <td className="py-1">{d.kind}</td>
                       <td className="py-1 tabular-nums">{d.dps != null ? formatNumber(d.dps) : "n/a"}</td>
@@ -311,7 +311,7 @@ export function CompanyReportViewer({
               {peers.map((p) => (
                 <li key={p.ticker}>
                   <span className="font-semibold">{p.ticker}</span> {p.companyName}
-                  <p className="text-xs text-muted-foreground">{p.selectionReason}</p>
+                  <p className="text-xs text-text-muted">{p.selectionReason}</p>
                 </li>
               ))}
             </ul>
@@ -320,14 +320,14 @@ export function CompanyReportViewer({
               <div className="overflow-x-auto">
                 <table className="mt-3 w-full text-xs">
                   <thead>
-                    <tr className="border-b border-border text-left text-muted-foreground">
+                    <tr className="border-b border-rule text-left text-text-muted">
                       <th className="py-1">Metric</th>
                       {peers.map((p) => <th key={p.ticker} className="py-1">{p.ticker}</th>)}
                     </tr>
                   </thead>
                   <tbody>
                     {["P/E", "P/B", "ROE", "Net margin", "Revenue growth", "Debt-to-equity"].map((m) => (
-                      <tr key={m} className="border-b border-border/50">
+                      <tr key={m} className="border-b border-rule/50">
                         <td className="py-1 font-medium">{m}</td>
                         {peers.map((p) => {
                           const r = (p.ratios ?? []).find((x) => x.ratio_name === m);
@@ -348,7 +348,7 @@ export function CompanyReportViewer({
 
         {officialFilings.length > 0 && (
           <CollapsibleSection id="filings" title="Official Disclosures" open={openSections.has("filings")} onToggle={toggle}>
-            <ul className="space-y-1 text-xs text-muted-foreground">
+            <ul className="space-y-1 text-xs text-text-muted">
               {officialFilings.slice(0, 10).map((f, i) => (
                 <li key={i}>{f.date ?? "—"} · <span className="text-primary">{f.category}</span>: {f.title}</li>
               ))}
@@ -369,7 +369,7 @@ export function CompanyReportViewer({
 
         <CollapsibleSection id="news" title="News and Developments" open={openSections.has("news")} onToggle={toggle} refresh={<SectionRefreshButton reportId={reportId} sectionId="news" onUpdated={setPayload} />}>
           <InsightBlock title="Recent developments" items={payload.narrative.recentDevelopments} />
-          <ul className="mt-2 space-y-1 text-xs text-muted-foreground">
+          <ul className="mt-2 space-y-1 text-xs text-text-muted">
             {independentNews.slice(0, 8).map((n, i) => (
               <li key={i}>{n.publishedAt?.slice(0, 10) ?? "—"} · {n.source ?? ""}: {n.title}</li>
             ))}
@@ -380,7 +380,7 @@ export function CompanyReportViewer({
           {payload.scenarios.map((s) => (
             <div key={s.label} className="mb-3 text-sm">
               <p className="font-semibold capitalize">{s.label} case</p>
-              <p className="text-xs text-muted-foreground">{s.notes}</p>
+              <p className="text-xs text-text-muted">{s.notes}</p>
               <ul className="mt-1 text-xs">
                 {Object.entries(s.assumptions).map(([k, v]) => (
                   <li key={k}>{k}: {v}</li>
@@ -423,7 +423,7 @@ export function CompanyReportViewer({
         </CollapsibleSection>
 
         <CollapsibleSection id="sources" title="Sources and Methodology" open={openSections.has("sources")} onToggle={toggle}>
-          <ul className="space-y-1 text-xs text-muted-foreground">
+          <ul className="space-y-1 text-xs text-text-muted">
             {payload.sources.map((s) => (
               <li key={s.id}>
                 <span className="font-semibold text-primary">[{s.id}]</span> {s.label}
@@ -440,7 +440,7 @@ export function CompanyReportViewer({
           </CollapsibleSection>
         )}
 
-        <div className="pt-2 text-xs text-muted-foreground">
+        <div className="pt-2 text-xs text-text-muted">
           <p>Price data: {payload.dataTimestamps.marketPrice?.slice(0, 16) ?? "—"}</p>
           <p>Financials: {payload.dataTimestamps.financialFilings?.slice(0, 16) ?? "—"}</p>
         </div>
@@ -465,7 +465,7 @@ function CollapsibleSection({
   refresh?: React.ReactNode;
 }) {
   return (
-    <div className="border-b border-border/60">
+    <div className="border-b border-rule/60">
       <div className="flex items-center justify-between gap-2 py-2">
         <button
           type="button"

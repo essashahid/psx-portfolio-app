@@ -199,7 +199,7 @@ export function StockPriceChart({
   if (candles.length === 0) {
     return (
       <div className="flex h-72 items-center justify-center">
-        <p className="text-xs text-muted-foreground">No price history available from the PSX portal.</p>
+        <p className="text-xs text-text-muted">No price history available from the PSX portal.</p>
       </div>
     );
   }
@@ -215,7 +215,7 @@ export function StockPriceChart({
     <div className="chart-reveal">
       <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
         <div className="flex items-center gap-2">
-          <div className="flex gap-0.5 rounded-lg bg-muted p-0.5">
+          <div className="flex gap-0.5 rounded-lg bg-surface-sunken p-0.5">
             {RANGES.map((r) => (
               <button
                 key={r.id}
@@ -224,8 +224,8 @@ export function StockPriceChart({
                 className={cn(
                   "rounded-md px-2.5 py-1 text-[11px] font-medium",
                   range === r.id
-                    ? "bg-card text-foreground shadow-sm"
-                    : "text-muted-foreground hover:text-foreground"
+                    ? "bg-surface-raised text-text-strong shadow-sm"
+                    : "text-text-muted hover:text-text-strong"
                 )}
               >
                 {r.label}
@@ -245,7 +245,7 @@ export function StockPriceChart({
               >
                 {formatSignedPct(rangeChange)}
               </span>
-              <span className="text-[10px] font-normal text-muted-foreground">{range} price return</span>
+              <span className="text-[10px] font-normal text-text-muted">{range} price return</span>
             </span>
           )}
           {relative && relPerf !== null && (
@@ -263,7 +263,7 @@ export function StockPriceChart({
         <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5">
           {hasBenchmark && (
             <div className="flex items-center gap-1.5">
-              <span className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">Compare</span>
+              <span className="text-[10px] font-semibold uppercase tracking-wide text-text-muted">Compare</span>
               <button
                 onClick={() => setMode((m) => (m === "price" ? "relative" : "price"))}
                 aria-pressed={relative}
@@ -276,7 +276,7 @@ export function StockPriceChart({
           )}
           {!relative && (
             <div className="flex items-center gap-1.5">
-              <span className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">Overlays</span>
+              <span className="text-[10px] font-semibold uppercase tracking-wide text-text-muted">Overlays</span>
               {signals && (
                 <button
                   onClick={() => setShowStructure((v) => !v)}

@@ -320,7 +320,7 @@ function MobileMenuRow({ icon: Icon, label, active, badge }: { icon: NavIcon; la
     <span
       className={cn(
         "flex min-h-11 items-center gap-3 rounded-lg px-3 text-sm font-medium transition-colors",
-        lit ? "bg-muted text-foreground" : "text-muted-foreground active:bg-muted active:text-foreground"
+        lit ? "bg-surface-sunken text-text-strong" : "text-text-muted active:bg-surface-sunken active:text-text-strong"
       )}
     >
       {pending ? <Loader2 className="h-4 w-4 shrink-0 animate-spin" /> : <Icon className="h-4 w-4 shrink-0" />}
@@ -341,7 +341,7 @@ function BottomNavRow({ icon: Icon, label, active, badge }: { icon: NavIcon; lab
     <span
       className={cn(
         "relative flex h-12 min-w-0 flex-col items-center justify-center gap-0.5 rounded-lg px-1 text-[10px] font-medium transition-colors",
-        lit ? "bg-brand text-white" : "text-muted-foreground active:bg-muted active:text-foreground"
+        lit ? "bg-brand text-white" : "text-text-muted active:bg-surface-sunken active:text-text-strong"
       )}
     >
       {pending ? <Loader2 className="h-[18px] w-[18px] shrink-0 animate-spin" /> : <Icon className="h-[18px] w-[18px] shrink-0" />}
@@ -369,7 +369,7 @@ export function MobileTopBar({ openAlerts }: { openAlerts: number }) {
       </Link>
       <Link
         href="/alerts"
-        className="relative flex h-11 w-11 shrink-0 items-center justify-center rounded-lg text-text-muted active:bg-muted"
+        className="relative flex h-11 w-11 shrink-0 items-center justify-center rounded-lg text-text-muted active:bg-surface-sunken"
         aria-label={openAlerts > 0 ? `${openAlerts} open alerts` : "Alerts"}
       >
         <Bell className="h-5 w-5" />
@@ -446,7 +446,7 @@ export function MobileBottomNav({
                 <p className="text-base font-semibold text-text-strong">More</p>
                 <p className="truncate text-[11px] text-text-muted">{email}</p>
               </div>
-              <button onClick={() => setMoreOpen(false)} className="flex h-11 w-11 items-center justify-center rounded-lg text-text-muted active:bg-muted" aria-label="Close menu">
+              <button onClick={() => setMoreOpen(false)} className="flex h-11 w-11 items-center justify-center rounded-lg text-text-muted active:bg-surface-sunken" aria-label="Close menu">
                 <X className="h-5 w-5" />
               </button>
             </div>
@@ -476,7 +476,7 @@ export function MobileBottomNav({
             <div className="border-t border-rule px-3 pt-3">
               <button
                 onClick={() => void signOutAndRedirect(router)}
-                className="flex min-h-11 w-full items-center gap-3 rounded-lg px-3 text-sm font-medium text-text-muted active:bg-muted"
+                className="flex min-h-11 w-full items-center gap-3 rounded-lg px-3 text-sm font-medium text-text-muted active:bg-surface-sunken"
               >
                 <LogOut className="h-4 w-4" /> Sign out
               </button>

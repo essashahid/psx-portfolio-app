@@ -164,7 +164,7 @@ export function OnboardingWizard({
             key={i}
             className={cn(
               "h-1 flex-1 rounded-full transition-colors",
-              i <= step ? "bg-emerald-600" : "bg-border"
+              i <= step ? "bg-emerald-600" : "bg-rule"
             )}
           />
         ))}

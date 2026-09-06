@@ -37,7 +37,7 @@ const VegaLiteChart = dynamic(() => import("@/components/features/chat/vega-lite
   ssr: false,
   loading: () => (
     <div className="flex h-52 items-center justify-center">
-      <p className="text-[12px] text-muted-foreground">Loading chart…</p>
+      <p className="text-[12px] text-text-muted">Loading chart…</p>
     </div>
   ),
 });
@@ -77,11 +77,11 @@ function ArtifactShell({
   className?: string;
 }) {
   return (
-    <div className={cn("my-4 overflow-hidden rounded-xl border border-border/70 bg-card", className)}>
+    <div className={cn("my-4 overflow-hidden rounded-xl border border-rule/70 bg-surface-raised", className)}>
       {(title || description) && (
-        <div className="border-b border-border/50 px-4 py-3">
+        <div className="border-b border-rule/50 px-4 py-3">
           {title && <p className="text-[13px] font-semibold tracking-[-0.01em]">{title}</p>}
-          {description && <p className="mt-0.5 text-[11px] text-muted-foreground">{description}</p>}
+          {description && <p className="mt-0.5 text-[11px] text-text-muted">{description}</p>}
         </div>
       )}
       {children}
@@ -154,7 +154,7 @@ function PriceChart({ spec }: { spec: PriceChartArtifact }) {
     return (
       <ArtifactShell title={spec.title} description={spec.description}>
         <div className="flex h-52 items-center justify-center">
-          <p className="text-[12px] text-muted-foreground">Loading price data…</p>
+          <p className="text-[12px] text-text-muted">Loading price data…</p>
         </div>
       </ArtifactShell>
     );
@@ -162,7 +162,7 @@ function PriceChart({ spec }: { spec: PriceChartArtifact }) {
   if (state.error || state.candles.length === 0) {
     return (
       <ArtifactShell title={spec.title} description={spec.description}>
-        <p className="px-4 py-4 text-[12px] text-muted-foreground">
+        <p className="px-4 py-4 text-[12px] text-text-muted">
           {spec.fallback ?? state.error ?? "No price data available for this period."}
         </p>
       </ArtifactShell>
@@ -234,7 +234,7 @@ function PriceChart({ spec }: { spec: PriceChartArtifact }) {
           </LineChart>
         </ResponsiveContainer>
         {(showDividends || showTransactions) && (
-          <p className="mt-1 px-2 text-[10px] text-muted-foreground">
+          <p className="mt-1 px-2 text-[10px] text-text-muted">
             {[
               showDividends ? "Dotted green marks indicate ex-dividend dates" : null,
               showTransactions ? "solid green/red marks indicate buys/sells" : null,
@@ -253,7 +253,7 @@ function EmbeddedBarChart({ spec }: { spec: BarChartArtifact }) {
   if (!spec.data?.length) {
     return (
       <ArtifactShell title={spec.title} description={spec.description}>
-        <p className="px-4 py-4 text-[12px] text-muted-foreground">{spec.fallback ?? "No data to display."}</p>
+        <p className="px-4 py-4 text-[12px] text-text-muted">{spec.fallback ?? "No data to display."}</p>
       </ArtifactShell>
     );
   }
@@ -288,7 +288,7 @@ function ComparisonTable({ spec }: { spec: ComparisonTableArtifact }) {
   if (!spec.rows?.length) {
     return (
       <ArtifactShell title={spec.title} description={spec.description}>
-        <p className="px-4 py-4 text-[12px] text-muted-foreground">{spec.fallback ?? "No data to display."}</p>
+        <p className="px-4 py-4 text-[12px] text-text-muted">{spec.fallback ?? "No data to display."}</p>
       </ArtifactShell>
     );
   }
@@ -296,20 +296,20 @@ function ComparisonTable({ spec }: { spec: ComparisonTableArtifact }) {
     <ArtifactShell title={spec.title} description={spec.description}>
       <div className="overflow-x-auto">
         <table className="w-full border-collapse text-[13px]">
-          <thead className="bg-muted/50">
+          <thead className="bg-surface-sunken/50">
             <tr>
               {spec.columns.map((col) => (
-                <th key={col.key} className="border-b border-border px-4 py-2 text-left text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+                <th key={col.key} className="border-b border-rule px-4 py-2 text-left text-[10px] font-semibold uppercase tracking-wide text-text-muted">
                   {col.label}
                 </th>
               ))}
             </tr>
           </thead>
-          <tbody className="divide-y divide-border/60">
+          <tbody className="divide-y divide-rule/60">
             {spec.rows.map((row, i) => (
-              <tr key={i} className="transition-colors hover:bg-muted/30">
+              <tr key={i} className="transition-colors hover:bg-surface-sunken/30">
                 {spec.columns.map((col) => (
-                  <td key={col.key} className={cn("px-4 py-2.5 align-top tabular-nums text-foreground/90", cellTone(row[col.key] as string | number | null))}>
+                  <td key={col.key} className={cn("px-4 py-2.5 align-top tabular-nums text-text-strong/90", cellTone(row[col.key] as string | number | null))}>
                     {row[col.key] != null ? String(row[col.key]) : "—"}
                   </td>
                 ))}
@@ -327,22 +327,22 @@ function ComparisonTable({ spec }: { spec: ComparisonTableArtifact }) {
 function MetricStrip({ spec }: { spec: MetricStripArtifact }) {
   return (
     <div className={cn("my-4 grid gap-2", spec.metrics.length <= 2 ? "grid-cols-2" : spec.metrics.length === 3 ? "sm:grid-cols-3" : "grid-cols-2 sm:grid-cols-4")}>
-      {spec.title && <p className="col-span-full text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">{spec.title}</p>}
+      {spec.title && <p className="col-span-full text-[11px] font-semibold uppercase tracking-wide text-text-muted">{spec.title}</p>}
       {spec.metrics.map((m, i) => (
-        <div key={i} className="rounded-xl border border-border/70 bg-card px-3.5 py-3">
-          <p className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">{m.label}</p>
+        <div key={i} className="rounded-xl border border-rule/70 bg-surface-raised px-3.5 py-3">
+          <p className="text-[10px] font-medium uppercase tracking-wide text-text-muted">{m.label}</p>
           <p className={cn(
             "mt-0.5 text-[17px] font-semibold tabular-nums leading-tight",
-            m.tone === "positive" ? "text-up" : m.tone === "negative" ? "text-down" : "text-foreground"
+            m.tone === "positive" ? "text-up" : m.tone === "negative" ? "text-down" : "text-text-strong"
           )}>
             {m.value}
           </p>
           {m.delta && (
-            <p className={cn("mt-0.5 text-[11px] tabular-nums", m.tone === "positive" ? "text-up" : m.tone === "negative" ? "text-down" : "text-muted-foreground")}>
+            <p className={cn("mt-0.5 text-[11px] tabular-nums", m.tone === "positive" ? "text-up" : m.tone === "negative" ? "text-down" : "text-text-muted")}>
               {m.delta}
             </p>
           )}
-          {m.detail && <p className="mt-0.5 text-[10px] text-muted-foreground">{m.detail}</p>}
+          {m.detail && <p className="mt-0.5 text-[10px] text-text-muted">{m.detail}</p>}
         </div>
       ))}
     </div>
@@ -383,7 +383,7 @@ function DataTable({ spec }: { spec: TableArtifact }) {
   if (!spec.rows?.length) {
     return (
       <ArtifactShell title={spec.title} description={spec.description}>
-        <p className="px-4 py-4 text-[12px] text-muted-foreground">{spec.fallback ?? "No rows to display."}</p>
+        <p className="px-4 py-4 text-[12px] text-text-muted">{spec.fallback ?? "No rows to display."}</p>
       </ArtifactShell>
     );
   }
@@ -391,23 +391,23 @@ function DataTable({ spec }: { spec: TableArtifact }) {
     <ArtifactShell title={spec.title} description={spec.description}>
       <div className="max-h-[70vh] overflow-auto">
         <table className="w-full border-collapse text-[13px]">
-          <thead className="sticky top-0 bg-muted/80 backdrop-blur-sm">
+          <thead className="sticky top-0 bg-surface-sunken/80 backdrop-blur-sm">
             <tr>
               {spec.columns.map((col) => (
-                <th key={col.key} className={cn("border-b border-border px-4 py-2 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground", col.align === "right" ? "text-right" : "text-left")}>
+                <th key={col.key} className={cn("border-b border-rule px-4 py-2 text-[10px] font-semibold uppercase tracking-wide text-text-muted", col.align === "right" ? "text-right" : "text-left")}>
                   {col.label}
                 </th>
               ))}
             </tr>
           </thead>
-          <tbody className="divide-y divide-border/60">
+          <tbody className="divide-y divide-rule/60">
             {spec.rows.map((row, i) => (
-              <tr key={i} className="transition-colors hover:bg-muted/30">
+              <tr key={i} className="transition-colors hover:bg-surface-sunken/30">
                 {spec.columns.map((col) => (
                   <td
                     key={col.key}
                     className={cn(
-                      "px-4 py-2 align-top tabular-nums text-foreground/90",
+                      "px-4 py-2 align-top tabular-nums text-text-strong/90",
                       col.align === "right" ? "text-right" : "text-left",
                       cellTone(row[col.key] as string | number | null, col.format)
                     )}
@@ -433,14 +433,14 @@ const TIMELINE_COLORS: Record<string, string> = {
   news:        "bg-slate-400",
   transaction: "bg-violet-500",
   corporate:   "bg-orange-500",
-  other:       "bg-muted-foreground",
+  other:       "bg-text-muted",
 };
 
 function EventTimeline({ spec }: { spec: TimelineArtifact }) {
   if (!spec.events?.length) {
     return (
       <ArtifactShell title={spec.title} description={spec.description}>
-        <p className="px-4 py-4 text-[12px] text-muted-foreground">{spec.fallback ?? "No events to display."}</p>
+        <p className="px-4 py-4 text-[12px] text-text-muted">{spec.fallback ?? "No events to display."}</p>
       </ArtifactShell>
     );
   }
@@ -454,16 +454,16 @@ function EventTimeline({ spec }: { spec: TimelineArtifact }) {
           {sorted.map((evt, i) => (
             <div key={i} className="flex gap-3">
               <div className="mt-1 flex flex-col items-center">
-                <span className={cn("h-2 w-2 shrink-0 rounded-full", TIMELINE_COLORS[evt.type] ?? "bg-muted-foreground")} />
-                {i < sorted.length - 1 && <span className="mt-1 w-px flex-1 bg-border" />}
+                <span className={cn("h-2 w-2 shrink-0 rounded-full", TIMELINE_COLORS[evt.type] ?? "bg-text-muted")} />
+                {i < sorted.length - 1 && <span className="mt-1 w-px flex-1 bg-rule" />}
               </div>
               <div className="pb-3">
-                <p className="text-[10px] text-muted-foreground">{fmtDate(evt.date)}</p>
-                <p className="text-[13px] font-medium leading-snug text-foreground">
+                <p className="text-[10px] text-text-muted">{fmtDate(evt.date)}</p>
+                <p className="text-[13px] font-medium leading-snug text-text-strong">
                   {evt.label}
-                  {evt.value && <span className="ml-1.5 text-muted-foreground">{evt.value}</span>}
+                  {evt.value && <span className="ml-1.5 text-text-muted">{evt.value}</span>}
                 </p>
-                {evt.detail && <p className="mt-0.5 text-[11px] text-muted-foreground">{evt.detail}</p>}
+                {evt.detail && <p className="mt-0.5 text-[11px] text-text-muted">{evt.detail}</p>}
               </div>
             </div>
           ))}
@@ -479,7 +479,7 @@ function PortfolioAttribution({ spec }: { spec: PortfolioAttributionArtifact }) 
   if (!spec.items?.length) {
     return (
       <ArtifactShell title={spec.title} description={spec.description}>
-        <p className="px-4 py-4 text-[12px] text-muted-foreground">{spec.fallback ?? "No data to display."}</p>
+        <p className="px-4 py-4 text-[12px] text-text-muted">{spec.fallback ?? "No data to display."}</p>
       </ArtifactShell>
     );
   }
@@ -493,16 +493,16 @@ function PortfolioAttribution({ spec }: { spec: PortfolioAttributionArtifact }) 
           const tone = item.tone ?? (item.value >= 0 ? "positive" : "negative");
           return (
             <div key={i} className="flex items-center gap-3">
-              <span className="w-28 shrink-0 truncate text-right text-[12px] text-muted-foreground">{item.label}</span>
+              <span className="w-28 shrink-0 truncate text-right text-[12px] text-text-muted">{item.label}</span>
               <div className="relative flex-1">
                 <div
-                  className={cn("h-5 rounded-r-sm", tone === "positive" ? "bg-emerald-500/80" : tone === "negative" ? "bg-red-500/80" : "bg-muted")}
+                  className={cn("h-5 rounded-r-sm", tone === "positive" ? "bg-emerald-500/80" : tone === "negative" ? "bg-red-500/80" : "bg-surface-sunken")}
                   style={{ width: `${Math.max(pct * 100, 2)}%` }}
                 />
               </div>
-              <span className={cn("w-20 shrink-0 text-right text-[12px] font-semibold tabular-nums", tone === "positive" ? "text-up" : tone === "negative" ? "text-down" : "text-muted-foreground")}>
+              <span className={cn("w-20 shrink-0 text-right text-[12px] font-semibold tabular-nums", tone === "positive" ? "text-up" : tone === "negative" ? "text-down" : "text-text-muted")}>
                 {item.value >= 0 ? "+" : ""}{item.value.toLocaleString("en-PK", { maximumFractionDigits: 2 })}
-                {item.percent != null && <span className="ml-1 text-[10px] text-muted-foreground">({item.percent >= 0 ? "+" : ""}{item.percent.toFixed(1)}%)</span>}
+                {item.percent != null && <span className="ml-1 text-[10px] text-text-muted">({item.percent >= 0 ? "+" : ""}{item.percent.toFixed(1)}%)</span>}
               </span>
             </div>
           );
@@ -528,7 +528,7 @@ function Snowflake({ spec }: { spec: SnowflakeArtifact }) {
   if (axes.length < 3) {
     return (
       <ArtifactShell title={spec.title} description={spec.description}>
-        <p className="px-4 py-4 text-[12px] text-muted-foreground">{spec.fallback ?? "A snowflake needs at least three axes."}</p>
+        <p className="px-4 py-4 text-[12px] text-text-muted">{spec.fallback ?? "A snowflake needs at least three axes."}</p>
       </ArtifactShell>
     );
   }
@@ -562,12 +562,12 @@ function Snowflake({ spec }: { spec: SnowflakeArtifact }) {
             return (
               <div key={i}>
                 <div className="flex items-center justify-between gap-2">
-                  <span className="text-[11px] text-muted-foreground">{a.label}</span>
+                  <span className="text-[11px] text-text-muted">{a.label}</span>
                   <span className="text-[11px] font-semibold tabular-nums" style={{ color: SNOWFLAKE_TONE(s, max) }}>
-                    {s.toFixed(1)}<span className="text-muted-foreground">/{max}</span>
+                    {s.toFixed(1)}<span className="text-text-muted">/{max}</span>
                   </span>
                 </div>
-                <div className="mt-0.5 h-1.5 overflow-hidden rounded-full bg-muted">
+                <div className="mt-0.5 h-1.5 overflow-hidden rounded-full bg-surface-sunken">
                   <div className="h-full rounded-full" style={{ width: `${(s / max) * 100}%`, backgroundColor: SNOWFLAKE_TONE(s, max) }} />
                 </div>
               </div>
@@ -587,7 +587,7 @@ function AllocationDonut({ spec }: { spec: AllocationArtifact }) {
   if (segments.length === 0) {
     return (
       <ArtifactShell title={spec.title} description={spec.description}>
-        <p className="px-4 py-4 text-[12px] text-muted-foreground">{spec.fallback ?? "No allocation data to display."}</p>
+        <p className="px-4 py-4 text-[12px] text-text-muted">{spec.fallback ?? "No allocation data to display."}</p>
       </ArtifactShell>
     );
   }
@@ -620,7 +620,7 @@ function AllocationDonut({ spec }: { spec: AllocationArtifact }) {
           {(spec.centerValue || spec.centerLabel) && (
             <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center text-center">
               {spec.centerValue && <span className="text-[22px] font-semibold leading-none tabular-nums">{spec.centerValue}</span>}
-              {spec.centerLabel && <span className="mt-1 max-w-27.5 text-[10px] leading-tight text-muted-foreground">{spec.centerLabel}</span>}
+              {spec.centerLabel && <span className="mt-1 max-w-27.5 text-[10px] leading-tight text-text-muted">{spec.centerLabel}</span>}
             </div>
           )}
         </div>
@@ -628,7 +628,7 @@ function AllocationDonut({ spec }: { spec: AllocationArtifact }) {
           {data.map((d, i) => (
             <div key={i} className="flex items-center gap-2">
               <span className="h-2.5 w-2.5 shrink-0 rounded-[3px]" style={{ backgroundColor: d.fill }} />
-              <span className="flex-1 truncate text-[12px] text-foreground/90">{d.label}</span>
+              <span className="flex-1 truncate text-[12px] text-text-strong/90">{d.label}</span>
               <span className="text-[12px] font-semibold tabular-nums">{total > 0 ? ((d.value / total) * 100).toFixed(1) : "0"}%</span>
             </div>
           ))}
@@ -645,7 +645,7 @@ function BenchmarkExcess({ spec }: { spec: BenchmarkExcessArtifact }) {
   if (items.length === 0) {
     return (
       <ArtifactShell title={spec.title} description={spec.description}>
-        <p className="px-4 py-4 text-[12px] text-muted-foreground">{spec.fallback ?? "No performance data to display."}</p>
+        <p className="px-4 py-4 text-[12px] text-text-muted">{spec.fallback ?? "No performance data to display."}</p>
       </ArtifactShell>
     );
   }
@@ -662,9 +662,9 @@ function BenchmarkExcess({ spec }: { spec: BenchmarkExcessArtifact }) {
           const half = (Math.abs(r.excess) / maxAbs) * 50; // percent width of the half-track
           return (
             <div key={i} className="flex items-center gap-3">
-              <span className="w-16 shrink-0 truncate text-[12px] font-medium text-foreground/90">{r.label}</span>
-              <div className="relative h-5 flex-1 rounded-sm bg-muted/40">
-                <div className="absolute inset-y-0 left-1/2 w-px bg-border" />
+              <span className="w-16 shrink-0 truncate text-[12px] font-medium text-text-strong/90">{r.label}</span>
+              <div className="relative h-5 flex-1 rounded-sm bg-surface-sunken/40">
+                <div className="absolute inset-y-0 left-1/2 w-px bg-rule" />
                 <div
                   className={cn("absolute inset-y-0 rounded-sm", beat ? "bg-emerald-500/80" : "bg-red-500/80")}
                   style={beat ? { left: "50%", width: `${half}%` } : { right: "50%", width: `${half}%` }}
@@ -673,13 +673,13 @@ function BenchmarkExcess({ spec }: { spec: BenchmarkExcessArtifact }) {
               <span className={cn("w-16 shrink-0 text-right text-[12px] font-semibold tabular-nums", beat ? "text-up" : "text-down")}>
                 {pct(r.excess)}
               </span>
-              <span className="hidden w-28 shrink-0 text-right text-[10px] text-muted-foreground tabular-nums sm:block">
+              <span className="hidden w-28 shrink-0 text-right text-[10px] text-text-muted tabular-nums sm:block">
                 {pct(r.returnPct)} vs {pct(r.benchmarkPct)}
               </span>
             </div>
           );
         })}
-        <p className="pt-1 text-[10px] text-muted-foreground">Bars show each holding&apos;s return minus {bench} over the window. Right of centre beat the index.</p>
+        <p className="pt-1 text-[10px] text-text-muted">Bars show each holding&apos;s return minus {bench} over the window. Right of centre beat the index.</p>
       </div>
     </ArtifactShell>
   );
@@ -698,7 +698,7 @@ function Gauge({ spec }: { spec: GaugeArtifact }) {
   if (zones.length === 0 || spec.max <= spec.min) {
     return (
       <ArtifactShell title={spec.title} description={spec.description}>
-        <p className="px-4 py-4 text-[12px] text-muted-foreground">{spec.fallback ?? "No gauge data to display."}</p>
+        <p className="px-4 py-4 text-[12px] text-text-muted">{spec.fallback ?? "No gauge data to display."}</p>
       </ArtifactShell>
     );
   }
@@ -735,12 +735,12 @@ function Gauge({ spec }: { spec: GaugeArtifact }) {
             <div className="mx-auto h-0 w-0 border-x-4 border-t-[6px] border-x-transparent" style={{ borderTopColor: INK.line }} />
           </div>
         </div>
-        <div className="mt-1.5 flex justify-between text-[10px] text-muted-foreground tabular-nums">
+        <div className="mt-1.5 flex justify-between text-[10px] text-text-muted tabular-nums">
           <span>{spec.min}{unit}</span>
-          {spec.markerLabel && <span className="font-medium text-foreground/80">{spec.markerLabel}</span>}
+          {spec.markerLabel && <span className="font-medium text-text-strong/80">{spec.markerLabel}</span>}
           <span>{spec.max}{unit}</span>
         </div>
-        {spec.caption && <p className="mt-2 text-[11px] text-muted-foreground">{spec.caption}</p>}
+        {spec.caption && <p className="mt-2 text-[11px] text-text-muted">{spec.caption}</p>}
       </div>
     </ArtifactShell>
   );
@@ -752,7 +752,7 @@ function VegaLite({ spec }: { spec: VegaLiteArtifact }) {
   if (!spec.spec || typeof spec.spec !== "object") {
     return (
       <ArtifactShell title={spec.title} description={spec.description}>
-        <p className="px-4 py-4 text-[12px] text-muted-foreground">{spec.fallback ?? "No chart specification provided."}</p>
+        <p className="px-4 py-4 text-[12px] text-text-muted">{spec.fallback ?? "No chart specification provided."}</p>
       </ArtifactShell>
     );
   }
@@ -776,8 +776,8 @@ function ArtifactError({ spec }: { spec: ArtifactErrorSpec }) {
 
 function ArtifactFallback() {
   return (
-    <div className="my-4 overflow-hidden rounded-xl border border-border/50 bg-muted/30 px-4 py-3">
-      <p className="text-[11px] text-muted-foreground">This content could not be rendered as a visual. The analysis is available in the surrounding text.</p>
+    <div className="my-4 overflow-hidden rounded-xl border border-rule/50 bg-surface-sunken/30 px-4 py-3">
+      <p className="text-[11px] text-text-muted">This content could not be rendered as a visual. The analysis is available in the surrounding text.</p>
     </div>
   );
 }

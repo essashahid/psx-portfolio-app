@@ -88,7 +88,7 @@ export function AllocationPie({
       </ResponsiveContainer>
       {/* Center readout — total at rest, slice share on hover */}
       <div className="pointer-events-none absolute inset-x-0 top-[86px] flex flex-col items-center">
-        <p className="max-w-[6.875rem] truncate text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+        <p className="max-w-[6.875rem] truncate text-[10px] font-semibold uppercase tracking-wide text-text-muted">
           {focused ? focused.name : "Total"}
         </p>
         <p className="text-sm font-semibold tabular-nums">
@@ -189,7 +189,7 @@ export function CostFrictionBars({
       <div className="mb-2 flex justify-end">
         <button
           type="button"
-          className="rounded-md border border-border px-2 py-1 text-[11px] text-muted-foreground hover:text-foreground"
+          className="rounded-md border border-rule px-2 py-1 text-[11px] text-text-muted hover:text-text-strong"
           onClick={() => downloadCsv("cost-friction.csv", data)}
         >
           Export CSV
@@ -209,10 +209,10 @@ export function CostFrictionBars({
                 <div className="chart-tooltip">
                   <p className="chart-tooltip-label">{row.category}</p>
                   <div className="flex items-center justify-between gap-5 text-[11px]">
-                    <span className="text-muted-foreground">Recorded</span>
+                    <span className="text-text-muted">Recorded</span>
                     <span className="font-semibold tabular-nums">{fmtPkr(row.amount)}</span>
                   </div>
-                  <p className="mt-2 max-w-[15rem] text-[11px] text-muted-foreground">{row.note}</p>
+                  <p className="mt-2 max-w-[15rem] text-[11px] text-text-muted">{row.note}</p>
                 </div>
               );
             }}

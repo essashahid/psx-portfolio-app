@@ -28,7 +28,7 @@ export function RefreshReportButton({ reportId }: { reportId: string }) {
       type="button"
       onClick={refresh}
       disabled={loading}
-      className="inline-flex h-8 items-center gap-1.5 rounded-md border border-border px-3 text-xs font-medium hover:bg-muted disabled:opacity-50"
+      className="inline-flex h-8 items-center gap-1.5 rounded-md border border-rule px-3 text-xs font-medium hover:bg-surface-sunken disabled:opacity-50"
     >
       {loading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <RefreshCw className="h-3.5 w-3.5" />}
       Refresh report

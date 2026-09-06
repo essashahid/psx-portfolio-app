@@ -47,7 +47,7 @@ export function SectionRefreshButton({
       type="button"
       onClick={refresh}
       disabled={loading}
-      className="inline-flex items-center gap-1 text-[10px] text-muted-foreground hover:text-foreground"
+      className="inline-flex items-center gap-1 text-[10px] text-text-muted hover:text-text-strong"
     >
       {loading ? <Loader2 className="h-3 w-3 animate-spin" /> : <RefreshCw className="h-3 w-3" />}
       Refresh

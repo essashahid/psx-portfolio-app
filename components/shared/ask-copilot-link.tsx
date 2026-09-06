@@ -31,7 +31,7 @@ export function AskCopilotLink({
     <Link
       href={href}
       className={cn(
-        "inline-flex h-8 items-center gap-1.5 rounded-md border border-border px-3 text-xs font-medium transition-colors hover:bg-accent",
+        "inline-flex h-8 items-center gap-1.5 rounded-md border border-rule px-3 text-xs font-medium transition-colors hover:bg-surface-inset",
         className
       )}
     >

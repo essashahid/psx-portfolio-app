@@ -12,14 +12,14 @@ export function ReportPriceChart({ payload }: { payload: CompanyReportPayload })
   const markers = portfolio?.markers ?? [];
 
   if (!data.length) {
-    return <p className="text-xs text-muted-foreground">No price history available.</p>;
+    return <p className="text-xs text-text-muted">No price history available.</p>;
   }
 
   return (
     <div className="h-56 w-full">
       <ResponsiveContainer width="100%" height="100%">
         <LineChart data={data} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
-          <CartesianGrid strokeDasharray="3 3" className="stroke-border/50" />
+          <CartesianGrid strokeDasharray="3 3" className="stroke-rule/50" />
           <XAxis dataKey="date" tick={{ fontSize: 10 }} minTickGap={40} />
           <YAxis tick={{ fontSize: 10 }} width={48} domain={["auto", "auto"]} />
           <Tooltip
@@ -43,7 +43,7 @@ export function ReportPriceChart({ payload }: { payload: CompanyReportPayload })
           ))}
         </LineChart>
       </ResponsiveContainer>
-      <p className="mt-1 text-[10px] text-muted-foreground">
+      <p className="mt-1 text-[10px] text-text-muted">
         Green line: KSE-100 indexed to stock start · Orange dashed: average cost · Vertical: trades
       </p>
     </div>

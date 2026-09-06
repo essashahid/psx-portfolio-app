@@ -92,7 +92,7 @@ export function SegmentedControl<T extends string>({
               "transition-[background-color,color,border-color] duration-(--dur-fast) ease-(--ease-ui)",
               "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2 focus-visible:ring-offset-card",
               selected
-                ? "border-foreground bg-foreground text-background"
+                ? "border-text-strong bg-text-strong text-surface-page"
                 : "border-rule bg-surface-raised text-text-muted hover:bg-surface-sunken hover:text-text-strong"
             )}
           >

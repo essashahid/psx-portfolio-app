@@ -90,7 +90,7 @@ type YieldSort = "yoc" | "yov" | "ttm" | "ticker";
 
 function YieldSortButton({ id, label, sort, setSort }: { id: YieldSort; label: string; sort: YieldSort; setSort: (s: YieldSort) => void }) {
   return (
-    <button onClick={() => setSort(id)} className={cn("hover:text-foreground", sort === id ? "font-semibold text-foreground" : "text-muted-foreground")}>{label}</button>
+    <button onClick={() => setSort(id)} className={cn("hover:text-text-strong", sort === id ? "font-semibold text-text-strong" : "text-text-muted")}>{label}</button>
   );
 }
 
@@ -140,7 +140,7 @@ export function DividendYieldTable({ dividends, holdings, asOf }: { dividends: D
   }, [rows, sort]);
 
   if (rows.length === 0) {
-    return <p className="py-8 text-center text-sm text-muted-foreground">No holdings with cost or trailing dividend income to show yields for.</p>;
+    return <p className="py-8 text-center text-sm text-text-muted">No holdings with cost or trailing dividend income to show yields for.</p>;
   }
 
   return (
@@ -207,24 +207,24 @@ export function TaxYearStatement({ dividends, defaultYear }: { dividends: Divide
   }, [dividends, year]);
 
   if (years.length === 0) {
-    return <p className="py-8 text-center text-sm text-muted-foreground">No received dividends to build a tax-year statement.</p>;
+    return <p className="py-8 text-center text-sm text-text-muted">No received dividends to build a tax-year statement.</p>;
   }
 
   return (
     <div>
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-2">
-          <label className="text-xs text-muted-foreground">Tax year</label>
-          <select value={year} onChange={(e) => setYear(e.target.value)} className="rounded-md border border-border bg-card px-2 py-1 text-sm">
+          <label className="text-xs text-text-muted">Tax year</label>
+          <select value={year} onChange={(e) => setYear(e.target.value)} className="rounded-md border border-rule bg-surface-raised px-2 py-1 text-sm">
             {years.map((y) => <option key={y} value={y}>{y}</option>)}
           </select>
         </div>
-        <a href={`/api/export/tax_statement?year=${encodeURIComponent(year)}`} className="inline-flex h-8 items-center gap-1.5 rounded-md border border-border px-3 text-xs font-medium hover:bg-muted">Export CSV</a>
+        <a href={`/api/export/tax_statement?year=${encodeURIComponent(year)}`} className="inline-flex h-8 items-center gap-1.5 rounded-md border border-rule px-3 text-xs font-medium hover:bg-surface-sunken">Export CSV</a>
       </div>
       <div className="mt-3 overflow-x-auto">
         <table className="w-full min-w-[32.5rem] border-collapse text-sm">
           <thead>
-            <tr className="border-b border-border text-xs text-muted-foreground">
+            <tr className="border-b border-rule text-xs text-text-muted">
               <th className="py-2 pr-3 text-left">Holding</th>
               <th className="px-3 py-2 text-right">Gross</th>
               <th className="px-3 py-2 text-right">Tax withheld</th>
@@ -233,8 +233,8 @@ export function TaxYearStatement({ dividends, defaultYear }: { dividends: Divide
           </thead>
           <tbody>
             {rows.map((row) => (
-              <tr key={row.ticker} className="border-b border-border">
-                <td className="py-2 pr-3 font-medium">{row.ticker} <span className="text-xs font-normal text-muted-foreground">· {row.count}</span></td>
+              <tr key={row.ticker} className="border-b border-rule">
+                <td className="py-2 pr-3 font-medium">{row.ticker} <span className="text-xs font-normal text-text-muted">· {row.count}</span></td>
                 <td className="px-3 py-2 text-right tabular-nums">{formatMoney(row.gross)}</td>
                 <td className="px-3 py-2 text-right tabular-nums">{formatMoney(row.tax)}</td>
                 <td className="px-3 py-2 text-right tabular-nums">{formatMoney(row.net)}</td>
@@ -262,19 +262,19 @@ export function TaxYearStatement({ dividends, defaultYear }: { dividends: Divide
 export function AwaitingPayment({ events }: { events: { ticker: string | null; company_name: string | null; net_expected: number | null; dueDate: string | null; daysOverdue: number }[] }) {
   if (events.length === 0) return null;
   return (
-    <section className="border-t border-border pt-4">
+    <section className="border-t border-rule pt-4">
       <h2 className="text-base font-semibold">Awaiting payment</h2>
-      <p className="mt-1 text-xs text-muted-foreground">Dividends announced or expected with a payment window that has already passed. Confirm receipt or check with your broker.</p>
-      <div className="mt-3 divide-y divide-border">
+      <p className="mt-1 text-xs text-text-muted">Dividends announced or expected with a payment window that has already passed. Confirm receipt or check with your broker.</p>
+      <div className="mt-3 divide-y divide-rule">
         {events.map((event, i) => (
           <div key={`${event.ticker}-${i}`} className="flex items-center justify-between gap-3 py-2 text-sm">
             <div>
               <span className="font-semibold">{event.ticker ?? "—"}</span>
-              {event.company_name && <span className="ml-2 text-xs text-muted-foreground">{event.company_name}</span>}
+              {event.company_name && <span className="ml-2 text-xs text-text-muted">{event.company_name}</span>}
             </div>
             <div className="text-right">
               <p className="tabular-nums">{event.net_expected !== null ? formatMoney(event.net_expected) : "—"}</p>
-              <p className="text-[11px] text-muted-foreground">{event.dueDate ? `Due ${event.dueDate} · ${event.daysOverdue}d overdue` : "Overdue"}</p>
+              <p className="text-[11px] text-text-muted">{event.dueDate ? `Due ${event.dueDate} · ${event.daysOverdue}d overdue` : "Overdue"}</p>
             </div>
           </div>
         ))}
