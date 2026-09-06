@@ -254,6 +254,13 @@ export async function buildMarketSnapshot(client?: SupabaseClient): Promise<Buil
   // Mirror quotes into market_quotes so the rest of the app benefits from the
   // same fresh whole-market pull (cache-first quote service, search, cockpit).
   await mirrorQuotes(db, items, date).catch((e) => errors.push(`mirror: ${e instanceof Error ? e.message : e}`));
+  // The snapshot is taken after the close, so each price is the day's close.
+  // Writing it here gives the whole universe a same-day close in the canonical
+  // history instead of waiting for the next technicals pass, which runs before
+  // the exchange publishes the day's EOD series and so lands a session late.
+  if (afterClosePkt()) {
+    await mirrorCloses(db, items, date).catch((e) => errors.push(`closes: ${e instanceof Error ? e.message : e}`));
+  }
 
   // Observability.
   await db.from("data_fetch_logs").insert({
@@ -358,5 +365,24 @@ async function mirrorQuotes(db: SupabaseClient, items: EnrichedItem[], date: str
     }));
   for (let i = 0; i < rows.length; i += 400) {
     await db.from("market_quotes").upsert(rows.slice(i, i + 400), { onConflict: "ticker" });
+  }
+}
+
+/** 15:35 PKT or later, so the price on hand is a close, not an intraday print. */
+function afterClosePkt(now = new Date()): boolean {
+  const parts = new Intl.DateTimeFormat("en-GB", { timeZone: "Asia/Karachi", hour: "2-digit", minute: "2-digit", hour12: false }).formatToParts(now);
+  const hour = Number(parts.find((p) => p.type === "hour")?.value ?? 0);
+  const minute = Number(parts.find((p) => p.type === "minute")?.value ?? 0);
+  return hour * 60 + minute >= 15 * 60 + 35;
+}
+
+async function mirrorCloses(db: SupabaseClient, items: EnrichedItem[], date: string): Promise<void> {
+  const now = new Date().toISOString();
+  const rows = items
+    .filter((i) => i.price != null && Number(i.price) > 0)
+    .map((i) => ({ ticker: i.ticker, price_date: date, close: i.price, volume: i.volume ?? null, source: "psx-market-watch", updated_at: now }));
+  for (let i = 0; i < rows.length; i += 400) {
+    const { error } = await db.from("company_price_history").upsert(rows.slice(i, i + 400), { onConflict: "ticker,price_date" });
+    if (error) throw error;
   }
 }
