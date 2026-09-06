@@ -20,6 +20,8 @@ them wrong, fix it in the same change.
   report generator (FCCL, 14 pages, generated 2026-06-25). Kept as a reference
   for the PDF export layout. It is reproducible: generate a report for any
   ticker and export it as PDF. Nothing imports it.
+- `operations/phase-one-cleanup.md` — what the September 2026 cleanup phase
+  changed, what it deliberately deferred and why, and what Phase 2 inherits.
 - `operations/launch-disabled-features.md` — which app surfaces are hidden for
   launch, where the flags live, and how to restore each one.
 - `research/bulls-and-bears-video-insights-idea.md` — an unbuilt idea for
