@@ -86,3 +86,75 @@ found duplicate-row risk on `transactions` and `cash_movements`, a
 `company_payouts` unique key defeated by nulls, no `updated_at` triggers
 anywhere, and macro series that are hardcoded arrays rather than fetched. Apply
 0042 alongside that work.
+
+---
+
+# Phase 2: data integrity
+
+Ran 6 September 2026. Preflight was run against the live database first, and it
+changed the plan twice.
+
+## Migrations, none applied
+
+| File | What | Applied |
+|---|---|---|
+| `0042_feature_keys.sql` | Feature CHECK → `feature_keys` table + trigger | No |
+| `0043_phase2_integrity.sql` | Unique keys, payout key, updated_at triggers, FK, source CHECKs | No |
+| `0044_drop_eod_history.sql` | Drops the superseded table | No, and separated on purpose |
+
+Applying was blocked by the permission classifier, correctly: these are
+production schema writes. Behaviour is unchanged until they run. Re-run
+`scripts/verification/phase2-preflight.sql` first and compare against the
+counts recorded in each migration header.
+
+Apply `0042` and `0043` together. Leave `0044` until you have taken the backup
+its header suggests.
+
+## Preflight results
+
+Nothing needed cleaning up before the constraints:
+
+- transactions 266 rows, 0 duplicate `(user_id, row_hash)`, 0 null hashes
+- cash_movements 95 rows, 0 duplicates, 0 null hashes
+- company_payouts 565 rows, 0 nulls in `raw` or `announcement_date`, 0 duplicates under either null semantics
+- dividend_events 1 reconciled reference, 0 orphans
+- profiles 6 rows, 12 distinct flags, all covered by 0042's seed of 20
+
+The holes are real but had not been fallen into yet.
+
+## Two things preflight changed
+
+**Source CHECKs.** Written from the comments in migration 0001, as planned,
+they would have rejected 133 transactions and 5,459 prices immediately.
+`transactions` carries `adjustment` and `email_confirmation`, `prices` carries
+`psx-dps`, and none of the three appears in the documentation. The constraints
+are built from what is stored. `prices` is left unconstrained entirely: its
+values are provider names and that list grows, so a closed set there breaks a
+price refresh rather than catching a typo.
+
+**eod_history is not empty.** Phase 1 recorded it as unreferenced, which is
+true of the code. It holds 115,035 rows. All of them match a
+`(ticker, price_date)` in `company_price_history`, so nothing unique is lost,
+but that is a fact worth establishing before a `drop table` rather than after.
+
+## Everything else
+
+- **Imports** count a 23505 unique violation as a duplicate instead of throwing. Deliberately not an upsert: `onConflict` needs the constraint 0043 adds, so upsert code shipped ahead of the migration would break every import.
+- **Macro.** `lib/market-data/sbp-easydata.ts` reads the real SBP series when `SBP_EASYDATA_API_KEY` and a series key are set. The T-bill fallback no longer appends a point at today's date; it stops at its last known step, so a missing feed looks missing. CPI still uses its table and needs a series key chosen.
+- **Extraction cron** scheduled weekdays 10:10 UTC. Temporary, and the route says so: Phase 3 moves ingestion to a worker and deletes these crons.
+- **`/admin/data-review`** shows 671 withheld rows across 171 companies and 1,585 open conflicts. Visibility only.
+- **`check-eod-prices.mjs` deleted.** It filtered on a column the table does not have and had reported 0.00 for its whole life.
+- **ratios.ts** no longer contradicts itself about LUCK, FFC and HUBC.
+
+## Risks
+
+The migrations are unapplied, so the integrity holes are still open in
+production. The import fix is inert until 0043 lands. Nothing in the admin page
+was seen rendered, since it is admin-gated and no demo account exists here.
+
+## Next: Phase 3
+
+The ingestion worker. Everything above treats symptoms of the same cause: eight
+jobs inside 300-second Vercel functions, each rotating through a slice of the
+universe and dropping the tail. Phase 3 moves that to a worker with no
+execution limit, one canonical `instruments` table, and a single price store.
