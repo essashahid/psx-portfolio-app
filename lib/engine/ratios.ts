@@ -40,15 +40,18 @@ const SHARE_COUNT_OVERRIDES: Record<string, number> = {
   LOADS: 371_250_000,
 };
 
-// Companies whose market-quoted figure is the CONSOLIDATED (group) one, not
-// the unconsolidated (standalone) figure PSX's own portal carries. The default
-// everywhere else — and correct for the large majority, including holding
-// companies like LUCK/FFC/HUBC where PSX's own quoted P/E matches our
-// unconsolidated figure — is unconsolidated. Flip a company into this set only
-// after an independent reference reconciles on consolidated AND fails to
-// reconcile on unconsolidated; do not add on the assumption that "it's a
-// group, so it must be consolidated" (LUCK is a holding company and is
-// correctly unconsolidated).
+// Companies served on the CONSOLIDATED (group) basis rather than the
+// unconsolidated (standalone) figure PSX's own portal carries. Unconsolidated
+// is the default everywhere else and correct for the large majority.
+//
+// Two different reasons put a company in this set, and they are not
+// interchangeable. Most are here because an independent reference reconciles
+// on consolidated and fails on unconsolidated: that is evidence, and it is the
+// bar for adding one. The five at the bottom, flipped on 2026-07-22, are here
+// because both bases reconcile exactly and the group basis was chosen
+// deliberately as the better description of the business; see the note there.
+//
+// What is not a reason: assuming "it is a group, so it must be consolidated".
 //
 // Effect: the annual/interim selection below excludes the PSX portal series
 // (which is always unconsolidated) and unconsolidated/unlabelled filing rows,
@@ -182,11 +185,11 @@ const CONSOLIDATED_BASIS_TICKERS = new Set<string>([
   // FATIMA carved its Multan Plant into a subsidiary effective 1 Jan 2025, so
   // its standalone series no longer describes the listed business at all.
   //
-  // NOTE this SUPERSEDES the earlier comment above claiming LUCK/FFC/HUBC are
-  // "correctly unconsolidated" because PSX quotes standalone. That was a real
-  // observation — PSX does quote standalone — but the platform now serves the
-  // group basis for holding structures, consistently, rather than matching
-  // PSX's convention. All consolidated EPS here is struck on profit
+  // PSX does quote standalone for these, and an earlier version of the comment
+  // at the top of this set cited that as proof they belonged on the
+  // unconsolidated basis. The observation was right and the conclusion was not:
+  // the platform serves the group basis for holding structures, consistently,
+  // rather than matching PSX's convention. All consolidated EPS here is struck on profit
   // attributable to OWNERS, each verified by division rather than by note
   // wording (FATIMA excepted: wholly owned subsidiaries, so no NCI exists).
   "MCB",
