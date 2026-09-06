@@ -1,11 +1,11 @@
 import Link from "next/link";
 import { createClient, getUser } from "@/lib/supabase/server";
-import { NewsEventCard, NewsEventRow, type TickerMoves } from "@/components/features/news/news-event-card";
+import { NewsEventCard, type TickerMoves } from "@/components/features/news/news-event-card";
 import { NewsRefreshButton } from "@/components/features/news/news-refresh-button";
 import { SectorChip, SectorDot } from "@/components/shared/sector-chip";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Button } from "@/components/ui/button";
-import { CalendarDays, LayoutGrid, List, Newspaper, Search } from "lucide-react";
+import { CalendarDays, Newspaper, Search } from "lucide-react";
 import { cn, formatSignedPct } from "@/lib/shared/format";
 import { getUserNewsFeed, type FeedNewsArticle } from "@/lib/news/global-store";
 import { getPrefs, type UserPrefs } from "@/lib/user/preferences";
@@ -24,7 +24,6 @@ import {
   windowCutoff,
   type DividendEventRow,
   type MarketEventRow,
-  type NewsFilterId,
   type NewsTabId,
   type UpcomingItem,
 } from "@/lib/news/feed";
@@ -40,8 +39,19 @@ type SearchParams = {
   q?: string;
   filter?: string;
   ticker?: string;
-  view?: string;
 };
+
+/**
+ * The tabs the web page shows. The feed definitions in lib/news/feed.ts still
+ * serve every tab (the phone and deep links to ?tab=companies, policy or saved
+ * keep working); the web bar only surfaces the three a self-directed investor
+ * reaches for.
+ */
+const WEB_TABS: { id: NewsTabId; label: string }[] = [
+  { id: "suggested", label: "For you" },
+  { id: "market", label: "Market" },
+  { id: "upcoming", label: "Upcoming" },
+];
 
 export default async function NewsPage({ searchParams }: { searchParams: Promise<SearchParams> }) {
   const sp = await searchParams;
@@ -54,7 +64,6 @@ export default async function NewsPage({ searchParams }: { searchParams: Promise
   const activeFilter = NEWS_FILTERS.find((f) => f.id === sp.filter)?.id ?? null;
   const query = sp.q?.trim() ?? "";
   const activeTicker = sp.ticker?.trim().toUpperCase() || null;
-  const view: "cards" | "compact" = sp.view === "compact" ? "compact" : "cards";
   const todayKey = pktDateKey(new Date());
 
   const [portfolio, articles, watchlistRes, sourceRes, dividendEventsRes, marketEventsRes, dailyPerformance, marketGlobal, prefs] = await Promise.all([
@@ -152,6 +161,11 @@ export default async function NewsPage({ searchParams }: { searchParams: Promise
   const topicsToWatch = [...new Set(suggested.flatMap((event) => event.whatToWatch))].slice(0, 6);
   const sectors = [...new Set(holdings.map((h) => h.sector).filter((s): s is string => !!s))].slice(0, 8);
 
+  // A deep link to a tab the bar does not show still needs a place to stand.
+  const visibleTabs = WEB_TABS.some((t) => t.id === tab)
+    ? WEB_TABS
+    : [...WEB_TABS, { id: tab, label: NEWS_TABS.find((t) => t.id === tab)?.label ?? tab }];
+
   const buildHref = (patch: Partial<SearchParams>) => {
     const merged = {
       tab,
@@ -159,7 +173,6 @@ export default async function NewsPage({ searchParams }: { searchParams: Promise
       q: query || undefined,
       filter: activeFilter ?? undefined,
       ticker: activeTicker ?? undefined,
-      view: view === "compact" ? view : undefined,
       ...patch,
     };
     const params = new URLSearchParams();
@@ -168,7 +181,6 @@ export default async function NewsPage({ searchParams }: { searchParams: Promise
     if (merged.q) params.set("q", merged.q);
     if (merged.filter) params.set("filter", merged.filter);
     if (merged.ticker) params.set("ticker", merged.ticker);
-    if (merged.view === "compact") params.set("view", merged.view);
     const qs = params.toString();
     return qs ? `/news?${qs}` : "/news";
   };
@@ -217,7 +229,7 @@ export default async function NewsPage({ searchParams }: { searchParams: Promise
       )}
 
       <nav className="sticky top-0 z-20 -mx-1 flex gap-1 overflow-x-auto border-b border-rule bg-surface-page/90 px-1 backdrop-blur">
-        {NEWS_TABS.map((item) => {
+        {visibleTabs.map((item) => {
           const active = item.id === tab;
           const label = tabLabel(item.id, { importantCount, newToday, saved: events.filter((event) => event.saved).length, upcoming: upcoming.length });
           return (
@@ -284,14 +296,12 @@ export default async function NewsPage({ searchParams }: { searchParams: Promise
             ))}
           </div>
 
-          <div className="flex min-w-0 flex-1 items-center gap-2 sm:max-w-md">
-          <form action="/news" className="relative min-w-0 flex-1">
+          <form action="/news" className="relative min-w-0 flex-1 sm:max-w-md">
             <Search className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-text-muted" />
             <input type="hidden" name="tab" value={tab === "suggested" ? "" : tab} />
             <input type="hidden" name="window" value={windowId === "week" ? "" : windowId} />
             {activeFilter && <input type="hidden" name="filter" value={activeFilter} />}
             {activeTicker && <input type="hidden" name="ticker" value={activeTicker} />}
-            {view === "compact" && <input type="hidden" name="view" value="compact" />}
             <input
               name="q"
               defaultValue={query}
@@ -299,32 +309,6 @@ export default async function NewsPage({ searchParams }: { searchParams: Promise
               className="h-9 w-full rounded-lg border border-rule bg-surface-raised pl-9 pr-3 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
             />
           </form>
-
-          <div className="inline-flex shrink-0 rounded-lg border border-rule bg-surface-raised p-0.5" role="group" aria-label="Feed density">
-            <Link
-              href={buildHref({ view: undefined })}
-              className={cn(
-                "flex h-8 w-8 items-center justify-center rounded-md transition-colors",
-                view === "cards" ? "bg-text-strong text-surface-page" : "text-text-muted hover:text-text-strong"
-              )}
-              title="Card view"
-              aria-label="Card view"
-            >
-              <LayoutGrid className="h-3.5 w-3.5" />
-            </Link>
-            <Link
-              href={buildHref({ view: "compact" })}
-              className={cn(
-                "flex h-8 w-8 items-center justify-center rounded-md transition-colors",
-                view === "compact" ? "bg-text-strong text-surface-page" : "text-text-muted hover:text-text-strong"
-              )}
-              title="Compact view"
-              aria-label="Compact view"
-            >
-              <List className="h-3.5 w-3.5" />
-            </Link>
-          </div>
-          </div>
         </div>
 
         <div className="flex flex-wrap gap-1.5">
@@ -414,19 +398,11 @@ export default async function NewsPage({ searchParams }: { searchParams: Promise
                     <h3 className="text-xs font-semibold uppercase tracking-wide text-text-muted">{dateHeading(group.date)}</h3>
                     <div className="h-px flex-1 bg-rule" />
                   </div>
-                  {view === "compact" ? (
-                    <div className="divide-y divide-rule/60 rounded-lg border border-rule bg-surface-raised px-2 py-1">
-                      {group.events.map((event) => (
-                        <NewsEventRow key={event.id} event={event} moves={moves} />
-                      ))}
-                    </div>
-                  ) : (
-                    <div className="space-y-3">
-                      {group.events.map((event) => (
-                        <NewsEventCard key={event.id} event={event} moves={moves} />
-                      ))}
-                    </div>
-                  )}
+                  <div className="space-y-3">
+                    {group.events.map((event) => (
+                      <NewsEventCard key={event.id} event={event} moves={moves} />
+                    ))}
+                  </div>
                 </section>
               ))}
             </section>

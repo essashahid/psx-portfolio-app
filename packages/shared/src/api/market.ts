@@ -81,7 +81,26 @@ export interface MarketResponse {
   mostActive: MarketMover[];
   /** Null when the snapshot carries no per-company returns. */
   distribution: MarketDistribution | null;
+  /**
+   * One plain sentence on the day, written on the server so the web page and
+   * the phone read the same words: advancers, share of market value that
+   * rose, and the sector that carried or weighed on the market most.
+   */
+  verdict?: string | null;
+  /**
+   * The companies that moved the index most today, in approximate index
+   * points, largest absolute contribution first. At most seven.
+   */
+  indexContributors?: MarketIndexContributor[];
   updatedLabel: string | null;
+}
+
+/** One company's approximate contribution to today's index move. */
+export interface MarketIndexContributor {
+  ticker: string;
+  name: string | null;
+  points: number;
+  changePct: number | null;
 }
 
 /**

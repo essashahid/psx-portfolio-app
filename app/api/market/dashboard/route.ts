@@ -4,6 +4,7 @@ import { getMarketDashboard } from "@/lib/market/read";
 import { sectorColor, shortSector } from "@psx/shared/sector-colors";
 import { buildReturnDistribution } from "@psx/shared/market/return-distribution";
 import { getForeignFlowSnapshot } from "@/lib/market/foreign-flows";
+import { indexContributors, marketVerdict, type SummaryRow } from "@/lib/market/summary";
 import type {
   MarketFlow,
   MarketMapItem,
@@ -74,6 +75,16 @@ export async function GET() {
     }));
     const capShown = mapRows.reduce((n, r) => n + Number(r.market_cap), 0);
 
+    // The day in one sentence and the names that moved the index, from the
+    // same priced rows the map is cut from (all of them, not just the tiles).
+    const summaryRows: SummaryRow[] = priced.map((r) => ({
+      ticker: r.ticker,
+      name: r.company_name,
+      sectorLabel: shortSector(r.sector),
+      changePct: r.change_percent,
+      marketCap: Number(r.market_cap),
+    }));
+
     // Who was buying. Absent for a day the tape has not landed yet, in which
     // case the section simply does not render.
     let flows: MarketFlow[] = [];
@@ -142,6 +153,8 @@ export async function GET() {
               dashboard.ownedTickers
             )
           : null,
+      verdict: marketVerdict(summaryRows),
+      indexContributors: indexContributors(summaryRows, snapshot?.index_value ?? null),
       updatedLabel: dashboard.updatedLabel,
     };
     return NextResponse.json(body);

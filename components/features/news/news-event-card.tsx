@@ -6,6 +6,7 @@ import Link from "next/link";
 import { Bookmark, EyeOff, ExternalLink, X } from "lucide-react";
 import type { NewsEvent } from "@/lib/news/events";
 import { SectorChip } from "@/components/shared/sector-chip";
+import { AskCopilotLink } from "@/components/shared/ask-copilot-link";
 import { categoryStyle } from "@/lib/news/category-colors";
 import { cn, formatSignedPct } from "@/lib/shared/format";
 
@@ -38,6 +39,31 @@ function Thumbnail({ src, alt, size = "sm" }: { src: string; alt: string; size?:
       }}
     />
   );
+}
+
+/**
+ * Where a story comes from, in small caps. An official PSX announcement
+ * reads differently from a media report, and this is the one place the card
+ * says which it is. Suggested stories keep their "Suggested for you" line.
+ */
+function SourceLabel({ event }: { event: NewsEvent }) {
+  const official = event.verification === "Official";
+  return (
+    <span
+      className={cn(
+        "text-[10px] font-bold uppercase tracking-(--tracking-caps)",
+        official ? "text-text-strong" : "text-text-muted"
+      )}
+    >
+      {official ? "Official announcement" : event.suggested ? "Suggested for you" : event.verification}
+    </span>
+  );
+}
+
+/** The Copilot question for a story that touches something the user holds. */
+function holdingQuestion(event: NewsEvent): string | null {
+  if (event.affectedHoldings.length === 0) return null;
+  return `What does this mean for my holdings: ${event.title}?`;
 }
 
 /** Day-change percentages per ticker, used to annotate holding chips. */
@@ -160,6 +186,7 @@ export function NewsEventCard({
   moves?: TickerMoves;
 }) {
   const state = useEventState(event);
+  const question = holdingQuestion(event);
 
   return (
     <>
@@ -181,7 +208,7 @@ export function NewsEventCard({
               <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-[11px] text-text-muted">
                 <CategoryEyebrow category={event.category} />
                 <span aria-hidden>·</span>
-                <span className="font-medium text-text-strong/75">{event.suggested ? "Suggested for you" : event.verification}</span>
+                <SourceLabel event={event} />
                 <span aria-hidden>·</span>
                 <span>{event.timeLabel}</span>
               </div>
@@ -214,12 +241,6 @@ export function NewsEventCard({
                   {event.whySuggested}
                 </p>
               )}
-              {event.whySuggested && (
-                <p className="mt-3 text-sm leading-relaxed text-text-strong/85">
-                  <span className="font-medium">Why suggested: </span>
-                  {event.whySuggested}
-                </p>
-              )}
               {event.potentialRelevance && (
                 <p className="mt-1.5 text-sm leading-relaxed text-text-muted">
                   <span className="font-medium text-text-strong/75">Potential relevance: </span>
@@ -239,6 +260,12 @@ export function NewsEventCard({
                   <>
                     <span aria-hidden>·</span>
                     <span>{event.relatedCount + 1} related sources</span>
+                  </>
+                )}
+                {question && (
+                  <>
+                    <span aria-hidden>·</span>
+                    <AskCopilotLink question={question} variant="inline" />
                   </>
                 )}
               </div>
@@ -271,6 +298,7 @@ export function NewsEventRow({ event, moves }: { event: NewsEvent; moves?: Ticke
   const state = useEventState(event);
   const firstTicker = event.affectedHoldings[0];
   const move = firstTicker ? moves?.[firstTicker] : null;
+  const question = holdingQuestion(event);
 
   return (
     <div>
@@ -311,8 +339,9 @@ export function NewsEventRow({ event, moves }: { event: NewsEvent; moves?: Ticke
           </Link>
         )}
         <span className="hidden w-32 shrink-0 truncate text-right text-[11px] text-text-muted md:block" title={event.source}>
-          {event.source}
+          {event.verification === "Official" ? <span className="font-bold uppercase tracking-(--tracking-caps) text-text-strong">Official</span> : event.source}
         </span>
+        {question && <AskCopilotLink question={question} variant="inline" className="hidden shrink-0 lg:inline-flex" />}
         <div className="flex shrink-0 items-center gap-0.5 opacity-0 transition-opacity focus-within:opacity-100 group-hover:opacity-100">
           <IconButton active={state.saved} onClick={() => state.toggle("saved")} label={state.saved ? "Unsave" : "Save"} small>
             <Bookmark className="h-3.5 w-3.5" fill={state.saved ? "currentColor" : "none"} />
