@@ -20,6 +20,29 @@ import { cn } from "@/lib/shared/format";
  *
  * Specificity does the work. `[&_th]:x` compiles to `.table th`, which outranks
  * the `.th` class the cell carries, so the overrides land without !important.
+ *
+ * ── What is still hand-rolled, and why ──────────────────────────────────────
+ * Sixteen files still write their own <table>. They are not stragglers; each
+ * one was measured against these two variants and left deliberately. Before
+ * adding a third variant, check whether it earns more than one caller.
+ *
+ *   Chart cells      dashboard/positions-table, stocks/financials-workspace,
+ *                    chat/artifacts. A sparkline in the last column is not
+ *                    something a cell primitive should know about.
+ *   Inline editing   dividends/dividend-form, dividends/dividend-receivables,
+ *                    admin/users/[id]. Inputs and row actions in the cells.
+ *   Grouping         holdings/holdings-table. Collapsible sector headers and
+ *                    a totals row spanning columns. It uses the sort hook.
+ *   Own contract     chat/prose renders markdown tables through react-markdown
+ *                    overrides; stocks/company-report-viewer lays out a PDF.
+ *   Other densities  performance/page (two scales across six tables),
+ *                    performance/ledger-table, dividends/dividend-analytics,
+ *                    stocks/compare, allocation/allocation-view,
+ *                    outlook/signal-explorer. Each sits on a padding scale
+ *                    neither variant produces, so moving them would restyle
+ *                    them. signal-explorer is the closest: it is `reader` one
+ *                    step tighter, and would justify a `compact` density the
+ *                    moment a second table wants it.
  */
 type Variant = "default" | "reader";
 
