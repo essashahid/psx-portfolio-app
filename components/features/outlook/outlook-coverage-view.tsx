@@ -27,7 +27,7 @@ const QUALITY_LABEL: Record<SeriesQuality, string> = {
 function qualityClass(q: SeriesQuality): string {
   if (q === "stale") return "text-amber-700";
   if (q === "missing") return "text-down";
-  return "text-muted-foreground";
+  return "text-text-muted";
 }
 
 const pct = (v: number, digits = 1) => (Number.isFinite(v) ? `${(v * 100).toFixed(digits)}%` : "n/a");
@@ -36,8 +36,8 @@ const signed = (v: number) => (Number.isFinite(v) ? `${v >= 0 ? "+" : ""}${(v * 
 function SectionHeading({ title, blurb }: { title: string; blurb: string }) {
   return (
     <div className="mb-3">
-      <h2 className="text-sm font-semibold tracking-editorial text-foreground">{title}</h2>
-      <p className="mt-1 max-w-3xl text-xs leading-relaxed text-muted-foreground">{blurb}</p>
+      <h2 className="text-sm font-semibold tracking-editorial text-text-strong">{title}</h2>
+      <p className="mt-1 max-w-3xl text-xs leading-relaxed text-text-muted">{blurb}</p>
     </div>
   );
 }
@@ -47,7 +47,7 @@ function SectionHeading({ title, blurb }: { title: string; blurb: string }) {
  * which already supplies a surface. Cards nested inside cards read as clutter.
  */
 function Section({ bare, className, children }: { bare: boolean; className?: string; children: React.ReactNode }) {
-  if (bare) return <div className="border-b border-border/60 pb-4 last:border-0 last:pb-0">{children}</div>;
+  if (bare) return <div className="border-b border-rule/60 pb-4 last:border-0 last:pb-0">{children}</div>;
   return (
     <Card className={className}>
       <CardContent className="p-4">{children}</CardContent>
@@ -57,24 +57,24 @@ function Section({ bare, className, children }: { bare: boolean; className?: str
 
 function CoverageRow({ s }: { s: SeriesCoverage }) {
   return (
-    <tr className="border-b border-border/60 last:border-0">
+    <tr className="border-b border-rule/60 last:border-0">
       <td className="py-2 pr-3">
-        <span className="text-foreground">{s.label}</span>
-        <span className="mt-0.5 block text-[11px] leading-snug text-muted-foreground">{s.note}</span>
+        <span className="text-text-strong">{s.label}</span>
+        <span className="mt-0.5 block text-[11px] leading-snug text-text-muted">{s.note}</span>
       </td>
-      <td className="py-2 pr-3 text-muted-foreground">{s.granularity}</td>
-      <td className="py-2 pr-3 text-right tabular-nums text-muted-foreground">{s.rows.toLocaleString()}</td>
-      <td className="py-2 pr-3 whitespace-nowrap tabular-nums text-muted-foreground">
+      <td className="py-2 pr-3 text-text-muted">{s.granularity}</td>
+      <td className="py-2 pr-3 text-right tabular-nums text-text-muted">{s.rows.toLocaleString()}</td>
+      <td className="py-2 pr-3 whitespace-nowrap tabular-nums text-text-muted">
         {s.firstDate ? `${s.firstDate} to ${s.lastDate}` : "none"}
       </td>
-      <td className="py-2 pr-3 text-right tabular-nums text-muted-foreground">
+      <td className="py-2 pr-3 text-right tabular-nums text-text-muted">
         {s.years > 0 ? `${s.years.toFixed(1)}y` : "n/a"}
       </td>
       <td className={`py-2 pr-3 ${qualityClass(s.quality)}`}>
         {QUALITY_LABEL[s.quality]}
         {s.quality === "stale" && s.ageDays !== null ? ` (${s.ageDays}d)` : ""}
       </td>
-      <td className="py-2 text-muted-foreground">{s.modelReady ? "Yes" : "No"}</td>
+      <td className="py-2 text-text-muted">{s.modelReady ? "Yes" : "No"}</td>
     </tr>
   );
 }
@@ -124,7 +124,7 @@ export function OutlookCoverageView({ report, bare = false }: { report: OutlookC
           <div className="-mx-4 overflow-x-auto px-4">
             <table className="w-full min-w-[46rem] text-xs">
               <thead>
-                <tr className="border-b border-border text-left text-[11px] uppercase tracking-wide text-muted-foreground">
+                <tr className="border-b border-rule text-left text-[11px] uppercase tracking-wide text-text-muted">
                   <th className="pb-2 pr-3 font-medium">Window</th>
                   {thresholds.map((t) => (
                     <th key={t} className="pb-2 pr-3 text-right font-medium">
@@ -141,24 +141,24 @@ export function OutlookCoverageView({ report, bare = false }: { report: OutlookC
                 {report.horizons.map((h) => {
                   const confidence = confidenceFor(h.independentWindows);
                   return (
-                    <tr key={h.key} className="border-b border-border/60 last:border-0">
-                      <td className="py-2 pr-3 text-foreground">
+                    <tr key={h.key} className="border-b border-rule/60 last:border-0">
+                      <td className="py-2 pr-3 text-text-strong">
                         {h.label}
                         {!shown.has(h.key) && (
-                          <span className="ml-1.5 text-[11px] text-muted-foreground">(not shown)</span>
+                          <span className="ml-1.5 text-[11px] text-text-muted">(not shown)</span>
                         )}
                       </td>
                       {h.thresholds.map((t) => (
-                        <td key={t.threshold} className="py-2 pr-3 text-right tabular-nums text-muted-foreground">
+                        <td key={t.threshold} className="py-2 pr-3 text-right tabular-nums text-text-muted">
                           {pct(t.frequency)}
-                          <span className="block text-[10px] text-muted-foreground/70">{t.hits} events</span>
+                          <span className="block text-[10px] text-text-muted/70">{t.hits} events</span>
                         </td>
                       ))}
-                      <td className="py-2 pr-3 text-right tabular-nums text-muted-foreground">{pct(h.positiveRate)}</td>
-                      <td className="py-2 pr-3 text-right tabular-nums text-muted-foreground">
+                      <td className="py-2 pr-3 text-right tabular-nums text-text-muted">{pct(h.positiveRate)}</td>
+                      <td className="py-2 pr-3 text-right tabular-nums text-text-muted">
                         {signed(h.drawdownPercentiles.worst)}
                       </td>
-                      <td className="py-2 pr-3 text-right tabular-nums text-muted-foreground">
+                      <td className="py-2 pr-3 text-right tabular-nums text-text-muted">
                         {h.independentWindows}
                       </td>
                       <td className="py-2">
@@ -170,7 +170,7 @@ export function OutlookCoverageView({ report, bare = false }: { report: OutlookC
               </tbody>
             </table>
           </div>
-          <p className="mt-3 text-[11px] leading-relaxed text-muted-foreground">
+          <p className="mt-3 text-[11px] leading-relaxed text-text-muted">
             Sample counts non-overlapping windows. Overlapping windows reuse the same market episodes, so quoting them
             would make a five-year record look like several thousand independent observations.
           </p>
@@ -185,7 +185,7 @@ export function OutlookCoverageView({ report, bare = false }: { report: OutlookC
             <div className="-mx-4 overflow-x-auto px-4">
               <table className="w-full min-w-[40rem] text-xs">
                 <thead>
-                  <tr className="border-b border-border text-left text-[11px] uppercase tracking-wide text-muted-foreground">
+                  <tr className="border-b border-rule text-left text-[11px] uppercase tracking-wide text-text-muted">
                     <th className="pb-2 pr-3 font-medium">Window</th>
                     <th className="pb-2 pr-3 text-right font-medium">Drop</th>
                     <th className="pb-2 pr-3 text-right font-medium">All periods</th>
@@ -199,16 +199,16 @@ export function OutlookCoverageView({ report, bare = false }: { report: OutlookC
                     const h = report.horizons.find((x) => x.key === v.horizonKey);
                     const informative = Number.isFinite(v.lift) && v.lift >= 1.25;
                     return (
-                      <tr key={`${v.horizonKey}-${v.threshold}`} className="border-b border-border/60 last:border-0">
-                        <td className="py-2 pr-3 text-foreground">{h?.label ?? v.horizonKey}</td>
-                        <td className="py-2 pr-3 text-right tabular-nums text-muted-foreground">
+                      <tr key={`${v.horizonKey}-${v.threshold}`} className="border-b border-rule/60 last:border-0">
+                        <td className="py-2 pr-3 text-text-strong">{h?.label ?? v.horizonKey}</td>
+                        <td className="py-2 pr-3 text-right tabular-nums text-text-muted">
                           {Math.abs(v.threshold * 100).toFixed(0)}%
                         </td>
-                        <td className="py-2 pr-3 text-right tabular-nums text-muted-foreground">{pct(v.baseRate)}</td>
-                        <td className="py-2 pr-3 text-right tabular-nums text-muted-foreground">{pct(v.lowVolRate)}</td>
-                        <td className="py-2 pr-3 text-right tabular-nums text-muted-foreground">{pct(v.highVolRate)}</td>
+                        <td className="py-2 pr-3 text-right tabular-nums text-text-muted">{pct(v.baseRate)}</td>
+                        <td className="py-2 pr-3 text-right tabular-nums text-text-muted">{pct(v.lowVolRate)}</td>
+                        <td className="py-2 pr-3 text-right tabular-nums text-text-muted">{pct(v.highVolRate)}</td>
                         <td
-                          className={`py-2 text-right tabular-nums ${informative ? "font-medium text-foreground" : "text-muted-foreground"}`}
+                          className={`py-2 text-right tabular-nums ${informative ? "font-medium text-text-strong" : "text-text-muted"}`}
                         >
                           {Number.isFinite(v.lift) ? `${v.lift.toFixed(2)}x` : "n/a"}
                         </td>
@@ -230,7 +230,7 @@ export function OutlookCoverageView({ report, bare = false }: { report: OutlookC
             <div className="-mx-4 overflow-x-auto px-4">
               <table className="w-full min-w-[44rem] text-xs">
                 <thead>
-                  <tr className="border-b border-border text-left text-[11px] uppercase tracking-wide text-muted-foreground">
+                  <tr className="border-b border-rule text-left text-[11px] uppercase tracking-wide text-text-muted">
                     <th className="pb-2 pr-3 font-medium">Window</th>
                     <th className="pb-2 pr-3 text-right font-medium">Drop</th>
                     <th className="pb-2 pr-3 text-right font-medium">Calm + broad</th>
@@ -243,28 +243,28 @@ export function OutlookCoverageView({ report, bare = false }: { report: OutlookC
                   {report.breadthSignal.quadrants.map((q) => {
                     const h = report.horizons.find((x) => x.key === q.horizonKey);
                     return (
-                      <tr key={`${q.horizonKey}-${q.threshold}`} className="border-b border-border/60 last:border-0">
-                        <td className="py-2 pr-3 text-foreground">{h?.label ?? q.horizonKey}</td>
-                        <td className="py-2 pr-3 text-right tabular-nums text-muted-foreground">
+                      <tr key={`${q.horizonKey}-${q.threshold}`} className="border-b border-rule/60 last:border-0">
+                        <td className="py-2 pr-3 text-text-strong">{h?.label ?? q.horizonKey}</td>
+                        <td className="py-2 pr-3 text-right tabular-nums text-text-muted">
                           {Math.abs(q.threshold * 100).toFixed(0)}%
                         </td>
-                        <td className="py-2 pr-3 text-right tabular-nums text-muted-foreground">
+                        <td className="py-2 pr-3 text-right tabular-nums text-text-muted">
                           {pct(q.calmBroad.rate)}
                         </td>
-                        <td className="py-2 pr-3 text-right tabular-nums text-muted-foreground">
+                        <td className="py-2 pr-3 text-right tabular-nums text-text-muted">
                           {pct(q.calmNarrow.rate)}
                         </td>
                         <td
-                          className={`py-2 pr-3 text-right tabular-nums ${q.quotable ? "font-medium text-foreground" : "text-muted-foreground/50"}`}
+                          className={`py-2 pr-3 text-right tabular-nums ${q.quotable ? "font-medium text-text-strong" : "text-text-muted/50"}`}
                         >
                           {q.quotable && Number.isFinite(q.narrowLiftWithinCalm)
                             ? `${q.narrowLiftWithinCalm.toFixed(2)}x`
                             : "too thin"}
                         </td>
-                        <td className="py-2 text-right tabular-nums text-muted-foreground">
+                        <td className="py-2 text-right tabular-nums text-text-muted">
                           {q.calmNarrowEpisodes}
                           {q.calmNarrowHits > 0 && (
-                            <span className="ml-1 text-[10px] text-muted-foreground/70">({q.calmNarrowHits} windows)</span>
+                            <span className="ml-1 text-[10px] text-text-muted/70">({q.calmNarrowHits} windows)</span>
                           )}
                         </td>
                       </tr>
@@ -273,7 +273,7 @@ export function OutlookCoverageView({ report, bare = false }: { report: OutlookC
                 </tbody>
               </table>
             </div>
-            <p className="mt-3 text-[11px] leading-relaxed text-muted-foreground">
+            <p className="mt-3 text-[11px] leading-relaxed text-text-muted">
               Ratios are withheld below {MIN_EPISODES_TO_QUOTE} distinct episodes. Several of the largest figures here
               rest on one or two market episodes seen through overlapping windows, which describes those episodes rather
               than a pattern. Measured over {report.breadthSignal.usableSessions} sessions from{" "}
@@ -291,7 +291,7 @@ export function OutlookCoverageView({ report, bare = false }: { report: OutlookC
           <div className="-mx-4 overflow-x-auto px-4">
             <table className="w-full min-w-[52rem] text-xs">
               <thead>
-                <tr className="border-b border-border text-left text-[11px] uppercase tracking-wide text-muted-foreground">
+                <tr className="border-b border-rule text-left text-[11px] uppercase tracking-wide text-text-muted">
                   <th className="pb-2 pr-3 font-medium">Series</th>
                   <th className="pb-2 pr-3 font-medium">Grain</th>
                   <th className="pb-2 pr-3 text-right font-medium">Rows</th>
@@ -317,16 +317,16 @@ export function OutlookCoverageView({ report, bare = false }: { report: OutlookC
           />
           <ul className="space-y-3">
             {report.missing.map((m) => (
-              <li key={m.key} className="border-b border-border/60 pb-3 last:border-0 last:pb-0">
-                <p className="text-xs font-medium text-foreground">{m.label}</p>
-                <p className="mt-0.5 text-[11px] leading-relaxed text-muted-foreground">{m.why}</p>
+              <li key={m.key} className="border-b border-rule/60 pb-3 last:border-0 last:pb-0">
+                <p className="text-xs font-medium text-text-strong">{m.label}</p>
+                <p className="mt-0.5 text-[11px] leading-relaxed text-text-muted">{m.why}</p>
               </li>
             ))}
           </ul>
       </Section>
 
       {report.index && (
-        <p className="text-[11px] leading-relaxed text-muted-foreground">
+        <p className="text-[11px] leading-relaxed text-text-muted">
           Index continuity: {report.index.points.toLocaleString()} sessions from {report.index.firstDate} to{" "}
           {report.index.lastDate}, with {report.index.gaps.totalMissingWeekdays} weekdays absent across the span, the
           longest run being {report.index.gaps.longestGapWeekdays} weekdays. Those absences are market holidays and

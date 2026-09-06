@@ -182,7 +182,7 @@ export function BenchmarkGrowthChart({ data }: { data: BenchmarkPointRow[] }) {
             </LineChart>
           </ResponsiveContainer>
         </div>
-        <p className="mt-2 text-xs text-muted-foreground">{MODE_CAPTION[mode]}</p>
+        <p className="mt-2 text-xs text-text-muted">{MODE_CAPTION[mode]}</p>
       </div>
     </section>
   );

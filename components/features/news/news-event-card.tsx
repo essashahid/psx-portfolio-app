@@ -30,7 +30,7 @@ function Thumbnail({ src, alt, size = "sm" }: { src: string; alt: string; size?:
       alt={alt}
       loading="lazy"
       className={cn(
-        "shrink-0 rounded-md border border-border object-cover",
+        "shrink-0 rounded-md border border-rule object-cover",
         size === "lg" ? "aspect-video w-full" : "h-20 w-20 sm:h-24 sm:w-28"
       )}
       onError={(e) => {
@@ -124,12 +124,12 @@ function AffectedChips({ event, moves, max = 6 }: { event: NewsEvent; moves?: Ti
           <Link
             key={ticker}
             href={`/news?ticker=${encodeURIComponent(ticker)}`}
-            className="inline-flex items-center gap-1.5 rounded-md border border-border px-2 py-0.5 text-[11px] font-medium text-foreground/80 transition-colors hover:border-foreground/30 hover:text-foreground"
+            className="inline-flex items-center gap-1.5 rounded-md border border-rule px-2 py-0.5 text-[11px] font-medium text-text-strong/80 transition-colors hover:border-text-strong/30 hover:text-text-strong"
             title={`Filter news for ${ticker}`}
           >
             {ticker}
             {typeof move === "number" && (
-              <span className={cn("tabular-nums", move > 0 ? "text-up" : move < 0 ? "text-down" : "text-muted-foreground")}>
+              <span className={cn("tabular-nums", move > 0 ? "text-up" : move < 0 ? "text-down" : "text-text-muted")}>
                 {formatSignedPct(move)}
               </span>
             )}
@@ -142,7 +142,7 @@ function AffectedChips({ event, moves, max = 6 }: { event: NewsEvent; moves?: Ti
         </Link>
       ))}
       {assets.map((asset) => (
-        <span key={asset} className="rounded-md border border-border px-2 py-0.5 text-[11px] text-foreground/70">
+        <span key={asset} className="rounded-md border border-rule px-2 py-0.5 text-[11px] text-text-strong/70">
           {asset}
         </span>
       ))}
@@ -165,7 +165,7 @@ export function NewsEventCard({
     <>
       <article
         className={cn(
-          "group rounded-lg border border-border bg-card transition-colors hover:border-foreground/20",
+          "group rounded-lg border border-rule bg-surface-raised transition-colors hover:border-text-strong/20",
           featured ? "p-5 shadow-card" : "p-4",
           state.hidden && "opacity-45"
         )}
@@ -178,10 +178,10 @@ export function NewsEventCard({
         <div className="flex items-start justify-between gap-4">
           <div className="min-w-0 flex-1">
             <button type="button" onClick={state.openDrawer} className="block w-full text-left">
-              <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-[11px] text-muted-foreground">
+              <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-[11px] text-text-muted">
                 <CategoryEyebrow category={event.category} />
                 <span aria-hidden>·</span>
-                <span className="font-medium text-foreground/75">{event.suggested ? "Suggested for you" : event.verification}</span>
+                <span className="font-medium text-text-strong/75">{event.suggested ? "Suggested for you" : event.verification}</span>
                 <span aria-hidden>·</span>
                 <span>{event.timeLabel}</span>
               </div>
@@ -191,13 +191,13 @@ export function NewsEventCard({
                     className={cn(
                       "font-semibold leading-snug tracking-editorial transition-colors",
                       featured ? "text-xl sm:text-2xl" : "text-base",
-                      state.read ? "text-foreground/60" : "text-foreground"
+                      state.read ? "text-text-strong/60" : "text-text-strong"
                     )}
                   >
                     {event.title}
                   </h2>
                   {event.summary && (
-                    <p className={cn("mt-2 leading-relaxed text-muted-foreground", featured ? "text-sm" : "line-clamp-2 text-sm")}>
+                    <p className={cn("mt-2 leading-relaxed text-text-muted", featured ? "text-sm" : "line-clamp-2 text-sm")}>
                       {event.summary}
                     </p>
                   )}
@@ -209,27 +209,27 @@ export function NewsEventCard({
                 )}
               </div>
               {event.whySuggested && (
-                <p className="mt-3 text-sm leading-relaxed text-foreground/85">
+                <p className="mt-3 text-sm leading-relaxed text-text-strong/85">
                   <span className="font-medium">Why suggested: </span>
                   {event.whySuggested}
                 </p>
               )}
               {event.whySuggested && (
-                <p className="mt-3 text-sm leading-relaxed text-foreground/85">
+                <p className="mt-3 text-sm leading-relaxed text-text-strong/85">
                   <span className="font-medium">Why suggested: </span>
                   {event.whySuggested}
                 </p>
               )}
               {event.potentialRelevance && (
-                <p className="mt-1.5 text-sm leading-relaxed text-muted-foreground">
-                  <span className="font-medium text-foreground/75">Potential relevance: </span>
+                <p className="mt-1.5 text-sm leading-relaxed text-text-muted">
+                  <span className="font-medium text-text-strong/75">Potential relevance: </span>
                   {event.potentialRelevance}
                 </p>
               )}
             </button>
             <div className="mt-3 space-y-3">
               <AffectedChips event={event} moves={moves} />
-              <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-[11px] text-muted-foreground">
+              <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-[11px] text-text-muted">
                 <span>{event.importance} importance</span>
                 <span aria-hidden>·</span>
                 <span>{event.sourceStatus}</span>
@@ -276,11 +276,11 @@ export function NewsEventRow({ event, moves }: { event: NewsEvent; moves?: Ticke
     <div>
       <div
         className={cn(
-          "group flex items-center gap-3 rounded-md px-2 py-2 transition-colors hover:bg-muted/40",
+          "group flex items-center gap-3 rounded-md px-2 py-2 transition-colors hover:bg-surface-sunken/40",
           state.hidden && "opacity-45"
         )}
       >
-        <span className="w-14 shrink-0 text-[11px] tabular-nums text-muted-foreground">{event.timeLabel}</span>
+        <span className="w-14 shrink-0 text-[11px] tabular-nums text-text-muted">{event.timeLabel}</span>
         <span
           className="h-1.5 w-1.5 shrink-0 rounded-full"
           style={{ backgroundColor: categoryStyle(event.category).color }}
@@ -290,8 +290,8 @@ export function NewsEventRow({ event, moves }: { event: NewsEvent; moves?: Ticke
           type="button"
           onClick={state.openDrawer}
           className={cn(
-            "min-w-0 flex-1 truncate text-left text-sm font-medium transition-colors hover:text-foreground",
-            state.read ? "text-foreground/55" : "text-foreground/90"
+            "min-w-0 flex-1 truncate text-left text-sm font-medium transition-colors hover:text-text-strong",
+            state.read ? "text-text-strong/55" : "text-text-strong/90"
           )}
           title={event.title}
         >
@@ -300,17 +300,17 @@ export function NewsEventRow({ event, moves }: { event: NewsEvent; moves?: Ticke
         {firstTicker && (
           <Link
             href={`/news?ticker=${encodeURIComponent(firstTicker)}`}
-            className="hidden shrink-0 items-center gap-1 rounded-md border border-border px-1.5 py-0.5 text-[11px] font-medium text-foreground/75 transition-colors hover:border-foreground/30 sm:inline-flex"
+            className="hidden shrink-0 items-center gap-1 rounded-md border border-rule px-1.5 py-0.5 text-[11px] font-medium text-text-strong/75 transition-colors hover:border-text-strong/30 sm:inline-flex"
           >
             {firstTicker}
             {typeof move === "number" && (
-              <span className={cn("tabular-nums", move > 0 ? "text-up" : move < 0 ? "text-down" : "text-muted-foreground")}>
+              <span className={cn("tabular-nums", move > 0 ? "text-up" : move < 0 ? "text-down" : "text-text-muted")}>
                 {formatSignedPct(move)}
               </span>
             )}
           </Link>
         )}
-        <span className="hidden w-32 shrink-0 truncate text-right text-[11px] text-muted-foreground md:block" title={event.source}>
+        <span className="hidden w-32 shrink-0 truncate text-right text-[11px] text-text-muted md:block" title={event.source}>
           {event.source}
         </span>
         <div className="flex shrink-0 items-center gap-0.5 opacity-0 transition-opacity focus-within:opacity-100 group-hover:opacity-100">
@@ -355,20 +355,20 @@ function EventDetailDrawer({
   // trapped by any ancestor that carries a transform or filter.
   if (typeof document === "undefined") return null;
   return createPortal(
-    <div className="palette-overlay fixed inset-0 z-100 bg-background/60 backdrop-blur-sm" role="dialog" aria-modal="true" onClick={onClose}>
+    <div className="palette-overlay fixed inset-0 z-100 bg-surface-page/60 backdrop-blur-sm" role="dialog" aria-modal="true" onClick={onClose}>
       <div
-        className="palette-panel absolute right-0 top-0 flex h-full w-full max-w-xl flex-col overflow-y-auto border-l border-border bg-card shadow-2xl"
+        className="palette-panel absolute right-0 top-0 flex h-full w-full max-w-xl flex-col overflow-y-auto border-l border-rule bg-surface-raised shadow-2xl"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="sticky top-0 z-10 flex items-center justify-between border-b border-border bg-card px-5 py-4">
+        <div className="sticky top-0 z-10 flex items-center justify-between border-b border-rule bg-surface-raised px-5 py-4">
           <div className="min-w-0">
-            <div className="flex items-center gap-2 text-[11px] text-muted-foreground">
+            <div className="flex items-center gap-2 text-[11px] text-text-muted">
               <CategoryEyebrow category={event.category} />
               <span>{event.verification} · {event.importance} importance</span>
             </div>
             <h2 className="mt-1 line-clamp-2 text-base font-semibold">{event.title}</h2>
           </div>
-          <button onClick={onClose} className="ml-4 flex h-8 w-8 shrink-0 items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground" aria-label="Close">
+          <button onClick={onClose} className="ml-4 flex h-8 w-8 shrink-0 items-center justify-center rounded-md text-text-muted hover:bg-surface-sunken hover:text-text-strong" aria-label="Close">
             <X className="h-4 w-4" />
           </button>
         </div>
@@ -402,7 +402,7 @@ function EventDetailDrawer({
                   <Link
                     key={ticker}
                     href={`/stocks/${ticker}`}
-                    className="rounded-md border border-border px-2 py-1 text-xs font-medium transition-colors hover:border-foreground/30"
+                    className="rounded-md border border-rule px-2 py-1 text-xs font-medium transition-colors hover:border-text-strong/30"
                     title={`Open ${ticker}`}
                   >
                     {ticker}
@@ -412,7 +412,7 @@ function EventDetailDrawer({
                   <SectorChip key={sector} sector={sector} />
                 ))}
                 {event.affectedAssets.map((asset) => (
-                  <span key={asset} className="rounded-md border border-border px-2 py-1 text-xs">{asset}</span>
+                  <span key={asset} className="rounded-md border border-rule px-2 py-1 text-xs">{asset}</span>
                 ))}
               </div>
             ) : (
@@ -424,7 +424,7 @@ function EventDetailDrawer({
             <DetailSection title="What to watch">
               <ul className="space-y-1.5">
                 {event.whatToWatch.map((item) => (
-                  <li key={item} className="text-sm text-foreground/85">- {item}</li>
+                  <li key={item} className="text-sm text-text-strong/85">- {item}</li>
                 ))}
               </ul>
             </DetailSection>
@@ -434,7 +434,7 @@ function EventDetailDrawer({
             <p>{event.sourceStatus}</p>
             <div className="mt-2 flex flex-wrap gap-1.5">
               {event.relatedSources.map((source) => (
-                <span key={source} className="rounded-md bg-muted px-2 py-1 text-xs text-muted-foreground">{source}</span>
+                <span key={source} className="rounded-md bg-surface-sunken px-2 py-1 text-xs text-text-muted">{source}</span>
               ))}
             </div>
             <a href={event.url} target="_blank" rel="noopener noreferrer" className="mt-3 inline-flex items-center gap-1.5 text-sm font-medium hover:underline">
@@ -442,14 +442,14 @@ function EventDetailDrawer({
             </a>
           </DetailSection>
 
-          <div className="flex flex-wrap gap-2 border-t border-border pt-4">
-            <button onClick={() => onToggle("saved")} className="rounded-md border border-border px-3 py-2 text-sm hover:bg-muted">
+          <div className="flex flex-wrap gap-2 border-t border-rule pt-4">
+            <button onClick={() => onToggle("saved")} className="rounded-md border border-rule px-3 py-2 text-sm hover:bg-surface-sunken">
               {saved ? "Unsave" : "Save"}
             </button>
-            <button onClick={() => onToggle("ignored")} className="rounded-md border border-border px-3 py-2 text-sm hover:bg-muted">
+            <button onClick={() => onToggle("ignored")} className="rounded-md border border-rule px-3 py-2 text-sm hover:bg-surface-sunken">
               {hidden ? "Un-hide" : "Hide"}
             </button>
-            <a href={event.url} target="_blank" rel="noopener noreferrer" className="rounded-md border border-border px-3 py-2 text-sm hover:bg-muted">
+            <a href={event.url} target="_blank" rel="noopener noreferrer" className="rounded-md border border-rule px-3 py-2 text-sm hover:bg-surface-sunken">
               Open source
             </a>
             <Link
@@ -458,7 +458,7 @@ function EventDetailDrawer({
                   ? `How does this affect ${event.affectedHoldings.join(", ")}? ${event.title}`
                   : `What does this mean for my portfolio? ${event.title}`
               )}`}
-              className="rounded-md border border-border px-3 py-2 text-sm hover:bg-muted"
+              className="rounded-md border border-rule px-3 py-2 text-sm hover:bg-surface-sunken"
             >
               Ask Copilot
             </Link>
@@ -473,8 +473,8 @@ function EventDetailDrawer({
 function DetailSection({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <section>
-      <h3 className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground">{title}</h3>
-      <div className="text-sm leading-relaxed text-foreground/85">{children}</div>
+      <h3 className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-text-muted">{title}</h3>
+      <div className="text-sm leading-relaxed text-text-strong/85">{children}</div>
     </section>
   );
 }
@@ -499,9 +499,9 @@ function IconButton({
       aria-label={label}
       aria-pressed={active}
       className={cn(
-        "flex items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground",
+        "flex items-center justify-center rounded-md text-text-muted transition-colors hover:bg-surface-sunken hover:text-text-strong",
         small ? "h-7 w-7" : "h-8 w-8",
-        active && "text-foreground"
+        active && "text-text-strong"
       )}
     >
       {children}

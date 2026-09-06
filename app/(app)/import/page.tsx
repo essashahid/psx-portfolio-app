@@ -34,7 +34,7 @@ export default async function ImportPage() {
         </CardHeader>
         <CardContent>
           {(batches ?? []).length === 0 ? (
-            <p className="py-6 text-center text-xs text-muted-foreground">No imports yet.</p>
+            <p className="py-6 text-center text-xs text-text-muted">No imports yet.</p>
           ) : (
             <Table>
               <THead>

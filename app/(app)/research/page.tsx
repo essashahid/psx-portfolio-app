@@ -48,7 +48,7 @@ export default async function ResearchLibraryPage({
         <Card className="lg:max-h-[calc(100vh-12rem)] lg:overflow-y-auto">
           <CardContent className="p-2">
             {(!reports || reports.length === 0) && (
-              <p className="px-2 py-6 text-center text-xs text-muted-foreground">
+              <p className="px-2 py-6 text-center text-xs text-text-muted">
                 No reports yet. Generate one from Stock Research or Holdings.
               </p>
             )}
@@ -59,14 +59,14 @@ export default async function ResearchLibraryPage({
                 <Link
                   key={r.id}
                   href={`/research?id=${r.id}`}
-                  className={`block rounded-md px-2.5 py-2 text-left transition-colors ${active ? "bg-accent" : "hover:bg-muted"}`}
+                  className={`block rounded-md px-2.5 py-2 text-left transition-colors ${active ? "bg-surface-inset" : "hover:bg-surface-sunken"}`}
                 >
                   <div className="flex items-center gap-2">
                     <span className="text-sm font-semibold">{r.ticker}</span>
                     <Badge variant="secondary" className="text-[10px]">v{v}</Badge>
                   </div>
-                  <p className="truncate text-xs text-muted-foreground">{r.title}</p>
-                  <p className="text-[10px] text-muted-foreground">{r.created_at.slice(0, 16).replace("T", " ")}</p>
+                  <p className="truncate text-xs text-text-muted">{r.title}</p>
+                  <p className="text-[10px] text-text-muted">{r.created_at.slice(0, 16).replace("T", " ")}</p>
                 </Link>
               );
             })}
@@ -79,18 +79,18 @@ export default async function ResearchLibraryPage({
               <div className="flex flex-wrap items-center gap-2">
                 <a
                   href={`/api/reports/company/${selected.id}/pdf`}
-                  className="inline-flex h-8 items-center gap-1.5 rounded-md border border-border px-3 text-xs font-medium hover:bg-muted"
+                  className="inline-flex h-8 items-center gap-1.5 rounded-md border border-rule px-3 text-xs font-medium hover:bg-surface-sunken"
                 >
                   <FileText className="h-3.5 w-3.5" /> PDF
                 </a>
                 <a
                   href={`/api/reports/company/${selected.id}/docx`}
-                  className="inline-flex h-8 items-center gap-1.5 rounded-md border border-border px-3 text-xs font-medium hover:bg-muted"
+                  className="inline-flex h-8 items-center gap-1.5 rounded-md border border-rule px-3 text-xs font-medium hover:bg-surface-sunken"
                 >
                   DOCX
                 </a>
                 <RefreshReportButton reportId={selected.id} />
-                <Link href={`/stocks/${selected.ticker}`} className="text-xs text-muted-foreground hover:text-foreground">
+                <Link href={`/stocks/${selected.ticker}`} className="text-xs text-text-muted hover:text-text-strong">
                   Open {selected.ticker} research →
                 </Link>
               </div>
@@ -98,7 +98,7 @@ export default async function ResearchLibraryPage({
                 <Card>
                   <CardContent className="p-3 text-xs">
                     <p className="font-semibold">What changed since previous version</p>
-                    <ul className="mt-1 list-inside list-disc text-muted-foreground">
+                    <ul className="mt-1 list-inside list-disc text-text-muted">
                       {payload.versionDiff.summary.map((s) => <li key={s}>{s}</li>)}
                     </ul>
                   </CardContent>
@@ -109,9 +109,9 @@ export default async function ResearchLibraryPage({
           ) : (
             <Card>
               <CardContent className="flex flex-col items-center justify-center gap-2 py-16 text-center">
-                <FileText className="h-8 w-8 text-muted-foreground" />
+                <FileText className="h-8 w-8 text-text-muted" />
                 <p className="text-sm font-medium">Select a report</p>
-                <p className="text-xs text-muted-foreground">Or generate a new report from any company page.</p>
+                <p className="text-xs text-text-muted">Or generate a new report from any company page.</p>
                 <Link href="/stocks" className="text-xs font-medium text-primary hover:underline">Browse stocks</Link>
               </CardContent>
             </Card>

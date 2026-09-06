@@ -27,9 +27,9 @@ function scoreColor(v: number): string {
 }
 
 function ScoreBar({ value }: { value: number | null }) {
-  if (value == null) return <div className="h-1.5 w-full rounded-full bg-muted" title="No data" />;
+  if (value == null) return <div className="h-1.5 w-full rounded-full bg-surface-sunken" title="No data" />;
   return (
-    <div className="h-1.5 w-full overflow-hidden rounded-full bg-muted" title={value.toFixed(0)}>
+    <div className="h-1.5 w-full overflow-hidden rounded-full bg-surface-sunken" title={value.toFixed(0)}>
       <div
         className={cn("h-full rounded-full", scoreColor(value))}
         style={{ width: `${value}%`, transition: "width var(--dur-base) var(--ease-out)" }}
@@ -65,18 +65,18 @@ export function ScoreBoard({ stocks, owned = [] }: { stocks: ScoredStock[]; owne
     <div className="space-y-3">
       <div className="flex flex-wrap items-center gap-2">
         <div className="relative min-w-[11.25rem] flex-1">
-          <Search className="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
+          <Search className="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-text-muted" />
           <input
             value={query}
             onChange={(e) => { setQuery(e.target.value); setVisible(PAGE); }}
             placeholder="Filter by ticker or company…"
-            className="h-11 w-full rounded-lg border border-border bg-card pl-8 pr-3 text-base outline-none focus:ring-2 focus:ring-emerald-500/30 md:h-9 md:text-sm"
+            className="h-11 w-full rounded-lg border border-rule bg-surface-raised pl-8 pr-3 text-base outline-none focus:ring-2 focus:ring-emerald-500/30 md:h-9 md:text-sm"
           />
         </div>
         {hasOwned && (
           <button
             onClick={() => { setOwnedOnly((v) => !v); setVisible(PAGE); }}
-            className={cn("flex h-11 shrink-0 items-center gap-1.5 rounded-full px-3 text-[11px] font-medium transition-colors md:h-auto md:px-2.5 md:py-1.5", ownedOnly ? "bg-emerald-600 text-white" : "bg-muted text-muted-foreground hover:text-foreground")}
+            className={cn("flex h-11 shrink-0 items-center gap-1.5 rounded-full px-3 text-[11px] font-medium transition-colors md:h-auto md:px-2.5 md:py-1.5", ownedOnly ? "bg-emerald-600 text-white" : "bg-surface-sunken text-text-muted hover:text-text-strong")}
           >
             <Briefcase className="h-3 w-3" /> Owned
           </button>
@@ -88,18 +88,18 @@ export function ScoreBoard({ stocks, owned = [] }: { stocks: ScoredStock[]; owne
           <button
             key={b}
             onClick={() => { setBucket(b); setVisible(PAGE); }}
-            className={cn("h-10 shrink-0 rounded-full px-3 text-[11px] font-medium transition-colors md:h-auto md:px-2.5 md:py-1", bucket === b ? "bg-foreground text-background" : "bg-muted text-muted-foreground hover:text-foreground")}
+            className={cn("h-10 shrink-0 rounded-full px-3 text-[11px] font-medium transition-colors md:h-auto md:px-2.5 md:py-1", bucket === b ? "bg-text-strong text-surface-page" : "bg-surface-sunken text-text-muted hover:text-text-strong")}
           >
             {b === "all" ? "All sectors" : BUCKET_META[b].label}
           </button>
         ))}
         <div className="ml-auto flex shrink-0 items-center gap-1">
-          <span className="text-[10px] text-muted-foreground">Rank by</span>
+          <span className="text-[10px] text-text-muted">Rank by</span>
           {(["score", ...SUB_KEYS] as const).map((k) => (
             <button
               key={k}
               onClick={() => { setSortKey(k); setVisible(PAGE); }}
-              className={cn("flex h-10 shrink-0 items-center gap-0.5 rounded-md px-2 text-[11px] font-medium capitalize transition-colors md:h-auto md:py-1", sortKey === k ? "bg-emerald-50 text-up" : "text-muted-foreground hover:text-foreground")}
+              className={cn("flex h-10 shrink-0 items-center gap-0.5 rounded-md px-2 text-[11px] font-medium capitalize transition-colors md:h-auto md:py-1", sortKey === k ? "bg-emerald-50 text-up" : "text-text-muted hover:text-text-strong")}
             >
               {k === "score" ? "Score" : SUBSCORE_META[k as SubScoreKey].label}
             </button>
@@ -107,10 +107,10 @@ export function ScoreBoard({ stocks, owned = [] }: { stocks: ScoredStock[]; owne
         </div>
       </div>
 
-      <p className="text-[11px] text-muted-foreground">{filtered.length} ranked companies</p>
+      <p className="text-[11px] text-text-muted">{filtered.length} ranked companies</p>
 
       {/* Header */}
-      <div className="hidden grid-cols-[28px_minmax(0,1.8fr)_56px_repeat(5,minmax(0,1fr))_72px] items-center gap-2 border-b border-border px-3 pb-1.5 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground lg:grid">
+      <div className="hidden grid-cols-[28px_minmax(0,1.8fr)_56px_repeat(5,minmax(0,1fr))_72px] items-center gap-2 border-b border-rule px-3 pb-1.5 text-[10px] font-semibold uppercase tracking-wide text-text-muted lg:grid">
         <span>#</span>
         <span>Company</span>
         <span className="text-center">Score</span>
@@ -119,9 +119,9 @@ export function ScoreBoard({ stocks, owned = [] }: { stocks: ScoredStock[]; owne
       </div>
 
       {shown.length === 0 ? (
-        <p className="py-10 text-center text-xs text-muted-foreground">No ranked companies match these filters.</p>
+        <p className="py-10 text-center text-xs text-text-muted">No ranked companies match these filters.</p>
       ) : (
-        <div className="divide-y divide-border overflow-hidden rounded-xl border border-border bg-card">
+        <div className="divide-y divide-rule overflow-hidden rounded-xl border border-rule bg-surface-raised">
           {shown.map((s) => {
             const t = tone(s.changePercent);
             const isOpen = expanded === s.ticker;
@@ -130,17 +130,17 @@ export function ScoreBoard({ stocks, owned = [] }: { stocks: ScoredStock[]; owne
               <div key={s.ticker}>
                 <button
                   onClick={() => setExpanded(isOpen ? null : s.ticker)}
-                  className="grid min-h-14 w-full grid-cols-[28px_minmax(0,1fr)_auto] items-center gap-2 px-3 py-2.5 text-left transition-colors hover:bg-muted/50 lg:min-h-0 lg:grid-cols-[28px_minmax(0,1.8fr)_56px_repeat(5,minmax(0,1fr))_72px] lg:py-2"
+                  className="grid min-h-14 w-full grid-cols-[28px_minmax(0,1fr)_auto] items-center gap-2 px-3 py-2.5 text-left transition-colors hover:bg-surface-sunken/50 lg:min-h-0 lg:grid-cols-[28px_minmax(0,1.8fr)_56px_repeat(5,minmax(0,1fr))_72px] lg:py-2"
                 >
-                  <span className="text-xs font-semibold tabular-nums text-muted-foreground">{s.rank}</span>
+                  <span className="text-xs font-semibold tabular-nums text-text-muted">{s.rank}</span>
                   <div className="flex min-w-0 items-center gap-1.5">
                     <div className="min-w-0">
                       <div className="flex items-center gap-1.5">
                         <span className="text-sm font-semibold">{s.ticker}</span>
                         {isOwned && <Briefcase className="h-3 w-3 text-up" aria-label="Owned" />}
-                        <span className="rounded bg-muted px-1 text-[8px] font-semibold uppercase text-muted-foreground">{BUCKET_META[s.bucket].label}</span>
+                        <span className="rounded bg-surface-sunken px-1 text-[8px] font-semibold uppercase text-text-muted">{BUCKET_META[s.bucket].label}</span>
                       </div>
-                      <p className="truncate text-[11px] text-muted-foreground">{s.companyName ?? s.sector ?? ""}</p>
+                      <p className="truncate text-[11px] text-text-muted">{s.companyName ?? s.sector ?? ""}</p>
                     </div>
                   </div>
                   <div className="hidden items-center justify-center lg:flex">
@@ -152,7 +152,7 @@ export function ScoreBoard({ stocks, owned = [] }: { stocks: ScoredStock[]; owne
                     </div>
                   ))}
                   <div className="text-right">
-                    <span className={cn("inline-block rounded-md px-1.5 py-0.5 text-xs font-bold tabular-nums lg:bg-transparent lg:px-0", t === "positive" ? "bg-emerald-50 text-up lg:text-up" : t === "negative" ? "bg-red-50 text-down lg:text-down" : "text-muted-foreground")}>{fmtPct(s.changePercent)}</span>
+                    <span className={cn("inline-block rounded-md px-1.5 py-0.5 text-xs font-bold tabular-nums lg:bg-transparent lg:px-0", t === "positive" ? "bg-emerald-50 text-up lg:text-up" : t === "negative" ? "bg-red-50 text-down lg:text-down" : "text-text-muted")}>{fmtPct(s.changePercent)}</span>
                     <span className={cn("ml-2 inline-flex h-8 w-8 items-center justify-center rounded-full text-xs font-bold tabular-nums text-white lg:hidden", scoreColor(s.score))}>
                       {s.score.toFixed(0)}
                     </span>
@@ -168,7 +168,7 @@ export function ScoreBoard({ stocks, owned = [] }: { stocks: ScoredStock[]; owne
 
       {filtered.length > visible && (
         <div className="text-center">
-          <button onClick={() => setVisible((v) => v + PAGE)} className="rounded-lg border border-border px-4 py-1.5 text-xs font-medium transition-colors hover:bg-muted">
+          <button onClick={() => setVisible((v) => v + PAGE)} className="rounded-lg border border-rule px-4 py-1.5 text-xs font-medium transition-colors hover:bg-surface-sunken">
             Show more ({filtered.length - visible} remaining)
           </button>
         </div>
@@ -212,47 +212,47 @@ function ScoreDetail({ s }: { s: ScoredStock }) {
     metricRow("RSI (14)", m.rsi, (v) => v.toFixed(0)),
   ];
   return (
-    <div className="grid gap-4 border-t border-border bg-muted/30 px-4 py-3 xl:grid-cols-4">
+    <div className="grid gap-4 border-t border-rule bg-surface-sunken/30 px-4 py-3 xl:grid-cols-4">
       <div>
-        <p className="mb-2 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">Sub-scores</p>
+        <p className="mb-2 text-[10px] font-semibold uppercase tracking-wide text-text-muted">Sub-scores</p>
         <div className="space-y-1.5">
           {(Object.keys(SUBSCORE_META) as SubScoreKey[]).map((k) => (
             <div key={k} className="flex items-center gap-2">
               <span className="w-20 shrink-0 text-[11px] capitalize">{SUBSCORE_META[k].label}</span>
               <ScoreBar value={s.subScores[k]} />
-              <span className="w-7 shrink-0 text-right text-[11px] tabular-nums text-muted-foreground">{s.subScores[k] != null ? s.subScores[k]!.toFixed(0) : "—"}</span>
+              <span className="w-7 shrink-0 text-right text-[11px] tabular-nums text-text-muted">{s.subScores[k] != null ? s.subScores[k]!.toFixed(0) : "—"}</span>
             </div>
           ))}
         </div>
       </div>
       <div>
-        <p className="mb-2 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">Quality & growth</p>
+        <p className="mb-2 text-[10px] font-semibold uppercase tracking-wide text-text-muted">Quality & growth</p>
         <dl className="grid grid-cols-2 gap-x-3 gap-y-1 text-[11px]">
           {fundamentals.map((r) => (
             <div key={r.label} className="flex justify-between gap-2">
-              <dt className="text-muted-foreground">{r.label}</dt>
+              <dt className="text-text-muted">{r.label}</dt>
               <dd className="font-medium tabular-nums">{r.value}</dd>
             </div>
           ))}
         </dl>
       </div>
       <div>
-        <p className="mb-2 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">Value & leverage</p>
+        <p className="mb-2 text-[10px] font-semibold uppercase tracking-wide text-text-muted">Value & leverage</p>
         <dl className="grid grid-cols-2 gap-x-3 gap-y-1 text-[11px]">
           {valuation.map((r) => (
             <div key={r.label} className="flex justify-between gap-2">
-              <dt className="text-muted-foreground">{r.label}</dt>
+              <dt className="text-text-muted">{r.label}</dt>
               <dd className="font-medium tabular-nums">{r.value}</dd>
             </div>
           ))}
         </dl>
       </div>
       <div>
-        <p className="mb-2 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">Technical state</p>
+        <p className="mb-2 text-[10px] font-semibold uppercase tracking-wide text-text-muted">Technical state</p>
         <dl className="grid grid-cols-2 gap-x-3 gap-y-1 text-[11px]">
           {technicals.map((r) => (
             <div key={r.label} className="flex justify-between gap-2">
-              <dt className="text-muted-foreground">{r.label}</dt>
+              <dt className="text-text-muted">{r.label}</dt>
               <dd className="font-medium tabular-nums">{r.value}</dd>
             </div>
           ))}

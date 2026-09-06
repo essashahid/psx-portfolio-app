@@ -33,7 +33,7 @@ export function ConfidenceChip({
   return (
     <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
       <Badge variant={confidence.variant}>{confidence.label}</Badge>
-      <span className="text-[11px] text-muted-foreground">
+      <span className="text-[11px] text-text-muted">
         based on {independentWindows} separate historical periods
         {since ? ` since ${new Date(since).getFullYear()}` : ""}
       </span>
@@ -76,14 +76,14 @@ export function RangeIndicator({
   return (
     <div>
       <div
-        className="relative h-2 rounded-full bg-border"
+        className="relative h-2 rounded-full bg-rule"
         role="img"
         aria-label={`Middle 80 percent of outcomes ran from ${fmtSigned(p10)} to ${fmtSigned(p90)}, with a typical result of ${fmtSigned(median)}.`}
       >
         {showZero && (
           <span
             aria-hidden
-            className="absolute -top-1 bottom-[-0.25rem] w-px bg-muted-foreground/35"
+            className="absolute -top-1 bottom-[-0.25rem] w-px bg-surface-sunken-foreground/35"
             style={{ left: `${zeroPos}%` }}
           />
         )}
@@ -94,14 +94,14 @@ export function RangeIndicator({
         />
         <span
           aria-hidden
-          className="absolute -top-1 h-4 w-4 -translate-x-2 rounded-full border-2 border-card bg-brand shadow-sm transition-[left] duration-(--dur-base) ease-(--ease-ui)"
+          className="absolute -top-1 h-4 w-4 -translate-x-2 rounded-full border-2 border-surface-raised bg-brand shadow-sm transition-[left] duration-(--dur-base) ease-(--ease-ui)"
           style={{ left: `${medianPos}%` }}
         />
       </div>
       <div className="mt-2.5 flex items-baseline justify-between text-[11px]">
-        <span className="tabular-nums text-muted-foreground">{fmtSigned(p10)}</span>
+        <span className="tabular-nums text-text-muted">{fmtSigned(p10)}</span>
         <span className="font-medium tabular-nums text-brand">Typically {fmtSigned(median)}</span>
-        <span className="tabular-nums text-muted-foreground">{fmtSigned(p90)}</span>
+        <span className="tabular-nums text-text-muted">{fmtSigned(p90)}</span>
       </div>
     </div>
   );
@@ -135,8 +135,8 @@ export function Disclosure({
         aria-expanded={open}
         aria-controls={panelId}
         className={cn(
-          "flex min-h-9 w-full items-center justify-center gap-1.5 rounded-md border border-border bg-transparent px-3 text-[13px] text-muted-foreground",
-          "transition-colors duration-(--dur-fast) ease-(--ease-ui) hover:bg-muted hover:text-foreground",
+          "flex min-h-9 w-full items-center justify-center gap-1.5 rounded-md border border-rule bg-transparent px-3 text-[13px] text-text-muted",
+          "transition-colors duration-(--dur-fast) ease-(--ease-ui) hover:bg-surface-sunken hover:text-text-strong",
           "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2 focus-visible:ring-offset-card"
         )}
       >
@@ -155,7 +155,7 @@ export function Disclosure({
         style={{ gridTemplateRows: open ? "1fr" : "0fr" }}
       >
         <div className="overflow-hidden">
-          <div className="mt-2.5 rounded-lg bg-muted p-4">{children}</div>
+          <div className="mt-2.5 rounded-lg bg-surface-sunken p-4">{children}</div>
         </div>
       </div>
     </div>
@@ -165,9 +165,9 @@ export function Disclosure({
 /** Label and value pair used inside a Disclosure panel. */
 export function DetailRow({ label, value }: { label: string; value: string }) {
   return (
-    <div className="flex items-baseline justify-between gap-4 border-b border-border/60 py-1.5 text-xs last:border-0">
-      <span className="text-muted-foreground">{label}</span>
-      <span className="font-medium tabular-nums text-foreground">{value}</span>
+    <div className="flex items-baseline justify-between gap-4 border-b border-rule/60 py-1.5 text-xs last:border-0">
+      <span className="text-text-muted">{label}</span>
+      <span className="font-medium tabular-nums text-text-strong">{value}</span>
     </div>
   );
 }

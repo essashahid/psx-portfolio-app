@@ -80,7 +80,7 @@ export default async function BullsBearsPage() {
         actions={
           <div className="flex flex-wrap items-center gap-2">
             <Badge variant="outline">Reference: {referenceDate}</Badge>
-            <Link href="/market" className="inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-xs font-medium transition-colors hover:bg-muted">
+            <Link href="/market" className="inline-flex items-center gap-1.5 rounded-lg border border-rule px-3 py-1.5 text-xs font-medium transition-colors hover:bg-surface-sunken">
               <RefreshCw className="h-3.5 w-3.5" />
               Market Pulse
             </Link>
@@ -95,7 +95,7 @@ export default async function BullsBearsPage() {
               <div>
                 <p className="eyebrow">This week&apos;s brief</p>
                 <h2 className="mt-2 text-2xl font-semibold tracking-editorial">{data.brief.episode}</h2>
-                <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
+                <p className="mt-2 text-sm leading-relaxed text-text-muted">
                   {data.brief.regime.note}
                 </p>
               </div>
@@ -107,11 +107,11 @@ export default async function BullsBearsPage() {
 
             <div className="grid gap-2 sm:grid-cols-2">
               {data.brief.topDevelopments.map((item, index) => (
-                <div key={item} className="rounded-lg border border-border bg-muted/35 p-3">
-                  <div className="mb-2 flex h-7 w-7 items-center justify-center rounded-md bg-card text-xs font-semibold tabular-nums">
+                <div key={item} className="rounded-lg border border-rule bg-surface-sunken/35 p-3">
+                  <div className="mb-2 flex h-7 w-7 items-center justify-center rounded-md bg-surface-raised text-xs font-semibold tabular-nums">
                     {index + 1}
                   </div>
-                  <p className="text-xs leading-relaxed text-foreground/85">{item}</p>
+                  <p className="text-xs leading-relaxed text-text-strong/85">{item}</p>
                 </div>
               ))}
             </div>
@@ -192,9 +192,9 @@ export default async function BullsBearsPage() {
           <CardDescription>{data.brief.source}</CardDescription>
         </CardHeader>
         <CardContent>
-          <p className="text-sm leading-relaxed text-muted-foreground">{data.brief.marketRecap.note}</p>
-          <p className="mt-3 text-[10px] text-muted-foreground">
-            This page is descriptive research tooling, not investment advice. Update <code className="rounded bg-muted px-1 py-0.5">lib/market/weekly-brief.ts</code> each week with the new transcript.
+          <p className="text-sm leading-relaxed text-text-muted">{data.brief.marketRecap.note}</p>
+          <p className="mt-3 text-[10px] text-text-muted">
+            This page is descriptive research tooling, not investment advice. Update <code className="rounded bg-surface-sunken px-1 py-0.5">lib/market/weekly-brief.ts</code> each week with the new transcript.
           </p>
         </CardContent>
       </Card>
@@ -204,10 +204,10 @@ export default async function BullsBearsPage() {
 
 function HeroMetric({ label, value, sub, tone: t }: { label: string; value: string; sub?: string; tone?: "positive" | "negative" | "flat" }) {
   return (
-    <div className="rounded-lg border border-border bg-card p-3">
-      <p className="text-[10px] uppercase tracking-wide text-muted-foreground">{label}</p>
-      <p className={cn("mt-1 text-xl font-semibold tabular-nums", t === "positive" ? "text-up" : t === "negative" ? "text-down" : "text-foreground")}>{value}</p>
-      {sub && <p className="mt-0.5 text-[10px] text-muted-foreground">{sub}</p>}
+    <div className="rounded-lg border border-rule bg-surface-raised p-3">
+      <p className="text-[10px] uppercase tracking-wide text-text-muted">{label}</p>
+      <p className={cn("mt-1 text-xl font-semibold tabular-nums", t === "positive" ? "text-up" : t === "negative" ? "text-down" : "text-text-strong")}>{value}</p>
+      {sub && <p className="mt-0.5 text-[10px] text-text-muted">{sub}</p>}
     </div>
   );
 }
@@ -239,14 +239,14 @@ function LiveRecapCard({ recap }: { recap: Awaited<ReturnType<typeof getBullsBea
           <p className="eyebrow">{recap.indexName ?? "Index"}</p>
           <div className="mt-1 flex items-end justify-between gap-3">
             <p className="text-3xl font-semibold tabular-nums">{recap.indexValue?.toLocaleString("en-PK", { maximumFractionDigits: 2 }) ?? "-"}</p>
-            <p className={cn("flex items-center gap-1 text-sm font-semibold tabular-nums", indexTone === "positive" ? "text-up" : indexTone === "negative" ? "text-down" : "text-muted-foreground")}>
+            <p className={cn("flex items-center gap-1 text-sm font-semibold tabular-nums", indexTone === "positive" ? "text-up" : indexTone === "negative" ? "text-down" : "text-text-muted")}>
               {indexTone === "positive" ? <ArrowUpRight className="h-4 w-4" /> : indexTone === "negative" ? <ArrowDownRight className="h-4 w-4" /> : null}
               {fmtPct(recap.indexChangePct)}
             </p>
           </div>
         </div>
         <div>
-          <div className="flex h-3 overflow-hidden rounded-full bg-muted">
+          <div className="flex h-3 overflow-hidden rounded-full bg-surface-sunken">
             <div className="h-full bg-emerald-500" style={{ width: `${advPct}%` }} />
             <div className="h-full bg-zinc-300" style={{ width: `${Math.max(0, 100 - advPct - decPct)}%` }} />
             <div className="h-full bg-red-500" style={{ width: `${decPct}%` }} />
@@ -257,7 +257,7 @@ function LiveRecapCard({ recap }: { recap: Awaited<ReturnType<typeof getBullsBea
             <SmallStat label="Decliners" value={fmtInt(recap.decliners)} tone="negative" />
           </div>
         </div>
-        <div className="grid grid-cols-2 gap-2 border-t border-border pt-3">
+        <div className="grid grid-cols-2 gap-2 border-t border-rule pt-3">
           <SmallStat label="Top sector" value={recap.topSector ?? "-"} tone="positive" align="left" />
           <SmallStat label="Weakest sector" value={recap.bottomSector ?? "-"} tone="negative" align="left" />
         </div>
@@ -269,8 +269,8 @@ function LiveRecapCard({ recap }: { recap: Awaited<ReturnType<typeof getBullsBea
 function SmallStat({ label, value, tone: t, align = "center" }: { label: string; value: string; tone?: "positive" | "negative"; align?: "center" | "left" }) {
   return (
     <div className={align === "center" ? "text-center" : "min-w-0"}>
-      <p className={cn("truncate text-sm font-semibold tabular-nums", t === "positive" ? "text-up" : t === "negative" ? "text-down" : "text-foreground")}>{value}</p>
-      <p className="text-[10px] uppercase tracking-wide text-muted-foreground">{label}</p>
+      <p className={cn("truncate text-sm font-semibold tabular-nums", t === "positive" ? "text-up" : t === "negative" ? "text-down" : "text-text-strong")}>{value}</p>
+      <p className="text-[10px] uppercase tracking-wide text-text-muted">{label}</p>
     </div>
   );
 }
@@ -285,24 +285,24 @@ function VisualDecisionMap({ data }: { data: Awaited<ReturnType<typeof getBullsB
         </CardDescription>
       </CardHeader>
       <CardContent className="grid gap-4 xl:grid-cols-2">
-        <div className="rounded-lg border border-border bg-muted/20 p-3">
+        <div className="rounded-lg border border-rule bg-surface-sunken/20 p-3">
           <p className="mb-1 text-xs font-semibold">Your holdings by show-style verdict</p>
-          <p className="mb-2 text-[11px] text-muted-foreground">Bars above 60 are investable screens; color shows whether the next step is add, hold, or review risk.</p>
+          <p className="mb-2 text-[11px] text-text-muted">Bars above 60 are investable screens; color shows whether the next step is add, hold, or review risk.</p>
           <PortfolioStrategyChart rows={data.portfolioStrategy} />
         </div>
-        <div className="rounded-lg border border-border bg-muted/20 p-3">
+        <div className="rounded-lg border border-rule bg-surface-sunken/20 p-3">
           <p className="mb-1 text-xs font-semibold">Episode setup risk / reward</p>
-          <p className="mb-2 text-[11px] text-muted-foreground">Left side is risk to stop; right side is reward to the first target from the suggested entry midpoint.</p>
+          <p className="mb-2 text-[11px] text-text-muted">Left side is risk to stop; right side is reward to the first target from the suggested entry midpoint.</p>
           <SetupRiskRewardChart setups={data.tradeSetups} />
         </div>
-        <div className="rounded-lg border border-border bg-muted/20 p-3">
+        <div className="rounded-lg border border-rule bg-surface-sunken/20 p-3">
           <p className="mb-1 text-xs font-semibold">Top 50: score vs momentum</p>
-          <p className="mb-2 text-[11px] text-muted-foreground">Upper-right names combine fundamentals and trend. Your owned names are highlighted in green.</p>
+          <p className="mb-2 text-[11px] text-text-muted">Upper-right names combine fundamentals and trend. Your owned names are highlighted in green.</p>
           <ScoreMomentumMap stocks={data.topPicks} owned={[...data.ownedTickers]} />
         </div>
-        <div className="rounded-lg border border-border bg-muted/20 p-3">
+        <div className="rounded-lg border border-rule bg-surface-sunken/20 p-3">
           <p className="mb-1 text-xs font-semibold">Live rotation by bucket</p>
-          <p className="mb-2 text-[11px] text-muted-foreground">This is the video’s cyclical / defensive / energy framework applied to today’s PSX sector snapshot.</p>
+          <p className="mb-2 text-[11px] text-text-muted">This is the video’s cyclical / defensive / energy framework applied to today’s PSX sector snapshot.</p>
           {data.regime ? <RegimeRotationChart buckets={data.regime.buckets} /> : <EmptyState icon={Gauge} title="No rotation chart yet" description="Refresh Market Pulse to populate live sector buckets." />}
         </div>
       </CardContent>
@@ -332,9 +332,9 @@ function PortfolioStrategyPanel({ rows }: { rows: PortfolioStrategyRow[] }) {
               <DecisionTile icon={Eye} label="Hold and watch" value={rows.filter((row) => row.verdict === "hold_watch").length} tone="neutral" />
               <DecisionTile icon={AlertTriangle} label="Risk review first" value={reviewRows.length} tone="caution" />
             </div>
-            <div className="divide-y divide-border overflow-hidden rounded-lg border border-border">
+            <div className="divide-y divide-rule overflow-hidden rounded-lg border border-rule">
               {rows.map((row) => (
-                <div key={row.ticker} className="bg-card p-3">
+                <div key={row.ticker} className="bg-surface-raised p-3">
                   <div className="flex flex-wrap items-start justify-between gap-2">
                     <div className="min-w-0">
                       <div className="flex flex-wrap items-center gap-2">
@@ -343,7 +343,7 @@ function PortfolioStrategyPanel({ rows }: { rows: PortfolioStrategyRow[] }) {
                         <Badge variant="outline">{BUCKET_META[row.bucket].label}</Badge>
                         {row.matchedSetup && <Badge variant="blue">Episode setup</Badge>}
                       </div>
-                      <p className="mt-1 max-w-3xl text-sm leading-relaxed text-foreground/85">{row.actionSentence}</p>
+                      <p className="mt-1 max-w-3xl text-sm leading-relaxed text-text-strong/85">{row.actionSentence}</p>
                     </div>
                     <div className="grid grid-cols-3 gap-3 text-right text-[11px]">
                       <MiniLabel label="Score" value={row.score != null ? `${row.score.toFixed(0)} (#${row.rank})` : "—"} />
@@ -391,20 +391,20 @@ function TeamSetupsPanel({ setups, opportunities }: { setups: EnrichedTradeSetup
           {opportunities.length ? (
             <div className="space-y-1">
               {opportunities.slice(0, 10).map((stock) => (
-                <Link key={stock.ticker} href={`/stocks/${stock.ticker}`} className="flex items-center justify-between gap-3 rounded-md px-2 py-2 transition-colors hover:bg-muted/60">
+                <Link key={stock.ticker} href={`/stocks/${stock.ticker}`} className="flex items-center justify-between gap-3 rounded-md px-2 py-2 transition-colors hover:bg-surface-sunken/60">
                   <div className="min-w-0">
-                    <p className="text-xs font-semibold">{stock.ticker} <span className="font-normal text-muted-foreground">#{stock.rank}</span></p>
-                    <p className="truncate text-[10px] text-muted-foreground">{stock.companyName ?? stock.sector ?? BUCKET_META[stock.bucket].label}</p>
+                    <p className="text-xs font-semibold">{stock.ticker} <span className="font-normal text-text-muted">#{stock.rank}</span></p>
+                    <p className="truncate text-[10px] text-text-muted">{stock.companyName ?? stock.sector ?? BUCKET_META[stock.bucket].label}</p>
                   </div>
                   <div className="text-right">
                     <p className="text-xs font-bold tabular-nums">{stock.score.toFixed(0)}</p>
-                    <p className="text-[10px] text-muted-foreground">{bestSubScore(stock)}</p>
+                    <p className="text-[10px] text-text-muted">{bestSubScore(stock)}</p>
                   </div>
                 </Link>
               ))}
             </div>
           ) : (
-            <p className="rounded-lg border border-border bg-muted/25 p-3 text-xs text-muted-foreground">No clean non-owned opportunities matched the current score and rotation filters.</p>
+            <p className="rounded-lg border border-rule bg-surface-sunken/25 p-3 text-xs text-text-muted">No clean non-owned opportunities matched the current score and rotation filters.</p>
           )}
         </CardContent>
       </Card>
@@ -418,7 +418,7 @@ function TradeSetupRow({ setup }: { setup: EnrichedTradeSetup }) {
   const statusVariant: "green" | "red" | "amber" | "blue" = setup.status === "in_entry" ? "green" : setup.status === "invalidated" ? "red" : setup.status === "extended" ? "amber" : "blue";
 
   return (
-    <div className="rounded-lg border border-border bg-card p-3">
+    <div className="rounded-lg border border-rule bg-surface-raised p-3">
       <div className="flex flex-wrap items-start justify-between gap-2">
         <div className="min-w-0">
           <div className="flex flex-wrap items-center gap-2">
@@ -427,7 +427,7 @@ function TradeSetupRow({ setup }: { setup: EnrichedTradeSetup }) {
             {setup.owned && <Badge variant="green">You own it</Badge>}
             <Badge variant="outline">{BUCKET_META[s.bucket].label}</Badge>
           </div>
-          <p className="mt-2 text-sm leading-relaxed text-foreground/85">
+          <p className="mt-2 text-sm leading-relaxed text-text-strong/85">
             The team’s plan for {s.ticker} was <strong>{s.setupLabel}</strong>: use {s.entry} as the entry, keep risk defined with stop {s.stop}, then look for {targetText}. {setup.statusText}
           </p>
         </div>
@@ -465,7 +465,7 @@ function IndexTechnicalCard({ data }: { data: Awaited<ReturnType<typeof getBulls
           <ReasonList title="Bullish evidence" items={map.bullishEvidence} tone="positive" />
           <ReasonList title="Invalidation / risk" items={[...map.bearishInvalidation, `Nearby support/gap: ${map.nearSupport}. Lower gaps: ${map.lowerGaps.join(", ")}.`]} tone="caution" />
         </div>
-        <p className="rounded-lg border border-border bg-muted/25 p-3 text-sm leading-relaxed text-foreground/85">{map.playbook}</p>
+        <p className="rounded-lg border border-rule bg-surface-sunken/25 p-3 text-sm leading-relaxed text-text-strong/85">{map.playbook}</p>
       </CardContent>
     </Card>
   );
@@ -482,13 +482,13 @@ function GlobalMarketsCard({ data }: { data: Awaited<ReturnType<typeof getBullsB
       </CardHeader>
       <CardContent className="space-y-2">
         {data.brief.globalMarkets.map((item) => (
-          <div key={item.market} className="rounded-lg border border-border bg-muted/25 p-3">
+          <div key={item.market} className="rounded-lg border border-rule bg-surface-sunken/25 p-3">
             <div className="flex flex-wrap items-center justify-between gap-2">
               <p className="text-sm font-semibold">{item.market}</p>
               <Badge variant={item.bias.toLowerCase().includes("sell") ? "amber" : item.bias.toLowerCase().includes("support") ? "green" : "outline"}>{item.bias}</Badge>
             </div>
-            <p className="mt-1 text-xs leading-relaxed text-muted-foreground">{item.levels}</p>
-            <p className="mt-2 text-xs leading-relaxed text-foreground/85">{item.investorRead}</p>
+            <p className="mt-1 text-xs leading-relaxed text-text-muted">{item.levels}</p>
+            <p className="mt-2 text-xs leading-relaxed text-text-strong/85">{item.investorRead}</p>
           </div>
         ))}
       </CardContent>
@@ -508,11 +508,11 @@ function RegimeCard({ regime, favored, cautious }: { regime: Awaited<ReturnType<
       <CardContent className="space-y-4">
         {regime ? (
           <>
-            <div className="rounded-lg border border-border bg-muted/25 p-3">
+            <div className="rounded-lg border border-rule bg-surface-sunken/25 p-3">
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <div>
                   <p className="text-sm font-semibold">{regime.label}</p>
-                  <p className="mt-1 text-xs leading-relaxed text-muted-foreground">{regime.note}</p>
+                  <p className="mt-1 text-xs leading-relaxed text-text-muted">{regime.note}</p>
                 </div>
                 {regime.leader && <Badge variant="green">Leader: {BUCKET_META[regime.leader].label}</Badge>}
               </div>
@@ -525,7 +525,7 @@ function RegimeCard({ regime, favored, cautious }: { regime: Awaited<ReturnType<
             </div>
           </>
         ) : (
-          <p className="py-6 text-center text-xs text-muted-foreground">No sector snapshot yet. The reference stance below is from the weekly brief.</p>
+          <p className="py-6 text-center text-xs text-text-muted">No sector snapshot yet. The reference stance below is from the weekly brief.</p>
         )}
 
         <div className="grid gap-2 sm:grid-cols-2">
@@ -568,32 +568,32 @@ function BucketBar({ bucket, row }: { bucket: SectorBucket; row: BucketRow | nul
   const t = tone(value);
 
   return (
-    <div className="grid gap-2 rounded-lg border border-border bg-card p-3 sm:grid-cols-[170px_1fr_86px] sm:items-center">
+    <div className="grid gap-2 rounded-lg border border-rule bg-surface-raised p-3 sm:grid-cols-[170px_1fr_86px] sm:items-center">
       <div className="flex min-w-0 items-center gap-2">
         <span className={cn("flex h-8 w-8 shrink-0 items-center justify-center rounded-lg", bucketToneClass(bucket))}>
           <Icon className="h-4 w-4" />
         </span>
         <div className="min-w-0">
           <p className="truncate text-xs font-semibold">{BUCKET_META[bucket].label}</p>
-          <p className="text-[10px] text-muted-foreground">{row ? `${fmtInt(row.stockCount)} stocks` : "No data"}</p>
+          <p className="text-[10px] text-text-muted">{row ? `${fmtInt(row.stockCount)} stocks` : "No data"}</p>
         </div>
       </div>
       <div>
-        <div className="h-2 overflow-hidden rounded-full bg-muted">
+        <div className="h-2 overflow-hidden rounded-full bg-surface-sunken">
           <div
             className={cn("h-full rounded-full", t === "positive" ? "bg-emerald-500" : t === "negative" ? "bg-red-500" : "bg-zinc-400")}
             style={{ width: `${Math.max(4, abs)}%` }}
           />
         </div>
         {row?.topSector && (
-          <p className="mt-1 text-[10px] text-muted-foreground">
+          <p className="mt-1 text-[10px] text-text-muted">
             Top: {row.topSector} {fmtPct(row.topSectorReturn)}
           </p>
         )}
       </div>
       <div className="text-right">
-        <p className={cn("text-sm font-semibold tabular-nums", t === "positive" ? "text-up" : t === "negative" ? "text-down" : "text-foreground")}>{fmtPct(value)}</p>
-        {row && <p className="text-[10px] text-muted-foreground">{row.advancers} up / {row.decliners} down</p>}
+        <p className={cn("text-sm font-semibold tabular-nums", t === "positive" ? "text-up" : t === "negative" ? "text-down" : "text-text-strong")}>{fmtPct(value)}</p>
+        {row && <p className="text-[10px] text-text-muted">{row.advancers} up / {row.decliners} down</p>}
       </div>
     </div>
   );
@@ -601,12 +601,12 @@ function BucketBar({ bucket, row }: { bucket: SectorBucket; row: BucketRow | nul
 
 function BriefBucketList({ title, buckets, variant }: { title: string; buckets: SectorBucket[]; variant: "green" | "amber" }) {
   return (
-    <div className="rounded-lg border border-border bg-muted/25 p-3">
-      <p className="mb-2 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">{title}</p>
+    <div className="rounded-lg border border-rule bg-surface-sunken/25 p-3">
+      <p className="mb-2 text-[10px] font-semibold uppercase tracking-wide text-text-muted">{title}</p>
       <div className="flex flex-wrap gap-1.5">
         {buckets.length ? buckets.map((bucket) => (
           <Badge key={bucket} variant={variant}>{BUCKET_META[bucket].label}</Badge>
-        )) : <span className="text-xs text-muted-foreground">None called out</span>}
+        )) : <span className="text-xs text-text-muted">None called out</span>}
       </div>
     </div>
   );
@@ -622,13 +622,13 @@ function MacroCard({ macro }: { macro: MacroIndicator[] }) {
       <CardContent>
         <div className="grid gap-2 sm:grid-cols-2">
           {macro.map((m) => (
-            <div key={m.label} className="rounded-lg border border-border bg-muted/25 p-3">
+            <div key={m.label} className="rounded-lg border border-rule bg-surface-sunken/25 p-3">
               <div className="flex items-start justify-between gap-2">
                 <p className="text-xs font-semibold">{m.label}</p>
                 <DirectionBadge direction={m.direction} />
               </div>
               <p className="mt-1 text-sm font-semibold tabular-nums">{m.value}</p>
-              <p className="mt-1 text-[11px] leading-relaxed text-muted-foreground">{m.note}</p>
+              <p className="mt-1 text-[11px] leading-relaxed text-text-muted">{m.note}</p>
             </div>
           ))}
         </div>
@@ -651,23 +651,23 @@ function BucketLeaders({ leaders }: { leaders: Record<SectorBucket, ScoredStock[
           return (
             <div key={bucket}>
               <div className="mb-1.5 flex items-center gap-2">
-                <Icon className="h-3.5 w-3.5 text-muted-foreground" />
+                <Icon className="h-3.5 w-3.5 text-text-muted" />
                 <p className="text-xs font-semibold">{BUCKET_META[bucket].label}</p>
               </div>
               {stocks.length ? (
                 <div className="space-y-1">
                   {stocks.slice(0, 3).map((s) => (
-                    <Link key={s.ticker} href={`/stocks/${s.ticker}`} className="flex items-center justify-between rounded-md px-2 py-1.5 transition-colors hover:bg-muted/60">
+                    <Link key={s.ticker} href={`/stocks/${s.ticker}`} className="flex items-center justify-between rounded-md px-2 py-1.5 transition-colors hover:bg-surface-sunken/60">
                       <div className="min-w-0">
                         <span className="text-xs font-semibold">{s.ticker}</span>
-                        <span className="ml-2 text-[10px] text-muted-foreground">{s.sector ?? s.companyName ?? ""}</span>
+                        <span className="ml-2 text-[10px] text-text-muted">{s.sector ?? s.companyName ?? ""}</span>
                       </div>
-                      <span className="rounded-full bg-foreground px-2 py-0.5 text-[11px] font-bold tabular-nums text-background">{s.score.toFixed(0)}</span>
+                      <span className="rounded-full bg-text-strong px-2 py-0.5 text-[11px] font-bold tabular-nums text-surface-page">{s.score.toFixed(0)}</span>
                     </Link>
                   ))}
                 </div>
               ) : (
-                <p className="rounded-md bg-muted/40 px-2 py-2 text-xs text-muted-foreground">No scored names.</p>
+                <p className="rounded-md bg-surface-sunken/40 px-2 py-2 text-xs text-text-muted">No scored names.</p>
               )}
             </div>
           );
@@ -681,17 +681,17 @@ function MiniStockGrid({ stocks }: { stocks: ScoredStock[] }) {
   return (
     <div className="grid gap-2 md:grid-cols-2 xl:grid-cols-3">
       {stocks.map((s) => (
-        <Link key={s.ticker} href={`/stocks/${s.ticker}`} className="rounded-lg border border-border bg-card p-3 transition-colors hover:bg-muted/40">
+        <Link key={s.ticker} href={`/stocks/${s.ticker}`} className="rounded-lg border border-rule bg-surface-raised p-3 transition-colors hover:bg-surface-sunken/40">
           <div className="flex items-start justify-between gap-2">
             <div className="min-w-0">
               <p className="text-sm font-semibold">{s.ticker}</p>
-              <p className="truncate text-[11px] text-muted-foreground">{s.companyName ?? s.sector ?? ""}</p>
+              <p className="truncate text-[11px] text-text-muted">{s.companyName ?? s.sector ?? ""}</p>
             </div>
             <span className="rounded-full bg-emerald-600 px-2 py-0.5 text-[11px] font-bold tabular-nums text-white">{s.score.toFixed(0)}</span>
           </div>
           <div className="mt-2 flex items-center justify-between text-[11px]">
-            <span className="text-muted-foreground">Rank #{s.rank}</span>
-            <span className={cn("font-semibold tabular-nums", tone(s.changePercent) === "positive" ? "text-up" : tone(s.changePercent) === "negative" ? "text-down" : "text-muted-foreground")}>{fmtPct(s.changePercent)}</span>
+            <span className="text-text-muted">Rank #{s.rank}</span>
+            <span className={cn("font-semibold tabular-nums", tone(s.changePercent) === "positive" ? "text-up" : tone(s.changePercent) === "negative" ? "text-down" : "text-text-muted")}>{fmtPct(s.changePercent)}</span>
           </div>
         </Link>
       ))}
@@ -721,17 +721,17 @@ function EarningsQualityCard({ flags, watchlist }: { flags: EarningsQualityFlag[
             ))}
           </div>
         ) : (
-          <p className="rounded-lg border border-border bg-muted/25 p-3 text-xs text-muted-foreground">No rule-based earnings quality flags in the current top 50.</p>
+          <p className="rounded-lg border border-rule bg-surface-sunken/25 p-3 text-xs text-text-muted">No rule-based earnings quality flags in the current top 50.</p>
         )}
 
         {cautionItems.length > 0 && (
           <div>
-            <p className="mb-2 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">Transcript cautions</p>
+            <p className="mb-2 text-[10px] font-semibold uppercase tracking-wide text-text-muted">Transcript cautions</p>
             <div className="space-y-2">
               {cautionItems.map((item) => (
-                <div key={item.ticker} className="rounded-lg border border-border bg-muted/25 p-3">
+                <div key={item.ticker} className="rounded-lg border border-rule bg-surface-sunken/25 p-3">
                   <p className="text-xs font-semibold">{item.ticker}</p>
-                  <p className="mt-1 text-xs leading-relaxed text-muted-foreground">{item.caution}</p>
+                  <p className="mt-1 text-xs leading-relaxed text-text-muted">{item.caution}</p>
                 </div>
               ))}
             </div>
@@ -770,18 +770,18 @@ function BudgetMapper({ impacts }: { impacts: BudgetImpact[] }) {
 
 function PolicyRow({ impact }: { impact: BudgetImpact }) {
   return (
-    <div className="rounded-lg border border-border bg-card p-3">
+    <div className="rounded-lg border border-rule bg-surface-raised p-3">
       <div className="flex flex-wrap items-start justify-between gap-2">
         <div className="min-w-0 flex-1">
           <p className="text-sm font-semibold">{impact.item.policy}</p>
-          <p className="mt-1 text-xs leading-relaxed text-muted-foreground">{impact.item.detail}</p>
+          <p className="mt-1 text-xs leading-relaxed text-text-muted">{impact.item.detail}</p>
         </div>
         <DirectionBadge direction={impact.item.direction} />
       </div>
       <div className="mt-2 flex flex-wrap gap-1.5">
         {impact.item.buckets.map((bucket) => <Badge key={bucket} variant="outline">{BUCKET_META[bucket].label}</Badge>)}
         {impact.holdings.map((ticker) => <Badge key={ticker} variant="green">{ticker}</Badge>)}
-        {impact.item.buckets.length === 0 && impact.holdings.length === 0 && <span className="text-[11px] text-muted-foreground">No direct sector mapping</span>}
+        {impact.item.buckets.length === 0 && impact.holdings.length === 0 && <span className="text-[11px] text-text-muted">No direct sector mapping</span>}
       </div>
     </div>
   );
@@ -795,14 +795,14 @@ function CallReviewCard({ calls }: { calls: CallReview[] }) {
         <CardDescription>Accountability ledger from the episode.</CardDescription>
       </CardHeader>
       <CardContent>
-        <div className="divide-y divide-border overflow-hidden rounded-lg border border-border">
+        <div className="divide-y divide-rule overflow-hidden rounded-lg border border-rule">
           {calls.map((call) => (
-            <div key={call.ticker} className="grid gap-2 bg-card p-3 sm:grid-cols-[90px_1fr_auto] sm:items-center">
+            <div key={call.ticker} className="grid gap-2 bg-surface-raised p-3 sm:grid-cols-[90px_1fr_auto] sm:items-center">
               <div>
                 <p className="text-sm font-semibold">{call.ticker}</p>
                 <StatusBadge status={call.status} />
               </div>
-              <p className="text-xs leading-relaxed text-muted-foreground">{call.note}</p>
+              <p className="text-xs leading-relaxed text-text-muted">{call.note}</p>
               <div className="grid grid-cols-3 gap-2 text-right text-[10px] sm:w-44">
                 <MiniLabel label="Entry" value={call.entry} />
                 <MiniLabel label="Target" value={call.target} />
@@ -849,11 +849,11 @@ function SignalList({ title, items, icon: Icon, tone: t }: { title: string; item
 
 function DecisionTile({ icon: Icon, label, value, tone: t }: { icon: typeof Activity; label: string; value: number; tone: "positive" | "neutral" | "caution" }) {
   return (
-    <div className={cn("flex items-center gap-3 rounded-lg border p-3", t === "positive" ? "border-emerald-200 bg-emerald-50/55" : t === "caution" ? "border-amber-200 bg-amber-50/55" : "border-border bg-muted/25")}>
-      <Icon className={cn("h-4 w-4 shrink-0", t === "positive" ? "text-up" : t === "caution" ? "text-amber-700" : "text-muted-foreground")} />
+    <div className={cn("flex items-center gap-3 rounded-lg border p-3", t === "positive" ? "border-emerald-200 bg-emerald-50/55" : t === "caution" ? "border-amber-200 bg-amber-50/55" : "border-rule bg-surface-sunken/25")}>
+      <Icon className={cn("h-4 w-4 shrink-0", t === "positive" ? "text-up" : t === "caution" ? "text-amber-700" : "text-text-muted")} />
       <div>
         <p className="text-lg font-semibold tabular-nums">{value}</p>
-        <p className="text-[10px] uppercase tracking-wide text-muted-foreground">{label}</p>
+        <p className="text-[10px] uppercase tracking-wide text-text-muted">{label}</p>
       </div>
     </div>
   );
@@ -864,10 +864,10 @@ function ReasonList({ title, items, tone: t }: { title: string; items: string[];
     ? "border-emerald-200 bg-emerald-50/45 text-emerald-950/85"
     : t === "caution"
       ? "border-amber-200 bg-amber-50/55 text-amber-950/85"
-      : "border-border bg-muted/25 text-foreground/80";
+      : "border-rule bg-surface-sunken/25 text-text-strong/80";
   return (
     <div className={cn("rounded-lg border p-3", styles)}>
-      <p className="mb-1.5 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">{title}</p>
+      <p className="mb-1.5 text-[10px] font-semibold uppercase tracking-wide text-text-muted">{title}</p>
       <div className="space-y-1.5">
         {items.map((item) => (
           <p key={item} className="text-xs leading-relaxed">{item}</p>
@@ -916,8 +916,8 @@ function StatusBadge({ status }: { status: CallReview["status"] }) {
 function MiniLabel({ label, value }: { label: string; value: string }) {
   return (
     <div>
-      <p className="uppercase tracking-wide text-muted-foreground">{label}</p>
-      <p className="font-semibold tabular-nums text-foreground">{value}</p>
+      <p className="uppercase tracking-wide text-text-muted">{label}</p>
+      <p className="font-semibold tabular-nums text-text-strong">{value}</p>
     </div>
   );
 }
@@ -939,7 +939,7 @@ function bucketToneClass(bucket: SectorBucket) {
     case "financials":
       return "bg-violet-50 text-violet-700";
     default:
-      return "bg-muted text-muted-foreground";
+      return "bg-surface-sunken text-text-muted";
   }
 }
 
@@ -1052,25 +1052,25 @@ function AtAGlance({ data }: { data: Awaited<ReturnType<typeof getBullsBears>> }
     positive: "border-emerald-200 bg-emerald-50/60",
     negative: "border-red-200 bg-red-50/60",
     caution: "border-amber-200 bg-amber-50/60",
-    neutral: "border-border bg-muted/30",
+    neutral: "border-rule bg-surface-sunken/30",
   };
   const iconStyles: Record<GlanceItem["tone"], string> = {
     positive: "text-up",
     negative: "text-down",
     caution: "text-amber-700",
-    neutral: "text-muted-foreground",
+    neutral: "text-text-muted",
   };
   const labelStyles: Record<GlanceItem["tone"], string> = {
     positive: "text-up",
     negative: "text-down",
     caution: "text-amber-800",
-    neutral: "text-muted-foreground",
+    neutral: "text-text-muted",
   };
   const textStyles: Record<GlanceItem["tone"], string> = {
     positive: "text-emerald-950/85",
     negative: "text-red-950/85",
     caution: "text-amber-950/85",
-    neutral: "text-foreground/80",
+    neutral: "text-text-strong/80",
   };
 
   return (

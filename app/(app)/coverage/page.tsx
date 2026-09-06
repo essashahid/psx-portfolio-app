@@ -16,11 +16,11 @@ export const dynamic = "force-dynamic";
 function Stat({ label, value, total }: { label: string; value: number; total?: number }) {
   const pct = total && total > 0 ? Math.round((value / total) * 100) : null;
   return (
-    <div className="rounded-lg border border-border bg-card/60 p-3">
-      <p className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">{label}</p>
+    <div className="rounded-lg border border-rule bg-surface-raised/60 p-3">
+      <p className="text-[10px] font-medium uppercase tracking-wide text-text-muted">{label}</p>
       <p className="mt-0.5 text-lg font-semibold tabular-nums">
         {value.toLocaleString("en-PK")}
-        {pct !== null && <span className="ml-1 text-xs font-normal text-muted-foreground">({pct}%)</span>}
+        {pct !== null && <span className="ml-1 text-xs font-normal text-text-muted">({pct}%)</span>}
       </p>
     </div>
   );
@@ -98,9 +98,9 @@ export default async function CoveragePage() {
             <Stat label="Financials" value={distinct(finRows.data)} total={universe} />
             <Stat label="Ratios" value={distinct(ratioRows.data)} total={universe} />
           </div>
-          <p className="mt-3 text-[11px] text-muted-foreground">
+          <p className="mt-3 text-[11px] text-text-muted">
             Quotes and technicals populate on demand when a stock page is opened, and in batches via the refresh worker
-            (<code className="rounded bg-muted px-1">/api/engine/refresh?task=quotes&scope=universe</code>). Financials populate from
+            (<code className="rounded bg-surface-sunken px-1">/api/engine/refresh?task=quotes&scope=universe</code>). Financials populate from
             official filings via the extraction queue.
           </p>
         </CardContent>
@@ -123,7 +123,7 @@ export default async function CoveragePage() {
                   <TR key={p.name}>
                     <TD>
                       <p className="text-xs font-medium">{p.label}</p>
-                      <p className="text-[10px] text-muted-foreground">{p.detail}</p>
+                      <p className="text-[10px] text-text-muted">{p.detail}</p>
                     </TD>
                     <TD><Badge variant={p.configured ? "green" : "secondary"}>{p.configured ? "yes" : "no"}</Badge></TD>
                     <TD>
@@ -137,8 +137,8 @@ export default async function CoveragePage() {
                         <Badge variant="outline">untested</Badge>
                       )}
                     </TD>
-                    <TD className="text-[11px] text-muted-foreground">{s?.last_success_at ? String(s.last_success_at).slice(0, 16).replace("T", " ") : "—"}</TD>
-                    <TD className="max-w-[13.75rem] truncate text-[11px] text-muted-foreground" title={s?.last_error ?? undefined}>
+                    <TD className="text-[11px] text-text-muted">{s?.last_success_at ? String(s.last_success_at).slice(0, 16).replace("T", " ") : "—"}</TD>
+                    <TD className="max-w-[13.75rem] truncate text-[11px] text-text-muted" title={s?.last_error ?? undefined}>
                       {s?.last_error ? `${String(s.last_error_at ?? "").slice(0, 10)} — ${s.last_error}` : "—"}
                     </TD>
                   </TR>
@@ -166,7 +166,7 @@ export default async function CoveragePage() {
         </CardHeader>
         <CardContent className="overflow-x-auto">
           {(logsRes.data ?? []).length === 0 ? (
-            <p className="py-4 text-center text-xs text-muted-foreground">No fetch activity logged yet. Open a stock page or run a refresh.</p>
+            <p className="py-4 text-center text-xs text-text-muted">No fetch activity logged yet. Open a stock page or run a refresh.</p>
           ) : (
             <Table>
               <THead>
@@ -175,16 +175,16 @@ export default async function CoveragePage() {
               <TBody>
                 {(logsRes.data ?? []).map((l, i) => (
                   <TR key={i}>
-                    <TD className="text-[11px] text-muted-foreground">{String(l.created_at).slice(5, 16).replace("T", " ")}</TD>
+                    <TD className="text-[11px] text-text-muted">{String(l.created_at).slice(5, 16).replace("T", " ")}</TD>
                     <TD className="text-xs font-medium">{l.ticker ?? "—"}</TD>
                     <TD className="text-xs">{l.section}</TD>
-                    <TD className="text-[11px] text-muted-foreground">{l.source}</TD>
+                    <TD className="text-[11px] text-text-muted">{l.source}</TD>
                     <TD>
-                      <span className={cn("text-xs font-medium", l.status === "ok" ? "text-up" : l.status === "error" ? "text-down" : "text-muted-foreground")}>
+                      <span className={cn("text-xs font-medium", l.status === "ok" ? "text-up" : l.status === "error" ? "text-down" : "text-text-muted")}>
                         {l.status}
                       </span>
                     </TD>
-                    <TD className="max-w-[16.25rem] truncate text-[11px] text-muted-foreground" title={l.detail ?? undefined}>{l.detail ?? "—"}</TD>
+                    <TD className="max-w-[16.25rem] truncate text-[11px] text-text-muted" title={l.detail ?? undefined}>{l.detail ?? "—"}</TD>
                   </TR>
                 ))}
               </TBody>

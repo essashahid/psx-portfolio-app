@@ -36,7 +36,7 @@ function CellTable({ cells }: { cells: CompactCell[] }) {
     <div className="-mx-1 overflow-x-auto px-1">
       <table className="w-full min-w-[38rem] text-[11px]">
         <thead>
-          <tr className="border-b border-border text-left uppercase tracking-wide text-muted-foreground">
+          <tr className="border-b border-rule text-left uppercase tracking-wide text-text-muted">
             <th className="pb-1.5 pr-3 font-medium">Cell</th>
             <th className="pb-1.5 pr-3 text-right font-medium">Base</th>
             <th className="pb-1.5 pr-3 text-right font-medium">After signal</th>
@@ -49,27 +49,27 @@ function CellTable({ cells }: { cells: CompactCell[] }) {
         </thead>
         <tbody>
           {cells.map((c) => (
-            <tr key={`${c.horizonKey}-${c.threshold}`} className="border-b border-border/50 last:border-0">
-              <td className="py-1.5 pr-3 whitespace-nowrap text-foreground">
+            <tr key={`${c.horizonKey}-${c.threshold}`} className="border-b border-rule/50 last:border-0">
+              <td className="py-1.5 pr-3 whitespace-nowrap text-text-strong">
                 {Math.abs(c.threshold * 100).toFixed(0)}% / {c.horizonKey}
-                {c.secondary && <span className="ml-1 text-muted-foreground/70">(secondary)</span>}
+                {c.secondary && <span className="ml-1 text-text-muted/70">(secondary)</span>}
               </td>
-              <td className="py-1.5 pr-3 text-right tabular-nums text-muted-foreground">{pct(c.baseRate)}</td>
-              <td className="py-1.5 pr-3 text-right tabular-nums text-muted-foreground">{pct(c.riskyRate)}</td>
-              <td className="py-1.5 pr-3 text-right tabular-nums text-foreground">{lift(c.lift)}</td>
-              <td className="py-1.5 pr-3 text-right tabular-nums text-muted-foreground">{c.hitEpisodes}</td>
-              <td className="py-1.5 pr-3 text-right tabular-nums text-muted-foreground">
+              <td className="py-1.5 pr-3 text-right tabular-nums text-text-muted">{pct(c.baseRate)}</td>
+              <td className="py-1.5 pr-3 text-right tabular-nums text-text-muted">{pct(c.riskyRate)}</td>
+              <td className="py-1.5 pr-3 text-right tabular-nums text-text-strong">{lift(c.lift)}</td>
+              <td className="py-1.5 pr-3 text-right tabular-nums text-text-muted">{c.hitEpisodes}</td>
+              <td className="py-1.5 pr-3 text-right tabular-nums text-text-muted">
                 {lift(c.firstHalfLift)} / {lift(c.secondHalfLift)}
               </td>
-              <td className="py-1.5 pr-3 text-right tabular-nums text-muted-foreground">
+              <td className="py-1.5 pr-3 text-right tabular-nums text-text-muted">
                 {c.beyondVolLift === null && c.beyondVolEpisodes === null ? "benchmark" : lift(c.beyondVolLift)}
               </td>
-              <td className="py-1.5 text-muted-foreground">{c.classification}</td>
+              <td className="py-1.5 text-text-muted">{c.classification}</td>
             </tr>
           ))}
         </tbody>
       </table>
-      <p className="mt-2 text-[11px] leading-relaxed text-muted-foreground">
+      <p className="mt-2 text-[11px] leading-relaxed text-text-muted">
         Lift is the drawdown rate after the signal&apos;s risky readings divided by the rate across all periods. Halves
         recompute it on each half of the sample; a flip means the pattern did not persist. Beyond vol repeats the
         measurement inside calm markets only, where volatility has nothing left to contribute.
@@ -84,29 +84,29 @@ function SignalCard({ row }: { row: SignalRow }) {
   const d = row.defining;
 
   return (
-    <div className="border-b border-border/60 last:border-0">
+    <div className="border-b border-rule/60 last:border-0">
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
         aria-expanded={open}
         className={cn(
           "flex w-full items-start gap-3 py-3 text-left",
-          "transition-colors duration-(--dur-fast) ease-(--ease-ui) hover:bg-muted/50",
+          "transition-colors duration-(--dur-fast) ease-(--ease-ui) hover:bg-surface-sunken/50",
           "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2 focus-visible:ring-offset-card"
         )}
       >
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
-            <span className="text-xs font-medium text-foreground">{row.label}</span>
+            <span className="text-xs font-medium text-text-strong">{row.label}</span>
             <Badge variant={badge.variant}>{badge.label}</Badge>
-            <span className="text-[11px] text-muted-foreground">{row.family}</span>
+            <span className="text-[11px] text-text-muted">{row.family}</span>
           </div>
-          <p className="mt-1 text-[11px] leading-relaxed text-muted-foreground">{row.verdictReason}</p>
+          <p className="mt-1 text-[11px] leading-relaxed text-text-muted">{row.verdictReason}</p>
         </div>
         {d && (
           <div className="hidden shrink-0 text-right sm:block">
-            <p className="text-xs font-medium tabular-nums text-foreground">{lift(d.lift)}</p>
-            <p className="text-[10px] text-muted-foreground">
+            <p className="text-xs font-medium tabular-nums text-text-strong">{lift(d.lift)}</p>
+            <p className="text-[10px] text-text-muted">
               {d.hitEpisodes} ep · {Math.abs(d.threshold * 100).toFixed(0)}%/{d.horizonKey}
             </p>
           </div>
@@ -114,7 +114,7 @@ function SignalCard({ row }: { row: SignalRow }) {
         <ChevronDown
           aria-hidden
           className={cn(
-            "mt-0.5 h-3.5 w-3.5 shrink-0 text-muted-foreground transition-transform duration-(--dur-fast) ease-(--ease-ui)",
+            "mt-0.5 h-3.5 w-3.5 shrink-0 text-text-muted transition-transform duration-(--dur-fast) ease-(--ease-ui)",
             open && "rotate-180"
           )}
         />
@@ -124,8 +124,8 @@ function SignalCard({ row }: { row: SignalRow }) {
         style={{ gridTemplateRows: open ? "1fr" : "0fr" }}
       >
         <div className="overflow-hidden">
-          <div className="mb-3 rounded-lg bg-muted p-3">
-            <p className="mb-2 text-[11px] text-muted-foreground">
+          <div className="mb-3 rounded-lg bg-surface-sunken p-3">
+            <p className="mb-2 text-[11px] text-text-muted">
               Measured over {row.observations.toLocaleString()} observations, {row.firstDate} to {row.lastDate}.
             </p>
             <CellTable cells={row.cells} />
@@ -161,7 +161,7 @@ export function SignalExplorer({ signals }: { signals: SignalRow[] }) {
       />
       <div className="mt-3">
         {rows.length === 0 ? (
-          <p className="py-4 text-xs text-muted-foreground">No signals in this group.</p>
+          <p className="py-4 text-xs text-text-muted">No signals in this group.</p>
         ) : (
           rows.map((row) => <SignalCard key={row.key} row={row} />)
         )}

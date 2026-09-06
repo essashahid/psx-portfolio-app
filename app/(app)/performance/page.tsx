@@ -159,11 +159,11 @@ export default async function PerformancePage() {
               size="sm"
             />
             <details className="relative">
-              <summary className="inline-flex h-10 cursor-pointer list-none items-center gap-1.5 rounded-md border border-border bg-card px-3 text-xs font-medium md:h-8">
+              <summary className="inline-flex h-10 cursor-pointer list-none items-center gap-1.5 rounded-md border border-rule bg-surface-raised px-3 text-xs font-medium md:h-8">
                 More <ChevronDown className="h-3.5 w-3.5" />
               </summary>
-              <div className="absolute right-0 z-20 mt-1 w-40 rounded-md border border-border bg-card p-1.5 shadow-[var(--shadow-card)]">
-                <a href="/api/export/holdings" className="block rounded px-2 py-1.5 text-xs hover:bg-muted">
+              <div className="absolute right-0 z-20 mt-1 w-40 rounded-md border border-rule bg-surface-raised p-1.5 shadow-[var(--shadow-card)]">
+                <a href="/api/export/holdings" className="block rounded px-2 py-1.5 text-xs hover:bg-surface-sunken">
                   <Download className="mr-1 inline h-3.5 w-3.5" />Export holdings
                 </a>
               </div>
@@ -222,7 +222,7 @@ export default async function PerformancePage() {
         </section>
       )}
 
-      <section className="border-t border-border pt-5">
+      <section className="border-t border-rule pt-5">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
             <p className="eyebrow">Wealth creation bridge</p>
@@ -239,7 +239,7 @@ export default async function PerformancePage() {
         </div>
       </section>
 
-      <section className="border-t border-border pt-5">
+      <section className="border-t border-rule pt-5">
         <p className="eyebrow">Performance against benchmarks</p>
         <h2 className="mt-1.5 font-display text-(length:--text-h1) font-normal tracking-editorial text-text-strong">How each comparison is built</h2>
         <div className="mt-6 grid gap-y-8 sm:grid-cols-3 sm:gap-y-0">
@@ -315,7 +315,7 @@ export default async function PerformancePage() {
 function Mini({ label, value }: { label: string; value: string }) {
   return (
     <div>
-      <p className="text-[10px] uppercase tracking-wide text-muted-foreground">{label}</p>
+      <p className="text-[10px] uppercase tracking-wide text-text-muted">{label}</p>
       <p className="mt-1 font-semibold tabular-nums">{value}</p>
     </div>
   );
@@ -325,12 +325,12 @@ function Mini({ label, value }: { label: string; value: string }) {
 
 function RealisedTable({ sales }: { sales: NonNullable<Awaited<ReturnType<typeof getPerformanceAnalytics>>>["sales"] }) {
   return (
-    <section className="border-t border-border pt-5">
+    <section className="border-t border-rule pt-5">
       <h2 className="font-display text-(length:--text-h1) font-normal tracking-editorial text-text-strong">Realised performance</h2>
       <div className="mt-4 overflow-x-auto">
         <table className="w-full min-w-[65rem] text-xs">
           <thead>
-            <tr className="border-b border-border text-left text-[10px] uppercase tracking-wide text-muted-foreground">
+            <tr className="border-b border-rule text-left text-[10px] uppercase tracking-wide text-text-muted">
               <th className="py-2 pr-4">Ticker</th>
               <th className="px-2 py-2">Sale date</th>
               <th className="px-2 py-2 text-right">Qty sold</th>
@@ -346,16 +346,16 @@ function RealisedTable({ sales }: { sales: NonNullable<Awaited<ReturnType<typeof
           </thead>
           <tbody>
             {sales.map((sale, index) => (
-              <tr key={`${sale.ticker}-${sale.date}-${index}`} className="border-b border-border last:border-0 align-top">
+              <tr key={`${sale.ticker}-${sale.date}-${index}`} className="border-b border-rule last:border-0 align-top">
                 <td className="py-2 pr-4 font-semibold">
                   <details>
                     <summary className="cursor-pointer list-none">{sale.ticker}</summary>
-                    <p className="mt-2 max-w-[16.25rem] text-[11px] leading-snug text-muted-foreground">
+                    <p className="mt-2 max-w-[16.25rem] text-[11px] leading-snug text-text-muted">
                       {sale.formula}. Source entries: {sale.sourceEntryNos.join(", ")}.
                     </p>
                   </details>
                 </td>
-                <td className="px-2 py-2 tabular-nums text-muted-foreground">{sale.date ?? "—"}</td>
+                <td className="px-2 py-2 tabular-nums text-text-muted">{sale.date ?? "—"}</td>
                 <td className="px-2 py-2 text-right tabular-nums">{formatNumber(sale.quantity, 0)}</td>
                 <td className="px-2 py-2 text-right tabular-nums">{formatMoney(sale.costOut)}</td>
                 <td className="px-2 py-2 text-right tabular-nums">{formatMoney(sale.grossProceeds)}</td>
@@ -376,13 +376,13 @@ function RealisedTable({ sales }: { sales: NonNullable<Awaited<ReturnType<typeof
 
 function YearTable({ rows }: { rows: NonNullable<Awaited<ReturnType<typeof getPerformanceAnalytics>>>["byYear"] }) {
   return (
-    <section className="border-t border-border pt-5">
+    <section className="border-t border-rule pt-5">
       <h2 className="font-display text-(length:--text-h1) font-normal tracking-editorial text-text-strong">Performance by year</h2>
-      <p className="mt-1 text-xs text-muted-foreground">Gross purchases are separate from external contributions. Benchmark and real-return columns stay unavailable until their series exist.</p>
+      <p className="mt-1 text-xs text-text-muted">Gross purchases are separate from external contributions. Benchmark and real-return columns stay unavailable until their series exist.</p>
       <div className="mt-4 overflow-x-auto">
         <table className="w-full min-w-[78.75rem] text-xs">
           <thead>
-            <tr className="border-b border-border text-left text-[10px] uppercase tracking-wide text-muted-foreground">
+            <tr className="border-b border-rule text-left text-[10px] uppercase tracking-wide text-text-muted">
               <th className="py-2 pr-4">Year</th>
               <th className="px-2 py-2 text-right">Contributions</th>
               <th className="px-2 py-2 text-right">External acquisitions</th>
@@ -402,7 +402,7 @@ function YearTable({ rows }: { rows: NonNullable<Awaited<ReturnType<typeof getPe
           </thead>
           <tbody>
             {rows.map((row) => (
-              <tr key={row.year} className="border-b border-border last:border-0">
+              <tr key={row.year} className="border-b border-rule last:border-0">
                 <td className="py-2 pr-4 font-semibold">{row.year}</td>
                 <td className="px-2 py-2 text-right tabular-nums">{formatMoney(row.deposits)}</td>
                 <td className="px-2 py-2 text-right tabular-nums">{formatMoney(row.manualExternalAcquisitions)}</td>
@@ -420,14 +420,14 @@ function YearTable({ rows }: { rows: NonNullable<Awaited<ReturnType<typeof getPe
                   {row.kse100MatchedResult !== null ? (
                     formatMoney(row.kse100MatchedResult)
                   ) : (
-                    <span className="text-muted-foreground">Unavailable</span>
+                    <span className="text-text-muted">Unavailable</span>
                   )}
                 </td>
                 <td className="px-2 py-2 text-right tabular-nums">
                   {row.realReturnAfterInflation !== null ? (
                     formatSignedPct(row.realReturnAfterInflation)
                   ) : (
-                    <span className="text-muted-foreground">Unavailable</span>
+                    <span className="text-text-muted">Unavailable</span>
                   )}
                 </td>
               </tr>
@@ -441,13 +441,13 @@ function YearTable({ rows }: { rows: NonNullable<Awaited<ReturnType<typeof getPe
 
 function PositionTable({ rows }: { rows: NonNullable<Awaited<ReturnType<typeof getPerformanceAnalytics>>>["positionBuild"] }) {
   return (
-    <section className="border-t border-border pt-5">
+    <section className="border-t border-rule pt-5">
       <h2 className="font-display text-(length:--text-h1) font-normal tracking-editorial text-text-strong">Position build-up analysis</h2>
-      <p className="mt-1 text-xs text-muted-foreground">Current holdings are aggregated under weighted-average accounting; purchase lots are not shown as separate holdings. Per-holding XIRR is the money-weighted annual return of each position&apos;s own buys, sells and current value; it excludes dividends.</p>
+      <p className="mt-1 text-xs text-text-muted">Current holdings are aggregated under weighted-average accounting; purchase lots are not shown as separate holdings. Per-holding XIRR is the money-weighted annual return of each position&apos;s own buys, sells and current value; it excludes dividends.</p>
       <div className="mt-4 overflow-x-auto">
         <table className="w-full min-w-[80rem] text-xs">
           <thead>
-            <tr className="border-b border-border text-left text-[10px] uppercase tracking-wide text-muted-foreground">
+            <tr className="border-b border-rule text-left text-[10px] uppercase tracking-wide text-text-muted">
               <th className="py-2 pr-4">Ticker</th>
               <th className="px-2 py-2">First</th>
               <th className="px-2 py-2">Latest</th>
@@ -468,10 +468,10 @@ function PositionTable({ rows }: { rows: NonNullable<Awaited<ReturnType<typeof g
           </thead>
           <tbody>
             {rows.map((row) => (
-              <tr key={row.ticker} className="border-b border-border last:border-0">
+              <tr key={row.ticker} className="border-b border-rule last:border-0">
                 <td className="py-2 pr-4 font-semibold">{row.ticker}</td>
-                <td className="px-2 py-2 tabular-nums text-muted-foreground">{row.firstAcquisitionDate ?? "—"}</td>
-                <td className="px-2 py-2 tabular-nums text-muted-foreground">{row.latestAcquisitionDate ?? "—"}</td>
+                <td className="px-2 py-2 tabular-nums text-text-muted">{row.firstAcquisitionDate ?? "—"}</td>
+                <td className="px-2 py-2 tabular-nums text-text-muted">{row.latestAcquisitionDate ?? "—"}</td>
                 <td className="px-2 py-2 text-right tabular-nums">{row.purchaseCount}</td>
                 <td className="px-2 py-2 text-right tabular-nums">{formatNumber(row.totalQuantityAcquired, 0)}</td>
                 <td className="px-2 py-2 text-right tabular-nums">{formatNumber(row.quantitySold, 0)}</td>
@@ -484,7 +484,7 @@ function PositionTable({ rows }: { rows: NonNullable<Awaited<ReturnType<typeof g
                 <td className="px-2 py-2 text-right tabular-nums">{formatMoney(row.amountInvested)}</td>
                 <td className="px-2 py-2 text-right tabular-nums">{formatMoney(row.currentValue)}</td>
                 <td className={cn("px-2 py-2 text-right tabular-nums", (row.unrealizedPl ?? 0) >= 0 ? "text-up" : "text-down")}>{formatMoney(row.unrealizedPl)}</td>
-                <td className={cn("px-2 py-2 text-right tabular-nums", row.xirrPct === null ? "text-muted-foreground" : row.xirrPct >= 0 ? "text-up" : "text-down")}>{row.xirrPct !== null ? `${row.xirrPct}%` : "—"}</td>
+                <td className={cn("px-2 py-2 text-right tabular-nums", row.xirrPct === null ? "text-text-muted" : row.xirrPct >= 0 ? "text-up" : "text-down")}>{row.xirrPct !== null ? `${row.xirrPct}%` : "—"}</td>
               </tr>
             ))}
           </tbody>
@@ -496,13 +496,13 @@ function PositionTable({ rows }: { rows: NonNullable<Awaited<ReturnType<typeof g
 
 function CostWorkspace({ friction }: { friction: NonNullable<Awaited<ReturnType<typeof getPerformanceAnalytics>>>["friction"] }) {
   return (
-    <section className="border-t border-border pt-5">
+    <section className="border-t border-rule pt-5">
       <h2 className="font-display text-(length:--text-h1) font-normal tracking-editorial text-text-strong">Cost and friction analysis</h2>
-      <p className="mt-1 text-xs text-muted-foreground">Unknown manual-trade fees are labelled unavailable, not treated as zero.</p>
+      <p className="mt-1 text-xs text-text-muted">Unknown manual-trade fees are labelled unavailable, not treated as zero.</p>
       <div className="mt-4 grid gap-6 xl:grid-cols-[1fr_1fr]">
         <CostFrictionBars data={friction.byCategory} />
         <div>
-          <div className="grid grid-cols-2 gap-4 border-b border-border pb-4 text-sm">
+          <div className="grid grid-cols-2 gap-4 border-b border-rule pb-4 text-sm">
             <Mini label="Trading costs" value={formatMoney(friction.tradeFeesTotal)} />
             <Mini label="Avg fee/order" value={formatMoney(friction.averageFeePerOrder)} />
             <Mini label="Gross traded value" value={formatMoney(friction.grossTradedValue)} />
@@ -512,7 +512,7 @@ function CostWorkspace({ friction }: { friction: NonNullable<Awaited<ReturnType<
           <div className="mt-2 overflow-x-auto">
             <table className="w-full min-w-[35rem] text-xs">
               <thead>
-                <tr className="border-b border-border text-left text-[10px] uppercase tracking-wide text-muted-foreground">
+                <tr className="border-b border-rule text-left text-[10px] uppercase tracking-wide text-text-muted">
                   <th className="py-2 pr-4">Band</th>
                   <th className="px-2 py-2 text-right">Orders</th>
                   <th className="px-2 py-2 text-right">Gross value</th>
@@ -523,7 +523,7 @@ function CostWorkspace({ friction }: { friction: NonNullable<Awaited<ReturnType<
               </thead>
               <tbody>
                 {friction.bySize.map((row) => (
-                  <tr key={row.bucket} className="border-b border-border last:border-0">
+                  <tr key={row.bucket} className="border-b border-rule last:border-0">
                     <td className="py-2 pr-4 font-medium">{row.bucket}</td>
                     <td className="px-2 py-2 text-right tabular-nums">{row.trades}</td>
                     <td className="px-2 py-2 text-right tabular-nums">{formatMoney(row.grossTradedValue)}</td>
@@ -538,9 +538,9 @@ function CostWorkspace({ friction }: { friction: NonNullable<Awaited<ReturnType<
           <h3 className="mt-4 text-sm font-semibold">Highest-cost orders</h3>
           <div className="mt-2 space-y-2 text-xs">
             {friction.highestCostOrders.map((row) => (
-              <div key={`${row.date}-${row.orderNo}-${row.tickers}`} className="flex items-center justify-between gap-3 border-b border-border pb-2">
+              <div key={`${row.date}-${row.orderNo}-${row.tickers}`} className="flex items-center justify-between gap-3 border-b border-rule pb-2">
                 <span><strong>{row.side}</strong> #{row.orderNo} · {row.tickers} · {row.date ?? "—"}</span>
-                <span className="tabular-nums text-muted-foreground">{formatMoney(row.fees)} · {row.feePct}%</span>
+                <span className="tabular-nums text-text-muted">{formatMoney(row.fees)} · {row.feePct}%</span>
               </div>
             ))}
           </div>
@@ -560,14 +560,14 @@ function AuditWorkspace({
   dividendIncome: number;
 }) {
   return (
-    <section className="border-t border-border pt-5">
+    <section className="border-t border-rule pt-5">
       <h2 className="font-display text-(length:--text-h1) font-normal tracking-editorial text-text-strong">Audit and XIRR inputs</h2>
-      <details className="mt-3 border-l border-border pl-3">
+      <details className="mt-3 border-l border-rule pl-3">
         <summary className="cursor-pointer text-sm font-medium">View XIRR cash flows</summary>
         <div className="mt-3 overflow-x-auto">
           <table className="w-full min-w-[35rem] text-xs">
             <thead>
-              <tr className="border-b border-border text-left text-[10px] uppercase tracking-wide text-muted-foreground">
+              <tr className="border-b border-rule text-left text-[10px] uppercase tracking-wide text-text-muted">
                 <th className="py-2 pr-4">Date</th>
                 <th className="px-2 py-2">Label</th>
                 <th className="px-2 py-2">Source</th>
@@ -576,10 +576,10 @@ function AuditWorkspace({
             </thead>
             <tbody>
               {cashflows.map((row, index) => (
-                <tr key={`${row.date}-${index}`} className="border-b border-border last:border-0">
+                <tr key={`${row.date}-${index}`} className="border-b border-rule last:border-0">
                   <td className="py-2 pr-4 tabular-nums">{row.date}</td>
                   <td className="px-2 py-2">{row.label ?? "Cash flow"}</td>
-                  <td className="px-2 py-2 text-muted-foreground">{row.source ?? "—"}</td>
+                  <td className="px-2 py-2 text-text-muted">{row.source ?? "—"}</td>
                   <td className={cn("px-2 py-2 text-right tabular-nums", row.amount < 0 ? "text-down" : "text-up")}>{formatMoney(row.amount)}</td>
                 </tr>
               ))}
@@ -587,15 +587,15 @@ function AuditWorkspace({
           </table>
         </div>
       </details>
-      <details className="mt-4 border-l border-border pl-3">
+      <details className="mt-4 border-l border-rule pl-3">
         <summary className="cursor-pointer text-sm font-medium">Normalized event table</summary>
-        <p className="mt-2 text-xs text-muted-foreground">
+        <p className="mt-2 text-xs text-text-muted">
           Includes broker entries, confirmed manual/corporate adjustments and original narrations. Dividend module linked amount: {formatMoney(dividendIncome)}.
         </p>
         <div className="mt-3 max-h-[35rem] overflow-auto">
           <table className="w-full min-w-[61.25rem] text-xs">
             <thead>
-              <tr className="sticky top-0 border-b border-border bg-background text-left text-[10px] uppercase tracking-wide text-muted-foreground">
+              <tr className="sticky top-0 border-b border-rule bg-surface-page text-left text-[10px] uppercase tracking-wide text-text-muted">
                 <th className="py-2 pr-4">Event</th>
                 <th className="px-2 py-2">Date</th>
                 <th className="px-2 py-2">Ticker</th>
@@ -609,19 +609,19 @@ function AuditWorkspace({
             </thead>
             <tbody>
               {events.map((event) => (
-                <tr key={event.id} className="border-b border-border last:border-0 align-top">
+                <tr key={event.id} className="border-b border-rule last:border-0 align-top">
                   <td className="py-2 pr-4 font-medium">{event.eventType}</td>
-                  <td className="px-2 py-2 tabular-nums text-muted-foreground">{event.effectiveDate ?? event.postingDate ?? "—"}</td>
+                  <td className="px-2 py-2 tabular-nums text-text-muted">{event.effectiveDate ?? event.postingDate ?? "—"}</td>
                   <td className="px-2 py-2 font-medium">{event.ticker ?? "—"}</td>
                   <td className="px-2 py-2 text-right tabular-nums">{formatNumber(event.quantity, 0)}</td>
                   <td className="px-2 py-2 text-right tabular-nums">{formatMoney(event.grossValue)}</td>
                   <td className="px-2 py-2 text-right tabular-nums">{formatMoney(event.netCashEffect)}</td>
-                  <td className="px-2 py-2 text-muted-foreground">{event.sourceType}</td>
+                  <td className="px-2 py-2 text-text-muted">{event.sourceType}</td>
                   <td className="px-2 py-2">{event.feesKnown ? "Known" : "Unavailable"}</td>
                   <td className="px-2 py-2">
                     <details>
-                      <summary className="cursor-pointer text-muted-foreground">Show</summary>
-                      <p className="mt-1 max-w-[26.25rem] leading-snug text-muted-foreground">{event.originalNarration}</p>
+                      <summary className="cursor-pointer text-text-muted">Show</summary>
+                      <p className="mt-1 max-w-[26.25rem] leading-snug text-text-muted">{event.originalNarration}</p>
                     </details>
                   </td>
                 </tr>

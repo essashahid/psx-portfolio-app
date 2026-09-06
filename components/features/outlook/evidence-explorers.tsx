@@ -23,20 +23,20 @@ const pct = (v: number) => (Number.isFinite(v) ? `${(v * 100).toFixed(1)}%` : "n
 const signed = (v: number) => (Number.isFinite(v) ? `${v >= 0 ? "+" : ""}${(v * 100).toFixed(1)}%` : "n/a");
 
 function Takeaway({ children }: { children: React.ReactNode }) {
-  return <p className="text-xs leading-relaxed text-foreground">{children}</p>;
+  return <p className="text-xs leading-relaxed text-text-strong">{children}</p>;
 }
 
 function Figure({ value, label, tone }: { value: string; label: string; tone?: "danger" | "positive" }) {
   return (
-    <div className="rounded-lg bg-muted p-4">
+    <div className="rounded-lg bg-surface-sunken p-4">
       <p
         className={`text-2xl font-semibold tabular-nums ${
-          tone === "danger" ? "text-down" : tone === "positive" ? "text-up" : "text-foreground"
+          tone === "danger" ? "text-down" : tone === "positive" ? "text-up" : "text-text-strong"
         }`}
       >
         {value}
       </p>
-      <p className="mt-1 text-[11px] leading-snug text-muted-foreground">{label}</p>
+      <p className="mt-1 text-[11px] leading-snug text-text-muted">{label}</p>
     </div>
   );
 }
@@ -133,8 +133,8 @@ export function RegimeExplorer({
               onClick={() => setRegimeKey(r.key)}
               className={`min-h-9 rounded-md border px-2 py-1.5 text-[12px] font-medium transition-[background-color,color,border-color] duration-(--dur-fast) ease-(--ease-ui) focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2 focus-visible:ring-offset-card ${
                 selected
-                  ? "border-foreground bg-foreground text-background"
-                  : "border-border bg-card text-muted-foreground hover:bg-muted hover:text-foreground"
+                  ? "border-text-strong bg-text-strong text-surface-page"
+                  : "border-rule bg-surface-raised text-text-muted hover:bg-surface-sunken hover:text-text-strong"
               }`}
             >
               {r.label}
@@ -200,8 +200,8 @@ export function TurbulenceExplorer({ rows }: { rows: TurbulenceOption[] }) {
                 { label: "After a turbulent stretch", rate: row.turbulentRate, tone: "turbulent" as const },
               ]
             ).map((side) => (
-              <div key={side.tone} className="rounded-lg bg-muted p-4">
-                <p className="mb-2.5 text-[11px] text-muted-foreground">{side.label}</p>
+              <div key={side.tone} className="rounded-lg bg-surface-sunken p-4">
+                <p className="mb-2.5 text-[11px] text-text-muted">{side.label}</p>
                 <div className="flex h-16 items-end">
                   <div
                     className={`w-full rounded-t transition-[height] duration-(--dur-base) ease-(--ease-ui) ${
@@ -210,7 +210,7 @@ export function TurbulenceExplorer({ rows }: { rows: TurbulenceOption[] }) {
                     style={{ height: `${height(side.rate)}%` }}
                   />
                 </div>
-                <p className="mt-2 text-lg font-semibold tabular-nums text-foreground">{pct(side.rate)}</p>
+                <p className="mt-2 text-lg font-semibold tabular-nums text-text-strong">{pct(side.rate)}</p>
               </div>
             ))}
           </div>

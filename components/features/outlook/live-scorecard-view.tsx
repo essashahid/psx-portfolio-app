@@ -61,8 +61,8 @@ export function LiveScorecardView({ scorecard }: { scorecard: LiveScorecard }) {
     <Card className="rise">
       <CardContent className="p-4">
         <div className="mb-3">
-          <h2 className="text-sm font-semibold tracking-editorial text-foreground">Live track record</h2>
-          <p className="mt-1 max-w-3xl text-xs leading-relaxed text-muted-foreground">
+          <h2 className="text-sm font-semibold tracking-editorial text-text-strong">Live track record</h2>
+          <p className="mt-1 max-w-3xl text-xs leading-relaxed text-text-muted">
             Every prediction the models make is recorded before the outcome exists, and scored once the window has
             elapsed. Phase 3 showed how the models behaved on history; this shows how they behave going forward, which
             is the evidence that decides whether they are worth shipping.
@@ -70,24 +70,24 @@ export function LiveScorecardView({ scorecard }: { scorecard: LiveScorecard }) {
         </div>
 
         {scorecard.totalScored === 0 && scorecard.totalPending === 0 ? (
-          <p className="text-xs text-muted-foreground">
+          <p className="text-xs text-text-muted">
             No predictions recorded yet. The daily job starts the record on its next run.
           </p>
         ) : (
           <>
             <div className="mb-3 flex flex-wrap gap-x-6 gap-y-1 text-xs">
-              <span className="text-muted-foreground">
-                Scored: <span className="font-medium tabular-nums text-foreground">{scorecard.totalScored}</span>
+              <span className="text-text-muted">
+                Scored: <span className="font-medium tabular-nums text-text-strong">{scorecard.totalScored}</span>
               </span>
-              <span className="text-muted-foreground">
-                Awaiting their outcome: <span className="font-medium tabular-nums text-foreground">{scorecard.totalPending}</span>
+              <span className="text-text-muted">
+                Awaiting their outcome: <span className="font-medium tabular-nums text-text-strong">{scorecard.totalPending}</span>
               </span>
             </div>
 
             <div className="-mx-4 overflow-x-auto px-4">
               <table className="w-full min-w-[44rem] text-xs">
                 <thead>
-                  <tr className="border-b border-border text-left text-[11px] uppercase tracking-wide text-muted-foreground">
+                  <tr className="border-b border-rule text-left text-[11px] uppercase tracking-wide text-text-muted">
                     <th className="pb-2 pr-3 font-medium">Output</th>
                     <th className="pb-2 pr-3 font-medium">Window</th>
                     <th className="pb-2 pr-3 text-right font-medium">Scored</th>
@@ -99,14 +99,14 @@ export function LiveScorecardView({ scorecard }: { scorecard: LiveScorecard }) {
                   {scorecard.scores.map((s) => {
                     const verdict = verdictOf(s);
                     return (
-                      <tr key={`${s.task}-${s.horizon}-${s.threshold ?? ""}-${s.model}`} className="border-b border-border/60 last:border-0">
-                        <td className="py-2 pr-3 text-foreground">
+                      <tr key={`${s.task}-${s.horizon}-${s.threshold ?? ""}-${s.model}`} className="border-b border-rule/60 last:border-0">
+                        <td className="py-2 pr-3 text-text-strong">
                           {TASK_LABEL[s.task] ?? s.task}
                           {s.threshold !== null && ` (${Math.abs(s.threshold * 100).toFixed(0)}%)`}
                         </td>
-                        <td className="py-2 pr-3 tabular-nums text-muted-foreground">{s.horizon} sessions</td>
-                        <td className="py-2 pr-3 text-right tabular-nums text-muted-foreground">{s.scored}</td>
-                        <td className="py-2 pr-3 text-muted-foreground">{measureOf(s)}</td>
+                        <td className="py-2 pr-3 tabular-nums text-text-muted">{s.horizon} sessions</td>
+                        <td className="py-2 pr-3 text-right tabular-nums text-text-muted">{s.scored}</td>
+                        <td className="py-2 pr-3 text-text-muted">{measureOf(s)}</td>
                         <td className="py-2">
                           <Badge variant={verdict.variant}>{verdict.text}</Badge>
                         </td>
@@ -117,7 +117,7 @@ export function LiveScorecardView({ scorecard }: { scorecard: LiveScorecard }) {
               </table>
             </div>
 
-            <p className="mt-3 text-[11px] leading-relaxed text-muted-foreground">
+            <p className="mt-3 text-[11px] leading-relaxed text-text-muted">
               {scorecard.note}
               {!anyReportable && " Nothing here is a measurement yet; the record is still being built."}
             </p>

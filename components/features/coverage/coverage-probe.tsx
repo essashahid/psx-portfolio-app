@@ -49,7 +49,7 @@ export function CoverageProbe() {
           onChange={(e) => setTicker(e.target.value.toUpperCase())}
           onKeyDown={(e) => e.key === "Enter" && run()}
           placeholder="Ticker, e.g. MEBL"
-          className="h-9 w-40 rounded-md border border-border bg-card px-3 text-sm outline-none focus:ring-2 focus:ring-emerald-500/40"
+          className="h-9 w-40 rounded-md border border-rule bg-surface-raised px-3 text-sm outline-none focus:ring-2 focus:ring-emerald-500/40"
         />
         <Button onClick={run} disabled={loading || !ticker.trim()} size="sm">
           {loading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Search className="h-3.5 w-3.5" />}
@@ -60,11 +60,11 @@ export function CoverageProbe() {
       {results && (
         <div className="space-y-1.5">
           {results.map((r) => (
-            <div key={r.provider} className="flex flex-wrap items-center gap-2 rounded-lg border border-border px-3 py-2">
+            <div key={r.provider} className="flex flex-wrap items-center gap-2 rounded-lg border border-rule px-3 py-2">
               <span className="w-32 text-xs font-medium">{r.provider}</span>
               <Badge variant={r.quote ? "green" : "secondary"}>quote {r.quote ? "✓" : "✗"}</Badge>
               <Badge variant={r.history ? "green" : "secondary"}>history {r.history ? "✓" : "✗"}</Badge>
-              {r.symbol && <span className="text-[11px] text-muted-foreground">symbol: {r.symbol}</span>}
+              {r.symbol && <span className="text-[11px] text-text-muted">symbol: {r.symbol}</span>}
               {r.error && <span className="text-[11px] text-down">{r.error}</span>}
             </div>
           ))}

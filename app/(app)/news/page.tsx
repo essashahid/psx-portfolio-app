@@ -183,7 +183,7 @@ export default async function NewsPage({ searchParams }: { searchParams: Promise
             <p className="mt-2 text-xs text-text-muted">
               {sourceHealth}
               {newSinceLastVisit > 0 && (
-                <span className="ml-1 text-foreground">· {newSinceLastVisit} new since your last visit</span>
+                <span className="ml-1 text-text-strong">· {newSinceLastVisit} new since your last visit</span>
               )}
             </p>
           </div>
@@ -207,16 +207,16 @@ export default async function NewsPage({ searchParams }: { searchParams: Promise
       <MarkSeen surface="news" />
 
       {newToday > 0 && (
-        <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-border bg-card px-4 py-3 text-sm">
+        <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-rule bg-surface-raised px-4 py-3 text-sm">
           <span>{newToday} new event{newToday === 1 ? "" : "s"} available today</span>
           <div className="flex gap-2">
             <Link href={buildHref({ window: "today" })} className="text-sm font-medium hover:underline">Show events</Link>
-            <Link href={buildHref({ window: "week" })} className="text-sm text-muted-foreground hover:text-foreground">Dismiss</Link>
+            <Link href={buildHref({ window: "week" })} className="text-sm text-text-muted hover:text-text-strong">Dismiss</Link>
           </div>
         </div>
       )}
 
-      <nav className="sticky top-0 z-20 -mx-1 flex gap-1 overflow-x-auto border-b border-border bg-background/90 px-1 backdrop-blur">
+      <nav className="sticky top-0 z-20 -mx-1 flex gap-1 overflow-x-auto border-b border-rule bg-surface-page/90 px-1 backdrop-blur">
         {NEWS_TABS.map((item) => {
           const active = item.id === tab;
           const label = tabLabel(item.id, { importantCount, newToday, saved: events.filter((event) => event.saved).length, upcoming: upcoming.length });
@@ -226,12 +226,12 @@ export default async function NewsPage({ searchParams }: { searchParams: Promise
               href={buildHref({ tab: item.id })}
               className={cn(
                 "relative whitespace-nowrap px-3 py-2.5 text-[13px] font-medium transition-colors",
-                active ? "text-foreground" : "text-muted-foreground hover:text-foreground"
+                active ? "text-text-strong" : "text-text-muted hover:text-text-strong"
               )}
             >
               {item.label}
-              {label && <span className="ml-1.5 text-[11px] text-muted-foreground/70">{label}</span>}
-              {active && <span className="absolute inset-x-2 -bottom-px h-0.5 rounded-full bg-foreground" />}
+              {label && <span className="ml-1.5 text-[11px] text-text-muted/70">{label}</span>}
+              {active && <span className="absolute inset-x-2 -bottom-px h-0.5 rounded-full bg-text-strong" />}
             </Link>
           );
         })}
@@ -239,7 +239,7 @@ export default async function NewsPage({ searchParams }: { searchParams: Promise
 
       {symbolRail.length > 0 && (
         <div className="rise -mx-1 flex items-center gap-1.5 overflow-x-auto px-1 pb-0.5" role="navigation" aria-label="Filter news by holding">
-          <span className="shrink-0 pr-1 text-[11px] font-medium uppercase tracking-wide text-muted-foreground">Your symbols</span>
+          <span className="shrink-0 pr-1 text-[11px] font-medium uppercase tracking-wide text-text-muted">Your symbols</span>
           {symbolRail.map((item) => {
             const active = activeTicker === item.ticker;
             return (
@@ -249,18 +249,18 @@ export default async function NewsPage({ searchParams }: { searchParams: Promise
                 className={cn(
                   "inline-flex shrink-0 items-center gap-1.5 rounded-md border px-2.5 py-1 text-xs transition-colors",
                   active
-                    ? "border-foreground/50 bg-muted font-medium text-foreground"
-                    : "border-border text-foreground/80 hover:border-foreground/30 hover:text-foreground"
+                    ? "border-text-strong/50 bg-surface-sunken font-medium text-text-strong"
+                    : "border-rule text-text-strong/80 hover:border-text-strong/30 hover:text-text-strong"
                 )}
                 title={active ? `Clear ${item.ticker} filter` : `Show news for ${item.ticker}`}
               >
                 <span className="font-medium">{item.ticker}</span>
                 {typeof item.move === "number" && (
-                  <span className={cn("tabular-nums", item.move > 0 ? "text-up" : item.move < 0 ? "text-down" : "text-muted-foreground")}>
+                  <span className={cn("tabular-nums", item.move > 0 ? "text-up" : item.move < 0 ? "text-down" : "text-text-muted")}>
                     {formatSignedPct(item.move)}
                   </span>
                 )}
-                {item.count > 0 && <span className="text-[11px] text-muted-foreground">{item.count}</span>}
+                {item.count > 0 && <span className="text-[11px] text-text-muted">{item.count}</span>}
               </Link>
             );
           })}
@@ -269,14 +269,14 @@ export default async function NewsPage({ searchParams }: { searchParams: Promise
 
       <section className="space-y-3">
         <div className="flex flex-wrap items-center justify-between gap-3">
-          <div className="inline-flex max-w-full overflow-x-auto rounded-lg border border-border bg-card p-0.5">
+          <div className="inline-flex max-w-full overflow-x-auto rounded-lg border border-rule bg-surface-raised p-0.5">
             {NEWS_WINDOWS.map((window) => (
               <Link
                 key={window.id}
                 href={buildHref({ window: window.id })}
                 className={cn(
                   "whitespace-nowrap rounded-md px-2.5 py-1 text-xs font-medium transition-colors",
-                  windowId === window.id ? "bg-foreground text-background" : "text-muted-foreground hover:text-foreground"
+                  windowId === window.id ? "bg-text-strong text-surface-page" : "text-text-muted hover:text-text-strong"
                 )}
               >
                 {window.label}
@@ -286,7 +286,7 @@ export default async function NewsPage({ searchParams }: { searchParams: Promise
 
           <div className="flex min-w-0 flex-1 items-center gap-2 sm:max-w-md">
           <form action="/news" className="relative min-w-0 flex-1">
-            <Search className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
+            <Search className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-text-muted" />
             <input type="hidden" name="tab" value={tab === "suggested" ? "" : tab} />
             <input type="hidden" name="window" value={windowId === "week" ? "" : windowId} />
             {activeFilter && <input type="hidden" name="filter" value={activeFilter} />}
@@ -296,16 +296,16 @@ export default async function NewsPage({ searchParams }: { searchParams: Promise
               name="q"
               defaultValue={query}
               placeholder="Search events, companies, tickers or topics"
-              className="h-9 w-full rounded-lg border border-border bg-card pl-9 pr-3 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              className="h-9 w-full rounded-lg border border-rule bg-surface-raised pl-9 pr-3 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
             />
           </form>
 
-          <div className="inline-flex shrink-0 rounded-lg border border-border bg-card p-0.5" role="group" aria-label="Feed density">
+          <div className="inline-flex shrink-0 rounded-lg border border-rule bg-surface-raised p-0.5" role="group" aria-label="Feed density">
             <Link
               href={buildHref({ view: undefined })}
               className={cn(
                 "flex h-8 w-8 items-center justify-center rounded-md transition-colors",
-                view === "cards" ? "bg-foreground text-background" : "text-muted-foreground hover:text-foreground"
+                view === "cards" ? "bg-text-strong text-surface-page" : "text-text-muted hover:text-text-strong"
               )}
               title="Card view"
               aria-label="Card view"
@@ -316,7 +316,7 @@ export default async function NewsPage({ searchParams }: { searchParams: Promise
               href={buildHref({ view: "compact" })}
               className={cn(
                 "flex h-8 w-8 items-center justify-center rounded-md transition-colors",
-                view === "compact" ? "bg-foreground text-background" : "text-muted-foreground hover:text-foreground"
+                view === "compact" ? "bg-text-strong text-surface-page" : "text-text-muted hover:text-text-strong"
               )}
               title="Compact view"
               aria-label="Compact view"
@@ -336,7 +336,7 @@ export default async function NewsPage({ searchParams }: { searchParams: Promise
                 href={buildHref({ filter: active ? undefined : filter.id })}
                 className={cn(
                   "rounded-md border px-2.5 py-1 text-xs transition-colors",
-                  active ? "border-foreground bg-foreground text-background" : "border-border text-muted-foreground hover:text-foreground"
+                  active ? "border-text-strong bg-text-strong text-surface-page" : "border-rule text-text-muted hover:text-text-strong"
                 )}
               >
                 {filter.label}
@@ -344,10 +344,10 @@ export default async function NewsPage({ searchParams }: { searchParams: Promise
             );
           })}
           <details className="group relative">
-            <summary className="cursor-pointer rounded-md border border-border px-2.5 py-1 text-xs text-muted-foreground hover:text-foreground">More</summary>
-            <div className="absolute left-0 top-8 z-30 w-48 rounded-lg border border-border bg-card p-2 text-xs shadow-lg">
+            <summary className="cursor-pointer rounded-md border border-rule px-2.5 py-1 text-xs text-text-muted hover:text-text-strong">More</summary>
+            <div className="absolute left-0 top-8 z-30 w-48 rounded-lg border border-rule bg-surface-raised p-2 text-xs shadow-lg">
               {["Sectors", "Mutual Funds", "Commodities", "Metals", "Crypto", "Global Markets"].map((item) => (
-                <div key={item} className="rounded px-2 py-1.5 text-muted-foreground">{item}</div>
+                <div key={item} className="rounded px-2 py-1.5 text-text-muted">{item}</div>
               ))}
             </div>
           </details>
@@ -362,7 +362,7 @@ export default async function NewsPage({ searchParams }: { searchParams: Promise
                 <div>
                   <h2 className="text-lg font-semibold tracking-editorial">Suggested for you</h2>
                 </div>
-                <Link href={buildHref({ filter: "suggested" })} className="text-xs font-medium text-muted-foreground hover:text-foreground">
+                <Link href={buildHref({ filter: "suggested" })} className="text-xs font-medium text-text-muted hover:text-text-strong">
                   View all suggested events
                 </Link>
               </div>
@@ -402,7 +402,7 @@ export default async function NewsPage({ searchParams }: { searchParams: Promise
                 {activeTicker && (
                   <Link
                     href={buildHref({ ticker: undefined })}
-                    className="inline-flex items-center gap-1.5 rounded-md border border-border px-2.5 py-1 text-xs text-foreground/80 transition-colors hover:border-foreground/30"
+                    className="inline-flex items-center gap-1.5 rounded-md border border-rule px-2.5 py-1 text-xs text-text-strong/80 transition-colors hover:border-text-strong/30"
                   >
                     Showing {activeTicker} only · clear
                   </Link>
@@ -411,11 +411,11 @@ export default async function NewsPage({ searchParams }: { searchParams: Promise
               {groups.map((group, groupIndex) => (
                 <section key={group.date} className={cn("space-y-3 rise", groupIndex < 5 && `rise-${groupIndex + 1}`)}>
                   <div className="flex items-center gap-3">
-                    <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{dateHeading(group.date)}</h3>
-                    <div className="h-px flex-1 bg-border" />
+                    <h3 className="text-xs font-semibold uppercase tracking-wide text-text-muted">{dateHeading(group.date)}</h3>
+                    <div className="h-px flex-1 bg-rule" />
                   </div>
                   {view === "compact" ? (
-                    <div className="divide-y divide-border/60 rounded-lg border border-border bg-card px-2 py-1">
+                    <div className="divide-y divide-rule/60 rounded-lg border border-rule bg-surface-raised px-2 py-1">
                       {group.events.map((event) => (
                         <NewsEventRow key={event.id} event={event} moves={moves} />
                       ))}
@@ -437,24 +437,24 @@ export default async function NewsPage({ searchParams }: { searchParams: Promise
           <UpcomingPanel upcoming={upcoming.slice(0, 6)} />
 
           {sectorPulse.length > 0 && (
-            <section className="rounded-lg border border-border bg-card p-4">
+            <section className="rounded-lg border border-rule bg-surface-raised p-4">
               <h2 className="text-sm font-semibold">Sector pulse</h2>
               <div className="mt-3 space-y-1">
                 {sectorPulse.map((row) => (
                   <Link
                     key={row.sector}
                     href={buildHref({ q: row.sector })}
-                    className="flex items-center justify-between gap-3 rounded-md px-2 py-1.5 text-sm transition-colors hover:bg-muted/50"
+                    className="flex items-center justify-between gap-3 rounded-md px-2 py-1.5 text-sm transition-colors hover:bg-surface-sunken/50"
                     title={`Search news for ${row.sector}`}
                   >
                     <span className="flex min-w-0 items-center gap-2">
                       <SectorDot sector={row.sector} />
-                      <span className="truncate text-foreground/85">{row.sector}</span>
+                      <span className="truncate text-text-strong/85">{row.sector}</span>
                     </span>
                     <span
                       className={cn(
                         "shrink-0 text-xs font-medium tabular-nums",
-                        (row.average_return ?? 0) > 0 ? "text-up" : (row.average_return ?? 0) < 0 ? "text-down" : "text-muted-foreground"
+                        (row.average_return ?? 0) > 0 ? "text-up" : (row.average_return ?? 0) < 0 ? "text-down" : "text-text-muted"
                       )}
                     >
                       {formatSignedPct(row.average_return)}
@@ -465,7 +465,7 @@ export default async function NewsPage({ searchParams }: { searchParams: Promise
             </section>
           )}
 
-          <section className="rounded-lg border border-border bg-card p-4">
+          <section className="rounded-lg border border-rule bg-surface-raised p-4">
             <h2 className="text-sm font-semibold">Portfolio coverage</h2>
             <div className="mt-3 space-y-2 text-sm">
               <p><span className="font-medium">{holdings.length}</span> owned holdings tracked</p>
@@ -483,16 +483,16 @@ export default async function NewsPage({ searchParams }: { searchParams: Promise
             )}
           </section>
 
-          <section className="rounded-lg border border-border bg-card p-4">
+          <section className="rounded-lg border border-rule bg-surface-raised p-4">
             <h2 className="text-sm font-semibold">Topics to watch</h2>
             {topicsToWatch.length > 0 ? (
               <ul className="mt-3 space-y-2">
                 {topicsToWatch.map((topic) => (
-                  <li key={topic} className="text-sm text-foreground/85">- {topic}</li>
+                  <li key={topic} className="text-sm text-text-strong/85">- {topic}</li>
                 ))}
               </ul>
             ) : (
-              <p className="mt-2 text-sm text-muted-foreground">No specific follow-up topics were identified from current suggested events.</p>
+              <p className="mt-2 text-sm text-text-muted">No specific follow-up topics were identified from current suggested events.</p>
             )}
           </section>
         </aside>
@@ -542,21 +542,21 @@ function formatAgo(value: string): string {
 
 function UpcomingPanel({ upcoming, large = false }: { upcoming: UpcomingItem[]; large?: boolean }) {
   return (
-    <section className={cn("rounded-lg border border-border bg-card p-4", large && "p-5")}>
+    <section className={cn("rounded-lg border border-rule bg-surface-raised p-4", large && "p-5")}>
       <div className="flex items-center gap-2">
-        <CalendarDays className="h-4 w-4 text-muted-foreground" />
+        <CalendarDays className="h-4 w-4 text-text-muted" />
         <h2 className="text-sm font-semibold">Upcoming events</h2>
       </div>
       {upcoming.length === 0 ? (
-        <p className="mt-3 text-sm text-muted-foreground">No confirmed upcoming events are available for your current filters.</p>
+        <p className="mt-3 text-sm text-text-muted">No confirmed upcoming events are available for your current filters.</p>
       ) : (
-        <div className="mt-3 divide-y divide-border">
+        <div className="mt-3 divide-y divide-rule">
           {upcoming.map((item) => (
             <div key={item.id} className="grid grid-cols-[44px_1fr] gap-3 py-3 first:pt-0 last:pb-0">
-              <div className="text-xs font-medium text-muted-foreground">{formatUpcomingDate(item.date)}</div>
+              <div className="text-xs font-medium text-text-muted">{formatUpcomingDate(item.date)}</div>
               <div className="min-w-0">
                 <p className="text-sm font-medium leading-snug">{item.title}</p>
-                <p className="mt-0.5 text-xs text-muted-foreground">{item.topic} · {item.relevance}</p>
+                <p className="mt-0.5 text-xs text-text-muted">{item.topic} · {item.relevance}</p>
                 {item.href && (
                   <a href={item.href} target="_blank" rel="noopener noreferrer" className="mt-1 inline-block text-xs font-medium hover:underline">
                     View official source

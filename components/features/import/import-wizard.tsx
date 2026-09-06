@@ -168,7 +168,7 @@ export function ImportWizard() {
         </CardHeader>
         <CardContent>
           <label
-            className="flex cursor-pointer flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed border-border bg-muted/30 py-12 transition-colors hover:bg-muted/60"
+            className="flex cursor-pointer flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed border-rule bg-surface-sunken/30 py-12 transition-colors hover:bg-surface-sunken/60"
             onDragOver={(e) => e.preventDefault()}
             onDrop={(e) => {
               e.preventDefault();
@@ -178,14 +178,14 @@ export function ImportWizard() {
           >
             {busy ? (
               <>
-                <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-                <p className="text-sm text-muted-foreground">Parsing statement…</p>
+                <Loader2 className="h-8 w-8 animate-spin text-text-muted" />
+                <p className="text-sm text-text-muted">Parsing statement…</p>
               </>
             ) : (
               <>
-                <Upload className="h-8 w-8 text-muted-foreground" />
+                <Upload className="h-8 w-8 text-text-muted" />
                 <p className="text-sm font-medium">Drop a file here or click to browse</p>
-                <p className="text-xs text-muted-foreground">CSV, XLSX or PDF · max 10 MB</p>
+                <p className="text-xs text-text-muted">CSV, XLSX or PDF · max 10 MB</p>
               </>
             )}
             <input
@@ -201,7 +201,7 @@ export function ImportWizard() {
             />
           </label>
           {error && <p className="mt-3 rounded-md bg-red-50 px-3 py-2 text-xs text-down">{error}</p>}
-          <div className="mt-4 grid gap-2 text-xs text-muted-foreground sm:grid-cols-2">
+          <div className="mt-4 grid gap-2 text-xs text-text-muted sm:grid-cols-2">
             <p>• <strong>Holdings snapshot</strong>: updates positions to match the statement.</p>
             <p>• <strong>Trade history</strong>: stores transactions, recalculates weighted-average cost.</p>
             <p>• <strong>Dividend/cash</strong>: records dividends and cash movements.</p>
@@ -302,7 +302,7 @@ export function ImportWizard() {
           </div>
 
           {showMapping && (
-            <div className="grid gap-2 rounded-md border border-border bg-muted/30 p-3 sm:grid-cols-2 lg:grid-cols-3">
+            <div className="grid gap-2 rounded-md border border-rule bg-surface-sunken/30 p-3 sm:grid-cols-2 lg:grid-cols-3">
               {upload.headers.map((h) => (
                 <div key={h} className="flex items-center gap-2">
                   <span className="w-1/2 truncate text-xs font-medium" title={h}>{h}</span>
@@ -343,7 +343,7 @@ export function ImportWizard() {
                   return (
                     <div
                       key={r.id}
-                      className={`rounded-lg border border-border bg-background p-3 ${r.status === "invalid" ? "opacity-60" : ""}`}
+                      className={`rounded-lg border border-rule bg-surface-page p-3 ${r.status === "invalid" ? "opacity-60" : ""}`}
                     >
                       <div className="flex items-center justify-between gap-3">
                         <label className="flex min-w-0 items-center gap-2 text-sm font-medium">
@@ -360,8 +360,8 @@ export function ImportWizard() {
                       </div>
                       <div className="mt-2 grid grid-cols-2 gap-2">
                         {previewCols.map((c) => (
-                          <div key={c} className="min-w-0 rounded-md border border-border bg-card px-2 py-1.5">
-                            <p className="truncate text-[10px] uppercase text-muted-foreground">
+                          <div key={c} className="min-w-0 rounded-md border border-rule bg-surface-raised px-2 py-1.5">
+                            <p className="truncate text-[10px] uppercase text-text-muted">
                               {c.replace(/_/g, " ")}
                             </p>
                             <p className="truncate text-xs font-medium">
@@ -373,7 +373,7 @@ export function ImportWizard() {
                         ))}
                       </div>
                       {r.issues.length > 0 && (
-                        <p className="mt-2 text-[11px] text-muted-foreground">{r.issues.join("; ")}</p>
+                        <p className="mt-2 text-[11px] text-text-muted">{r.issues.join("; ")}</p>
                       )}
                     </div>
                   );
@@ -403,7 +403,7 @@ export function ImportWizard() {
                               onChange={() => toggleRow(r.id)}
                             />
                           </TD>
-                          <TD className="text-muted-foreground">{r.row_index + 1}</TD>
+                          <TD className="text-text-muted">{r.row_index + 1}</TD>
                           {previewCols.map((c) => (
                             <TD key={c} className="max-w-[10rem] truncate text-xs">
                               {r.normalized?.[c] !== null && r.normalized?.[c] !== undefined
@@ -412,7 +412,7 @@ export function ImportWizard() {
                             </TD>
                           ))}
                           <TD><Badge variant={STATUS_BADGE[r.status] ?? "secondary"}>{r.status}</Badge></TD>
-                          <TD className="max-w-[15rem] truncate text-xs text-muted-foreground" title={r.issues.join("; ")}>
+                          <TD className="max-w-[15rem] truncate text-xs text-text-muted" title={r.issues.join("; ")}>
                             {r.issues.join("; ") || "—"}
                           </TD>
                         </TR>

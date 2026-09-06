@@ -31,8 +31,8 @@ function headlineCell(cells: CellEvidence[], verdict: SignalClass): CellEvidence
 function SectionHeading({ title, blurb }: { title: string; blurb: string }) {
   return (
     <div className="mb-3">
-      <h2 className="text-sm font-semibold tracking-editorial text-foreground">{title}</h2>
-      <p className="mt-1 max-w-3xl text-xs leading-relaxed text-muted-foreground">{blurb}</p>
+      <h2 className="text-sm font-semibold tracking-editorial text-text-strong">{title}</h2>
+      <p className="mt-1 max-w-3xl text-xs leading-relaxed text-text-muted">{blurb}</p>
     </div>
   );
 }
@@ -42,7 +42,7 @@ function SectionHeading({ title, blurb }: { title: string; blurb: string }) {
  * which already supplies a surface. Cards nested inside cards read as clutter.
  */
 function Section({ bare, className, children }: { bare: boolean; className?: string; children: React.ReactNode }) {
-  if (bare) return <div className="border-b border-border/60 pb-4 last:border-0 last:pb-0">{children}</div>;
+  if (bare) return <div className="border-b border-rule/60 pb-4 last:border-0 last:pb-0">{children}</div>;
   return (
     <Card className={className}>
       <CardContent className="p-4">{children}</CardContent>
@@ -65,7 +65,7 @@ export function SignalEvidenceView({ report, bare = false }: { report: SignalEvi
           <div className="-mx-4 overflow-x-auto px-4">
             <table className="w-full min-w-[52rem] text-xs">
               <thead>
-                <tr className="border-b border-border text-left text-[11px] uppercase tracking-wide text-muted-foreground">
+                <tr className="border-b border-rule text-left text-[11px] uppercase tracking-wide text-text-muted">
                   <th className="pb-2 pr-3 font-medium">Signal</th>
                   <th className="pb-2 pr-3 font-medium">Family</th>
                   <th className="pb-2 pr-3 text-right font-medium">Coverage</th>
@@ -81,21 +81,21 @@ export function SignalEvidenceView({ report, bare = false }: { report: SignalEvi
                   const cell = headlineCell(s.cells, s.verdict);
                   const badge = VERDICT_BADGE[s.verdict];
                   return (
-                    <tr key={s.key} className="border-b border-border/60 last:border-0">
+                    <tr key={s.key} className="border-b border-rule/60 last:border-0">
                       <td className="py-2 pr-3">
-                        <span className="text-foreground">{s.label}</span>
-                        <span className="mt-0.5 block text-[11px] leading-snug text-muted-foreground">{s.verdictReason}</span>
+                        <span className="text-text-strong">{s.label}</span>
+                        <span className="mt-0.5 block text-[11px] leading-snug text-text-muted">{s.verdictReason}</span>
                       </td>
-                      <td className="py-2 pr-3 text-muted-foreground">{s.family}</td>
-                      <td className="py-2 pr-3 text-right tabular-nums text-muted-foreground">
+                      <td className="py-2 pr-3 text-text-muted">{s.family}</td>
+                      <td className="py-2 pr-3 text-right tabular-nums text-text-muted">
                         {s.coverage.observations.toLocaleString()} obs
                       </td>
-                      <td className="py-2 pr-3 text-right tabular-nums text-muted-foreground">
+                      <td className="py-2 pr-3 text-right tabular-nums text-text-muted">
                         {Math.abs(cell.threshold * 100).toFixed(0)}% / {cell.horizonKey}
                       </td>
-                      <td className="py-2 pr-3 text-right tabular-nums text-muted-foreground">{x(cell.lift)}</td>
-                      <td className="py-2 pr-3 text-right tabular-nums text-muted-foreground">{cell.hitEpisodes}</td>
-                      <td className="py-2 pr-3 text-right tabular-nums text-muted-foreground">
+                      <td className="py-2 pr-3 text-right tabular-nums text-text-muted">{x(cell.lift)}</td>
+                      <td className="py-2 pr-3 text-right tabular-nums text-text-muted">{cell.hitEpisodes}</td>
+                      <td className="py-2 pr-3 text-right tabular-nums text-text-muted">
                         {cell.beyondVol ? x(cell.beyondVol.lift) : "benchmark"}
                       </td>
                       <td className="py-2">
@@ -115,7 +115,7 @@ export function SignalEvidenceView({ report, bare = false }: { report: SignalEvi
             blurb="Phase 1 found that narrow participation during calm markets looked informative. That analysis defined narrow using cut-offs computed over the whole sample, which quietly used knowledge of where breadth would later sit. Re-run with cut-offs a date could actually have known, the calm-and-narrow combination never occurred at all: every point-in-time narrow reading fell inside a single turbulent stretch. Negative results like this are the reason the stricter method exists, and the pair remains worth re-testing as more history accrues."
           />
           {pairCellsWithEvidence.length === 0 ? (
-            <p className="text-xs text-muted-foreground">
+            <p className="text-xs text-text-muted">
               No signal pair currently carries enough distinct episodes to quote. Pair analysis resumes as coverage grows.
             </p>
           ) : (
@@ -123,8 +123,8 @@ export function SignalEvidenceView({ report, bare = false }: { report: SignalEvi
               {report.pairs
                 .filter((p) => p.cells.some((c) => c.quotable))
                 .map((p) => (
-                  <li key={`${p.anchor}-${p.other}`} className="text-xs text-muted-foreground">
-                    <span className="font-medium text-foreground">
+                  <li key={`${p.anchor}-${p.other}`} className="text-xs text-text-muted">
+                    <span className="font-medium text-text-strong">
                       {p.anchor} with {p.other}:
                     </span>{" "}
                     {p.cells
@@ -148,7 +148,7 @@ export function SignalEvidenceView({ report, bare = false }: { report: SignalEvi
           <div className="-mx-4 overflow-x-auto px-4">
             <table className="w-full min-w-[44rem] text-xs">
               <thead>
-                <tr className="border-b border-border text-left text-[11px] uppercase tracking-wide text-muted-foreground">
+                <tr className="border-b border-rule text-left text-[11px] uppercase tracking-wide text-text-muted">
                   <th className="pb-2 pr-3 font-medium">Regime</th>
                   <th className="pb-2 pr-3 text-right font-medium">Share of history</th>
                   {report.regimes[0]?.cells.map((c) => (
@@ -160,13 +160,13 @@ export function SignalEvidenceView({ report, bare = false }: { report: SignalEvi
               </thead>
               <tbody>
                 {report.regimes.map((r) => (
-                  <tr key={r.key} className="border-b border-border/60 last:border-0">
-                    <td className="py-2 pr-3 text-foreground">{r.label}</td>
-                    <td className="py-2 pr-3 text-right tabular-nums text-muted-foreground">{pct(r.occupancyShare)}</td>
+                  <tr key={r.key} className="border-b border-rule/60 last:border-0">
+                    <td className="py-2 pr-3 text-text-strong">{r.label}</td>
+                    <td className="py-2 pr-3 text-right tabular-nums text-text-muted">{pct(r.occupancyShare)}</td>
                     {r.cells.map((c) => (
-                      <td key={`${c.horizonKey}-${c.threshold}`} className="py-2 pr-3 text-right tabular-nums text-muted-foreground">
+                      <td key={`${c.horizonKey}-${c.threshold}`} className="py-2 pr-3 text-right tabular-nums text-text-muted">
                         {pct(c.rate)}
-                        <span className="block text-[10px] text-muted-foreground/70">{c.hitEpisodes} ep</span>
+                        <span className="block text-[10px] text-text-muted/70">{c.hitEpisodes} ep</span>
                       </td>
                     ))}
                   </tr>
@@ -178,12 +178,12 @@ export function SignalEvidenceView({ report, bare = false }: { report: SignalEvi
 
       <Section bare={bare} className="rise rise-3">
           <SectionHeading title="Method" blurb="The rules this evidence was produced under, in full." />
-          <ul className="list-disc space-y-1.5 pl-4 text-xs leading-relaxed text-muted-foreground">
+          <ul className="list-disc space-y-1.5 pl-4 text-xs leading-relaxed text-text-muted">
             {report.method.map((note, i) => (
               <li key={i}>{note}</li>
             ))}
           </ul>
-          <p className="mt-3 text-[11px] text-muted-foreground">
+          <p className="mt-3 text-[11px] text-text-muted">
             Window: {report.window.firstDate} to {report.window.lastDate}, {report.window.sessions.toLocaleString()} sessions.
             Generated {new Date(report.generatedAt).toLocaleDateString("en-CA", { timeZone: "Asia/Karachi" })}.
           </p>

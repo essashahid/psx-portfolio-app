@@ -41,8 +41,8 @@ function SectionCard({
     <Card className={className}>
       <CardContent className="p-4">
         <div className="mb-3">
-          <h2 className="text-sm font-semibold tracking-editorial text-foreground">{title}</h2>
-          <p className="mt-1 max-w-3xl text-xs leading-relaxed text-muted-foreground">{blurb}</p>
+          <h2 className="text-sm font-semibold tracking-editorial text-text-strong">{title}</h2>
+          <p className="mt-1 max-w-3xl text-xs leading-relaxed text-text-muted">{blurb}</p>
         </div>
         {children}
       </CardContent>
@@ -55,25 +55,25 @@ function CoverageTierBlock({ group }: { group: CoverageGroup }) {
   const count = group.series.length + group.missing.length;
 
   return (
-    <div className="border-b border-border/60 py-3 first:pt-0 last:border-0 last:pb-0">
+    <div className="border-b border-rule/60 py-3 first:pt-0 last:border-0 last:pb-0">
       <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
         <Badge variant={style.variant}>{style.badge}</Badge>
-        <span className="text-xs font-medium text-foreground">{group.title}</span>
-        <span className="text-[11px] text-muted-foreground">{count}</span>
+        <span className="text-xs font-medium text-text-strong">{group.title}</span>
+        <span className="text-[11px] text-text-muted">{count}</span>
       </div>
-      <p className="mt-1 max-w-3xl text-[11px] leading-relaxed text-muted-foreground">{group.blurb}</p>
+      <p className="mt-1 max-w-3xl text-[11px] leading-relaxed text-text-muted">{group.blurb}</p>
       <ul className="mt-2 space-y-1">
         {group.series.map((s) => (
           <li key={s.key} className="flex flex-wrap items-baseline justify-between gap-x-3 text-[11px]">
-            <span className="text-foreground">{s.label}</span>
-            <span className="tabular-nums text-muted-foreground">
+            <span className="text-text-strong">{s.label}</span>
+            <span className="tabular-nums text-text-muted">
               {s.years > 0 ? `${s.years.toFixed(1)}y` : "no history"}
               {s.quality === "stale" && s.ageDays !== null ? ` · ${s.ageDays}d stale` : ""}
             </span>
           </li>
         ))}
         {group.missing.map((m) => (
-          <li key={m.key} className="text-[11px] text-muted-foreground">
+          <li key={m.key} className="text-[11px] text-text-muted">
             {m.label}
           </li>
         ))}
@@ -105,8 +105,8 @@ export function DataDashboardView({
       <Card className="rise border-l-[3px] border-l-brand">
         <CardContent className="p-4">
           <p className="eyebrow mb-1.5">Phase 2 &middot; Signal research complete</p>
-          <p className="text-sm leading-relaxed text-foreground">{summary.readiness.headline}.</p>
-          <p className="mt-2 max-w-3xl text-xs leading-relaxed text-muted-foreground">{summary.readiness.detail}</p>
+          <p className="text-sm leading-relaxed text-text-strong">{summary.readiness.headline}.</p>
+          <p className="mt-2 max-w-3xl text-xs leading-relaxed text-text-muted">{summary.readiness.detail}</p>
         </CardContent>
       </Card>
 
@@ -130,8 +130,8 @@ export function DataDashboardView({
         <Card className="rise rise-1">
           <CardContent className="p-4">
             <p className="eyebrow mb-1.5">Primary signal</p>
-            <p className="text-sm font-semibold text-foreground">{summary.primarySignal.label}</p>
-            <p className="mt-1 max-w-3xl text-xs leading-relaxed text-muted-foreground">{summary.primarySignal.detail}</p>
+            <p className="text-sm font-semibold text-text-strong">{summary.primarySignal.label}</p>
+            <p className="mt-1 max-w-3xl text-xs leading-relaxed text-text-muted">{summary.primarySignal.detail}</p>
           </CardContent>
         </Card>
       )}
@@ -148,17 +148,17 @@ export function DataDashboardView({
             { rows: moderateRows, variant: "blue" as const, label: "Moderate", note: "Direction holds in both halves with real but smaller lift." },
           ].map((group) =>
             group.rows.length === 0 ? null : (
-              <div key={group.label} className="rounded-lg bg-muted p-3">
+              <div key={group.label} className="rounded-lg bg-surface-sunken p-3">
                 <div className="flex flex-wrap items-center gap-2">
                   <Badge variant={group.variant}>{group.label}</Badge>
-                  <span className="text-[11px] text-muted-foreground">{group.note}</span>
+                  <span className="text-[11px] text-text-muted">{group.note}</span>
                 </div>
                 <ul className="mt-2 space-y-1.5">
                   {group.rows.map((r) => (
                     <li key={r.key} className="text-xs">
-                      <span className="text-foreground">{r.label}</span>
+                      <span className="text-text-strong">{r.label}</span>
                       {r.defining && (
-                        <span className="ml-2 tabular-nums text-muted-foreground">
+                        <span className="ml-2 tabular-nums text-text-muted">
                           {r.defining.lift !== null && Number.isFinite(r.defining.lift)
                             ? `${r.defining.lift.toFixed(2)}x`
                             : "n/a"}{" "}
@@ -172,19 +172,19 @@ export function DataDashboardView({
             )
           )}
 
-          <div className="rounded-lg bg-muted p-3">
+          <div className="rounded-lg bg-surface-sunken p-3">
             <div className="flex flex-wrap items-center gap-2">
               <Badge variant="secondary">Not carried forward</Badge>
-              <span className="text-[11px] text-muted-foreground">{summary.notCarried} signals</span>
+              <span className="text-[11px] text-text-muted">{summary.notCarried} signals</span>
             </div>
-            <ul className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-[11px] text-muted-foreground">
+            <ul className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-[11px] text-text-muted">
               {failedCounts.map((f) => (
                 <li key={f.verdict}>
-                  <span className="tabular-nums text-foreground">{f.count}</span> {f.verdict}
+                  <span className="tabular-nums text-text-strong">{f.count}</span> {f.verdict}
                 </li>
               ))}
             </ul>
-            <p className="mt-2 text-[11px] leading-relaxed text-muted-foreground">
+            <p className="mt-2 text-[11px] leading-relaxed text-text-muted">
               Redundant means the lift vanished once volatility was accounted for. Unstable means it inverted between
               halves. Insufficient means too few distinct episodes to judge at all.
             </p>
@@ -242,20 +242,20 @@ export function DataDashboardView({
       <Card className="rise rise-4">
         <CardContent className="space-y-3 p-4">
           <div>
-            <h2 className="text-sm font-semibold tracking-editorial text-foreground">Technical detail</h2>
-            <p className="mt-1 max-w-3xl text-xs leading-relaxed text-muted-foreground">
+            <h2 className="text-sm font-semibold tracking-editorial text-text-strong">Technical detail</h2>
+            <p className="mt-1 max-w-3xl text-xs leading-relaxed text-text-muted">
               The full tables, the rules the evidence was produced under, and the research notes behind the conclusions
               above.
             </p>
           </div>
 
           <Disclosure label="Method and leakage rules" openLabel="Hide method and leakage rules">
-            <ul className="list-disc space-y-1.5 pl-4 text-xs leading-relaxed text-muted-foreground">
+            <ul className="list-disc space-y-1.5 pl-4 text-xs leading-relaxed text-text-muted">
               {dashboard.method.map((note, i) => (
                 <li key={i}>{note}</li>
               ))}
             </ul>
-            <p className="mt-3 text-[11px] leading-relaxed text-muted-foreground">
+            <p className="mt-3 text-[11px] leading-relaxed text-text-muted">
               Leakage is guarded in two places and tested: signal values are checked for prefix consistency, meaning
               computing a signal on a truncated history reproduces the full-history values exactly for every date inside
               the truncation, and states come from expanding percentiles so a date is only ever ranked against its own
@@ -273,7 +273,7 @@ export function DataDashboardView({
         </CardContent>
       </Card>
 
-      <p className="text-[11px] leading-relaxed text-muted-foreground">
+      <p className="text-[11px] leading-relaxed text-text-muted">
         Nothing on this page is a forecast. Every figure is a historical base rate or a descriptive statistic, measured
         in-sample. No model has been fitted or selected. Generated{" "}
         {new Date(dashboard.generatedAt).toLocaleDateString("en-CA", { timeZone: "Asia/Karachi" })}.

@@ -59,7 +59,7 @@ export default async function JournalPage({
         href={`/journal?${params.toString()}`}
         className={cn(
           "rounded-full border px-2.5 py-1 text-[11px] font-medium",
-          active ? "border-primary bg-primary text-primary-foreground" : "border-border bg-card text-muted-foreground hover:text-foreground"
+          active ? "border-primary bg-primary text-primary-foreground" : "border-rule bg-surface-raised text-text-muted hover:text-text-strong"
         )}
       >
         {label}
@@ -99,7 +99,7 @@ export default async function JournalPage({
             name="q"
             defaultValue={sp.q ?? ""}
             placeholder="Search entries…"
-            className="h-8 w-full rounded-md border border-border bg-card px-3 text-xs"
+            className="h-8 w-full rounded-md border border-rule bg-surface-raised px-3 text-xs"
           />
           <Button type="submit" size="sm" variant="outline">Search</Button>
         </form>
@@ -107,7 +107,7 @@ export default async function JournalPage({
 
       <div className="space-y-3">
         {(entries ?? []).length === 0 && (
-          <Card><CardContent className="py-10 text-center text-xs text-muted-foreground">No journal entries match.</CardContent></Card>
+          <Card><CardContent className="py-10 text-center text-xs text-text-muted">No journal entries match.</CardContent></Card>
         )}
         {(entries ?? []).map((e) => (
           <Card key={e.id}>
@@ -122,7 +122,7 @@ export default async function JournalPage({
                 )}
                 {e.confidence && <Badge variant="secondary">confidence {e.confidence}/5</Badge>}
                 {e.source === "ai" && <Badge variant="amber">AI generated</Badge>}
-                {e.follow_up_date && <span className="text-[11px] text-muted-foreground">follow up {e.follow_up_date}</span>}
+                {e.follow_up_date && <span className="text-[11px] text-text-muted">follow up {e.follow_up_date}</span>}
               </div>
               <h3 className="mt-2 text-sm font-semibold">{e.title}</h3>
               {e.body && (
@@ -130,11 +130,11 @@ export default async function JournalPage({
                   <Markdown content={e.body} />
                 </div>
               )}
-              <div className="mt-2 grid gap-1 text-xs text-muted-foreground sm:grid-cols-2">
-                {e.expected_outcome && <p><span className="font-medium text-foreground">Expected:</span> {e.expected_outcome}</p>}
-                {e.risk && <p><span className="font-medium text-foreground">Risk:</span> {e.risk}</p>}
-                {e.outcome && <p><span className="font-medium text-foreground">Outcome:</span> {e.outcome}</p>}
-                {e.lessons && <p><span className="font-medium text-foreground">Lessons:</span> {e.lessons}</p>}
+              <div className="mt-2 grid gap-1 text-xs text-text-muted sm:grid-cols-2">
+                {e.expected_outcome && <p><span className="font-medium text-text-strong">Expected:</span> {e.expected_outcome}</p>}
+                {e.risk && <p><span className="font-medium text-text-strong">Risk:</span> {e.risk}</p>}
+                {e.outcome && <p><span className="font-medium text-text-strong">Outcome:</span> {e.outcome}</p>}
+                {e.lessons && <p><span className="font-medium text-text-strong">Lessons:</span> {e.lessons}</p>}
               </div>
             </CardContent>
           </Card>

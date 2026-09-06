@@ -70,7 +70,7 @@ export function GoalsEditor({ holdings }: { holdings: EnrichedHolding[] }) {
   }, 0);
 
   return (
-    <div className="rounded-lg border border-border bg-card">
+    <div className="rounded-lg border border-rule bg-surface-raised">
       <Table>
         <THead>
           <TR>
@@ -146,7 +146,7 @@ export function GoalsEditor({ holdings }: { holdings: EnrichedHolding[] }) {
           })}
         </TBody>
       </Table>
-      <div className="border-t border-border px-3 py-2 text-[11px] text-muted-foreground">
+      <div className="border-t border-rule px-3 py-2 text-[11px] text-text-muted">
         Target allocations sum to{" "}
         <Badge variant={Math.abs(totalTarget - 100) <= 2 ? "green" : "amber"}>{totalTarget.toFixed(1)}%</Badge>
         {Math.abs(totalTarget - 100) > 2 && " — consider adjusting toward 100%."}

@@ -48,11 +48,11 @@ export function LedgerTable({
   }
 
   return (
-    <section className="border-t border-border pt-5">
+    <section className="border-t border-rule pt-5">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <h2 className="text-lg font-semibold">Virtual ledger</h2>
-          <p className="mt-1 max-w-3xl text-xs text-muted-foreground">
+          <p className="mt-1 max-w-3xl text-xs text-text-muted">
             Editable cash and trade ledger. Holdings, dashboard, benchmark and alerts are derived from these rows.
           </p>
         </div>
@@ -62,7 +62,7 @@ export function LedgerTable({
       <div className="mt-4 overflow-x-auto">
         <table className="w-full min-w-[61.25rem] text-xs">
           <thead>
-            <tr className="border-b border-border text-left text-[10px] uppercase tracking-wide text-muted-foreground">
+            <tr className="border-b border-rule text-left text-[10px] uppercase tracking-wide text-text-muted">
               <th className="py-2 pr-4">Date</th>
               <th className="px-2 py-2">Narration</th>
               <th className="px-2 py-2">Ticker</th>
@@ -79,10 +79,10 @@ export function LedgerTable({
               const txn = row.refType === "transaction" ? txnsById.get(row.id) : null;
               const cash = row.refType === "cash_movement" ? cashById.get(row.id) : null;
               return (
-                <tr key={key} className="border-b border-border last:border-0 align-middle">
-                  <td className="py-2 pr-4 tabular-nums text-muted-foreground">{row.date ?? "—"}</td>
+                <tr key={key} className="border-b border-rule last:border-0 align-middle">
+                  <td className="py-2 pr-4 tabular-nums text-text-muted">{row.date ?? "—"}</td>
                   <td className="px-2 py-2 font-medium">{row.narration}</td>
-                  <td className="px-2 py-2 text-muted-foreground">{row.ticker ?? "—"}</td>
+                  <td className="px-2 py-2 text-text-muted">{row.ticker ?? "—"}</td>
                   <td className="px-2 py-2 text-right tabular-nums text-down">{row.debit ? formatMoney(row.debit) : "—"}</td>
                   <td className="px-2 py-2 text-right tabular-nums text-up">{row.credit ? formatMoney(row.credit) : "—"}</td>
                   <td className="px-2 py-2 text-right font-medium tabular-nums">{formatMoney(row.balance)}</td>

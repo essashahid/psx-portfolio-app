@@ -46,8 +46,8 @@ const TASK_LABEL: Record<string, string> = {
 function SectionHeading({ title, blurb }: { title: string; blurb: string }) {
   return (
     <div className="mb-3">
-      <h2 className="text-sm font-semibold tracking-editorial text-foreground">{title}</h2>
-      <p className="mt-1 max-w-3xl text-xs leading-relaxed text-muted-foreground">{blurb}</p>
+      <h2 className="text-sm font-semibold tracking-editorial text-text-strong">{title}</h2>
+      <p className="mt-1 max-w-3xl text-xs leading-relaxed text-text-muted">{blurb}</p>
     </div>
   );
 }
@@ -60,7 +60,7 @@ export function Phase3Review({ evaluation, outlook }: { evaluation: Phase3Evalua
       <Card className="rise">
         <CardContent className="p-4">
           <p className="eyebrow mb-1.5">Phase 3 &middot; Model evaluation</p>
-          <p className="text-sm leading-relaxed text-foreground">
+          <p className="text-sm leading-relaxed text-text-strong">
             {passed.length} of {evaluation.gates.length} forecast outputs passed their walk-forward gate across{" "}
             {evaluation.folds} expanding folds. Everything below is the committed evaluation run; the outlook preview is
             experimental and not production-approved.
@@ -77,7 +77,7 @@ export function Phase3Review({ evaluation, outlook }: { evaluation: Phase3Evalua
           <div className="-mx-4 overflow-x-auto px-4">
             <table className="w-full min-w-[44rem] text-xs">
               <thead>
-                <tr className="border-b border-border text-left text-[11px] uppercase tracking-wide text-muted-foreground">
+                <tr className="border-b border-rule text-left text-[11px] uppercase tracking-wide text-text-muted">
                   <th className="pb-2 pr-3 font-medium">Output</th>
                   <th className="pb-2 pr-3 font-medium">Horizon</th>
                   <th className="pb-2 pr-3 font-medium">Verdict</th>
@@ -86,22 +86,22 @@ export function Phase3Review({ evaluation, outlook }: { evaluation: Phase3Evalua
               </thead>
               <tbody>
                 {evaluation.gates.map((g, i) => (
-                  <tr key={i} className="border-b border-border/60 last:border-0">
-                    <td className="py-2 pr-3 text-foreground">
+                  <tr key={i} className="border-b border-rule/60 last:border-0">
+                    <td className="py-2 pr-3 text-text-strong">
                       {TASK_LABEL[g.task] ?? g.task}
                       {g.threshold !== undefined ? ` (${Math.abs(g.threshold * 100).toFixed(0)}%)` : ""}
                     </td>
-                    <td className="py-2 pr-3 tabular-nums text-muted-foreground">{g.horizon} sessions</td>
+                    <td className="py-2 pr-3 tabular-nums text-text-muted">{g.horizon} sessions</td>
                     <td className="py-2 pr-3">
                       <Badge variant={g.pass ? "green" : "secondary"}>{g.pass ? "Pass" : "Withheld"}</Badge>
                     </td>
-                    <td className="py-2 text-muted-foreground">{g.pass ? g.selectedModel : (g.reasons[0] ?? "failed its gate")}</td>
+                    <td className="py-2 text-text-muted">{g.pass ? g.selectedModel : (g.reasons[0] ?? "failed its gate")}</td>
                   </tr>
                 ))}
               </tbody>
             </table>
           </div>
-          <p className="mt-3 text-[11px] leading-relaxed text-muted-foreground">
+          <p className="mt-3 text-[11px] leading-relaxed text-text-muted">
             Support levels are shown as reference points only: a placebo-controlled study found no evidence they hold
             better than arbitrary nearby prices (held {pct(evaluation.levelStudy.holdRate)} vs{" "}
             {pct(evaluation.levelStudy.placeboHoldRate)} for placebo levels over {evaluation.levelStudy.approaches}{" "}
@@ -118,28 +118,28 @@ export function Phase3Review({ evaluation, outlook }: { evaluation: Phase3Evalua
           />
           <div className="grid gap-3 lg:grid-cols-3">
             {outlook.horizons.map((h) => (
-              <div key={h.sessions} className="rounded-lg bg-muted p-4">
-                <p className="text-xs font-semibold text-foreground">{h.label}</p>
+              <div key={h.sessions} className="rounded-lg bg-surface-sunken p-4">
+                <p className="text-xs font-semibold text-text-strong">{h.label}</p>
                 <dl className="mt-2 space-y-1.5 text-[11px] leading-relaxed">
                   <div>
-                    <dt className="font-medium text-muted-foreground">Direction</dt>
-                    <dd className="text-foreground">
+                    <dt className="font-medium text-text-muted">Direction</dt>
+                    <dd className="text-text-strong">
                       {h.direction.status === "ok" && h.direction.probs
                         ? `Rise ${pct(h.direction.probs.rise)} · Sideways ${pct(h.direction.probs.sideways)} · Fall ${pct(h.direction.probs.fall)}`
                         : "Withheld: failed its walk-forward gate"}
                     </dd>
                   </div>
                   <div>
-                    <dt className="font-medium text-muted-foreground">Likely trading range</dt>
-                    <dd className="text-foreground">
+                    <dt className="font-medium text-text-muted">Likely trading range</dt>
+                    <dd className="text-text-strong">
                       {h.tradingRange.status === "ok"
                         ? `${h.tradingRange.loIndex?.toLocaleString()} to ${h.tradingRange.hiIndex?.toLocaleString()}`
                         : "Withheld"}
                     </dd>
                   </div>
                   <div>
-                    <dt className="font-medium text-muted-foreground">Drawdown risk</dt>
-                    <dd className="text-foreground">
+                    <dt className="font-medium text-text-muted">Drawdown risk</dt>
+                    <dd className="text-text-strong">
                       {h.drawdownRisk
                         .map((d) =>
                           d.status === "ok" ? `${Math.abs(d.threshold * 100).toFixed(0)}% dip: ${pct(d.p)}` : `${Math.abs(d.threshold * 100).toFixed(0)}%: withheld`
@@ -148,8 +148,8 @@ export function Phase3Review({ evaluation, outlook }: { evaluation: Phase3Evalua
                     </dd>
                   </div>
                   <div>
-                    <dt className="font-medium text-muted-foreground">Nearest levels</dt>
-                    <dd className="text-foreground">
+                    <dt className="font-medium text-text-muted">Nearest levels</dt>
+                    <dd className="text-text-strong">
                       {h.keyLevels.supports[0] ? `S ${h.keyLevels.supports[0].price.toLocaleString()} (break ${pct(h.keyLevels.supports[0].breakProb)})` : "—"}
                       {h.keyLevels.resistances[0]
                         ? ` · R ${h.keyLevels.resistances[0].price.toLocaleString()} (touch ${pct(h.keyLevels.resistances[0].breakProb)})`
@@ -157,8 +157,8 @@ export function Phase3Review({ evaluation, outlook }: { evaluation: Phase3Evalua
                     </dd>
                   </div>
                   <div>
-                    <dt className="font-medium text-muted-foreground">Expected return / closing range / scenarios</dt>
-                    <dd className="text-muted-foreground">Withheld: failed their walk-forward gates</dd>
+                    <dt className="font-medium text-text-muted">Expected return / closing range / scenarios</dt>
+                    <dd className="text-text-muted">Withheld: failed their walk-forward gates</dd>
                   </div>
                 </dl>
               </div>
@@ -175,12 +175,12 @@ export function Phase3Review({ evaluation, outlook }: { evaluation: Phase3Evalua
           />
           <div className="grid gap-3 sm:grid-cols-2">
             {evaluation.examples.map((ex) => (
-              <div key={ex.date} className="rounded-lg bg-muted p-4 text-[11px] leading-relaxed">
-                <p className="text-xs font-semibold text-foreground">{ex.label}</p>
-                <p className="text-muted-foreground">
+              <div key={ex.date} className="rounded-lg bg-surface-sunken p-4 text-[11px] leading-relaxed">
+                <p className="text-xs font-semibold text-text-strong">{ex.label}</p>
+                <p className="text-text-muted">
                   {ex.date} · KSE-100 {Math.round(ex.close).toLocaleString()} · trend {ex.saidThen.trend}
                 </p>
-                <p className="mt-2 text-foreground">
+                <p className="mt-2 text-text-strong">
                   Said then:{" "}
                   {[
                     ex.saidThen.drawdownRisk5d3pct ? `3% dip within a week ${pct(ex.saidThen.drawdownRisk5d3pct.p)}` : null,
@@ -191,14 +191,14 @@ export function Phase3Review({ evaluation, outlook }: { evaluation: Phase3Evalua
                     .join("; ")}
                   .
                 </p>
-                <p className="mt-1 text-muted-foreground">
+                <p className="mt-1 text-text-muted">
                   Happened: week {signed(ex.whatHappened.ret5)}, two weeks {signed(ex.whatHappened.ret10)}, month {signed(ex.whatHappened.ret20)}; deepest
                   two-week dip {signed(ex.whatHappened.maxDip10)}.
                 </p>
               </div>
             ))}
           </div>
-          <p className="mt-3 text-[11px] leading-relaxed text-muted-foreground">
+          <p className="mt-3 text-[11px] leading-relaxed text-text-muted">
             The first example is an honest miss kept on display: the direction model leaned 67% rise directly before the
             worst month in the sample, and the two-week path fell below the range&apos;s lower bound. Ranges and
             probabilities narrow the odds; they do not remove surprise.

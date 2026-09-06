@@ -165,7 +165,7 @@ export function AddLedgerEntryDialog({
       <Dialog open={open} onClose={() => setOpen(false)} title={isEdit ? "Edit ledger entry" : "Add ledger entry"}>
         <form onSubmit={submit} className="space-y-3">
           {!isEdit && (
-            <div className="grid grid-cols-2 gap-2 rounded-md bg-muted p-1">
+            <div className="grid grid-cols-2 gap-2 rounded-md bg-surface-sunken p-1">
               <Button type="button" variant={mode === "trade" ? "secondary" : "ghost"} size="sm" onClick={() => setMode("trade")}>Trade</Button>
               <Button type="button" variant={mode === "cash" ? "secondary" : "ghost"} size="sm" onClick={() => setMode("cash")}>Raast deposit</Button>
             </div>
