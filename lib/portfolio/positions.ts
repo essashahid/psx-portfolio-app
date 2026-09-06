@@ -12,6 +12,42 @@ import type {
   TxnType,
 } from "@/lib/shared/types";
 
+/** The cost fields of a holdings row as stored, before any valuation. */
+export type HoldingCostRow = Pick<Holding, "quantity" | "source"> & {
+  avg_cost: number | string | null;
+  total_cost: number | string | null;
+};
+
+/**
+ * Whether a holding was recorded without a purchase price.
+ *
+ * Onboarding lets someone add what they own without knowing what they paid.
+ * The holdings columns are NOT NULL, so such a row is written by hand
+ * (source "manual") with zero cost. Zero is never a real cost for a bought
+ * position, and a position derived from the ledger always carries its cost,
+ * so the pair (manual, zero) is the marker. A null cost, should the columns
+ * be relaxed later, means the same thing.
+ */
+export function isCostUnknown(h: HoldingCostRow): boolean {
+  if (h.avg_cost === null || h.total_cost === null) return true;
+  return h.source === "manual" && Number(h.avg_cost) === 0 && Number(h.total_cost) === 0 && Number(h.quantity) > 0;
+}
+
+/**
+ * Value one holding against a price. Pure, so the null-cost rule can be tested
+ * without a database: an unknown cost gives a cost of 0 for totals and a null
+ * unrealised P/L, never a gain of zero.
+ */
+export function valueHolding(h: HoldingCostRow, price: number | null) {
+  const quantity = Number(h.quantity);
+  const costUnknown = isCostUnknown(h);
+  const avgCost = costUnknown ? 0 : Number(h.avg_cost);
+  const cost = costUnknown ? 0 : Number(h.total_cost) || quantity * avgCost;
+  const marketValue = price !== null && price > 0 ? quantity * price : null;
+  const unrealizedPl = marketValue !== null && !costUnknown ? marketValue - cost : null;
+  return { quantity, avgCost, cost, costUnknown, marketValue, unrealizedPl };
+}
+
 /**
  * Loads everything needed to value the portfolio and enriches each holding with
  * latest price, market value, P/L, weight, targets and thesis status.
@@ -157,21 +193,17 @@ export async function getPortfolio(
   let totalValue = 0;
   let totalCost = 0;
   const prelim = holdings.map((h) => {
-    const quantity = Number(h.quantity);
-    const avgCost = Number(h.avg_cost);
-    const cost = Number(h.total_cost) || quantity * avgCost;
     const lp = latestPrice.get(h.ticker) ?? null;
-    const marketValue = lp ? quantity * lp.price : null;
-    totalCost += cost;
-    totalValue += marketValue ?? cost; // unpriced holdings fall back to cost for weight math
-    return { h, quantity, avgCost, cost, lp, marketValue };
+    const valued = valueHolding(h, lp?.price ?? null);
+    totalCost += valued.cost;
+    totalValue += valued.marketValue ?? valued.cost; // unpriced holdings fall back to cost for weight math
+    return { h, lp, ...valued };
   });
 
-  const enriched: EnrichedHolding[] = prelim.map(({ h, quantity, avgCost, cost, lp, marketValue }) => {
+  const enriched: EnrichedHolding[] = prelim.map(({ h, quantity, avgCost, cost, costUnknown, lp, marketValue, unrealizedPl }) => {
     const target = targetByTicker.get(h.ticker);
     const thesis = thesisByTicker.get(h.ticker);
     const effectiveValue = marketValue ?? cost;
-    const unrealizedPl = marketValue !== null ? marketValue - cost : null;
     const distance =
       lp && target?.target_price
         ? ((Number(target.target_price) - lp.price) / lp.price) * 100
@@ -181,6 +213,7 @@ export async function getPortfolio(
       quantity,
       avg_cost: avgCost,
       total_cost: cost,
+      costUnknown,
       latest_price: lp?.price ?? null,
       price_date: lp?.price_date ?? null,
       price_source: lp?.source ?? null,
@@ -201,7 +234,7 @@ export async function getPortfolio(
   });
 
   const unrealizedPl = enriched.reduce((s, h) => s + (h.unrealized_pl ?? 0), 0);
-  const pricedCost = enriched.filter((h) => h.market_value !== null).reduce((s, h) => s + h.total_cost, 0);
+  const pricedCost = enriched.filter((h) => h.market_value !== null && !h.costUnknown).reduce((s, h) => s + h.total_cost, 0);
 
   // sector weights
   const sectorMap = new Map<string, number>();

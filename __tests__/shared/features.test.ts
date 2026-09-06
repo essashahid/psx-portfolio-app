@@ -22,9 +22,17 @@ const reader = (href: AppFeatureHref) => featureAllowed(href, LAUNCH, false);
 const admin = (href: AppFeatureHref) => featureAllowed(href, LAUNCH, true);
 
 describe("featureAllowed", () => {
-  test("a launch account reaches exactly the six launch tabs, plus alerts and settings", () => {
+  test("a launch account reaches exactly the launch tabs, plus alerts and settings", () => {
     const reachable = ALL_APP_FEATURES.filter(reader).sort();
     expect(reachable).toEqual([...LAUNCH_DEFAULT_FEATURES, "/alerts", "/settings"].sort());
+  });
+
+  test("news is part of the launch default and open to a reader", () => {
+    expect(LAUNCH_DEFAULT_FEATURES).toContain("/news");
+    expect(reader("/news")).toBe(true);
+    // An older stored list without /news still resolves it as absent, so the
+    // backfill in migration 0047 is what makes it reachable, not this code.
+    expect(featureAllowed("/news", ["/dashboard", "/holdings"], false)).toBe(false);
   });
 
   test("no admin-only route is reachable without admin", () => {
@@ -58,7 +66,7 @@ describe("featureAllowed", () => {
 });
 
 describe("normalizeEnabledFeatures", () => {
-  test("an unset list falls back to the launch six", () => {
+  test("an unset list falls back to the launch default", () => {
     expect(normalizeEnabledFeatures(undefined).sort())
       .toEqual([...LAUNCH_DEFAULT_FEATURES, "/alerts", "/settings"].sort());
   });

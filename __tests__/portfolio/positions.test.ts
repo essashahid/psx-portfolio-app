@@ -1,4 +1,4 @@
-import { rebuildHoldings } from "../../lib/portfolio/positions";
+import { isCostUnknown, rebuildHoldings, valueHolding } from "../../lib/portfolio/positions";
 
 /**
  * Cost basis and realised P/L had no test, which made them the most
@@ -157,5 +157,49 @@ describe("rebuildHoldings: several holdings and edge cases", () => {
     ]);
     expect(realizedByTxn).toHaveLength(2);
     expect(realizedByTxn[1]).toBe(1_000);
+  });
+});
+
+/**
+ * Positions added during onboarding without a purchase price. The columns are
+ * NOT NULL, so the row carries zero and source "manual"; the valuation must
+ * read that back as unknown and never as a gain of zero.
+ */
+describe("valueHolding: unknown cost", () => {
+  const unknown = { quantity: 100, avg_cost: 0, total_cost: 0, source: "manual" };
+
+  test("a manual row with zero cost is unknown, and a ledger row with zero cost is not", () => {
+    expect(isCostUnknown(unknown)).toBe(true);
+    expect(isCostUnknown({ ...unknown, source: "transactions" })).toBe(false);
+  });
+
+  test("a null cost is unknown whatever the source", () => {
+    expect(isCostUnknown({ quantity: 10, avg_cost: null, total_cost: null, source: "transactions" })).toBe(true);
+  });
+
+  test("an unknown cost values the position but leaves P/L null", () => {
+    const v = valueHolding(unknown, 120);
+    expect(v.costUnknown).toBe(true);
+    expect(v.marketValue).toBe(12_000);
+    expect(v.cost).toBe(0);
+    expect(v.unrealizedPl).toBeNull();
+  });
+
+  test("an unknown cost with no price has neither value nor P/L", () => {
+    const v = valueHolding({ ...unknown, avg_cost: null, total_cost: null }, null);
+    expect(v.marketValue).toBeNull();
+    expect(v.unrealizedPl).toBeNull();
+    expect(v.cost).toBe(0);
+  });
+
+  test("a known cost still produces the usual figures", () => {
+    const v = valueHolding({ quantity: 100, avg_cost: 100, total_cost: 10_000, source: "transactions" }, 120);
+    expect(v.costUnknown).toBe(false);
+    expect(v.unrealizedPl).toBe(2_000);
+  });
+
+  test("a stored total_cost of zero on a ledger row falls back to quantity times average", () => {
+    const v = valueHolding({ quantity: 10, avg_cost: 50, total_cost: 0, source: "transactions" }, null);
+    expect(v.cost).toBe(500);
   });
 });

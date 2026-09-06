@@ -2,7 +2,6 @@ import { Suspense } from "react";
 import { createClient, getUser } from "@/lib/supabase/server";
 import { getPortfolio } from "@/lib/portfolio/positions";
 import { getDailyHoldingPerformance } from "@/lib/portfolio/daily-performance";
-import { getCachedMarketGlobal } from "@/lib/market/read";
 import { cn, formatNumber, formatSignedPct } from "@/lib/shared/format";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -15,7 +14,7 @@ import { AddTransactionDialog } from "@/components/features/holdings/add-transac
 import { ImportantPsxEvents, type PsxEventRow } from "@/components/features/dashboard/important-psx-events";
 import { GrowthChart, type GrowthPoint } from "@/components/features/dashboard/growth-chart";
 import { ContributionLedger } from "@/components/features/dashboard/dashboard-bands";
-import { AllocationPanel, type ActiveWeightRow } from "@/components/features/dashboard/dashboard-bands";
+import { AllocationPanel } from "@/components/features/dashboard/dashboard-bands";
 import { PositionsTable, type PositionRow } from "@/components/features/dashboard/positions-table";
 import { getClustersForTickers } from "@/lib/news/global-store";
 import { AsOf } from "@/components/shared/as-of";
@@ -24,6 +23,9 @@ import { Sparkline } from "@/components/shared/sparkline";
 import { shortSector } from "@/lib/shared/sector-colors";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { Briefcase } from "lucide-react";
+import Link from "next/link";
+import { normalizeEnabledFeatures } from "@/lib/config/features";
+import { taxYearOf } from "@psx/shared/dividends/tax-year";
 
 export const dynamic = "force-dynamic";
 
@@ -121,6 +123,47 @@ async function getSparks(supabase: SupabaseClient, tickers: string[]): Promise<M
   return out;
 }
 
+/**
+ * The compact dividends block under the hero: received this tax year, received
+ * all time, and the next payout on the calendar. The next payout is labelled
+ * by its status and is never presented as money in hand.
+ */
+async function getDividendSummary(supabase: SupabaseClient, userId: string, hiddenTickers: Set<string>) {
+  const today = new Date().toLocaleDateString("en-CA", { timeZone: "Asia/Karachi" });
+  const thisTaxYear = taxYearOf(today);
+  const [receivedRes, nextRes] = await Promise.all([
+    supabase.from("dividends").select("ticker, amount, net_amount, status, pay_date, payment_date").eq("user_id", userId),
+    supabase
+      .from("dividend_events")
+      .select("ticker, status, payment_date, estimated_payment_start, net_expected, gross_expected")
+      .eq("user_id", userId)
+      .in("status", ["announced", "expected"])
+      .or(`payment_date.gte.${today},estimated_payment_start.gte.${today}`)
+      .order("payment_date", { ascending: true, nullsFirst: false })
+      .limit(20),
+  ]);
+  let thisYear = 0;
+  let allTime = 0;
+  for (const d of receivedRes.data ?? []) {
+    if ((d.status ?? "received") !== "received") continue;
+    if (d.ticker && hiddenTickers.has(d.ticker)) continue;
+    const amt = Number(d.net_amount ?? d.amount ?? 0);
+    allTime += amt;
+    const paid = (d.payment_date ?? d.pay_date) as string | null;
+    if (paid && taxYearOf(paid) === thisTaxYear) thisYear += amt;
+  }
+  const next = (nextRes.data ?? [])
+    .map((e) => ({
+      ticker: e.ticker as string,
+      status: e.status as string,
+      date: ((e.payment_date ?? e.estimated_payment_start) as string | null) ?? null,
+      amount: e.net_expected !== null ? Number(e.net_expected) : e.gross_expected !== null ? Number(e.gross_expected) : null,
+    }))
+    .filter((e) => e.date && e.date >= today && !hiddenTickers.has(e.ticker))
+    .sort((a, b) => (a.date as string).localeCompare(b.date as string))[0] ?? null;
+  return { thisYear, allTime, taxYear: thisTaxYear, next };
+}
+
 /** The ISO date n days before now. Module scope: this page is a server
  * component, but reading the clock is impure either way, so it is kept out of
  * the render body. */
@@ -133,23 +176,34 @@ export default async function DashboardPage() {
   const user = await getUser();
   if (!user) return null;
 
-  const [summary, dailyPerformance, profileRes, marketGlobal] = await Promise.all([
+  const [summary, dailyPerformance, profileRes] = await Promise.all([
     getPortfolio(supabase, user.id),
     getDailyHoldingPerformance(supabase, user.id),
-    supabase.from("profiles").select("demo_mode, full_name").eq("id", user.id).maybeSingle(),
-    getCachedMarketGlobal().catch(() => null),
+    supabase.from("profiles").select("demo_mode, full_name, enabled_features").eq("id", user.id).maybeSingle(),
   ]);
+  const enabled = normalizeEnabledFeatures(profileRes.data?.enabled_features);
+  const importEnabled = enabled.includes("/import");
+  const newsEnabled = enabled.includes("/news");
 
   if (summary.holdingsCount === 0) {
     return (
       <div className="mx-auto max-w-2xl pt-12">
         <p className="eyebrow">Get started</p>
-        <h1 className="mt-1.5 font-display text-3xl font-normal tracking-editorial text-text-strong">Portfolio dashboard</h1>
+        <h1 className="mt-1.5 font-display text-3xl font-normal tracking-editorial text-text-strong">Home</h1>
         <EmptyState
           icon={Briefcase}
-          title="Your portfolio is empty"
-          description="Add a manual buy transaction to start tracking holdings, dividends, portfolio value and allocations."
-          action={<AddTransactionDialog label="Add transaction" variant="default" />}
+          title="Add what you own"
+          description="Enter the shares you hold and the platform will track their value, dividends and allocation from here."
+          action={
+            <div className="flex flex-col items-center gap-3">
+              <AddTransactionDialog label="Add a holding" variant="default" />
+              {importEnabled && (
+                <Link href="/import" className="text-xs font-medium text-text-muted underline-offset-2 hover:text-text-strong hover:underline">
+                  Import a broker statement
+                </Link>
+              )}
+            </div>
+          }
         />
       </div>
     );
@@ -158,10 +212,12 @@ export default async function DashboardPage() {
   const isDemo = Boolean(profileRes.data?.demo_mode);
   const tickers = summary.holdings.map((h) => h.ticker);
   const liveValue = summary.totalValue + summary.cashBalance;
+  const hiddenTickers = new Set(summary.hiddenHoldings.map((h) => h.ticker));
 
-  const [series, sparks] = await Promise.all([
+  const [series, sparks, dividends] = await Promise.all([
     getBenchmarkSeries(supabase, user.id, liveValue),
     getSparks(supabase, tickers),
+    getDividendSummary(supabase, user.id, hiddenTickers),
   ]);
 
   const dayPnl = dailyPerformance.totalDayPnl;
@@ -190,7 +246,8 @@ export default async function DashboardPage() {
       name: h.company_name ?? null,
       sector: h.sector ?? null,
       qty: h.quantity ?? 0,
-      avg: h.avg_cost ?? null,
+      avg: h.costUnknown ? null : (h.avg_cost ?? null),
+      costUnknown: h.costUnknown,
       price: h.latest_price,
       dayPct: dailyByTicker.get(h.ticker)?.dayChangePct ?? null,
       value: h.market_value,
@@ -235,26 +292,7 @@ export default async function DashboardPage() {
       meta: shortSector(h.sector),
     }));
 
-  // Index sector weights, proxied from the snapshot's market-cap coverage.
-  const activeWeights: ActiveWeightRow[] = (() => {
-    const heatmap = marketGlobal?.heatmap ?? [];
-    const capBySector = new Map<string, number>();
-    let capTotal = 0;
-    for (const item of heatmap) {
-      const cap = Number(item.market_cap ?? 0);
-      if (!item.sector || cap <= 0) continue;
-      capBySector.set(item.sector, (capBySector.get(item.sector) ?? 0) + cap);
-      capTotal += cap;
-    }
-    if (capTotal <= 0) return [];
-    return summary.sectorWeights.map((s) => ({
-      sector: s.sector,
-      mineW: s.weight,
-      idxW: ((capBySector.get(s.sector) ?? 0) / capTotal) * 100,
-    }));
-  })();
-
-
+  const unknownCostCount = summary.holdings.filter((h) => h.costUnknown).length;
   const dayTone = dayPnl !== null && dayPnl > 0 ? "text-up" : dayPnl !== null && dayPnl < 0 ? "text-down" : "text-text-strong";
 
   return (
@@ -324,7 +362,7 @@ export default async function DashboardPage() {
                 <span>Portfolio <strong className="figure font-semibold text-text-strong">{formatSignedPct(bench.portfolioPct)}</strong></span>
                 <span>KSE-100 <strong className="figure font-semibold text-text-strong">{formatSignedPct(bench.ksePct)}</strong></span>
               </span>
-              <AsOf date={latestMarketDate} time={dailyPerformance.snapshotTime} label="Last updated" live />
+              <AsOf date={latestMarketDate} time={dailyPerformance.snapshotTime} label="Prices delayed, last updated" live />
             </div>
           )}
         </div>
@@ -333,7 +371,7 @@ export default async function DashboardPage() {
 
         <div className="relative z-2 -mx-3 mt-7 sm:-mx-4 md:-mx-(--gutter-page)">
           <div className="grid border-y border-rule sm:grid-cols-2 lg:grid-cols-4">
-            <HeroMetric label="Total cost" value={formatNumber(summary.totalCost, 0)} sub="PKR" first />
+            <HeroMetric label="Total cost" value={formatNumber(summary.totalCost, 0)} sub={unknownCostCount > 0 ? `PKR, ${unknownCostCount} holding${unknownCostCount === 1 ? "" : "s"} with cost unknown` : "PKR"} first />
             <HeroMetric label="Unrealised P/L" value={fmtSigned(summary.unrealizedPl)} sub={formatSignedPct(summary.unrealizedPlPct)} tone={summary.unrealizedPl > 0 ? "up" : summary.unrealizedPl < 0 ? "down" : undefined} />
             <HeroMetric label="Dividends received" value={formatNumber(summary.dividendIncome, 0)} sub="Since first transaction" />
             <HeroMetric label="Broker cash" value={formatNumber(summary.cashBalance, 0)} sub="Uninvested" last />
@@ -342,6 +380,32 @@ export default async function DashboardPage() {
         <p className="relative z-2 py-3 pb-5 text-xs text-text-muted">
           {formatNumber(summary.holdingsCount, 0)} holdings · Largest holding: {summary.largestHolding ? `${summary.largestHolding.ticker}, ${summary.largestHolding.weight?.toFixed(1)}%` : "—"} · Largest sector: {summary.largestSector ? `${shortSector(summary.largestSector.sector)}, ${summary.largestSector.weight.toFixed(1)}%` : "—"}
         </p>
+      </Band>
+
+      {/* ── Dividends ── */}
+      <Band tone="paper" className={GUTTER}>
+        <PanelHeader
+          title="Dividends"
+          aside={
+            <Link href="/dividends" className="text-xs font-medium text-text-muted underline-offset-2 hover:text-text-strong hover:underline">
+              All dividends
+            </Link>
+          }
+        />
+        <div className="mt-5 grid gap-y-5 sm:grid-cols-3">
+          <Metric size="compact" label={`Received, tax year ${dividends.taxYear}`} value={formatNumber(dividends.thisYear, 0)} sub="PKR, net" />
+          <Metric size="compact" label="Received, all time" value={formatNumber(dividends.allTime, 0)} sub="PKR, net" />
+          {dividends.next ? (
+            <Metric
+              size="compact"
+              label={`Next payout, ${dividends.next.status === "announced" ? "announced" : "expected"}`}
+              value={dividends.next.amount !== null ? formatNumber(dividends.next.amount, 0) : dividends.next.ticker}
+              sub={`${dividends.next.ticker}, ${dividends.next.date}`}
+            />
+          ) : (
+            <Metric size="compact" label="Next payout" value={<span className="text-text-muted">None on the calendar</span>} />
+          )}
+        </div>
       </Band>
 
       {/* ── Growth of capital ── */}
@@ -369,13 +433,20 @@ export default async function DashboardPage() {
             <PanelHeader title="Daily contribution" />
             <ContributionLedger rows={contributionRows} />
           </div>
-          <AllocationPanel sectors={sectorSlices} holdings={holdingSlices} activeWeights={activeWeights} totalValue={summary.totalValue} />
+          <AllocationPanel sectors={sectorSlices} holdings={holdingSlices} activeWeights={[]} totalValue={summary.totalValue} />
         </div>
 
         <div className="mt-9 border-t border-rule pt-7">
           <Suspense fallback={<EventsSkeleton />}>
             <DashboardEvents tickers={tickers} userId={user.id} />
           </Suspense>
+          {newsEnabled && (
+            <p className="mt-4 text-xs">
+              <Link href="/news" className="font-medium text-text-muted underline-offset-2 hover:text-text-strong hover:underline">
+                All developments for what you hold
+              </Link>
+            </p>
+          )}
         </div>
       </Band>
       <MarkSeen surface="dashboard" />

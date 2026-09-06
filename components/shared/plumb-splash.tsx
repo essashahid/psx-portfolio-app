@@ -39,8 +39,15 @@ function isColdStart(): boolean {
 }
 
 export function PlumbSplash() {
-  // Decided once, on mount, so a re-render cannot restage it.
-  const [visible, setVisible] = useState(() => isColdStart());
+  // Nothing on the server render, decided once on the client. Reading
+  // performance timings in the initial state produced markup the server had
+  // not rendered, and React threw a hydration mismatch on every page.
+  const [visible, setVisible] = useState(false);
+
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- client-only decision after mount
+    if (isColdStart()) setVisible(true);
+  }, []);
 
   useEffect(() => {
     if (!visible) return;

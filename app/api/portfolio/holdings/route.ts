@@ -48,6 +48,7 @@ export async function GET() {
         dayChangePct: day?.dayChangePct ?? null,
         dayPnl: day?.dayPnl ?? null,
         dividendIncome: h.dividend_income,
+        costUnknown: Boolean(h.costUnknown),
         color: sectorColor(h.sector),
       };
     });

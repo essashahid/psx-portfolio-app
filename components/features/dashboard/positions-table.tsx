@@ -10,6 +10,8 @@ export interface PositionRow {
   sector: string | null;
   qty: number;
   avg: number | null;
+  /** Added without a purchase price; the average cost column says so. */
+  costUnknown?: boolean;
   price: number | null;
   dayPct: number | null;
   value: number | null;
@@ -52,7 +54,9 @@ export function PositionsTable({ rows }: { rows: PositionRow[] }) {
                 </span>
               </td>
               <td className={cn(TD, "figure text-right")}>{formatNumber(r.qty, 0)}</td>
-              <td className={cn(TD, "figure text-right")}>{r.avg !== null ? formatNumber(r.avg, 2) : "—"}</td>
+              <td className={cn(TD, "text-right", r.costUnknown ? "text-xs text-text-muted" : "figure")}>
+                {r.costUnknown ? "Cost unknown" : r.avg !== null ? formatNumber(r.avg, 2) : "—"}
+              </td>
               <td className={cn(TD, "figure text-right")}>{r.price !== null ? formatNumber(r.price, 2) : "—"}</td>
               <td className={cn(TD, "figure text-right font-semibold", (r.dayPct ?? 0) > 0 ? "text-up" : (r.dayPct ?? 0) < 0 ? "text-down" : "text-text-muted")}>
                 {r.dayPct !== null ? `${r.dayPct < 0 ? "−" : "+"}${formatNumber(Math.abs(r.dayPct), 2)}%` : "—"}

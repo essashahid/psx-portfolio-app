@@ -37,10 +37,11 @@ export default async function HoldingsPage() {
 
   const latestPriceDate = summary.holdings.map((holding) => holding.price_date).filter(Boolean).sort().at(-1) ?? null;
   const unpriced = summary.holdingsCount - summary.pricedHoldings;
+  const unknownCost = summary.holdings.filter((h) => h.costUnknown).length;
 
   const dayPnl = dailyPerformance.totalDayPnl;
   const belowCostRows = summary.holdings
-    .filter((h) => h.latest_price !== null && h.avg_cost !== null && h.latest_price < h.avg_cost)
+    .filter((h) => h.latest_price !== null && !h.costUnknown && h.avg_cost !== null && h.latest_price < h.avg_cost)
     .map((h) => ({ ticker: h.ticker, last: h.latest_price as number, avg: h.avg_cost as number }))
     .sort((a, b) => a.last / a.avg - b.last / b.avg);
 
@@ -50,13 +51,13 @@ export default async function HoldingsPage() {
         <div className="flex flex-wrap items-end justify-between gap-6 border-b border-rule pb-5">
           <div>
             <span className="mb-3.5 block h-0.75 w-11 bg-clay" />
-            <p className="eyebrow">Portfolio</p>
+            <p className="eyebrow">{positionsHeadline(summary.holdingsCount, summary.sectorWeights.length)}</p>
             <h1 className="mt-1.5 font-display text-(length:--text-title) font-normal tracking-editorial text-text-strong">
-              {positionsHeadline(summary.holdingsCount, summary.sectorWeights.length)}
+              Portfolio
             </h1>
             <p className="mt-1.5 flex flex-wrap items-center gap-x-1.5 text-xs text-text-muted">
               <AsOf date={latestPriceDate} label="Prices" />
-              <span>· {summary.pricedHoldings} of {summary.holdingsCount} priced{unpriced ? ` · ${unpriced} valued at cost` : ""}</span>
+              <span>· {summary.pricedHoldings} of {summary.holdingsCount} priced{unpriced ? ` · ${unpriced} valued at cost` : ""}{unknownCost ? ` · ${unknownCost} with cost unknown` : ""}</span>
             </p>
           </div>
         </div>
@@ -79,9 +80,9 @@ export default async function HoldingsPage() {
           <Band tone="paper" rule="none" className="px-3 sm:px-4 md:px-(--gutter-page)">
             <EmptyState
               icon={Briefcase}
-              title="No holdings yet"
-              description="Add a manual buy transaction to start tracking positions and prices."
-              action={isDemo ? undefined : <AddTransactionDialog label="Add transaction" variant="default" />}
+              title="Add what you own"
+              description="Enter the shares you hold to start tracking positions and prices."
+              action={isDemo ? undefined : <AddTransactionDialog label="Add a holding" variant="default" />}
             />
           </Band>
         )

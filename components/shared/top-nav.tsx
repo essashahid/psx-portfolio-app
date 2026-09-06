@@ -15,20 +15,16 @@ import {
   ShieldCheck,
   ChevronDown,
   Settings,
+  Newspaper,
 } from "lucide-react";
-import { NAV, NAV_SECTIONS } from "@/lib/config/navigation";
+import { INTERNAL_NAV, NAV, NAV_SECTIONS, PRIMARY_NAV_HREFS } from "@/lib/config/navigation";
 import { PlumbMark } from "@/components/shared/plumb-mark";
 
-/** The design's 4 inline primary tabs. Everything else lives in "Research ∨". */
-const PRIMARY_HREFS = ["/dashboard", "/holdings", "/dividends", "/performance"];
+/** The six primary tabs, in header order. */
+const PRIMARY_HREFS: readonly string[] = PRIMARY_NAV_HREFS;
 
-/**
- * Destinations the desktop header already owns: the bell goes to alerts, the
- * account menu goes to settings. Listing them in the Research dropdown as well
- * would be a third route to two pages. The mobile "More" sheet still carries
- * them, because it has no bell-and-avatar row of its own.
- */
-const CHROME_HREFS = ["/alerts", "/settings"];
+// Alerts, settings and news are chrome on desktop: the bell, the account menu.
+// The mobile "More" sheet still lists them because it has no bell-and-avatar row.
 
 function primaryTabs(visibleHrefs: string[]) {
   const allowed = new Set(visibleHrefs);
@@ -46,13 +42,19 @@ function visibleSections(visibleHrefs: string[], excludeHrefs: string[] = []) {
   })).filter((section) => section.items.length > 0);
 }
 
+/** The phone's bottom bar: Home, Portfolio, Companies, Market, Ask. */
+const MOBILE_PRIMARY = ["/dashboard", "/holdings", "/stocks", "/market", "/chat"];
+
 function mobilePrimary(visibleHrefs: string[]) {
   const allowed = new Set(visibleHrefs);
-  const wanted = ["/dashboard", "/holdings", "/market", "/dividends", "/chat"];
-  const picked = wanted.filter((href) => allowed.has(href)).slice(0, 4);
+  const picked = MOBILE_PRIMARY.filter((href) => allowed.has(href));
   return NAV.filter((item) => picked.includes(item.href)).sort(
     (a, b) => picked.indexOf(a.href) - picked.indexOf(b.href)
   );
+}
+
+function isActive(pathname: string, href: string) {
+  return pathname === href || pathname.startsWith(href + "/");
 }
 
 function activeNavItem(pathname: string) {
@@ -71,10 +73,9 @@ async function signOutAndRedirect(router: ReturnType<typeof useRouter>) {
 }
 
 /**
- * Desktop shell: logo, inline primary tabs, a "Research ∨" overflow menu for
- * everything else, then search / alerts / account on the right. Replaces the
- * former left sidebar — hidden below md, where MobileTopBar + MobileBottomNav
- * take over.
+ * Desktop shell: logo, the six primary tabs, an "Internal" menu for admins,
+ * then search, alerts and account on the right. Hidden below md, where
+ * MobileTopBar and MobileBottomNav take over.
  */
 export function TopNav({
   email,
@@ -93,13 +94,9 @@ export function TopNav({
   const menuRef = useRef<HTMLDivElement>(null);
 
   const tabs = primaryTabs(visibleHrefs);
-  const overflowSections = visibleSections(visibleHrefs, [...PRIMARY_HREFS, ...CHROME_HREFS]);
-  const activeOverflow = overflowSections
-    .flatMap((s) => s.items)
-    .find((item) => pathname === item.href || pathname.startsWith(item.href + "/"));
-  const menuActive = overflowSections.some((section) =>
-    section.items.some((item) => pathname === item.href || pathname.startsWith(item.href + "/"))
-  ) || (isAdmin && (pathname === "/admin" || pathname.startsWith("/admin/")));
+  const newsVisible = visibleHrefs.includes("/news");
+  const internalActive =
+    INTERNAL_NAV.some((item) => isActive(pathname, item.href)) || isActive(pathname, "/admin") || isActive(pathname, "/news");
 
   useEffect(() => {
     if (!menuOpen) return;
@@ -117,6 +114,12 @@ export function TopNav({
     };
   }, [menuOpen]);
 
+  const internalItems = [
+    { href: "/admin", label: "Admin", icon: ShieldCheck },
+    ...INTERNAL_NAV.map((item) => ({ href: item.href, label: item.label, icon: item.icon })),
+    ...(newsVisible ? [{ href: "/news", label: "News", icon: Newspaper }] : []),
+  ];
+
   return (
     <header className="sticky top-0 z-30 hidden border-b border-rule bg-surface-page/94 backdrop-blur-(--blur-bar) md:block">
       <div className="flex items-center gap-8 px-(--gutter-page) py-3.5">
@@ -127,7 +130,7 @@ export function TopNav({
 
         <nav className="flex min-w-0 flex-1 flex-wrap items-center gap-x-6 gap-y-2">
           {tabs.map((item) => {
-            const active = pathname === item.href || pathname.startsWith(item.href + "/");
+            const active = isActive(pathname, item.href);
             return (
               <Link
                 key={item.href}
@@ -143,7 +146,7 @@ export function TopNav({
             );
           })}
 
-          {overflowSections.length > 0 || isAdmin ? (
+          {isAdmin && (
             <div ref={menuRef} className="relative inline-flex">
               <button
                 type="button"
@@ -151,58 +154,36 @@ export function TopNav({
                 aria-expanded={menuOpen}
                 className={cn(
                   "inline-flex items-center gap-1 whitespace-nowrap text-sm transition-colors",
-                  menuActive || menuOpen ? "font-semibold text-text-strong" : "font-medium text-text-muted hover:text-text-strong"
+                  internalActive || menuOpen ? "font-semibold text-text-strong" : "font-medium text-text-muted hover:text-text-strong"
                 )}
               >
-                {activeOverflow?.label ?? "Research"}
+                Internal
                 <ChevronDown className={cn("h-3.5 w-3.5 transition-transform", menuOpen && "rotate-180")} />
               </button>
               {menuOpen && (
-                <div className="absolute left-0 top-full z-40 mt-3 grid w-64 gap-4 rounded-lg border border-rule bg-surface-raised p-4 shadow-(--shadow-dialog)">
-                  {overflowSections.map((section) => (
-                    <div key={section.title} className="grid gap-0.5">
-                      <p className="eyebrow px-1 pb-1 text-[9px]">{section.title}</p>
-                      {section.items.map((item) => {
-                        const active = pathname === item.href || pathname.startsWith(item.href + "/");
-                        return (
-                          <Link
-                            key={item.href}
-                            href={item.href}
-                            onClick={() => setMenuOpen(false)}
-                            title={item.hint}
-                            className={cn(
-                              "flex items-center gap-2.5 rounded-md px-2 py-2 text-[13px] transition-colors",
-                              active ? "bg-surface-sunken font-semibold text-text-strong" : "font-medium text-text-muted hover:bg-surface-sunken hover:text-text-strong"
-                            )}
-                          >
-                            <item.icon className="h-3.5 w-3.5 shrink-0" />
-                            {item.label}
-                          </Link>
-                        );
-                      })}
-                    </div>
-                  ))}
-                  {isAdmin && (
-                    <div className="grid gap-0.5 border-t border-rule pt-3">
-                      <p className="eyebrow px-1 pb-1 text-[9px]">Administration</p>
+                <div className="absolute left-0 top-full z-40 mt-3 grid w-64 gap-0.5 rounded-lg border border-rule bg-surface-raised p-3 shadow-(--shadow-dialog)">
+                  <p className="eyebrow px-1 pb-1 text-[9px]">Admin only</p>
+                  {internalItems.map((item) => {
+                    const active = isActive(pathname, item.href);
+                    return (
                       <Link
-                        href="/admin"
+                        key={item.href}
+                        href={item.href}
                         onClick={() => setMenuOpen(false)}
                         className={cn(
-                          "flex items-center gap-2 rounded-md px-1.5 py-1.5 text-[13px] font-medium transition-colors",
-                          pathname === "/admin" || pathname.startsWith("/admin/")
-                            ? "bg-brand-soft font-semibold text-brand"
-                            : "text-text-muted hover:bg-surface-sunken hover:text-text-strong"
+                          "flex items-center gap-2.5 rounded-md px-2 py-2 text-[13px] transition-colors",
+                          active ? "bg-surface-sunken font-semibold text-text-strong" : "font-medium text-text-muted hover:bg-surface-sunken hover:text-text-strong"
                         )}
                       >
-                        <ShieldCheck className="h-3.5 w-3.5" /> Admin
+                        <item.icon className="h-3.5 w-3.5 shrink-0" />
+                        {item.label}
                       </Link>
-                    </div>
-                  )}
+                    );
+                  })}
                 </div>
               )}
             </div>
-          ) : null}
+          )}
         </nav>
 
         <div className="flex shrink-0 items-center gap-4 text-text-faint">
@@ -228,7 +209,7 @@ export function TopNav({
               </span>
             )}
           </Link>
-          <AccountMenu email={email} onSignOut={() => void signOutAndRedirect(router)} />
+          <AccountMenu email={email} showNews={newsVisible} onSignOut={() => void signOutAndRedirect(router)} />
         </div>
       </div>
     </header>
@@ -243,7 +224,7 @@ export function TopNav({
  * account) and actual behaviour (end my session) were opposites. It opens a
  * menu now, and signing out is a deliberate second click.
  */
-function AccountMenu({ email, onSignOut }: { email: string; onSignOut: () => void }) {
+function AccountMenu({ email, showNews, onSignOut }: { email: string; showNews: boolean; onSignOut: () => void }) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
@@ -293,6 +274,17 @@ function AccountMenu({ email, onSignOut }: { email: string; onSignOut: () => voi
             <Settings className="h-[15px] w-[15px]" />
             Settings
           </Link>
+          {showNews && (
+            <Link
+              href="/news"
+              role="menuitem"
+              onClick={() => setOpen(false)}
+              className="flex items-center gap-2.5 px-3.5 py-2 text-sm text-text-body transition-colors hover:bg-surface-sunken hover:text-text-strong"
+            >
+              <Newspaper className="h-[15px] w-[15px]" />
+              News
+            </Link>
+          )}
           <button
             type="button"
             role="menuitem"
@@ -398,7 +390,7 @@ export function MobileBottomNav({
   const router = useRouter();
   const [moreOpen, setMoreOpen] = useState(false);
   const mobileNav = mobilePrimary(visibleHrefs);
-  const moreSections = visibleSections(visibleHrefs, mobileNav.map((item) => item.href));
+  const moreSections = visibleSections(visibleHrefs, [...mobileNav.map((item) => item.href), ...INTERNAL_NAV.map((item) => item.href)]);
   const primaryPath = mobileNav.some((item) => pathname === item.href || pathname.startsWith(item.href + "/"));
 
   useEffect(() => {
@@ -424,10 +416,9 @@ export function MobileBottomNav({
         >
           {mobileNav.map((item) => {
             const active = pathname === item.href || pathname.startsWith(item.href + "/");
-            const shortLabel = item.href === "/dashboard" ? "Home" : item.href === "/chat" ? "Copilot" : item.label.replace(" Pulse", "");
             return (
               <Link key={item.href} href={item.href} aria-current={active ? "page" : undefined} className="block">
-                <BottomNavRow icon={item.icon} label={shortLabel} active={active} />
+                <BottomNavRow icon={item.icon} label={item.label} active={active} />
               </Link>
             );
           })}
@@ -466,10 +457,15 @@ export function MobileBottomNav({
               ))}
               {isAdmin && (
                 <div className="grid gap-1">
-                  <p className="eyebrow px-3 text-[9px]">Administration</p>
+                  <p className="eyebrow px-3 text-[9px]">Internal</p>
                   <Link href="/admin" onClick={() => setMoreOpen(false)} className="block">
-                    <MobileMenuRow icon={ShieldCheck} label="Admin" active={pathname === "/admin" || pathname.startsWith("/admin/")} />
+                    <MobileMenuRow icon={ShieldCheck} label="Admin" active={isActive(pathname, "/admin")} />
                   </Link>
+                  {INTERNAL_NAV.map((item) => (
+                    <Link key={item.href} href={item.href} onClick={() => setMoreOpen(false)} className="block">
+                      <MobileMenuRow icon={item.icon} label={item.label} active={isActive(pathname, item.href)} />
+                    </Link>
+                  ))}
                 </div>
               )}
             </nav>

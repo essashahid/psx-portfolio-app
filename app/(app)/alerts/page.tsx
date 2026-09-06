@@ -6,18 +6,18 @@ import { cn } from "@/lib/shared/format";
 export const dynamic = "force-dynamic";
 
 const TYPE_LABEL: Record<string, string> = {
-  price_above_target: "Price vs target",
-  price_below_review: "Below review level",
-  allocation_above_target: "Allocation drift",
-  allocation_below_target: "Allocation drift",
-  missing_thesis: "Missing thesis",
-  review_due: "Review due",
-  negative_news: "Negative news",
-  dividend_news: "Dividend announcement",
-  result_news: "Financial result",
-  concentration_risk: "Concentration risk",
-  corporate_action_check: "Corporate action",
-  import_issue: "Import issue",
+  price_above_target: "Price reached your target",
+  price_below_review: "Price below your review level",
+  allocation_above_target: "Holding larger than planned",
+  allocation_below_target: "Holding smaller than planned",
+  missing_thesis: "No reason recorded for holding",
+  review_due: "Review date passed",
+  negative_news: "Bad news",
+  dividend_news: "Dividend announced",
+  result_news: "Results announced",
+  concentration_risk: "Too much in one place",
+  corporate_action_check: "Corporate action to check",
+  import_issue: "Import needs checking",
 };
 
 /**
@@ -65,10 +65,11 @@ export default async function AlertsPage({
       <section>
         <div className="flex flex-wrap items-end justify-between gap-5">
           <div>
-            <p className="eyebrow">Signals</p>
+            <p className="eyebrow">Watch</p>
             <h1 className="mt-1.5 font-display text-(length:--text-title) font-normal tracking-editorial text-text-strong">
               Alerts
             </h1>
+            <p className="mt-1.5 text-sm text-text-muted">Results, dividends, announcements and concentration for what you hold.</p>
           </div>
           <div className="flex gap-5 pb-1">
             {(["open", "history"] as const).map((v) => (
@@ -93,7 +94,7 @@ export default async function AlertsPage({
         <section className="mt-8 border-t border-rule pt-10">
           <p className="max-w-(--measure) text-sm leading-relaxed text-text-muted">
             {view === "open"
-              ? "Nothing needs your attention. Alerts appear here when a thesis is missing, an allocation drifts from its target, a review date passes, a price crosses a level you set, a position grows concentrated, or an import needs checking."
+              ? "Nothing needs your attention. Alerts appear here when a company you hold announces results or a dividend, when a price crosses a level you set, when one holding grows to a large share of your portfolio, or when an import needs checking."
               : "Alerts you have dismissed, or that resolved themselves, will appear here."}
           </p>
         </section>

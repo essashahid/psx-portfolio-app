@@ -281,6 +281,12 @@ export interface NormalizedRow {
 }
 
 export interface EnrichedHolding extends Holding {
+  /**
+   * The position was added without a purchase price (onboarding quick-add),
+   * so total_cost is 0 as a placeholder and unrealised P/L is null. Surfaces
+   * should print "Cost unknown" rather than a gain of zero.
+   */
+  costUnknown: boolean;
   latest_price: number | null;
   price_date: string | null;
   price_source: string | null;

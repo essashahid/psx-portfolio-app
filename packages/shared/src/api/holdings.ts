@@ -27,6 +27,8 @@ export interface HoldingRow {
   dayChangePct: number | null;
   dayPnl: number | null;
   dividendIncome: number;
+  /** True when the position was added without a purchase price; P/L is withheld. */
+  costUnknown: boolean;
   /** From the shared palette, so one sector is one colour everywhere. */
   color: string;
 }
@@ -80,4 +82,27 @@ export interface HoldingPatchRequest {
   avg_cost?: number;
   notes?: string;
   hidden?: boolean;
+}
+
+/**
+ * The request contract for POST /api/holdings/quick-add.
+ *
+ * Used by onboarding to record what someone already owns. With an average
+ * cost the route writes a BUY dated today and derives the holding from the
+ * ledger, so it is indistinguishable from a manually entered trade. Without
+ * one the holding is written directly with an unknown cost and every surface
+ * prints "Cost unknown" instead of a P/L.
+ */
+export interface HoldingQuickAddRequest {
+  ticker: string;
+  quantity: number;
+  /** Average cost per share in PKR, or null when the person does not know it. */
+  avgCost: number | null;
+}
+
+export interface HoldingQuickAddResponse {
+  ok: true;
+  ticker: string;
+  /** "ledger" when a BUY was written, "manual" when the cost was unknown. */
+  path: "ledger" | "manual";
 }

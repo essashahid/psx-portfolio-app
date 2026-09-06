@@ -105,13 +105,13 @@ export default async function SettingsPage() {
 
   return (
     <div className="mx-auto w-full max-w-(--content-max) space-y-4">
-      <PageHeader eyebrow="Configuration" title="Settings" description="Profile, prices, accounts, data management and integrations." />
+      <PageHeader eyebrow="Account" title="Settings" description="Your profile, appearance, cash, tax profile and data." />
 
       <Card>
         <CardHeader>
           <CardTitle>Your profile and view</CardTitle>
           <CardDescription>
-            Set your experience level, risk comfort and objective. These personalize which sections appear and the tone of
+            Set your experience level and objective. These personalise which sections appear and the tone of
             insights.
           </CardDescription>
         </CardHeader>
@@ -148,10 +148,10 @@ export default async function SettingsPage() {
 
       <Card>
         <CardHeader>
-          <CardTitle>Tax profile — dividends</CardTitle>
+          <CardTitle>Tax profile for dividends</CardTitle>
           <CardDescription>
-            Used to estimate withholding on expected dividends. Defaults to Pakistan filer / ATL. This is an estimate
-            aid, not tax advice — edit the rate if FBR rules change or a dividend category is taxed differently.
+            Used to estimate withholding on expected dividends. Defaults to Pakistan filer (ATL). This is an estimate
+            aid, not tax advice. Edit the rate if FBR rules change or a dividend category is taxed differently.
           </CardDescription>
         </CardHeader>
         <CardContent><TaxProfileForm settings={taxSettings} /></CardContent>
@@ -160,10 +160,10 @@ export default async function SettingsPage() {
       {isAdmin && (
       <Card>
         <CardHeader>
-          <CardTitle>Foreign flows — FIPI / LIPI</CardTitle>
+          <CardTitle>Foreign flows, FIPI and LIPI</CardTitle>
           <CardDescription>
             Foreign (FIPI) and local (LIPI) investor flows power the Market Pulse flows card, the Bulls &amp; Bears regime
-            overlay, and the Research Copilot. Auto-fetch uses SCSTrade&apos;s public FIPI/LIPI tables when enabled; manual
+            overlay, and the Ask. Auto-fetch uses SCSTrade&apos;s public FIPI/LIPI tables when enabled; manual
             entry remains available for overrides and backfills. Figures are net USD millions; positive = net foreign buying.
           </CardDescription>
         </CardHeader>
@@ -199,13 +199,15 @@ export default async function SettingsPage() {
       )}
 
       <div className="grid gap-4 lg:grid-cols-2">
+        {isAdmin && (
         <Card>
           <CardHeader>
             <CardTitle>Broker account labels</CardTitle>
-            <CardDescription>For your own organization only.</CardDescription>
+            <CardDescription>For your own organisation only.</CardDescription>
           </CardHeader>
           <CardContent><BrokerAccounts accounts={accountsRes.data ?? []} /></CardContent>
         </Card>
+        )}
 
         {isAdmin && (
         <Card>
@@ -227,7 +229,7 @@ export default async function SettingsPage() {
         </Card>
         )}
 
-        {importEnabled && (
+        {isAdmin && importEnabled && (
           <Card>
             <CardHeader><CardTitle>Saved import mappings</CardTitle></CardHeader>
             <CardContent><SavedMappings mappings={mappingsRes.data ?? []} /></CardContent>
@@ -249,7 +251,7 @@ export default async function SettingsPage() {
         </Card>
       </div>
 
-      {importEnabled && (
+      {isAdmin && importEnabled && (
         <Card>
           <CardHeader>
             <CardTitle>Uploaded statements</CardTitle>
@@ -259,6 +261,7 @@ export default async function SettingsPage() {
         </Card>
       )}
 
+      {isAdmin && (
       <Card>
         <CardHeader>
           <CardTitle>Demo mode</CardTitle>
@@ -280,6 +283,7 @@ export default async function SettingsPage() {
           />
         </CardContent>
       </Card>
+      )}
 
       <Card className="border-red-200">
         <CardHeader>

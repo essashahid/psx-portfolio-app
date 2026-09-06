@@ -10,6 +10,7 @@ import { AddTransactionDialog } from "@/components/features/holdings/add-transac
 import { SectorDot } from "@/components/shared/sector-chip";
 import { sectorColor, shortSector } from "@/lib/shared/sector-colors";
 import { useSortableTable, type SortValue } from "@/components/shared/use-sortable-table";
+import { AskCopilotLink } from "@/components/shared/ask-copilot-link";
 
 type SortKey = "ticker" | "qty" | "price" | "value" | "pl";
 type Grouping = "flat" | "sector";
@@ -20,6 +21,7 @@ interface Row {
   sector: string | null;
   qty: number;
   avg: number | null;
+  costUnknown: boolean;
   price: number | null;
   day: number | null;
   value: number;
@@ -82,7 +84,8 @@ export function HoldingsTable({
         name: h.company_name ?? null,
         sector: h.sector ?? null,
         qty: h.quantity ?? 0,
-        avg: h.avg_cost ?? null,
+        avg: h.costUnknown ? null : (h.avg_cost ?? null),
+        costUnknown: h.costUnknown,
         price: h.latest_price,
         day: dayByTicker.get(h.ticker) ?? null,
         value: h.market_value ?? h.total_cost ?? 0,
@@ -220,7 +223,7 @@ export function HoldingsTable({
 
                 {open &&
                   group.rows.map((r) => (
-                    <tr key={r.ticker} className="border-b border-rule transition-colors last:border-0 hover:bg-surface-sunken/50">
+                    <tr key={r.ticker} className="group border-b border-rule transition-colors last:border-0 hover:bg-surface-sunken/50">
                       <td className={cn(TD, "pl-0")}>
                         <span className="flex items-center gap-2.5">
                           <SectorDot sector={r.sector} />
@@ -236,8 +239,8 @@ export function HoldingsTable({
                       </td>
                       <td className={cn(TD, "text-right")}>
                         <span className="figure">{formatNumber(r.qty, 0)}</span>
-                        <span className="figure block text-(length:--text-2xs) text-text-muted">
-                          @ {r.avg !== null ? formatNumber(r.avg, 2) : "—"}
+                        <span className={cn("block text-(length:--text-2xs) text-text-muted", !r.costUnknown && "figure")}>
+                          {r.costUnknown ? "Cost unknown" : `@ ${r.avg !== null ? formatNumber(r.avg, 2) : "—"}`}
                         </span>
                       </td>
                       <td className={cn(TD, "text-right")}>
@@ -257,10 +260,26 @@ export function HoldingsTable({
                           {formatNumber(r.weight, 1)}% of book
                         </span>
                       </td>
-                      <td className={cn(TD, "pr-0 text-right", r.pl >= 0 ? "text-up" : "text-down")}>
-                        <span className="figure font-semibold">{signed(r.pl, 0)}</span>
-                        <span className="figure block text-(length:--text-2xs) font-semibold">
-                          {r.ret !== null ? `${signed(r.ret, 2)}%` : "—"}
+                      <td className={cn(TD, "pr-0 text-right", r.costUnknown ? "text-text-muted" : r.pl >= 0 ? "text-up" : "text-down")}>
+                        <span className="flex items-center justify-end gap-2">
+                          <span className="min-w-0">
+                            {r.costUnknown ? (
+                              <span className="block text-xs">Cost unknown</span>
+                            ) : (
+                              <>
+                                <span className="figure font-semibold">{signed(r.pl, 0)}</span>
+                                <span className="figure block text-(length:--text-2xs) font-semibold">
+                                  {r.ret !== null ? `${signed(r.ret, 2)}%` : "—"}
+                                </span>
+                              </>
+                            )}
+                          </span>
+                          <AskCopilotLink
+                            question={`Explain how ${r.ticker} is doing in my portfolio`}
+                            label=""
+                            variant="inline"
+                            className="text-text-faint opacity-0 transition-opacity hover:text-brand focus-visible:opacity-100 group-hover:opacity-100"
+                          />
                         </span>
                       </td>
                     </tr>

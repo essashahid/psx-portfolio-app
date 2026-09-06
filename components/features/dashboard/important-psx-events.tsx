@@ -41,8 +41,7 @@ export function ImportantPsxEvents({ events }: { events: PsxEventRow[] }) {
             return (
               <div
                 key={e.id}
-                className="ledger-row grid items-baseline gap-3 sm:gap-5"
-                style={{ gridTemplateColumns: "6.875rem minmax(0,1fr) minmax(0,11.25rem) 5.5rem" }}
+                className="ledger-row grid grid-cols-[5.5rem_minmax(0,1fr)_5rem] items-baseline gap-3 sm:grid-cols-[6.875rem_minmax(0,1fr)_minmax(0,11.25rem)_5.5rem] sm:gap-5"
               >
                 <span
                   className="text-(length:--text-3xs) font-bold uppercase tracking-(--tracking-caps)"

@@ -1,5 +1,10 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 
+/**
+ * What a new account can open. /news is included so the developments on Home
+ * and Market have somewhere to link; it is not a primary tab (see navigation).
+ * Migration 0047 backfills it for existing accounts and the column default.
+ */
 export const LAUNCH_DEFAULT_FEATURES = [
   "/dashboard",
   "/holdings",
@@ -7,6 +12,7 @@ export const LAUNCH_DEFAULT_FEATURES = [
   "/stocks",
   "/market",
   "/chat",
+  "/news",
 ] as const;
 
 export const ALL_APP_FEATURES = [

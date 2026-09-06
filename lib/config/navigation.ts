@@ -56,42 +56,48 @@ export const NAV_SECTIONS: { title: string; items: NavItemDef[] }[] = [
   {
     title: "Overview",
     items: [
-      { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard, hint: "Your portfolio at a glance" },
-      { href: "/holdings", label: "Holdings", icon: Briefcase, hint: "Positions, P/L and weights" },
+      { href: "/dashboard", label: "Home", icon: LayoutDashboard, hint: "Your portfolio at a glance" },
+      { href: "/holdings", label: "Portfolio", icon: Briefcase, hint: "Positions, P/L and weights" },
       { href: "/dividends", label: "Dividends", icon: HandCoins, hint: "Payouts received and forecast" },
-      { href: "/performance", label: "Performance", icon: TrendingUp, hint: "XIRR, cost basis, friction and concentration analytics" },
     ],
   },
   {
     title: "Research",
     items: [
-      { href: "/research", label: "Saved Reports", icon: FileText, hint: "Company research reports library" },
-      { href: "/stocks", label: "Stock Research", icon: Search, hint: "Fundamentals, ratios and structure per stock" },
-      { href: "/market", label: "Market Pulse", icon: Activity, hint: "Index, breadth, sectors and flows" },
-      { href: "/outlook", label: "PSX Market Outlook", icon: Radar, hint: "Early-warning and forecasting system" },
-      { href: "/bulls-bears", label: "Bulls & Bears", icon: BarChart3, hint: "Weekly regime, picks and watchlist", adminOnly: true },
-      { href: "/news", label: "News Center", icon: Newspaper, hint: "Portfolio and market news" },
-      { href: "/chat", label: "Research Copilot", icon: Sparkles, hint: "Ask anything about your portfolio and PSX" },
+      { href: "/stocks", label: "Companies", icon: Search, hint: "Fundamentals, ratios and structure per company" },
+      { href: "/market", label: "Market", icon: Activity, hint: "Index, breadth, sectors and flows" },
+      { href: "/chat", label: "Ask", icon: Sparkles, hint: "Ask anything about your portfolio and PSX" },
+      { href: "/news", label: "News", icon: Newspaper, hint: "Portfolio and market news" },
     ],
   },
   {
-    title: "Planning",
+    title: "Internal",
     items: [
+      { href: "/performance", label: "Performance", icon: TrendingUp, hint: "XIRR, cost basis, friction and concentration analytics" },
+      { href: "/research", label: "Saved Reports", icon: FileText, hint: "Company research reports library" },
+      { href: "/outlook", label: "PSX Market Outlook", icon: Radar, hint: "Early-warning and forecasting system" },
+      { href: "/bulls-bears", label: "Bulls & Bears", icon: BarChart3, hint: "Weekly regime, picks and watchlist", adminOnly: true },
       { href: "/goals", label: "Goals & Targets", icon: Target, hint: "Targets and progress" },
       { href: "/allocation", label: "Capital Allocation", icon: PieChart, hint: "Where to deploy new capital across asset classes", adminOnly: true },
       { href: "/journal", label: "Journal", icon: NotebookPen, hint: "Your decisions and notes" },
-      { href: "/alerts", label: "Alerts", icon: Bell, hint: "Triggered watch conditions" },
+      { href: "/import", label: "Import Center", icon: Upload, hint: "Import statements and transactions" },
+      { href: "/coverage", label: "Data Engine", icon: Database, hint: "Data coverage and provider health", adminOnly: true },
     ],
   },
   {
-    title: "Data & setup",
+    title: "Account",
     items: [
-      { href: "/import", label: "Import Center", icon: Upload, hint: "Import statements and transactions" },
-      { href: "/coverage", label: "Data Engine", icon: Database, hint: "Data coverage and provider health", adminOnly: true },
+      { href: "/alerts", label: "Alerts", icon: Bell, hint: "Results, dividends, announcements and concentration" },
       { href: "/settings", label: "Settings", icon: Settings, hint: "Preferences and account" },
     ],
   },
 ];
+
+/**
+ * The six primary destinations, in the order the header shows them. Everything
+ * else is chrome (alerts, settings), reachable by link (news) or internal.
+ */
+export const PRIMARY_NAV_HREFS = ["/dashboard", "/holdings", "/dividends", "/stocks", "/market", "/chat"] as const;
 
 /**
  * Everything defined, including what is not ready to show. Menus read NAV,
@@ -104,6 +110,13 @@ export const NAV = ALL_NAV.filter((item) => !isUnreleased(item.href));
 const LAUNCH_DEFAULT_HREFS = new Set<string>(LAUNCH_DEFAULT_FEATURES);
 export const LAUNCH_DEFAULT_NAV = NAV.filter((item) => LAUNCH_DEFAULT_HREFS.has(item.href));
 const ADMIN_ONLY_HREFS = new Set<string>(ADMIN_ONLY_FEATURES);
+
+/**
+ * The admin "Internal" menu: every admin-only route, whether or not it is
+ * released. The route guard still decides access; this is only where an admin
+ * finds the work in progress without typing the URL.
+ */
+export const INTERNAL_NAV = ALL_NAV.filter((item) => ADMIN_ONLY_HREFS.has(item.href));
 
 type NavPrefs = Pick<Profile, "enabled_features">;
 
