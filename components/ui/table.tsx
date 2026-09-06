@@ -26,9 +26,9 @@ import { cn } from "@/lib/shared/format";
  * one was measured against these two variants and left deliberately. Before
  * adding a third variant, check whether it earns more than one caller.
  *
- *   Chart cells      dashboard/positions-table, stocks/financials-workspace,
- *                    chat/artifacts. A sparkline in the last column is not
- *                    something a cell primitive should know about.
+ *   Chart cells      dashboard/positions-table and chat/artifacts. A
+ *                    sparkline in the last column is not something a cell
+ *                    primitive should know about.
  *   Inline editing   dividends/dividend-form, dividends/dividend-receivables,
  *                    admin/users/[id]. Inputs and row actions in the cells.
  *   Grouping         holdings/holdings-table. Collapsible sector headers and
