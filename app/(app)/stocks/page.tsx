@@ -4,6 +4,7 @@ import { fmtPct, fmtInt, tone } from "@/lib/market/format";
 import { ScreenerTable } from "@/components/features/stocks/screener-table";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Band } from "@/components/ui/band";
+import { Metric } from "@/components/ui/metric";
 import { AsOf } from "@/components/shared/as-of";
 import { cn, formatNumber } from "@/lib/shared/format";
 import { Activity } from "lucide-react";
@@ -118,18 +119,16 @@ function HeroMetric({
   last?: boolean;
 }) {
   return (
-    <div
+    <Metric
+      label={label}
+      value={value}
+      sub={sub}
+      tone={metricTone}
       className={cn(
         "border-t border-rule py-4 first:border-t-0 sm:border-t-0 sm:border-l sm:px-5 sm:first:border-l-0",
         first && "sm:pl-0",
         last && "sm:pr-0"
       )}
-    >
-      <p className="text-(length:--text-2xs) font-bold uppercase tracking-(--tracking-caps) text-text-faint">{label}</p>
-      <p className={cn("figure mt-1.5 text-(length:--text-h1) font-semibold", metricTone === "up" ? "text-up" : metricTone === "down" ? "text-down" : "text-text-strong")}>
-        {value}
-      </p>
-      {sub && <p className="figure mt-0.5 text-xs text-text-muted">{sub}</p>}
-    </div>
+    />
   );
 }

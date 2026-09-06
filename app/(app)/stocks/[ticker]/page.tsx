@@ -10,6 +10,7 @@ import { CompanyTabs } from "@/components/features/stocks/company-tabs";
 import { PriceTrack } from "@/components/features/stocks/price-track";
 import { CardSkeleton, TableSkeleton } from "@/components/ui/page-skeleton";
 import { Band } from "@/components/ui/band";
+import { Metric } from "@/components/ui/metric";
 import { formatNumber, formatSignedPct, formatFinancialPeriod, cn } from "@/lib/shared/format";
 import { normalizeEnabledFeatures } from "@/lib/config/features";
 import { sectorColor } from "@/lib/shared/sector-colors";
@@ -41,11 +42,13 @@ function compactNumber(value: number | null | undefined, digits = 1): string {
 /** One cell of the six-metric strip under the header. */
 function HeaderMetric({ label, value, sub }: { label: string; value: string; sub?: string }) {
   return (
-    <div className="border-t border-rule py-3.5 first:border-t-0 sm:border-t-0 sm:border-l sm:px-5 sm:py-0 sm:first:border-l-0 sm:first:pl-0">
-      <p className="text-(length:--text-3xs) font-bold uppercase tracking-(--tracking-caps) text-text-faint">{label}</p>
-      <p className="figure mt-1.5 text-(length:--text-h2) font-semibold text-text-strong">{value}</p>
-      {sub && <p className="mt-0.5 text-(length:--text-2xs) text-text-faint">{sub}</p>}
-    </div>
+    <Metric
+      size="compact"
+      label={label}
+      value={value}
+      sub={sub}
+      className="border-t border-rule py-3.5 first:border-t-0 sm:border-t-0 sm:border-l sm:px-5 sm:py-0 sm:first:border-l-0 sm:first:pl-0"
+    />
   );
 }
 

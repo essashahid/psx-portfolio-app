@@ -10,6 +10,7 @@ import { AnimatedMoney } from "@/components/ui/animated-money";
 import { Cascade } from "@/components/shared/cascade";
 import { Band } from "@/components/ui/band";
 import { PanelHeader } from "@/components/ui/panel-header";
+import { Metric } from "@/components/ui/metric";
 import { AddTransactionDialog } from "@/components/features/holdings/add-transaction-dialog";
 import { ImportantPsxEvents, type PsxEventRow } from "@/components/features/dashboard/important-psx-events";
 import { GrowthChart, type GrowthPoint } from "@/components/features/dashboard/growth-chart";
@@ -398,17 +399,17 @@ function HeroMetric({
   last?: boolean;
 }) {
   return (
-    <div
+    <Metric
+      label={label}
+      value={value}
+      sub={sub}
+      tone={tone}
       className={cn(
         "border-t border-rule px-3 py-4 first:border-t-0 sm:border-t-0 sm:border-l sm:px-6 sm:first:border-l-0",
         first && "md:pl-(--gutter-page)",
         last && "md:pr-(--gutter-page)"
       )}
-    >
-      <p className="text-(length:--text-2xs) font-bold uppercase tracking-(--tracking-caps) text-text-faint">{label}</p>
-      <p className={cn("figure mt-1.5 text-(length:--text-h1) font-semibold", tone === "up" ? "text-up" : tone === "down" ? "text-down" : "text-text-strong")}>{value}</p>
-      {sub && <p className="figure mt-0.5 text-xs text-text-muted">{sub}</p>}
-    </div>
+    />
   );
 }
 
