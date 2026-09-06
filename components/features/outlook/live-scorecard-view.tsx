@@ -1,5 +1,6 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Table, THead, TBody, TR, TH, TD } from "@/components/ui/table";
 import { MIN_SCORED_FOR_SKILL, type LiveScorecard, type TaskScore } from "@/lib/engine/outlook/scorecard";
 
 /**
@@ -84,38 +85,36 @@ export function LiveScorecardView({ scorecard }: { scorecard: LiveScorecard }) {
               </span>
             </div>
 
-            <div className="-mx-4 overflow-x-auto px-4">
-              <table className="w-full min-w-[44rem] text-xs">
-                <thead>
-                  <tr className="border-b border-rule text-left text-[11px] uppercase tracking-wide text-text-muted">
-                    <th className="pb-2 pr-3 font-medium">Output</th>
-                    <th className="pb-2 pr-3 font-medium">Window</th>
-                    <th className="pb-2 pr-3 text-right font-medium">Scored</th>
-                    <th className="pb-2 pr-3 font-medium">Result so far</th>
-                    <th className="pb-2 font-medium">Status</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {scorecard.scores.map((s) => {
-                    const verdict = verdictOf(s);
-                    return (
-                      <tr key={`${s.task}-${s.horizon}-${s.threshold ?? ""}-${s.model}`} className="border-b border-rule/60 last:border-0">
-                        <td className="py-2 pr-3 text-text-strong">
-                          {TASK_LABEL[s.task] ?? s.task}
-                          {s.threshold !== null && ` (${Math.abs(s.threshold * 100).toFixed(0)}%)`}
-                        </td>
-                        <td className="py-2 pr-3 tabular-nums text-text-muted">{s.horizon} sessions</td>
-                        <td className="py-2 pr-3 text-right tabular-nums text-text-muted">{s.scored}</td>
-                        <td className="py-2 pr-3 text-text-muted">{measureOf(s)}</td>
-                        <td className="py-2">
-                          <Badge variant={verdict.variant}>{verdict.text}</Badge>
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
+            <Table variant="reader" wrapperClassName="-mx-4 px-4" className="min-w-[44rem]">
+              <THead>
+                <TR>
+                  <TH>Output</TH>
+                  <TH>Window</TH>
+                  <TH className="text-right">Scored</TH>
+                  <TH>Result so far</TH>
+                  <TH>Status</TH>
+                </TR>
+              </THead>
+              <TBody>
+                {scorecard.scores.map((s) => {
+                  const verdict = verdictOf(s);
+                  return (
+                    <TR key={`${s.task}-${s.horizon}-${s.threshold ?? ""}-${s.model}`}>
+                      <TD className="text-text-strong">
+                        {TASK_LABEL[s.task] ?? s.task}
+                        {s.threshold !== null && ` (${Math.abs(s.threshold * 100).toFixed(0)}%)`}
+                      </TD>
+                      <TD className="tabular-nums text-text-muted">{s.horizon} sessions</TD>
+                      <TD className="text-right tabular-nums text-text-muted">{s.scored}</TD>
+                      <TD className="text-text-muted">{measureOf(s)}</TD>
+                      <TD>
+                        <Badge variant={verdict.variant}>{verdict.text}</Badge>
+                      </TD>
+                    </TR>
+                  );
+                })}
+              </TBody>
+            </Table>
 
             <p className="mt-3 text-[11px] leading-relaxed text-text-muted">
               {scorecard.note}

@@ -1,5 +1,6 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Table, THead, TBody, TR, TH, TD } from "@/components/ui/table";
 import type { GateDecision, ExperimentalOutlook } from "@/lib/engine/outlook/experimental-outlook";
 
 /**
@@ -74,33 +75,31 @@ export function Phase3Review({ evaluation, outlook }: { evaluation: Phase3Evalua
             title="Ship or withhold, per output"
             blurb="Each forecast task was judged against its own naive baseline on the full test span and both halves. A withheld output failed and stays absent from any future product surface until it earns its place."
           />
-          <div className="-mx-4 overflow-x-auto px-4">
-            <table className="w-full min-w-[44rem] text-xs">
-              <thead>
-                <tr className="border-b border-rule text-left text-[11px] uppercase tracking-wide text-text-muted">
-                  <th className="pb-2 pr-3 font-medium">Output</th>
-                  <th className="pb-2 pr-3 font-medium">Horizon</th>
-                  <th className="pb-2 pr-3 font-medium">Verdict</th>
-                  <th className="pb-2 font-medium">Model or reason</th>
-                </tr>
-              </thead>
-              <tbody>
-                {evaluation.gates.map((g, i) => (
-                  <tr key={i} className="border-b border-rule/60 last:border-0">
-                    <td className="py-2 pr-3 text-text-strong">
-                      {TASK_LABEL[g.task] ?? g.task}
-                      {g.threshold !== undefined ? ` (${Math.abs(g.threshold * 100).toFixed(0)}%)` : ""}
-                    </td>
-                    <td className="py-2 pr-3 tabular-nums text-text-muted">{g.horizon} sessions</td>
-                    <td className="py-2 pr-3">
-                      <Badge variant={g.pass ? "green" : "secondary"}>{g.pass ? "Pass" : "Withheld"}</Badge>
-                    </td>
-                    <td className="py-2 text-text-muted">{g.pass ? g.selectedModel : (g.reasons[0] ?? "failed its gate")}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+          <Table variant="reader" wrapperClassName="-mx-4 px-4" className="min-w-[44rem]">
+            <THead>
+              <TR>
+                <TH>Output</TH>
+                <TH>Horizon</TH>
+                <TH>Verdict</TH>
+                <TH>Model or reason</TH>
+              </TR>
+            </THead>
+            <TBody>
+              {evaluation.gates.map((g, i) => (
+                <TR key={i}>
+                  <TD className="text-text-strong">
+                    {TASK_LABEL[g.task] ?? g.task}
+                    {g.threshold !== undefined ? ` (${Math.abs(g.threshold * 100).toFixed(0)}%)` : ""}
+                  </TD>
+                  <TD className="tabular-nums text-text-muted">{g.horizon} sessions</TD>
+                  <TD>
+                    <Badge variant={g.pass ? "green" : "secondary"}>{g.pass ? "Pass" : "Withheld"}</Badge>
+                  </TD>
+                  <TD className="text-text-muted">{g.pass ? g.selectedModel : (g.reasons[0] ?? "failed its gate")}</TD>
+                </TR>
+              ))}
+            </TBody>
+          </Table>
           <p className="mt-3 text-[11px] leading-relaxed text-text-muted">
             Support levels are shown as reference points only: a placebo-controlled study found no evidence they hold
             better than arbitrary nearby prices (held {pct(evaluation.levelStudy.holdRate)} vs{" "}
