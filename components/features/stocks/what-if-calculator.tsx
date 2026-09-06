@@ -127,7 +127,7 @@ export function WhatIfCalculator({ ticker }: { ticker: string }) {
         )}
         {result && (
           <div className={cn("mt-5 grid grid-cols-2 gap-y-5 sm:grid-cols-4", loading && "opacity-60")}>
-            <Metric size="compact" label="Worth today" value={`PKR ${formatNumber(result.total, 0)}`} sub={`${formatNumber(result.sharesNow, 0)} shares at ${formatNumber(result.endPrice)}`} />
+            <Metric size="compact" label="Worth today" value={`PKR ${formatNumber(result.total, 0)}`} sub={`${formatNumber(result.sharesNow, 0)} shares at ${formatNumber(result.endPrice)}, today's share terms`} />
             <Metric size="compact" label="From price" value={`${result.priceGain >= 0 ? "+" : "−"}${formatNumber(Math.abs(result.priceGain), 0)}`} tone={result.priceGain > 0 ? "up" : result.priceGain < 0 ? "down" : undefined} sub={`bought at ${formatNumber(result.startPrice)}`} />
             <Metric size="compact" label="From dividends" value={result.dividendCount > 0 ? `+${formatNumber(result.dividends, 0)}` : "—"} sub={result.dividendCount > 0 ? `${result.dividendCount} payouts, before tax` : "none on record"} />
             <Metric
@@ -140,13 +140,16 @@ export function WhatIfCalculator({ ticker }: { ticker: string }) {
         )}
         {result && (
           <p className="mt-4 max-w-(--measure) text-(length:--text-2xs) leading-relaxed text-text-faint">
-            Prices are delayed closes. Dividends are gross of withholding tax
+            What this is built on: daily closes on file from {longDate(result.earliestDate)} to {longDate(result.endDate)}, as the exchange
+            reports them and adjusted for past bonus and split events, so share counts and buy prices are in today&apos;s share terms.
+            The exchange serves five years; every day recorded here is kept, so the range grows.
             {result.dividendsIncomplete
               ? result.dividendsKnownFrom
-                ? ` and the payout record only starts on ${longDate(result.dividendsKnownFrom)}, so earlier ones are not counted`
-                : " and no payout record exists for this company, so none are counted"
-              : ""}
-            .{result.bonusEvents > 0 ? ` Includes ${result.bonusEvents} bonus or split event${result.bonusEvents === 1 ? "" : "s"}.` : ""} This is arithmetic on the past, not a forecast.
+                ? ` Cash dividends on record from ${longDate(result.dividendsKnownFrom)}; earlier ones are not counted, so the dividend line is an undercount.`
+                : " No dividend record exists for this company yet, so none are counted."
+              : " Every recorded cash dividend in the window is counted."}
+            {" "}Dividends are before withholding tax. Prices are delayed closes.
+            {result.bonusEvents > 0 ? ` Includes ${result.bonusEvents} bonus or split event${result.bonusEvents === 1 ? "" : "s"} in the window.` : ""} Arithmetic on the past, not a forecast.
           </p>
         )}
       </div>

@@ -64,19 +64,22 @@ export function WhatIf({ ticker }: { ticker: string }) {
             {r.annualisedPct !== null ? ` (${formatSignedPct(r.annualisedPct)} a year)` : ""}.
           </Text>
           <View style={styles.grid}>
-            <Cell label="Worth today" value={formatNumber(r.total, 0)} sub={`${formatNumber(r.sharesNow, 0)} shares`} />
+            <Cell label="Worth today" value={formatNumber(r.total, 0)} sub={`${formatNumber(r.sharesNow, 0)} shares, today's terms`} />
             <Cell label="From price" value={`${r.priceGain >= 0 ? "+" : "-"}${formatNumber(Math.abs(r.priceGain), 0)}`} sub={`bought at ${formatNumber(r.startPrice)}`} tone={r.priceGain >= 0 ? colors.textUp : colors.textDown} />
             <Cell label="From dividends" value={r.dividendCount > 0 ? `+${formatNumber(r.dividends, 0)}` : "none"} sub={r.dividendCount > 0 ? `${r.dividendCount} payouts, before tax` : "on record"} />
             <Cell label="KSE-100, same money" value={r.benchmark ? formatNumber(r.benchmark.valueNow, 0) : "none"} sub={r.benchmark ? `${formatSignedPct(r.benchmark.returnPct)} on price alone` : "no index history"} />
           </View>
           <Text style={styles.footnote}>
-            Delayed closes. Dividends are before withholding tax
+            Built on daily closes on file from {longDate(r.earliestDate)} to {longDate(r.endDate)}, as the exchange reports them and
+            adjusted for past bonus and split events, so share counts and buy prices are in today's share terms. The exchange serves
+            five years; every day recorded here is kept, so the range grows.
             {r.dividendsIncomplete
               ? r.dividendsKnownFrom
-                ? `, and the payout record only starts on ${longDate(r.dividendsKnownFrom)}, so earlier ones are not counted`
-                : ", and no payout record exists, so none are counted"
-              : ""}
-            .{r.bonusEvents > 0 ? ` Includes ${r.bonusEvents} bonus or split event${r.bonusEvents === 1 ? "" : "s"}.` : ""} Arithmetic on the past, not a forecast.
+                ? ` Cash dividends on record from ${longDate(r.dividendsKnownFrom)}; earlier ones are not counted, so the dividend line is an undercount.`
+                : " No dividend record exists for this company yet, so none are counted."
+              : " Every recorded cash dividend in the window is counted."}
+            {" "}Dividends are before withholding tax. Prices are delayed closes.
+            {r.bonusEvents > 0 ? ` Includes ${r.bonusEvents} bonus or split event${r.bonusEvents === 1 ? "" : "s"} in the window.` : ""} Arithmetic on the past, not a forecast.
           </Text>
         </>
       ) : null}
