@@ -9,6 +9,7 @@ import { SegmentedControl } from "@/components/ui/segmented-control";
 import { AddTransactionDialog } from "@/components/features/holdings/add-transaction-dialog";
 import { SectorDot } from "@/components/shared/sector-chip";
 import { sectorColor, shortSector } from "@/lib/shared/sector-colors";
+import { useSortableTable, type SortValue } from "@/components/shared/use-sortable-table";
 
 type SortKey = "ticker" | "qty" | "price" | "value" | "pl";
 type Grouping = "flat" | "sector";
@@ -35,6 +36,17 @@ const COLUMNS: { key: SortKey; label: string; sortName: string; align: "left" | 
   { key: "pl", label: "Unrealised · return", sortName: "unrealised", align: "right" },
 ];
 
+/** Column -> comparable value. Same branches the inline sorter used. */
+function rowSortValue(r: Row, key: SortKey): SortValue {
+  switch (key) {
+    case "ticker": return r.ticker;
+    case "qty": return r.qty;
+    case "price": return r.price ?? 0;
+    case "value": return r.value;
+    case "pl": return r.pl;
+  }
+}
+
 const signed = (v: number, d = 0) => `${v < 0 ? "−" : "+"}${formatNumber(Math.abs(v), d)}`;
 
 /**
@@ -55,8 +67,6 @@ export function HoldingsTable({
 }) {
   const [query, setQuery] = useState("");
   const [grouping, setGrouping] = useState<Grouping>("flat");
-  const [sortKey, setSortKey] = useState<SortKey>("value");
-  const [sortDir, setSortDir] = useState<-1 | 1>(-1);
   const [collapsed, setCollapsed] = useState<Set<string>>(new Set());
 
   const dayByTicker = useMemo(
@@ -83,16 +93,7 @@ export function HoldingsTable({
       .filter((r) => !q || `${r.ticker} ${r.name ?? ""} ${r.sector ?? ""}`.toLowerCase().includes(q));
   }, [holdings, query, dayByTicker]);
 
-  const sorted = useMemo(() => {
-    const copy = [...rows];
-    copy.sort((a, b) => {
-      if (sortKey === "ticker") return a.ticker.localeCompare(b.ticker) * -sortDir;
-      const av = sortKey === "qty" ? a.qty : sortKey === "price" ? (a.price ?? 0) : sortKey === "value" ? a.value : a.pl;
-      const bv = sortKey === "qty" ? b.qty : sortKey === "price" ? (b.price ?? 0) : sortKey === "value" ? b.value : b.pl;
-      return (av - bv) * sortDir;
-    });
-    return copy;
-  }, [rows, sortKey, sortDir]);
+  const { rows: sorted, sortKey, sortDir, sortBy } = useSortableTable<Row, SortKey>(rows, rowSortValue, "value");
 
   const groups = useMemo(() => {
     if (grouping !== "sector") {
@@ -120,14 +121,6 @@ export function HoldingsTable({
       };
     });
   }, [sorted, grouping]);
-
-  function sortBy(key: SortKey) {
-    if (key === sortKey) setSortDir((d) => (d === -1 ? 1 : -1));
-    else {
-      setSortKey(key);
-      setSortDir(-1);
-    }
-  }
 
   const totalValue = sorted.reduce((n, r) => n + r.value, 0);
   const totalPl = sorted.reduce((n, r) => n + r.pl, 0);
