@@ -9,7 +9,7 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { useRouter } from "expo-router";
+import { useLocalSearchParams, useRouter } from "expo-router";
 import { ChevronLeft, Search } from "lucide-react-native";
 import * as Haptics from "expo-haptics";
 import type { StockRow, StocksResponse } from "@psx/shared/api/stocks";
@@ -75,7 +75,9 @@ export default function ResearchScreen() {
   const styles = useStyles();
   const colors = useColors();
   const router = useRouter();
-  const [query, setQuery] = useState("");
+  // Arriving from the Home search with something already typed.
+  const { q } = useLocalSearchParams<{ q?: string }>();
+  const [query, setQuery] = useState(q ?? "");
   const [sort, setSort] = useState<(typeof SORTS)[number]["key"]>("marketCap");
   const [data, setData] = useState<StocksResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -110,7 +112,7 @@ export default function ResearchScreen() {
           <ChevronLeft size={20} color={colors.textMuted} />
           <Text style={styles.backLabel}>Back</Text>
         </Pressable>
-        <PageTitle style={styles.title}>Stock Research</PageTitle>
+        <PageTitle style={styles.title}>Companies</PageTitle>
 
         <View style={styles.searchBox}>
           <Search size={17} color={colors.textFaint} />

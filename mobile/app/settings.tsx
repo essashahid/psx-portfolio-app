@@ -16,8 +16,10 @@ import {
   type TaxPatchRequest,
 } from "@psx/shared/api/settings";
 import { formatNumber } from "@psx/shared/format";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useApi } from "@/lib/use-api";
 import { apiWrite, ApiError } from "@/lib/api";
+import { track } from "@/lib/track";
 import { useAuth } from "@/lib/auth";
 import { Band } from "@/components/ui/layout";
 import { Caps, Figure, PageTitle } from "@/components/ui/text";
@@ -28,6 +30,12 @@ import { Cta } from "@/components/ui/button";
 import { colors, fontFamily, fontSize, layout, palette, space } from "@/lib/theme";
 import { APP_NAME } from "@/lib/brand";
 import { makeStyles, useColors, useTheme, type ThemeMode } from "@/lib/theme-context";
+
+/**
+ * There is no push delivery yet. The toggle is stored on the phone and turning
+ * it on is counted, so the demand for it is measured before it is built.
+ */
+const PUSH_DIVIDENDS_KEY = "plumb.push.dividends";
 
 /**
  * A row of options where exactly one is chosen, laid out down the page rather
@@ -106,6 +114,19 @@ export default function SettingsScreen() {
   const [busy, setBusy] = useState(false);
   const [saved, setSaved] = useState<string | null>(null);
   const [failure, setFailure] = useState<string | null>(null);
+  const [pushDividends, setPushDividends] = useState(false);
+
+  useEffect(() => {
+    AsyncStorage.getItem(PUSH_DIVIDENDS_KEY)
+      .then((stored) => setPushDividends(stored === "1"))
+      .catch(() => {});
+  }, []);
+
+  function togglePushDividends(next: boolean) {
+    setPushDividends(next);
+    AsyncStorage.setItem(PUSH_DIVIDENDS_KEY, next ? "1" : "0").catch(() => {});
+    if (next) track("push_interest", { kind: "dividends" });
+  }
 
   // Seeded from the server once it answers, and again after a pull-to-refresh,
   // so a half-typed value is never overwritten mid-edit by a background load.
@@ -283,6 +304,16 @@ export default function SettingsScreen() {
           <View style={styles.saveRow}>
             <Cta label="Save settings" busy={busy} onPress={save} />
           </View>
+        </Band>
+
+        <Band>
+          <Caps style={styles.blockHead}>On your phone</Caps>
+          <Toggle
+            label="Tell me about dividends on my phone"
+            hint="Notifications are not built yet. Turning this on tells us you want them."
+            value={pushDividends}
+            onChange={togglePushDividends}
+          />
         </Band>
 
         <Band>

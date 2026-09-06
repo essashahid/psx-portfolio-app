@@ -20,7 +20,9 @@ import { ModelChip, ModelPicker } from "@/components/features/model-picker";
 import { ThreadHistory } from "@/components/features/thread-history";
 import { splitContentWithMarkers, stripArtifactMarkers } from "@psx/shared/chat/md-table";
 import type { SavedChatMessage, ThreadDetailResponse } from "@psx/shared/api/threads";
+import type { ChatModelsResponse } from "@psx/shared/api/chat-models";
 import { api, ApiError } from "@/lib/api";
+import { track } from "@/lib/track";
 import {
   CHAT_MODELS,
   DEFAULT_MODEL_ID,
@@ -100,7 +102,7 @@ export default function CopilotScreen() {
    */
   useEffect(() => {
     let live = true;
-    void api<{ providers: ProviderStatus }>("/api/chat/models")
+    void api<ChatModelsResponse>("/api/chat/models")
       .then((res) => {
         if (!live) return;
         setProviders(res.providers);
@@ -179,6 +181,7 @@ export default function CopilotScreen() {
       if (!text || busy) return;
 
       void Haptics.selectionAsync();
+      track("chat_asked", { surface: "mobile", model });
       setInput("");
       setError(null);
       setBusy(true);
@@ -250,9 +253,14 @@ export default function CopilotScreen() {
           }
         });
       } catch (err) {
-        const label = CHAT_MODELS.find((m) => m.id === model)?.label ?? model;
-        const detail = err instanceof Error ? err.message : "The Copilot could not answer.";
-        setError(`${label}: ${detail}`);
+        if (err instanceof ApiError && err.status === 429) {
+          // The daily cap. Not a model fault, so no model label in front of it.
+          setError(err.message);
+        } else {
+          const label = CHAT_MODELS.find((m) => m.id === model)?.label ?? model;
+          const detail = err instanceof Error ? err.message : "Ask could not answer.";
+          setError(`${label}: ${detail}`);
+        }
         updateLast((m) => ({ ...m, status: undefined }));
       } finally {
         setBusy(false);
@@ -281,7 +289,7 @@ export default function CopilotScreen() {
         <View style={styles.header}>
           <View style={styles.headerBar}>
             <View style={styles.titleRow}>
-              <PageTitle>Copilot</PageTitle>
+              <PageTitle>Ask</PageTitle>
               <ModelChip
                 label={CHAT_MODELS.find((m) => m.id === model)?.label ?? "Model"}
                 onPress={() => setPickingModel(true)}
@@ -315,7 +323,7 @@ export default function CopilotScreen() {
               </Pressable>
             </View>
           </View>
-          <Text style={styles.grounding}>Grounded in your holdings, dividends and PSX data</Text>
+          <Text style={styles.grounding}>Plain answers from your own holdings, dividends and PSX data</Text>
         </View>
 
         <ScrollView
@@ -327,8 +335,7 @@ export default function CopilotScreen() {
         >
           {empty ? (
             <Text style={styles.intro}>
-              Ask about your holdings, a company, or how the book is doing. Answers read your
-              actual portfolio, so they are specific to what you own.
+              Ask about your portfolio. Plain answers from your own figures. Not financial advice.
             </Text>
           ) : null}
 
@@ -391,7 +398,7 @@ export default function CopilotScreen() {
               style={styles.input}
               value={input}
               onChangeText={setInput}
-              placeholder="Ask about your book"
+              placeholder="Ask about your portfolio"
               placeholderTextColor={colors.textFaint}
               editable={!busy}
               multiline

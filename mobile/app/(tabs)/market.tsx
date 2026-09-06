@@ -1,6 +1,9 @@
 import { useMemo } from "react";
-import { RefreshControl, ScrollView, StyleSheet, Text, View } from "react-native";
+import { Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { useRouter } from "expo-router";
+import { Search } from "lucide-react-native";
+import * as Haptics from "expo-haptics";
 import type { MarketMover, MarketResponse } from "@psx/shared/api/market";
 import { formatCompact, formatFigure, formatNumber, formatPctSigned } from "@psx/shared/format";
 import { useApi } from "@/lib/use-api";
@@ -73,50 +76,20 @@ function MoverBlock({ title, rows }: { title: string; rows: MarketMover[] }) {
 export default function MarketScreen() {
   const styles = useStyles();
   const colors = useColors();
+  const router = useRouter();
   const { data, error, loading, refreshing, refresh } = useApi<MarketResponse>(
     "/api/market/dashboard",
     "Could not load the market."
   );
 
-  const verdict = useMemo(() => {
-    const rows = data?.map ?? [];
-    if (rows.length === 0) return null;
-    const advanced = rows.filter((r) => (r.changePct ?? 0) > 0.05).length;
-    const capTotal = rows.reduce((n, r) => n + r.marketCap, 0);
-    const rising = rows.filter((r) => (r.changePct ?? 0) > 0).reduce((n, r) => n + r.marketCap, 0);
-    const bySector = new Map<string, { cap: number; weighted: number; label: string }>();
-    for (const r of rows) {
-      const key = r.sectorLabel;
-      const g = bySector.get(key) ?? { cap: 0, weighted: 0, label: key };
-      g.cap += r.marketCap;
-      g.weighted += (r.changePct ?? 0) * r.marketCap;
-      bySector.set(key, g);
-    }
-    const ranked = [...bySector.values()]
-      .map((g) => ({ label: g.label, move: g.weighted / g.cap }))
-      .sort((a, b) => b.move - a.move);
-    if (ranked.length === 0) return null;
-    const share = Math.round((rising / capTotal) * 100);
-    return `${advanced} of ${rows.length} companies advanced, and ${share}% of market value sits in names that rose. ${ranked[0].label} carried the index; ${ranked[ranked.length - 1].label} weighed most on it.`;
-  }, [data?.map]);
-
-  /** Index points a name moved: its weight in the index times its own move. */
+  // The verdict sentence and the index contributors come from the server, so
+  // the phone and the web page read the same words and the same points.
+  const verdict = data?.verdict ?? null;
   const contributions = useMemo(() => {
-    const rows = data?.map ?? [];
-    const level = data?.index?.value;
-    if (rows.length === 0 || !level) return [];
-    const capTotal = rows.reduce((n, r) => n + r.marketCap, 0);
-    const scored = rows
-      .map((r) => ({
-        ticker: r.ticker,
-        color: r.color,
-        points: (r.marketCap / capTotal) * ((r.changePct ?? 0) / 100) * level,
-      }))
-      .sort((a, b) => Math.abs(b.points) - Math.abs(a.points))
-      .slice(0, 7);
-    const max = Math.max(...scored.map((r) => Math.abs(r.points)), 0.0001);
-    return scored.map((r) => ({ ...r, width: Math.max((Math.abs(r.points) / max) * 48, 0.8) }));
-  }, [data?.map, data?.index?.value]);
+    const rows = data?.indexContributors ?? [];
+    const max = Math.max(...rows.map((r) => Math.abs(r.points)), 0.0001);
+    return rows.map((r) => ({ ...r, width: Math.max((Math.abs(r.points) / max) * 48, 0.8) }));
+  }, [data?.indexContributors]);
 
   if (loading) return <ScreenSkeleton dark={false} metrics={2} rows={8} />;
 
@@ -132,7 +105,21 @@ export default function MarketScreen() {
         showsVerticalScrollIndicator={false}
       >
         <SafeAreaView edges={["top"]} style={styles.header}>
-          <PageTitle>Market Pulse</PageTitle>
+          <View style={styles.titleRow}>
+            <PageTitle>Market</PageTitle>
+            <Pressable
+              onPress={() => {
+                void Haptics.selectionAsync();
+                router.push("/research");
+              }}
+              hitSlop={12}
+              accessibilityLabel="Search companies"
+              accessibilityRole="button"
+              style={styles.searchButton}
+            >
+              <Search size={19} color={colors.textMuted} />
+            </Pressable>
+          </View>
 
           {data?.index ? (
             <>
@@ -183,6 +170,7 @@ export default function MarketScreen() {
 
         <View style={styles.gutter}>
           <ErrorNote message={error} />
+          {verdict ? <Text style={styles.verdict}>{verdict}</Text> : null}
         </View>
 
         {data?.map && data.map.length > 0 ? (
@@ -195,7 +183,6 @@ export default function MarketScreen() {
                 ? ` ${data.mapCoverage.shown} companies · ${formatCompact(data.mapCoverage.capShown)} of ${formatCompact(data.mapCoverage.capTotal)}.`
                 : ""}
             </Figure>
-            {verdict ? <Text style={styles.verdict}>{verdict}</Text> : null}
           </Band>
         ) : null}
 
@@ -206,7 +193,6 @@ export default function MarketScreen() {
               {contributions.map((row) => (
                 <LedgerRow key={row.ticker}>
                   <View style={styles.contribRow}>
-                    <View style={[styles.contribDot, { backgroundColor: row.color }]} />
                     <Text style={styles.contribTicker}>{row.ticker}</Text>
                     <View style={styles.contribTrack}>
                       <View style={[styles.contribAxis, { backgroundColor: colors.ruleStrong }]} />
@@ -333,7 +319,8 @@ const useStyles = makeStyles((c) => ({
   mapCaption: { marginTop: space.xs, fontSize: fontSize.xxs, lineHeight: 17, color: c.textFaint },
   /* Set in the display face: it is a sentence of judgement, not a label. */
   verdict: {
-    marginTop: space.md,
+    marginTop: 0,
+    marginBottom: space.sm,
     fontFamily: fontFamily.display,
     fontSize: 17,
     lineHeight: 26,
@@ -341,7 +328,6 @@ const useStyles = makeStyles((c) => ({
     color: c.textStrong,
   },
   contribRow: { flexDirection: "row", alignItems: "center", flex: 1, gap: space.sm },
-  contribDot: { width: 8, height: 8 },
   contribTicker: { width: 56, fontFamily: fontFamily.uiSemibold, fontSize: fontSize.sm, color: c.textStrong },
   /* A centre line the bars grow out of, so gains and losses read as opposites. */
   contribTrack: { position: "relative", flex: 1, height: 14, justifyContent: "center" },
@@ -352,6 +338,8 @@ const useStyles = makeStyles((c) => ({
   screen: { flex: 1, backgroundColor: c.surfacePage },
   gutter: { paddingHorizontal: layout.gutter },
   header: { paddingHorizontal: layout.gutter, paddingBottom: space.lg },
+  titleRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
+  searchButton: { minHeight: layout.hitMin, justifyContent: "center" },
   indexRow: { flexDirection: "row", alignItems: "flex-end", justifyContent: "space-between", marginTop: space.lg },
   indexLeft: { flex: 1 },
   indexValue: {

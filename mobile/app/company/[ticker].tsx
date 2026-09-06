@@ -1,14 +1,28 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { ChevronLeft, MessageSquare, Pencil, Star } from "lucide-react-native";
 import * as Haptics from "expo-haptics";
 import * as WebBrowser from "expo-web-browser";
-import type { CompanyResponse } from "@psx/shared/api/stocks";
-import { formatCompact, formatNumber, formatPctSigned } from "@psx/shared/format";
+import type {
+  CompanyFiling,
+  CompanyNewsItem,
+  CompanyPayout,
+  CompanyResponse,
+  KeyFigure,
+  TrendPoint,
+} from "@psx/shared/api/stocks";
+import type { ChartDataResponse } from "@psx/shared/api/chart";
+import type { HoldingRow, HoldingsResponse } from "@psx/shared/api/holdings";
+import type { WatchlistWriteRequest } from "@psx/shared/api/watchlist";
+import { formatCompact, formatCompactSigned, formatNumber, formatPctSigned } from "@psx/shared/format";
 import { sectorColor, shortSector } from "@psx/shared/sector-colors";
+import { groupRatios } from "@psx/shared/company/ratio-groups";
+import { tone } from "@psx/shared/market/format";
 import { useApi } from "@/lib/use-api";
+import { apiWrite } from "@/lib/api";
+import { track } from "@/lib/track";
 import { Segmented } from "@/components/segmented";
 import { Band, Ledger, LedgerRow } from "@/components/ui/layout";
 import { Caps, Figure, PageTitle } from "@/components/ui/text";
@@ -17,13 +31,6 @@ import { PageSkeleton } from "@/components/skeleton";
 import { PositionSheet } from "@/components/features/position-sheet";
 import { PriceChart, PeriodRail, type ChartPeriod } from "@/components/charts/price-chart";
 import { Rise } from "@/components/ui/motion";
-import type { ChartDataResponse } from "@psx/shared/api/chart";
-import type { NewsResponse } from "@psx/shared/api/news";
-import { groupRatios } from "@psx/shared/company/ratio-groups";
-import { formatCompactSigned } from "@psx/shared/format";
-import type { WatchlistWriteRequest } from "@psx/shared/api/watchlist";
-import { tone } from "@psx/shared/market/format";
-import { apiWrite } from "@/lib/api";
 import { makeStyles, useColors } from "@/lib/theme-context";
 import {
   colors,
@@ -36,22 +43,167 @@ import {
   tracking,
 } from "@/lib/theme";
 
-const TABS = ["Overview", "Fundamentals", "Payouts"] as const;
+/** The same three tabs as the web company page, in the same order. */
+const TABS = ["Overview", "Financials", "Filings"] as const;
 type Tab = (typeof TABS)[number];
 
-/** The handful of ratios worth the first screen, in reading order. */
-const HEADLINE = [
-  "P/E",
-  "P/B",
-  "Dividend yield (TTM)",
-  "ROE",
-  "Debt-to-equity",
-  "Current ratio",
-];
+/** How many filed years the growth bars show. Matches the web strip. */
+const TREND_YEARS = 4;
+
+const ASK_QUESTION = (ticker: string) =>
+  `Explain ${ticker} to me simply: what it does, how it is doing, and whether it pays dividends.`;
 
 function ratioText(value: number | string | null): string {
   if (value === null || value === undefined) return "—";
   return typeof value === "number" ? formatNumber(value, 2) : String(value);
+}
+
+function openLink(url: string) {
+  void WebBrowser.openBrowserAsync(url, {
+    presentationStyle: WebBrowser.WebBrowserPresentationStyle.FULL_SCREEN,
+  });
+}
+
+function payoutText(p: CompanyPayout): string {
+  if (p.dps !== null) return `${formatNumber(p.dps, 2)} per share`;
+  if (p.percentage !== null) return `${formatNumber(p.percentage, 0)}%`;
+  return "—";
+}
+
+/**
+ * Small bars for the last few filed years. A withheld year draws as an empty
+ * dashed slot rather than a gap, so the reader sees it was filed and is under
+ * review, not that it was never filed. The reason goes in a footnote.
+ */
+function TinyBars({
+  points,
+  withheld,
+}: {
+  points: TrendPoint[];
+  withheld: { year: number; reason: string }[];
+}) {
+  const styles = useStyles();
+  const colors = useColors();
+  const years = [...new Set([...points.map((p) => p.year), ...withheld.map((w) => w.year)])]
+    .sort((a, b) => a - b)
+    .slice(-TREND_YEARS);
+  if (years.length === 0) return <Text style={styles.empty}>No filed years on record.</Text>;
+  const byYear = new Map(points.map((p) => [p.year, p.value]));
+  const values = years.map((y) => byYear.get(y)).filter((v): v is number => typeof v === "number");
+  const hi = Math.max(0, ...values);
+  const lo = Math.min(0, ...values);
+  const span = hi - lo || 1;
+  const H = 44;
+  const zeroY = (hi / span) * H;
+
+  return (
+    <View>
+      <View style={[styles.bars, { height: H }]}>
+        {years.map((year, i) => {
+          const v = byYear.get(year);
+          if (typeof v !== "number") {
+            return <View key={year} style={[styles.barSlot, styles.barWithheld, { height: H }]} />;
+          }
+          const top = v >= 0 ? zeroY - (v / span) * H : zeroY;
+          const h = Math.max(1.5, (Math.abs(v) / span) * H);
+          const last = i === years.length - 1;
+          const fill = v < 0 ? colors.chartDown : last ? colors.textStrong : colors.textFaint;
+          return (
+            <View key={year} style={[styles.barSlot, { height: H }]}>
+              <View style={[styles.bar, { top, height: h, backgroundColor: fill }]} />
+            </View>
+          );
+        })}
+      </View>
+      <View style={styles.bars}>
+        {years.map((year) => (
+          <Figure key={year} style={styles.barYear}>
+            {String(year).slice(2)}
+          </Figure>
+        ))}
+      </View>
+    </View>
+  );
+}
+
+/** One of the eight headline figures. Tapping the row shows what it means. */
+function KeyFigureRow({ figure }: { figure: KeyFigure }) {
+  const styles = useStyles();
+  const [open, setOpen] = useState(false);
+  return (
+    <Pressable
+      onPress={() => {
+        void Haptics.selectionAsync();
+        setOpen((v) => !v);
+      }}
+      accessibilityRole="button"
+      accessibilityState={{ expanded: open }}
+      style={({ pressed }) => [styles.figureRow, pressed && styles.rowPressed]}
+    >
+      <View style={styles.figureLine}>
+        <Text style={styles.figureLabel}>{figure.label}</Text>
+        <View style={styles.figureRight}>
+          <Figure style={[styles.figureValue, figure.value === null && styles.figureMuted]}>
+            {figure.display}
+          </Figure>
+          {figure.period ? <Figure style={styles.figurePeriod}>{figure.period}</Figure> : null}
+        </View>
+      </View>
+      {figure.withheld ? <Text style={styles.footnote}>{figure.withheld}</Text> : null}
+      {open ? <Text style={styles.hint}>{figure.hint}</Text> : null}
+    </Pressable>
+  );
+}
+
+type Development = {
+  key: string;
+  date: string | null;
+  label: string;
+  title: string;
+  note: string | null;
+  url: string | null;
+};
+
+function developmentsOf(filings: CompanyFiling[], news: CompanyNewsItem[]): Development[] {
+  return [
+    ...filings.map((f, i) => ({
+      key: `f-${f.date ?? ""}-${i}`,
+      date: f.date,
+      label: "PSX filing",
+      title: f.title,
+      note: f.category || null,
+      url: f.url || null,
+    })),
+    ...news.map((n) => ({
+      key: `n-${n.id}`,
+      date: n.publishedAt?.slice(0, 10) ?? null,
+      label: n.source ?? "Press",
+      title: n.title,
+      note: null,
+      url: n.url,
+    })),
+  ].sort((a, b) => (b.date ?? "").localeCompare(a.date ?? ""));
+}
+
+function DevelopmentRow({ entry }: { entry: Development }) {
+  const styles = useStyles();
+  return (
+    <Pressable
+      onPress={entry.url ? () => openLink(entry.url as string) : undefined}
+      disabled={!entry.url}
+      style={({ pressed }) => [styles.development, pressed && styles.rowPressed]}
+      accessibilityRole={entry.url ? "link" : "text"}
+      accessibilityLabel={entry.title}
+    >
+      <Figure style={styles.developmentMeta} numberOfLines={1}>
+        {entry.date ?? "undated"}
+        {"  "}
+        <Text style={styles.developmentLabel}>{entry.label.toUpperCase()}</Text>
+        {entry.note ? `  ${entry.note}` : ""}
+      </Figure>
+      <Text style={styles.developmentTitle}>{entry.title}</Text>
+    </Pressable>
+  );
 }
 
 export default function CompanyScreen() {
@@ -59,22 +211,18 @@ export default function CompanyScreen() {
   const colors = useColors();
   const router = useRouter();
   const { ticker } = useLocalSearchParams<{ ticker: string }>();
-  const [tab, setTab] = useState<Tab>("Overview");
+  const [tab, setTabState] = useState<Tab>("Overview");
   const symbol = (ticker ?? "").toUpperCase();
 
   const [editing, setEditing] = useState(false);
   const [watchBusy, setWatchBusy] = useState(false);
   const [chartPeriod, setChartPeriod] = useState<ChartPeriod>("1Y");
 
-  // The chart and the ticker's news load beside the company card rather than
-  // inside it: each is slower than the ratios and neither should hold them up.
+  // The chart loads beside the company card rather than inside it: it is
+  // slower than the ratios and should not hold them up.
   const chart = useApi<ChartDataResponse>(
     `/api/chart-data?ticker=${encodeURIComponent(symbol)}&period=${chartPeriod}`,
     "Could not load the price history."
-  );
-  const news = useApi<NewsResponse>(
-    `/api/portfolio/news?tab=companies&window=all&ticker=${encodeURIComponent(symbol)}`,
-    "Could not load the news for this company."
   );
 
   const { data, error, loading, refreshing, refresh } = useApi<CompanyResponse>(
@@ -82,16 +230,26 @@ export default function CompanyScreen() {
     "Could not load this company."
   );
 
-  const headline = useMemo(() => {
-    if (!data) return [];
-    const by = new Map(data.ratios.map((r) => [r.name, r]));
-    return HEADLINE.map((name) => ({ name, row: by.get(name) })).filter((entry) => entry.row);
-  }, [data]);
+  // Your position's value and gain come from the holdings route, which is the
+  // same calculation the Holdings tab and the web show. Nothing is recomputed
+  // here, so the three surfaces cannot disagree. The route is already warm
+  // from launch, so this is usually a cache hit.
+  const holdings = useApi<HoldingsResponse>("/api/portfolio/holdings", "");
+  const held: HoldingRow | null = useMemo(
+    () => holdings.data?.rows.find((row) => row.ticker === symbol) ?? null,
+    [holdings.data, symbol]
+  );
 
-  function openStory(url: string) {
-    void WebBrowser.openBrowserAsync(url, {
-      presentationStyle: WebBrowser.WebBrowserPresentationStyle.FULL_SCREEN,
-    });
+  const viewed = useRef(false);
+  useEffect(() => {
+    if (!data || viewed.current) return;
+    viewed.current = true;
+    track("company_viewed", { ticker: symbol, held: !!data.position });
+  }, [data, symbol]);
+
+  function setTab(next: Tab) {
+    setTabState(next);
+    track("company_tab_viewed", { ticker: symbol, tab: next.toLowerCase() });
   }
 
   async function toggleWatch() {
@@ -109,33 +267,40 @@ export default function CompanyScreen() {
     }
   }
 
+  function askAbout() {
+    void Haptics.selectionAsync();
+    router.push({ pathname: "/(tabs)/copilot", params: { q: ASK_QUESTION(symbol) } });
+  }
+
   if (loading) return <PageSkeleton rows={6} />;
 
   const position = data?.position ?? null;
-  const price = data?.quote?.price ?? data?.priceUsed ?? null;
-  const marketValue = position && price !== null ? position.quantity * price : null;
-  const unrealized =
-    marketValue !== null && position?.totalCost != null ? marketValue - position.totalCost : null;
-  const unrealizedPct =
-    unrealized !== null && position?.totalCost ? (unrealized / position.totalCost) * 100 : null;
-  // Five is what fits before the section stops being a summary of the news and
-  // starts being the news.
-  const stories = (news.data?.groups ?? []).flatMap((group) => group.events).slice(0, 5);
+  const quote = data?.quote;
+  const freshness = data?.quoteFreshness ?? (quote?.price !== null && quote?.price !== undefined ? "fresh" : "missing");
+  const quoteDate = quote?.asOf ? quote.asOf.slice(0, 10) : null;
+  const delayedLine =
+    freshness === "missing"
+      ? "No recent price"
+      : freshness === "stale"
+        ? `Delayed, as of ${quoteDate ?? "an earlier session"}`
+        : "Delayed";
 
   const grouped = groupRatios(data?.ratios ?? []);
-
-  const quote = data?.quote;
-  // What the figures rest on, and a warning when they are not hand-verified.
-  // "stale" and "mismatch" are worth saying out loud; "verified" is the quiet
-  // default and does not need announcing.
-  const period = data?.verified?.throughPeriod ?? data?.periods.latestInterim ?? data?.periods.latestAnnual;
-  const status = data?.verified?.status;
-  // A trailing period already reads as a phrase ("TTM to 2026 9M"), so it takes
-  // no preposition; a bare one ("2026 FY") does.
-  const periodPhrase = period ? (/^TTM/i.test(period) ? period : `Figures to ${period}`) : null;
-  const basisLine = periodPhrase
-    ? `${periodPhrase}${status && status !== "verified" ? ` · ${status}` : ""}`
-    : null;
+  const keyFigures = data?.keyFigures ?? [];
+  const byKey = new Map(keyFigures.map((f) => [f.key, f]));
+  const peFigure = byKey.get("P/E") ?? null;
+  const yieldFigure = byKey.get("Dividend yield (TTM)") ?? null;
+  const trends = data?.trends;
+  const contestedFor = (field: string) =>
+    (trends?.contested ?? []).filter((c) => c.field === field).map((c) => ({ year: c.year, reason: c.reason }));
+  const revenueWithheld = contestedFor("revenue");
+  const epsWithheld = contestedFor("eps");
+  const payouts = data?.payouts ?? [];
+  const lastPayouts = payouts
+    .filter((p) => (!p.kind || p.kind.toLowerCase() === "cash") && p.dps !== null)
+    .slice(0, 4);
+  const filings = data?.filings ?? [];
+  const developments = developmentsOf(filings, data?.news ?? []);
 
   return (
     <SafeAreaView style={styles.screen} edges={["top"]}>
@@ -143,12 +308,10 @@ export default function CompanyScreen() {
         refreshControl={
           <RefreshControl
             refreshing={refreshing}
-            // A pull refreshes the whole screen, not only the block that owns
-            // the spinner.
             onRefresh={() => {
               void refresh();
               void chart.refresh();
-              void news.refresh();
+              void holdings.refresh();
             }}
             tintColor={colors.textMuted}
           />
@@ -162,7 +325,7 @@ export default function CompanyScreen() {
               <Text style={styles.backLabel}>Back</Text>
             </Pressable>
             <View style={styles.headerActions}>
-              {data?.position ? (
+              {position ? (
                 <Pressable
                   onPress={() => {
                     void Haptics.selectionAsync();
@@ -190,12 +353,9 @@ export default function CompanyScreen() {
                 />
               </Pressable>
               <Pressable
-                onPress={() => {
-                  void Haptics.selectionAsync();
-                  router.push({ pathname: "/(tabs)/copilot", params: { q: `Tell me about ${symbol}` } });
-                }}
+                onPress={askAbout}
                 hitSlop={12}
-                accessibilityLabel="Ask the Copilot about this company"
+                accessibilityLabel={`Ask about ${symbol}`}
                 accessibilityRole="button"
               >
                 <MessageSquare size={19} color={colors.textMuted} />
@@ -203,15 +363,17 @@ export default function CompanyScreen() {
             </View>
           </View>
 
+          {/* Identity: ticker, name, sector dot. */}
           <View style={styles.identity}>
             <View style={[styles.dot, { backgroundColor: sectorColor(data?.sector ?? null) }]} />
             <PageTitle style={styles.symbol}>{symbol}</PageTitle>
           </View>
           <Text style={styles.company} numberOfLines={2}>
             {data?.name ?? ""}
-            {data?.sector ? ` · ${shortSector(data.sector)}` : ""}
+            {data?.sector ? `, ${shortSector(data.sector)}` : ""}
           </Text>
 
+          {/* Quote row. Every price here is delayed, and the caption says so. */}
           <View style={styles.quoteRow}>
             <Figure style={styles.price}>{formatNumber(quote?.price, 2)}</Figure>
             <View style={styles.quoteRight}>
@@ -221,10 +383,7 @@ export default function CompanyScreen() {
               <Figure style={styles.cap}>Cap {formatCompact(quote?.marketCap)}</Figure>
             </View>
           </View>
-
-          {/* Say what the valuation rests on. A ratio from a single old period
-              is a different claim from a trailing twelve months. */}
-          {basisLine ? <Figure style={styles.basis}>{basisLine}</Figure> : null}
+          <Figure style={styles.delayed}>{delayedLine}</Figure>
 
           <View style={styles.tabs}>
             <Segmented options={TABS} value={tab} onChange={setTab} />
@@ -244,102 +403,164 @@ export default function CompanyScreen() {
               />
               <PeriodRail value={chartPeriod} onChange={setChartPeriod} />
               {chart.data && chart.data.transactions.length > 0 ? (
-                <Figure style={styles.chartKey}>
-                  dashed rule is your cost · rings are your trades
-                </Figure>
+                <Figure style={styles.chartKey}>The dashed rule is your cost. Rings are your trades.</Figure>
               ) : chart.data?.avgCost ? (
-                <Figure style={styles.chartKey}>dashed rule is your cost</Figure>
+                <Figure style={styles.chartKey}>The dashed rule is your cost.</Figure>
+              ) : null}
+              {chart.data && chart.data.breaks > 0 ? (
+                <Figure style={styles.chartKey}>Adjusted for bonus and split events.</Figure>
               ) : null}
 
+              <View style={styles.block}>
+                <Caps style={styles.blockCaps}>What the company does</Caps>
+                <Text style={styles.prose}>{data?.description || "No official description on file."}</Text>
+              </View>
+
               {position ? (
-                <View style={styles.positionBlock}>
+                <View style={styles.block}>
                   <View style={styles.blockHead}>
                     <Caps>Your position</Caps>
-                    <Figure style={styles.positionWeight}>
-                      {formatNumber(position.quantity, 0)} shares
-                    </Figure>
+                    <Figure style={styles.blockNote}>{formatNumber(position.quantity, 0)} shares</Figure>
                   </View>
                   <View style={styles.metricGrid}>
                     <View style={styles.metricCell}>
                       <Caps>At cost</Caps>
                       <Figure style={styles.metricValue}>
-                        {position.totalCost !== null ? formatNumber(position.totalCost, 0) : "—"}
+                        {held?.totalCost != null ? formatNumber(held.totalCost, 0) : "—"}
                       </Figure>
                     </View>
                     <View style={styles.metricCell}>
                       <Caps>Value now</Caps>
                       <Figure style={styles.metricValue}>
-                        {marketValue !== null ? formatNumber(marketValue, 0) : "—"}
+                        {held?.marketValue != null ? formatNumber(held.marketValue, 0) : "—"}
                       </Figure>
                     </View>
                     <View style={styles.metricCell}>
                       <Caps>Unrealised</Caps>
-                      <Figure style={[styles.metricValue, { color: toneColor(colors, tone(unrealized)) }]}>
-                        {unrealized !== null ? formatCompactSigned(unrealized) : "—"}
+                      <Figure style={[styles.metricValue, { color: toneColor(colors, tone(held?.unrealizedPl)) }]}>
+                        {held?.unrealizedPl != null ? formatCompactSigned(held.unrealizedPl) : "—"}
                       </Figure>
                     </View>
                     <View style={styles.metricCell}>
                       <Caps>On cost</Caps>
-                      <Figure style={[styles.metricValue, { color: toneColor(colors, tone(unrealizedPct)) }]}>
-                        {unrealizedPct !== null ? formatPctSigned(unrealizedPct) : "—"}
+                      <Figure style={[styles.metricValue, { color: toneColor(colors, tone(held?.unrealizedPlPct)) }]}>
+                        {held?.unrealizedPlPct != null ? formatPctSigned(held.unrealizedPlPct) : "—"}
                       </Figure>
                     </View>
                   </View>
                   {position.notes ? <Text style={styles.positionNote}>{position.notes}</Text> : null}
                   {position.hidden ? (
-                    <Text style={styles.hiddenNote}>
-                      Hidden from analysis. It stays in your ledger but is left out of every figure
-                      and chart.
+                    <Text style={styles.footnote}>
+                      Hidden from analysis. It stays in your ledger but is left out of every figure and
+                      chart.
                     </Text>
                   ) : null}
                 </View>
               ) : null}
 
-              <View style={styles.ratioBlock}>
-                <Caps style={styles.blockCaps}>Key ratios</Caps>
-                {headline.length === 0 ? (
-                  <Text style={styles.empty}>No ratios published for this company yet.</Text>
-                ) : (
-                  <View style={styles.metricGrid}>
-                    {headline.map(({ name, row }) => (
-                      <View key={name} style={styles.metricCell}>
-                        <Caps>{name}</Caps>
-                        <Figure style={styles.metricValue}>{ratioText(row?.value ?? null)}</Figure>
-                      </View>
-                    ))}
+              <View style={styles.block}>
+                <Caps style={styles.blockCaps}>Is it growing?</Caps>
+                <View style={styles.trendGrid}>
+                  <View style={styles.trendCell}>
+                    <Text style={styles.trendLabel}>Revenue</Text>
+                    <TinyBars points={trends?.revenue ?? []} withheld={revenueWithheld} />
                   </View>
+                  <View style={styles.trendCell}>
+                    <Text style={styles.trendLabel}>Earnings per share</Text>
+                    <TinyBars points={trends?.eps ?? []} withheld={epsWithheld} />
+                  </View>
+                </View>
+                {[...revenueWithheld, ...epsWithheld].length > 0 ? (
+                  <Text style={styles.footnote}>
+                    {[...revenueWithheld.map((w) => `FY${w.year} revenue withheld. ${w.reason}`), ...epsWithheld.map((w) => `FY${w.year} EPS withheld. ${w.reason}`)].join(" ")}
+                  </Text>
+                ) : null}
+              </View>
+
+              <View style={styles.block}>
+                <Caps style={styles.blockCaps}>Does it pay?</Caps>
+                <View style={styles.figureLine}>
+                  <Text style={styles.figureLabel}>{yieldFigure?.label ?? "Dividend yield"}</Text>
+                  <View style={styles.figureRight}>
+                    <Figure style={[styles.figureValue, (yieldFigure?.value ?? null) === null && styles.figureMuted]}>
+                      {yieldFigure?.display ?? "—"}
+                    </Figure>
+                    {yieldFigure?.period ? <Figure style={styles.figurePeriod}>{yieldFigure.period}</Figure> : null}
+                  </View>
+                </View>
+                {yieldFigure?.withheld ? <Text style={styles.footnote}>{yieldFigure.withheld}</Text> : null}
+                <Caps style={styles.subCaps}>Last cash payouts</Caps>
+                {lastPayouts.length === 0 ? (
+                  <Text style={styles.empty}>No cash payout announcements on file.</Text>
+                ) : (
+                  <Ledger>
+                    {lastPayouts.map((p, i) => (
+                      <LedgerRow key={`${p.date}-${i}`}>
+                        <Figure style={styles.payoutDate}>{p.date ?? "date unknown"}</Figure>
+                        <Figure style={styles.payoutValue}>{payoutText(p)}</Figure>
+                      </LedgerRow>
+                    ))}
+                  </Ledger>
                 )}
               </View>
 
-              {/* News about the company you are reading about belongs here, not
-                  two taps away in another section. */}
-              {stories.length > 0 ? (
-                <View style={styles.newsBlock}>
-                  <Caps style={styles.blockCaps}>In the news</Caps>
-                  {stories.map((story, i) => (
-                    <Rise key={story.id} index={i}>
-                      <Pressable
-                        onPress={() => openStory(story.url)}
-                        style={({ pressed }) => [styles.story, pressed && styles.storyPressed]}
-                        accessibilityRole="link"
-                        accessibilityLabel={story.title}
-                      >
-                        <Figure style={styles.storyMeta} numberOfLines={1}>
-                          {story.source} · {story.timeLabel}
-                        </Figure>
-                        <Text style={styles.storyTitle}>{story.title}</Text>
-                      </Pressable>
-                    </Rise>
-                  ))}
+              <View style={styles.block}>
+                <Caps style={styles.blockCaps}>Is it expensive?</Caps>
+                <View style={styles.figureLine}>
+                  <Text style={styles.figureLabel}>{peFigure?.label ?? "Price to earnings"}</Text>
+                  <View style={styles.figureRight}>
+                    <Figure style={[styles.figureValue, (peFigure?.value ?? null) === null && styles.figureMuted]}>
+                      {peFigure?.display ?? "—"}
+                    </Figure>
+                    {peFigure?.period ? <Figure style={styles.figurePeriod}>{peFigure.period}</Figure> : null}
+                  </View>
                 </View>
-              ) : null}
+                <Text style={styles.footnote}>
+                  {peFigure?.withheld ?? peFigure?.hint ?? "The share price divided by a year of earnings per share."}
+                </Text>
+              </View>
+
+              <View style={styles.block}>
+                <Caps style={styles.blockCaps}>Key figures</Caps>
+                {keyFigures.length === 0 ? (
+                  <Text style={styles.empty}>No figures published for this company yet.</Text>
+                ) : (
+                  <View style={styles.figureList}>
+                    {keyFigures.map((figure) => (
+                      <KeyFigureRow key={figure.key} figure={figure} />
+                    ))}
+                  </View>
+                )}
+                <Text style={styles.footnote}>Tap a figure to see what it means. The full set is under Financials.</Text>
+              </View>
+
+              <View style={styles.block}>
+                <Caps style={styles.blockCaps}>Recent developments</Caps>
+                {developments.length === 0 ? (
+                  <Text style={styles.empty}>
+                    No filings or coverage on file for {symbol}. Announcements appear here as the exchange
+                    publishes them.
+                  </Text>
+                ) : (
+                  developments.map((entry, i) => (
+                    <Rise key={entry.key} index={i}>
+                      <DevelopmentRow entry={entry} />
+                    </Rise>
+                  ))
+                )}
+              </View>
+
+              <Pressable onPress={askAbout} style={styles.askRow} accessibilityRole="button">
+                <Text style={styles.askText}>Want the plain version? Ask walks through {symbol} in a few sentences.</Text>
+                <Text style={styles.askLink}>Ask about {symbol}</Text>
+              </Pressable>
             </>
           ) : null}
 
-          {tab === "Fundamentals" ? (
-            grouped.length > 0 ? (
-              <>
-                {grouped.map((group) => (
+          {tab === "Financials" ? (
+            <>
+              {grouped.length > 0 ? (
+                grouped.map((group) => (
                   <View key={group.title} style={styles.ratioGroup}>
                     <Caps style={styles.blockCaps}>{group.title}</Caps>
                     <Ledger>
@@ -353,34 +574,50 @@ export default function CompanyScreen() {
                       ))}
                     </Ledger>
                   </View>
-                ))}
-              </>
-            ) : (
-              <Text style={styles.empty}>No fundamentals published for this company yet.</Text>
-            )
+                ))
+              ) : (
+                <Text style={styles.empty}>No fundamentals published for this company yet.</Text>
+              )}
+
+              <View style={styles.ratioGroup}>
+                <Caps style={styles.blockCaps}>Payouts</Caps>
+                {payouts.length === 0 ? (
+                  <Text style={styles.empty}>No declared payouts on record.</Text>
+                ) : (
+                  <Ledger>
+                    {payouts.map((p, i) => (
+                      <LedgerRow key={`${p.date}-${i}`}>
+                        <View style={styles.payoutLeft}>
+                          <Text style={styles.payoutKind}>{p.kind ?? "Payout"}</Text>
+                          <Figure style={styles.payoutDate}>{p.date ?? "date unknown"}</Figure>
+                        </View>
+                        <Figure style={styles.payoutValue}>{payoutText(p)}</Figure>
+                      </LedgerRow>
+                    ))}
+                  </Ledger>
+                )}
+              </View>
+            </>
           ) : null}
 
-          {tab === "Payouts" ? (
-            data && data.payouts.length > 0 ? (
-              <Ledger>
-                {data.payouts.map((p, i) => (
-                  <LedgerRow key={`${p.date}-${i}`}>
-                    <View style={styles.payoutLeft}>
-                      <Text style={styles.payoutKind}>{p.kind ?? "Payout"}</Text>
-                      <Figure style={styles.payoutDate}>{p.date ?? "date unknown"}</Figure>
-                    </View>
-                    <Figure style={styles.payoutValue}>
-                      {p.dps !== null
-                        ? `${formatNumber(p.dps, 2)} per share`
-                        : p.percentage !== null
-                          ? `${formatNumber(p.percentage, 0)}%`
-                          : "—"}
-                    </Figure>
-                  </LedgerRow>
-                ))}
-              </Ledger>
+          {tab === "Filings" ? (
+            filings.length === 0 ? (
+              <Text style={styles.empty}>No filings on file for {symbol}.</Text>
             ) : (
-              <Text style={styles.empty}>No declared payouts on record.</Text>
+              filings.map((f, i) => (
+                <Rise key={`${f.date}-${i}`} index={i}>
+                  <DevelopmentRow
+                    entry={{
+                      key: `f-${i}`,
+                      date: f.date,
+                      label: "PSX filing",
+                      title: f.title,
+                      note: f.category || null,
+                      url: f.url || null,
+                    }}
+                  />
+                </Rise>
+              ))
             )
           ) : null}
         </Band>
@@ -389,9 +626,12 @@ export default function CompanyScreen() {
       <PositionSheet
         open={editing}
         ticker={symbol}
-        initial={data?.position ?? null}
+        initial={position}
         onClose={() => setEditing(false)}
-        onSaved={refresh}
+        onSaved={() => {
+          refresh();
+          void holdings.refresh();
+        }}
         onRemoved={() => router.back()}
       />
     </SafeAreaView>
@@ -420,10 +660,10 @@ const useStyles = makeStyles((c) => ({
   quoteRight: { alignItems: "flex-end", gap: 2 },
   changePct: { fontFamily: fontFamily.monoSemibold, fontSize: fontSize.h2 },
   cap: { fontSize: fontSize.xxs, color: c.textFaint },
-  basis: { marginTop: space.md, fontSize: fontSize.xxs, color: c.textFaint },
+  delayed: { marginTop: space.sm, fontSize: fontSize.xxs, color: c.textFaint },
   tabs: { marginTop: space.lg },
   chartKey: { marginTop: space.sm, fontSize: fontSize.xxs, color: c.textFaint },
-  positionBlock: { marginTop: space.xl },
+  block: { marginTop: space.xl },
   blockHead: {
     flexDirection: "row",
     alignItems: "baseline",
@@ -431,36 +671,29 @@ const useStyles = makeStyles((c) => ({
     marginBottom: space.md,
   },
   blockCaps: { marginBottom: space.md },
-  positionWeight: { fontSize: fontSize.xxs, color: c.textFaint },
+  subCaps: { marginTop: space.lg, marginBottom: space.xs },
+  blockNote: { fontSize: fontSize.xxs, color: c.textFaint },
+  prose: { fontFamily: fontFamily.ui, fontSize: fontSize.sm, lineHeight: 21, color: c.textBody },
   positionNote: {
+    marginTop: space.md,
     fontFamily: fontFamily.ui,
     fontSize: fontSize.sm,
     lineHeight: 20,
     color: c.textMuted,
   },
-  hiddenNote: {
+  footnote: {
+    marginTop: space.sm,
     fontFamily: fontFamily.ui,
     fontSize: fontSize.xxs,
     lineHeight: 17,
+    color: c.textFaint,
+  },
+  hint: {
+    marginTop: space.xs,
+    fontFamily: fontFamily.ui,
+    fontSize: fontSize.xs,
+    lineHeight: 18,
     color: c.textMuted,
-    marginTop: space.sm,
-  },
-  ratioBlock: { marginTop: space.xl },
-  ratioGroup: { marginBottom: space.xl },
-  newsBlock: { marginTop: space.xl },
-  story: {
-    paddingVertical: space.md,
-    borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: c.rule,
-    gap: 2,
-  },
-  storyPressed: { backgroundColor: c.surfaceSunken },
-  storyMeta: { fontSize: fontSize.xxs, color: c.textFaint },
-  storyTitle: {
-    fontFamily: fontFamily.uiMedium,
-    fontSize: fontSize.sm,
-    lineHeight: 20,
-    color: c.textStrong,
   },
   metricGrid: { flexDirection: "row", flexWrap: "wrap" },
   metricCell: {
@@ -472,11 +705,62 @@ const useStyles = makeStyles((c) => ({
     borderBottomColor: c.rule,
   },
   metricValue: { fontFamily: fontFamily.monoSemibold, fontSize: fontSize.h2, color: c.textStrong },
+  trendGrid: { flexDirection: "row", gap: space.xl },
+  trendCell: { flex: 1, gap: space.sm },
+  trendLabel: { fontFamily: fontFamily.uiMedium, fontSize: fontSize.xs, color: c.textMuted },
+  bars: { flexDirection: "row", gap: 8, alignItems: "flex-end" },
+  barSlot: { width: 22, position: "relative" },
+  bar: { position: "absolute", left: 0, right: 0 },
+  barWithheld: { borderWidth: 1, borderStyle: "dashed", borderColor: c.ruleStrong },
+  barYear: { width: 22, textAlign: "center", marginTop: 4, fontSize: fontSize.xxxs, color: c.textFaint },
+  figureList: { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: c.rule },
+  figureRow: {
+    paddingVertical: space.md,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: c.rule,
+  },
+  figureLine: { flexDirection: "row", alignItems: "baseline", justifyContent: "space-between", gap: space.md },
+  figureLabel: { flex: 1, fontFamily: fontFamily.ui, fontSize: fontSize.sm, color: c.textBody },
+  figureRight: { alignItems: "flex-end", gap: 2 },
+  figureValue: { fontFamily: fontFamily.monoSemibold, fontSize: fontSize.sm, color: c.textStrong },
+  figureMuted: { color: c.textFaint },
+  figurePeriod: { fontSize: fontSize.xxxs, color: c.textFaint },
+  rowPressed: { backgroundColor: c.surfaceSunken },
+  development: {
+    paddingVertical: space.md,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: c.rule,
+    gap: 3,
+  },
+  developmentMeta: { fontSize: fontSize.xxs, color: c.textFaint },
+  developmentLabel: {
+    fontFamily: fontFamily.uiBold,
+    fontSize: fontSize.xxxs,
+    letterSpacing: letterSpacing(fontSize.xxxs, tracking.caps),
+    color: c.textFaint,
+  },
+  developmentTitle: {
+    fontFamily: fontFamily.uiMedium,
+    fontSize: fontSize.sm,
+    lineHeight: 20,
+    color: c.textStrong,
+  },
+  askRow: {
+    marginTop: space.xl,
+    paddingTop: space.lg,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: c.ruleStrong,
+    gap: space.sm,
+    minHeight: layout.hitMin,
+  },
+  askText: { fontFamily: fontFamily.ui, fontSize: fontSize.sm, lineHeight: 20, color: c.textMuted },
+  askLink: { fontFamily: fontFamily.uiSemibold, fontSize: fontSize.sm, color: c.textBrand },
+  ratioGroup: { marginBottom: space.xl },
   ratioName: { flex: 1, fontFamily: fontFamily.ui, fontSize: fontSize.sm, color: c.textBody },
   ratioValue: { fontFamily: fontFamily.monoSemibold, fontSize: fontSize.sm },
   payoutLeft: { flex: 1, gap: 1 },
   payoutKind: { fontFamily: fontFamily.uiSemibold, fontSize: fontSize.sm, color: c.textStrong },
-  payoutDate: { fontSize: fontSize.xxs, color: c.textFaint },
+  payoutDate: { flex: 1, fontSize: fontSize.xxs, color: c.textFaint },
   payoutValue: { fontFamily: fontFamily.monoSemibold, fontSize: fontSize.sm },
   empty: { fontFamily: fontFamily.ui, fontSize: fontSize.sm, color: c.textMuted, lineHeight: 20 },
 }));

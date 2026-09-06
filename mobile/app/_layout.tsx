@@ -1,5 +1,6 @@
-import { useEffect, useState } from "react";
-import { Stack } from "expo-router";
+import { Component, useEffect, useState, type ReactNode } from "react";
+import { Pressable, RefreshControl, ScrollView, Text, View } from "react-native";
+import { Stack, usePathname } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import * as SplashScreen from "expo-splash-screen";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
@@ -27,8 +28,9 @@ import { AuthProvider, useAuth } from "@/lib/auth";
 import { persister, queryClient } from "@/lib/query";
 import { ThemeProvider, useTheme } from "@/lib/theme-context";
 import { prefetch } from "@/lib/use-api";
+import { reportError, setTrackedPath, track } from "@/lib/track";
 import { Splash } from "@/components/ui/splash";
-import { colors } from "@/lib/theme";
+import { colors, fontFamily, fontSize, layout, space } from "@/lib/theme";
 import { useColors } from "@/lib/theme-context";
 
 // Hold the native splash rather than letting it drop at the first render. It
@@ -42,6 +44,69 @@ void SplashScreen.preventAutoHideAsync();
 // render cost for the whole session, which is what makes a five-tab app feel
 // heavier the longer it is open.
 enableFreeze(true);
+
+// Uncaught JS errors go to the server before the default handler (the red box
+// in development, a crash in release) gets them. Installed once at module
+// load rather than in an effect, so an error during the first render is
+// caught too.
+const previousHandler = ErrorUtils.getGlobalHandler();
+ErrorUtils.setGlobalHandler((error, isFatal) => {
+  reportError(error);
+  previousHandler?.(error, isFatal);
+});
+
+/**
+ * Catches a render error below the navigator, reports it, and offers a way
+ * back that does not need the app to be killed. Pulling down remounts the
+ * tree by clearing the caught error.
+ */
+class ErrorBoundary extends Component<{ children: ReactNode }, { error: Error | null }> {
+  state = { error: null as Error | null };
+
+  static getDerivedStateFromError(error: Error) {
+    return { error };
+  }
+
+  componentDidCatch(error: Error) {
+    reportError(error);
+  }
+
+  render() {
+    if (!this.state.error) return this.props.children;
+    return (
+      <ScrollView
+        contentContainerStyle={fallbackStyles.fill}
+        refreshControl={<RefreshControl refreshing={false} onRefresh={() => this.setState({ error: null })} />}
+      >
+        <View style={fallbackStyles.body}>
+          <Text style={fallbackStyles.title}>Something went wrong. Pull to retry.</Text>
+          <Pressable onPress={() => this.setState({ error: null })} accessibilityRole="button" style={fallbackStyles.button}>
+            <Text style={fallbackStyles.buttonLabel}>Try again</Text>
+          </Pressable>
+        </View>
+      </ScrollView>
+    );
+  }
+}
+
+const fallbackStyles = {
+  fill: { flexGrow: 1, backgroundColor: colors.surfacePage },
+  body: { flex: 1, justifyContent: "center" as const, paddingHorizontal: layout.gutter, gap: space.lg },
+  title: { fontFamily: fontFamily.ui, fontSize: fontSize.body, lineHeight: 22, color: colors.textStrong },
+  button: { alignSelf: "flex-start" as const, minHeight: layout.hitMin, justifyContent: "center" as const },
+  buttonLabel: { fontFamily: fontFamily.uiMedium, fontSize: fontSize.sm, color: colors.textBrand },
+} as const;
+
+/** One page_view per route change, and the current path kept for other events. */
+function PageViews() {
+  const pathname = usePathname();
+  const { session } = useAuth();
+  useEffect(() => {
+    setTrackedPath(pathname);
+    if (session) track("page_view", {}, pathname);
+  }, [pathname, session]);
+  return null;
+}
 
 /**
  * The screens worth having in hand before the tabs mount. Home is what the app
@@ -142,7 +207,10 @@ function Shell() {
 
   return (
     <Launch ready={fontsReady && !loading}>
-      <RootNavigator />
+      <ErrorBoundary>
+        <PageViews />
+        <RootNavigator />
+      </ErrorBoundary>
     </Launch>
   );
 }

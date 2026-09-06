@@ -81,8 +81,8 @@ function Position({ row, largest }: { row: HoldingRow; largest: number }) {
           {priced ? ` · now ${formatNumber(row.latestPrice, 2)}` : " · awaiting price"}
         </Figure>
         {priced ? (
-          <Figure style={[styles.gain, { color: directionColor(row.unrealizedPl) }]}>
-            {formatCompactSigned(row.unrealizedPl)} · {formatPctSigned(row.unrealizedPlPct)}
+          <Figure style={[styles.gain, { color: row.costUnknown ? colors.textMuted : directionColor(row.unrealizedPl) }]}>
+            {row.costUnknown ? "Cost unknown" : `${formatCompactSigned(row.unrealizedPl)} · ${formatPctSigned(row.unrealizedPlPct)}`}
           </Figure>
         ) : (
           <Figure style={styles.atCost}>at cost</Figure>

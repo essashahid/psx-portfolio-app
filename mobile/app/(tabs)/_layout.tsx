@@ -8,8 +8,8 @@ import { colors, fontFamily, layout, space } from "@/lib/theme";
 import { makeStyles, useColors } from "@/lib/theme-context";
 
 /**
- * Five fixed slots: Home, Holdings, Market, Copilot, More. Everything else
- * lives behind More. Copilot sits in the bar on purpose rather than in the
+ * Five fixed slots: Home, Holdings, Market, Ask, More. Everything else
+ * lives behind More. Ask sits in the bar on purpose rather than in the
  * sheet, since it is the shortest route from a number to an explanation.
  *
  * The active slot is a filled indigo pill rather than a tinted glyph, which is
@@ -82,7 +82,7 @@ export default function TabsLayout() {
       />
       <Tabs.Screen
         name="copilot"
-        options={{ tabBarIcon: ({ focused }) => <Slot name="copilot" label="Copilot" focused={focused} /> }}
+        options={{ tabBarIcon: ({ focused }) => <Slot name="copilot" label="Ask" focused={focused} /> }}
       />
       <Tabs.Screen
         name="more"

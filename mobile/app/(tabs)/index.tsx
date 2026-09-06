@@ -1,8 +1,13 @@
-import { RefreshControl, ScrollView, StyleSheet, Text, View } from "react-native";
+import { useEffect, useState } from "react";
+import { Pressable, RefreshControl, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Link, useRouter } from "expo-router";
-import { Bell } from "lucide-react-native";
+import { Bell, Search } from "lucide-react-native";
+import * as Haptics from "expo-haptics";
 import type { HomeContributor, HomeResponse } from "@psx/shared/api/home";
+import type { DividendsResponse } from "@psx/shared/api/dividends";
+import type { StockRow, StocksResponse } from "@psx/shared/api/stocks";
+import { taxYearOf } from "@psx/shared/dividends/tax-year";
 import {
   formatCompact,
   formatCompactSigned,
@@ -11,6 +16,7 @@ import {
 } from "@psx/shared/format";
 import { shortSector } from "@psx/shared/sector-colors";
 import { useApi } from "@/lib/use-api";
+import { api } from "@/lib/api";
 import { AreaChart } from "@/components/charts/area-chart";
 import { StackedRule } from "@/components/charts/stacked-rule";
 import { Wordmark } from "@/components/ui/mark";
@@ -44,6 +50,146 @@ function HeaderMetric({ label, value, detail, tone }: { label: string; value: st
   );
 }
 
+/**
+ * A company search on the ink field. Typing shows the first few matches from
+ * the same browse route the stock list uses; picking one opens the company,
+ * and submitting hands the query to the full list.
+ */
+function CompanySearch() {
+  const styles = useStyles();
+  const colors = useColors();
+  const router = useRouter();
+  const [query, setQuery] = useState("");
+  const [results, setResults] = useState<StockRow[]>([]);
+
+  useEffect(() => {
+    const q = query.trim();
+    if (!q) {
+      setResults([]);
+      return;
+    }
+    let live = true;
+    const timer = setTimeout(() => {
+      const params = new URLSearchParams({ q, sort: "marketCap", limit: "5" });
+      api<StocksResponse>(`/api/stocks/browse?${params.toString()}`)
+        .then((res) => {
+          if (live) setResults(res.stocks);
+        })
+        .catch(() => {
+          if (live) setResults([]);
+        });
+    }, 300);
+    return () => {
+      live = false;
+      clearTimeout(timer);
+    };
+  }, [query]);
+
+  function open(ticker: string) {
+    void Haptics.selectionAsync();
+    setQuery("");
+    setResults([]);
+    router.push({ pathname: "/company/[ticker]", params: { ticker } });
+  }
+
+  function submit() {
+    const q = query.trim();
+    if (results.length === 1) {
+      open(results[0].ticker);
+      return;
+    }
+    setQuery("");
+    setResults([]);
+    router.push(q ? { pathname: "/research", params: { q } } : "/research");
+  }
+
+  return (
+    <View style={styles.searchBlock}>
+      <View style={styles.searchBox}>
+        <Search size={16} color={colors.textOnDarkFaint} />
+        <TextInput
+          style={styles.searchInput}
+          value={query}
+          onChangeText={setQuery}
+          onSubmitEditing={submit}
+          placeholder="Search a company"
+          placeholderTextColor={colors.textOnDarkFaint}
+          autoCapitalize="characters"
+          autoCorrect={false}
+          returnKeyType="search"
+          accessibilityLabel="Search a company"
+        />
+      </View>
+      {results.length > 0 ? (
+        <View style={styles.searchResults}>
+          {results.map((row) => (
+            <Pressable
+              key={row.ticker}
+              onPress={() => open(row.ticker)}
+              style={({ pressed }) => [styles.searchRow, pressed && styles.searchRowPressed]}
+              accessibilityRole="button"
+            >
+              <Text style={styles.searchTicker}>{row.ticker}</Text>
+              <Text style={styles.searchName} numberOfLines={1}>
+                {row.name ?? shortSector(row.sector)}
+              </Text>
+            </Pressable>
+          ))}
+        </View>
+      ) : null}
+    </View>
+  );
+}
+
+/**
+ * Dividends in three figures: this tax year, all time, and the next payout if
+ * one is on the calendar. The next one is labelled by its status and never
+ * counted as received.
+ */
+function DividendsBand({ data }: { data: DividendsResponse }) {
+  const styles = useStyles();
+  const thisYear = taxYearOf(new Date().toISOString().slice(0, 10));
+  const year = data.byTaxYear.find((y) => y.taxYear === thisYear);
+  const next = data.upcoming[0] ?? null;
+  const nextLabel = next?.status === "announced" ? "Announced" : "Expected";
+  const nextAmount = next ? (next.netAmount ?? next.amount) : null;
+
+  return (
+    <Band>
+      <View style={styles.bandHead}>
+        <Caps>Dividends</Caps>
+        <Link href="/dividends" style={styles.link}>
+          All dividends
+        </Link>
+      </View>
+      <View style={styles.dividendGrid}>
+        <View style={styles.dividendCell}>
+          <Caps>Tax year {thisYear}</Caps>
+          <Figure style={styles.dividendValue}>{formatCompact(year?.net ?? 0)}</Figure>
+          <Text style={styles.dividendDetail}>received, after tax</Text>
+        </View>
+        <View style={styles.dividendCell}>
+          <Caps>All time</Caps>
+          <Figure style={styles.dividendValue}>{formatCompact(data.receivedNetTotal)}</Figure>
+          <Text style={styles.dividendDetail}>received, after tax</Text>
+        </View>
+      </View>
+      {next ? (
+        <View style={styles.nextRow}>
+          <Caps>{nextLabel}</Caps>
+          <Text style={styles.nextText}>
+            {next.ticker ?? next.companyName ?? "Payout"}
+            {nextAmount !== null ? `, ${formatCompact(nextAmount)}` : ""}
+            {next.payDate ? ` on ${next.payDate}` : ""}
+          </Text>
+        </View>
+      ) : (
+        <Text style={styles.nextText}>No announced or expected payout on the calendar.</Text>
+      )}
+    </Band>
+  );
+}
+
 function Contributor({ row }: { row: HomeContributor }) {
   const styles = useStyles();
   return (
@@ -74,6 +220,7 @@ export default function HomeScreen() {
     "/api/portfolio/home",
     "Could not load your portfolio."
   );
+  const dividends = useApi<DividendsResponse>("/api/portfolio/dividends", "Could not load dividends.");
 
   if (loading) return <ScreenSkeleton metrics={4} rows={7} />;
 
@@ -84,7 +231,14 @@ export default function HomeScreen() {
       <ScrollView
         contentContainerStyle={styles.scroll}
         refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={refresh} tintColor={colors.textMuted} />
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={() => {
+              void refresh();
+              void dividends.refresh();
+            }}
+            tintColor={colors.textMuted}
+          />
         }
         showsVerticalScrollIndicator={false}
       >
@@ -98,6 +252,8 @@ export default function HomeScreen() {
               onPress={() => router.push("/alerts")}
             />
           </View>
+
+          <CompanySearch />
 
           <Caps onDark style={styles.valueLabel}>
             {data?.atCost ? "Invested at cost" : "Portfolio value"}
@@ -123,7 +279,9 @@ export default function HomeScreen() {
           {data?.asOf ? (
             <View style={styles.asOfRow}>
               <LivePulse live={marketOpen} />
-              <Figure style={styles.asOf}>As of {data.asOf.slice(0, 16).replace("T", " ")}</Figure>
+              <Figure style={styles.asOf}>
+                Delayed prices, as of {data.asOf.slice(0, 16).replace("T", " ")}
+              </Figure>
             </View>
           ) : null}
 
@@ -174,6 +332,8 @@ export default function HomeScreen() {
         <View style={styles.gutter}>
           <ErrorNote message={error} />
         </View>
+
+        {dividends.data ? <DividendsBand data={dividends.data} /> : null}
 
         {data && data.sectors.length > 0 ? (
           <Band style={styles.bandTight}>
@@ -234,7 +394,44 @@ const useStyles = makeStyles((c) => ({
     justifyContent: "space-between",
     minHeight: 46,
   },
+  searchBlock: { marginTop: space.sm },
+  searchBox: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: space.sm,
+    minHeight: 40,
+    paddingHorizontal: space.md,
+    borderWidth: 1,
+    borderColor: c.ruleOnDark,
+    borderRadius: layout.radiusSm,
+  },
+  searchInput: { flex: 1, fontFamily: fontFamily.ui, fontSize: fontSize.body, color: c.textOnDark, paddingVertical: 0 },
+  searchResults: { marginTop: space.xs },
+  searchRow: {
+    flexDirection: "row",
+    alignItems: "baseline",
+    gap: space.sm,
+    minHeight: layout.hitMin,
+    paddingVertical: space.sm,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: c.ruleOnDark,
+  },
+  searchRowPressed: { opacity: 0.6 },
+  searchTicker: { fontFamily: fontFamily.uiSemibold, fontSize: fontSize.sm, color: c.textOnDark },
+  searchName: { flex: 1, fontFamily: fontFamily.ui, fontSize: fontSize.xs, color: c.textOnDarkMuted },
   valueLabel: { marginTop: space.lg },
+  dividendGrid: { flexDirection: "row", gap: space.lg },
+  dividendCell: { flex: 1, gap: 3 },
+  dividendValue: { fontFamily: fontFamily.monoSemibold, fontSize: fontSize.h2, color: c.textStrong },
+  dividendDetail: { fontFamily: fontFamily.ui, fontSize: fontSize.xxs, color: c.textFaint },
+  nextRow: {
+    marginTop: space.lg,
+    paddingTop: space.md,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: c.rule,
+    gap: 3,
+  },
+  nextText: { marginTop: space.xs, fontFamily: fontFamily.ui, fontSize: fontSize.sm, lineHeight: 20, color: c.textBody },
   value: { marginTop: space.xs },
   valueUnit: {
     fontFamily: fontFamily.display,

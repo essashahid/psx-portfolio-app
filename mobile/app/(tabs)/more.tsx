@@ -1,5 +1,5 @@
 import { useCallback } from "react";
-import { Alert, Linking, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useFocusEffect, useRouter, type Href } from "expo-router";
 import Constants from "expo-constants";
@@ -8,20 +8,12 @@ import {
   Bell,
   BookOpen,
   ChevronRight,
-  Database,
-  ExternalLink,
-  FileText,
   HandCoins,
   LogOut,
   Newspaper,
-  NotebookPen,
-  PieChart,
-  Radar,
   Search,
   Settings,
-  Target,
   TrendingUp,
-  Upload,
 } from "lucide-react-native";
 import type { LucideIcon } from "lucide-react-native";
 import { useAuth } from "@/lib/auth";
@@ -32,19 +24,20 @@ import { Caps, Figure, PageTitle } from "@/components/ui/text";
 import { APP_NAME } from "@/lib/brand";
 import { colors, fontFamily, fontSize, layout, space } from "@/lib/theme";
 import { makeStyles, useColors } from "@/lib/theme-context";
-import { isUnreleased } from "@psx/shared/features";
 
+/**
+ * Every entry here is a screen in the app. The desk-only web surfaces (saved
+ * reports, outlook, goals, allocation, journal, import, data engine) are not
+ * listed: a phone user with a handful of stocks does not need them, and the
+ * settings route does not say whether the account is an admin, so there is no
+ * way to show them to admins alone.
+ */
 type Entry = {
   icon: LucideIcon;
   label: string;
-  /** A screen in the app. */
-  href?: Href;
-  /** Lives on the web; opens the browser rather than pretending to be here. */
-  web?: string;
+  href: Href;
   badge?: number | null;
 };
-
-const WEB_BASE = process.env.EXPO_PUBLIC_WEB_URL ?? process.env.EXPO_PUBLIC_API_URL ?? "";
 
 function Row({ entry }: { entry: Entry }) {
   const styles = useStyles();
@@ -54,8 +47,7 @@ function Row({ entry }: { entry: Entry }) {
 
   function open() {
     void Haptics.selectionAsync();
-    if (entry.href) router.push(entry.href);
-    else if (entry.web && WEB_BASE) void Linking.openURL(`${WEB_BASE}${entry.web}`);
+    router.push(entry.href);
   }
 
   return (
@@ -64,27 +56,14 @@ function Row({ entry }: { entry: Entry }) {
         <Icon size={18} color={colors.textMuted} />
         <Text style={styles.label}>{entry.label}</Text>
         {entry.badge ? <Figure style={styles.badge}>{entry.badge}</Figure> : null}
-        {entry.web ? (
-          <ExternalLink size={15} color={colors.textFaint} />
-        ) : (
-          <ChevronRight size={17} color={colors.textFaint} />
-        )}
+        <ChevronRight size={17} color={colors.textFaint} />
       </LedgerRow>
     </Pressable>
   );
 }
 
-/**
- * Not-yet-ready destinations are dropped here rather than at each call site, so
- * one shared list governs both surfaces.
- *
- * Matched on the `web` target, never the native route: /research is the
- * saved-report viewer on the web but the stock screener here, and matching on
- * path would withdraw a screen that is finished. /performance is the one
- * native screen being held back, so it is named directly.
- */
+/** Performance is the one native screen still being held back. */
 function isHidden(entry: Entry): boolean {
-  if (entry.web && isUnreleased(entry.web)) return true;
   return entry.href === "/performance";
 }
 
@@ -112,7 +91,7 @@ export default function MoreScreen() {
 
   // This tab stays mounted, so a fetch on mount alone leaves the badge showing
   // whatever the count was when the app started. There is no pull-to-refresh
-  // here either — it is a list of links, not data — so re-reading on focus is
+  // here either, since it is a list of links rather than data, so re-reading on focus is
   // the only thing keeping the number honest.
   useFocusEffect(
     useCallback(() => {
@@ -149,7 +128,7 @@ export default function MoreScreen() {
         </SafeAreaView>
 
         <Group
-          title="Overview"
+          title="Your portfolio"
           entries={[
             { icon: HandCoins, label: "Dividends", href: "/dividends" },
             { icon: TrendingUp, label: "Performance", href: "/performance" },
@@ -160,28 +139,15 @@ export default function MoreScreen() {
         <Group
           title="Research"
           entries={[
-            { icon: Search, label: "Stock Research", href: "/research" },
-            { icon: FileText, label: "Saved reports", web: "/research" },
-            { icon: Radar, label: "PSX Market Outlook", web: "/outlook" },
-            { icon: Newspaper, label: "News Centre", href: "/news" },
+            { icon: Search, label: "Companies", href: "/research" },
+            { icon: Newspaper, label: "News", href: "/news" },
           ]}
         />
 
         <Group
-          title="Planning"
+          title="Account"
           entries={[
-            { icon: Target, label: "Goals & targets", web: "/goals" },
-            { icon: PieChart, label: "Capital allocation", web: "/allocation" },
-            { icon: NotebookPen, label: "Journal", web: "/journal" },
             { icon: Bell, label: "Alerts", href: "/alerts", badge: alerts?.openCount ?? null },
-          ]}
-        />
-
-        <Group
-          title="Data & setup"
-          entries={[
-            { icon: Upload, label: "Import Center", web: "/import" },
-            { icon: Database, label: "Data Engine", web: "/coverage" },
             { icon: Settings, label: "Settings", href: "/settings" },
           ]}
         />
@@ -191,11 +157,9 @@ export default function MoreScreen() {
             <LogOut size={17} color={colors.textDown} />
             <Text style={styles.signOutLabel}>Sign out</Text>
           </Pressable>
-          {/* Say plainly which things open a browser and why. */}
           <Text style={styles.footer}>
-            {APP_NAME} version {Constants.expoConfig?.version ?? "0.1.0"}. Rows marked with an
-            arrow open the web app, where there is room for importing, editing and long
-            reports. Data is held in your own Supabase project with row-level security. For
+            {APP_NAME} version {Constants.expoConfig?.version ?? "0.1.0"}. Importing broker
+            statements and long reports live on the web app, where there is room for them. For
             personal portfolio tracking and research support only. It is not financial advice.
           </Text>
         </Band>

@@ -1,6 +1,6 @@
 import { fetch as expoFetch } from "expo/fetch";
 import { ChatStreamParser, type ChatStreamEvent } from "@psx/shared/chat/stream";
-import { apiUrl, authHeader } from "./api";
+import { ApiError, apiUrl, authHeader } from "./api";
 
 /**
  * Streams one Copilot answer, calling onEvent as each event lands.
@@ -30,7 +30,9 @@ export async function streamChat(
     } catch {
       // Not JSON. The status line is all we have.
     }
-    throw new Error(message);
+    // ApiError rather than Error so the screen can tell a daily cap (429)
+    // from a provider failure and word it accordingly.
+    throw new ApiError(message, response.status);
   }
   if (!response.body) throw new Error("The server sent no answer stream.");
 
