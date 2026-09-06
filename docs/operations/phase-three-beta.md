@@ -115,6 +115,16 @@ unchanged.
 Allocation, Journal, Import Center, Coverage, Bulls & Bears remain admin-only
 (`ADMIN_ONLY_FEATURES`); Import is enabled per account from Admin.
 
+**What if I had invested.** On the company Overview of both surfaces: an
+amount and a date (one, three or five years, or any date) become the value
+today, split into price gain and gross dividends, with the annual rate and
+the KSE-100 over the same window. `lib/company/what-if.ts` is the arithmetic
+(shares through every bonus or split, each dividend on the shares held that
+day); `GET /api/stocks/[ticker]/what-if` serves both surfaces. Dividends
+before the payout record are reported as not counted, never estimated.
+History is read through `lib/company/history.ts`, which pages past the
+1,000-row PostgREST cap that a single query silently stops at.
+
 ## Beta readiness (Phase 5)
 
 - Invite: Admin > Waitlist > Invite, or invite by email. Supabase sends the

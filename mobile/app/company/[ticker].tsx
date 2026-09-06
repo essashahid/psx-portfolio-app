@@ -31,6 +31,7 @@ import {
   valuationReading,
 } from "@/lib/company-readings";
 import { Segmented } from "@/components/segmented";
+import { WhatIf } from "@/components/features/what-if";
 import { Band, Ledger, LedgerRow } from "@/components/ui/layout";
 import { Disclosure } from "@/components/ui/disclosure";
 import { Caps, Figure, PageTitle } from "@/components/ui/text";
@@ -617,6 +618,8 @@ export default function CompanyScreen() {
                   </Text>
                 ) : null}
               </View>
+
+              <WhatIf ticker={symbol} />
 
               <View style={styles.block}>
                 <Caps style={styles.blockCaps}>Key figures</Caps>

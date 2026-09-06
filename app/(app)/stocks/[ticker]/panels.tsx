@@ -19,6 +19,7 @@ import { Metric } from "@/components/ui/metric";
 import { Table, THead, TBody, TR, TH, TD } from "@/components/ui/table";
 import { AskCopilotLink } from "@/components/shared/ask-copilot-link";
 import { FundamentalsGrid } from "@/components/features/stocks/fundamentals-grid";
+import { WhatIfCalculator } from "@/components/features/stocks/what-if-calculator";
 import { FilingsSpine, type SpineEntry } from "@/components/features/stocks/filings-spine";
 import { formatNumber, formatFinancialPeriod, formatSignedPct, cn } from "@/lib/shared/format";
 import { adjustForCorporateActions, detectCorporateActionBreaks } from "@psx/shared/market/adjust";
@@ -349,6 +350,8 @@ export async function OverviewPanel({ ticker }: { ticker: string }) {
             )}
           </div>
         </QuestionRow>
+
+        <WhatIfCalculator ticker={ticker} />
       </div>
 
       <div className="mt-10">

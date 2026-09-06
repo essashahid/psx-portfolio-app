@@ -18,6 +18,7 @@ export const EVENT_NAMES = [
   "feedback_sent",
   "push_interest",
   "discrepancy_reported",
+  "what_if_run",
 ] as const;
 
 export type EventName = (typeof EVENT_NAMES)[number];
