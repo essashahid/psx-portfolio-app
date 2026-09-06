@@ -60,7 +60,6 @@ export default function LoginPage() {
       setError("The read-only demo could not be opened. Please try the button below.");
     }
     if (params.get("invite") === "expired") {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
       setError("That link has expired or was already used. Ask for a new invite, or use Forgot password if you already have an account.");
     }
   }, []);
@@ -131,8 +130,8 @@ export default function LoginPage() {
             <span className="block">read the way an analyst would read it.</span>
           </h1>
           <p className="mt-8 max-w-[38ch] text-sm leading-relaxed text-[var(--text-on-dark-muted)]">
-            Holdings, dividends and performance against the KSE-100, built from your own broker statements. No
-            credentials, no orders.
+            Track what you own, understand how it is doing, and know what matters. Add holdings by hand or from a
+            broker statement. No credentials, no orders.
           </p>
         </div>
 

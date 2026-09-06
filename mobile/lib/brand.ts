@@ -10,7 +10,7 @@ export const APP_NAME = "PortfolioOS PK";
 
 /** The one-line promise under the wordmark on the login screen. */
 export const APP_PROMISE =
-  "Import a broker statement and PortfolioOS PK tracks holdings, dividends and performance against the KSE-100. It never asks for brokerage credentials and it never places orders.";
+  "Track what you own, understand how it is doing, and know what matters. Add your holdings by hand or from a broker statement. It never asks for brokerage credentials and it never places orders.";
 
 export const DISCLAIMER_SHORT =
   "For personal portfolio tracking and research support only. It is not financial advice.";

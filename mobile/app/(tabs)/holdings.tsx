@@ -77,7 +77,7 @@ function Position({ row, largest }: { row: HoldingRow; largest: number }) {
 
       <View style={styles.lineTight}>
         <Figure style={styles.basis} numberOfLines={1}>
-          {formatNumber(row.quantity, 0)} at {formatNumber(row.avgCost, 2)}
+          {formatNumber(row.quantity, 0)} {row.costUnknown ? "shares, cost unknown" : `at ${formatNumber(row.avgCost, 2)}`}
           {priced ? ` · now ${formatNumber(row.latestPrice, 2)}` : " · awaiting price"}
         </Figure>
         {priced ? (

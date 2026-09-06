@@ -50,9 +50,9 @@ type Part = { type: "text"; content: string } | { type: "artifact"; spec: Artifa
 type Message = { role: "user" | "assistant"; parts: Part[]; status?: string };
 
 const PROMPTS = [
-  "What should I trim?",
-  "Dividend outlook",
-  "Which holding carries the most risk?",
+  "Why is my portfolio down today?",
+  "How much have I earned from dividends this tax year?",
+  "Which of my holdings are most concentrated?",
   "How am I doing against the KSE-100?",
 ];
 
