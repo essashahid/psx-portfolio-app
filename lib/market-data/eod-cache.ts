@@ -23,6 +23,14 @@ export interface ClosePoint {
 /** Refetch a symbol when we have nothing cached or the latest day is older than this. */
 const STALE_AFTER_DAYS = 1;
 
+/** How far back the "latest cached date" lookup scans before falling back to per-symbol reads. */
+const LATEST_LOOKBACK_DAYS = 14;
+
+/** YYYY-MM-DD for `days` days before today (UTC). */
+export function daysAgo(days: number): string {
+  return new Date(Date.now() - days * 86_400_000).toISOString().slice(0, 10);
+}
+
 function isStale(latest: string | null): boolean {
   if (!latest) return true;
   const ageMs = Date.now() - new Date(`${latest}T00:00:00Z`).getTime();
@@ -47,16 +55,33 @@ export async function ensureEodCached(
   const admin = createAdminClient();
   const symbols = [...new Set([KSE_SYMBOL, ...tickers.map((t) => t.toUpperCase())])];
 
-  // Latest cached date per symbol in one query.
-  const { data: latestRows } = await admin
+  // Latest cached date per symbol. Look in a short recent window first (one
+  // small query covers every symbol that is up to date), then ask only for the
+  // symbols that window missed, one row each. Reading the whole history just to
+  // find its newest date was a large share of this project's egress.
+  const latestByTicker = new Map<string, string>();
+  const { data: recentRows } = await admin
     .from("company_price_history")
     .select("ticker, price_date")
     .in("ticker", symbols)
+    .gte("price_date", daysAgo(LATEST_LOOKBACK_DAYS))
     .order("price_date", { ascending: false });
-  const latestByTicker = new Map<string, string>();
-  for (const row of latestRows ?? []) {
+  for (const row of recentRows ?? []) {
     if (!latestByTicker.has(row.ticker)) latestByTicker.set(row.ticker, row.price_date as string);
   }
+  const unresolved = symbols.filter((s) => !latestByTicker.has(s));
+  await Promise.all(
+    unresolved.map(async (symbol) => {
+      const { data } = await admin
+        .from("company_price_history")
+        .select("price_date")
+        .eq("ticker", symbol)
+        .order("price_date", { ascending: false })
+        .limit(1);
+      const latest = data?.[0]?.price_date as string | undefined;
+      if (latest) latestByTicker.set(symbol, latest);
+    })
+  );
 
   const refreshed: string[] = [];
   const skipped: string[] = [];
@@ -77,20 +102,30 @@ export async function ensureEodCached(
   return { refreshed, skipped };
 }
 
-/** Reads cached daily closes for the given symbols (+ KSE-100), oldest first. */
+/**
+ * Reads cached daily closes for the given symbols (+ KSE-100), oldest first.
+ *
+ * Pass `since` (YYYY-MM-DD) whenever the caller only needs a recent window.
+ * Without it this reads the full history of every symbol (~20k rows for a
+ * typical portfolio), which is the single largest source of database egress
+ * in this app, so new callers should always bound it.
+ */
 export async function getCachedEod(
   supabase: SupabaseClient,
-  tickers: string[]
+  tickers: string[],
+  opts: { since?: string } = {}
 ): Promise<Map<string, ClosePoint[]>> {
   const symbols = [...new Set([KSE_SYMBOL, ...tickers.map((t) => t.toUpperCase())])];
   const byTicker = new Map<string, ClosePoint[]>();
-  // Page through to avoid the default 1000-row cap (5y * ~17 symbols ≈ 20k rows).
+  // Page through to avoid the default 1000-row cap.
   const PAGE = 1000;
   for (let from = 0; ; from += PAGE) {
-    const { data, error } = await supabase
+    let query = supabase
       .from("company_price_history")
       .select("ticker, price_date, close")
-      .in("ticker", symbols)
+      .in("ticker", symbols);
+    if (opts.since) query = query.gte("price_date", opts.since);
+    const { data, error } = await query
       .order("price_date", { ascending: true })
       .range(from, from + PAGE - 1);
     if (error || !data || data.length === 0) break;

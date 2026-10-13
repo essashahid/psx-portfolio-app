@@ -1,5 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { getCachedEod, KSE_SYMBOL, type ClosePoint } from "@/lib/market-data/eod-cache";
+import { daysAgo, getCachedEod, KSE_SYMBOL, type ClosePoint } from "@/lib/market-data/eod-cache";
 import { fmtPct } from "@/lib/market/format";
 import type { HoldingsSummary } from "@/lib/chat/data";
 
@@ -71,7 +71,9 @@ export async function getBenchmarkPerformance(
   const symbols = [...new Set([...focus, ...held])];
   if (symbols.length === 0) return null;
 
-  const eod = await getCachedEod(supabase, symbols);
+  // Only the longest window (plus a month of slack for holidays) is ever read.
+  const longestWindow = Math.max(...WINDOWS.map((w) => w.days));
+  const eod = await getCachedEod(supabase, symbols, { since: daysAgo(longestWindow + 31) });
   const kse = eod.get(KSE_SYMBOL);
   if (!kse || kse.length < 2) return null;
   const asOf = kse[kse.length - 1].date;

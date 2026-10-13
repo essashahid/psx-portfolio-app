@@ -52,7 +52,12 @@ export async function buildPriceChartWithBenchmark(
   const sample = windowed.length ? windowed : sorted;
 
   await ensureEodCached([ticker]);
-  const eod = await getCachedEod(supabase, [ticker]);
+  // Only the KSE-100 line is used here (the ticker's own closes come from
+  // `candles`), and only across the chart window.
+  const kseSince = new Date(new Date(`${sample[0]?.date ?? windowStart}T00:00:00Z`).getTime() - 31 * 86_400_000)
+    .toISOString()
+    .slice(0, 10);
+  const eod = await getCachedEod(supabase, [], { since: kseSince });
   const kseSeries = eod.get(KSE_SYMBOL) ?? [];
   const baseDate = sample[0]?.date ?? windowStart;
   const baseClose = sample[0]?.close ?? 100;

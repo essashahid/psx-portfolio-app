@@ -81,7 +81,16 @@ export async function rebuildBenchmarkSeries(
   // Cached price history; fill an at-cost par point for positions acquired
   // before their first listed close (e.g. IPO allotments).
   const tickers = [...new Set(shareEvents.map((e) => e.ticker))];
-  const priceSeries = await getCachedEod(supabase, tickers);
+  // Prices before the first ledger entry never affect the series, so read from
+  // a month before it (a month of slack covers holidays for close-as-of lookups).
+  const ledgerDates = [
+    ...txns.map((t) => t.trade_date),
+    ...cash.map((c) => c.movement_date),
+  ].filter((d): d is string => Boolean(d)).sort();
+  const since = ledgerDates.length
+    ? new Date(new Date(`${ledgerDates[0]}T00:00:00Z`).getTime() - 31 * 86_400_000).toISOString().slice(0, 10)
+    : undefined;
+  const priceSeries = await getCachedEod(supabase, tickers, { since });
   const firstBuyPrice = new Map<string, { date: string; price: number }>();
   for (const t of txns) {
     if (t.type !== "BUY" || !t.ticker || !t.trade_date || !t.price) continue;
